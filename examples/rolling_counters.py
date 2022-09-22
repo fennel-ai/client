@@ -1,13 +1,11 @@
 import pandas as pd
 
-import aggregate
-import config
-import connector
-from expectations import *
-import feature
-from schema import *
-import stream
-import windows
+from aggregate import aggregate
+from lib.expectations import *
+from feature import feature
+from lib.schema import *
+from stream import stream, connector
+from lib import windows
 
 configs = []
 
@@ -15,7 +13,7 @@ configs = []
 @pip_install([('pandas', '==1.5', '<2.0'), 'numpy', ])
 class Actions(stream.Stream):
     name = 'actions'
-    retention = windows.DAY*14
+    retention = windows.DAY * 14
 
     @classmethod
     def schema(cls) -> Schema:
@@ -36,7 +34,7 @@ class Actions(stream.Stream):
 
 @pip_install('requests', '>=1.5')
 class UserLikeCount(aggregate.Count):
-    windows = [windows.DAY, 3*windows.DAY]
+    windows = [windows.DAY, 3 * windows.DAY]
     stream = Actions.name
     @classmethod
     def schema(cls) -> Schema:
@@ -67,8 +65,8 @@ class UserLikeCount(aggregate.Count):
 @config.depends_on('min_value_user_like_count_day3', 'max_value_user_like_count_day30')
 @config.depends_on('min_value_user_like_count_day30', 'max_value_user_like_count_day30')
 def user_like_count_3days(uids: pd.Series, categories: pd.Series) -> pd.DataFrame:
-    day3 = UserLikeCount.lookup(uids=uids, categories=categories, window=windows.DAY*3)
-    day30 = UserLikeCount.lookup(uids=uids, categories=categories, window=windows.DAY*3)
+    day3 = UserLikeCount.lookup(uids=uids, categories=categories, window=windows.DAY * 3)
+    day30 = UserLikeCount.lookup(uids=uids, categories=categories, window=windows.DAY * 3)
     min_value = config.read('min_values')
     max_value = config.read('max_values')
     tempvar = user_like_count_3days.extract(df['a'], df['b'])

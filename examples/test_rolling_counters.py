@@ -1,9 +1,6 @@
 import unittest
 
-import pandas as pd
-
-import feature
-import workspace
+from workspace import workspace
 
 
 class MyTest(unittest.TestCase):

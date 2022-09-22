@@ -8,7 +8,7 @@ class Stream:
     version = 1
     retention = None
     # by default, get all the data
-    start = datetime.datetime(1990, 1, 1)
+    start = datetime.datetime(2010, 1, 1)
 
     manual_logging = True # TODO: find a better name for this option
 
