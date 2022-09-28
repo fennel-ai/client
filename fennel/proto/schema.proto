@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package fennel.proto;
+
+
+enum FieldType {
+  NONE = 0;
+  KEY = 1;
+  VALUE = 2;
+  TIMESTAMP = 3;
+}
+
+enum ScalarType {
+  INT = 0;
+  DOUBLE = 1;
+  STRING = 2;
+  BOOLEAN = 3;
+}
+
+message DataType {
+  oneof type {
+    ScalarType scalar_type = 1;
+    ArrayType array_type = 2;
+    MapType map_type = 3;
+  }
+}
+
+message Expectation {
+
+}
+
+message Schema {
+  string name = 1;
+  repeated Field fields = 2;
+}
+
+message Value {
+  oneof value {
+    int64 int_value = 1;
+    double double_value = 2;
+    string string_value = 3;
+    bool bool_value = 4;
+    Array array_value = 6;
+    Map map_value = 7;
+  }
+}
+
+message Array {
+  repeated Value elements = 1;
+}
+
+message ArrayType {
+  DataType element_type = 1;
+}
+
+// Proto map keys cannot be messages, but are limited to strings and ints.
+// Hence we use two arrays to represent a map.
+message Map {
+  repeated Value keys = 1;
+  repeated Value values = 2;
+}
+
+message MapType {
+  DataType key_type = 1;
+  DataType value_type = 2;
+}
+
+message Field {
+  string name = 1;
+  FieldType type = 2;
+  DataType dtype = 3;
+  Value default_value = 4;
+  repeated Expectation expectation = 5;
+}

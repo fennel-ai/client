@@ -10,6 +10,7 @@ class Aggregate:
     version = 1
     stream: str = None
     mode = 'pandas'
+    windows = None
 
     @classmethod
     def schema(cls) -> schema.Schema:

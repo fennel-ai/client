@@ -1,39 +1,30 @@
-#TODO(aditya): read hamilton post: https://multithreaded.stitchfix.com/blog/2021/10/14/functions-dags-hamilton/
+# TODO(aditya): read hamilton post: https://multithreaded.stitchfix.com/blog/2021/10/14/functions-dags-hamilton/
 from typing import *
+
+import grpc
+import pandas as pd
+
+import fennel.gen.services_pb2_grpc as services_pb2
+from fennel.stream import Stream
 
 
 # TODO(aditya): how will auth work?
 class Workspace:
-    def __init__(self, name: str, prod: bool, ttl: int = 0, auth: bool = False, token: str = None, py_version=None, env=None):
+    def __init__(self, name: str, url: str):
         self.name = name
-        self.prod = prod
-        self.ttl = 0
-        self.auth = auth
-        self.token = token
-        self.streams = []
-        self.aggregates = []
-        self.features = []
+        self.url = url
+        self.channel = grpc.insecure_channel(url)
+        self.stub = services_pb2.FennelFeatureStoreStub(self.channel)
 
-    def add_stream(self, s: str):
-        self.add_stream_many([s])
+    def register_streams(self, *streams: List[Stream]):
+        for stream in streams:
+            stream.register(self.stub)
+        print("Registered streams:", [stream.name for stream in streams])
 
-    def add_stream_many(self, streams: List[str]):
-        self.streams.extend(streams)
-
-    def add_aggregate_many(self, aggregates: List[str]):
-        self.aggregates.extend(aggregates)
-
-    def add_aggregate(self, a: str):
-        self.add_aggregate_many([a])
-
-    def sync(self):
-        pass
-
-    #TODO(aditya/nikhil): figure out the right signature for global extract function
+    # TODO(aditya/nikhil): figure out the right signature for global extract function
     # extract a single feature using these kwargs
     def extract(config: Dict[str, Any], reqs: Dict[str, Dict[str, pd.Series]], batch=False, concat=False):
         pass
-
 
     def extract_magic(config: Dict[str, Any], names: List[str], df: pd.DataFrame):
         pass

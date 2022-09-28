@@ -1,0 +1,60 @@
+// proto2 vs proto3 - https://github.com/protocolbuffers/protobuf/releases/tag/v3.0.0
+syntax = "proto3";
+
+package fennel.proto;
+
+import "schema.proto";
+
+// Next field number: 6
+message CreateSourceRequest {
+    string name = 1;
+    uint32 version = 2;
+    oneof source {
+       SQL sql = 3;
+       S3 s3 = 4;
+       BigQuery bigquery = 5;
+    }
+}
+
+// Next field number: 9
+message CreateConnectorRequest {
+    string name = 1;
+    uint32 version = 2;
+    string source_name = 3;
+    string source_type = 4;
+    bytes connector_function = 5;
+    string cursor_field = 6;
+    string table_name = 7;
+    Schema schema = 8;
+}
+
+// Next field number: 8
+message SQL {
+    enum SQLType {
+        Postgres = 0;
+        MySQL = 1;
+    }
+    SQLType sql_type = 1;
+    string host = 2;
+    string db = 3;
+    string username = 4;
+    string password = 5;
+    uint32 port = 6;
+    string jdbc_params = 7;
+}
+
+// Next field number: 6
+message S3 {
+    string bucket = 1;
+    string path_prefix = 2;
+    string aws_access_key_id = 3;
+    string aws_secret_access_key = 4;
+    string schema = 5;
+}
+
+// Next field number: 4
+message BigQuery {
+    string project_id = 1;
+    string dataset = 2;
+    string credentials_json = 3;
+}
