@@ -2,6 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
+import fennel.gen.aggregate_pb2 as aggregate__pb2
 import fennel.gen.status_pb2 as status__pb2
 import fennel.gen.stream_pb2 as stream__pb2
 
@@ -19,16 +20,16 @@ class FennelFeatureStoreStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.RegisterSource = channel.unary_unary(
-            '/fennel.proto.FennelFeatureStore/RegisterSource',
-            request_serializer=stream__pb2.CreateSourceRequest.SerializeToString,
-            response_deserializer=status__pb2.Status.FromString,
-        )
-        self.RegisterConnector = channel.unary_unary(
-            '/fennel.proto.FennelFeatureStore/RegisterConnector',
-            request_serializer=stream__pb2.CreateConnectorRequest.SerializeToString,
-            response_deserializer=status__pb2.Status.FromString,
-        )
+        self.RegisterStream = channel.unary_unary(
+                '/fennel.proto.FennelFeatureStore/RegisterStream',
+                request_serializer=stream__pb2.CreateStreamRequest.SerializeToString,
+                response_deserializer=status__pb2.Status.FromString,
+                )
+        self.RegisterAggregate = channel.unary_unary(
+                '/fennel.proto.FennelFeatureStore/RegisterAggregate',
+                request_serializer=aggregate__pb2.CreateAggregateRequest.SerializeToString,
+                response_deserializer=status__pb2.Status.FromString,
+                )
 
 
 class FennelFeatureStoreServicer(object):
@@ -38,15 +39,14 @@ class FennelFeatureStoreServicer(object):
 
     """
 
-    def RegisterSource(self, request, context):
+    def RegisterStream(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def RegisterConnector(self, request, context):
+    def RegisterAggregate(self, request, context):
         """
-        rpc RegisterAggregate (users.GetUsersRequest) returns (stream  users.GetUsersResult);
         rpc RegisterFeature (users.GetUsersRequest) returns (stream  users.GetUsersResult);
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -56,23 +56,23 @@ class FennelFeatureStoreServicer(object):
 
 def add_FennelFeatureStoreServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        'RegisterSource': grpc.unary_unary_rpc_method_handler(
-            servicer.RegisterSource,
-            request_deserializer=stream__pb2.CreateSourceRequest.FromString,
-            response_serializer=status__pb2.Status.SerializeToString,
-        ),
-        'RegisterConnector': grpc.unary_unary_rpc_method_handler(
-            servicer.RegisterConnector,
-            request_deserializer=stream__pb2.CreateConnectorRequest.FromString,
-            response_serializer=status__pb2.Status.SerializeToString,
-        ),
+            'RegisterStream': grpc.unary_unary_rpc_method_handler(
+                    servicer.RegisterStream,
+                    request_deserializer=stream__pb2.CreateStreamRequest.FromString,
+                    response_serializer=status__pb2.Status.SerializeToString,
+            ),
+            'RegisterAggregate': grpc.unary_unary_rpc_method_handler(
+                    servicer.RegisterAggregate,
+                    request_deserializer=aggregate__pb2.CreateAggregateRequest.FromString,
+                    response_serializer=status__pb2.Status.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        'fennel.proto.FennelFeatureStore', rpc_method_handlers)
+            'fennel.proto.FennelFeatureStore', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
-# This class is part of an EXPERIMENTAL API.
+ # This class is part of an EXPERIMENTAL API.
 class FennelFeatureStore(object):
     """The generated code needs to be hand modified to add the following
     import stream_pb2 as stream__pb2 to import fennel.gen.stream_pb2 as stream__pb2
@@ -81,35 +81,35 @@ class FennelFeatureStore(object):
     """
 
     @staticmethod
-    def RegisterSource(request,
-                       target,
-                       options=(),
-                       channel_credentials=None,
-                       call_credentials=None,
-                       insecure=False,
-                       compression=None,
-                       wait_for_ready=None,
-                       timeout=None,
-                       metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/fennel.proto.FennelFeatureStore/RegisterSource',
-                                             stream__pb2.CreateSourceRequest.SerializeToString,
-                                             status__pb2.Status.FromString,
-                                             options, channel_credentials,
-                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+    def RegisterStream(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/fennel.proto.FennelFeatureStore/RegisterStream',
+            stream__pb2.CreateStreamRequest.SerializeToString,
+            status__pb2.Status.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def RegisterConnector(request,
-                          target,
-                          options=(),
-                          channel_credentials=None,
-                          call_credentials=None,
-                          insecure=False,
-                          compression=None,
-                          wait_for_ready=None,
-                          timeout=None,
-                          metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/fennel.proto.FennelFeatureStore/RegisterConnector',
-                                             stream__pb2.CreateConnectorRequest.SerializeToString,
-                                             status__pb2.Status.FromString,
-                                             options, channel_credentials,
-                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+    def RegisterAggregate(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/fennel.proto.FennelFeatureStore/RegisterAggregate',
+            aggregate__pb2.CreateAggregateRequest.SerializeToString,
+            status__pb2.Status.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

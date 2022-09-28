@@ -1,6 +1,6 @@
 import dataclasses
 import json
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 
 import fennel.errors as errors
 import fennel.gen.stream_pb2 as proto
@@ -15,7 +15,7 @@ class Source:
     def type(self):
         return str(self.__class__.__name__)
 
-    def validate(self):
+    def validate(self) -> List[Exception]:
         pass
 
     def support_single_stream(self):
@@ -30,17 +30,19 @@ class SQLSource(Source):
     password: str
     jdbc_params: Optional[str] = None
 
-    def validate(self):
+    def validate(self) -> List[Exception]:
+        exceptions = []
         if not isinstance(self.host, str):
-            raise errors.InvalidSourceError("host must be a string")
+            exceptions.append(TypeError("host must be a string"))
         if not isinstance(self.db_name, str):
-            raise errors.InvalidSourceError("db_name must be a string")
+            exceptions.append(TypeError("db_name must be a string"))
         if not isinstance(self.username, str):
-            raise errors.InvalidSourceError("username must be a string")
+            exceptions.append(TypeError("username must be a string"))
         if not isinstance(self.password, str):
-            raise errors.InvalidSourceError("password must be a string")
+            exceptions.append(TypeError("password must be a string"))
         if self.jdbc_params is not None and not isinstance(self.jdbc_params, str):
-            raise errors.InvalidSourceError("jdbc_params must be a string")
+            exceptions.append(TypeError("jdbc_params must be a string"))
+        return exceptions
 
 
 @dataclasses.dataclass(frozen=True)
@@ -56,13 +58,13 @@ class S3(Source):
     def support_single_stream(self):
         return True
 
-    def validate(self):
-        errors = []
+    def validate(self) -> List[Exception]:
+        exceptions = []
         if self.format not in ["csv", "json", "parquet"]:
-            errors.append("format must be csv")
+            exceptions.append(TypeError("format must be csv"))
         if self.delimiter not in [",", "\t", "|"]:
-            errors.append("delimiter must be one of [',', '\t', '|']")
-        return errors
+            exceptions.append(TypeError("delimiter must be one of [',', '\t', '|']"))
+        return exceptions
 
 
 @dataclasses.dataclass(frozen=True)
@@ -71,13 +73,13 @@ class BigQuery(Source):
     dataset_id: str
     credentials_json: str
 
-    def validate(self):
-        errors = []
+    def validate(self) -> List[Exception]:
+        exceptions = []
         try:
             json.loads(self.credentials_json)
         except Exception as e:
-            errors.append("credentials_json must be valid json")
-        return errors
+            exceptions.append(e)
+        return exceptions
 
 
 @dataclasses.dataclass(frozen=True)
@@ -121,23 +123,30 @@ def create_grpc_request(src: Source):
 
 
 def source(src: Source, table: Optional[str] = None):
-    if table is not None:
-        if src.support_single_stream():
-            raise errors.IncorrectSourceException("table must be None since it supports only a single stream")
-    else:
-        if not src.support_single_stream():
-            raise errors.IncorrectSourceException("table must be provided since it supports multiple streams/tables")
-        table = ""
-
-    # Validate source
-    src.validate()
-
     def decorator(fn: Callable):
         def ret(*args, **kwargs):
             raise Exception("can not call func")
             return fn(*args, **kwargs)
 
-        def register(stub):
+        def validate() -> List[Exception]:
+            exceptions = []
+            if table is not None:
+                if src.support_single_stream():
+                    exceptions.append(
+                        errors.IncorrectSourceException("table must be None since it supports only a single stream"))
+            else:
+                if not src.support_single_stream():
+                    exceptions.append(errors.IncorrectSourceException(
+                        "table must be provided since it supports multiple streams/tables"))
+            exceptions.extend(src.validate())
+            exceptions.extend(fn.validate())
+            if fn.__code__.co_argcount != 2:
+                exceptions.append(Exception("fn must have two arguments, self and pandas dataframe"))
+            return exceptions
+
+        setattr(ret, "validate", validate)
+
+        def create_source_request():
             if table is not None:
                 if src.support_single_stream():
                     raise Exception("table must be None since it supports only a single stream")
@@ -147,17 +156,10 @@ def source(src: Source, table: Optional[str] = None):
             grpc_request = create_grpc_request(src)
             if src.type() == "S3":
                 grpc_request.s3.schema = json.dumps(src.schema)
-            response = stub.RegisterSource(grpc_request)
-            check_response(response)
-            print('Registered source', src.name)
+            return grpc_request
 
-        setattr(ret, "register", register)
+        setattr(ret, "create_source_request", create_source_request)
 
-        def validate_fn():
-            if fn.__code__.co_argcount != 2:
-                raise Exception("fn must have two arguments, self and pandas dataframe")
-
-        setattr(ret, "validate_fn", validate_fn)
         setattr(ret, "source", src)
         setattr(ret, "table", table)
         setattr(ret, "populator_func", fn)

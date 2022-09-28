@@ -6,6 +6,8 @@ import pandas as pd
 
 import fennel.gen.services_pb2_grpc as services_pb2
 from fennel.stream import Stream
+from fennel.aggregate import Aggregate
+from fennel.utils import check_response
 
 
 # TODO(aditya): how will auth work?
@@ -17,9 +19,30 @@ class Workspace:
         self.stub = services_pb2.FennelFeatureStoreStub(self.channel)
 
     def register_streams(self, *streams: List[Stream]):
+        exceptions = []
         for stream in streams:
-            stream.register(self.stub)
+            exceptions.extend(stream.validate())
+
+        if len(exceptions) > 0:
+            raise Exception(exceptions)
+
+        for stream in streams:
+            resp = stream.register(self.stub)
+            check_response(resp)
         print("Registered streams:", [stream.name for stream in streams])
+
+    def register_aggregates(self, *aggregates: List[Aggregate]):
+        exceptions = []
+        for agg in aggregates:
+            exceptions.extend(agg.validate())
+
+        if len(exceptions) > 0:
+            raise Exception(exceptions)
+
+        for agg in aggregates:
+            resp = agg.register(self.stub)
+            check_response(resp)
+        print("Registered aggregates:", [agg.name for agg in aggregates])
 
     # TODO(aditya/nikhil): figure out the right signature for global extract function
     # extract a single feature using these kwargs

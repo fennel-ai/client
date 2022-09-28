@@ -20,3 +20,8 @@ class IncorrectSourceException(Exception):
 class SchemaException(Exception):
     def __init__(self, errors: List[Exception]):
         super().__init__(f"Schema errors: {errors}")
+
+
+class StreamException(Exception):
+    def __init__(self, errors: List[Exception]):
+        super().__init__(f"Stream errors: {errors}")

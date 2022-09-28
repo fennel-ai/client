@@ -5,15 +5,15 @@ package fennel.proto;
 
 import "stream.proto";
 import "status.proto";
+import "aggregate.proto";
 
 // The generated code needs to be hand modified to add the following
 // import stream_pb2 as stream__pb2 to import fennel.gen.stream_pb2 as stream__pb2
 // More info: https://github.com/protocolbuffers/protobuf/issues/1491 & https://github.com/protocolbuffers/protobuf/issues/881
 
 service FennelFeatureStore {
-  rpc RegisterSource (CreateSourceRequest) returns (Status);
-  rpc RegisterConnector (CreateConnectorRequest) returns (Status);
+  rpc RegisterStream (CreateStreamRequest) returns (Status);
   //
-  //  rpc RegisterAggregate (users.GetUsersRequest) returns (stream  users.GetUsersResult);
+  rpc RegisterAggregate (CreateAggregateRequest) returns (Status);
   //  rpc RegisterFeature (users.GetUsersRequest) returns (stream  users.GetUsersResult);
 }

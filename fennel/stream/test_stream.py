@@ -12,37 +12,7 @@ from fennel.lib.schema import (
     String,
 )
 from fennel.stream import (MySQL, source, Stream)
-from fennel.workspace import WorkspaceTest
-
-
-# ----------------------Setup Fixtures------------------------------------------------
-
-@pytest.fixture(scope='module')
-def grpc_add_to_server():
-    from fennel.gen.services_pb2_grpc import add_FennelFeatureStoreServicer_to_server
-    return add_FennelFeatureStoreServicer_to_server
-
-
-@pytest.fixture(scope='module')
-def grpc_servicer():
-    return Servicer()
-
-
-@pytest.fixture(scope='module')
-def grpc_stub_cls(grpc_channel):
-    from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
-    return FennelFeatureStoreStub
-
-
-class Servicer(FennelFeatureStoreServicer):
-    def RegisterSource(self, request, context) -> Status:
-        return Status(code=200, message=f'test')
-
-    def RegisterConnector(self, request, context) -> Status:
-        return Status(code=200, message=f'test')
-
-
-# ----------------------End Set Up------------------------------------------------
+from fennel.test_lib import *
 
 mysql_src = MySQL(
     name='mysql_psql_src',
@@ -79,17 +49,18 @@ def test_StreamRegistration(grpc_stub):
     workspace = WorkspaceTest(grpc_stub)
     workspace.register_streams(actions)
 
-    with pytest.raises(TypeError):
-        @source()
-        def populate2(self, df: pd.DataFrame) -> pd.DataFrame:
-            df = df[df['action_type'] == 'like']
-            return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
-
-    with pytest.raises(IncorrectSourceException):
-        @source(src=mysql_src)
-        def populate2(self, df: pd.DataFrame) -> pd.DataFrame:
-            df = df[df['action_type'] == 'like']
-            return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
+    # with pytest.raises(TypeError):
+    #     @source()
+    #     def populate2(self, df: pd.DataFrame) -> pd.DataFrame:
+    #         df = df[df['action_type'] == 'like']
+    #         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
+    #
+    # with pytest.raises(IncorrectSourceException):
+    #     @source(src=mysql_src)
+    #     def populate2(self, df: pd.DataFrame) -> pd.DataFrame:
+    #         df = df[df['action_type'] == 'like']
+    #         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
+    #
 
 
 class ActionsMultipleSources(Stream):
@@ -126,3 +97,69 @@ def test_StreamRegistration_MultipleSources(grpc_stub):
     workspace.register_streams(ActionsMultipleSources())
     # Duplicate registration should pass
     workspace.register_streams(ActionsMultipleSources(), Actions())
+
+
+class ActionsInvalidSchema(Stream):
+    name = 'actions'
+    retention = windows.DAY * 14
+
+    @classmethod
+    def schema(cls) -> Schema:
+        return Schema(
+            Field('actor_id', dtype=int, default=0),
+            Field('target_id', dtype=String(), default=1),
+            Field('action_type', dtype=Array(), default="love"),
+        )
+
+    @source(src=mysql_src, table='actions')
+    def populate(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = df[df['action_type'] == 'like']
+        return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
+
+
+class ActionsInvalidSchema2(Stream):
+    name = 'actions'
+    retention = windows.DAY * 14
+
+    @classmethod
+    def schema(cls) -> Schema:
+        return Schema(
+            Field('actor_id', dtype=int, default=0),
+            Field('target_id', dtype=String(), default=1),
+            Field('action_type', dtype=Array(String()), default="love"),
+        )
+
+    @source(src=mysql_src, table='actions')
+    def populate(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = df[df['action_type'] == 'like']
+        return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
+
+
+def test_InvalidStreamRegistration(grpc_stub):
+    with pytest.raises(TypeError) as e:
+        actions = ActionsInvalidSchema()
+        workspace = WorkspaceTest(grpc_stub)
+        workspace.register_streams(actions)
+    assert str(e.value) == "invalid array type: None"
+
+    with pytest.raises(Exception) as e:
+        actions = ActionsInvalidSchema2()
+        workspace = WorkspaceTest(grpc_stub)
+        workspace.register_streams(actions)
+    assert str(
+        e.value) == "[TypeError('Type should be a Fennel Type object such as Int() and not a class such as " \
+                    "Int/int'), " \
+                    "TypeError('Expected default value for field target_id to be str, got 1'), TypeError('Expected " \
+                    "default value for field action_type to be list, got love')]"
+    #
+    # with pytest.raises(TypeError):
+    #     @source()
+    #     def populate2(self, df: pd.DataFrame) -> pd.DataFrame:
+    #         df = df[df['action_type'] == 'like']
+    #         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
+    #
+    # with pytest.raises(IncorrectSourceException):
+    #     @source(src=mysql_src)
+    #     def populate2(self, df: pd.DataFrame) -> pd.DataFrame:
+    #         df = df[df['action_type'] == 'like']
+    #         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]

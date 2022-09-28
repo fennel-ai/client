@@ -13,17 +13,17 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cschema.proto\x12\x0c\x66\x65nnel.proto\"\x9d\x01\n\x08\x44\x61taType\x12/\n\x0bscalar_type\x18\x01 \x01(\x0e\x32\x18.fennel.proto.ScalarTypeH\x00\x12-\n\narray_type\x18\x02 \x01(\x0b\x32\x17.fennel.proto.ArrayTypeH\x00\x12)\n\x08map_type\x18\x03 \x01(\x0b\x32\x15.fennel.proto.MapTypeH\x00\x42\x06\n\x04type\"\r\n\x0b\x45xpectation\";\n\x06Schema\x12\x0c\n\x04name\x18\x01 \x01(\t\x12#\n\x06\x66ields\x18\x02 \x03(\x0b\x32\x13.fennel.proto.Field\"\xbf\x01\n\x05Value\x12\x13\n\tint_value\x18\x01 \x01(\x03H\x00\x12\x16\n\x0c\x64ouble_value\x18\x02 \x01(\x01H\x00\x12\x16\n\x0cstring_value\x18\x03 \x01(\tH\x00\x12\x14\n\nbool_value\x18\x04 \x01(\x08H\x00\x12*\n\x0b\x61rray_value\x18\x06 \x01(\x0b\x32\x13.fennel.proto.ArrayH\x00\x12&\n\tmap_value\x18\x07 \x01(\x0b\x32\x11.fennel.proto.MapH\x00\x42\x07\n\x05value\".\n\x05\x41rray\x12%\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x13.fennel.proto.Value\"9\n\tArrayType\x12,\n\x0c\x65lement_type\x18\x01 \x01(\x0b\x32\x16.fennel.proto.DataType\"M\n\x03Map\x12!\n\x04keys\x18\x01 \x03(\x0b\x32\x13.fennel.proto.Value\x12#\n\x06values\x18\x02 \x03(\x0b\x32\x13.fennel.proto.Value\"_\n\x07MapType\x12(\n\x08key_type\x18\x01 \x01(\x0b\x32\x16.fennel.proto.DataType\x12*\n\nvalue_type\x18\x02 \x01(\x0b\x32\x16.fennel.proto.DataType\"\x8f\x01\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12%\n\x04type\x18\x02 \x01(\x0e\x32\x17.fennel.proto.FieldType\x12%\n\x05\x64type\x18\x03 \x01(\x0b\x32\x16.fennel.proto.DataType\x12*\n\rdefault_value\x18\x04 \x01(\x0b\x32\x13.fennel.proto.Value*8\n\tFieldType\x12\x08\n\x04NONE\x10\x00\x12\x07\n\x03KEY\x10\x01\x12\t\n\x05VALUE\x10\x02\x12\r\n\tTIMESTAMP\x10\x03*:\n\nScalarType\x12\x07\n\x03INT\x10\x00\x12\n\n\x06\x44OUBLE\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x0b\n\x07\x42OOLEAN\x10\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cschema.proto\x12\x0c\x66\x65nnel.proto\"\x9d\x01\n\x08\x44\x61taType\x12/\n\x0bscalar_type\x18\x01 \x01(\x0e\x32\x18.fennel.proto.ScalarTypeH\x00\x12-\n\narray_type\x18\x02 \x01(\x0b\x32\x17.fennel.proto.ArrayTypeH\x00\x12)\n\x08map_type\x18\x03 \x01(\x0b\x32\x15.fennel.proto.MapTypeH\x00\x42\x06\n\x04type\"\r\n\x0b\x45xpectation\";\n\x06Schema\x12\x0c\n\x04name\x18\x01 \x01(\t\x12#\n\x06\x66ields\x18\x02 \x03(\x0b\x32\x13.fennel.proto.Field\"\xbf\x01\n\x05Value\x12\x13\n\tint_value\x18\x01 \x01(\x03H\x00\x12\x16\n\x0c\x64ouble_value\x18\x02 \x01(\x01H\x00\x12\x16\n\x0cstring_value\x18\x03 \x01(\tH\x00\x12\x14\n\nbool_value\x18\x04 \x01(\x08H\x00\x12*\n\x0b\x61rray_value\x18\x06 \x01(\x0b\x32\x13.fennel.proto.ArrayH\x00\x12&\n\tmap_value\x18\x07 \x01(\x0b\x32\x11.fennel.proto.MapH\x00\x42\x07\n\x05value\".\n\x05\x41rray\x12%\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x13.fennel.proto.Value\"/\n\tArrayType\x12\"\n\x02of\x18\x01 \x01(\x0b\x32\x16.fennel.proto.DataType\"M\n\x03Map\x12!\n\x04keys\x18\x01 \x03(\x0b\x32\x13.fennel.proto.Value\x12#\n\x06values\x18\x02 \x03(\x0b\x32\x13.fennel.proto.Value\"U\n\x07MapType\x12#\n\x03key\x18\x01 \x01(\x0b\x32\x16.fennel.proto.DataType\x12%\n\x05value\x18\x02 \x01(\x0b\x32\x16.fennel.proto.DataType\"\xbf\x01\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12%\n\x04type\x18\x02 \x01(\x0e\x32\x17.fennel.proto.FieldType\x12%\n\x05\x64type\x18\x03 \x01(\x0b\x32\x16.fennel.proto.DataType\x12*\n\rdefault_value\x18\x04 \x01(\x0b\x32\x13.fennel.proto.Value\x12.\n\x0b\x65xpectation\x18\x05 \x03(\x0b\x32\x19.fennel.proto.Expectation*8\n\tFieldType\x12\x08\n\x04NONE\x10\x00\x12\x07\n\x03KEY\x10\x01\x12\t\n\x05VALUE\x10\x02\x12\r\n\tTIMESTAMP\x10\x03*:\n\nScalarType\x12\x07\n\x03INT\x10\x00\x12\n\n\x06\x44OUBLE\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x0b\n\x07\x42OOLEAN\x10\x03\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'schema_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _FIELDTYPE._serialized_start=889
-  _FIELDTYPE._serialized_end=945
-  _SCALARTYPE._serialized_start=947
-  _SCALARTYPE._serialized_end=1005
+  _FIELDTYPE._serialized_start=917
+  _FIELDTYPE._serialized_end=973
+  _SCALARTYPE._serialized_start=975
+  _SCALARTYPE._serialized_end=1033
   _DATATYPE._serialized_start=31
   _DATATYPE._serialized_end=188
   _EXPECTATION._serialized_start=190
@@ -35,11 +35,11 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _ARRAY._serialized_start=460
   _ARRAY._serialized_end=506
   _ARRAYTYPE._serialized_start=508
-  _ARRAYTYPE._serialized_end=565
-  _MAP._serialized_start=567
-  _MAP._serialized_end=644
-  _MAPTYPE._serialized_start=646
-  _MAPTYPE._serialized_end=741
-  _FIELD._serialized_start=744
-  _FIELD._serialized_end=887
+  _ARRAYTYPE._serialized_end=555
+  _MAP._serialized_start=557
+  _MAP._serialized_end=634
+  _MAPTYPE._serialized_start=636
+  _MAPTYPE._serialized_end=721
+  _FIELD._serialized_start=724
+  _FIELD._serialized_end=915
 # @@protoc_insertion_point(module_scope)
