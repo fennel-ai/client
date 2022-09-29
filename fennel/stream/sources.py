@@ -139,7 +139,7 @@ def source(src: Source, table: Optional[str] = None):
                     exceptions.append(errors.IncorrectSourceException(
                         "table must be provided since it supports multiple streams/tables"))
             exceptions.extend(src.validate())
-            exceptions.extend(fn.validate())
+            # exceptions.extend(fn.validate())
             if fn.__code__.co_argcount != 2:
                 exceptions.append(Exception("fn must have two arguments, self and pandas dataframe"))
             return exceptions

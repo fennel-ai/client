@@ -44,6 +44,18 @@ class Workspace:
             check_response(resp)
         print("Registered aggregates:", [agg.name for agg in aggregates])
 
+    def register_features(self, *features):
+        exceptions = []
+        for feature in features:
+            exceptions.extend(feature.validate())
+
+        if len(exceptions) > 0:
+            raise Exception(exceptions)
+
+        for feature in features:
+            resp = feature.register(self.stub)
+            check_response(resp)
+
     # TODO(aditya/nikhil): figure out the right signature for global extract function
     # extract a single feature using these kwargs
     def extract(config: Dict[str, Any], reqs: Dict[str, Dict[str, pd.Series]], batch=False, concat=False):

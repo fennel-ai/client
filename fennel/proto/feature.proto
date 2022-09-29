@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package fennel.proto;
+
+import "schema.proto";
+
+message CreateFeatureRequest {
+  string name = 1;
+  string mode = 2;
+}

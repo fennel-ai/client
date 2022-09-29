@@ -21,9 +21,13 @@ class WorkspaceTest(Workspace):
         if len(exceptions) > 0:
             raise Exception(exceptions)
 
+        responses = []
         for stream in streams:
             resp = stream.register(self.stub)
-        print("Registered streams:", [stream.name for stream in streams])
+            responses.append(resp)
+
+        print("Registered test streams:", [stream.name for stream in streams])
+        return responses
 
     def register_aggregates(self, *aggregates: List[Aggregate]) -> List[Status]:
         exceptions = []
@@ -37,5 +41,21 @@ class WorkspaceTest(Workspace):
         for agg in aggregates:
             resp = agg.register(self.stub)
             responses.append(resp)
-        print("Registered aggregates:", [agg.name for agg in aggregates])
+
+        print("Registered test aggregates:", [agg.name for agg in aggregates])
+        return responses
+
+    def register_features(self, *features):
+        exceptions = []
+        for feature in features:
+            exceptions.extend(feature.validate())
+
+        if len(exceptions) > 0:
+            raise Exception(exceptions)
+
+        responses = []
+        for feature in features:
+            resp = feature.register(self.stub)
+            responses.append(resp)
+
         return responses

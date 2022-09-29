@@ -49,19 +49,6 @@ def test_StreamRegistration(grpc_stub):
     workspace = WorkspaceTest(grpc_stub)
     workspace.register_streams(actions)
 
-    # with pytest.raises(TypeError):
-    #     @source()
-    #     def populate2(self, df: pd.DataFrame) -> pd.DataFrame:
-    #         df = df[df['action_type'] == 'like']
-    #         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
-    #
-    # with pytest.raises(IncorrectSourceException):
-    #     @source(src=mysql_src)
-    #     def populate2(self, df: pd.DataFrame) -> pd.DataFrame:
-    #         df = df[df['action_type'] == 'like']
-    #         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
-    #
-
 
 class ActionsMultipleSources(Stream):
     name = 'actions_multiple_sources'
@@ -82,12 +69,12 @@ class ActionsMultipleSources(Stream):
         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
 
     @source(src=mysql_src, table='')
-    def populate(self, df: pd.DataFrame) -> pd.DataFrame:
+    def populate_1(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df[df['action_type'] == 'share_actions']
         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
 
     @source(src=mysql_src, table='comment_actions')
-    def populate(self, df: pd.DataFrame) -> pd.DataFrame:
+    def populate_actions(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df[df['action_type'] == 'comment']
         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
 
@@ -151,15 +138,30 @@ def test_InvalidStreamRegistration(grpc_stub):
                     "Int/int'), " \
                     "TypeError('Expected default value for field target_id to be str, got 1'), TypeError('Expected " \
                     "default value for field action_type to be list, got love')]"
-    #
-    # with pytest.raises(TypeError):
-    #     @source()
-    #     def populate2(self, df: pd.DataFrame) -> pd.DataFrame:
-    #         df = df[df['action_type'] == 'like']
-    #         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
-    #
-    # with pytest.raises(IncorrectSourceException):
-    #     @source(src=mysql_src)
-    #     def populate2(self, df: pd.DataFrame) -> pd.DataFrame:
-    #         df = df[df['action_type'] == 'like']
-    #         return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
+
+
+class ActionsInvalidSource(Stream):
+    name = 'actions'
+    retention = windows.DAY * 14
+
+    @classmethod
+    def schema(cls) -> Schema:
+        return Schema(
+            Field('actor_id', dtype=Int(), default=0),
+            Field('target_id', dtype=Int(), default=0),
+            Field('action_type', dtype=String(), default="love"),
+        )
+
+    @source(src=mysql_src)
+    def populate(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = df[df['action_type'] == 'like']
+        return df[['actor_id', 'target_id', 'action_type', 'timestamp']]
+
+
+def test_InvalidSource(grpc_stub):
+    with pytest.raises(Exception) as e:
+        actions = ActionsInvalidSource()
+        workspace = WorkspaceTest(grpc_stub)
+        workspace.register_streams(actions)
+    assert str(
+        e.value) == "[IncorrectSourceException('Incorrect source, table must be None since it supports only a single stream.')]"

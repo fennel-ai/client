@@ -3,11 +3,14 @@ import pandas as pd
 from typing import *
 import inspect
 from fennel.lib.schema import Schema, Field, FieldType
+import cloudpickle
 
 from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.gen.aggregate_pb2 import CreateAggregateRequest
 from fennel.utils import check_response, Singleton
 from fennel.gen.status_pb2 import Status
+import fennel.gen.aggregate_pb2 as proto
+from fennel.errors import NameException
 
 
 class AggregateSchema(Schema):
@@ -56,14 +59,21 @@ class Aggregate(Singleton):
     def preprocess(cls, df: pd.DataFrame) -> pd.DataFrame:
         raise NotImplementedError()
 
+    def _get_agg_type(self):
+        raise NotImplementedError()
+
     def validate(self) -> List[Exception]:
         # Validate the schema
         # Cast to aggregate schema
         agg_schema = AggregateSchema(self.schema())
         exceptions = agg_schema.validate()
+        if self.name is None:
+            exceptions.append(NameException(f'name not provided  {self.__class__.__name__}'))
+        if self.stream is None:
+            exceptions.append(Exception(f'stream not provided for aggregate  {self.__class__.__name__}'))
         # Validate the preprocess function
         for name, func in inspect.getmembers(self.__class__, predicate=inspect.ismethod):
-            if name not in ['preprocess', 'schema', 'version']:
+            if name[0] != '_' and name not in ['preprocess', 'schema', 'version']:
                 exceptions.append(TypeError(f'invalid method {name} found in aggregate class'))
             if name == 'preprocess' and func.__code__.co_argcount != 2:
                 exceptions.append(
@@ -71,58 +81,82 @@ class Aggregate(Singleton):
                         f'preprocess function should take 2 arguments ( self & df ) but got {func.__code__.co_argcount}'))
         return exceptions
 
+    def _get_pickle_preprocess_function(self):
+        for name, func in inspect.getmembers(self.__class__, predicate=inspect.ismethod):
+            if name == 'preprocess':
+                return cloudpickle.dumps(func)
+
     def register(self, stub: FennelFeatureStoreStub) -> Status:
         req = CreateAggregateRequest(
             name=self.name,
             version=self.version,
             stream=self.stream,
             mode=self.mode,
+            aggregate_type=self._get_agg_type(),
+            preprocess_function=self._get_pickle_preprocess_function(),
             windows=self.windows,
             schema=self.schema().to_proto(),
         )
         resp = stub.RegisterAggregate(req)
-        check_response(resp)
         return resp
 
 
 class Count(Aggregate, ABC):
     windows: List[int] = None
 
+    def _get_agg_type(self):
+        return proto.AggregateType.COUNT
+
+    def validate(self) -> List[Exception]:
+        return super().validate()
+
 
 class Min(Aggregate, ABC):
     windows: List[int] = None
 
-    @classmethod
-    def _validate(cls) -> List[Exception]:
-        raise NotImplementedError()
+    def _get_agg_type(self):
+        return proto.AggregateType.MIN
+
+    def validate(self) -> List[Exception]:
+        return super().validate()
 
 
 class Max(Aggregate, ABC):
     windows: List[int] = None
 
-    @classmethod
-    def _validate(cls) -> List[Exception]:
-        raise NotImplementedError()
+    def _get_agg_type(self):
+        return proto.AggregateType.MAX
+
+    def validate(self) -> List[Exception]:
+        return super().validate()
 
 
 class KeyValue(Aggregate, ABC):
     static = False
 
+    def _get_agg_type(self):
+        return proto.AggregateType.KEY_VALUE
+
     @classmethod
-    def _validate(cls) -> List[Exception]:
-        raise NotImplementedError()
+    def validate(self) -> List[Exception]:
+        return super().validate()
 
 
 class Rate(Aggregate, ABC):
     windows: List[int] = None
 
-    @classmethod
-    def _validate(cls) -> List[Exception]:
-        raise NotImplementedError()
+    def _get_agg_type(self):
+        return proto.AggregateType.RATE
+
+    def validate(self) -> List[Exception]:
+        return super().validate()
 
 
 class Average(Aggregate, ABC):
     windows: List[int] = None
 
-    def _validate(self) -> List[Exception]:
-        raise NotImplementedError()
+    def _get_agg_type(self):
+        return proto.AggregateType.AVG
+
+    def validate(self) -> List[Exception]:
+        return super().validate()

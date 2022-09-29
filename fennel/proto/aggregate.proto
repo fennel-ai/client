@@ -11,6 +11,7 @@ enum AggregateType {
     MIN = 3;
     MAX = 4;
     RATE = 5;
+    KEY_VALUE = 6;
 }
 
 message CreateAggregateRequest {

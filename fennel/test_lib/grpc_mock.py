@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 from fennel.gen.status_pb2 import Status
 from fennel.gen.services_pb2_grpc import FennelFeatureStoreServicer
+from google.protobuf import any_pb2
 
 
 @pytest.fixture(scope='module')
@@ -23,9 +24,15 @@ def grpc_stub_cls(grpc_channel):
 
 class Servicer(FennelFeatureStoreServicer):
     def RegisterStream(self, request, context) -> Status:
-        return Status(code=200, message=f'test')
+        resp = Status(code=200, message=request.name)
+        msg = any_pb2.Any()
+        msg.Pack(request)
+        resp.details.append(msg)
+        return resp
 
     def RegisterAggregate(self, request, context) -> Status:
-        print(request)
-        print(context)
-        return Status(code=200, message=f'test')
+        resp = Status(code=200, message=request.name)
+        msg = any_pb2.Any()
+        msg.Pack(request)
+        resp.details.append(msg)
+        return resp

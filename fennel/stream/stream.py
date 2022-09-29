@@ -18,16 +18,14 @@ class Stream(Singleton):
     # by default, get all the data from 1st of Jan 2020
     start = datetime.datetime(2020, 1, 1)
 
-    @classmethod
-    def schema(cls) -> schema.Schema:
+    def schema(self) -> schema.Schema:
         raise NotImplementedError()
 
-    @classmethod
-    def validate(cls) -> List[Exception]:
+    def validate(self) -> List[Exception]:
         # Validate the schema
-        exceptions = cls.schema().validate()
+        exceptions = self.schema().validate()
         # Validate the populators(source + connector) functions
-        for name, func in inspect.getmembers(cls.__class__, predicate=inspect.isfunction):
+        for name, func in inspect.getmembers(self.__class__, predicate=inspect.isfunction):
             if hasattr(func, 'validate'):
                 exceptions.extend(func.validate())
         return exceptions

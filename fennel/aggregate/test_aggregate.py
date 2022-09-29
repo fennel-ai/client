@@ -19,6 +19,7 @@ from fennel.test_lib import *
 
 class UserLikeCount(Count):
     def __init__(self, stream, windows: List[Window]):
+        self.name = self.__class__.__name__
         self.stream = stream
 
     @classmethod
@@ -40,12 +41,15 @@ class UserLikeCount(Count):
 def test_AggregateRegistration(grpc_stub):
     agg = UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28])
     workspace = WorkspaceTest(grpc_stub)
-    workspace.register_aggregates(agg)
+    responses = workspace.register_aggregates(agg)
+    assert len(responses) == 1
+    assert responses[0].code == 200
 
 
 class UserLikeCountInvalidSchema(Count):
     def __init__(self, stream, windows: List[Window]):
         self.stream = stream
+        self.name = self.__class__.__name__
 
     @classmethod
     def schema(cls) -> Schema:
@@ -77,6 +81,7 @@ def test_InvalidSchemaAggregateRegistration(grpc_stub):
 class UserLikeCountInvalidProcessingFunction(Count):
     def __init__(self, stream, windows: List[Window]):
         self.stream = stream
+        self.name = self.__class__.__name__
 
     @classmethod
     def schema(cls) -> Schema:
@@ -105,6 +110,7 @@ def test_InvalidProcessingFunctionAggregateRegistration(grpc_stub):
 class UserLikeCountInvalidProcessingFunction2(Count):
     def __init__(self, stream, windows: List[Window]):
         self.stream = stream
+        self.name = self.__class__.__name__
 
     @classmethod
     def schema(cls) -> Schema:

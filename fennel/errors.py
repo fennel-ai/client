@@ -22,6 +22,6 @@ class SchemaException(Exception):
         super().__init__(f"Schema errors: {errors}")
 
 
-class StreamException(Exception):
-    def __init__(self, errors: List[Exception]):
-        super().__init__(f"Stream errors: {errors}")
+class NameException(Exception):
+    def __init__(self, class_name: str):
+        super().__init__(f"No name provided for {class_name}")
