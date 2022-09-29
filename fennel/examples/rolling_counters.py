@@ -15,7 +15,7 @@ configs = []
 @pip_install([('pandas', '==1.5', '<2.0'), 'numpy', ])
 class Actions(stream.Stream):
     name = 'actions'
-    retention = windows.DAY*14
+    retention = windows.DAY * 14
 
     @classmethod
     def schema(cls) -> Schema:
@@ -29,15 +29,16 @@ class Actions(stream.Stream):
     @connector.mysql('localhost', 'admin', 'password', 'actions', mode='pandas')
     def populate_from_mysql(self, df: pd.DataFrame) -> pd.DataFrame:
         # imagine the format of date is: 'YYYY-MM-DD:HH:MM:SS'
-        df['timestamp']  = pd.to_datetime(df['date'])
+        df['timestamp'] = pd.to_datetime(df['date'])
         df.drop('useless_column')
         return df
 
 
 @pip_install('requests', '>=1.5')
 class UserLikeCount(aggregate.Count):
-    windows = [windows.DAY, 3*windows.DAY]
+    windows = [windows.DAY, 3 * windows.DAY]
     stream = Actions.name
+
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
@@ -59,16 +60,16 @@ class UserLikeCount(aggregate.Count):
     name='user_like_count',
     mode='pandas', depends_on_aggregates=[UserLikeCount.name], depends_on_features=['my_feature'],
     schema=Schema(
-        Field('3days', Int), # user_like_count:3days
-        Field('30days', Int) # user_like_count:30days
+        Field('3days', Int),  # user_like_count:3days
+        Field('30days', Int)  # user_like_count:30days
     ),
 )
 @pip_install('requests', '>=1.5')
 @config.depends_on('min_value_user_like_count_day3', 'max_value_user_like_count_day30')
 @config.depends_on('min_value_user_like_count_day30', 'max_value_user_like_count_day30')
 def user_like_count_3days(uids: pd.Series, categories: pd.Series) -> pd.DataFrame:
-    day3 = UserLikeCount.lookup(uids=uids, categories=categories, window=windows.DAY*3)
-    day30 = UserLikeCount.lookup(uids=uids, categories=categories, window=windows.DAY*3)
+    day3 = UserLikeCount.lookup(uids=uids, categories=categories, window=windows.DAY * 3)
+    day30 = UserLikeCount.lookup(uids=uids, categories=categories, window=windows.DAY * 3)
     min_value = config.read('min_values')
     max_value = config.read('max_values')
     tempvar = user_like_count_3days.extract(df['a'], df['b'])
@@ -87,5 +88,3 @@ def main():
     os = pd.Series([request.current_os()])
     config = configerator.get_current()
     return feature.extract_magic(feautre_names, df, config={'a': 1, 'b': 2}, batch=False, concact=True)
-
-

@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package fennel.proto;
+
+import "schema.proto";
+
+enum AggregateType {
+    SUM = 0;
+    AVG = 1;
+    COUNT = 2;
+    MIN = 3;
+    MAX = 4;
+    RATE = 5;
+    KEY_VALUE = 6;
+}
+
+message CreateAggregateRequest {
+  string name = 1;
+  string mode = 2;
+  uint32 version = 3;
+  string stream = 4;
+  bytes preprocess_function = 5;
+  AggregateType aggregate_type = 6;
+  repeated int32 windows = 7;
+  Schema schema = 8;
+}
