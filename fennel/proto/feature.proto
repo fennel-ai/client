@@ -4,7 +4,18 @@ package fennel.proto;
 
 import "schema.proto";
 
+enum FeatureDefType {
+   FEATURE = 0;
+   FEATURE_PACK = 1;
+}
+
 message CreateFeatureRequest {
   string name = 1;
   string mode = 2;
+  FeatureDefType type = 3;
+  uint32 version = 4;
+  bytes function = 5;
+  repeated string depends_on_aggregates = 6;
+  repeated string depends_on_features = 7;
+  Schema schema = 8;
 }

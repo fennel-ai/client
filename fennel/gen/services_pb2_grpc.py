@@ -3,14 +3,22 @@
 import grpc
 
 import fennel.gen.aggregate_pb2 as aggregate__pb2
+import fennel.gen.feature_pb2 as feature__pb2
 import fennel.gen.status_pb2 as status__pb2
 import fennel.gen.stream_pb2 as stream__pb2
 
 
 class FennelFeatureStoreStub(object):
-    """The generated code needs to be hand modified to add the following
+    """*
+    The generated code needs to be hand modified to add the following
     import stream_pb2 as stream__pb2 to import fennel.gen.stream_pb2 as stream__pb2
     More info: https://github.com/protocolbuffers/protobuf/issues/1491 & https://github.com/protocolbuffers/protobuf/issues/881
+
+    Use the following command from client ( root ) directory to generated the required files -
+
+    python -m grpc_tools.protoc --proto_path=fennel/proto/ --python_out=fennel/gen/  --grpc_python_out=fennel/gen/  fennel/proto/*.proto \
+    && sed -i -E "s/^import \([a-z]*\)_pb2 as \([a-z]*\)__pb2$/import fennel.gen.\1_pb2 as \2__pb2/" fennel/gen/*.py \
+    && rm fennel/gen/*.py-E
 
     """
 
@@ -30,12 +38,24 @@ class FennelFeatureStoreStub(object):
                 request_serializer=aggregate__pb2.CreateAggregateRequest.SerializeToString,
                 response_deserializer=status__pb2.Status.FromString,
                 )
+        self.RegisterFeature = channel.unary_unary(
+                '/fennel.proto.FennelFeatureStore/RegisterFeature',
+                request_serializer=feature__pb2.CreateFeatureRequest.SerializeToString,
+                response_deserializer=status__pb2.Status.FromString,
+                )
 
 
 class FennelFeatureStoreServicer(object):
-    """The generated code needs to be hand modified to add the following
+    """*
+    The generated code needs to be hand modified to add the following
     import stream_pb2 as stream__pb2 to import fennel.gen.stream_pb2 as stream__pb2
     More info: https://github.com/protocolbuffers/protobuf/issues/1491 & https://github.com/protocolbuffers/protobuf/issues/881
+
+    Use the following command from client ( root ) directory to generated the required files -
+
+    python -m grpc_tools.protoc --proto_path=fennel/proto/ --python_out=fennel/gen/  --grpc_python_out=fennel/gen/  fennel/proto/*.proto \
+    && sed -i -E "s/^import \([a-z]*\)_pb2 as \([a-z]*\)__pb2$/import fennel.gen.\1_pb2 as \2__pb2/" fennel/gen/*.py \
+    && rm fennel/gen/*.py-E
 
     """
 
@@ -46,9 +66,13 @@ class FennelFeatureStoreServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def RegisterAggregate(self, request, context):
-        """
-        rpc RegisterFeature (users.GetUsersRequest) returns (stream  users.GetUsersResult);
-        """
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RegisterFeature(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -66,6 +90,11 @@ def add_FennelFeatureStoreServicer_to_server(servicer, server):
                     request_deserializer=aggregate__pb2.CreateAggregateRequest.FromString,
                     response_serializer=status__pb2.Status.SerializeToString,
             ),
+            'RegisterFeature': grpc.unary_unary_rpc_method_handler(
+                    servicer.RegisterFeature,
+                    request_deserializer=feature__pb2.CreateFeatureRequest.FromString,
+                    response_serializer=status__pb2.Status.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'fennel.proto.FennelFeatureStore', rpc_method_handlers)
@@ -74,9 +103,16 @@ def add_FennelFeatureStoreServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class FennelFeatureStore(object):
-    """The generated code needs to be hand modified to add the following
+    """*
+    The generated code needs to be hand modified to add the following
     import stream_pb2 as stream__pb2 to import fennel.gen.stream_pb2 as stream__pb2
     More info: https://github.com/protocolbuffers/protobuf/issues/1491 & https://github.com/protocolbuffers/protobuf/issues/881
+
+    Use the following command from client ( root ) directory to generated the required files -
+
+    python -m grpc_tools.protoc --proto_path=fennel/proto/ --python_out=fennel/gen/  --grpc_python_out=fennel/gen/  fennel/proto/*.proto \
+    && sed -i -E "s/^import \([a-z]*\)_pb2 as \([a-z]*\)__pb2$/import fennel.gen.\1_pb2 as \2__pb2/" fennel/gen/*.py \
+    && rm fennel/gen/*.py-E
 
     """
 
@@ -110,6 +146,23 @@ class FennelFeatureStore(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/fennel.proto.FennelFeatureStore/RegisterAggregate',
             aggregate__pb2.CreateAggregateRequest.SerializeToString,
+            status__pb2.Status.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def RegisterFeature(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/fennel.proto.FennelFeatureStore/RegisterFeature',
+            feature__pb2.CreateFeatureRequest.SerializeToString,
             status__pb2.Status.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -102,3 +102,4 @@ if __name__ == '__main__':
     workspace.register_streams(Actions())
     workspace.register_aggregates(UserLikeCount)
     workspace.register(user_like_count_3days)
+    workspace.extract(feature_names, df, config)
