@@ -1,14 +1,20 @@
+import sys
 from typing import List
-
+import pytest
 import pandas as pd
 import ast
-
-from fennel.aggregate import (Count, aggregate_lookup)
+import pickle
+from fennel.aggregate import (Count, )
 from fennel.feature import feature, feature_pack
 from fennel.lib import (Field, Schema, windows)
 from fennel.lib.schema import (FieldType, Int)
 from fennel.lib.windows import Window
 from fennel.test_lib import *
+
+import fennel.gen.feature_pb2 as feature_proto
+import fennel.aggregate
+
+from fennel.dummy import aggregate_lookup
 
 
 class UserLikeCount(Count):
@@ -41,20 +47,24 @@ class UserLikeCount(Count):
     ),
 )
 def user_like_count_3days(uids: pd.Series) -> pd.Series:
-    day7, day28 = UserLikeCount.lookup(uids=uids, window=[windows.Day, windows.Week])
-    # day7, day28 = aggregate_lookup('TestUserLikeCount', uids=uids, window=[windows.Day, windows.Week])
-    # agg_name = UserLikeCount.name
-    # return agg_name
+    day7, day28 = UserLikeCount.lookup(uids=uids, window=[windows.DAY, windows.WEEK])
+    day7 = day7.apply(lambda x: x * x)
+    print("Day71:", day7)
     return day7
 
 
-def test_FeatureRegistration(grpc_stub):
+def test_FeatureRegistration(grpc_stub, mocker):
+    mocker.patch(__name__ + '.aggregate_lookup', return_value=(pd.Series([6, 12, 13]),
+                                                               pd.Series([5, 12, 13])))
     workspace = WorkspaceTest(grpc_stub)
-    responses = workspace.register_aggregates(UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28]))
-    cde = user_like_count_3days.__code__
-    print(cde)
+    workspace.register_aggregates(UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28]))
     responses = workspace.register_features(user_like_count_3days)
     assert len(responses) == 1
+    create_feature = feature_proto.CreateFeatureRequest()
+    responses[0].details[0].Unpack(create_feature)
+    feature_func = pickle.loads(create_feature.function)
+    features = feature_func.extract(uids=pd.Series([1, 2, 3, 4, 5]))
+    assert features[0] == 36
 
 # @feature_pack(
 #     name='user_like_count',

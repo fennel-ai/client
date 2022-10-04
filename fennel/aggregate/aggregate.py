@@ -45,9 +45,9 @@ class AggregateSchema(Schema):
         return exceptions
 
 
-def aggregate_lookup(agg_name: str, **kwargs):
-    print("Aggregate", agg_name, " lookup will be patched")
-    pass
+# def aggregate_lookup(agg_name: str, **kwargs):
+#     print("Aggregate", agg_name, " lookup will be patched :)")
+#     return pd.Series([31, 32, 33, 7]), pd.Series([41, 42, 43])
 
 
 class Aggregate(Singleton):
@@ -56,6 +56,14 @@ class Aggregate(Singleton):
     stream: str = None
     mode: str = 'pandas'
     windows: List[Window] = []
+
+    def __init__(self, name: str, stream: str, windows: List[Window], version: int = 1,
+                 mode: str = 'pandas', ):
+        self.name = name
+        self.version = version
+        self.stream = stream
+        self.mode = mode
+        self.windows = windows
 
     @classmethod
     def schema(cls) -> Schema:
@@ -79,12 +87,14 @@ class Aggregate(Singleton):
             exceptions.append(Exception(f'stream not provided for aggregate  {self.__class__.__name__}'))
         # Validate the preprocess function
         for name, func in inspect.getmembers(self.__class__, predicate=inspect.ismethod):
-            if name[0] != '_' and name not in ['preprocess', 'schema', 'version']:
+            if name[0] != '_' and name not in ['preprocess', 'schema', 'version', 'instance']:
                 exceptions.append(TypeError(f'invalid method {name} found in aggregate class'))
             if name == 'preprocess' and func.__code__.co_argcount != 2:
                 exceptions.append(
                     TypeError(
                         f'preprocess function should take 2 arguments ( self & df ) but got {func.__code__.co_argcount}'))
+        if self.windows is None or len(self.windows) == 0:
+            exceptions.append(Exception(f'windows not provided for aggregate  {self.__class__.__name__}'))
         return exceptions
 
     def _get_pickle_preprocess_function(self):
@@ -93,6 +103,8 @@ class Aggregate(Singleton):
                 return cloudpickle.dumps(func)
 
     def register(self, stub: FennelFeatureStoreStub) -> Status:
+        if self.windows is None:
+            raise Exception("windows not provided")
         req = CreateAggregateRequest(
             name=self.name,
             version=self.version,

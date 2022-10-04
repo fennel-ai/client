@@ -9,17 +9,13 @@ import fennel.gen.stream_pb2 as stream__pb2
 
 
 class FennelFeatureStoreStub(object):
-    """*
+    """
     The generated code needs to be hand modified to add the following
     import stream_pb2 as stream__pb2 to import fennel.gen.stream_pb2 as stream__pb2
     More info: https://github.com/protocolbuffers/protobuf/issues/1491 & https://github.com/protocolbuffers/protobuf/issues/881
 
     Use the following command from client ( root ) directory to generated the required files -
-
-    python -m grpc_tools.protoc --proto_path=fennel/proto/ --python_out=fennel/gen/  --grpc_python_out=fennel/gen/  fennel/proto/*.proto \
-    && sed -i -E "s/^import \([a-z]*\)_pb2 as \([a-z]*\)__pb2$/import fennel.gen.\1_pb2 as \2__pb2/" fennel/gen/*.py \
-    && rm fennel/gen/*.py-E
-
+    https://gist.github.com/aditya-nambiar/87c8b55fe509c1c1cd06d212b8a8ded1
     """
 
     def __init__(self, channel):
@@ -46,17 +42,13 @@ class FennelFeatureStoreStub(object):
 
 
 class FennelFeatureStoreServicer(object):
-    """*
+    """
     The generated code needs to be hand modified to add the following
     import stream_pb2 as stream__pb2 to import fennel.gen.stream_pb2 as stream__pb2
     More info: https://github.com/protocolbuffers/protobuf/issues/1491 & https://github.com/protocolbuffers/protobuf/issues/881
 
     Use the following command from client ( root ) directory to generated the required files -
-
-    python -m grpc_tools.protoc --proto_path=fennel/proto/ --python_out=fennel/gen/  --grpc_python_out=fennel/gen/  fennel/proto/*.proto \
-    && sed -i -E "s/^import \([a-z]*\)_pb2 as \([a-z]*\)__pb2$/import fennel.gen.\1_pb2 as \2__pb2/" fennel/gen/*.py \
-    && rm fennel/gen/*.py-E
-
+    https://gist.github.com/aditya-nambiar/87c8b55fe509c1c1cd06d212b8a8ded1
     """
 
     def RegisterStream(self, request, context):
@@ -103,17 +95,13 @@ def add_FennelFeatureStoreServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class FennelFeatureStore(object):
-    """*
+    """
     The generated code needs to be hand modified to add the following
     import stream_pb2 as stream__pb2 to import fennel.gen.stream_pb2 as stream__pb2
     More info: https://github.com/protocolbuffers/protobuf/issues/1491 & https://github.com/protocolbuffers/protobuf/issues/881
 
     Use the following command from client ( root ) directory to generated the required files -
-
-    python -m grpc_tools.protoc --proto_path=fennel/proto/ --python_out=fennel/gen/  --grpc_python_out=fennel/gen/  fennel/proto/*.proto \
-    && sed -i -E "s/^import \([a-z]*\)_pb2 as \([a-z]*\)__pb2$/import fennel.gen.\1_pb2 as \2__pb2/" fennel/gen/*.py \
-    && rm fennel/gen/*.py-E
-
+    https://gist.github.com/aditya-nambiar/87c8b55fe509c1c1cd06d212b8a8ded1
     """
 
     @staticmethod

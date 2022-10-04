@@ -1,0 +1,1 @@
+from fennel.dummy.aggregate_lookup import aggregate_lookup
