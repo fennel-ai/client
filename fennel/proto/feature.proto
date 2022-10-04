@@ -15,7 +15,8 @@ message CreateFeatureRequest {
   FeatureDefType type = 3;
   uint32 version = 4;
   bytes function = 5;
-  repeated string depends_on_aggregates = 6;
-  repeated string depends_on_features = 7;
-  Schema schema = 8;
+  string function_source_code = 6;
+  repeated string depends_on_aggregates = 7;
+  repeated string depends_on_features = 8;
+  Schema schema = 9;
 }

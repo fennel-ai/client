@@ -10,17 +10,6 @@ python-versions = ">=3.6"
 python-dateutil = ">=2.7.0"
 
 [[package]]
-name = "astunparse"
-version = "1.6.3"
-description = "An AST unparser for Python"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-six = ">=1.6.1,<2.0"
-
-[[package]]
 name = "attrs"
 version = "22.1.0"
 description = "Classes Without Boilerplate"
@@ -270,19 +259,6 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
-name = "protoletariat"
-version = "1.0.1"
-description = "Python protocol buffers for the rest of us"
-category = "main"
-optional = false
-python-versions = ">=3.8,<3.11"
-
-[package.dependencies]
-astunparse = {version = ">=1.6.3,<2", markers = "python_version < \"3.9\""}
-click = ">=7.1.2,<9"
-protobuf = ">=3.19.1,<5"
-
-[[package]]
 name = "py"
 version = "1.11.0"
 description = "library with cross-python path, ini-parsing, io, code, log facilities"
@@ -347,6 +323,20 @@ python-versions = "*"
 
 [package.dependencies]
 pytest = ">=3.6.0"
+
+[[package]]
+name = "pytest-mock"
+version = "3.9.0"
+description = "Thin-wrapper around the mock package for easier use with pytest"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+pytest = ">=5.0"
+
+[package.extras]
+dev = ["pre-commit", "tox", "pytest-asyncio"]
 
 [[package]]
 name = "python-dateutil"
@@ -424,12 +414,11 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = ">=3.8,<3.11"
-content-hash = "a2ad07a37574afcdf0649b5c6860d50a17de1ccdae91ea46d9b57223b755cc82"
+python-versions = "^3.8"
+content-hash = "ad34549ae7021472ee47889f0938f3b12368be1b29fa0afe0959080a36f66ddd"
 
 [metadata.files]
 arrow = []
-astunparse = []
 attrs = []
 black = [
     {file = "black-22.8.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ce957f1d6b78a8a231b18e0dd2d94a33d2ba738cd88a7fe64f53f659eea49fdd"},
@@ -530,7 +519,6 @@ pathspec = [
 platformdirs = []
 pluggy = []
 protobuf = []
-protoletariat = []
 py = [
     {file = "py-1.11.0-py2.py3-none-any.whl", hash = "sha256:607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378"},
     {file = "py-1.11.0.tar.gz", hash = "sha256:51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719"},
@@ -543,6 +531,7 @@ pyparsing = [
 ]
 pytest = []
 pytest-grpc = []
+pytest-mock = []
 python-dateutil = [
     {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
     {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},

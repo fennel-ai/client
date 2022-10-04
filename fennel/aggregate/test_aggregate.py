@@ -20,8 +20,7 @@ from fennel.gen.aggregate_pb2 import CreateAggregateRequest
 
 class UserLikeCount(Count):
     def __init__(self, stream, windows: List[Window]):
-        self.name = self.__class__.__name__
-        self.stream = stream
+        super().__init__('TestUserLikeCount', stream, windows)
 
     @classmethod
     def schema(cls) -> Schema:
@@ -54,8 +53,7 @@ def test_AggregateRegistration(grpc_stub):
 
 class UserLikeCountInvalidSchema(Count):
     def __init__(self, stream, windows: List[Window]):
-        self.stream = stream
-        self.name = self.__class__.__name__
+        super().__init__('TestUserLikeCount', stream, windows)
 
     @classmethod
     def schema(cls) -> Schema:
@@ -78,6 +76,7 @@ def test_InvalidSchemaAggregateRegistration(grpc_stub):
         agg = UserLikeCountInvalidSchema('actions', [windows.DAY * 7, windows.DAY * 28])
         workspace = WorkspaceTest(grpc_stub)
         workspace.register_aggregates(agg)
+
     assert str(
         e.value) == "[TypeError('Type should be a Fennel Type object such as Int() and not a class such as Int/int'), " \
                     "TypeError('Type should be a Fennel Type object such as Int() and not a class such as Int/int'), " \
@@ -86,8 +85,7 @@ def test_InvalidSchemaAggregateRegistration(grpc_stub):
 
 class UserLikeCountInvalidProcessingFunction(Count):
     def __init__(self, stream, windows: List[Window]):
-        self.stream = stream
-        self.name = self.__class__.__name__
+        super().__init__('TestUserLikeCount', stream, windows)
 
     @classmethod
     def schema(cls) -> Schema:
@@ -115,8 +113,7 @@ def test_InvalidProcessingFunctionAggregateRegistration(grpc_stub):
 
 class UserLikeCountInvalidProcessingFunction2(Count):
     def __init__(self, stream, windows: List[Window]):
-        self.stream = stream
-        self.name = self.__class__.__name__
+        super().__init__('TestUserLikeCount', stream, windows)
 
     @classmethod
     def schema(cls) -> Schema:

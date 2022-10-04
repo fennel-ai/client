@@ -20,6 +20,12 @@ class Singleton(object):
         it.init(*args, **kwds)
         return it
 
+    @classmethod
+    def instance(cls):
+        if not hasattr(cls, "__it__"):
+            raise Exception("Singleton instance not initialized")
+        return getattr(cls, "__it__")
+
     def init(self, *args, **kwds):
         pass
 
