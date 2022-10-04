@@ -27,10 +27,18 @@ class Servicer(FennelFeatureStoreServicer):
         resp = Status(code=200, message=request.name)
         msg = any_pb2.Any()
         msg.Pack(request)
+        # For testing we add the request to the response, so we can check it.
         resp.details.append(msg)
         return resp
 
     def RegisterAggregate(self, request, context) -> Status:
+        resp = Status(code=200, message=request.name)
+        msg = any_pb2.Any()
+        msg.Pack(request)
+        resp.details.append(msg)
+        return resp
+
+    def RegisterFeature(self, request, context) -> Status:
         resp = Status(code=200, message=request.name)
         msg = any_pb2.Any()
         msg.Pack(request)

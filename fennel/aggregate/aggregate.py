@@ -11,6 +11,7 @@ from fennel.utils import check_response, Singleton
 from fennel.gen.status_pb2 import Status
 import fennel.gen.aggregate_pb2 as proto
 from fennel.errors import NameException
+from fennel.lib.windows import Window
 
 
 class AggregateSchema(Schema):
@@ -44,12 +45,17 @@ class AggregateSchema(Schema):
         return exceptions
 
 
+def aggregate_lookup(agg_name: str, **kwargs):
+    print("Aggregate", agg_name, " lookup will be patched")
+    pass
+
+
 class Aggregate(Singleton):
-    name = None
-    version = 1
+    name: str = None
+    version: int = 1
     stream: str = None
-    mode = 'pandas'
-    windows = None
+    mode: str = 'pandas'
+    windows: List[Window] = []
 
     @classmethod
     def schema(cls) -> Schema:
@@ -94,7 +100,7 @@ class Aggregate(Singleton):
             mode=self.mode,
             aggregate_type=self._get_agg_type(),
             preprocess_function=self._get_pickle_preprocess_function(),
-            windows=self.windows,
+            windows=[int(w.total_seconds()) for w in self.windows],
             schema=self.schema().to_proto(),
         )
         resp = stub.RegisterAggregate(req)
