@@ -12,9 +12,8 @@ from fennel.lib.windows import Window
 from fennel.test_lib import *
 
 import fennel.gen.feature_pb2 as feature_proto
-import fennel.aggregate
 
-from fennel.dummy import aggregate_lookup
+from fennel.feature import aggregate_lookup
 
 
 class UserLikeCount(Count):
@@ -49,7 +48,6 @@ class UserLikeCount(Count):
 def user_like_count_3days(uids: pd.Series) -> pd.Series:
     day7, day28 = UserLikeCount.lookup(uids=uids, window=[windows.DAY, windows.WEEK])
     day7 = day7.apply(lambda x: x * x)
-    print("Day71:", day7)
     return day7
 
 
@@ -64,31 +62,73 @@ def test_FeatureRegistration(grpc_stub, mocker):
     responses[0].details[0].Unpack(create_feature)
     feature_func = pickle.loads(create_feature.function)
     features = feature_func.extract(uids=pd.Series([1, 2, 3, 4, 5]))
+    assert type(features) == pd.Series
     assert features[0] == 36
 
-# @feature_pack(
-#     name='user_like_count',
-#     depends_on_aggregates=[UserLikeCount],
-#     schema=Schema(
-#         Field('user_like_count_7days', Int(), 0),
-#         Field('user_like_count_7days_sqrt', Int(), 0),
-#         Field('user_like_count_7days_sq', Int(), 1),
-#         Field('user_like_count_28days', Int(), 1),
-#         Field('user_like_count_28days_sqrt', Int(), 2),
-#         Field('user_like_count_28days_sq', Int(), 2),
-#     ),
-# )
-# def user_like_count_3days(uids: pd.Series) -> pd.DataFrame:
-#     day7, day28 = UserLikeCount.Lookup(uids=uids, window=[windows.Day, windows.Week])
-#     day7_sq = day7 ** 2
-#     day7_sqrt = day7 ** 0.5
-#     day28_sq = day28 ** 2
-#     day28_sqrt = day28 ** 0.5
-#     return pd.DataFrame(
-#         {'user_like_count_1day': day7, 'user_like_count_7days': day28, 'user_like_count_7days_sqrt': day7_sqrt,
-#          'user_like_count_7days_sq': day7_sq, 'user_like_count_28days': day28,
-#          'user_like_count_28days_sqrt': day28_sqrt, 'user_like_count_28days_sq': day28_sq})
-#
-#
-# def test_FeaturePackRegistration(grpc_stub):
-#     assert 1 == 1
+
+@feature_pack(
+    name='user_like_count',
+    depends_on_aggregates=[UserLikeCount],
+    schema=Schema(
+        Field('user_like_count_7days', Int(), 0),
+        Field('user_like_count_7days_sqrt', Int(), 0),
+        Field('user_like_count_7days_sq', Int(), 1),
+        Field('user_like_count_28days', Int(), 1),
+        Field('user_like_count_28days_sqrt', Int(), 2),
+        Field('user_like_count_28days_sq', Int(), 2),
+    ),
+)
+def user_like_count_3days_pack(uids: pd.Series) -> pd.DataFrame:
+    day7, day28 = UserLikeCount.lookup(uids=uids, window=[windows.DAY, windows.WEEK])
+    day7_sq = day7 ** 2
+    day7_sqrt = day7 ** 0.5
+    day28_sq = day28 ** 2
+    day28_sqrt = day28 ** 0.5
+    return pd.DataFrame(
+        {'user_like_count_1day': day7, 'user_like_count_7days': day28, 'user_like_count_7days_sqrt': day7_sqrt,
+         'user_like_count_7days_sq': day7_sq, 'user_like_count_28days': day28,
+         'user_like_count_28days_sqrt': day28_sqrt, 'user_like_count_28days_sq': day28_sq})
+
+
+def test_FeaturePackRegistration(grpc_stub, mocker):
+    mocker.patch(__name__ + '.aggregate_lookup', return_value=(pd.Series([6, 12, 13, 15, 156]),
+                                                               pd.Series([5, 12, 13, 34, 156])))
+    workspace = WorkspaceTest(grpc_stub)
+    workspace.register_aggregates(UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28]))
+    responses = workspace.register_features(user_like_count_3days_pack)
+    assert len(responses) == 1
+    create_feature = feature_proto.CreateFeatureRequest()
+    responses[0].details[0].Unpack(create_feature)
+    feature_func = pickle.loads(create_feature.function)
+    features = feature_func.extract(uids=pd.Series([1, 2, 3, 4, 5]))
+    assert type(features) == pd.DataFrame
+    assert features.shape == (5, 7)
+    pd.set_option('display.max_columns', None)
+    assert features['user_like_count_1day'][0] == 6
+
+
+@feature_pack(
+    name='user_like_count',
+    depends_on_aggregates=[UserLikeCount],
+    schema=Schema(
+        Field('user_like_count_7days', Int(), 0),
+        Field('user_like_count_7days_sqrt', Int(), 0),
+        Field('user_like_count_7days_sq', Int(), 1),
+        Field('user_like_count_28days', Int(), 1),
+        Field('user_like_count_28days_sqrt', Int(), 2),
+        Field('user_like_count_28days_sq', Int(), 2),
+    ),
+)
+def user_like_count_3days_pack_invalid(uids: pd.Series) -> pd.Series:
+    day7, day28 = UserLikeCount.lookup(uids=uids, window=[windows.DAY, windows.WEEK])
+    return day7
+
+
+def test_FeaturePackRegistrationInvalid(grpc_stub, mocker):
+    mocker.patch(__name__ + '.aggregate_lookup', return_value=(pd.Series([6, 12, 13, 15, 156]),
+                                                               pd.Series([5, 12, 13, 34, 156])))
+    with pytest.raises(Exception) as e:
+        workspace = WorkspaceTest(grpc_stub)
+        workspace.register_aggregates(UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28]))
+        workspace.register_features(user_like_count_3days_pack_invalid)
+    assert str(e.value) == "['feature function must return a pandas.Series']"

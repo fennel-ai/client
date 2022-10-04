@@ -12,6 +12,11 @@ from fennel.lib.schema import Schema
 import fennel.aggregate
 
 
+def aggregate_lookup(agg_name: str, **kwargs):
+    print("Aggregate", agg_name, " lookup patched")
+    return pd.Series([8, 12, 13]), pd.Series([21, 22, 23])
+
+
 class AggLookupTransformer(ast.NodeTransformer):
     def __init__(self, agg2name: Dict[str, str]):
         self.agg2name = agg2name
@@ -72,12 +77,9 @@ def feature(
             function_source_code = inspect.getsource(func)
             tree = ast.parse(function_source_code)
             agg2name = {agg.instance().__class__.__name__: agg.instance().name for agg in depends_on_aggregates}
-            # print(ast.dump(tree, indent=4))
             new_tree = AggLookupTransformer(agg2name).visit(tree)
             ast.fix_missing_locations(new_tree)
             ast.copy_location(new_tree.body[0], tree)
-            # print("=====================================")
-            # print(ast.dump(new_tree, indent=4))
             code = compile(tree, inspect.getfile(func), 'exec')
             tmp_namespace = {}
             namespace = func.__globals__
@@ -146,19 +148,40 @@ def feature_pack(
 
         setattr(ret, "compute", compute)
 
+        def extract(*args, **kwargs) -> pd.DataFrame:
+            return func(*args, **kwargs)
+
+        setattr(ret, "extract", extract)
+
         @functools.wraps(func)
         def register(stub: FennelFeatureStoreStub):
-            p = ast.parse(func)
+            function_source_code = inspect.getsource(func)
+            tree = ast.parse(function_source_code)
+            agg2name = {agg.instance().__class__.__name__: agg.instance().name for agg in depends_on_aggregates}
+            new_tree = AggLookupTransformer(agg2name).visit(tree)
+            ast.fix_missing_locations(new_tree)
+            ast.copy_location(new_tree.body[0], tree)
+            code = compile(tree, inspect.getfile(func), 'exec')
+            tmp_namespace = {}
+            namespace = func.__globals__
+            for k, v in namespace.items():
+                if k == func.__name__:
+                    continue
+                tmp_namespace[k] = v
+            exec(code, tmp_namespace)
+            new_function = tmp_namespace[func.__name__]
+            functools.update_wrapper(new_function, func)
             req = feature_proto.CreateFeatureRequest(
                 name=name,
                 version=version,
                 mode=mode,
                 schema=schema.to_proto(),
-                function=cloudpickle.dumps(func),
+                function=cloudpickle.dumps(new_function),
+                function_source_code=function_source_code,
                 type=feature_proto.FeatureDefType.FEATURE_PACK,
             )
             req.depends_on_features.extend([f.name for f in depends_on_features])
-            req.depends_on_aggregates.extend([agg.name for agg in depends_on_aggregates])
+            req.depends_on_aggregates.extend([str(agg.name) for agg in depends_on_aggregates if agg is not None])
             return stub.RegisterFeature(req)
 
         setattr(ret, "register", register)
