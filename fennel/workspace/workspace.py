@@ -1,4 +1,3 @@
-# TODO(aditya): read hamilton post: https://multithreaded.stitchfix.com/blog/2021/10/14/functions-dags-hamilton/
 from typing import *
 
 import grpc
@@ -8,6 +7,7 @@ import fennel.gen.services_pb2_grpc as services_pb2
 from fennel.stream import Stream
 from fennel.aggregate import Aggregate
 from fennel.utils import check_response
+from fennel.gen.aggregate_pb2 import CreateAggregateRequest
 
 
 # TODO(aditya): how will auth work?

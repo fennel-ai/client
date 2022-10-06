@@ -42,13 +42,10 @@ def test_AggregateRegistration(grpc_stub):
     agg = UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28])
     workspace = WorkspaceTest(grpc_stub)
     responses = workspace.register_aggregates(agg)
-    print("test_AggregateRegistration")
     assert len(responses) == 1
     assert responses[0].code == 200
     create_agg = CreateAggregateRequest()
     responses[0].details[0].Unpack(create_agg)
-    print(create_agg.name)
-    print(create_agg)
 
 
 class UserLikeCountInvalidSchema(Count):

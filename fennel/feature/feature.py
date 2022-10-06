@@ -10,6 +10,7 @@ from fennel.aggregate import Aggregate
 from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.lib.schema import Schema
 import fennel.aggregate
+from fennel.utils import modify_aggregate_lookup
 
 
 def aggregate_lookup(agg_name: str, **kwargs):
@@ -24,7 +25,7 @@ class AggLookupTransformer(ast.NodeTransformer):
     def visit_Call(self, node):
         if isinstance(node.func, ast.Attribute) and node.func.attr == 'lookup':
             if node.func.value.id not in self.agg2name:
-                return node
+                raise Exception(f"aggregate {node.func.value.id} not included in feature definition")
 
             agg_name = self.agg2name[node.func.value.id]
             return ast.Call(func=ast.Name('aggregate_lookup', ctx=node.func.ctx), args=[ast.Constant(agg_name)],
@@ -32,11 +33,13 @@ class AggLookupTransformer(ast.NodeTransformer):
         return node
 
 
+def is_sign_args_and_kwargs(sign):
+    return len(sign.parameters) == 2 and 'args' in sign.parameters and 'kwargs' in sign.parameters
+
+
 def feature(
         name: str = None,
         version: int = 1,
-        depends_on_aggregates: List[Aggregate] = [],
-        depends_on_features: List[Any] = [],
         mode: str = 'pandas',
         schema: Schema = None,
 ):
@@ -48,8 +51,14 @@ def feature(
 
         ret.name = name
         ret.version = version
-        ret.depends_on_aggregates = depends_on_aggregates
-        ret.depends_on_features = depends_on_features
+        if hasattr(func, 'depends_on_aggregates'):
+            ret.depends_on_aggregates = func.depends_on_aggregates
+        else:
+            ret.depends_on_aggregates = []
+        if hasattr(func, 'depends_on_features'):
+            ret.depends_on_features = func.depends_on_features
+        else:
+            ret.depends_on_features = []
         ret.mode = mode
         ret.schema = schema
         # The original code written by the user
@@ -58,6 +67,8 @@ def feature(
         def validate() -> List[Exception]:
             exceptions = schema.validate()
             sign = inspect.signature(func)
+            if is_sign_args_and_kwargs(sign):
+                sign = func.signature
             for param in sign.parameters.values():
                 if param.annotation != pd.Series and mode == 'pandas':
                     exceptions.append(f'parameter {param.name} is not a pandas.Series')
@@ -74,22 +85,8 @@ def feature(
 
         @functools.wraps(func)
         def register(stub: FennelFeatureStoreStub):
-            function_source_code = inspect.getsource(func)
-            tree = ast.parse(function_source_code)
-            agg2name = {agg.instance().__class__.__name__: agg.instance().name for agg in depends_on_aggregates}
-            new_tree = AggLookupTransformer(agg2name).visit(tree)
-            ast.fix_missing_locations(new_tree)
-            ast.copy_location(new_tree.body[0], tree)
-            code = compile(tree, inspect.getfile(func), 'exec')
-            tmp_namespace = {}
-            namespace = func.__globals__
-            for k, v in namespace.items():
-                if k == func.__name__:
-                    continue
-                tmp_namespace[k] = v
-            exec(code, tmp_namespace)
-            new_function = tmp_namespace[func.__name__]
-            functools.update_wrapper(new_function, func)
+            agg2name = {agg.instance().__class__.__name__: agg.instance().name for agg in ret.depends_on_aggregates}
+            new_function, function_source_code = modify_aggregate_lookup(func, agg2name)
             req = feature_proto.CreateFeatureRequest(
                 name=name,
                 version=version,
@@ -99,8 +96,8 @@ def feature(
                 function_source_code=function_source_code,
                 type=feature_proto.FeatureDefType.FEATURE,
             )
-            req.depends_on_features.extend([f.name for f in depends_on_features])
-            req.depends_on_aggregates.extend([str(agg.name) for agg in depends_on_aggregates if agg is not None])
+            req.depends_on_features.extend([f.name for f in ret.depends_on_features])
+            req.depends_on_aggregates.extend([str(agg.name) for agg in ret.depends_on_aggregates if agg is not None])
             return stub.RegisterFeature(req)
 
         setattr(ret, "register", register)
@@ -113,8 +110,6 @@ def feature(
 def feature_pack(
         name: str = None,
         version: int = 1,
-        depends_on_aggregates: List[Aggregate] = [],
-        depends_on_features: List[Any] = [],
         mode: str = 'pandas',
         schema: Schema = None,
 ):
@@ -126,14 +121,22 @@ def feature_pack(
 
         ret.name = name
         ret.version = version
-        ret.depends_on_aggregates = depends_on_aggregates
-        ret.depends_on_features = depends_on_features
+        if hasattr(func, 'depends_on_aggregates'):
+            ret.depends_on_aggregates = func.depends_on_aggregates
+        else:
+            ret.depends_on_aggregates = []
+        if hasattr(func, 'depends_on_features'):
+            ret.depends_on_features = func.depends_on_features
+        else:
+            ret.depends_on_features = []
         ret.mode = mode
         ret.schema = schema
 
         def validate() -> List[Exception]:
             exceptions = schema.validate()
             sign = inspect.signature(func)
+            if is_sign_args_and_kwargs(sign):
+                sign = func.signature
             for param in sign.parameters.values():
                 if param.annotation != pd.Series and mode == 'pandas':
                     exceptions.append(f'parameter {param.name} is not a pandas.Series')
@@ -155,22 +158,8 @@ def feature_pack(
 
         @functools.wraps(func)
         def register(stub: FennelFeatureStoreStub):
-            function_source_code = inspect.getsource(func)
-            tree = ast.parse(function_source_code)
-            agg2name = {agg.instance().__class__.__name__: agg.instance().name for agg in depends_on_aggregates}
-            new_tree = AggLookupTransformer(agg2name).visit(tree)
-            ast.fix_missing_locations(new_tree)
-            ast.copy_location(new_tree.body[0], tree)
-            code = compile(tree, inspect.getfile(func), 'exec')
-            tmp_namespace = {}
-            namespace = func.__globals__
-            for k, v in namespace.items():
-                if k == func.__name__:
-                    continue
-                tmp_namespace[k] = v
-            exec(code, tmp_namespace)
-            new_function = tmp_namespace[func.__name__]
-            functools.update_wrapper(new_function, func)
+            agg2name = {agg.instance().__class__.__name__: agg.instance().name for agg in ret.depends_on_aggregates}
+            new_function, function_source_code = modify_aggregate_lookup(func, agg2name)
             req = feature_proto.CreateFeatureRequest(
                 name=name,
                 version=version,
@@ -180,8 +169,8 @@ def feature_pack(
                 function_source_code=function_source_code,
                 type=feature_proto.FeatureDefType.FEATURE_PACK,
             )
-            req.depends_on_features.extend([f.name for f in depends_on_features])
-            req.depends_on_aggregates.extend([str(agg.name) for agg in depends_on_aggregates if agg is not None])
+            req.depends_on_features.extend([f.name for f in ret.depends_on_features])
+            req.depends_on_aggregates.extend([str(agg.name) for agg in ret.depends_on_aggregates if agg is not None])
             return stub.RegisterFeature(req)
 
         setattr(ret, "register", register)

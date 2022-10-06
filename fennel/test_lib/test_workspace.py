@@ -49,7 +49,6 @@ class WorkspaceTest(Workspace):
         exceptions = []
         for feature in features:
             exceptions.extend(feature.validate())
-
         if len(exceptions) > 0:
             raise Exception(exceptions)
 

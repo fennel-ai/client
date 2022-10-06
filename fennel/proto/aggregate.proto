@@ -20,7 +20,8 @@ message CreateAggregateRequest {
   uint32 version = 3;
   string stream = 4;
   bytes preprocess_function = 5;
-  AggregateType aggregate_type = 6;
-  repeated int32 windows = 7;
-  Schema schema = 8;
+  string function_source_code = 6;
+  AggregateType aggregate_type = 7;
+  repeated int32 windows = 8;
+  Schema schema = 9;
 }
