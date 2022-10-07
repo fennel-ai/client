@@ -18,7 +18,9 @@ class Singleton(object):
     @classmethod
     def instance(cls):
         if not hasattr(cls, "__it__"):
-            raise Exception(f'Singleton instance {cls.__name__} not initialized')
+            raise Exception(
+                f"Singleton instance {cls.__name__} not initialized"
+            )
         return getattr(cls, "__it__")
 
     def init(self, *args, **kwds):

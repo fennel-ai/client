@@ -6,5 +6,5 @@ from fennel.aggregate.aggregate import (
     KeyValue,
     Rate,
     Average,
-    depends_on
+    depends_on,
 )

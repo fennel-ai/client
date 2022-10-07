@@ -10,20 +10,24 @@ from fennel.gen.status_pb2 import Status
 from fennel.test_lib.test_workspace import ClientTestWorkspace
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def grpc_add_to_server():
-    from fennel.gen.services_pb2_grpc import add_FennelFeatureStoreServicer_to_server
+    from fennel.gen.services_pb2_grpc import (
+        add_FennelFeatureStoreServicer_to_server,
+    )
+
     return add_FennelFeatureStoreServicer_to_server
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def grpc_servicer():
     return Servicer()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def grpc_stub_cls(grpc_channel):
     from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
+
     return FennelFeatureStoreStub
 
 
@@ -45,9 +49,11 @@ def create_test_workspace(grpc_stub, mocker):
                     continue
                 if agg_name == k.instance().name:
                     return v
-            raise Exception(f'Mock for {agg_name} not found')
+            raise Exception(f"Mock for {agg_name} not found")
 
-        mocker.patch(caller_path + '.aggregate_lookup', side_effect=agg_side_effect)
+        mocker.patch(
+            caller_path + ".aggregate_lookup", side_effect=agg_side_effect
+        )
 
         def feature_side_effect(feature_name, *args, **kwargs):
             for k, v in mocks.items():
@@ -55,9 +61,11 @@ def create_test_workspace(grpc_stub, mocker):
                     continue
                 if feature_name == k:
                     return v
-            raise Exception(f'Mock for {feature_name} not found')
+            raise Exception(f"Mock for {feature_name} not found")
 
-        mocker.patch(caller_path + '.feature_extract', side_effect=feature_side_effect)
+        mocker.patch(
+            caller_path + ".feature_extract", side_effect=feature_side_effect
+        )
         return ClientTestWorkspace(grpc_stub, mocker)
 
     return workspace

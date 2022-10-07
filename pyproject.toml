@@ -35,6 +35,12 @@ build-backend = "poetry.core.masonry.api"
 python_version = "3.8"
 exclude = [
     'test.*\.py$',
+    'fennel/gen/',
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "fennel.gen",
 ]
 
 [tool.black]
