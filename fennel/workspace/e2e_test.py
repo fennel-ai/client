@@ -4,12 +4,12 @@ import pandas as pd
 import pytest
 
 from fennel.aggregate import (Count, depends_on, KeyValue)
-# noinspection PyUnresolvedReferences
-from fennel.feature import aggregate_lookup, feature, feature_extract
+from fennel.feature import *
 from fennel.lib import (Field, Schema, windows)
 from fennel.lib.schema import (Array, Bool, Double, FieldType, Int, Map, String)
 from fennel.lib.windows import Window
 from fennel.stream import (MySQL, source, Stream)
+# noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
 """
@@ -26,37 +26,6 @@ Goals
     - e2e tests that take an artificial stream and produce aggregate data ( mocks )
     - e2e tests that take an artificial stream and produce feature data ( mocks )
 """
-
-
-# create_test_workspace fixture allows you to mock aggregates and features
-# You need to provide a dictionary of aggregate/feature and the return value.
-# Future work: Add support for providing ability to create mocks depending on the input.
-@pytest.fixture
-def create_test_workspace(grpc_stub, mocker):
-    def workspace(mocks):
-        def agg_side_effect(agg_name, *args, **kwargs):
-            for k, v in mocks.items():
-                if type(k) == str:
-                    continue
-                if agg_name == k.instance().name:
-                    return v
-            raise Exception(f'Mock for {agg_name} not found')
-
-        mocker.patch(__name__ + '.aggregate_lookup', side_effect=agg_side_effect)
-
-        def feature_side_effect(feature_name, *args, **kwargs):
-            for k, v in mocks.items():
-                if type(k) != str:
-                    continue
-                if feature_name == k:
-                    return v
-            raise Exception(f'Mock for {feature_name} not found')
-
-        mocker.patch(__name__ + '.feature_extract', side_effect=feature_side_effect)
-        return ClientTestWorkspace(grpc_stub, mocker)
-
-    return workspace
-
 
 ############################################################################################################
 #                                                       Tests                                              #
@@ -305,6 +274,7 @@ def test_Feature_Agg_And_FeatureMock2(create_test_workspace):
     # 144 * 144 + 12 * 12 = 20736 + 144 = 20880
     # 169 * 169 + 13 * 13 = 28561 + 169 = 28730
     assert features.tolist() == [1332, 20880, 28730]
+
 ############################################################################################################
 # Workspace Tests
 ############################################################################################################
