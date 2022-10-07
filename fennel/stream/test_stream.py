@@ -185,11 +185,13 @@ def test_InvalidStreamRegistration(grpc_stub):
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_streams(actions)
     assert (
-            str(e.value)
-            == "[TypeError('Type for actor_id should be a Fennel Type object such as Int() and not a class such as "
-               "Int/int'), "
-               "TypeError('Expected default value for field target_id to be str, got 1'), TypeError('Expected "
-               "default value for field action_type to be list, got love')]"
+        str(e.value) == "[TypeError('Type for actor_id should be a "
+        "Fennel Type object "
+        "such as Int() and not a class such as Int/int'), "
+        "TypeError('Expected default value for field "
+        "target_id to be str, got 1'), TypeError('Expected "
+        "default value for field action_type to be list, "
+        "got love')]"
     )
 
 
@@ -217,6 +219,7 @@ def test_InvalidSource(grpc_stub):
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_streams(actions)
     assert (
-            str(e.value)
-            == "[IncorrectSourceException('Incorrect source, table must be None since it supports only a single stream.')]"
+        str(e.value)
+        == "[IncorrectSourceException('Incorrect source, table must be "
+        "None since it supports only a single stream.')]"
     )
