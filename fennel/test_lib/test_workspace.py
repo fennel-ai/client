@@ -3,6 +3,7 @@ from typing import List
 from fennel.aggregate import Aggregate
 from fennel.gen.status_pb2 import Status
 from fennel.stream import Stream
+# noinspection PyUnresolvedReferences
 from fennel.workspace import Workspace
 
 

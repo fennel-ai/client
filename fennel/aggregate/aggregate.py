@@ -1,4 +1,6 @@
+import ast
 import inspect
+import textwrap
 from abc import ABC
 from typing import *
 
@@ -12,7 +14,58 @@ from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.gen.status_pb2 import Status
 from fennel.lib.schema import FieldType, Schema
 from fennel.lib.windows import Window
-from fennel.utils import modify_aggregate_lookup, Singleton
+from fennel.utils import Singleton
+
+
+class AggLookupTransformer(ast.NodeTransformer):
+    def __init__(self, agg2name: Dict[str, str]):
+        self.agg2name = agg2name
+
+    def visit_Call(self, node):
+        if isinstance(node.func, ast.Attribute) and node.func.attr == 'lookup':
+            if node.func.value.id not in self.agg2name:
+                raise Exception(f"aggregate {node.func.value.id} not included in feature definition")
+
+            agg_name = self.agg2name[node.func.value.id]
+            return ast.Call(func=ast.Name('aggregate_lookup', ctx=node.func.ctx), args=[ast.Constant(agg_name)],
+                            keywords=node.keywords)
+        return node
+
+
+# Takes the list of aggregates that this aggregate depends upon as dictionary of aggregate to aggregate name.
+def _modify_aggregate_lookup(func, agg2name: Dict[str, str]):
+    if hasattr(func, 'wrapped_function'):
+        feature_func = func.wrapped_function
+    else:
+        feature_func = func
+    function_source_code = textwrap.dedent(inspect.getsource(feature_func))
+    tree = ast.parse(function_source_code)
+    new_tree = AggLookupTransformer(agg2name).visit(tree)
+    new_tree.body[0].decorator_list = []
+    # Remove the class argument
+    new_tree.body[0].args = ast.arguments(args=new_tree.body[0].args.args[1:],
+                                          posonlyargs=new_tree.body[0].args.posonlyargs,
+                                          kwonlyargs=new_tree.body[0].args.kwonlyargs,
+                                          kw_defaults=new_tree.body[0].args.kw_defaults,
+                                          defaults=new_tree.body[0].args.defaults)
+    ast.fix_missing_locations(new_tree)
+    ast.copy_location(new_tree.body[0], tree)
+    code = compile(tree, inspect.getfile(feature_func), 'exec')
+    tmp_namespace = {}
+    if hasattr(func, 'namespace'):
+        namespace = func.namespace
+    else:
+        namespace = func.__globals__
+    if hasattr(func, 'func_name'):
+        func_name = func.func_name
+    else:
+        func_name = func.__name__
+    for k, v in namespace.items():
+        if k == func_name:
+            continue
+        tmp_namespace[k] = v
+    exec(code, tmp_namespace)
+    return tmp_namespace[func_name], function_source_code
 
 
 class AggregateSchema(Schema):
@@ -68,7 +121,7 @@ class Aggregate(Singleton):
         else:
             depends_on_aggregates = []
         agg2names = {agg.instance().__class__.__name__: agg.instance().name for agg in depends_on_aggregates}
-        mod_func, function_src_code = modify_aggregate_lookup(preprocess, agg2names)
+        mod_func, function_src_code = _modify_aggregate_lookup(preprocess, agg2names)
 
         def outer(*args, **kwargs):
             result = mod_func(*args, **kwargs)

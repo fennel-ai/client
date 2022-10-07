@@ -302,8 +302,9 @@ def test_Feature_Agg_And_FeatureMock2(create_test_workspace):
     features = user_like_count_3days_square_random.extract(uids=pd.Series([1, 2, 3, 4, 5]))
     assert type(features) == pd.Series
     # 36 * 36 + 6 * 6 = 1296 + 36 = 1332
-    assert features[0] == 1332
-
+    # 144 * 144 + 12 * 12 = 20736 + 144 = 20880
+    # 169 * 169 + 13 * 13 = 28561 + 169 = 28730
+    assert features.tolist() == [1332, 20880, 28730]
 ############################################################################################################
 # Workspace Tests
 ############################################################################################################
