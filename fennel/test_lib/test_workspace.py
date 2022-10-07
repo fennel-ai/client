@@ -1,14 +1,19 @@
-import grpc
-import pytest
+from typing import List
 
-from typing import List, Optional, Union
-from fennel.workspace import Workspace
-from fennel.stream import Stream
 from fennel.aggregate import Aggregate
 from fennel.gen.status_pb2 import Status
+from fennel.stream import Stream
+from fennel.workspace import Workspace
 
 
-class WorkspaceTest(Workspace):
+class ClientTestWorkspace(Workspace):
+    def __init__(self, stub, mocker):
+        super().__init__(name='test', url='localhost:8080')
+        self.stub = stub
+        self.mocker = mocker
+
+
+class InternalTestWorkspace(Workspace):
     def __init__(self, stub):
         super().__init__(name='test', url='localhost:8080')
         self.stub = stub
@@ -54,6 +59,7 @@ class WorkspaceTest(Workspace):
 
         responses = []
         for feature in features:
+            print("Registering feature:", feature.name)
             resp = feature.register(self.stub)
             responses.append(resp)
 

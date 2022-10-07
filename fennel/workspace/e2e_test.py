@@ -1,35 +1,66 @@
+from typing import List
+
 import pandas as pd
 import pytest
 
-from fennel.errors import IncorrectSourceException
-from fennel.gen.services_pb2_grpc import FennelFeatureStoreServicer
-from fennel.gen.status_pb2 import Status
+from fennel.aggregate import (Count, depends_on, KeyValue)
+# noinspection PyUnresolvedReferences
+from fennel.feature import aggregate_lookup, feature, feature_extract
 from fennel.lib import (Field, Schema, windows)
-from typing import List, Optional, Union
-from fennel.gen.aggregate_pb2 import CreateAggregateRequest
-
-from fennel.lib.schema import (
-    Int,
-    Map,
-    Array,
-    Double,
-    Bool,
-    String,
-)
+from fennel.lib.schema import (Array, Bool, Double, FieldType, Int, Map, String)
+from fennel.lib.windows import Window
 from fennel.stream import (MySQL, source, Stream)
 from fennel.test_lib import *
-from fennel.aggregate import (Aggregate, Count, Min, Max, KeyValue, depends_on)
-from fennel.lib.windows import Window
-from fennel.lib.schema import (
-    Int,
-    Double,
-    Bool,
-    Map,
-    Array,
-    String,
-    FieldType
-)
-from fennel.feature import aggregate_lookup
+
+"""
+Goals
+    Unit - Test each concept individually
+    - Ability to test stream populate functionality ( no mocks needed )
+    - Ability to test aggregate preprocess functionality ( KV agg mocks needed )
+    - Ability to test feature computation functionality ( Agg  & feature mocks needed )
+    - Ability to test feature functionality  with environment variables ( Agg & feature mocks needed )
+    
+    Integration - Test the entire flow; stream -> aggregate -> feature ( or subset of it )
+    - e2e tests that read data from stream and produce final features ( talk to server )
+    - e2e tests for streams that connect to the stream and produce few stream values ( talk to server )
+    - e2e tests that take an artificial stream and produce aggregate data ( mocks )
+    - e2e tests that take an artificial stream and produce feature data ( mocks )
+"""
+
+
+# create_test_workspace fixture allows you to mock aggregates and features
+# You need to provide a dictionary of aggregate/feature and the return value.
+# Future work: Add support for providing ability to create mocks depending on the input.
+@pytest.fixture
+def create_test_workspace(grpc_stub, mocker):
+    def workspace(mocks):
+        def agg_side_effect(agg_name, *args, **kwargs):
+            for k, v in mocks.items():
+                if type(k) == str:
+                    continue
+                if agg_name == k.instance().name:
+                    return v
+            raise Exception(f'Mock for {agg_name} not found')
+
+        mocker.patch(__name__ + '.aggregate_lookup', side_effect=agg_side_effect)
+
+        def feature_side_effect(feature_name, *args, **kwargs):
+            for k, v in mocks.items():
+                if type(k) != str:
+                    continue
+                if feature_name == k:
+                    return v
+            raise Exception(f'Mock for {feature_name} not found')
+
+        mocker.patch(__name__ + '.feature_extract', side_effect=feature_side_effect)
+        return ClientTestWorkspace(grpc_stub, mocker)
+
+    return workspace
+
+
+############################################################################################################
+#                                                       Tests                                              #
+############################################################################################################
 
 mysql_src = MySQL(
     name='mysql_psql_src',
@@ -119,7 +150,7 @@ class UserLikeCount(Count):
         return Schema(
             Field('actor_id', Int(), 0, field_type=FieldType.Key),
             Field('target_id', Int(), 0, field_type=FieldType.Value),
-            Field('timestamp', Int(), 0, field_type=FieldType.Timestamp),
+            Field('timestamp', Double(), 0.0, field_type=FieldType.Timestamp),
         )
 
     @classmethod
@@ -130,15 +161,11 @@ class UserLikeCount(Count):
         return filtered_df
 
 
-def test_AggregatePreprocess(grpc_stub):
+def test_AggregatePreprocess(create_test_workspace):
+    workspace = create_test_workspace({})
     agg = UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28])
-    workspace = WorkspaceTest(grpc_stub)
-    responses = workspace.register_aggregates(agg)
+    workspace.register_aggregates(agg)
 
-    assert len(responses) == 1
-    assert responses[0].code == 200
-    create_agg = CreateAggregateRequest()
-    responses[0].details[0].Unpack(create_agg)
     df = pd.DataFrame(
         {
             'actor_id': [1, 2, 3, 4, 5],
@@ -162,7 +189,7 @@ class UserGenderKVAgg(KeyValue):
         return Schema(
             Field('uid', Int(), 0, field_type=FieldType.Key),
             Field('gender', String(), "female", field_type=FieldType.Value),
-            Field('timestamp', Int(), 0, field_type=FieldType.Timestamp),
+            Field('timestamp', Double(), 0.0, field_type=FieldType.Timestamp),
         )
 
     @classmethod
@@ -178,9 +205,9 @@ class GenderLikeCountWithKVAgg(Count):
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
-            Field('gender', Int(), 0, field_type=FieldType.Key),
+            Field('gender', String(), "male", field_type=FieldType.Key),
             Field('count', Int(), 0, field_type=FieldType.Value),
-            Field('timestamp', Int(), 0, field_type=FieldType.Timestamp),
+            Field('timestamp', Double(), 0.0, field_type=FieldType.Timestamp),
         )
 
     @classmethod
@@ -198,20 +225,11 @@ class GenderLikeCountWithKVAgg(Count):
         return new_df[['gender', 'count', 'timestamp']]
 
 
-def test_AggregatePreprocess_WithMockAgg(grpc_stub, mocker):
-    def side_effect(*args, **kwargs):
-        return pd.Series(["male", "female", "female"])
-
-    mocker.patch(__name__ + '.aggregate_lookup', side_effect=side_effect)
+def test_client_AggregatePreprocess(create_test_workspace):
+    workspace = create_test_workspace({UserGenderKVAgg: pd.Series(["male", "female", "male"])})
     agg1 = UserGenderKVAgg('actions', [windows.DAY * 7])
     agg2 = GenderLikeCountWithKVAgg('actions', [windows.DAY * 7, windows.DAY * 28])
-    workspace = WorkspaceTest(grpc_stub)
-    responses = workspace.register_aggregates(agg1, agg2)
-
-    assert len(responses) == 2
-    assert responses[0].code == 200
-    create_agg = CreateAggregateRequest()
-    responses[0].details[0].Unpack(create_agg)
+    workspace.register_aggregates(agg1, agg2)
     df = pd.DataFrame(
         {
             'actor_id': [1, 2, 3, 4, 5],
@@ -221,7 +239,7 @@ def test_AggregatePreprocess_WithMockAgg(grpc_stub, mocker):
         })
     processed_df = agg2.preprocess(df)
     assert processed_df.shape == (3, 3)
-    assert processed_df['gender'].tolist() == ["male", "female", "female"]
+    assert processed_df['gender'].tolist() == ["male", "female", "male"]
     assert processed_df['timestamp'].tolist() == [1.1, 2.1, 5.1]
     assert processed_df['count'].tolist() == [1, 1, 1]
 
@@ -230,32 +248,62 @@ def test_AggregatePreprocess_WithMockAgg(grpc_stub, mocker):
 # Feature Tests
 ############################################################################################################
 
+
+@feature(
+    name='user_like_count',
+    schema=Schema(
+        Field('user_like_count_7days', Int(), 0),
+    ),
+)
+@depends_on(
+    aggregates=[UserLikeCount],
+)
+def user_like_count_3days(uids: pd.Series) -> pd.Series:
+    day7, day28 = UserLikeCount.lookup(uids=uids, window=[windows.DAY, windows.WEEK])
+    day7 = day7.apply(lambda x: x * x)
+    return day7
+
+
+def test_Feature(create_test_workspace):
+    workspace = create_test_workspace({UserLikeCount: (pd.Series([6, 12, 13]),
+                                                       pd.Series([5, 12, 13]))})
+    workspace.register_aggregates(UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28]))
+    workspace.register_features(user_like_count_3days)
+    features = user_like_count_3days.extract(uids=pd.Series([1, 2, 3, 4, 5]))
+    assert type(features) == pd.Series
+    assert features[0] == 36
+
+
+@feature(
+    name='user_like_count_7days_random_sq',
+    schema=Schema(
+        Field('user_like_count_7days_random_sq', Int(), 0),
+    ),
+)
+@depends_on(
+    aggregates=[UserLikeCount],
+    features=[user_like_count_3days],
+)
+def user_like_count_3days_square_random(uids: pd.Series) -> pd.Series:
+    user_count_features = user_like_count_3days.extract(uids=uids)
+    day7, day28 = UserLikeCount.lookup(uids=uids, window=[windows.DAY, windows.WEEK])
+    day7_sq = day7.apply(lambda x: x * x)
+    user_count_features_sq = user_count_features.apply(lambda x: x * x)
+    return day7_sq + user_count_features_sq
+
+
+def test_Feature_Agg_And_FeatureMock2(create_test_workspace):
+    workspace = create_test_workspace({UserLikeCount: (pd.Series([6, 12, 13]),
+                                                       pd.Series([5, 12, 13])),
+                                       user_like_count_3days.name: pd.Series([36, 144, 169])
+                                       })
+    workspace.register_aggregates(UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28]))
+    workspace.register_features(user_like_count_3days, user_like_count_3days_square_random)
+    features = user_like_count_3days_square_random.extract(uids=pd.Series([1, 2, 3, 4, 5]))
+    assert type(features) == pd.Series
+    # 36 * 36 + 6 * 6 = 1296 + 36 = 1332
+    assert features[0] == 1332
+
 ############################################################################################################
 # Workspace Tests
 ############################################################################################################
-
-#
-# class Test:
-#     def __init__(self):
-#         pass
-#
-#     def __enter__(self):
-#         pass
-#
-#     def __exit__(self, exc_type, exc_val, exc_tb):
-#         pass
-
-
-"""
-    Unit
-        # - stream's transform function for a populator works -- no mocks
-        # - preaggrgate works (df -> df) -- this needs mock for aggregates
-        # - df -> aggregated data (talk to server, mock)
-        - everything works in env specified
-        # - feature computation works given input streams (mock of aggregates/features)
-    
-    Integration
-        - e2e == read from stream, e2e
-        - e2e == artificial stream data, e2e aggregate
-        - e2e == read from stream, populate aggregates, read features
-"""

@@ -1,36 +1,22 @@
-import ast
 import functools
-from typing import *
 import inspect
+from typing import *
+
 import cloudpickle
 import pandas as pd
-import pickle
+
 import fennel.gen.feature_pb2 as feature_proto
-from fennel.aggregate import Aggregate
 from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.lib.schema import Schema
-import fennel.aggregate
-from fennel.utils import modify_aggregate_lookup
+from fennel.utils import modify_feature_extract
 
 
 def aggregate_lookup(agg_name: str, **kwargs):
-    print("Aggregate", agg_name, " lookup patched")
-    return pd.Series([8, 12, 13]), pd.Series([21, 22, 23])
+    raise Exception("Aggregate lookup incorrectly patched")
 
 
-class AggLookupTransformer(ast.NodeTransformer):
-    def __init__(self, agg2name: Dict[str, str]):
-        self.agg2name = agg2name
-
-    def visit_Call(self, node):
-        if isinstance(node.func, ast.Attribute) and node.func.attr == 'lookup':
-            if node.func.value.id not in self.agg2name:
-                raise Exception(f"aggregate {node.func.value.id} not included in feature definition")
-
-            agg_name = self.agg2name[node.func.value.id]
-            return ast.Call(func=ast.Name('aggregate_lookup', ctx=node.func.ctx), args=[ast.Constant(agg_name)],
-                            keywords=node.keywords)
-        return node
+def feature_extract(feature_name, **kwargs):
+    raise Exception("Feature extract incorrectly patched")
 
 
 def is_sign_args_and_kwargs(sign):
@@ -45,11 +31,13 @@ def feature(
 ):
     def decorator(func):
         def ret(*args, **kwargs):
-            raise Exception(
-                "can not call feature directly"
-            )
+            return func(*args, **kwargs)
 
         ret.name = name
+        if hasattr(func, 'wrapped_function'):
+            ret.func_def_name = func.wrapped_function.__name__
+        else:
+            ret.func_def_name = func.__name__
         ret.version = version
         if hasattr(func, 'depends_on_aggregates'):
             ret.depends_on_aggregates = func.depends_on_aggregates
@@ -61,8 +49,6 @@ def feature(
             ret.depends_on_features = []
         ret.mode = mode
         ret.schema = schema
-        # The original code written by the user
-        ret.org_func = func
 
         def validate() -> List[Exception]:
             exceptions = schema.validate()
@@ -78,21 +64,31 @@ def feature(
 
         setattr(ret, "validate", validate)
 
-        def extract(*args, **kwargs) -> pd.DataFrame:
+        def mod_extract(*args, **kwargs) -> pd.DataFrame:
             return func(*args, **kwargs)
+
+        setattr(ret, "mod_extract", mod_extract)
+
+        def extract(*args, **kwargs) -> pd.DataFrame:
+            agg2name = {agg.instance().__class__.__name__: agg.instance().name for agg in ret.depends_on_aggregates}
+            feature2name = {f.func_def_name: f.name for f in ret.depends_on_features}
+            mod_feature_func, _ = modify_feature_extract(func, agg2name, feature2name)
+            return mod_feature_func(*args, **kwargs)
 
         setattr(ret, "extract", extract)
 
         @functools.wraps(func)
         def register(stub: FennelFeatureStoreStub):
             agg2name = {agg.instance().__class__.__name__: agg.instance().name for agg in ret.depends_on_aggregates}
-            new_function, function_source_code = modify_aggregate_lookup(func, agg2name)
+            feature2name = {f.func_def_name: f.name for f in ret.depends_on_features}
+            mod_feature_func, function_source_code = modify_feature_extract(func, agg2name, feature2name)
+
             req = feature_proto.CreateFeatureRequest(
                 name=name,
                 version=version,
                 mode=mode,
                 schema=schema.to_proto(),
-                function=cloudpickle.dumps(new_function),
+                function=cloudpickle.dumps(mod_feature_func),
                 function_source_code=function_source_code,
                 type=feature_proto.FeatureDefType.FEATURE,
             )
@@ -115,9 +111,7 @@ def feature_pack(
 ):
     def decorator(func):
         def ret(*args, **kwargs):
-            raise Exception(
-                "can not call feature directly"
-            )
+            raise Exception("Feature pack should not be called directly")
 
         ret.name = name
         ret.version = version
@@ -146,11 +140,6 @@ def feature_pack(
 
         setattr(ret, "validate", validate)
 
-        def compute() -> pd.DataFrame:
-            pass
-
-        setattr(ret, "compute", compute)
-
         def extract(*args, **kwargs) -> pd.DataFrame:
             return func(*args, **kwargs)
 
@@ -159,7 +148,7 @@ def feature_pack(
         @functools.wraps(func)
         def register(stub: FennelFeatureStoreStub):
             agg2name = {agg.instance().__class__.__name__: agg.instance().name for agg in ret.depends_on_aggregates}
-            new_function, function_source_code = modify_aggregate_lookup(func, agg2name)
+            new_function, function_source_code = modify_feature_extract(func, agg2name, ret.depends_on_features)
             req = feature_proto.CreateFeatureRequest(
                 name=name,
                 version=version,

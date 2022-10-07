@@ -1,12 +1,11 @@
 import dataclasses
 import json
-from typing import Callable, Optional, List
+from typing import Callable, List, Optional
+
+import pandas as pd
 
 import fennel.errors as errors
 import fennel.gen.stream_pb2 as proto
-from fennel.utils import check_response
-import fennel.errors as errors
-import pandas as pd
 
 
 @dataclasses.dataclass(frozen=True)
@@ -138,11 +137,11 @@ def source(src: Source, table: Optional[str] = None):
                 if not field2types[col].type_check(dtype):
                     raise Exception(f'Column {col} type mismatch, got {dtype} expected {field2types[col]}')
             # Deeper Type Check
-            for _, row in result.iterrows():
-                for col in result.columns:
-                    type_errors = field2types[col].validate(row[col])
+            for (colname, colvals) in result.items():
+                for val in colvals:
+                    type_errors = field2types[colname].validate(val)
                     if type_errors:
-                        raise Exception(f'Column {col} value {row[col]} failed validation: {type_errors}')
+                        raise Exception(f'Column {colname} value {val} failed validation: {type_errors}')
             return result
 
         def validate() -> List[Exception]:

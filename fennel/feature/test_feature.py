@@ -1,22 +1,17 @@
-import sys
-from typing import List
-import pytest
-import pandas as pd
-import ast
 import pickle
-from fennel.aggregate import (Count, )
+from typing import List
 
-print("All tests passed")
-from fennel.feature import feature, feature_pack
+import pandas as pd
+import pytest
+
+import fennel.gen.feature_pb2 as feature_proto
+from fennel.aggregate import Count, depends_on
+# noinspection PyUnresolvedReferences
+from fennel.feature import aggregate_lookup, feature, feature_pack
 from fennel.lib import (Field, Schema, windows)
 from fennel.lib.schema import (FieldType, Int)
 from fennel.lib.windows import Window
 from fennel.test_lib import *
-
-import fennel.gen.feature_pb2 as feature_proto
-
-from fennel.feature import aggregate_lookup
-from fennel.aggregate import depends_on
 
 
 class UserLikeCount(Count):
@@ -59,14 +54,14 @@ def user_like_count_3days(uids: pd.Series) -> pd.Series:
 def test_FeatureRegistration(grpc_stub, mocker):
     mocker.patch(__name__ + '.aggregate_lookup', return_value=(pd.Series([6, 12, 13]),
                                                                pd.Series([5, 12, 13])))
-    workspace = WorkspaceTest(grpc_stub)
+    workspace = InternalTestWorkspace(grpc_stub)
     workspace.register_aggregates(UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28]))
     responses = workspace.register_features(user_like_count_3days)
     assert len(responses) == 1
     create_feature = feature_proto.CreateFeatureRequest()
     responses[0].details[0].Unpack(create_feature)
     feature_func = pickle.loads(create_feature.function)
-    features = feature_func.extract(uids=pd.Series([1, 2, 3, 4, 5]))
+    features = feature_func.mod_extract(uids=pd.Series([1, 2, 3, 4, 5]))
     assert type(features) == pd.Series
     assert features[0] == 36
 
@@ -100,7 +95,7 @@ def user_like_count_3days_pack(uids: pd.Series) -> pd.DataFrame:
 def test_FeaturePackRegistration(grpc_stub, mocker):
     mocker.patch(__name__ + '.aggregate_lookup', return_value=(pd.Series([6, 12, 13, 15, 156]),
                                                                pd.Series([5, 12, 13, 34, 156])))
-    workspace = WorkspaceTest(grpc_stub)
+    workspace = InternalTestWorkspace(grpc_stub)
     workspace.register_aggregates(UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28]))
     responses = workspace.register_features(user_like_count_3days_pack)
     assert len(responses) == 1
@@ -110,7 +105,6 @@ def test_FeaturePackRegistration(grpc_stub, mocker):
     features = feature_func.extract(uids=pd.Series([1, 2, 3, 4, 5]))
     assert type(features) == pd.DataFrame
     assert features.shape == (5, 7)
-    pd.set_option('display.max_columns', None)
     assert features['user_like_count_1day'][0] == 6
 
 
@@ -137,7 +131,7 @@ def test_FeaturePackRegistrationInvalid(grpc_stub, mocker):
     mocker.patch(__name__ + '.aggregate_lookup', return_value=(pd.Series([6, 12, 13, 15, 156]),
                                                                pd.Series([5, 12, 13, 34, 156])))
     with pytest.raises(Exception) as e:
-        workspace = WorkspaceTest(grpc_stub)
+        workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28]))
         workspace.register_features(user_like_count_3days_pack_invalid)
     assert str(e.value) == "['feature function must return a pandas.Series']"
@@ -159,7 +153,7 @@ def test_FeatureRegistrationInvalidDependency(grpc_stub, mocker):
     mocker.patch(__name__ + '.aggregate_lookup', return_value=(pd.Series([6, 12, 13]),
                                                                pd.Series([5, 12, 13])))
     with pytest.raises(Exception) as e:
-        workspace = WorkspaceTest(grpc_stub)
+        workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28]))
         workspace.register_features(user_like_count_3days_invalid_dependency)
     assert str(e.value) == "aggregate UserLikeCount not included in feature definition"
