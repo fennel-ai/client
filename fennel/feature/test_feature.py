@@ -61,7 +61,7 @@ def test_FeatureRegistration(grpc_stub, mocker):
     create_feature = feature_proto.CreateFeatureRequest()
     responses[0].details[0].Unpack(create_feature)
     feature_func = pickle.loads(create_feature.function)
-    features = feature_func.mod_extract(uids=pd.Series([1, 2, 3, 4, 5]))
+    features = feature_func(uids=pd.Series([1, 2, 3, 4, 5]))
     assert type(features) == pd.Series
     assert features[0] == 36
 
