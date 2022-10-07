@@ -179,6 +179,7 @@ def source(src: Source, table: Optional[str] = None):
         setattr(ret, "source", src)
         setattr(ret, "table", table)
         setattr(ret, "populator_func", fn)
+        setattr(ret, "func_name", fn.__name__)
 
         return ret
 
