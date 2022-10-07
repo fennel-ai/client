@@ -21,8 +21,9 @@ message CreateConnectorRequest {
     string source_name = 2;
     string source_type = 3;
     bytes connector_function = 4;
-    string cursor_field = 5;
-    string table_name = 6;
+    string populator_src_code = 5;
+    string cursor_field = 6;
+    string table_name = 7;
 }
 
 message CreateStreamRequest {

@@ -1,5 +1,7 @@
+import ast
 import datetime
 import inspect
+import textwrap
 from typing import List
 
 import cloudpickle
@@ -8,6 +10,39 @@ from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.gen.stream_pb2 import CreateConnectorRequest, CreateStreamRequest
 from fennel.lib import schema
 from fennel.utils import Singleton
+
+
+def _modify_stream(func):
+    if hasattr(func, 'populator_func'):
+        populator_func = func.populator_func
+    else:
+        populator_func = func
+    function_source_code = textwrap.dedent(inspect.getsource(populator_func))
+    tree = ast.parse(function_source_code)
+    # Remove the class argument
+    tree.body[0].args = ast.arguments(args=tree.body[0].args.args[1:],
+                                      posonlyargs=tree.body[0].args.posonlyargs,
+                                      kwonlyargs=tree.body[0].args.kwonlyargs,
+                                      kw_defaults=tree.body[0].args.kw_defaults,
+                                      defaults=tree.body[0].args.defaults)
+    tree.body[0].decorator_list = []
+    ast.fix_missing_locations(tree)
+    code = compile(tree, inspect.getfile(populator_func), 'exec')
+    tmp_namespace = {}
+    if hasattr(func, 'namespace'):
+        namespace = func.namespace
+    else:
+        namespace = func.__globals__
+    if hasattr(func, 'func_name'):
+        func_name = func.func_name
+    else:
+        func_name = func.__name__
+    for k, v in namespace.items():
+        if k == func_name:
+            continue
+        tmp_namespace[k] = v
+    exec(code, tmp_namespace)
+    return tmp_namespace[func_name], function_source_code
 
 
 class Stream(Singleton):
@@ -35,16 +70,22 @@ class Stream(Singleton):
         source_requests = []
         connector_requests = []
         for name, func in inspect.getmembers(self.__class__, predicate=inspect.isfunction):
-            if hasattr(func, 'register'):
+            # Has a source attached to it
+            if hasattr(func, 'create_source_request'):
                 source_requests.append(func.create_source_request())
+                mod_func, function_source_code = _modify_stream(func)
+                if hasattr(func, 'func_name'):
+                    func_name = func.func_name
+                else:
+                    func_name = func.__name__
                 connector_requests.append(CreateConnectorRequest(
-                    name=self.func.__name__,
+                    name=func_name,
                     source_name=func.source.name,
                     source_type=func.source.type(),
-                    connector_function=cloudpickle.dumps(func.populator_func),
+                    connector_function=cloudpickle.dumps(mod_func),
+                    populator_src_code=function_source_code,
                     table_name=func.table,
                 ))
-
         req = CreateStreamRequest(
             name=self.name,
             version=self.version,
