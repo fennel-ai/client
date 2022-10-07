@@ -143,7 +143,7 @@ def feature(
                     )
             if sign.return_annotation != pd.Series and mode == "pandas":
                 exceptions.append(
-                    f"feature function must return a pandas.Series"
+                    "feature function must return a pandas.Series"
                 )
             return exceptions
 
@@ -246,7 +246,7 @@ def feature_pack(
                     )
             if sign.return_annotation != pd.DataFrame and mode == "pandas":
                 exceptions.append(
-                    f"feature function must return a pandas.Series"
+                    "feature function must return a pandas.Series"
                 )
             return exceptions
 

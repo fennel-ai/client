@@ -83,10 +83,10 @@ def test_InvalidSchemaAggregateRegistration(grpc_stub):
         workspace.register_aggregates(agg)
 
     assert (
-            str(e.value)
-            == "[TypeError('Type for uid should be a Fennel Type object such as Int() and not a class such as Int/int'), "
-               "TypeError('Type for count should be a Fennel Type object such as Int() and not a class such as Int/int'), "
-               "TypeError('Type for timestamp should be a Fennel Type object such as Int() and not a class such as Int/int')]"
+        str(e.value)
+        == "[TypeError('Type for uid should be a Fennel Type object such as Int() and not a class such as Int/int'), "
+        "TypeError('Type for count should be a Fennel Type object such as Int() and not a class such as Int/int'), "
+        "TypeError('Type for timestamp should be a Fennel Type object such as Int() and not a class such as Int/int')]"
     )
 
 
@@ -104,7 +104,7 @@ class UserLikeCountInvalidProcessingFunction(Count):
 
     @classmethod
     def preprocess(
-            cls, df: pd.DataFrame, user_df: pd.DataFrame
+        cls, df: pd.DataFrame, user_df: pd.DataFrame
     ) -> pd.DataFrame:
         df = df[df["action_type"] == "like"]
         df["actor_id"].rename("uid")
@@ -120,8 +120,8 @@ def test_InvalidProcessingFunctionAggregateRegistration(grpc_stub):
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(agg)
     assert (
-            str(e.value)
-            == "[TypeError('preprocess function should take 2 arguments ( self & df ) but got 3')]"
+        str(e.value)
+        == "[TypeError('preprocess function should take 2 arguments ( self & df ) but got 3')]"
     )
 
 
@@ -153,6 +153,6 @@ def test_InvalidProcessingFunctionAggregateRegistration2(grpc_stub):
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(agg)
     assert (
-            str(e.value)
-            == "[TypeError('invalid method preprocess2 found in aggregate class')]"
+        str(e.value)
+        == "[TypeError('invalid method preprocess2 found in aggregate class')]"
     )

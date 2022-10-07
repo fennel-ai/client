@@ -1,6 +1,6 @@
 import dataclasses
 import json
-from typing import Callable, List, Optional
+from typing import Callable, cast, List, Optional
 
 import pandas as pd
 
@@ -41,7 +41,7 @@ class SQLSource(Source):
         if not isinstance(self.password, str):
             exceptions.append(TypeError("password must be a string"))
         if self.jdbc_params is not None and not isinstance(
-                self.jdbc_params, str
+            self.jdbc_params, str
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
@@ -99,6 +99,7 @@ class MySQL(SQLSource):
 def create_grpc_request(src: Source):
     req = proto.CreateSourceRequest(name=src.name)
     if src.type() == "S3":
+        src = cast(S3, src)
         req.s3.CopyFrom(
             proto.S3(
                 bucket=src.bucket,
@@ -111,6 +112,7 @@ def create_grpc_request(src: Source):
             )
         )
     elif src.type() == "BigQuery":
+        src = cast(BigQuery, src)
         req.bigquery.CopFrom(
             proto.BigQuery(
                 project_id=src.project_id,
@@ -119,6 +121,7 @@ def create_grpc_request(src: Source):
             )
         )
     elif src.type() == "Postgres" or src.type() == "MySQL":
+        src = cast(SQLSource, src)
         req.sql.CopyFrom(
             proto.SQL(
                 sql_type=proto.SQL.SQLType.Postgres

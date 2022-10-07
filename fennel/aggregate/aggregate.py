@@ -2,7 +2,7 @@ import ast
 import inspect
 import textwrap
 from abc import ABC
-from typing import *
+from typing import Any, Dict, List
 
 import cloudpickle
 import pandas as pd
@@ -223,7 +223,7 @@ class Aggregate(Singleton):
             found_preprocess = True
         if not found_preprocess:
             exceptions.append(
-                Exception(f"preprocess function not found in aggregate class")
+                Exception("preprocess function not found in aggregate class")
             )
         return exceptions
 

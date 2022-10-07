@@ -9,6 +9,7 @@ from fennel.lib import Field, Schema, windows
 from fennel.lib.schema import Array, Bool, Double, FieldType, Int, Map, String
 from fennel.lib.windows import Window
 from fennel.stream import MySQL, source, Stream
+
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -17,19 +18,18 @@ Goals
     Unit - Test each concept individually
     - Ability to test stream populate functionality ( no mocks needed )
     - Ability to test aggregate preprocess functionality ( KV agg mocks needed )
-    - Ability to test feature computation functionality ( Agg  & feature mocks needed )
-    - Ability to test feature functionality  with environment variables ( Agg & feature mocks needed )
-    
-    Integration - Test the entire flow; stream -> aggregate -> feature ( or subset of it )
-    - e2e tests that read data from stream and produce final features ( talk to server )
-    - e2e tests for streams that connect to the stream and produce few stream values ( talk to server )
-    - e2e tests that take an artificial stream and produce aggregate data ( mocks )
-    - e2e tests that take an artificial stream and produce feature data ( mocks )
+    - Ability to test feature computation functionality ( Agg  & feature mocks )
+    - Ability to test feature functionality  with environment variables ( ^ )
+    Integration - Test the entire flow; stream -> aggregate -> feature
+    - e2e tests that read data from stream and produce final features
+    - e2e tests for streams that connect to the stream and produce few values
+    - e2e tests that take an artificial stream and produce aggregate data
+    - e2e tests that take an artificial stream and produce feature data
 """
 
-############################################################################################################
-#                                                       Tests                                              #
-############################################################################################################
+################################################################################
+#                           Tests                                              #
+################################################################################
 
 mysql_src = MySQL(
     name="mysql_psql_src",
@@ -109,9 +109,9 @@ class Actions(Stream):
         ]
 
 
-############################################################################################################
+################################################################################
 # Stream Tests
-############################################################################################################
+################################################################################
 
 
 def test_StreamProcess():
@@ -143,14 +143,14 @@ def test_InvalidPopulate_StreamProcess():
     with pytest.raises(Exception) as e:
         actions.invalid_populate(df)
     assert (
-            str(e.value)
-            == """Column random_array value {'1': [1, 2, 3]} failed validation: [TypeError("Expected list, got <class 'dict'>")]"""
+        str(e.value) == "Column random_array value {'1': [1, 2, 3]} failed "
+        "validation: [TypeError(\"Expected list, got <class 'dict'>\")]"
     )
 
 
-############################################################################################################
+################################################################################
 # Aggregate Tests
-############################################################################################################
+################################################################################
 
 
 class UserLikeCount(Count):
@@ -234,8 +234,8 @@ def test_AggregatePreprocessInvalidSchema(create_test_workspace):
     with pytest.raises(Exception) as e:
         _ = agg.preprocess(df)
     assert (
-            str(e.value)
-            == """Column timestamp type mismatch, got object expected Double"""
+        str(e.value)
+        == """Column timestamp type mismatch, got object expected Double"""
     )
 
 
@@ -308,9 +308,9 @@ def test_client_AggregatePreprocess(create_test_workspace):
     assert processed_df["count"].tolist() == [1, 1, 1]
 
 
-############################################################################################################
+################################################################################
 # Feature Tests
-############################################################################################################
+################################################################################
 
 
 @feature(
@@ -385,6 +385,7 @@ def test_Feature_Agg_And_FeatureMock2(create_test_workspace):
     # 169 * 169 + 13 * 13 = 28561 + 169 = 28730
     assert features.tolist() == [1332, 20880, 28730]
 
-############################################################################################################
+
+################################################################################
 # Workspace Tests
-############################################################################################################
+################################################################################
