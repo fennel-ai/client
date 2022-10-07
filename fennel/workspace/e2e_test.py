@@ -9,7 +9,6 @@ from fennel.lib import Field, Schema, windows
 from fennel.lib.schema import Array, Bool, Double, FieldType, Int, Map, String
 from fennel.lib.windows import Window
 from fennel.stream import MySQL, source, Stream
-
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -48,19 +47,19 @@ class Actions(Stream):
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
-            Field("actor_id", dtype=Int(), default=0),
-            Field("target_id", dtype=Int(), default=0),
-            Field("action_type", dtype=String(), default="love"),
-            Field("gender", dtype=Bool(), default=False),
-            Field("timestamp", dtype=Double(), default=0.0),
+            Field("actor_id", dtype=Int, default=0),
+            Field("target_id", dtype=Int, default=0),
+            Field("action_type", dtype=String, default="love"),
+            Field("gender", dtype=Bool, default=False),
+            Field("timestamp", dtype=Double, default=0.0),
             Field(
                 "random_array",
-                dtype=Array(Array(String())),
+                dtype=Array(Array(String)),
                 default=[["a", "b", "c"], ["d", "e", "f"]],
             ),
             Field(
                 "metadata",
-                dtype=Map(String(), Array(Int())),
+                dtype=Map(String, Array(Int)),
                 default=[["a", "b", "c"], ["d", "e", "f"]],
             ),
         )
@@ -144,8 +143,8 @@ def test_InvalidPopulate_StreamProcess():
     with pytest.raises(Exception) as e:
         actions.invalid_populate(df)
     assert (
-        str(e.value)
-        == """Column random_array value {'1': [1, 2, 3]} failed validation: [TypeError("Expected list, got <class 'dict'>")]"""
+            str(e.value)
+            == """Column random_array value {'1': [1, 2, 3]} failed validation: [TypeError("Expected list, got <class 'dict'>")]"""
     )
 
 
@@ -161,9 +160,9 @@ class UserLikeCount(Count):
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
-            Field("actor_id", Int(), 0, field_type=FieldType.Key),
-            Field("target_id", Int(), 0, field_type=FieldType.Value),
-            Field("timestamp", Double(), 0.0, field_type=FieldType.Timestamp),
+            Field("actor_id", Int, 0, field_type=FieldType.Key),
+            Field("target_id", Int, 0, field_type=FieldType.Value),
+            Field("timestamp", Double, 0.0, field_type=FieldType.Timestamp),
         )
 
     @classmethod
@@ -201,9 +200,9 @@ class UserLikeCountInvalidSchema(Count):
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
-            Field("actor_id", Int(), 0, field_type=FieldType.Key),
-            Field("target_id", Int(), 0, field_type=FieldType.Value),
-            Field("timestamp", Double(), 0.0, field_type=FieldType.Timestamp),
+            Field("actor_id", Int, 0, field_type=FieldType.Key),
+            Field("target_id", Int, 0, field_type=FieldType.Value),
+            Field("timestamp", Double, 0.0, field_type=FieldType.Timestamp),
         )
 
     @classmethod
@@ -235,8 +234,8 @@ def test_AggregatePreprocessInvalidSchema(create_test_workspace):
     with pytest.raises(Exception) as e:
         _ = agg.preprocess(df)
     assert (
-        str(e.value)
-        == """Column timestamp type mismatch, got object expected Double"""
+            str(e.value)
+            == """Column timestamp type mismatch, got object expected Double"""
     )
 
 
@@ -247,9 +246,9 @@ class UserGenderKVAgg(KeyValue):
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
-            Field("uid", Int(), 0, field_type=FieldType.Key),
-            Field("gender", String(), "female", field_type=FieldType.Value),
-            Field("timestamp", Double(), 0.0, field_type=FieldType.Timestamp),
+            Field("uid", Int, 0, field_type=FieldType.Key),
+            Field("gender", String, "female", field_type=FieldType.Value),
+            Field("timestamp", Double, 0.0, field_type=FieldType.Timestamp),
         )
 
     @classmethod
@@ -265,9 +264,9 @@ class GenderLikeCountWithKVAgg(Count):
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
-            Field("gender", String(), "male", field_type=FieldType.Key),
-            Field("count", Int(), 0, field_type=FieldType.Value),
-            Field("timestamp", Double(), 0.0, field_type=FieldType.Timestamp),
+            Field("gender", String, "male", field_type=FieldType.Key),
+            Field("count", Int, 0, field_type=FieldType.Value),
+            Field("timestamp", Double, 0.0, field_type=FieldType.Timestamp),
         )
 
     @classmethod
@@ -317,7 +316,7 @@ def test_client_AggregatePreprocess(create_test_workspace):
 @feature(
     name="user_like_count",
     schema=Schema(
-        Field("user_like_count_7days", Int(), 0),
+        Field("user_like_count_7days", Int, 0),
     ),
 )
 @depends_on(
@@ -347,7 +346,7 @@ def test_Feature(create_test_workspace):
 @feature(
     name="user_like_count_7days_random_sq",
     schema=Schema(
-        Field("user_like_count_7days_random_sq", Int(), 0),
+        Field("user_like_count_7days_random_sq", Int, 0),
     ),
 )
 @depends_on(
@@ -385,7 +384,6 @@ def test_Feature_Agg_And_FeatureMock2(create_test_workspace):
     # 144 * 144 + 12 * 12 = 20736 + 144 = 20880
     # 169 * 169 + 13 * 13 = 28561 + 169 = 28730
     assert features.tolist() == [1332, 20880, 28730]
-
 
 ############################################################################################################
 # Workspace Tests

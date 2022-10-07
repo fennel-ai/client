@@ -25,18 +25,18 @@ class Actions(Stream):
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
-            Field("actor_id", dtype=Int(), default=0),
-            Field("target_id", dtype=Int(), default=0),
-            Field("action_type", dtype=String(), default="love"),
-            Field("timestamp", dtype=Int(), default=0),
+            Field("actor_id", dtype=Int, default=0),
+            Field("target_id", dtype=Int, default=0),
+            Field("action_type", dtype=String, default="love"),
+            Field("timestamp", dtype=Int, default=0),
             Field(
                 "metadata2",
-                dtype=Array(Array(String())),
+                dtype=Array(Array(String)),
                 default=[["a", "b", "c"], ["d", "e", "f"]],
             ),
             Field(
                 "metadata3",
-                dtype=Map(String(), String()),
+                dtype=Map(String, String),
                 default={"yo": "hello"},
             ),
         )
@@ -82,10 +82,10 @@ class ActionsMultipleSources(Stream):
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
-            Field("actor_id", dtype=Int(), default=1),
-            Field("target_id", dtype=Int(), default=2),
-            Field("action_type", dtype=Int(), default=3),
-            Field("timestamp", dtype=Int(), default=0),
+            Field("actor_id", dtype=Int, default=1),
+            Field("target_id", dtype=Int, default=2),
+            Field("action_type", dtype=Int, default=3),
+            Field("timestamp", dtype=Int, default=0),
         )
 
     @source(src=mysql_src, table="like_actions")
@@ -145,7 +145,7 @@ class ActionsInvalidSchema(Stream):
     def schema(cls) -> Schema:
         return Schema(
             Field("actor_id", dtype=int, default=0),
-            Field("target_id", dtype=String(), default=1),
+            Field("target_id", dtype=String, default=1),
             Field("action_type", dtype=Array(), default="love"),
         )
 
@@ -163,8 +163,8 @@ class ActionsInvalidSchema2(Stream):
     def schema(cls) -> Schema:
         return Schema(
             Field("actor_id", dtype=int, default=0),
-            Field("target_id", dtype=String(), default=1),
-            Field("action_type", dtype=Array(String()), default="love"),
+            Field("target_id", dtype=String, default=1),
+            Field("action_type", dtype=Array(String), default="love"),
         )
 
     @source(src=mysql_src, table="actions")
@@ -185,11 +185,11 @@ def test_InvalidStreamRegistration(grpc_stub):
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_streams(actions)
     assert (
-        str(e.value)
-        == "[TypeError('Type for actor_id should be a Fennel Type object such as Int() and not a class such as "
-        "Int/int'), "
-        "TypeError('Expected default value for field target_id to be str, got 1'), TypeError('Expected "
-        "default value for field action_type to be list, got love')]"
+            str(e.value)
+            == "[TypeError('Type for actor_id should be a Fennel Type object such as Int() and not a class such as "
+               "Int/int'), "
+               "TypeError('Expected default value for field target_id to be str, got 1'), TypeError('Expected "
+               "default value for field action_type to be list, got love')]"
     )
 
 
@@ -200,9 +200,9 @@ class ActionsInvalidSource(Stream):
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
-            Field("actor_id", dtype=Int(), default=0),
-            Field("target_id", dtype=Int(), default=0),
-            Field("action_type", dtype=String(), default="love"),
+            Field("actor_id", dtype=Int, default=0),
+            Field("target_id", dtype=Int, default=0),
+            Field("action_type", dtype=String, default="love"),
         )
 
     @source(src=mysql_src)
@@ -217,6 +217,6 @@ def test_InvalidSource(grpc_stub):
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_streams(actions)
     assert (
-        str(e.value)
-        == "[IncorrectSourceException('Incorrect source, table must be None since it supports only a single stream.')]"
+            str(e.value)
+            == "[IncorrectSourceException('Incorrect source, table must be None since it supports only a single stream.')]"
     )
