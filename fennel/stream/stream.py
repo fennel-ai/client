@@ -13,27 +13,29 @@ from fennel.utils import Singleton
 
 
 def _modify_stream(func):
-    if hasattr(func, 'populator_func'):
+    if hasattr(func, "populator_func"):
         populator_func = func.populator_func
     else:
         populator_func = func
     function_source_code = textwrap.dedent(inspect.getsource(populator_func))
     tree = ast.parse(function_source_code)
     # Remove the class argument
-    tree.body[0].args = ast.arguments(args=tree.body[0].args.args[1:],
-                                      posonlyargs=tree.body[0].args.posonlyargs,
-                                      kwonlyargs=tree.body[0].args.kwonlyargs,
-                                      kw_defaults=tree.body[0].args.kw_defaults,
-                                      defaults=tree.body[0].args.defaults)
+    tree.body[0].args = ast.arguments(
+        args=tree.body[0].args.args[1:],
+        posonlyargs=tree.body[0].args.posonlyargs,
+        kwonlyargs=tree.body[0].args.kwonlyargs,
+        kw_defaults=tree.body[0].args.kw_defaults,
+        defaults=tree.body[0].args.defaults,
+    )
     tree.body[0].decorator_list = []
     ast.fix_missing_locations(tree)
-    code = compile(tree, inspect.getfile(populator_func), 'exec')
+    code = compile(tree, inspect.getfile(populator_func), "exec")
     tmp_namespace = {}
-    if hasattr(func, 'namespace'):
+    if hasattr(func, "namespace"):
         namespace = func.namespace
     else:
         namespace = func.__globals__
-    if hasattr(func, 'func_name'):
+    if hasattr(func, "func_name"):
         func_name = func.func_name
     else:
         func_name = func.__name__
@@ -59,8 +61,10 @@ class Stream(Singleton):
         # Validate the schema
         exceptions = self.schema().validate()
         # Validate the populators(source + connector) functions
-        for name, func in inspect.getmembers(self.__class__, predicate=inspect.isfunction):
-            if hasattr(func, 'validate'):
+        for name, func in inspect.getmembers(
+            self.__class__, predicate=inspect.isfunction
+        ):
+            if hasattr(func, "validate"):
                 exceptions.extend(func.validate())
         return exceptions
 
@@ -69,23 +73,27 @@ class Stream(Singleton):
         # Go through all functions of the class and find the ones that can be registered (sources)
         source_requests = []
         connector_requests = []
-        for name, func in inspect.getmembers(self.__class__, predicate=inspect.isfunction):
+        for name, func in inspect.getmembers(
+            self.__class__, predicate=inspect.isfunction
+        ):
             # Has a source attached to it
-            if hasattr(func, 'create_source_request'):
+            if hasattr(func, "create_source_request"):
                 source_requests.append(func.create_source_request())
                 mod_func, function_source_code = _modify_stream(func)
-                if hasattr(func, 'func_name'):
+                if hasattr(func, "func_name"):
                     func_name = func.func_name
                 else:
                     func_name = func.__name__
-                connector_requests.append(CreateConnectorRequest(
-                    name=func_name,
-                    source_name=func.source.name,
-                    source_type=func.source.type(),
-                    connector_function=cloudpickle.dumps(mod_func),
-                    populator_src_code=function_source_code,
-                    table_name=func.table,
-                ))
+                connector_requests.append(
+                    CreateConnectorRequest(
+                        name=func_name,
+                        source_name=func.source.name,
+                        source_type=func.source.type(),
+                        connector_function=cloudpickle.dumps(mod_func),
+                        populator_src_code=function_source_code,
+                        table_name=func.table,
+                    )
+                )
         req = CreateStreamRequest(
             name=self.name,
             version=self.version,

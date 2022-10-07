@@ -3,20 +3,21 @@ from typing import List
 from fennel.aggregate import Aggregate
 from fennel.gen.status_pb2 import Status
 from fennel.stream import Stream
+
 # noinspection PyUnresolvedReferences
 from fennel.workspace import Workspace
 
 
 class ClientTestWorkspace(Workspace):
     def __init__(self, stub, mocker):
-        super().__init__(name='test', url='localhost:8080')
+        super().__init__(name="test", url="localhost:8080")
         self.stub = stub
         self.mocker = mocker
 
 
 class InternalTestWorkspace(Workspace):
     def __init__(self, stub):
-        super().__init__(name='test', url='localhost:8080')
+        super().__init__(name="test", url="localhost:8080")
         self.stub = stub
 
     def register_streams(self, *streams: List[Stream]):
