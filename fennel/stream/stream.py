@@ -1,5 +1,6 @@
 import datetime
 import inspect
+from typing import List
 
 import cloudpickle
 
@@ -7,8 +8,6 @@ from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.gen.stream_pb2 import CreateConnectorRequest, CreateStreamRequest
 from fennel.lib import schema
 from fennel.utils import Singleton
-from fennel.errors import SchemaException
-from typing import List
 
 
 class Stream(Singleton):

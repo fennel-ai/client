@@ -19,6 +19,8 @@ grpcio = "^1.49.1"
 grpcio-tools = "^1.49.1"
 pytest-grpc = "^0.8.0"
 pytest-mock = "^3.9.0"
+dill = "^0.3.5"
+tox = "^3.26.0"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"

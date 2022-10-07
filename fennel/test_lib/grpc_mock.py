@@ -1,8 +1,8 @@
-import pandas as pd
 import pytest
-from fennel.gen.status_pb2 import Status
-from fennel.gen.services_pb2_grpc import FennelFeatureStoreServicer
 from google.protobuf import any_pb2
+
+from fennel.gen.services_pb2_grpc import FennelFeatureStoreServicer
+from fennel.gen.status_pb2 import Status
 
 
 @pytest.fixture(scope='module')

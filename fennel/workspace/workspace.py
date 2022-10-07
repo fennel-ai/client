@@ -1,12 +1,11 @@
-# TODO(aditya): read hamilton post: https://multithreaded.stitchfix.com/blog/2021/10/14/functions-dags-hamilton/
 from typing import *
 
 import grpc
 import pandas as pd
 
 import fennel.gen.services_pb2_grpc as services_pb2
-from fennel.stream import Stream
 from fennel.aggregate import Aggregate
+from fennel.stream import Stream
 from fennel.utils import check_response
 
 

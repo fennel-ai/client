@@ -1,16 +1,8 @@
 import pandas as pd
 import pytest
 
-from fennel.errors import IncorrectSourceException
-from fennel.gen.services_pb2_grpc import FennelFeatureStoreServicer
-from fennel.gen.status_pb2 import Status
 from fennel.lib import (Field, Schema, windows)
-from fennel.lib.schema import (
-    Int,
-    Map,
-    Array,
-    String,
-)
+from fennel.lib.schema import (Array, Int, Map, String)
 from fennel.stream import (MySQL, source, Stream)
 from fennel.test_lib import *
 
@@ -46,7 +38,7 @@ class Actions(Stream):
 
 def test_StreamRegistration(grpc_stub):
     actions = Actions()
-    workspace = WorkspaceTest(grpc_stub)
+    workspace = InternalTestWorkspace(grpc_stub)
     workspace.register_streams(actions)
 
 
@@ -80,7 +72,7 @@ class ActionsMultipleSources(Stream):
 
 
 def test_StreamRegistration_MultipleSources(grpc_stub):
-    workspace = WorkspaceTest(grpc_stub)
+    workspace = InternalTestWorkspace(grpc_stub)
     workspace.register_streams(ActionsMultipleSources())
     # Duplicate registration should pass
     workspace.register_streams(ActionsMultipleSources(), Actions())
@@ -125,16 +117,16 @@ class ActionsInvalidSchema2(Stream):
 def test_InvalidStreamRegistration(grpc_stub):
     with pytest.raises(TypeError) as e:
         actions = ActionsInvalidSchema()
-        workspace = WorkspaceTest(grpc_stub)
+        workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_streams(actions)
     assert str(e.value) == "invalid array type: None"
 
     with pytest.raises(Exception) as e:
         actions = ActionsInvalidSchema2()
-        workspace = WorkspaceTest(grpc_stub)
+        workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_streams(actions)
     assert str(
-        e.value) == "[TypeError('Type should be a Fennel Type object such as Int() and not a class such as " \
+        e.value) == "[TypeError('Type for actor_id should be a Fennel Type object such as Int() and not a class such as " \
                     "Int/int'), " \
                     "TypeError('Expected default value for field target_id to be str, got 1'), TypeError('Expected " \
                     "default value for field action_type to be list, got love')]"
@@ -161,7 +153,7 @@ class ActionsInvalidSource(Stream):
 def test_InvalidSource(grpc_stub):
     with pytest.raises(Exception) as e:
         actions = ActionsInvalidSource()
-        workspace = WorkspaceTest(grpc_stub)
+        workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_streams(actions)
     assert str(
         e.value) == "[IncorrectSourceException('Incorrect source, table must be None since it supports only a single stream.')]"

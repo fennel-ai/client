@@ -1,17 +1,18 @@
-from abc import ABC
-import pandas as pd
-from typing import *
 import inspect
-from fennel.lib.schema import Schema, Field, FieldType
-import cloudpickle
+from abc import ABC
+from typing import *
 
-from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
-from fennel.gen.aggregate_pb2 import CreateAggregateRequest
-from fennel.utils import check_response, Singleton
-from fennel.gen.status_pb2 import Status
+import cloudpickle
+import pandas as pd
+
 import fennel.gen.aggregate_pb2 as proto
 from fennel.errors import NameException
+from fennel.gen.aggregate_pb2 import CreateAggregateRequest
+from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
+from fennel.gen.status_pb2 import Status
+from fennel.lib.schema import FieldType, Schema
 from fennel.lib.windows import Window
+from fennel.utils import modify_aggregate_lookup, Singleton
 
 
 class AggregateSchema(Schema):
@@ -45,11 +46,6 @@ class AggregateSchema(Schema):
         return exceptions
 
 
-# def aggregate_lookup(agg_name: str, **kwargs):
-#     print("Aggregate", agg_name, " lookup will be patched :)")
-#     return pd.Series([31, 32, 33, 7]), pd.Series([41, 42, 43])
-
-
 class Aggregate(Singleton):
     name: str = None
     version: int = 1
@@ -66,6 +62,43 @@ class Aggregate(Singleton):
         self.windows = windows
 
     @classmethod
+    def wrap(cls, preprocess):
+        if hasattr(preprocess, 'depends_on_aggregates'):
+            depends_on_aggregates = preprocess.depends_on_aggregates
+        else:
+            depends_on_aggregates = []
+        agg2names = {agg.instance().__class__.__name__: agg.instance().name for agg in depends_on_aggregates}
+        mod_func, function_src_code = modify_aggregate_lookup(preprocess, agg2names)
+
+        def outer(*args, **kwargs):
+            result = mod_func(*args, **kwargs)
+            # Validate the return value with the schema
+            field2types = cls.schema().get_fields_and_types()
+            for col, dtype in zip(result.columns, result.dtypes):
+                if col not in field2types:
+                    raise Exception("Column {} not in schema".format(col))
+                if not field2types[col].type_check(dtype):
+                    raise Exception(f'Column {col} type mismatch, got {dtype} expected {field2types[col]}')
+            # Deeper Type Check
+            for (colname, colvals) in result.items():
+                for val in colvals:
+                    type_errors = field2types[colname].validate(val)
+                    if type_errors:
+                        raise Exception(f'Column {colname} value {val} failed validation: {type_errors}')
+
+            return result
+
+        return outer, mod_func, function_src_code
+
+    def __new__(cls, *args, **kwargs):
+        instance = super(Aggregate, cls).__new__(cls, *args, **kwargs)
+        # instance._instance = None
+        for name, func in inspect.getmembers(instance.__class__, predicate=inspect.ismethod):
+            if name == 'preprocess':
+                instance.preprocess, instance.mod_preprocess, instance.function_src_code = cls.wrap(func)
+        return instance
+
+    @classmethod
     def schema(cls) -> Schema:
         raise NotImplementedError()
 
@@ -76,6 +109,25 @@ class Aggregate(Singleton):
     def _get_agg_type(self):
         raise NotImplementedError()
 
+    def _validate_preprocess(self) -> List[Exception]:
+        exceptions = []
+        found_preprocess = False
+        for name, func in inspect.getmembers(self.__class__, predicate=inspect.ismethod):
+            if name[0] != '_' and name not in ['preprocess', 'schema', 'version', 'instance', 'wrap']:
+                exceptions.append(TypeError(f'invalid method {name} found in aggregate class'))
+            if name != 'preprocess':
+                continue
+            if hasattr(func, 'wrapped_function'):
+                func = func.wrapped_function
+            if func.__code__.co_argcount != 2:
+                exceptions.append(
+                    TypeError(
+                        f'preprocess function should take 2 arguments ( self & df ) but got {func.__code__.co_argcount}'))
+            found_preprocess = True
+        if not found_preprocess:
+            exceptions.append(Exception(f'preprocess function not found in aggregate class'))
+        return exceptions
+
     def validate(self) -> List[Exception]:
         # Validate the schema
         # Cast to aggregate schema
@@ -85,22 +137,13 @@ class Aggregate(Singleton):
             exceptions.append(NameException(f'name not provided  {self.__class__.__name__}'))
         if self.stream is None:
             exceptions.append(Exception(f'stream not provided for aggregate  {self.__class__.__name__}'))
+
         # Validate the preprocess function
-        for name, func in inspect.getmembers(self.__class__, predicate=inspect.ismethod):
-            if name[0] != '_' and name not in ['preprocess', 'schema', 'version', 'instance']:
-                exceptions.append(TypeError(f'invalid method {name} found in aggregate class'))
-            if name == 'preprocess' and func.__code__.co_argcount != 2:
-                exceptions.append(
-                    TypeError(
-                        f'preprocess function should take 2 arguments ( self & df ) but got {func.__code__.co_argcount}'))
+        exceptions.extend(self._validate_preprocess())
+
         if self.windows is None or len(self.windows) == 0:
             exceptions.append(Exception(f'windows not provided for aggregate  {self.__class__.__name__}'))
         return exceptions
-
-    def _get_pickle_preprocess_function(self):
-        for name, func in inspect.getmembers(self.__class__, predicate=inspect.ismethod):
-            if name == 'preprocess':
-                return cloudpickle.dumps(func)
 
     def register(self, stub: FennelFeatureStoreStub) -> Status:
         if self.windows is None:
@@ -111,12 +154,32 @@ class Aggregate(Singleton):
             stream=self.stream,
             mode=self.mode,
             aggregate_type=self._get_agg_type(),
-            preprocess_function=self._get_pickle_preprocess_function(),
+            preprocess_function=cloudpickle.dumps(self.mod_preprocess),
+            function_source_code=self.function_src_code,
             windows=[int(w.total_seconds()) for w in self.windows],
             schema=self.schema().to_proto(),
         )
         resp = stub.RegisterAggregate(req)
         return resp
+
+
+def depends_on(
+        aggregates: List[Aggregate] = [],
+        features: List[Any] = [],
+):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        wrapper.depends_on_aggregates = aggregates
+        wrapper.depends_on_features = features
+        wrapper.signature = inspect.signature(func)
+        wrapper.wrapped_function = func
+        wrapper.namespace = func.__globals__
+        wrapper.func_name = func.__name__
+        return wrapper
+
+    return decorator
 
 
 class Count(Aggregate, ABC):
@@ -155,7 +218,6 @@ class KeyValue(Aggregate, ABC):
     def _get_agg_type(self):
         return proto.AggregateType.KEY_VALUE
 
-    @classmethod
     def validate(self) -> List[Exception]:
         return super().validate()
 

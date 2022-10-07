@@ -1,21 +1,15 @@
+import pickle
+from typing import List
+
+import pandas as pd
 import pytest
 
-from typing import List, Optional, Union
+from fennel.aggregate import (Count)
+from fennel.gen.aggregate_pb2 import CreateAggregateRequest
 from fennel.lib import (Field, Schema, windows)
-from fennel.aggregate import (Aggregate, Count, Min, Max, KeyValue)
-from fennel.lib.schema import (
-    Int,
-    Double,
-    Bool,
-    Map,
-    Array,
-    String,
-    FieldType
-)
-import pandas as pd
+from fennel.lib.schema import (Double, FieldType, Int, String)
 from fennel.lib.windows import Window
 from fennel.test_lib import *
-from fennel.gen.aggregate_pb2 import CreateAggregateRequest
 
 
 class UserLikeCount(Count):
@@ -25,30 +19,38 @@ class UserLikeCount(Count):
     @classmethod
     def schema(cls) -> Schema:
         return Schema(
-            Field('uid', Int(), 0, field_type=FieldType.Key),
-            Field('count', Int(), 0, field_type=FieldType.Value),
-            Field('timestamp', Int(), 0, field_type=FieldType.Timestamp),
+            Field('actor_id', Int(), 0, field_type=FieldType.Key),
+            Field('target_id', Int(), 0, field_type=FieldType.Value),
+            Field('timestamp', Double(), 0.0, field_type=FieldType.Timestamp),
         )
 
     @classmethod
     def preprocess(cls, df: pd.DataFrame) -> pd.DataFrame:
-        df = df[df['action_type'] == 'like']
-        df['actor_id'].rename('uid')
-        df = df.drop('action_type')
-        return df
+        filtered_df = df[df['action_type'] == 'like'].copy()
+        filtered_df['actor_id'].rename('uid')
+        filtered_df.drop(columns=['action_type'], inplace=True)
+        return filtered_df
 
 
 def test_AggregateRegistration(grpc_stub):
     agg = UserLikeCount('actions', [windows.DAY * 7, windows.DAY * 28])
-    workspace = WorkspaceTest(grpc_stub)
+    workspace = InternalTestWorkspace(grpc_stub)
     responses = workspace.register_aggregates(agg)
-    print("test_AggregateRegistration")
     assert len(responses) == 1
     assert responses[0].code == 200
     create_agg = CreateAggregateRequest()
     responses[0].details[0].Unpack(create_agg)
-    print(create_agg.name)
-    print(create_agg)
+    preprocess = pickle.loads(create_agg.preprocess_function)
+    df = pd.DataFrame(
+        {
+            'actor_id': [1, 2, 3, 4, 5],
+            'target_id': [1, 2, 3, 4, 5],
+            'timestamp': [1.1, 2.1, 3.1, 4.1, 5.1],
+            'action_type': ['like', 'like', 'share', 'comment', 'like'],
+        })
+    processed_df = preprocess(df)
+    assert type(processed_df) == pd.DataFrame
+    assert processed_df.shape == (3, 3)
 
 
 class UserLikeCountInvalidSchema(Count):
@@ -74,13 +76,13 @@ class UserLikeCountInvalidSchema(Count):
 def test_InvalidSchemaAggregateRegistration(grpc_stub):
     with pytest.raises(Exception) as e:
         agg = UserLikeCountInvalidSchema('actions', [windows.DAY * 7, windows.DAY * 28])
-        workspace = WorkspaceTest(grpc_stub)
+        workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(agg)
 
     assert str(
-        e.value) == "[TypeError('Type should be a Fennel Type object such as Int() and not a class such as Int/int'), " \
-                    "TypeError('Type should be a Fennel Type object such as Int() and not a class such as Int/int'), " \
-                    "TypeError('Type should be a Fennel Type object such as Int() and not a class such as Int/int')]"
+        e.value) == "[TypeError('Type for uid should be a Fennel Type object such as Int() and not a class such as Int/int'), " \
+                    "TypeError('Type for count should be a Fennel Type object such as Int() and not a class such as Int/int'), " \
+                    "TypeError('Type for timestamp should be a Fennel Type object such as Int() and not a class such as Int/int')]"
 
 
 class UserLikeCountInvalidProcessingFunction(Count):
@@ -106,7 +108,7 @@ class UserLikeCountInvalidProcessingFunction(Count):
 def test_InvalidProcessingFunctionAggregateRegistration(grpc_stub):
     with pytest.raises(Exception) as e:
         agg = UserLikeCountInvalidProcessingFunction('actions', [windows.DAY * 7, windows.DAY * 28])
-        workspace = WorkspaceTest(grpc_stub)
+        workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(agg)
     assert str(e.value) == "[TypeError('preprocess function should take 2 arguments ( self & df ) but got 3')]"
 
@@ -134,6 +136,6 @@ class UserLikeCountInvalidProcessingFunction2(Count):
 def test_InvalidProcessingFunctionAggregateRegistration2(grpc_stub):
     with pytest.raises(Exception) as e:
         agg = UserLikeCountInvalidProcessingFunction2('actions', [windows.DAY * 7, windows.DAY * 28])
-        workspace = WorkspaceTest(grpc_stub)
+        workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(agg)
     assert str(e.value) == "[TypeError('invalid method preprocess2 found in aggregate class')]"

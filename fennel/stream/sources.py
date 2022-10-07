@@ -1,11 +1,11 @@
 import dataclasses
 import json
-from typing import Callable, Optional, List
+from typing import Callable, List, Optional
+
+import pandas as pd
 
 import fennel.errors as errors
 import fennel.gen.stream_pb2 as proto
-from fennel.utils import check_response
-import fennel.errors as errors
 
 
 @dataclasses.dataclass(frozen=True)
@@ -124,9 +124,25 @@ def create_grpc_request(src: Source):
 
 def source(src: Source, table: Optional[str] = None):
     def decorator(fn: Callable):
-        def ret(*args, **kwargs):
-            raise Exception("can not call func")
-            return fn(*args, **kwargs)
+        # Runs validation checks on the returned value of the
+        def ret(self, *args, **kwargs):
+            result = fn(self, *args, **kwargs)
+            if type(result) != pd.DataFrame:
+                raise Exception(fn.__name__, " function must return a pandas DataFrame")
+            field2types = self.schema().get_fields_and_types()
+            # Basic Type Check
+            for col, dtype in zip(result.columns, result.dtypes):
+                if col not in field2types:
+                    raise Exception("Column {} not in schema".format(col))
+                if not field2types[col].type_check(dtype):
+                    raise Exception(f'Column {col} type mismatch, got {dtype} expected {field2types[col]}')
+            # Deeper Type Check
+            for (colname, colvals) in result.items():
+                for val in colvals:
+                    type_errors = field2types[colname].validate(val)
+                    if type_errors:
+                        raise Exception(f'Column {colname} value {val} failed validation: {type_errors}')
+            return result
 
         def validate() -> List[Exception]:
             exceptions = []
