@@ -20,5 +20,6 @@ service FennelFeatureStore {
   rpc RegisterStream (CreateStreamRequest) returns (Status);
   rpc RegisterAggregate (CreateAggregateRequest) returns (Status);
   rpc RegisterFeature (CreateFeatureRequest) returns (Status);
+  rpc ExtractFeatures (ExtractFeaturesRequest) returns (ExtractFeaturesResponse);
 }
 

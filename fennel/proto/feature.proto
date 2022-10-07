@@ -3,6 +3,7 @@ syntax = "proto3";
 package fennel.proto;
 
 import "schema.proto";
+import "status.proto";
 
 enum FeatureDefType {
    FEATURE = 0;
@@ -19,4 +20,14 @@ message CreateFeatureRequest {
   repeated string depends_on_aggregates = 7;
   repeated string depends_on_features = 8;
   Schema schema = 9;
+}
+
+message ExtractFeaturesRequest {
+  repeated string feature_names = 1;
+  bytes dataframe = 2;
+  map<string, float> config = 3;
+}
+
+message ExtractFeaturesResponse {
+  Status status = 1;
 }
