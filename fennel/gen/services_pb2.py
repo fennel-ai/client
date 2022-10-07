@@ -17,7 +17,7 @@ import fennel.gen.aggregate_pb2 as aggregate__pb2
 import fennel.gen.feature_pb2 as feature__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0eservices.proto\x12\x0c\x66\x65nnel.proto\x1a\x0cstream.proto\x1a\x0cstatus.proto\x1a\x0f\x61ggregate.proto\x1a\rfeature.proto2\xfd\x01\n\x12\x46\x65nnelFeatureStore\x12I\n\x0eRegisterStream\x12!.fennel.proto.CreateStreamRequest\x1a\x14.fennel.proto.Status\x12O\n\x11RegisterAggregate\x12$.fennel.proto.CreateAggregateRequest\x1a\x14.fennel.proto.Status\x12K\n\x0fRegisterFeature\x12\".fennel.proto.CreateFeatureRequest\x1a\x14.fennel.proto.Statusb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0eservices.proto\x12\x0c\x66\x65nnel.proto\x1a\x0cstream.proto\x1a\x0cstatus.proto\x1a\x0f\x61ggregate.proto\x1a\rfeature.proto2\xdd\x02\n\x12\x46\x65nnelFeatureStore\x12I\n\x0eRegisterStream\x12!.fennel.proto.CreateStreamRequest\x1a\x14.fennel.proto.Status\x12O\n\x11RegisterAggregate\x12$.fennel.proto.CreateAggregateRequest\x1a\x14.fennel.proto.Status\x12K\n\x0fRegisterFeature\x12\".fennel.proto.CreateFeatureRequest\x1a\x14.fennel.proto.Status\x12^\n\x0f\x45xtractFeatures\x12$.fennel.proto.ExtractFeaturesRequest\x1a%.fennel.proto.ExtractFeaturesResponseb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'services_pb2', globals())
@@ -25,5 +25,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
   _FENNELFEATURESTORE._serialized_start=93
-  _FENNELFEATURESTORE._serialized_end=346
+  _FENNELFEATURESTORE._serialized_end=442
 # @@protoc_insertion_point(module_scope)

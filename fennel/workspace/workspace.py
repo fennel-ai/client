@@ -3,6 +3,7 @@ from typing import *
 import grpc
 import pandas as pd
 
+import fennel.gen.feature_pb2 as feature_proto
 import fennel.gen.services_pb2_grpc as services_pb2
 from fennel.aggregate import Aggregate
 from fennel.stream import Stream
@@ -55,6 +56,11 @@ class Workspace:
             resp = feature.register(self.stub)
             check_response(resp)
 
-    def extract(config: Dict[str, Any], names: List[str], df: pd.DataFrame):
-
-        pass
+    def extract(self, config: Dict[str, Any], names: List[str], df: pd.DataFrame):
+        req = feature_proto.ExtractFeaturesRequest()
+        req.names.extend(names)
+        req.data.CopyFrom(df.to_dict(orient='tight'))
+        req.config.CopyFrom(config)
+        resp = self.stub.ExtractFeatures(req)
+        check_response(resp)
+        return resp

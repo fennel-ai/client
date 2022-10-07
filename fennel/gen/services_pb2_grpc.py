@@ -39,6 +39,11 @@ class FennelFeatureStoreStub(object):
                 request_serializer=feature__pb2.CreateFeatureRequest.SerializeToString,
                 response_deserializer=status__pb2.Status.FromString,
                 )
+        self.ExtractFeatures = channel.unary_unary(
+                '/fennel.proto.FennelFeatureStore/ExtractFeatures',
+                request_serializer=feature__pb2.ExtractFeaturesRequest.SerializeToString,
+                response_deserializer=feature__pb2.ExtractFeaturesResponse.FromString,
+                )
 
 
 class FennelFeatureStoreServicer(object):
@@ -69,6 +74,12 @@ class FennelFeatureStoreServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ExtractFeatures(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_FennelFeatureStoreServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -86,6 +97,11 @@ def add_FennelFeatureStoreServicer_to_server(servicer, server):
                     servicer.RegisterFeature,
                     request_deserializer=feature__pb2.CreateFeatureRequest.FromString,
                     response_serializer=status__pb2.Status.SerializeToString,
+            ),
+            'ExtractFeatures': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExtractFeatures,
+                    request_deserializer=feature__pb2.ExtractFeaturesRequest.FromString,
+                    response_serializer=feature__pb2.ExtractFeaturesResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -152,5 +168,22 @@ class FennelFeatureStore(object):
         return grpc.experimental.unary_unary(request, target, '/fennel.proto.FennelFeatureStore/RegisterFeature',
             feature__pb2.CreateFeatureRequest.SerializeToString,
             status__pb2.Status.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ExtractFeatures(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/fennel.proto.FennelFeatureStore/ExtractFeatures',
+            feature__pb2.ExtractFeaturesRequest.SerializeToString,
+            feature__pb2.ExtractFeaturesResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
