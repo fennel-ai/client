@@ -22,9 +22,9 @@ def feature_extract(feature_name, **kwargs):
 
 def _is_sign_args_and_kwargs(sign):
     return (
-        len(sign.parameters) == 2
-        and "args" in sign.parameters
-        and "kwargs" in sign.parameters
+            len(sign.parameters) == 2
+            and "args" in sign.parameters
+            and "kwargs" in sign.parameters
     )
 
 
@@ -65,7 +65,7 @@ class FeatureExtractTransformer(ast.NodeTransformer):
 # Takes the list of aggregates that this feature depends upon as dictionary of aggregate to aggregate name
 # and the list of feature names that this feature depends upon.
 def _modify_feature_extract(
-    func, agg2name: Dict[str, str], feature2name: List[Any]
+        func, agg2name: Dict[str, str], feature2name: List[Any]
 ):
     if hasattr(func, "wrapped_function"):
         feature_func = func.wrapped_function
@@ -77,8 +77,8 @@ def _modify_feature_extract(
     decorators = []
     for decorator in new_tree.body[0].decorator_list:
         if isinstance(decorator, ast.Call) and decorator.func.id in (
-            "feature",
-            "feature_pack",
+                "feature",
+                "feature_pack",
         ):
             decorators.append(
                 ast.Call(decorator.func, decorator.args, decorator.keywords)
@@ -105,10 +105,10 @@ def _modify_feature_extract(
 
 
 def feature(
-    name: str = None,
-    version: int = 1,
-    mode: str = "pandas",
-    schema: Schema = None,
+        name: str = None,
+        version: int = 1,
+        mode: str = "pandas",
+        schema: Schema = None,
 ):
     def decorator(func):
         def ret(*args, **kwargs):
@@ -157,7 +157,7 @@ def feature(
         # Directly called only for testing. Else the modded function feature_extract is called in the backend.
         def extract(*args, **kwargs) -> pd.DataFrame:
             agg2name = {
-                agg.instance().__class__.__name__: agg.instance().name
+                agg.__name__: agg.name
                 for agg in ret.depends_on_aggregates
             }
             feature2name = {
@@ -173,7 +173,7 @@ def feature(
         @functools.wraps(func)
         def register(stub: FennelFeatureStoreStub):
             agg2name = {
-                agg.instance().__class__.__name__: agg.instance().name
+                agg.__name__: agg.name
                 for agg in ret.depends_on_aggregates
             }
             feature2name = {
@@ -212,10 +212,10 @@ def feature(
 
 
 def feature_pack(
-    name: str = None,
-    version: int = 1,
-    mode: str = "pandas",
-    schema: Schema = None,
+        name: str = None,
+        version: int = 1,
+        mode: str = "pandas",
+        schema: Schema = None,
 ):
     def decorator(func):
         def ret(*args, **kwargs):
@@ -260,7 +260,7 @@ def feature_pack(
         @functools.wraps(func)
         def register(stub: FennelFeatureStoreStub):
             agg2name = {
-                agg.instance().__class__.__name__: agg.instance().name
+                agg.__name__: agg.name
                 for agg in ret.depends_on_aggregates
             }
             new_function, function_source_code = _modify_feature_extract(

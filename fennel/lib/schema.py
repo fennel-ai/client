@@ -201,12 +201,12 @@ class FieldType(Enum):
 
 class Field:
     def __init__(
-        self,
-        name: str,
-        dtype: Type,
-        default: Any,
-        field_type: FieldType = FieldType.None_,
-        expectations: List[Expectation] = None,
+            self,
+            name: str,
+            dtype: Type,
+            default: Any,
+            field_type: FieldType = FieldType.None_,
+            expectations: List[Expectation] = None,
     ):
         self.name = name
         self.dtype = dtype
@@ -377,7 +377,9 @@ class Field:
 
 
 class Schema:
-    def __init__(self, *fields: List[Field]):
+    fields: List[Field]
+
+    def __init__(self, fields: List[Field]):
         self.fields = fields
 
     def validate_fields(self) -> List[Exception]:

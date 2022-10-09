@@ -12,20 +12,19 @@ class Expectation:
         self.mostly = mostly
 
     def validate(
-        self,
+            self,
     ) -> typing.List[Exception]:
         pass
 
-
-def expect_values_between(
-    low: typing.Any, high: typing.Any, mostly: float
-) -> Expectation:
-    return Expectation("values_between", [low, high], mostly=mostly)
-
-
-def expect_values_equal_to(expected: typing.Any, mostly: float) -> Expectation:
-    return Expectation("values_equal_to", expected, mostly=mostly)
-
-
-def expect_values_positive(mostly: float) -> Expectation:
-    return Expectation("vaues_positive", None, mostly)
+# def expect_values_between(
+#     low: typing.Any, high: typing.Any, mostly: float
+# ) -> Expectation:
+#     return Expectation("values_between", [low, high], mostly=mostly)
+#
+#
+# def expect_values_equal_to(expected: typing.Any, mostly: float) -> Expectation:
+#     return Expectation("values_equal_to", expected, mostly=mostly)
+#
+#
+# def expect_values_positive(mostly: float) -> Expectation:
+#     return Expectation("vaues_positive", None, mostly)

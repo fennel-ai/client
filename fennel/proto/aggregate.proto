@@ -19,7 +19,7 @@ message CreateAggregateRequest {
   string mode = 2;
   uint32 version = 3;
   string stream = 4;
-  bytes preprocess_function = 5;
+  bytes preaggregate_function = 5;
   string function_source_code = 6;
   AggregateType aggregate_type = 7;
   repeated int32 windows = 8;

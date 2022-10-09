@@ -8,8 +8,7 @@ import cloudpickle
 
 from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.gen.stream_pb2 import CreateConnectorRequest, CreateStreamRequest
-from fennel.lib import schema
-from fennel.utils import Singleton
+from fennel.lib import Schema
 
 
 def _modify_stream(func):
@@ -47,35 +46,34 @@ def _modify_stream(func):
     return tmp_namespace[func_name], function_source_code
 
 
-class Stream(Singleton):
+class Stream:
     name = None
     version = 1
     retention = datetime.timedelta(days=30)
     # by default, get all the data from 1st of Jan 2020
     start = datetime.datetime(2020, 1, 1)
+    schema: Schema = None
 
-    def schema(self) -> schema.Schema:
-        raise NotImplementedError()
-
-    def validate(self) -> List[Exception]:
+    @classmethod
+    def validate(cls) -> List[Exception]:
         # Validate the schema
-        exceptions = self.schema().validate()
+        exceptions = cls.schema.validate()
         # Validate the populators(source + connector) functions
         for name, func in inspect.getmembers(
-            self.__class__, predicate=inspect.isfunction
+                cls.__class__, predicate=inspect.isfunction
         ):
             if hasattr(func, "validate"):
                 exceptions.extend(func.validate())
         return exceptions
 
-    def register(self, stub: FennelFeatureStoreStub):
-        # Register the connectors/populators one by one.
-        # Go through all functions of the class and find the ones that can be registered (sources)
+    @classmethod
+    def register(cls, stub: FennelFeatureStoreStub):
+        # Register the connectors/populators one by one. Go through all
+        # functions of the class and find the ones that can be registered (
+        # sources)
         source_requests = []
         connector_requests = []
-        for name, func in inspect.getmembers(
-            self.__class__, predicate=inspect.isfunction
-        ):
+        for name, func in cls.__dict__.items():
             # Has a source attached to it
             if hasattr(func, "create_source_request"):
                 source_requests.append(func.create_source_request())
@@ -95,12 +93,12 @@ class Stream(Singleton):
                     )
                 )
         req = CreateStreamRequest(
-            name=self.name,
-            version=self.version,
-            retention=int(self.retention.total_seconds()),
+            name=cls.name,
+            version=cls.version,
+            retention=int(cls.retention.total_seconds()),
             # Fix start time
             # start=self.start,
-            schema=self.schema().to_proto(),
+            schema=cls.schema.to_proto(),
             sources=source_requests,
             connectors=connector_requests,
         )

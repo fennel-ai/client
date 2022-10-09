@@ -1,10 +1,3 @@
-from fennel.aggregate.aggregate import (
-    Aggregate,
-    Count,
-    Min,
-    Max,
-    KeyValue,
-    Rate,
-    Average,
-    depends_on,
-)
+from fennel.aggregate.aggregate import (AggregateMetaclass, Average,
+                                        Count, depends_on, KeyValue,
+                                        Max, Min, Rate)

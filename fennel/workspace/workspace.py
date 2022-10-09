@@ -5,7 +5,6 @@ import pandas as pd
 
 import fennel.gen.feature_pb2 as feature_proto
 import fennel.gen.services_pb2_grpc as services_pb2
-from fennel.aggregate import Aggregate
 from fennel.stream import Stream
 from fennel.utils import check_response
 
@@ -31,7 +30,7 @@ class Workspace:
             check_response(resp)
         print("Registered streams:", [stream.name for stream in streams])
 
-    def register_aggregates(self, *aggregates: List[Aggregate]):
+    def register_aggregates(self, *aggregates: Any):
         exceptions = []
         for agg in aggregates:
             exceptions.extend(agg.validate())
@@ -57,7 +56,7 @@ class Workspace:
             check_response(resp)
 
     def extract(
-        self, config: Dict[str, Any], names: List[str], df: pd.DataFrame
+            self, config: Dict[str, Any], names: List[str], df: pd.DataFrame
     ):
         req = feature_proto.ExtractFeaturesRequest()
         req.names.extend(names)
