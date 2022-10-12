@@ -19,9 +19,7 @@ message DataType {
   }
 }
 
-message Expectation {
-
-}
+message Expectation {}
 
 message Schema {
   string name = 1;
@@ -39,13 +37,9 @@ message Value {
   }
 }
 
-message Array {
-  repeated Value elements = 1;
-}
+message Array { repeated Value elements = 1; }
 
-message ArrayType {
-  DataType of = 1;
-}
+message ArrayType { DataType of = 1; }
 
 // Proto map keys cannot be messages, but are limited to strings and ints.
 // Hence we use two arrays to represent a map.

@@ -3,17 +3,18 @@ syntax = "proto3";
 package fennel.proto;
 
 import "schema.proto";
+import "status.proto";
 
 enum AggregateType {
-    SUM = 0;
-    AVG = 1;
-    COUNT = 2;
-    MIN = 3;
-    MAX = 4;
-    RATE = 5;
-    KEY_VALUE = 6;
-    TOPK = 7;
-    CF = 8;
+  SUM = 0;
+  AVG = 1;
+  COUNT = 2;
+  MIN = 3;
+  MAX = 4;
+  RATE = 5;
+  KEY_VALUE = 6;
+  TOPK = 7;
+  CF = 8;
 }
 
 message CreateAggregateRequest {
