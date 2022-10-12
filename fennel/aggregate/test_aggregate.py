@@ -3,22 +3,40 @@ import pickle
 import pandas as pd
 import pytest
 
-from fennel.aggregate import Count
+from fennel.aggregate import Aggregate, Count
 from fennel.gen.aggregate_pb2 import CreateAggregateRequest
 from fennel.lib import Field, Schema, windows
-from fennel.lib.schema import Double, FieldType, Int, String
+from fennel.lib.schema import Double, Int, String
 from fennel.test_lib import *
 
 
-class UserLikeCount(Count):
+class UserLikeCount(Aggregate):
     name = "TestUserLikeCount"
     stream = "Actions"
     windows = [windows.DAY * 7, windows.DAY * 28]
 
-    schema = Schema([
-        Field("actor_id", Int, 0, field_type=FieldType.Key),
-        Field("target_id", Int, 0, field_type=FieldType.Value),
-        Field("timestamp", Double, 0.0, field_type=FieldType.Timestamp)]
+    schema = Schema(
+        [
+            Field(
+                "actor_id",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "target_id",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "timestamp",
+                dtype=Double,
+                default=0.0,
+            ),
+        ]
+    )
+
+    aggregate_type = Count(
+        key="actor_id", value="target_id", timestamp="timestamp"
     )
 
     @classmethod
@@ -50,14 +68,31 @@ def test_AggregateRegistration(grpc_stub):
     assert processed_df.shape == (3, 3)
 
 
-class UserLikeCountInvalidSchema(Count):
+class UserLikeCountInvalidSchema(Aggregate):
     name = "TestUserLikeCount"
     stream = "Actions"
     windows = [windows.DAY * 7, windows.DAY * 28]
     schema = Schema(
-        [Field("uid", int, 0, field_type=FieldType.Key),
-         Field("count", int, 0, field_type=FieldType.Value),
-         Field("timestamp", int, 0, field_type=FieldType.Timestamp)]
+        [
+            Field(
+                "uid",
+                dtype=int,
+                default=0,
+            ),
+            Field(
+                "count",
+                dtype=int,
+                default=0,
+            ),
+            Field(
+                "timestamp",
+                dtype=int,
+                default=0,
+            ),
+        ]
+    )
+    aggregate_type = Count(
+        key="actor_id", value="target_id", timestamp="timestamp"
     )
 
     @classmethod
@@ -74,26 +109,43 @@ def test_InvalidSchemaAggregateRegistration(grpc_stub):
         workspace.register_aggregates(UserLikeCountInvalidSchema)
 
     assert (
-            str(e.value)
-            == "[TypeError('Type for uid should be a Fennel Type object such as Int() and not a class such as Int/int'), "
-               "TypeError('Type for count should be a Fennel Type object such as Int() and not a class such as Int/int'), "
-               "TypeError('Type for timestamp should be a Fennel Type object such as Int() and not a class such as Int/int')]"
+        str(e.value)
+        == "[TypeError('Type for uid should be a Fennel Type object such as Int() and not a class such as Int/int'), "
+        "TypeError('Type for count should be a Fennel Type object such as Int() and not a class such as Int/int'), "
+        "TypeError('Type for timestamp should be a Fennel Type object such as Int() and not a class such as Int/int')]"
     )
 
 
-class UserLikeCountInvalidProcessingFunction(Count):
+class UserLikeCountInvalidProcessingFunction(Aggregate):
     name = "TestUserLikeCount"
     stream = "Actions"
     windows = [windows.DAY * 7, windows.DAY * 28]
     schema = Schema(
-        [Field("uid", String, "aditya", field_type=FieldType.Key),
-         Field("count", Int, 12, field_type=FieldType.Value),
-         Field("timestamp", Int, 1234, field_type=FieldType.Timestamp)],
+        [
+            Field(
+                "uid",
+                dtype=String,
+                default="aditya",
+            ),
+            Field(
+                "count",
+                dtype=Int,
+                default=12,
+            ),
+            Field(
+                "timestamp",
+                dtype=Int,
+                default=1234,
+            ),
+        ],
+    )
+    aggregate_type = Count(
+        key="actor_id", value="target_id", timestamp="timestamp"
     )
 
     @classmethod
     def preaggregate(
-            cls, df: pd.DataFrame, user_df: pd.DataFrame
+        cls, df: pd.DataFrame, user_df: pd.DataFrame
     ) -> pd.DataFrame:
         df = df[df["action_type"] == "like"]
         df["actor_id"].rename("uid")
@@ -106,20 +158,29 @@ def test_InvalidProcessingFunctionAggregateRegistration(grpc_stub):
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(UserLikeCountInvalidProcessingFunction)
     assert (
-            str(e.value)
-            == "[TypeError('preaggregate function should take 2 arguments ( "
-               "cls & df ) but got 3')]"
+        str(e.value)
+        == "[TypeError('preaggregate function should take 2 arguments ( "
+        "cls & df ) but got 3')]"
     )
 
 
-class UserLikeCountInvalidProcessingFunction2(Count):
+class UserLikeCountInvalidProcessingFunction2(Aggregate):
     name = "TestUserLikeCount"
     stream = "Actions"
     windows = [windows.DAY * 7, windows.DAY * 28]
-    schema = Schema([
-        Field("uid", String, "aditya", field_type=FieldType.Key),
-        Field("count", Int, 12, field_type=FieldType.Value),
-        Field("timestamp", Int, 1234, field_type=FieldType.Timestamp)]
+    schema = Schema(
+        [
+            Field(
+                "uid",
+                dtype=String,
+                default="aditya",
+            ),
+            Field("count", dtype=Int, default=12),
+            Field("timestamp", dtype=Int, default=1234),
+        ]
+    )
+    aggregate_type = Count(
+        key="actor_id", value="target_id", timestamp="timestamp"
     )
 
     @classmethod
@@ -134,6 +195,8 @@ def test_InvalidProcessingFunctionAggregateRegistration2(grpc_stub):
     with pytest.raises(Exception) as e:
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(UserLikeCountInvalidProcessingFunction2)
-    assert (str(e.value)
-            == "[TypeError('invalid method preprocess2 found in aggregate "
-               "class, only preaggregate is allowed')]")
+    assert (
+        str(e.value)
+        == "[TypeError('invalid method preprocess2 found in aggregate "
+        "class, only preaggregate is allowed')]"
+    )

@@ -5,7 +5,7 @@ import pytest
 
 from fennel.gen.stream_pb2 import CreateStreamRequest
 from fennel.lib import Field, Schema, windows
-from fennel.lib.schema import Array, Int, Map, String
+from fennel.lib.schema import Array, Double, Int, Map, String
 from fennel.stream import MySQL, populator, Stream
 from fennel.test_lib import *
 
@@ -21,25 +21,28 @@ mysql_src = MySQL(
 class Actions(Stream):
     name = "actions"
     retention = windows.DAY * 14
-    schema = Schema([
-        Field("actor_id", dtype=Int, default=0),
-        Field("target_id", dtype=Int, default=0),
-        Field("action_type", dtype=String, default="love"),
-        Field("timestamp", dtype=Int, default=0),
-        Field(
-            "metadata2",
-            dtype=Array(Array(String)),
-            default=[["a", "b", "c"], ["d", "e", "f"]],
-        ),
-        Field(
-            "metadata3",
-            dtype=Map(String, String),
-            default={"yo": "hello"},
-        )],
+    schema = Schema(
+        [
+            Field("actor_id", dtype=Int, default=0),
+            Field("target_id", dtype=Int, default=0),
+            Field("action_type", dtype=String, default="love"),
+            Field("timestamp", dtype=Double, default=0.0),
+            Field(
+                "metadata2",
+                dtype=Array(Array(String)),
+                default=[["a", "b", "c"], ["d", "e", "f"]],
+            ),
+            Field(
+                "metadata3",
+                dtype=Map(String, String),
+                default={"yo": "hello"},
+            ),
+        ],
     )
 
+    @classmethod
     @populator(source=mysql_src, table="actions")
-    def populate(self, df: pd.DataFrame) -> pd.DataFrame:
+    def populate(cls, df: pd.DataFrame) -> pd.DataFrame:
         df = df[df["action_type"] == "like"]
         return df[["actor_id", "target_id", "action_type", "timestamp"]]
 
@@ -62,7 +65,8 @@ def test_StreamRegistration(grpc_stub):
             "action_type": ["like", "like", "share", "comment", "like"],
         }
     )
-    processed_df = populate(df)
+    stream = pickle.loads(create_stream_req.stream_cls)
+    processed_df = populate(stream, df)
     assert type(processed_df) == pd.DataFrame
     assert processed_df.shape == (3, 4)
     assert processed_df["actor_id"].tolist() == [1, 2, 5]
@@ -74,25 +78,30 @@ def test_StreamRegistration(grpc_stub):
 class ActionsMultipleSources(Stream):
     name = "actions_multiple_sources"
     retention = windows.DAY * 14
-    schema = Schema([
-        Field("actor_id", dtype=Int, default=1),
-        Field("target_id", dtype=Int, default=2),
-        Field("action_type", dtype=Int, default=3),
-        Field("timestamp", dtype=Int, default=0)],
+    schema = Schema(
+        [
+            Field("actor_id", dtype=Int, default=1),
+            Field("target_id", dtype=Int, default=2),
+            Field("action_type", dtype=String, default="action"),
+            Field("timestamp", dtype=Double, default=0.0),
+        ],
     )
 
+    @classmethod
     @populator(source=mysql_src, table="like_actions")
-    def populate_mysql_1(self, df: pd.DataFrame) -> pd.DataFrame:
+    def populate_mysql_1(cls, df: pd.DataFrame) -> pd.DataFrame:
         df = df[df["action_type"] == "like"]
         return df[["actor_id", "target_id", "action_type", "timestamp"]]
 
+    @classmethod
     @populator(source=mysql_src, table="")
-    def populate_1(self, df: pd.DataFrame) -> pd.DataFrame:
+    def populate_1(cls, df: pd.DataFrame) -> pd.DataFrame:
         df = df[df["action_type"] == "share"]
         return df[["actor_id", "target_id", "action_type", "timestamp"]]
 
+    @classmethod
     @populator(source=mysql_src, table="comment_actions")
-    def populate_actions(self, df: pd.DataFrame) -> pd.DataFrame:
+    def populate_actions(cls, df: pd.DataFrame) -> pd.DataFrame:
         df = df[df["action_type"] == "comment"]
         return df[["actor_id", "target_id", "action_type", "timestamp"]]
 
@@ -109,7 +118,7 @@ def test_StreamRegistration_MultipleSources(grpc_stub):
     assert len(create_stream_req.connectors) == 3
     create_connect_req = None
     for c in create_stream_req.connectors:
-        if c.name == "populate_1":
+        if c.name == "actions_multiple_sources:populate_1":
             create_connect_req = c
     assert create_connect_req is not None
     populate = pickle.loads(create_connect_req.connector_function)
@@ -121,7 +130,8 @@ def test_StreamRegistration_MultipleSources(grpc_stub):
             "action_type": ["like", "like", "share", "comment", "like"],
         }
     )
-    processed_df = populate(df)
+    stream = pickle.loads(create_stream_req.stream_cls)
+    processed_df = populate(stream, df)
     assert type(processed_df) == pd.DataFrame
     assert processed_df.shape == (1, 4)
     assert processed_df["actor_id"].tolist() == [3]
@@ -134,45 +144,53 @@ class ActionsInvalidSchema2(Stream):
     name = "actions"
     retention = windows.DAY * 14
     schema = Schema(
-        [Field("actor_id", dtype=int, default=0),
-         Field("target_id", dtype=String, default=1),
-         Field("action_type", dtype=Array(String), default="love")],
+        [
+            Field("actor_id", dtype=int, default=0),
+            Field("target_id", dtype=String, default=1),
+            Field("action_type", dtype=Array(String), default="love"),
+        ],
     )
 
+    @classmethod
     @populator(source=mysql_src, table="actions")
-    def populate(self, df: pd.DataFrame) -> pd.DataFrame:
+    def populate(cls, df: pd.DataFrame) -> pd.DataFrame:
         df = df[df["action_type"] == "like"]
         return df[["actor_id", "target_id", "action_type", "timestamp"]]
 
 
 def test_InvalidStreamRegistration(grpc_stub):
     with pytest.raises(TypeError) as e:
+
         class ActionsInvalidSchema(Stream):
             name = "actions"
             retention = windows.DAY * 14
-            schema = Schema([
-                Field("actor_id", dtype=int, default=0),
-                Field("target_id", dtype=String, default=1),
-                Field("action_type", dtype=Array(), default="love")],
+            schema = Schema(
+                [
+                    Field("actor_id", dtype=int, default=0),
+                    Field("target_id", dtype=String, default=1),
+                    Field("action_type", dtype=Array(), default="love"),
+                ],
             )
 
+            @classmethod
             @populator(source=mysql_src, table="actions")
-            def populate(self, df: pd.DataFrame) -> pd.DataFrame:
+            def populate(cls, df: pd.DataFrame) -> pd.DataFrame:
                 df = df[df["action_type"] == "like"]
                 return df[["actor_id", "target_id", "action_type", "timestamp"]]
+
     assert str(e.value) == "invalid array type: None"
 
     with pytest.raises(Exception) as e:
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_streams(ActionsInvalidSchema2)
     assert (
-            str(e.value) == "[TypeError('Type for actor_id should be a "
-                            "Fennel Type object "
-                            "such as Int() and not a class such as Int/int'), "
-                            "TypeError('Expected default value for field "
-                            "target_id to be str, got 1'), TypeError('Expected "
-                            "default value for field action_type to be list, "
-                            "got love')]"
+        str(e.value) == "[TypeError('Type for actor_id should be a "
+        "Fennel Type object "
+        "such as Int() and not a class such as Int/int'), "
+        "TypeError('Expected default value for field "
+        "target_id to be str, got 1'), TypeError('Expected "
+        "default value for field action_type to be list, "
+        "got love')]"
     )
 
 
@@ -180,13 +198,16 @@ class ActionsInvalidSource(Stream):
     name = "actions"
     retention = windows.DAY * 14
     schema = Schema(
-        [Field("actor_id", dtype=Int, default=0),
-         Field("target_id", dtype=Int, default=0),
-         Field("action_type", dtype=String, default="love")],
+        [
+            Field("actor_id", dtype=Int, default=0),
+            Field("target_id", dtype=Int, default=0),
+            Field("action_type", dtype=String, default="love"),
+        ],
     )
 
+    @classmethod
     @populator(source=mysql_src)
-    def populate(self, df: pd.DataFrame) -> pd.DataFrame:
+    def populate(cls, df: pd.DataFrame) -> pd.DataFrame:
         df = df[df["action_type"] == "like"]
         return df[["actor_id", "target_id", "action_type", "timestamp"]]
 
@@ -196,6 +217,6 @@ def test_InvalidSource(grpc_stub):
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_streams(ActionsInvalidSource)
     assert (
-            str(e.value)
-            == "table must be provided since it supports multiple streams/tables"
+        str(e.value)
+        == "table must be provided since it supports multiple streams/tables"
     )

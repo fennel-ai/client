@@ -1,11 +1,12 @@
 import pandas as pd
 import pytest
 
-from fennel.aggregate import Count, depends_on, KeyValue
+from fennel.aggregate import Aggregate, Count, depends_on, KeyValue
 from fennel.feature import *
 from fennel.lib import Field, Schema, windows
-from fennel.lib.schema import Array, Bool, Double, FieldType, Int, Map, String
+from fennel.lib.schema import Array, Bool, Double, Int, Map, String
 from fennel.stream import MySQL, populator, Stream
+
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -40,21 +41,23 @@ class Actions(Stream):
     name = "actions"
     retention = windows.DAY * 14
     schema = Schema(
-        [Field("actor_id", dtype=Int, default=0),
-         Field("target_id", dtype=Int, default=0),
-         Field("action_type", dtype=String, default="love"),
-         Field("gender", dtype=Bool, default=False),
-         Field("timestamp", dtype=Double, default=0.0),
-         Field(
-             "random_array",
-             dtype=Array(Array(String)),
-             default=[["a", "b", "c"], ["d", "e", "f"]],
-         ),
-         Field(
-             "metadata",
-             dtype=Map(String, Array(Int)),
-             default=[["a", "b", "c"], ["d", "e", "f"]],
-         )]
+        [
+            Field("actor_id", dtype=Int, default=0),
+            Field("target_id", dtype=Int, default=0),
+            Field("action_type", dtype=String, default="love"),
+            Field("gender", dtype=Bool, default=False),
+            Field("timestamp", dtype=Double, default=0.0),
+            Field(
+                "random_array",
+                dtype=Array(Array(String)),
+                default=[["a", "b", "c"], ["d", "e", "f"]],
+            ),
+            Field(
+                "metadata",
+                dtype=Map(String, Array(Int)),
+                default=[["a", "b", "c"], ["d", "e", "f"]],
+            ),
+        ]
     )
 
     @classmethod
@@ -136,8 +139,8 @@ def test_InvalidPopulate_StreamProcess():
     with pytest.raises(Exception) as e:
         Actions.invalid_populate(df)
     assert (
-            str(e.value) == "Column random_array value {'1': [1, 2, 3]} failed "
-                            "validation: [TypeError(\"Expected list, got <class 'dict'>\")]"
+        str(e.value) == "Column random_array value {'1': [1, 2, 3]} failed "
+        "validation: [TypeError(\"Expected list, got <class 'dict'>\")]"
     )
 
 
@@ -146,14 +149,31 @@ def test_InvalidPopulate_StreamProcess():
 ################################################################################
 
 
-class UserLikeCount(Count):
+class UserLikeCount(Aggregate):
     name = "TestUserLikeCount"
     stream = "actions"
     windows = [windows.DAY * 1, windows.DAY * 7, windows.DAY * 14]
     schema = Schema(
-        [Field("actor_id", Int, 0, field_type=FieldType.Key),
-         Field("target_id", Int, 0, field_type=FieldType.Value),
-         Field("timestamp", Double, 0.0, field_type=FieldType.Timestamp)]
+        [
+            Field(
+                "actor_id",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "target_id",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "timestamp",
+                dtype=Double,
+                default=0.0,
+            ),
+        ]
+    )
+    aggregate_type = Count(
+        key="target_id", value="actor_id", timestamp="timestamp"
     )
 
     @classmethod
@@ -183,15 +203,28 @@ def test_AggregatePreprocess(create_test_workspace):
     assert processed_df["target_id"].tolist() == [1, 2, 5]
 
 
-class UserLikeCountInvalidSchema(Count):
+class UserLikeCountInvalidSchema(Aggregate):
     name = "TestUserLikeCount"
     stream = "actions"
     windows = [windows.DAY * 7, windows.DAY * 28]
     schema = Schema(
-        [Field("actor_id", Int, 0, field_type=FieldType.Key),
-         Field("target_id", Int, 0, field_type=FieldType.Value),
-         Field("timestamp", Double, "123", field_type=FieldType.Timestamp),
-         ]
+        [
+            Field(
+                "actor_id",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "target_id",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "timestamp",
+                dtype=Double,
+                default="123",
+            ),
+        ]
     )
 
     @classmethod
@@ -219,23 +252,37 @@ def test_AggregatePreprocessInvalidSchema(create_test_workspace):
         workspace.register_aggregates(UserLikeCountInvalidSchema)
         _ = UserLikeCountInvalidSchema.preaggregate(df)
     assert (
-            str(e.value)
-            == """[TypeError('Expected default value for field timestamp to be float, got 123')]"""
+        str(e.value)
+        == """[TypeError('Expected default value for field timestamp to be float, got 123')]"""
     )
 
 
-class UserGenderKVAgg(KeyValue):
+class UserGenderKVAgg(Aggregate):
     name = "TestUserGenderKVAgg"
     stream = "actions"
     windows = [windows.DAY * 7, windows.DAY * 28]
 
     schema = Schema(
-        [Field("uid", dtype=Int, default=0, field_type=FieldType.Key),
-         Field("gender", dtype=String, default="female",
-             field_type=FieldType.Value),
-         Field("timestamp", dtype=Double, default=0.0,
-             field_type=FieldType.Timestamp),
-         ])
+        [
+            Field(
+                "uid",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "gender",
+                dtype=String,
+                default="female",
+            ),
+            Field(
+                "timestamp",
+                dtype=Double,
+                default=0.0,
+            ),
+        ]
+    )
+
+    aggregate_type = KeyValue(key="uid", value="gender", timestamp="timestamp")
 
     @classmethod
     def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
@@ -243,22 +290,36 @@ class UserGenderKVAgg(KeyValue):
         return filtered_df[["uid", "gender", "timestamp"]]
 
 
-class GenderLikeCountWithKVAgg(Count):
+class GenderLikeCountWithKVAgg(Aggregate):
     name = "TestGenderLikeCountWithKVAgg"
     stream = "actions"
     windows = [windows.DAY * 7, windows.DAY * 28]
-    schema = Schema([Field("gender", String, "male", field_type=FieldType.Key),
-                     Field("count", Int, 0, field_type=FieldType.Value),
-                     Field("timestamp", Double, 0.0,
-                         field_type=FieldType.Timestamp)])
+    schema = Schema(
+        [
+            Field(
+                "gender",
+                dtype=String,
+                default="male",
+            ),
+            Field(
+                "count",
+                dtype=Int,
+                default=0,
+            ),
+            Field("timestamp", dtype=Double, default=0.0),
+        ]
+    )
+    aggregate_type = Count(key="gender", value="count", timestamp="timestamp")
 
     @classmethod
     @depends_on(aggregates=[UserGenderKVAgg])
     def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
         filtered_df = df[df["action_type"] == "like"].copy()
         filtered_df.reset_index(inplace=True)
-        user_gender = UserGenderKVAgg.lookup(
-            uids=filtered_df["actor_id"], window=[windows.DAY]
+        user_gender = aggregate_lookup(
+            "TestUserGenderKVAgg",
+            uids=filtered_df["actor_id"],
+            window=[windows.DAY],
         )
         filtered_df.rename(columns={"actor_id": "uid"}, inplace=True)
         gender_df = pd.DataFrame({"gender": user_gender})
@@ -271,8 +332,7 @@ def test_client_AggregatePreprocess(create_test_workspace):
     workspace = create_test_workspace(
         {UserGenderKVAgg: pd.Series(["male", "female", "male"])}
     )
-    print(type(UserGenderKVAgg()))
-    workspace.register_aggregates(UserGenderKVAgg, GenderLikeCountWithKVAgg)
+    workspace.register_aggregates(UserGenderKVAgg)  # GenderLikeCountWithKVAgg)
     df = pd.DataFrame(
         {
             "actor_id": [1, 2, 3, 4, 5],
@@ -297,7 +357,9 @@ def test_client_AggregatePreprocess(create_test_workspace):
     name="user_like_count",
     schema=Schema([Field("user_like_count_7days", Int, 0)]),
 )
-@depends_on(aggregates=[UserLikeCount], )
+@depends_on(
+    aggregates=[UserLikeCount],
+)
 def user_like_count_3days(uids: pd.Series) -> pd.Series:
     day7, day28 = UserLikeCount.lookup(
         uids=uids, window=[windows.DAY, windows.WEEK]
@@ -338,10 +400,12 @@ def user_like_count_3days_square_random(uids: pd.Series) -> pd.Series:
 
 
 def test_Feature_Agg_And_FeatureMock2(create_test_workspace):
-    workspace = create_test_workspace({
-        UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13])),
-        user_like_count_3days.name: pd.Series([36, 144, 169]),
-    })
+    workspace = create_test_workspace(
+        {
+            UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13])),
+            user_like_count_3days.name: pd.Series([36, 144, 169]),
+        }
+    )
     workspace.register_aggregates(UserLikeCount)
     workspace.register_features(
         user_like_count_3days, user_like_count_3days_square_random
@@ -354,6 +418,7 @@ def test_Feature_Agg_And_FeatureMock2(create_test_workspace):
     # 144 * 144 + 12 * 12 = 20736 + 144 = 20880
     # 169 * 169 + 13 * 13 = 28561 + 169 = 28730
     assert features.tolist() == [1332, 20880, 28730]
+
 
 ################################################################################
 # Workspace Tests

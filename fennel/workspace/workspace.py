@@ -33,7 +33,7 @@ class Workspace:
     def register_aggregates(self, *aggregates: Any):
         exceptions = []
         for agg in aggregates:
-            exceptions.extend(agg.validate())
+            exceptions.extend(agg._validate())
 
         if len(exceptions) > 0:
             raise Exception(exceptions)
@@ -56,7 +56,7 @@ class Workspace:
             check_response(resp)
 
     def extract(
-            self, config: Dict[str, Any], names: List[str], df: pd.DataFrame
+        self, config: Dict[str, Any], names: List[str], df: pd.DataFrame
     ):
         req = feature_proto.ExtractFeaturesRequest()
         req.names.extend(names)

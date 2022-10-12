@@ -1,5 +1,4 @@
 import inspect
-from enum import Enum
 from typing import Any, List
 
 import numpy as np
@@ -102,6 +101,27 @@ class F_String(Type):
 String = F_String()
 
 
+class F_Timestamp(Type):
+    def __str__(self):
+        return "Timestamp"
+
+    def to_proto(self) -> proto.DataType:
+        return proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP)
+
+    def type_check(self, other: "Type") -> bool:
+        print("Timestamp type check", other)
+        return other == np.dtype("I")
+
+    def validate(self, value: Any) -> List[Exception]:
+        exceptions = []
+        if not isinstance(value, str):
+            exceptions.append(TypeError(f"Expected str, got {type(value)}"))
+        return exceptions
+
+
+Timestamp = F_Timestamp()
+
+
 class Map(Type):
     def __init__(self, key: Type = None, val: Type = None):
         self.key = key
@@ -192,26 +212,17 @@ class Array(Type):
         return exceptions
 
 
-class FieldType(Enum):
-    None_ = 0
-    Key = 1
-    Value = 2
-    Timestamp = 3
-
-
 class Field:
     def __init__(
-            self,
-            name: str,
-            dtype: Type,
-            default: Any,
-            field_type: FieldType = FieldType.None_,
-            expectations: List[Expectation] = None,
+        self,
+        name: str,
+        dtype: Type,
+        default: Any,
+        expectations: List[Expectation] = None,
     ):
         self.name = name
         self.dtype = dtype
         self.default = default
-        self.field_type = field_type
         self.expectations = expectations
 
     def to_value_proto(self, dtype: Type, value: Any) -> proto.Value:
@@ -382,7 +393,7 @@ class Schema:
     def __init__(self, fields: List[Field]):
         self.fields = fields
 
-    def validate_fields(self) -> List[Exception]:
+    def validate(self) -> List[Exception]:
         exceptions = []
         seen_so_far = set()
         for field in self.fields:
@@ -392,18 +403,6 @@ class Schema:
                     Exception(f"field {field.name} provided multiple times")
                 )
             seen_so_far.add(field.name)
-        return exceptions
-
-    def validate(self) -> List[Exception]:
-        exceptions = self.validate_fields()
-        for field in self.fields:
-            if field.field_type != FieldType.None_:
-                exceptions.append(
-                    Exception(
-                        f"field {field.name} provides type when not needed"
-                    )
-                )
-
         return exceptions
 
     def to_proto(self):

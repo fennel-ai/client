@@ -3,6 +3,7 @@ from typing import List
 from fennel.aggregate import AggregateMetaclass
 from fennel.gen.status_pb2 import Status
 from fennel.stream import Stream
+
 # noinspection PyUnresolvedReferences
 from fennel.workspace import Workspace
 
@@ -35,11 +36,12 @@ class InternalTestWorkspace(Workspace):
         print("Registered test streams:", [stream.name for stream in streams])
         return responses
 
-    def register_aggregates(self, *aggregates: List[AggregateMetaclass]) -> \
-            List[Status]:
+    def register_aggregates(
+        self, *aggregates: List[AggregateMetaclass]
+    ) -> List[Status]:
         exceptions = []
         for agg in aggregates:
-            exceptions.extend(agg.validate())
+            exceptions.extend(agg._validate())
 
         if len(exceptions) > 0:
             raise Exception(exceptions)

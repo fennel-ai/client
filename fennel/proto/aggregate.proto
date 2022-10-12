@@ -12,6 +12,8 @@ enum AggregateType {
     MAX = 4;
     RATE = 5;
     KEY_VALUE = 6;
+    TOPK = 7;
+    CF = 8;
 }
 
 message CreateAggregateRequest {
@@ -19,9 +21,9 @@ message CreateAggregateRequest {
   string mode = 2;
   uint32 version = 3;
   string stream = 4;
-  bytes preaggregate_function = 5;
-  string function_source_code = 6;
-  AggregateType aggregate_type = 7;
-  repeated int32 windows = 8;
-  Schema schema = 9;
+  bytes agg_cls = 6;
+  string function_source_code = 7;
+  AggregateType aggregate_type = 8;
+  repeated int32 windows = 9;
+  Schema schema = 10;
 }

@@ -12,9 +12,10 @@ class Expectation:
         self.mostly = mostly
 
     def validate(
-            self,
+        self,
     ) -> typing.List[Exception]:
         pass
+
 
 # def expect_values_between(
 #     low: typing.Any, high: typing.Any, mostly: float

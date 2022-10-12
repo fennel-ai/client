@@ -41,7 +41,7 @@ class SQLSource(Source):
         if not isinstance(self.password, str):
             exceptions.append(TypeError("password must be a string"))
         if self.jdbc_params is not None and not isinstance(
-                self.jdbc_params, str
+            self.jdbc_params, str
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
