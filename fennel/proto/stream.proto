@@ -37,7 +37,8 @@ message CreateStreamRequest {
     // and the source and connector at a given index are related.
     repeated CreateSourceRequest sources = 5;
     repeated CreateConnectorRequest connectors = 6;
-    Schema schema = 7;
+    bytes stream_cls = 7;
+    Schema schema = 8;
 }
 
 // Next field number: 8

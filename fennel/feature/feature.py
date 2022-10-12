@@ -157,8 +157,7 @@ def feature(
         # Directly called only for testing. Else the modded function feature_extract is called in the backend.
         def extract(*args, **kwargs) -> pd.DataFrame:
             agg2name = {
-                agg.instance().__class__.__name__: agg.instance().name
-                for agg in ret.depends_on_aggregates
+                agg.__name__: agg.name for agg in ret.depends_on_aggregates
             }
             feature2name = {
                 f.func_def_name: f.name for f in ret.depends_on_features
@@ -173,8 +172,7 @@ def feature(
         @functools.wraps(func)
         def register(stub: FennelFeatureStoreStub):
             agg2name = {
-                agg.instance().__class__.__name__: agg.instance().name
-                for agg in ret.depends_on_aggregates
+                agg.__name__: agg.name for agg in ret.depends_on_aggregates
             }
             feature2name = {
                 f.func_def_name: f.name for f in ret.depends_on_features
@@ -260,8 +258,7 @@ def feature_pack(
         @functools.wraps(func)
         def register(stub: FennelFeatureStoreStub):
             agg2name = {
-                agg.instance().__class__.__name__: agg.instance().name
-                for agg in ret.depends_on_aggregates
+                agg.__name__: agg.name for agg in ret.depends_on_aggregates
             }
             new_function, function_source_code = _modify_feature_extract(
                 func, agg2name, ret.depends_on_features

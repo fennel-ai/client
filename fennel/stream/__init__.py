@@ -1,10 +1,10 @@
-from fennel.stream.stream import Stream
 from fennel.stream.sources import (
-    Source,
-    Postgres,
-    S3,
     BigQuery,
     MySQL,
+    populator,
+    Postgres,
+    S3,
+    Source,
     SQLSource,
-    source,
 )
+from fennel.stream.stream import Stream

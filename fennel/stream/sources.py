@@ -140,16 +140,16 @@ def create_grpc_request(src: Source):
     return req
 
 
-def source(src: Source, table: Optional[str] = None):
+def populator(source: Source, table: Optional[str] = None):
     def decorator(fn: Callable):
         # Runs validation checks on the returned value of the
-        def ret(self, *args, **kwargs):
-            result = fn(self, *args, **kwargs)
+        def ret(cls, *args, **kwargs):
+            result = fn(cls, *args, **kwargs)
             if type(result) != pd.DataFrame:
                 raise Exception(
                     fn.__name__, " function must return a pandas DataFrame"
                 )
-            field2types = self.schema().get_fields_and_types()
+            field2types = cls.schema.get_fields_and_types()
             # Basic Type Check
             for col, dtype in zip(result.columns, result.dtypes):
                 if col not in field2types:
@@ -171,20 +171,20 @@ def source(src: Source, table: Optional[str] = None):
         def validate() -> List[Exception]:
             exceptions = []
             if table is not None:
-                if src.support_single_stream():
+                if source.support_single_stream():
                     exceptions.append(
                         errors.IncorrectSourceException(
                             "table must be None since it supports only a single stream"
                         )
                     )
             else:
-                if not src.support_single_stream():
+                if not source.support_single_stream():
                     exceptions.append(
                         errors.IncorrectSourceException(
                             "table must be provided since it supports multiple streams/tables"
                         )
                     )
-            exceptions.extend(src.validate())
+            exceptions.extend(source.validate())
             # exceptions.extend(fn.validate())
             if fn.__code__.co_argcount != 2:
                 exceptions.append(
@@ -198,23 +198,23 @@ def source(src: Source, table: Optional[str] = None):
 
         def create_source_request():
             if table is not None:
-                if src.support_single_stream():
+                if source.support_single_stream():
                     raise Exception(
                         "table must be None since it supports only a single stream"
                     )
             else:
-                if not src.support_single_stream():
+                if not source.support_single_stream():
                     raise Exception(
                         "table must be provided since it supports multiple streams/tables"
                     )
-            grpc_request = create_grpc_request(src)
-            if src.type() == "S3":
-                grpc_request.s3.schema = json.dumps(src.schema)
+            grpc_request = create_grpc_request(source)
+            if source.type() == "S3":
+                grpc_request.s3.schema = json.dumps(source.schema)
             return grpc_request
 
         setattr(ret, "create_source_request", create_source_request)
 
-        setattr(ret, "source", src)
+        setattr(ret, "source", source)
         setattr(ret, "table", table)
         setattr(ret, "populator_func", fn)
         setattr(ret, "func_name", fn.__name__)

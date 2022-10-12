@@ -32,19 +32,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
 python_version = "3.8"
-exclude = [
-    'test.*\.py$',
-    'fennel/gen/',
-]
-
-[[tool.mypy.overrides]]
-module = [
-    "fennel.gen",
-]
+exclude = '''(pb2\.py$|grpc\.py$)'''
 
 [tool.black]
 line-length = 80
-# 'extend-exclude' excludes files or directories in addition to the defaults
 extend-exclude = '''
 (
     .*_pb2.py

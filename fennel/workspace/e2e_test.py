@@ -1,14 +1,11 @@
-from typing import List
-
 import pandas as pd
 import pytest
 
-from fennel.aggregate import Count, depends_on, KeyValue
+from fennel.aggregate import Aggregate, Count, depends_on, KeyValue
 from fennel.feature import *
 from fennel.lib import Field, Schema, windows
-from fennel.lib.schema import Array, Bool, Double, FieldType, Int, Map, String
-from fennel.lib.windows import Window
-from fennel.stream import MySQL, source, Stream
+from fennel.lib.schema import Array, Bool, Double, Int, Map, String
+from fennel.stream import MySQL, populator, Stream
 
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
@@ -43,10 +40,8 @@ mysql_src = MySQL(
 class Actions(Stream):
     name = "actions"
     retention = windows.DAY * 14
-
-    @classmethod
-    def schema(cls) -> Schema:
-        return Schema(
+    schema = Schema(
+        [
             Field("actor_id", dtype=Int, default=0),
             Field("target_id", dtype=Int, default=0),
             Field("action_type", dtype=String, default="love"),
@@ -62,10 +57,12 @@ class Actions(Stream):
                 dtype=Map(String, Array(Int)),
                 default=[["a", "b", "c"], ["d", "e", "f"]],
             ),
-        )
+        ]
+    )
 
-    @source(src=mysql_src, table="actions")
-    def populate(self, df: pd.DataFrame) -> pd.DataFrame:
+    @classmethod
+    @populator(source=mysql_src, table="actions")
+    def populate(cls, df: pd.DataFrame) -> pd.DataFrame:
         filtered_df = df[df["action_type"] == "like"].copy()
         filtered_df["metadata"] = filtered_df["target_id"].apply(
             lambda x: {str(x): [x, x + 1, x + 2]}
@@ -85,8 +82,9 @@ class Actions(Stream):
             ]
         ]
 
-    @source(src=mysql_src, table="actions")
-    def invalid_populate(self, df: pd.DataFrame) -> pd.DataFrame:
+    @classmethod
+    @populator(source=mysql_src, table="actions")
+    def invalid_populate(cls, df: pd.DataFrame) -> pd.DataFrame:
         filtered_df = df[df["action_type"] == "like"].copy()
         filtered_df.loc[:, "random_array"] = (
             filtered_df["target_id"]
@@ -115,7 +113,6 @@ class Actions(Stream):
 
 
 def test_StreamProcess():
-    actions = Actions()
     df = pd.DataFrame(
         {
             "actor_id": [1, 2, 3, 4, 5],
@@ -125,12 +122,11 @@ def test_StreamProcess():
             "timestamp": [1.1, 2.1, 3.1, 4.1, 5.1],
         }
     )
-    processed_df = actions.populate(df)
+    processed_df = Actions.populate(df)
     assert processed_df.shape == (3, 7)
 
 
 def test_InvalidPopulate_StreamProcess():
-    actions = Actions()
     df = pd.DataFrame(
         {
             "actor_id": [1, 2, 3, 4, 5],
@@ -141,7 +137,7 @@ def test_InvalidPopulate_StreamProcess():
         }
     )
     with pytest.raises(Exception) as e:
-        actions.invalid_populate(df)
+        Actions.invalid_populate(df)
     assert (
         str(e.value) == "Column random_array value {'1': [1, 2, 3]} failed "
         "validation: [TypeError(\"Expected list, got <class 'dict'>\")]"
@@ -153,20 +149,35 @@ def test_InvalidPopulate_StreamProcess():
 ################################################################################
 
 
-class UserLikeCount(Count):
-    def __init__(self, stream, windows: List[Window]):
-        super().__init__("TestUserLikeCount", stream, windows)
+class UserLikeCount(Aggregate):
+    name = "TestUserLikeCount"
+    stream = "actions"
+    windows = [windows.DAY * 1, windows.DAY * 7, windows.DAY * 14]
+    schema = Schema(
+        [
+            Field(
+                "actor_id",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "target_id",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "timestamp",
+                dtype=Double,
+                default=0.0,
+            ),
+        ]
+    )
+    aggregate_type = Count(
+        key="target_id", value="actor_id", timestamp="timestamp"
+    )
 
     @classmethod
-    def schema(cls) -> Schema:
-        return Schema(
-            Field("actor_id", Int, 0, field_type=FieldType.Key),
-            Field("target_id", Int, 0, field_type=FieldType.Value),
-            Field("timestamp", Double, 0.0, field_type=FieldType.Timestamp),
-        )
-
-    @classmethod
-    def preprocess(cls, df: pd.DataFrame) -> pd.DataFrame:
+    def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
         filtered_df = df[df["action_type"] == "like"].copy()
         filtered_df["actor_id"].rename("uid")
         filtered_df.drop(columns=["action_type"], inplace=True)
@@ -175,8 +186,7 @@ class UserLikeCount(Count):
 
 def test_AggregatePreprocess(create_test_workspace):
     workspace = create_test_workspace({})
-    agg = UserLikeCount("actions", [windows.DAY * 7, windows.DAY * 28])
-    workspace.register_aggregates(agg)
+    workspace.register_aggregates(UserLikeCount)
 
     df = pd.DataFrame(
         {
@@ -186,27 +196,39 @@ def test_AggregatePreprocess(create_test_workspace):
             "action_type": ["like", "like", "share", "comment", "like"],
         }
     )
-    processed_df = agg.preprocess(df)
+    processed_df = UserLikeCount.preaggregate(df)
     assert processed_df.shape == (3, 3)
     assert processed_df["actor_id"].tolist() == [1, 2, 5]
     assert processed_df["timestamp"].tolist() == [1.1, 2.1, 5.1]
     assert processed_df["target_id"].tolist() == [1, 2, 5]
 
 
-class UserLikeCountInvalidSchema(Count):
-    def __init__(self, stream, windows: List[Window]):
-        super().__init__("TestUserLikeCount", stream, windows)
+class UserLikeCountInvalidSchema(Aggregate):
+    name = "TestUserLikeCount"
+    stream = "actions"
+    windows = [windows.DAY * 7, windows.DAY * 28]
+    schema = Schema(
+        [
+            Field(
+                "actor_id",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "target_id",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "timestamp",
+                dtype=Double,
+                default="123",
+            ),
+        ]
+    )
 
     @classmethod
-    def schema(cls) -> Schema:
-        return Schema(
-            Field("actor_id", Int, 0, field_type=FieldType.Key),
-            Field("target_id", Int, 0, field_type=FieldType.Value),
-            Field("timestamp", Double, 0.0, field_type=FieldType.Timestamp),
-        )
-
-    @classmethod
-    def preprocess(cls, df: pd.DataFrame) -> pd.DataFrame:
+    def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
         filtered_df = df[df["action_type"] == "like"].copy()
         filtered_df["actor_id"].rename("uid")
         filtered_df.drop(columns=["action_type"], inplace=True)
@@ -218,11 +240,6 @@ class UserLikeCountInvalidSchema(Count):
 
 def test_AggregatePreprocessInvalidSchema(create_test_workspace):
     workspace = create_test_workspace({})
-    agg = UserLikeCountInvalidSchema(
-        "actions", [windows.DAY * 7, windows.DAY * 28]
-    )
-    workspace.register_aggregates(agg)
-
     df = pd.DataFrame(
         {
             "actor_id": [1, 2, 3, 4, 5],
@@ -232,50 +249,77 @@ def test_AggregatePreprocessInvalidSchema(create_test_workspace):
         }
     )
     with pytest.raises(Exception) as e:
-        _ = agg.preprocess(df)
+        workspace.register_aggregates(UserLikeCountInvalidSchema)
+        _ = UserLikeCountInvalidSchema.preaggregate(df)
     assert (
         str(e.value)
-        == """Column timestamp type mismatch, got object expected Double"""
+        == """[TypeError('Expected default value for field timestamp to be float, got 123')]"""
     )
 
 
-class UserGenderKVAgg(KeyValue):
-    def __init__(self, stream, windows: List[Window]):
-        super().__init__("TestUserGenderKVAgg", stream, windows)
+class UserGenderKVAgg(Aggregate):
+    name = "TestUserGenderKVAgg"
+    stream = "actions"
+    windows = [windows.DAY * 7, windows.DAY * 28]
+
+    schema = Schema(
+        [
+            Field(
+                "uid",
+                dtype=Int,
+                default=0,
+            ),
+            Field(
+                "gender",
+                dtype=String,
+                default="female",
+            ),
+            Field(
+                "timestamp",
+                dtype=Double,
+                default=0.0,
+            ),
+        ]
+    )
+
+    aggregate_type = KeyValue(key="uid", value="gender", timestamp="timestamp")
 
     @classmethod
-    def schema(cls) -> Schema:
-        return Schema(
-            Field("uid", Int, 0, field_type=FieldType.Key),
-            Field("gender", String, "female", field_type=FieldType.Value),
-            Field("timestamp", Double, 0.0, field_type=FieldType.Timestamp),
-        )
-
-    @classmethod
-    def preprocess(cls, df: pd.DataFrame) -> pd.DataFrame:
+    def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
         filtered_df = df[df["action_type"] == "gender_type"].copy()
         return filtered_df[["uid", "gender", "timestamp"]]
 
 
-class GenderLikeCountWithKVAgg(Count):
-    def __init__(self, stream, windows: List[Window]):
-        super().__init__("TestGenderLikeCountWithKVAgg", stream, windows)
-
-    @classmethod
-    def schema(cls) -> Schema:
-        return Schema(
-            Field("gender", String, "male", field_type=FieldType.Key),
-            Field("count", Int, 0, field_type=FieldType.Value),
-            Field("timestamp", Double, 0.0, field_type=FieldType.Timestamp),
-        )
+class GenderLikeCountWithKVAgg(Aggregate):
+    name = "TestGenderLikeCountWithKVAgg"
+    stream = "actions"
+    windows = [windows.DAY * 7, windows.DAY * 28]
+    schema = Schema(
+        [
+            Field(
+                "gender",
+                dtype=String,
+                default="male",
+            ),
+            Field(
+                "count",
+                dtype=Int,
+                default=0,
+            ),
+            Field("timestamp", dtype=Double, default=0.0),
+        ]
+    )
+    aggregate_type = Count(key="gender", value="count", timestamp="timestamp")
 
     @classmethod
     @depends_on(aggregates=[UserGenderKVAgg])
-    def preprocess(cls, df: pd.DataFrame) -> pd.DataFrame:
+    def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
         filtered_df = df[df["action_type"] == "like"].copy()
         filtered_df.reset_index(inplace=True)
-        user_gender = UserGenderKVAgg.lookup(
-            uids=filtered_df["actor_id"], window=[windows.DAY]
+        user_gender = aggregate_lookup(
+            "TestUserGenderKVAgg",
+            uids=filtered_df["actor_id"],
+            window=[windows.DAY],
         )
         filtered_df.rename(columns={"actor_id": "uid"}, inplace=True)
         gender_df = pd.DataFrame({"gender": user_gender})
@@ -288,11 +332,7 @@ def test_client_AggregatePreprocess(create_test_workspace):
     workspace = create_test_workspace(
         {UserGenderKVAgg: pd.Series(["male", "female", "male"])}
     )
-    agg1 = UserGenderKVAgg("actions", [windows.DAY * 7])
-    agg2 = GenderLikeCountWithKVAgg(
-        "actions", [windows.DAY * 7, windows.DAY * 28]
-    )
-    workspace.register_aggregates(agg1, agg2)
+    workspace.register_aggregates(UserGenderKVAgg)  # GenderLikeCountWithKVAgg)
     df = pd.DataFrame(
         {
             "actor_id": [1, 2, 3, 4, 5],
@@ -301,7 +341,7 @@ def test_client_AggregatePreprocess(create_test_workspace):
             "action_type": ["like", "like", "share", "comment", "like"],
         }
     )
-    processed_df = agg2.preprocess(df)
+    processed_df = GenderLikeCountWithKVAgg.preaggregate(df)
     assert processed_df.shape == (3, 3)
     assert processed_df["gender"].tolist() == ["male", "female", "male"]
     assert processed_df["timestamp"].tolist() == [1.1, 2.1, 5.1]
@@ -315,9 +355,7 @@ def test_client_AggregatePreprocess(create_test_workspace):
 
 @feature(
     name="user_like_count",
-    schema=Schema(
-        Field("user_like_count_7days", Int, 0),
-    ),
+    schema=Schema([Field("user_like_count_7days", Int, 0)]),
 )
 @depends_on(
     aggregates=[UserLikeCount],
@@ -334,9 +372,7 @@ def test_Feature(create_test_workspace):
     workspace = create_test_workspace(
         {UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13]))}
     )
-    workspace.register_aggregates(
-        UserLikeCount("actions", [windows.DAY * 7, windows.DAY * 28])
-    )
+    workspace.register_aggregates(UserLikeCount)
     workspace.register_features(user_like_count_3days)
     features = user_like_count_3days.extract(uids=pd.Series([1, 2, 3, 4, 5]))
     assert type(features) == pd.Series
@@ -346,7 +382,7 @@ def test_Feature(create_test_workspace):
 @feature(
     name="user_like_count_7days_random_sq",
     schema=Schema(
-        Field("user_like_count_7days_random_sq", Int, 0),
+        [Field("user_like_count_7days_random_sq", Int, 0)],
     ),
 )
 @depends_on(
@@ -370,9 +406,7 @@ def test_Feature_Agg_And_FeatureMock2(create_test_workspace):
             user_like_count_3days.name: pd.Series([36, 144, 169]),
         }
     )
-    workspace.register_aggregates(
-        UserLikeCount("actions", [windows.DAY * 7, windows.DAY * 28])
-    )
+    workspace.register_aggregates(UserLikeCount)
     workspace.register_features(
         user_like_count_3days, user_like_count_3days_square_random
     )

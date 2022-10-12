@@ -1,8 +1,6 @@
-import ast
+import dataclasses
 import inspect
-import textwrap
-from abc import ABC
-from typing import Any, Dict, List
+from typing import Any, List, Optional, Union
 
 import cloudpickle
 import pandas as pd
@@ -12,276 +10,251 @@ from fennel.errors import NameException
 from fennel.gen.aggregate_pb2 import CreateAggregateRequest
 from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.gen.status_pb2 import Status
-from fennel.lib.schema import FieldType, Schema
+from fennel.lib.schema import Schema
 from fennel.lib.windows import Window
-from fennel.utils import Singleton
 
 
-class AggLookupTransformer(ast.NodeTransformer):
-    def __init__(self, agg2name: Dict[str, str]):
-        self.agg2name = agg2name
-
-    def visit_Call(self, node):
-        if isinstance(node.func, ast.Attribute) and node.func.attr == "lookup":
-            if node.func.value.id not in self.agg2name:
+def wrap_preaggregate(cls, fn, schema):
+    def wrapper(df):
+        result = fn.__func__(cls, df)
+        field2types = schema.get_fields_and_types()
+        # Shallow Type Check
+        for col, dtype in zip(result.columns, result.dtypes):
+            if col not in field2types:
+                raise Exception("Column {} not in schema".format(col))
+            if not field2types[col].type_check(dtype):
                 raise Exception(
-                    f"aggregate {node.func.value.id} not included in feature definition"
+                    f"Column {col} type mismatch, got {dtype} expected {field2types[col]}"
                 )
+        # Deeper Type Check
+        for (colname, colvals) in result.items():
+            for val in colvals:
+                type_errors = field2types[colname].validate(val)
+                if type_errors:
+                    raise Exception(
+                        f"Column {colname} value {val} failed validation: {type_errors}"
+                    )
+        return result
 
-            agg_name = self.agg2name[node.func.value.id]
-            return ast.Call(
-                func=ast.Name("aggregate_lookup", ctx=node.func.ctx),
-                args=[ast.Constant(agg_name)],
-                keywords=node.keywords,
+    # Return the composite function
+    return wrapper
+
+
+# Metaclass that creates aggregate class
+class AggregateMetaclass(type):
+    def __new__(cls, name, bases, attrs):
+        preaggregate_fn = None
+        schema = None
+        for attr_name, func in attrs.items():
+            if attr_name == "preaggregate":
+                preaggregate_fn = func
+            elif attr_name == "schema":
+                schema = func
+        if preaggregate_fn is not None:
+            attrs["preaggregate"] = wrap_preaggregate(
+                cls, preaggregate_fn, schema
             )
-        return node
+            attrs["og_preaggregate"] = preaggregate_fn
+        return super(AggregateMetaclass, cls).__new__(cls, name, bases, attrs)
 
 
-# Takes the list of aggregates that this aggregate depends upon as dictionary of aggregate to aggregate name.
-def _modify_aggregate_lookup(func, agg2name: Dict[str, str]):
-    if hasattr(func, "wrapped_function"):
-        feature_func = func.wrapped_function
-    else:
-        feature_func = func
-    function_source_code = textwrap.dedent(inspect.getsource(feature_func))
-    tree = ast.parse(function_source_code)
-    new_tree = AggLookupTransformer(agg2name).visit(tree)
-    new_tree.body[0].decorator_list = []
-    # Remove the class argument
-    new_tree.body[0].args = ast.arguments(
-        args=new_tree.body[0].args.args[1:],
-        posonlyargs=new_tree.body[0].args.posonlyargs,
-        kwonlyargs=new_tree.body[0].args.kwonlyargs,
-        kw_defaults=new_tree.body[0].args.kw_defaults,
-        defaults=new_tree.body[0].args.defaults,
-    )
-    ast.fix_missing_locations(new_tree)
-    ast.copy_location(new_tree.body[0], tree)
-    code = compile(tree, inspect.getfile(feature_func), "exec")
-    tmp_namespace = {}
-    if hasattr(func, "namespace"):
-        namespace = func.namespace
-    else:
-        namespace = func.__globals__
-    if hasattr(func, "func_name"):
-        func_name = func.func_name
-    else:
-        func_name = func.__name__
-    for k, v in namespace.items():
-        if k == func_name:
-            continue
-        tmp_namespace[k] = v
-    exec(code, tmp_namespace)
-    return tmp_namespace[func_name], function_source_code
+KeyType = Union[str, List[str]]
 
 
-class AggregateSchema(Schema):
-    def __init__(self, schema: Schema):
-        super().__init__(*schema.fields)
+@dataclasses.dataclass(frozen=True)
+class AggregateType:
+    key: KeyType
+    timestamp: str
 
-    def validate(self) -> List[Exception]:
-        exceptions = self.validate_fields()
-        key_fields = []
-        value_fields = []
-        timestamp_fields = []
-        for field in self.fields:
-            if field.field_type == FieldType.None_:
-                exceptions.append(
-                    f"field {field.name} does not specify valid type - key, value, or timestamp"
-                )
-            elif field.field_type == FieldType.Key:
-                key_fields.append(field.name)
-            elif field.field_type == FieldType.Value:
-                value_fields.append(field.name)
-            elif field.field_type == FieldType.Timestamp:
-                timestamp_fields.append(field.name)
-            else:
-                exceptions.append(f"invalid field type: {field.type}")
-
-        if len(key_fields) <= 0:
-            exceptions.append("no field with type 'key' provided")
-        if len(value_fields) <= 0:
-            exceptions.append("no field with type 'value' provided")
-        if len(timestamp_fields) != 1:
-            exceptions.append(
-                f"expected exactly one timestamp field but got: {len(timestamp_fields)} instead"
-            )
-
-        return exceptions
+    def validate(self, agg: Any) -> List[Exception]:
+        if self.key is None:
+            raise Exception("key not provided")
+        if self.timestamp is None:
+            raise Exception("timestamp not provided")
 
 
-class Aggregate(Singleton):
+class Aggregate(metaclass=AggregateMetaclass):
     name: str = None
     version: int = 1
     stream: str = None
     mode: str = "pandas"
-    windows: List[Window] = []
-
-    def __init__(
-        self,
-        name: str,
-        stream: str,
-        windows: List[Window],
-        version: int = 1,
-        mode: str = "pandas",
-    ):
-        self.name = name
-        self.version = version
-        self.stream = stream
-        self.mode = mode
-        self.windows = windows
+    schema: Schema = None
+    aggregate_type: AggregateType = None
 
     @classmethod
-    def wrap(cls, preprocess):
-        if hasattr(preprocess, "depends_on_aggregates"):
-            depends_on_aggregates = preprocess.depends_on_aggregates
-        else:
-            depends_on_aggregates = []
-        agg2names = {
-            agg.instance().__class__.__name__: agg.instance().name
-            for agg in depends_on_aggregates
-        }
-        mod_func, function_src_code = _modify_aggregate_lookup(
-            preprocess, agg2names
-        )
-
-        def outer(*args, **kwargs):
-            result = mod_func(*args, **kwargs)
-            # Validate the return value with the schema
-            field2types = cls.schema().get_fields_and_types()
-            for col, dtype in zip(result.columns, result.dtypes):
-                if col not in field2types:
-                    raise Exception("Column {} not in schema".format(col))
-                if not field2types[col].type_check(dtype):
-                    raise Exception(
-                        f"Column {col} type mismatch, got {dtype} expected {field2types[col]}"
-                    )
-            # Deeper Type Check
-            for (colname, colvals) in result.items():
-                for val in colvals:
-                    type_errors = field2types[colname].validate(val)
-                    if type_errors:
-                        raise Exception(
-                            f"Column {colname} value {val} failed validation: {type_errors}"
-                        )
-
-            return result
-
-        return outer, mod_func, function_src_code
-
-    def __new__(cls, *args, **kwargs):
-        instance = super(Aggregate, cls).__new__(cls, *args, **kwargs)
-        # instance._instance = None
-        for name, func in inspect.getmembers(
-            instance.__class__, predicate=inspect.ismethod
-        ):
-            if name == "preprocess":
-                (
-                    instance.preprocess,
-                    instance.mod_preprocess,
-                    instance.function_src_code,
-                ) = cls.wrap(func)
-        return instance
-
-    @classmethod
-    def schema(cls) -> Schema:
+    def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
         raise NotImplementedError()
 
     @classmethod
-    def preprocess(cls, df: pd.DataFrame) -> pd.DataFrame:
-        raise NotImplementedError()
-
-    def _get_agg_type(self):
-        raise NotImplementedError()
-
-    def _validate_preprocess(self) -> List[Exception]:
-        exceptions = []
-        found_preprocess = False
-        for name, func in inspect.getmembers(
-            self.__class__, predicate=inspect.ismethod
-        ):
-            if name[0] != "_" and name not in [
-                "preprocess",
-                "schema",
-                "version",
-                "instance",
-                "wrap",
-            ]:
-                exceptions.append(
-                    TypeError(f"invalid method {name} found in aggregate class")
-                )
-            if name != "preprocess":
-                continue
-            if hasattr(func, "wrapped_function"):
-                func = func.wrapped_function
-            if func.__code__.co_argcount != 2:
-                exceptions.append(
-                    TypeError(
-                        f"preprocess function should take 2 arguments ( self & df ) but got {func.__code__.co_argcount}"
-                    )
-                )
-            found_preprocess = True
-        if not found_preprocess:
-            exceptions.append(
-                Exception("preprocess function not found in aggregate class")
-            )
-        return exceptions
-
-    def validate(self) -> List[Exception]:
-        # Validate the schema
-        # Cast to aggregate schema
-        agg_schema = AggregateSchema(self.schema())
-        exceptions = agg_schema.validate()
-        if self.name is None:
-            exceptions.append(
-                NameException(f"name not provided  {self.__class__.__name__}")
-            )
-        if self.stream is None:
-            exceptions.append(
-                Exception(
-                    f"stream not provided for aggregate  {self.__class__.__name__}"
-                )
-            )
-
-        # Validate the preprocess function
-        exceptions.extend(self._validate_preprocess())
-
-        if self.windows is None or len(self.windows) == 0:
-            exceptions.append(
-                Exception(
-                    f"windows not provided for aggregate  {self.__class__.__name__}"
-                )
-            )
-        return exceptions
-
-    def register(self, stub: FennelFeatureStoreStub) -> Status:
-        if self.windows is None:
+    def register(cls, stub: FennelFeatureStoreStub) -> Status:
+        if cls.windows is None:
             raise Exception("windows not provided")
+
         req = CreateAggregateRequest(
-            name=self.name,
-            version=self.version,
-            stream=self.stream,
-            mode=self.mode,
-            aggregate_type=self._get_agg_type(),
-            preprocess_function=cloudpickle.dumps(self.mod_preprocess),
-            function_source_code=self.function_src_code,
-            windows=[int(w.total_seconds()) for w in self.windows],
-            schema=self.schema().to_proto(),
+            name=cls.name,
+            version=cls.version,
+            stream=cls.stream,
+            mode=cls.mode,
+            aggregate_type=cls.aggregate_type.agg_func,
+            preaggregate_function=cloudpickle.dumps(cls.og_preaggregate),
+            function_source_code=inspect.getsource(cls.og_preaggregate),
+            windows=[int(w.total_seconds()) for w in cls.windows],
+            schema=cls.schema.to_proto(),
         )
         resp = stub.RegisterAggregate(req)
         return resp
 
+    @classmethod
+    def _validate_preaggregate(cls) -> List[Exception]:
+        exceptions = []
+        found_preaggregate = False
+        class_methods = {
+            name: func.__func__
+            for name, func in cls.__dict__.items()
+            if hasattr(func, "__func__")
+        }
+        for name, func in class_methods.items():
+            if name[0] != "_" and name != "og_preaggregate":
+                exceptions.append(
+                    TypeError(
+                        f"invalid method {name} found in aggregate "
+                        f"class, only preaggregate is allowed"
+                    )
+                )
+            if hasattr(func, "wrapped_function"):
+                func = func.wrapped_function
+
+            if func.__code__.co_argcount != 2:
+                exceptions.append(
+                    TypeError(
+                        f"preaggregate function should take 2 arguments ( cls & df ) but got {func.__code__.co_argcount}"
+                    )
+                )
+            found_preaggregate = True
+        if not found_preaggregate:
+            exceptions.append(
+                Exception("preaggregate function not found in aggregate class")
+            )
+        return exceptions
+
+    @classmethod
+    def _validate(cls) -> List[Exception]:
+        # Validate the schema
+        exceptions = cls.schema.validate()
+        if cls.name is None:
+            exceptions.append(
+                NameException(f"name not provided  {cls.__class__.__name__}")
+            )
+        if cls.stream is None:
+            exceptions.append(
+                Exception(
+                    f"stream not provided for aggregate  "
+                    f"{cls.__class__.__name__}"
+                )
+            )
+
+        # Validate the preaggregate function
+        exceptions.extend(cls._validate_preaggregate())
+        return exceptions
+
+
+@dataclasses.dataclass(frozen=True)
+class WindowBasedAggregate(AggregateType):
+    value: str
+    windows: List[Window] = None
+
+    def validate(self, agg: Aggregate) -> List[Exception]:
+        super().validate(agg)
+        if self.windows is None:
+            raise Exception("windows not provided")
+
+
+@dataclasses.dataclass(frozen=True)
+class Count(WindowBasedAggregate):
+    agg_func = proto.AggregateType.COUNT
+
+
+@dataclasses.dataclass(frozen=True)
+class Sum(WindowBasedAggregate):
+    agg_func = proto.AggregateType.SUM
+
+
+@dataclasses.dataclass(frozen=True)
+class Average(WindowBasedAggregate):
+    agg_func = proto.AggregateType.AVG
+
+
+@dataclasses.dataclass(frozen=True)
+class Max(WindowBasedAggregate):
+    agg_func = proto.AggregateType.MAX
+
+
+@dataclasses.dataclass(frozen=True)
+class Min(WindowBasedAggregate):
+    agg_func = proto.AggregateType.MIN
+
+
+@dataclasses.dataclass(frozen=True)
+class KeyValue(AggregateType):
+    value: str
+    agg_func = proto.AggregateType.KEY_VALUE
+
+
+@dataclasses.dataclass(frozen=True)
+class Rate(AggregateType):
+    agg_func: proto.AggregateType.RATE
+
+
+@dataclasses.dataclass(frozen=True)
+class TopK(AggregateType):
+    item: KeyType
+    score: str
+    k: int
+    agg_func: proto.AggregateType.TOPK
+    update_frequency: int = 60
+
+    def validate(self, agg: Aggregate) -> List[Exception]:
+        super().validate(agg)
+        if self.k is None:
+            raise Exception("k not provided")
+        if self.item is None:
+            raise Exception("item not provided")
+        if self.score is None:
+            raise Exception("score not provided")
+        if self.update_frequency is None:
+            raise Exception("update_frequency not provided")
+
+
+@dataclasses.dataclass(frozen=True)
+class CF(AggregateType):
+    context: KeyType
+    weight: str
+    agg_func: proto.AggregateType.CF
+
+    def validate(self, agg: Aggregate) -> List[Exception]:
+        if self.context is None:
+            raise Exception("context not provided")
+        if self.weight is None:
+            raise Exception("weight not provided")
+
 
 def depends_on(
-    aggregates: List[Aggregate] = [],
-    features: List[Any] = [],
+    aggregates: Optional[List[Any]] = None,
+    features: List[Any] = None,
 ):
     def decorator(func):
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
 
-        wrapper.depends_on_aggregates = aggregates
-        wrapper.depends_on_features = features
+        if aggregates is not None:
+            wrapper.depends_on_aggregates = aggregates
+        else:
+            wrapper.depends_on_aggregates = []
+
+        if features is not None:
+            wrapper.depends_on_features = features
+        else:
+            wrapper.depends_on_features = []
         wrapper.signature = inspect.signature(func)
         wrapper.wrapped_function = func
         wrapper.namespace = func.__globals__
@@ -289,63 +262,3 @@ def depends_on(
         return wrapper
 
     return decorator
-
-
-class Count(Aggregate, ABC):
-    windows: List[int] = None
-
-    def _get_agg_type(self):
-        return proto.AggregateType.COUNT
-
-    def validate(self) -> List[Exception]:
-        return super().validate()
-
-
-class Min(Aggregate, ABC):
-    windows: List[int] = None
-
-    def _get_agg_type(self):
-        return proto.AggregateType.MIN
-
-    def validate(self) -> List[Exception]:
-        return super().validate()
-
-
-class Max(Aggregate, ABC):
-    windows: List[int] = None
-
-    def _get_agg_type(self):
-        return proto.AggregateType.MAX
-
-    def validate(self) -> List[Exception]:
-        return super().validate()
-
-
-class KeyValue(Aggregate, ABC):
-    static = False
-
-    def _get_agg_type(self):
-        return proto.AggregateType.KEY_VALUE
-
-    def validate(self) -> List[Exception]:
-        return super().validate()
-
-
-class Rate(Aggregate, ABC):
-    windows: List[int] = None
-
-    def _get_agg_type(self):
-        return proto.AggregateType.RATE
-
-    def validate(self) -> List[Exception]:
-        return super().validate()
-
-
-class Average(Aggregate, ABC):
-    windows: List[int] = None
-
-    def _get_agg_type(self):
-        return proto.AggregateType.AVG
-
-    def validate(self) -> List[Exception]:
-        return super().validate()

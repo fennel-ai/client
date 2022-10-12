@@ -47,7 +47,8 @@ def create_test_workspace(grpc_stub, mocker):
             for k, v in mocks.items():
                 if type(k) == str:
                     continue
-                if agg_name == k.instance().name:
+                print(k)
+                if agg_name == k.name:
                     return v
             raise Exception(f"Mock for {agg_name} not found")
 
