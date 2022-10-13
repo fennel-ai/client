@@ -404,6 +404,19 @@ def user_like_count_3days_square_random(uids: pd.Series) -> pd.Series:
     return day7_sq + user_count_features_sq
 
 
+class MyCustomFennelTest(FennelTest):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def mock_aggregate(aggregate_mock, agg_name, *args, **kwargs):
+        return (pd.Series([6, 12, 13]), pd.Series([5, 12, 13]))
+
+    @staticmethod
+    def mock_feature(feature_mock, feature_name, *args, **kwargs):
+        return pd.Series([36, 144, 169])
+
+
 class TestFeatureClient(unittest.TestCase):
     @FennelTest(
         aggregate_mock={
@@ -419,11 +432,15 @@ class TestFeatureClient(unittest.TestCase):
         assert type(features) == pd.Series
         assert features[0] == 36
 
-    @FennelTest(
-        aggregate_mock={
-            UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13]))
-        },
-        feature_mock={user_like_count_3days: pd.Series([36, 144, 169])},
+    # @FennelTest(
+    #     aggregate_mock={
+    #         UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13]))
+    #     },
+    #     feature_mock={user_like_count_3days: pd.Series([36, 144, 169])},
+    # )
+    @MyCustomFennelTest(
+        aggregate_mock=(pd.Series([6, 12, 13]), pd.Series([5, 12, 13])),
+        feature_mock=pd.Series([36, 144, 169]),
     )
     def test_Feature_Agg_And_FeatureMock(self, workspace):
         workspace.register_aggregates(UserLikeCount)
