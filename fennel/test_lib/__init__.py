@@ -1,5 +1,4 @@
 from fennel.test_lib.grpc_mock import (
-    create_test_workspace,
     FennelTest,
     grpc_add_to_server,
     grpc_servicer,

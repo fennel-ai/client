@@ -11,9 +11,9 @@ from fennel.lib.schema import Schema
 from fennel.utils import fennel_pickle
 
 
-def aggregate_lookup(agg_name: str, **kwargs):
-    raise Exception("Aggregate lookup incorrectly patched")
-
+# def aggregate_lookup(agg_name: str, **kwargs):
+#     raise Exception("Aggregate lookup incorrectly patched")
+#
 
 def feature_extract(feature_name, **kwargs):
     raise Exception("Feature extract incorrectly patched")
@@ -21,9 +21,9 @@ def feature_extract(feature_name, **kwargs):
 
 def _is_sign_args_and_kwargs(sign):
     return (
-        len(sign.parameters) == 2
-        and "args" in sign.parameters
-        and "kwargs" in sign.parameters
+            len(sign.parameters) == 2
+            and "args" in sign.parameters
+            and "kwargs" in sign.parameters
     )
 
 
@@ -62,10 +62,10 @@ class FeatureExtractTransformer(ast.NodeTransformer):
 
 
 def feature(
-    name: str = None,
-    version: int = 1,
-    mode: str = "pandas",
-    schema: Schema = None,
+        name: str = None,
+        version: int = 1,
+        mode: str = "pandas",
+        schema: Schema = None,
 ):
     def decorator(func):
         def ret(*args, **kwargs):
@@ -143,10 +143,10 @@ def feature(
 
 
 def feature_pack(
-    name: str = None,
-    version: int = 1,
-    mode: str = "pandas",
-    schema: Schema = None,
+        name: str = None,
+        version: int = 1,
+        mode: str = "pandas",
+        schema: Schema = None,
 ):
     def decorator(func):
         def ret(*args, **kwargs):

@@ -8,7 +8,6 @@ from fennel.feature import *
 from fennel.lib import Field, Schema, windows
 from fennel.lib.schema import Array, Bool, Int, Map, Now, String, Timestamp
 from fennel.stream import MySQL, populator, Stream
-
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -264,8 +263,8 @@ class TestAggregateClient(unittest.TestCase):
             workspace.register_aggregates(UserLikeCountInvalidSchema)
             _ = UserLikeCountInvalidSchema.preaggregate(df)
         assert (
-            str(e.value)
-            == """Column timestamp value 2020-01-01 00:00:00 failed validation: [TypeError("Expected pd.Timestamp, got value 2020-01-01 00:00:00, type : <class 'str'>")]"""
+                str(e.value)
+                == """Column timestamp value 2020-01-01 00:00:00 failed validation: [TypeError("Expected pd.Timestamp, got value 2020-01-01 00:00:00, type : <class 'str'>")]"""
         )
 
 
@@ -330,8 +329,7 @@ class GenderLikeCountWithKVAgg(Aggregate):
     def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
         filtered_df = df[df["action_type"] == "like"].copy()
         filtered_df.reset_index(inplace=True)
-        user_gender = aggregate_lookup(
-            "TestUserGenderKVAgg",
+        user_gender = UserGenderKVAgg.lookup(
             uids=filtered_df["actor_id"],
             window=[windows.DAY],
         )
@@ -377,8 +375,8 @@ class Testclient(unittest.TestCase):
     aggregates=[UserLikeCount],
 )
 def user_like_count_3days(uids: pd.Series) -> pd.Series:
-    day7, day28 = aggregate_lookup(
-        "TestUserLikeCount", uids=uids, window=[windows.DAY, windows.WEEK]
+    day7, day28 = UserLikeCount.lookup(
+        uids=uids, window=[windows.DAY, windows.WEEK]
     )
     day7 = day7.apply(lambda x: x * x)
     return day7
@@ -396,8 +394,8 @@ def user_like_count_3days(uids: pd.Series) -> pd.Series:
 )
 def user_like_count_3days_square_random(uids: pd.Series) -> pd.Series:
     user_count_features = user_like_count_3days.extract(uids=uids)
-    day7, day28 = aggregate_lookup(
-        "TestUserLikeCount", uids=uids, window=[windows.DAY, windows.WEEK]
+    day7, day28 = UserLikeCount.lookup(
+        uids=uids, window=[windows.DAY, windows.WEEK]
     )
     day7_sq = day7.apply(lambda x: x * x)
     user_count_features_sq = user_count_features.apply(lambda x: x * x)
@@ -455,7 +453,6 @@ class TestFeatureClient(unittest.TestCase):
         # 144 * 144 + 12 * 12 = 20736 + 144 = 20880
         # 169 * 169 + 13 * 13 = 28561 + 169 = 28730
         assert features.tolist() == [1332, 20880, 28730]
-
 
 ################################################################################
 # Workspace Tests

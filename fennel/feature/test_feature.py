@@ -5,9 +5,8 @@ import pytest
 
 import fennel.gen.feature_pb2 as feature_proto
 from fennel.aggregate import Aggregate, Count, depends_on
-
 # noinspection PyUnresolvedReferences
-from fennel.feature import aggregate_lookup, feature, feature_pack
+from fennel.feature import feature, feature_pack
 from fennel.lib import Field, Schema, windows
 from fennel.lib.schema import Int, Now, Timestamp
 from fennel.test_lib import *
@@ -51,8 +50,8 @@ class UserLikeCount(Aggregate):
     aggregates=[UserLikeCount],
 )
 def user_like_count_3days(uids: pd.Series) -> pd.Series:
-    day7, day28 = aggregate_lookup(
-        "TestUserLikeCount", uids=uids, window=[windows.DAY, windows.WEEK]
+    day7, day28 = UserLikeCount.lookup(
+        uids=uids, window=[windows.DAY, windows.WEEK]
     )
     day7 = day7.apply(lambda x: square(x))
     return day7
@@ -60,7 +59,7 @@ def user_like_count_3days(uids: pd.Series) -> pd.Series:
 
 def test_FeatureRegistration2(grpc_stub, mocker):
     mocker.patch(
-        __name__ + ".aggregate_lookup",
+        "fennel.aggregate.aggregate.aggregate_lookup",
         return_value=(pd.Series([6, 12, 13]), pd.Series([5, 12, 13])),
     )
     workspace = InternalTestWorkspace(grpc_stub)
@@ -92,13 +91,13 @@ def test_FeatureRegistration2(grpc_stub, mocker):
     aggregates=[UserLikeCount],
 )
 def user_like_count_3days_pack(uids: pd.Series) -> pd.DataFrame:
-    day7, day28 = aggregate_lookup(
-        "TestUserLikeCount", uids=uids, window=[windows.DAY, windows.WEEK]
+    day7, day28 = UserLikeCount.lookup(
+        uids=uids, window=[windows.DAY, windows.WEEK]
     )
-    day7_sq = day7**2
-    day7_sqrt = day7**0.5
-    day28_sq = day28**2
-    day28_sqrt = day28**0.5
+    day7_sq = day7 ** 2
+    day7_sqrt = day7 ** 0.5
+    day28_sq = day28 ** 2
+    day28_sqrt = day28 ** 0.5
     return pd.DataFrame(
         {
             "user_like_count_1day": day7,
@@ -114,7 +113,7 @@ def user_like_count_3days_pack(uids: pd.Series) -> pd.DataFrame:
 
 def test_FeaturePackRegistration(grpc_stub, mocker):
     mocker.patch(
-        __name__ + ".aggregate_lookup",
+        "fennel.aggregate.aggregate.aggregate_lookup",
         return_value=(
             pd.Series([6, 12, 13, 15, 156]),
             pd.Series([5, 12, 13, 34, 156]),
@@ -158,7 +157,7 @@ def user_like_count_3days_pack_invalid(uids: pd.Series) -> pd.Series:
 
 def test_FeaturePackRegistrationInvalid(grpc_stub, mocker):
     mocker.patch(
-        __name__ + ".aggregate_lookup",
+        "fennel.aggregate.aggregate.aggregate_lookup",
         return_value=(
             pd.Series([6, 12, 13, 15, 156]),
             pd.Series([5, 12, 13, 34, 156]),
@@ -178,12 +177,11 @@ def test_FeaturePackRegistrationInvalid(grpc_stub, mocker):
     ),
 )
 def user_like_count_3days_invalid_dependency(uids: pd.Series) -> pd.Series:
-    day7, day28 = aggregate_lookup(
-        "TestUserLikeCount", uids=uids, window=[windows.DAY, windows.WEEK]
+    day7, day28 = UserLikeCount.lookup(
+        uids=uids, window=[windows.DAY, windows.WEEK]
     )
     day7 = day7.apply(lambda x: x * x)
     return day7
-
 
 # AST checks are disabled for now
 # def test_FeatureRegistrationInvalidDependency(grpc_stub, mocker):

@@ -79,6 +79,11 @@ class AggregateFunction:
         raise NotImplementedError
 
 
+def aggregate_lookup(agg_name: str, **kwargs):
+    print(agg_name)
+    raise Exception("Aggregate lookup incorrectly patched.")
+
+
 class Aggregate(metaclass=AggregateMetaclass):
     name: str = None
     version: int = 0
@@ -160,6 +165,10 @@ class Aggregate(metaclass=AggregateMetaclass):
         # Validate the preaggregate function
         exceptions.extend(cls._validate_preaggregate())
         return exceptions
+
+    @classmethod
+    def lookup(cls, *args, **kwargs):
+        return aggregate_lookup(cls.name, *args, **kwargs)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -268,8 +277,8 @@ class CF(AggregateFunction):
 
 
 def depends_on(
-    aggregates: Optional[List[Any]] = None,
-    features: List[Any] = None,
+        aggregates: Optional[List[Any]] = None,
+        features: List[Any] = None,
 ):
     def decorator(func):
         @functools.wraps(func)
