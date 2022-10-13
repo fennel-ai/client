@@ -36,7 +36,6 @@ testpaths = [
     "fennel/stream",
     "fennel/feature",
     "fennel/lib",
-    "fennel/workspace"
 ]
 
 

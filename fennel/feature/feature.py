@@ -190,10 +190,6 @@ def feature_pack(
 
         @functools.wraps(func)
         def register(stub: FennelFeatureStoreStub):
-            print(
-                "Going to dump func"
-                "--------------------------------------------------------"
-            )
             req = feature_proto.CreateFeatureRequest(
                 name=name,
                 version=version,

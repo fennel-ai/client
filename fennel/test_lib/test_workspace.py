@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import List
 
 from fennel.aggregate import AggregateMetaclass
 from fennel.gen.status_pb2 import Status
@@ -8,30 +8,15 @@ from fennel.stream import Stream
 from fennel.workspace import Workspace
 
 
-class FennelTest:
-    def __init__(self, mocks: Dict[str, Any] = {}):
-        self.mocks = mocks
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-    def __call__(self, func):
-        return ClientTestWorkspace(func, self.mocks)
-
-
 class ClientTestWorkspace(Workspace):
-    def __init__(self, stub, mocker):
-        super().__init__(name="test", url="localhost:8080")
+    def __init__(self, stub):
+        super().__init__(name="test", url="localhost:50051")
         self.stub = stub
-        self.mocker = mocker
 
 
 class InternalTestWorkspace(Workspace):
     def __init__(self, stub):
-        super().__init__(name="test", url="localhost:8080")
+        super().__init__(name="test", url="localhost:50051")
         self.stub = stub
 
     def register_streams(self, *streams: List[Stream]):
