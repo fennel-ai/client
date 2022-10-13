@@ -11,6 +11,7 @@ from fennel.feature import aggregate_lookup, feature, feature_pack
 from fennel.lib import Field, Schema, windows
 from fennel.lib.schema import Int, Now, Timestamp
 from fennel.test_lib import *
+from fennel.utils import square
 
 
 class UserLikeCount(Aggregate):
@@ -50,14 +51,14 @@ class UserLikeCount(Aggregate):
     aggregates=[UserLikeCount],
 )
 def user_like_count_3days(uids: pd.Series) -> pd.Series:
-    day7, day28 = UserLikeCount.lookup(
-        uids=uids, window=[windows.DAY, windows.WEEK]
+    day7, day28 = aggregate_lookup(
+        "TestUserLikeCount", uids=uids, window=[windows.DAY, windows.WEEK]
     )
-    day7 = day7.apply(lambda x: x * x)
+    day7 = day7.apply(lambda x: square(x))
     return day7
 
 
-def test_FeatureRegistration(grpc_stub, mocker):
+def test_FeatureRegistration2(grpc_stub, mocker):
     mocker.patch(
         __name__ + ".aggregate_lookup",
         return_value=(pd.Series([6, 12, 13]), pd.Series([5, 12, 13])),
@@ -91,8 +92,8 @@ def test_FeatureRegistration(grpc_stub, mocker):
     aggregates=[UserLikeCount],
 )
 def user_like_count_3days_pack(uids: pd.Series) -> pd.DataFrame:
-    day7, day28 = UserLikeCount.lookup(
-        uids=uids, window=[windows.DAY, windows.WEEK]
+    day7, day28 = aggregate_lookup(
+        "TestUserLikeCount", uids=uids, window=[windows.DAY, windows.WEEK]
     )
     day7_sq = day7**2
     day7_sqrt = day7**0.5
@@ -126,7 +127,7 @@ def test_FeaturePackRegistration(grpc_stub, mocker):
     create_feature = feature_proto.CreateFeatureRequest()
     responses[0].details[0].Unpack(create_feature)
     feature_func = pickle.loads(create_feature.function)
-    features = feature_func.extract(uids=pd.Series([1, 2, 3, 4, 5]))
+    features = feature_func(uids=pd.Series([1, 2, 3, 4, 5]))
     assert type(features) == pd.DataFrame
     assert features.shape == (5, 7)
     assert features["user_like_count_1day"][0] == 6
@@ -177,23 +178,24 @@ def test_FeaturePackRegistrationInvalid(grpc_stub, mocker):
     ),
 )
 def user_like_count_3days_invalid_dependency(uids: pd.Series) -> pd.Series:
-    day7, day28 = UserLikeCount.lookup(
-        uids=uids, window=[windows.DAY, windows.WEEK]
+    day7, day28 = aggregate_lookup(
+        "TestUserLikeCount", uids=uids, window=[windows.DAY, windows.WEEK]
     )
     day7 = day7.apply(lambda x: x * x)
     return day7
 
 
-def test_FeatureRegistrationInvalidDependency(grpc_stub, mocker):
-    mocker.patch(
-        __name__ + ".aggregate_lookup",
-        return_value=(pd.Series([6, 12, 13]), pd.Series([5, 12, 13])),
-    )
-    with pytest.raises(Exception) as e:
-        workspace = InternalTestWorkspace(grpc_stub)
-        workspace.register_aggregates(UserLikeCount)
-        workspace.register_features(user_like_count_3days_invalid_dependency)
-    assert (
-        str(e.value)
-        == "aggregate UserLikeCount not included in feature definition"
-    )
+# AST checks are disabled for now
+# def test_FeatureRegistrationInvalidDependency(grpc_stub, mocker):
+#     mocker.patch(
+#         __name__ + ".aggregate_lookup",
+#         return_value=(pd.Series([6, 12, 13]), pd.Series([5, 12, 13])),
+#     )
+#     with pytest.raises(Exception) as e:
+#         workspace = InternalTestWorkspace(grpc_stub)
+#         workspace.register_aggregates(UserLikeCount)
+#         workspace.register_features(user_like_count_3days_invalid_dependency)
+#     assert (
+#             str(e.value)
+#             == "aggregate UserLikeCount not included in feature definition"
+#     )

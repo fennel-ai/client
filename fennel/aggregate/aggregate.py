@@ -1,8 +1,8 @@
 import dataclasses
+import functools
 import inspect
 from typing import Any, List, Optional, Union
 
-import cloudpickle
 import pandas as pd
 
 import fennel.gen.aggregate_pb2 as proto
@@ -12,6 +12,7 @@ from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.gen.status_pb2 import Status
 from fennel.lib.schema import Schema
 from fennel.lib.windows import Window
+from fennel.utils import fennel_pickle
 
 
 def wrap_preaggregate(cls, fn, schema):
@@ -98,7 +99,7 @@ class Aggregate(metaclass=AggregateMetaclass):
             stream=cls.stream,
             mode=cls.mode,
             aggregate_type=cls.aggregate_type.to_proto(),
-            agg_cls=cloudpickle.dumps(cls),
+            agg_cls=fennel_pickle(cls),
             function_source_code=inspect.getsource(cls.og_preaggregate),
             schema=cls.schema.to_proto(),
         )
@@ -114,6 +115,7 @@ class Aggregate(metaclass=AggregateMetaclass):
             for name, func in cls.__dict__.items()
             if hasattr(func, "__func__")
         }
+
         for name, func in class_methods.items():
             if name[0] != "_" and name != "og_preaggregate":
                 exceptions.append(
@@ -124,7 +126,6 @@ class Aggregate(metaclass=AggregateMetaclass):
                 )
             if hasattr(func, "wrapped_function"):
                 func = func.wrapped_function
-
             if func.__code__.co_argcount != 2:
                 exceptions.append(
                     TypeError(
@@ -271,6 +272,7 @@ def depends_on(
     features: List[Any] = None,
 ):
     def decorator(func):
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
 
@@ -286,7 +288,6 @@ def depends_on(
         wrapper.signature = inspect.signature(func)
         wrapper.wrapped_function = func
         wrapper.namespace = func.__globals__
-        wrapper.func_name = func.__name__
         return wrapper
 
     return decorator
