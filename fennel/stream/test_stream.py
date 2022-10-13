@@ -5,7 +5,7 @@ import pytest
 
 from fennel.gen.stream_pb2 import CreateStreamRequest
 from fennel.lib import Field, Schema, windows
-from fennel.lib.schema import Array, Double, Int, Map, String
+from fennel.lib.schema import Array, Int, Map, Now, String, Timestamp
 from fennel.stream import MySQL, populator, Stream
 from fennel.test_lib import *
 
@@ -26,7 +26,7 @@ class Actions(Stream):
             Field("actor_id", dtype=Int, default=0),
             Field("target_id", dtype=Int, default=0),
             Field("action_type", dtype=String, default="love"),
-            Field("timestamp", dtype=Double, default=0.0),
+            Field("timestamp", dtype=Timestamp, default=Now),
             Field(
                 "metadata2",
                 dtype=Array(Array(String)),
@@ -57,11 +57,12 @@ def test_StreamRegistration(grpc_stub):
     assert len(create_stream_req.connectors) == 1
     create_connect_req = create_stream_req.connectors[0]
     populate = pickle.loads(create_connect_req.connector_function)
+    now = pd.Timestamp.now()
     df = pd.DataFrame(
         {
             "actor_id": [1, 2, 3, 4, 5],
             "target_id": [1, 2, 3, 4, 5],
-            "timestamp": [1.1, 2.1, 3.1, 4.1, 5.1],
+            "timestamp": [now, now, now, now, now],
             "action_type": ["like", "like", "share", "comment", "like"],
         }
     )
@@ -71,7 +72,7 @@ def test_StreamRegistration(grpc_stub):
     assert processed_df.shape == (3, 4)
     assert processed_df["actor_id"].tolist() == [1, 2, 5]
     assert processed_df["target_id"].tolist() == [1, 2, 5]
-    assert processed_df["timestamp"].tolist() == [1.1, 2.1, 5.1]
+    assert processed_df["timestamp"].tolist() == [now, now, now]
     assert processed_df["action_type"].tolist() == ["like", "like", "like"]
 
 
@@ -83,7 +84,7 @@ class ActionsMultipleSources(Stream):
             Field("actor_id", dtype=Int, default=1),
             Field("target_id", dtype=Int, default=2),
             Field("action_type", dtype=String, default="action"),
-            Field("timestamp", dtype=Double, default=0.0),
+            Field("timestamp", dtype=Timestamp, default=pd.Timestamp.now()),
         ],
     )
 
@@ -122,11 +123,13 @@ def test_StreamRegistration_MultipleSources(grpc_stub):
             create_connect_req = c
     assert create_connect_req is not None
     populate = pickle.loads(create_connect_req.connector_function)
+    now = pd.Timestamp.now()
+    yest = now - pd.Timedelta(days=1)
     df = pd.DataFrame(
         {
             "actor_id": [1, 2, 3, 4, 5],
             "target_id": [1, 2, 3, 4, 5],
-            "timestamp": [1.1, 2.1, 3.1, 4.1, 5.1],
+            "timestamp": [now, yest, now, yest, now],
             "action_type": ["like", "like", "share", "comment", "like"],
         }
     )
@@ -136,7 +139,7 @@ def test_StreamRegistration_MultipleSources(grpc_stub):
     assert processed_df.shape == (1, 4)
     assert processed_df["actor_id"].tolist() == [3]
     assert processed_df["target_id"].tolist() == [3]
-    assert processed_df["timestamp"].tolist() == [3.1]
+    assert processed_df["timestamp"].tolist() == [now]
     assert processed_df["action_type"].tolist() == ["share"]
 
 
@@ -148,6 +151,7 @@ class ActionsInvalidSchema2(Stream):
             Field("actor_id", dtype=int, default=0),
             Field("target_id", dtype=String, default=1),
             Field("action_type", dtype=Array(String), default="love"),
+            Field("timestamp", dtype=Timestamp, default=Now),
         ],
     )
 
@@ -202,6 +206,9 @@ class ActionsInvalidSource(Stream):
             Field("actor_id", dtype=Int, default=0),
             Field("target_id", dtype=Int, default=0),
             Field("action_type", dtype=String, default="love"),
+            Field(
+                "timestamp", dtype=Timestamp, default=pd.Timestamp("2020-01-01")
+            ),
         ],
     )
 

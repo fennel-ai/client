@@ -6,14 +6,13 @@ import pytest
 from fennel.aggregate import Aggregate, Count
 from fennel.gen.aggregate_pb2 import CreateAggregateRequest
 from fennel.lib import Field, Schema, windows
-from fennel.lib.schema import Double, Int, String
+from fennel.lib.schema import Int, Now, String, Timestamp
 from fennel.test_lib import *
 
 
 class UserLikeCount(Aggregate):
     name = "TestUserLikeCount"
     stream = "Actions"
-    windows = [windows.DAY * 7, windows.DAY * 28]
 
     schema = Schema(
         [
@@ -29,14 +28,17 @@ class UserLikeCount(Aggregate):
             ),
             Field(
                 "timestamp",
-                dtype=Double,
-                default=0.0,
+                dtype=Timestamp,
+                default=Now,
             ),
         ]
     )
 
     aggregate_type = Count(
-        key="actor_id", value="target_id", timestamp="timestamp"
+        key="actor_id",
+        value="target_id",
+        timestamp="timestamp",
+        windows=[windows.DAY * 7, windows.DAY * 28],
     )
 
     @classmethod
@@ -54,7 +56,7 @@ def test_AggregateRegistration(grpc_stub):
     assert responses[0].code == 200
     create_agg = CreateAggregateRequest()
     responses[0].details[0].Unpack(create_agg)
-    preprocess = pickle.loads(create_agg.preaggregate_function)
+    agg_cls = pickle.loads(create_agg.agg_cls)
     df = pd.DataFrame(
         {
             "actor_id": [1, 2, 3, 4, 5],
@@ -63,7 +65,9 @@ def test_AggregateRegistration(grpc_stub):
             "action_type": ["like", "like", "share", "comment", "like"],
         }
     )
-    processed_df = preprocess(df)
+    # Schema check is done in the preaggregate function not in
+    # og_preaggregate. Since that will be done by the server.
+    processed_df = agg_cls.og_preaggregate(df)
     assert type(processed_df) == pd.DataFrame
     assert processed_df.shape == (3, 3)
 
@@ -71,7 +75,6 @@ def test_AggregateRegistration(grpc_stub):
 class UserLikeCountInvalidSchema(Aggregate):
     name = "TestUserLikeCount"
     stream = "Actions"
-    windows = [windows.DAY * 7, windows.DAY * 28]
     schema = Schema(
         [
             Field(
@@ -85,14 +88,19 @@ class UserLikeCountInvalidSchema(Aggregate):
                 default=0,
             ),
             Field(
-                "timestamp",
+                "timestamp1",
                 dtype=int,
                 default=0,
             ),
         ]
     )
     aggregate_type = Count(
-        key="actor_id", value="target_id", timestamp="timestamp"
+        key="actor_id",
+        value="target_id",
+        windows=[
+            windows.DAY * 7,
+        ],
+        timestamp="timestamp",
     )
 
     @classmethod
@@ -112,14 +120,14 @@ def test_InvalidSchemaAggregateRegistration(grpc_stub):
         str(e.value)
         == "[TypeError('Type for uid should be a Fennel Type object such as Int() and not a class such as Int/int'), "
         "TypeError('Type for count should be a Fennel Type object such as Int() and not a class such as Int/int'), "
-        "TypeError('Type for timestamp should be a Fennel Type object such as Int() and not a class such as Int/int')]"
+        "TypeError('Type for timestamp1 should be a Fennel Type object such as Int() and not a class such as Int/int'), "
+        "Exception('No timestamp field provided')]"
     )
 
 
 class UserLikeCountInvalidProcessingFunction(Aggregate):
     name = "TestUserLikeCount"
     stream = "Actions"
-    windows = [windows.DAY * 7, windows.DAY * 28]
     schema = Schema(
         [
             Field(
@@ -134,13 +142,18 @@ class UserLikeCountInvalidProcessingFunction(Aggregate):
             ),
             Field(
                 "timestamp",
-                dtype=Int,
-                default=1234,
+                dtype=Timestamp,
+                default=Now,
             ),
         ],
     )
     aggregate_type = Count(
-        key="actor_id", value="target_id", timestamp="timestamp"
+        key="actor_id",
+        value="target_id",
+        timestamp="timestamp",
+        windows=[
+            windows.DAY * 7,
+        ],
     )
 
     @classmethod
@@ -167,7 +180,6 @@ def test_InvalidProcessingFunctionAggregateRegistration(grpc_stub):
 class UserLikeCountInvalidProcessingFunction2(Aggregate):
     name = "TestUserLikeCount"
     stream = "Actions"
-    windows = [windows.DAY * 7, windows.DAY * 28]
     schema = Schema(
         [
             Field(
@@ -176,11 +188,16 @@ class UserLikeCountInvalidProcessingFunction2(Aggregate):
                 default="aditya",
             ),
             Field("count", dtype=Int, default=12),
-            Field("timestamp", dtype=Int, default=1234),
+            Field("timestamp", dtype=Timestamp, default=Now),
         ]
     )
     aggregate_type = Count(
-        key="actor_id", value="target_id", timestamp="timestamp"
+        key="actor_id",
+        value="target_id",
+        timestamp="timestamp",
+        windows=[
+            windows.DAY * 7,
+        ],
     )
 
     @classmethod

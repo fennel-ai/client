@@ -6,8 +6,8 @@ import "schema.proto";
 import "status.proto";
 
 enum FeatureDefType {
-   FEATURE = 0;
-   FEATURE_PACK = 1;
+  FEATURE = 0;
+  FEATURE_PACK = 1;
 }
 
 message CreateFeatureRequest {

@@ -2,9 +2,12 @@ import inspect
 from typing import Any, List
 
 import numpy as np
+import pandas as pd
 
 import fennel.gen.schema_pb2 as proto
 from fennel.lib.expectations import Expectation
+
+Now = -1
 
 
 class Type(object):
@@ -109,14 +112,31 @@ class F_Timestamp(Type):
         return proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP)
 
     def type_check(self, other: "Type") -> bool:
-        print("Timestamp type check", other)
-        return other == np.dtype("I")
+        return (
+            other == pd.Timestamp
+            or other == np.datetime64
+            or other == np.dtype("datetime64[ns]")
+        )
 
     def validate(self, value: Any) -> List[Exception]:
         exceptions = []
-        if not isinstance(value, str):
-            exceptions.append(TypeError(f"Expected str, got {type(value)}"))
+        if isinstance(value, pd.Timestamp):
+            return exceptions
+        if value != Now:
+            exceptions.append(
+                TypeError(
+                    f"Expected pd.Timestamp, got value {value}, type :"
+                    f" {type(value)}"
+                )
+            )
         return exceptions
+
+    @staticmethod
+    def get_timestamp_proto(value: pd.Timestamp) -> proto.Timestamp:
+        return proto.Timestamp(
+            seconds=int(value.timestamp()),
+            nanos=int(value.nanosecond % 1 * 1e9),
+        )
 
 
 Timestamp = F_Timestamp()
@@ -218,10 +238,12 @@ class Field:
         name: str,
         dtype: Type,
         default: Any,
+        nullable: bool = False,
         expectations: List[Expectation] = None,
     ):
         self.name = name
         self.dtype = dtype
+        self.nullable = nullable
         self.default = default
         self.expectations = expectations
 
@@ -254,6 +276,17 @@ class Field:
                     f"bool, got {value}"
                 )
             return proto.Value(bool_value=value)
+        elif type(dtype) == F_Timestamp:
+            if value != Now and not isinstance(value, pd.Timestamp):
+                raise TypeError(
+                    f"Expected default value for field {self.name} to be "
+                    f"pd.Timestamp, got {value}"
+                )
+            elif value == Now:
+                return proto.Value(timestamp_value=proto.Timestamp(now=True))
+            return proto.Value(
+                timestamp_value=F_Timestamp.get_timestamp_proto(value)
+            )
         elif type(dtype) == Array:
             if not isinstance(value, list):
                 raise TypeError(
@@ -315,6 +348,14 @@ class Field:
                     TypeError(
                         f"Expected default value for field {self.name} to be "
                         f"bool, got {value}"
+                    )
+                )
+        elif type(dtype) == F_Timestamp:
+            if value != Now and not isinstance(value, pd.Timestamp):
+                errors.append(
+                    TypeError(
+                        f"Expected default value for field {self.name} to be "
+                        f"pandas timestamp, got {value}"
                     )
                 )
         elif type(dtype) == Array:
@@ -404,6 +445,12 @@ class Schema:
                 )
             seen_so_far.add(field.name)
         return exceptions
+
+    def check_timestamp_field_exists(self) -> List[Exception]:
+        for field in self.fields:
+            if type(field.dtype) == F_Timestamp:
+                return []
+        return [Exception("No timestamp field provided")]
 
     def to_proto(self):
         return proto.Schema(fields=[field.to_proto() for field in self.fields])

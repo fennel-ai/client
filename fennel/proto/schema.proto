@@ -34,9 +34,18 @@ message Value {
     double double_value = 2;
     string string_value = 3;
     bool bool_value = 4;
+    Timestamp timestamp_value = 5;
     Array array_value = 6;
     Map map_value = 7;
   }
+}
+
+message Timestamp {
+  // Seconds since the Unix epoch.
+  int64 seconds = 1;
+  int32 nanos = 2;
+  // If set to true using the current timestamp.
+  bool now = 3;
 }
 
 message Array {
@@ -61,8 +70,8 @@ message MapType {
 
 message Field {
   string name = 1;
-  FieldType type = 2;
-  DataType dtype = 3;
+  DataType dtype = 2;
+  bool nullable = 3;
   Value default_value = 4;
   repeated Expectation expectation = 5;
 }

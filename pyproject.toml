@@ -30,6 +30,16 @@ mypy = "^0.961"
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.pytest.ini_options]
+testpaths = [
+    "fennel/aggregate",
+    "fennel/stream",
+    "fennel/feature",
+    "fennel/lib",
+    "fennel/workspace"
+]
+
+
 [tool.mypy]
 python_version = "3.8"
 exclude = '''(pb2\.py$|grpc\.py$)'''

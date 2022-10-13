@@ -1,8 +1,20 @@
+import datetime
+
+import pandas as pd
 import pytest
 
 from fennel.errors import SchemaException
 from fennel.lib import Field, Schema
-from fennel.lib.schema import Array, Bool, F_Double, Int, Map, String
+from fennel.lib.schema import (
+    Array,
+    Bool,
+    Double,
+    Int,
+    Map,
+    Now,
+    String,
+    Timestamp,
+)
 
 
 def validate_schema(s):
@@ -15,14 +27,25 @@ def test_ValidSchema():
     Schema(
         [
             Field("actor_id", dtype=Int, default=1),
-            Field("target_id", dtype=F_Double(), default=2.0),
+            Field("target_id", dtype=Double, default=2.0),
             Field("action_type", dtype=String, default="wassup"),
             Field("bool_field", dtype=Bool, default=True),
+            Field("timestamp", dtype=Int, default=0),
+            Field("timestamp", dtype=Timestamp, default=Now),
+            Field("timestamp", dtype=Timestamp, default=pd.Timestamp.now()),
+            Field(
+                "timestamp", dtype=Timestamp, default=pd.Timestamp("2018-01-01")
+            ),
         ],
     )
     Schema(
         [
             Field("actor_id", dtype=Array(Int), default=[2, 3, 4, 5]),
+            Field(
+                "actor_id",
+                dtype=Array(Timestamp),
+                default=[pd.Timestamp.now(), Now, pd.Timestamp("2018-01-01")],
+            ),
             Field("target_id", dtype=Array(String), default=["a", "b", "c"]),
             Field(
                 "action_type",
@@ -49,7 +72,7 @@ def test_RepeatedFields():
             Schema(
                 [
                     Field("actor_id", dtype=Int, default=1),
-                    Field("actor_id", dtype=F_Double(), default=2.0),
+                    Field("actor_id", dtype=Double, default=2.0),
                     Field("action_type", dtype=String, default="wassup"),
                     Field("bool_field", dtype=Bool, default=True),
                 ],
@@ -213,4 +236,21 @@ def test_InvalidDefaultValue():
         "TypeError('Expected default value for field actor_id to "
         "be str, got 2'), TypeError('Expected "
         "default value for field actor_id to be str, got 3')]"
+    )
+    with pytest.raises(SchemaException) as e:
+        validate_schema(
+            Schema(
+                [
+                    Field(
+                        "timestamp",
+                        dtype=Timestamp,
+                        default=datetime.datetime(2019, 1, 1, 0, 0, 0),
+                    )
+                ],
+            )
+        )
+    assert (
+        str(e.value) == "Schema errors: [TypeError('Expected default "
+        "value for field timestamp to be pandas "
+        "timestamp, got 2019-01-01 00:00:00')]"
     )

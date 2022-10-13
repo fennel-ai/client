@@ -24,6 +24,8 @@ class Stream:
         for name, func in cls.__dict__.items():
             if hasattr(func, "validate"):
                 exceptions.extend(func.validate())
+        # Ensure that timestamp is present in the schema
+        exceptions.extend(cls.schema.check_timestamp_field_exists())
         return exceptions
 
     @classmethod

@@ -4,16 +4,16 @@ package fennel.proto;
 
 import "schema.proto";
 
-enum AggregateType {
-    SUM = 0;
-    AVG = 1;
-    COUNT = 2;
-    MIN = 3;
-    MAX = 4;
-    RATE = 5;
-    KEY_VALUE = 6;
-    TOPK = 7;
-    CF = 8;
+enum AggregateFunction {
+  SUM = 0;
+  AVG = 1;
+  COUNT = 2;
+  MIN = 3;
+  MAX = 4;
+  RATE = 5;
+  KEY_VALUE = 6;
+  TOPK = 7;
+  CF = 8;
 }
 
 message CreateAggregateRequest {
@@ -26,4 +26,39 @@ message CreateAggregateRequest {
   AggregateType aggregate_type = 8;
   repeated int32 windows = 9;
   Schema schema = 10;
+}
+
+message AggregateType {
+  AggregateFunction function = 1;
+  repeated string key_fields = 2;
+  string timestamp_field = 3;
+
+  oneof Config {
+    WindowConfig window_config = 4;
+    KeyValueConfig key_value_config = 5;
+    TopKConfig topk_config = 6;
+    CFConfig cf_config = 7;
+  }
+}
+
+
+message WindowConfig {
+  repeated int32 windows = 1;
+  string value_field = 2;
+}
+
+message KeyValueConfig {
+  string value_field = 2;
+}
+
+message TopKConfig {
+  int32 k = 1;
+  repeated string item_fields = 2;
+  string score_field = 3;
+}
+
+message CFConfig {
+  int32 k = 1;
+  repeated string context_fields = 2;
+  string weight_field = 3;
 }
