@@ -9,14 +9,13 @@ from fennel.aggregate import Aggregate, Count, depends_on
 # noinspection PyUnresolvedReferences
 from fennel.feature import aggregate_lookup, feature, feature_pack
 from fennel.lib import Field, Schema, windows
-from fennel.lib.schema import Int
+from fennel.lib.schema import Int, Now, Timestamp
 from fennel.test_lib import *
 
 
 class UserLikeCount(Aggregate):
     name = "TestUserLikeCount"
     stream = "Actions"
-    windows = [windows.DAY * 7, windows.DAY * 28]
     schema = Schema(
         [
             Field("uid", dtype=Int, default=0),
@@ -25,15 +24,14 @@ class UserLikeCount(Aggregate):
                 dtype=Int,
                 default=0,
             ),
-            Field(
-                "timestamp",
-                dtype=Int,
-                default=0,
-            ),
+            Field("timestamp", dtype=Timestamp, default=Now),
         ],
     )
     aggregate_type = Count(
-        key="actor_id", value="target_id", timestamp="timestamp"
+        key="actor_id",
+        value="target_id",
+        timestamp="timestamp",
+        windows=[windows.DAY * 7],
     )
 
     @classmethod

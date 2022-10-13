@@ -62,24 +62,29 @@ KeyType = Union[str, List[str]]
 
 
 @dataclasses.dataclass(frozen=True)
-class AggregateType:
+class AggregateFunction:
     key: KeyType
     timestamp: str
 
     def validate(self, agg: Any) -> List[Exception]:
+        exceptions = []
         if self.key is None:
-            raise Exception("key not provided")
+            exceptions.append(Exception("key not provided"))
         if self.timestamp is None:
-            raise Exception("timestamp not provided")
+            exceptions.append(Exception("timestamp not provided"))
+        return exceptions
+
+    def to_proto(self) -> proto.AggregateFunction:
+        raise NotImplementedError
 
 
 class Aggregate(metaclass=AggregateMetaclass):
     name: str = None
-    version: int = 1
+    version: int = 0
     stream: str = None
     mode: str = "pandas"
     schema: Schema = None
-    aggregate_type: AggregateType = None
+    aggregate_type: AggregateFunction = None
 
     @classmethod
     def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
@@ -87,18 +92,14 @@ class Aggregate(metaclass=AggregateMetaclass):
 
     @classmethod
     def register(cls, stub: FennelFeatureStoreStub) -> Status:
-        if cls.windows is None:
-            raise Exception("windows not provided")
-
         req = CreateAggregateRequest(
             name=cls.name,
             version=cls.version,
             stream=cls.stream,
             mode=cls.mode,
-            aggregate_type=cls.aggregate_type.agg_func,
-            preaggregate_function=cloudpickle.dumps(cls.og_preaggregate),
+            aggregate_type=cls.aggregate_type.to_proto(),
+            agg_cls=cloudpickle.dumps(cls),
             function_source_code=inspect.getsource(cls.og_preaggregate),
-            windows=[int(w.total_seconds()) for w in cls.windows],
             schema=cls.schema.to_proto(),
         )
         resp = stub.RegisterAggregate(req)
@@ -152,90 +153,117 @@ class Aggregate(metaclass=AggregateMetaclass):
                     f"{cls.__class__.__name__}"
                 )
             )
-
+        exceptions.extend(cls.aggregate_type.validate(cls))
+        # Validate the aggregate schema contains a timestamp field
+        exceptions.extend(cls.schema.check_timestamp_field_exists())
         # Validate the preaggregate function
         exceptions.extend(cls._validate_preaggregate())
         return exceptions
 
 
 @dataclasses.dataclass(frozen=True)
-class WindowBasedAggregate(AggregateType):
+class WindowBasedAggregate(AggregateFunction):
     value: str
     windows: List[Window] = None
 
     def validate(self, agg: Aggregate) -> List[Exception]:
-        super().validate(agg)
+        exceptions = super().validate(agg)
         if self.windows is None:
-            raise Exception("windows not provided")
+            exceptions.append(Exception("windows not provided"))
+        return exceptions
+
+    def to_proto(self) -> proto.AggregateFunction:
+        return proto.AggregateType(
+            function=self.agg_func,
+            key_fields=self.key if isinstance(self.key, list) else [self.key],
+            timestamp_field=self.timestamp,
+            window_config=proto.WindowConfig(
+                value_field=self.value,
+                windows=[int(w.total_seconds()) for w in self.windows],
+            ),
+        )
 
 
 @dataclasses.dataclass(frozen=True)
 class Count(WindowBasedAggregate):
-    agg_func = proto.AggregateType.COUNT
+    agg_func = proto.AggregateFunction.COUNT
 
 
 @dataclasses.dataclass(frozen=True)
 class Sum(WindowBasedAggregate):
-    agg_func = proto.AggregateType.SUM
+    agg_func = proto.AggregateFunction.SUM
 
 
 @dataclasses.dataclass(frozen=True)
 class Average(WindowBasedAggregate):
-    agg_func = proto.AggregateType.AVG
+    agg_func = proto.AggregateFunction.AVG
 
 
 @dataclasses.dataclass(frozen=True)
 class Max(WindowBasedAggregate):
-    agg_func = proto.AggregateType.MAX
+    agg_func = proto.AggregateFunction.MAX
 
 
 @dataclasses.dataclass(frozen=True)
 class Min(WindowBasedAggregate):
-    agg_func = proto.AggregateType.MIN
+    agg_func = proto.AggregateFunction.MIN
 
 
 @dataclasses.dataclass(frozen=True)
-class KeyValue(AggregateType):
+class KeyValue(AggregateFunction):
     value: str
-    agg_func = proto.AggregateType.KEY_VALUE
+    agg_func = proto.AggregateFunction.KEY_VALUE
+
+    def to_proto(self) -> proto.AggregateType:
+        return proto.AggregateType(
+            function=self.agg_func,
+            key_fields=self.key if isinstance(self.key, list) else [self.key],
+            timestamp_field=self.timestamp,
+            key_value_config=proto.KeyValueConfig(
+                value_field=self.value,
+            ),
+        )
 
 
 @dataclasses.dataclass(frozen=True)
-class Rate(AggregateType):
-    agg_func: proto.AggregateType.RATE
+class Rate(AggregateFunction):
+    agg_func: proto.AggregateFunction.RATE
 
 
 @dataclasses.dataclass(frozen=True)
-class TopK(AggregateType):
+class TopK(AggregateFunction):
     item: KeyType
     score: str
     k: int
-    agg_func: proto.AggregateType.TOPK
+    agg_func: proto.AggregateFunction.TOPK
     update_frequency: int = 60
 
     def validate(self, agg: Aggregate) -> List[Exception]:
-        super().validate(agg)
+        exceptions = super().validate(agg)
         if self.k is None:
-            raise Exception("k not provided")
+            exceptions.append(Exception("k not provided"))
         if self.item is None:
-            raise Exception("item not provided")
+            exceptions.append(Exception("item not provided"))
         if self.score is None:
-            raise Exception("score not provided")
+            exceptions.append(Exception("score not provided"))
         if self.update_frequency is None:
-            raise Exception("update_frequency not provided")
+            exceptions.append(Exception("update_frequency not provided"))
+        return exceptions
 
 
 @dataclasses.dataclass(frozen=True)
-class CF(AggregateType):
+class CF(AggregateFunction):
     context: KeyType
     weight: str
-    agg_func: proto.AggregateType.CF
+    agg_func: proto.AggregateFunction.CF
 
     def validate(self, agg: Aggregate) -> List[Exception]:
+        exceptions = super().validate(agg)
         if self.context is None:
-            raise Exception("context not provided")
+            exceptions.append(Exception("context not provided"))
         if self.weight is None:
-            raise Exception("weight not provided")
+            exceptions.append(Exception("weight not provided"))
+        return exceptions
 
 
 def depends_on(

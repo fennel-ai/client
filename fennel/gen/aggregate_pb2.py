@@ -14,15 +14,25 @@ _sym_db = _symbol_database.Default()
 import fennel.gen.schema_pb2 as schema__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x61ggregate.proto\x12\x0c\x66\x65nnel.proto\x1a\x0cschema.proto\"\xfe\x01\n\x16\x43reateAggregateRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04mode\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\r\x12\x0e\n\x06stream\x18\x04 \x01(\t\x12\x1d\n\x15preaggregate_function\x18\x05 \x01(\x0c\x12\x1c\n\x14\x66unction_source_code\x18\x06 \x01(\t\x12\x33\n\x0e\x61ggregate_type\x18\x07 \x01(\x0e\x32\x1b.fennel.proto.AggregateType\x12\x0f\n\x07windows\x18\x08 \x03(\x05\x12$\n\x06schema\x18\t \x01(\x0b\x32\x14.fennel.proto.Schema*i\n\rAggregateType\x12\x07\n\x03SUM\x10\x00\x12\x07\n\x03\x41VG\x10\x01\x12\t\n\x05\x43OUNT\x10\x02\x12\x07\n\x03MIN\x10\x03\x12\x07\n\x03MAX\x10\x04\x12\x08\n\x04RATE\x10\x05\x12\r\n\tKEY_VALUE\x10\x06\x12\x08\n\x04TOPK\x10\x07\x12\x06\n\x02\x43\x46\x10\x08\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x61ggregate.proto\x12\x0c\x66\x65nnel.proto\x1a\x0cschema.proto\"\xf0\x01\n\x16\x43reateAggregateRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04mode\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\r\x12\x0e\n\x06stream\x18\x04 \x01(\t\x12\x0f\n\x07\x61gg_cls\x18\x06 \x01(\x0c\x12\x1c\n\x14\x66unction_source_code\x18\x07 \x01(\t\x12\x33\n\x0e\x61ggregate_type\x18\x08 \x01(\x0b\x32\x1b.fennel.proto.AggregateType\x12\x0f\n\x07windows\x18\t \x03(\x05\x12$\n\x06schema\x18\n \x01(\x0b\x32\x14.fennel.proto.Schema\"\xc6\x02\n\rAggregateType\x12\x31\n\x08\x66unction\x18\x01 \x01(\x0e\x32\x1f.fennel.proto.AggregateFunction\x12\x12\n\nkey_fields\x18\x02 \x03(\t\x12\x17\n\x0ftimestamp_field\x18\x03 \x01(\t\x12\x33\n\rwindow_config\x18\x04 \x01(\x0b\x32\x1a.fennel.proto.WindowConfigH\x00\x12\x38\n\x10key_value_config\x18\x05 \x01(\x0b\x32\x1c.fennel.proto.KeyValueConfigH\x00\x12/\n\x0btopk_config\x18\x06 \x01(\x0b\x32\x18.fennel.proto.TopKConfigH\x00\x12+\n\tcf_config\x18\x07 \x01(\x0b\x32\x16.fennel.proto.CFConfigH\x00\x42\x08\n\x06\x43onfig\"4\n\x0cWindowConfig\x12\x0f\n\x07windows\x18\x01 \x03(\x05\x12\x13\n\x0bvalue_field\x18\x02 \x01(\t\"%\n\x0eKeyValueConfig\x12\x13\n\x0bvalue_field\x18\x02 \x01(\t\"A\n\nTopKConfig\x12\t\n\x01k\x18\x01 \x01(\x05\x12\x13\n\x0bitem_fields\x18\x02 \x03(\t\x12\x13\n\x0bscore_field\x18\x03 \x01(\t\"C\n\x08\x43\x46\x43onfig\x12\t\n\x01k\x18\x01 \x01(\x05\x12\x16\n\x0e\x63ontext_fields\x18\x02 \x03(\t\x12\x14\n\x0cweight_field\x18\x03 \x01(\t*m\n\x11\x41ggregateFunction\x12\x07\n\x03SUM\x10\x00\x12\x07\n\x03\x41VG\x10\x01\x12\t\n\x05\x43OUNT\x10\x02\x12\x07\n\x03MIN\x10\x03\x12\x07\n\x03MAX\x10\x04\x12\x08\n\x04RATE\x10\x05\x12\r\n\tKEY_VALUE\x10\x06\x12\x08\n\x04TOPK\x10\x07\x12\x06\n\x02\x43\x46\x10\x08\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'aggregate_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _AGGREGATETYPE._serialized_start=304
-  _AGGREGATETYPE._serialized_end=409
+  _AGGREGATEFUNCTION._serialized_start=848
+  _AGGREGATEFUNCTION._serialized_end=957
   _CREATEAGGREGATEREQUEST._serialized_start=48
-  _CREATEAGGREGATEREQUEST._serialized_end=302
+  _CREATEAGGREGATEREQUEST._serialized_end=288
+  _AGGREGATETYPE._serialized_start=291
+  _AGGREGATETYPE._serialized_end=617
+  _WINDOWCONFIG._serialized_start=619
+  _WINDOWCONFIG._serialized_end=671
+  _KEYVALUECONFIG._serialized_start=673
+  _KEYVALUECONFIG._serialized_end=710
+  _TOPKCONFIG._serialized_start=712
+  _TOPKCONFIG._serialized_end=777
+  _CFCONFIG._serialized_start=779
+  _CFCONFIG._serialized_end=846
 # @@protoc_insertion_point(module_scope)

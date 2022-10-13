@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 
 from fennel.aggregate import AggregateMetaclass
 from fennel.gen.status_pb2 import Status
@@ -6,6 +6,20 @@ from fennel.stream import Stream
 
 # noinspection PyUnresolvedReferences
 from fennel.workspace import Workspace
+
+
+class FennelTest:
+    def __init__(self, mocks: Dict[str, Any] = {}):
+        self.mocks = mocks
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    def __call__(self, func):
+        return ClientTestWorkspace(func, self.mocks)
 
 
 class ClientTestWorkspace(Workspace):

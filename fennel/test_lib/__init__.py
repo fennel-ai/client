@@ -6,5 +6,6 @@ from fennel.test_lib.grpc_mock import (
 )
 from fennel.test_lib.test_workspace import (
     ClientTestWorkspace,
+    FennelTest,
     InternalTestWorkspace,
 )
