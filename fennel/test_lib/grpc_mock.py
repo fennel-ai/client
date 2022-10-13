@@ -1,21 +1,28 @@
 import inspect
+from concurrent import futures
+from functools import partial
+from unittest.mock import patch
 
+import grpc
+
+# noinspection PyUnresolvedReferences
+import pandas as pd
 import pytest
 from google.protobuf import any_pb2
 
 # noinspection PyUnresolvedReferences
 from fennel.feature import aggregate_lookup, feature_extract
-from fennel.gen.services_pb2_grpc import FennelFeatureStoreServicer
+from fennel.gen.services_pb2_grpc import (
+    add_FennelFeatureStoreServicer_to_server,
+    FennelFeatureStoreServicer,
+    FennelFeatureStoreStub,
+)
 from fennel.gen.status_pb2 import Status
 from fennel.test_lib.test_workspace import ClientTestWorkspace
 
 
 @pytest.fixture(scope="module")
 def grpc_add_to_server():
-    from fennel.gen.services_pb2_grpc import (
-        add_FennelFeatureStoreServicer_to_server,
-    )
-
     return add_FennelFeatureStoreServicer_to_server
 
 
@@ -26,8 +33,6 @@ def grpc_servicer():
 
 @pytest.fixture(scope="module")
 def grpc_stub_cls(grpc_channel):
-    from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
-
     return FennelFeatureStoreStub
 
 
@@ -47,7 +52,6 @@ def create_test_workspace(grpc_stub, mocker):
             for k, v in mocks.items():
                 if type(k) == str:
                     continue
-                print(k)
                 if agg_name == k.name:
                     return v
             raise Exception(f"Mock for {agg_name} not found")
@@ -70,6 +74,60 @@ def create_test_workspace(grpc_stub, mocker):
         return ClientTestWorkspace(grpc_stub, mocker)
 
     return workspace
+
+
+class FennelTest:
+    port = 50051
+
+    def __init__(self, aggregate_mock=None, feature_mock=None):
+        self.aggregate_mock = aggregate_mock
+        self.feature_mock = feature_mock
+
+    def _start_a_test_server(self):
+        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+        add_FennelFeatureStoreServicer_to_server(Servicer(), self.server)
+        self.server.add_insecure_port(f"[::]:{self.port}")
+        self.server.start()
+
+    @staticmethod
+    def mock_aggregate(aggregate_mock, agg_name, *args, **kwargs):
+        for k, v in aggregate_mock.items():
+            if type(k) == str:
+                continue
+            if agg_name == k.name:
+                return v
+        raise Exception(f"Mock for {agg_name} not found")
+
+    def mock_feature(feature_mock, feature_name, *args, **kwargs):
+        for k, v in feature_mock.items():
+            if type(k) != str:
+                continue
+            if feature_name == k:
+                return v
+        raise Exception(f"Mock for {feature_name} not found")
+
+    def __call__(self, func):
+        frm = inspect.stack()[1]
+        mod = inspect.getmodule(frm[0])
+        caller_path = mod.__name__
+
+        def wrapper(*args, **kwargs):
+            self._start_a_test_server()
+            with grpc.insecure_channel(f"localhost:{self.port}") as channel:
+                with patch(caller_path + ".aggregate_lookup") as agg_mock:
+                    agg_mock.side_effect = partial(
+                        FennelTest.mock_aggregate, self.aggregate_mock
+                    )
+                    with patch(
+                        caller_path + ".feature_extract"
+                    ) as feature_mock:
+                        feature_mock.side_effect = self.feature_mock
+                        stub = FennelFeatureStoreStub(channel)
+                        workspace = ClientTestWorkspace(stub)
+                        return func(*args, **kwargs, workspace=workspace)
+            self.server.stop(None)
+
+        return wrapper
 
 
 class Servicer(FennelFeatureStoreServicer):

@@ -1,3 +1,5 @@
+import unittest
+
 import pandas as pd
 import pytest
 
@@ -112,41 +114,43 @@ class Actions(Stream):
 ################################################################################
 
 
-def test_StreamProcess():
-    now = pd.Timestamp.now()
-    df = pd.DataFrame(
-        {
-            "actor_id": [1, 2, 3, 4, 5],
-            "target_id": [1, 2, 3, 4, 5],
-            "action_type": ["like", "like", "share", "comment", "like"],
-            "gender": [True, False, True, False, True],
-            "timestamp": [now, now, now, now, now],
-        }
-    )
-    processed_df = Actions.populate(df)
-    assert processed_df.shape == (3, 7)
+class TestStream(unittest.TestCase):
+    def test_streamprocess(self):
+        now = pd.Timestamp.now()
+        df = pd.DataFrame(
+            {
+                "actor_id": [1, 2, 3, 4, 5],
+                "target_id": [1, 2, 3, 4, 5],
+                "action_type": ["like", "like", "share", "comment", "like"],
+                "gender": [True, False, True, False, True],
+                "timestamp": [now, now, now, now, now],
+            }
+        )
+        processed_df = Actions.populate(df)
+        assert processed_df.shape == (3, 7)
+
+    def test_invalidpopulate_streamprocess(self):
+        now = pd.Timestamp.now()
+        df = pd.DataFrame(
+            {
+                "actor_id": [1, 2, 3, 4, 5],
+                "target_id": [1, 2, 3, 4, 5],
+                "action_type": ["like", "like", "share", "comment", "like"],
+                "gender": [True, False, True, False, True],
+                "timestamp": [now, now, now, now, now],
+            }
+        )
+        with self.assertRaises(Exception) as e:
+            Actions.invalid_populate(df)
+        self.assertEqual(
+            str(e.exception),
+            "Column random_array value {'1': [1, 2, 3]} failed "
+            "validation: [TypeError(\"Expected list, got <class 'dict'>\")]",
+        )
+
+    ################################################################################
 
 
-def test_InvalidPopulate_StreamProcess():
-    now = pd.Timestamp.now()
-    df = pd.DataFrame(
-        {
-            "actor_id": [1, 2, 3, 4, 5],
-            "target_id": [1, 2, 3, 4, 5],
-            "action_type": ["like", "like", "share", "comment", "like"],
-            "gender": [True, False, True, False, True],
-            "timestamp": [now, now, now, now, now],
-        }
-    )
-    with pytest.raises(Exception) as e:
-        Actions.invalid_populate(df)
-    assert (
-        str(e.value) == "Column random_array value {'1': [1, 2, 3]} failed "
-        "validation: [TypeError(\"Expected list, got <class 'dict'>\")]"
-    )
-
-
-################################################################################
 # Aggregate Tests
 ################################################################################
 
@@ -182,26 +186,6 @@ class UserLikeCount(Aggregate):
         filtered_df["actor_id"].rename("uid")
         filtered_df.drop(columns=["action_type"], inplace=True)
         return filtered_df
-
-
-def test_AggregatePreprocess(create_test_workspace):
-    workspace = create_test_workspace({})
-    workspace.register_aggregates(UserLikeCount)
-    now = pd.Timestamp.now()
-    yesterday = now - pd.Timedelta(days=1)
-    df = pd.DataFrame(
-        {
-            "actor_id": [1, 2, 3, 4, 5],
-            "target_id": [1, 2, 3, 4, 5],
-            "timestamp": [now, yesterday, now, yesterday, now],
-            "action_type": ["like", "like", "share", "comment", "like"],
-        }
-    )
-    processed_df = UserLikeCount.preaggregate(df)
-    assert processed_df.shape == (3, 3)
-    assert processed_df["actor_id"].tolist() == [1, 2, 5]
-    assert processed_df["timestamp"].tolist() == [now, yesterday, now]
-    assert processed_df["target_id"].tolist() == [1, 2, 5]
 
 
 class UserLikeCountInvalidSchema(Aggregate):
@@ -244,25 +228,45 @@ class UserLikeCountInvalidSchema(Aggregate):
         return filtered_df
 
 
-def test_AggregatePreprocessInvalidSchema(create_test_workspace):
-    workspace = create_test_workspace({})
-    now = pd.Timestamp("2020-01-01")
-    yesterday = now - pd.Timedelta(days=1)
-    df = pd.DataFrame(
-        {
-            "actor_id": [1, 2, 3, 4, 5],
-            "target_id": [1, 2, 3, 4, 5],
-            "timestamp": [now, now, yesterday, yesterday, now],
-            "action_type": ["like", "like", "share", "comment", "like"],
-        }
-    )
-    with pytest.raises(Exception) as e:
-        workspace.register_aggregates(UserLikeCountInvalidSchema)
-        _ = UserLikeCountInvalidSchema.preaggregate(df)
-    assert (
-        str(e.value)
-        == """Column timestamp value 2020-01-01 00:00:00 failed validation: [TypeError("Expected pd.Timestamp, got value 2020-01-01 00:00:00, type : <class 'str'>")]"""
-    )
+class TestAggregateClient(unittest.TestCase):
+    @FennelTest()
+    def test_AggregatePreprocess(self, workspace):
+        workspace.register_aggregates(UserLikeCount)
+        now = pd.Timestamp.now()
+        yesterday = now - pd.Timedelta(days=1)
+        df = pd.DataFrame(
+            {
+                "actor_id": [1, 2, 3, 4, 5],
+                "target_id": [1, 2, 3, 4, 5],
+                "timestamp": [now, yesterday, now, yesterday, now],
+                "action_type": ["like", "like", "share", "comment", "like"],
+            }
+        )
+        processed_df = UserLikeCount.preaggregate(df)
+        assert processed_df.shape == (3, 3)
+        assert processed_df["actor_id"].tolist() == [1, 2, 5]
+        assert processed_df["timestamp"].tolist() == [now, yesterday, now]
+        assert processed_df["target_id"].tolist() == [1, 2, 5]
+
+    @FennelTest()
+    def test_AggregatePreprocessInvalidSchema(self, workspace):
+        now = pd.Timestamp("2020-01-01")
+        yesterday = now - pd.Timedelta(days=1)
+        df = pd.DataFrame(
+            {
+                "actor_id": [1, 2, 3, 4, 5],
+                "target_id": [1, 2, 3, 4, 5],
+                "timestamp": [now, now, yesterday, yesterday, now],
+                "action_type": ["like", "like", "share", "comment", "like"],
+            }
+        )
+        with pytest.raises(Exception) as e:
+            workspace.register_aggregates(UserLikeCountInvalidSchema)
+            _ = UserLikeCountInvalidSchema.preaggregate(df)
+        assert (
+            str(e.value)
+            == """Column timestamp value 2020-01-01 00:00:00 failed validation: [TypeError("Expected pd.Timestamp, got value 2020-01-01 00:00:00, type : <class 'str'>")]"""
+        )
 
 
 class UserGenderKVAgg(Aggregate):
@@ -338,25 +342,26 @@ class GenderLikeCountWithKVAgg(Aggregate):
         return new_df[["gender", "count", "timestamp"]]
 
 
-def test_client_AggregatePreprocess(create_test_workspace):
-    workspace = create_test_workspace(
-        {UserGenderKVAgg: pd.Series(["male", "female", "male"])}
+class Testclient(unittest.TestCase):
+    @FennelTest(
+        aggregate_mock={UserGenderKVAgg: pd.Series(["male", "female", "male"])}
     )
-    workspace.register_aggregates(UserGenderKVAgg, GenderLikeCountWithKVAgg)
-    now = pd.Timestamp.now()
-    df = pd.DataFrame(
-        {
-            "actor_id": [1, 2, 3, 4, 5],
-            "target_id": [1, 2, 3, 4, 5],
-            "timestamp": [now, now, now, now, now],
-            "action_type": ["like", "like", "share", "comment", "like"],
-        }
-    )
-    processed_df = GenderLikeCountWithKVAgg.preaggregate(df)
-    assert processed_df.shape == (3, 3)
-    assert processed_df["gender"].tolist() == ["male", "female", "male"]
-    assert processed_df["timestamp"].tolist() == [now, now, now]
-    assert processed_df["count"].tolist() == [1, 1, 1]
+    def test_client_AggregatePreprocess(self, workspace):
+        workspace.register_aggregates(UserGenderKVAgg, GenderLikeCountWithKVAgg)
+        now = pd.Timestamp.now()
+        df = pd.DataFrame(
+            {
+                "actor_id": [1, 2, 3, 4, 5],
+                "target_id": [1, 2, 3, 4, 5],
+                "timestamp": [now, now, now, now, now],
+                "action_type": ["like", "like", "share", "comment", "like"],
+            }
+        )
+        processed_df = GenderLikeCountWithKVAgg.preaggregate(df)
+        assert processed_df.shape == (3, 3)
+        assert processed_df["gender"].tolist() == ["male", "female", "male"]
+        assert processed_df["timestamp"].tolist() == [now, now, now]
+        assert processed_df["count"].tolist() == [1, 1, 1]
 
 
 ################################################################################
@@ -379,17 +384,6 @@ def user_like_count_3days(uids: pd.Series) -> pd.Series:
     return day7
 
 
-def test_Feature(create_test_workspace):
-    workspace = create_test_workspace(
-        {UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13]))}
-    )
-    workspace.register_aggregates(UserLikeCount)
-    workspace.register_features(user_like_count_3days)
-    features = user_like_count_3days.extract(uids=pd.Series([1, 2, 3, 4, 5]))
-    assert type(features) == pd.Series
-    assert features[0] == 36
-
-
 @feature(
     name="user_like_count_7days_random_sq",
     schema=Schema(
@@ -410,25 +404,40 @@ def user_like_count_3days_square_random(uids: pd.Series) -> pd.Series:
     return day7_sq + user_count_features_sq
 
 
-def test_Feature_Agg_And_FeatureMock2(create_test_workspace):
-    workspace = create_test_workspace(
-        {
-            UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13])),
-            user_like_count_3days.name: pd.Series([36, 144, 169]),
+class TestFeatureClient(unittest.TestCase):
+    @FennelTest(
+        aggregate_mock={
+            UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13]))
         }
     )
-    workspace.register_aggregates(UserLikeCount)
-    workspace.register_features(
-        user_like_count_3days, user_like_count_3days_square_random
+    def test_Feature(self, workspace):
+        workspace.register_aggregates(UserLikeCount)
+        workspace.register_features(user_like_count_3days)
+        features = user_like_count_3days.extract(
+            uids=pd.Series([1, 2, 3, 4, 5])
+        )
+        assert type(features) == pd.Series
+        assert features[0] == 36
+
+    @FennelTest(
+        aggregate_mock={
+            UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13]))
+        },
+        feature_mock={user_like_count_3days: pd.Series([36, 144, 169])},
     )
-    features = user_like_count_3days_square_random.extract(
-        uids=pd.Series([1, 2, 3, 4, 5])
-    )
-    assert type(features) == pd.Series
-    # 36 * 36 + 6 * 6 = 1296 + 36 = 1332
-    # 144 * 144 + 12 * 12 = 20736 + 144 = 20880
-    # 169 * 169 + 13 * 13 = 28561 + 169 = 28730
-    assert features.tolist() == [1332, 20880, 28730]
+    def test_Feature_Agg_And_FeatureMock(self, workspace):
+        workspace.register_aggregates(UserLikeCount)
+        workspace.register_features(
+            user_like_count_3days, user_like_count_3days_square_random
+        )
+        features = user_like_count_3days_square_random.extract(
+            uids=pd.Series([1, 2, 3, 4, 5])
+        )
+        assert type(features) == pd.Series
+        # 36 * 36 + 6 * 6 = 1296 + 36 = 1332
+        # 144 * 144 + 12 * 12 = 20736 + 144 = 20880
+        # 169 * 169 + 13 * 13 = 28561 + 169 = 28730
+        assert features.tolist() == [1332, 20880, 28730]
 
 
 ################################################################################
