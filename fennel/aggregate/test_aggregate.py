@@ -53,7 +53,7 @@ def test_AggregateRegistration(grpc_stub):
     workspace = InternalTestWorkspace(grpc_stub)
     responses = workspace.register_aggregates(UserLikeCount)
     assert len(responses) == 1
-    assert responses[0].code == 200
+    assert responses[0].code == 0
     create_agg = CreateAggregateRequest()
     responses[0].details[0].Unpack(create_agg)
     agg_cls = pickle.loads(create_agg.agg_cls)

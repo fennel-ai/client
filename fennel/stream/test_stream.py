@@ -51,7 +51,7 @@ def test_StreamRegistration(grpc_stub):
     workspace = InternalTestWorkspace(grpc_stub)
     responses = workspace.register_streams(Actions)
     assert len(responses) == 1
-    assert responses[0].code == 200
+    assert responses[0].code == 0
     create_stream_req = CreateStreamRequest()
     responses[0].details[0].Unpack(create_stream_req)
     assert len(create_stream_req.connectors) == 1
@@ -113,7 +113,7 @@ def test_StreamRegistration_MultipleSources(grpc_stub):
     # Duplicate registration should pass
     responses = workspace.register_streams(ActionsMultipleSources, Actions)
     assert len(responses) == 2
-    assert responses[0].code == 200
+    assert responses[0].code == 0
     create_stream_req = CreateStreamRequest()
     responses[0].details[0].Unpack(create_stream_req)
     assert len(create_stream_req.connectors) == 3
