@@ -98,6 +98,7 @@ class FennelTest:
                 return v
         raise Exception(f"Mock for {agg_name} not found")
 
+    @staticmethod
     def mock_feature(feature_mock, feature_name, *args, **kwargs):
         for k, v in feature_mock.items():
             if type(k) != str:
@@ -105,6 +106,16 @@ class FennelTest:
             if feature_name == k:
                 return v
         raise Exception(f"Mock for {feature_name} not found")
+
+    def agg_mock_method(self):
+        if "mock_aggregate" not in self.__class__.__dict__:
+            raise Exception("static function mock_aggregate not found")
+        return self.__class__.__dict__["mock_aggregate"].__func__
+
+    def feature_mock_method(self):
+        if "mock_feature" not in self.__class__.__dict__:
+            raise Exception("static function mock_feature not found")
+        return self.__class__.__dict__["mock_feature"].__func__
 
     def __call__(self, func):
         frm = inspect.stack()[1]
@@ -116,12 +127,14 @@ class FennelTest:
             with grpc.insecure_channel(f"localhost:{self.port}") as channel:
                 with patch(caller_path + ".aggregate_lookup") as agg_mock:
                     agg_mock.side_effect = partial(
-                        FennelTest.mock_aggregate, self.aggregate_mock
+                        self.agg_mock_method(), self.aggregate_mock
                     )
                     with patch(
                         caller_path + ".feature_extract"
                     ) as feature_mock:
-                        feature_mock.side_effect = self.feature_mock
+                        feature_mock.side_effect = partial(
+                            self.feature_mock_method(), self.feature_mock
+                        )
                         stub = FennelFeatureStoreStub(channel)
                         workspace = ClientTestWorkspace(stub)
                         return func(*args, **kwargs, workspace=workspace)
