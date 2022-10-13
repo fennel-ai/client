@@ -342,7 +342,7 @@ def test_client_AggregatePreprocess(create_test_workspace):
     workspace = create_test_workspace(
         {UserGenderKVAgg: pd.Series(["male", "female", "male"])}
     )
-    workspace.register_aggregates(UserGenderKVAgg)  # GenderLikeCountWithKVAgg)
+    workspace.register_aggregates(UserGenderKVAgg, GenderLikeCountWithKVAgg)
     now = pd.Timestamp.now()
     df = pd.DataFrame(
         {
@@ -372,8 +372,8 @@ def test_client_AggregatePreprocess(create_test_workspace):
     aggregates=[UserLikeCount],
 )
 def user_like_count_3days(uids: pd.Series) -> pd.Series:
-    day7, day28 = UserLikeCount.lookup(
-        uids=uids, window=[windows.DAY, windows.WEEK]
+    day7, day28 = aggregate_lookup(
+        "TestUserLikeCount", uids=uids, window=[windows.DAY, windows.WEEK]
     )
     day7 = day7.apply(lambda x: x * x)
     return day7
@@ -402,8 +402,8 @@ def test_Feature(create_test_workspace):
 )
 def user_like_count_3days_square_random(uids: pd.Series) -> pd.Series:
     user_count_features = user_like_count_3days.extract(uids=uids)
-    day7, day28 = UserLikeCount.lookup(
-        uids=uids, window=[windows.DAY, windows.WEEK]
+    day7, day28 = aggregate_lookup(
+        "TestUserLikeCount", uids=uids, window=[windows.DAY, windows.WEEK]
     )
     day7_sq = day7.apply(lambda x: x * x)
     user_count_features_sq = user_count_features.apply(lambda x: x * x)

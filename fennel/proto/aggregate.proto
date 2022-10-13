@@ -26,6 +26,7 @@ message CreateAggregateRequest {
   AggregateType aggregate_type = 8;
   repeated int32 windows = 9;
   Schema schema = 10;
+  repeated string depends_on_aggregates = 11;
 }
 
 message AggregateType {
