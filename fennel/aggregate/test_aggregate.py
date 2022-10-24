@@ -34,11 +34,11 @@ class UserLikeCount(Aggregate):
         ]
     )
 
-    aggregate_type = Count(
+    aggregation = Count(
         key="actor_id",
         value="target_id",
         timestamp="timestamp",
-        windows=[windows.DAY * 7, windows.DAY * 28],
+        windows=[windows.DAY * 7],
     )
 
     @classmethod
@@ -94,7 +94,7 @@ class UserLikeCountInvalidSchema(Aggregate):
             ),
         ]
     )
-    aggregate_type = Count(
+    aggregation = Count(
         key="actor_id",
         value="target_id",
         windows=[
@@ -147,7 +147,7 @@ class UserLikeCountInvalidProcessingFunction(Aggregate):
             ),
         ],
     )
-    aggregate_type = Count(
+    aggregation = Count(
         key="actor_id",
         value="target_id",
         timestamp="timestamp",
@@ -191,7 +191,7 @@ class UserLikeCountInvalidProcessingFunction2(Aggregate):
             Field("timestamp", dtype=Timestamp, default=Now),
         ]
     )
-    aggregate_type = Count(
+    aggregation = Count(
         key="actor_id",
         value="target_id",
         timestamp="timestamp",

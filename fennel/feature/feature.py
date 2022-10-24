@@ -1,4 +1,3 @@
-import ast
 import functools
 import inspect
 from typing import *
@@ -11,11 +10,7 @@ from fennel.lib.schema import Schema
 from fennel.utils import fennel_pickle
 
 
-def aggregate_lookup(agg_name: str, **kwargs):
-    raise Exception("Aggregate lookup incorrectly patched")
-
-
-def feature_extract(feature_name, **kwargs):
+def feature_extract(feature_name: str, *args, **kwargs):
     raise Exception("Feature extract incorrectly patched")
 
 
@@ -27,41 +22,7 @@ def _is_sign_args_and_kwargs(sign):
     )
 
 
-class FeatureExtractTransformer(ast.NodeTransformer):
-    def __init__(self, agg2name: Dict[str, str], feature2name: Dict[str, str]):
-        self.agg2name = agg2name
-        self.feature2name = feature2name
-
-    def visit_Call(self, node):
-        if isinstance(node.func, ast.Attribute) and node.func.attr == "lookup":
-            if node.func.value.id not in self.agg2name:
-                raise Exception(
-                    f"aggregate {node.func.value.id} not included in feature definition"
-                )
-
-            agg_name = self.agg2name[node.func.value.id]
-            return ast.Call(
-                func=ast.Name("aggregate_lookup", ctx=node.func.ctx),
-                args=[ast.Constant(agg_name)],
-                keywords=node.keywords,
-            )
-
-        if isinstance(node.func, ast.Attribute) and node.func.attr == "extract":
-            if node.func.value.id not in self.feature2name:
-                raise Exception(
-                    f"feature {node.func.value.id} not included in feature definition"
-                )
-
-            feature_name = self.feature2name[node.func.value.id]
-            return ast.Call(
-                func=ast.Name("feature_extract", ctx=node.func.ctx),
-                args=[ast.Constant(feature_name)],
-                keywords=node.keywords,
-            )
-        return node
-
-
-def feature(
+def single(
     name: str = None,
     version: int = 1,
     mode: str = "pandas",
@@ -108,7 +69,8 @@ def feature(
 
         # Directly called only for testing. Else the modded function feature_extract is called in the backend.
         def extract(*args, **kwargs) -> pd.DataFrame:
-            return func(*args, **kwargs)
+            print("Extracting feature")
+            return feature_extract(ret.name, *args, **kwargs)
 
         setattr(ret, "extract", extract)
 
@@ -142,7 +104,7 @@ def feature(
     return decorator
 
 
-def feature_pack(
+def family(
     name: str = None,
     version: int = 1,
     mode: str = "pandas",

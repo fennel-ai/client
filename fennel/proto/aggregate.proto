@@ -29,27 +29,35 @@ message CreateAggregateRequest {
   repeated string depends_on_aggregates = 11;
 }
 
+message Window {
+  int32 from = 1;
+  int32 to = 2;
+}
+
+message DeltaWindow {
+  Window baseline = 1;
+  Window target = 2;
+}
+
+message WindowSpec {
+  oneof WindowType {
+    bool forever_window = 1;
+    Window window = 2;
+    DeltaWindow delta_window = 3;
+  }
+}
+
 message AggregateType {
   AggregateFunction function = 1;
   repeated string key_fields = 2;
   string timestamp_field = 3;
+  repeated WindowSpec windows = 4;
 
   oneof Config {
-    WindowConfig window_config = 4;
-    KeyValueConfig key_value_config = 5;
+    string value_field = 5;
     TopKConfig topk_config = 6;
     CFConfig cf_config = 7;
   }
-}
-
-
-message WindowConfig {
-  repeated int32 windows = 1;
-  string value_field = 2;
-}
-
-message KeyValueConfig {
-  string value_field = 2;
 }
 
 message TopKConfig {
@@ -59,7 +67,7 @@ message TopKConfig {
 }
 
 message CFConfig {
-  int32 k = 1;
+  int32 limit = 1;
   repeated string context_fields = 2;
   string weight_field = 3;
 }

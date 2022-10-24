@@ -1,4 +1,3 @@
-import inspect
 from concurrent import futures
 from functools import partial
 from unittest.mock import patch
@@ -11,7 +10,10 @@ import pytest
 from google.protobuf import any_pb2
 
 # noinspection PyUnresolvedReferences
-from fennel.feature import aggregate_lookup, feature_extract
+from fennel.aggregate import aggregate_lookup
+
+# noinspection PyUnresolvedReferences
+from fennel.feature import feature_extract
 from fennel.gen.services_pb2_grpc import (
     add_FennelFeatureStoreServicer_to_server,
     FennelFeatureStoreServicer,
@@ -36,47 +38,7 @@ def grpc_stub_cls(grpc_channel):
     return FennelFeatureStoreStub
 
 
-# create_test_workspace fixture allows you to mock aggregates and features
-# You need to provide a dictionary of aggregate/feature and the return value.
-# Future work: Add support for providing ability to create mocks depending on the input.
-@pytest.fixture
-def create_test_workspace(grpc_stub, mocker):
-    def workspace(mocks):
-        # Current frame is test_lin.grpc_mock, the just previous frame is where the test is defined
-        # We need to patch the functions defined in the test
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
-        caller_path = mod.__name__
-
-        def agg_side_effect(agg_name, *args, **kwargs):
-            for k, v in mocks.items():
-                if type(k) == str:
-                    continue
-                if agg_name == k.name:
-                    return v
-            raise Exception(f"Mock for {agg_name} not found")
-
-        mocker.patch(
-            caller_path + ".aggregate_lookup", side_effect=agg_side_effect
-        )
-
-        def feature_side_effect(feature_name, *args, **kwargs):
-            for k, v in mocks.items():
-                if type(k) != str:
-                    continue
-                if feature_name == k:
-                    return v
-            raise Exception(f"Mock for {feature_name} not found")
-
-        mocker.patch(
-            caller_path + ".feature_extract", side_effect=feature_side_effect
-        )
-        return ClientTestWorkspace(grpc_stub, mocker)
-
-    return workspace
-
-
-class FennelTest:
+class workspace:
     port = 50051
 
     def __init__(self, aggregate_mock=None, feature_mock=None):
@@ -100,6 +62,8 @@ class FennelTest:
 
     @staticmethod
     def mock_feature(feature_mock, feature_name, *args, **kwargs):
+        print("$", feature_mock)
+        print("$", feature_name)
         for k, v in feature_mock.items():
             if type(k) != str:
                 continue
@@ -118,19 +82,17 @@ class FennelTest:
         return self.__class__.__dict__["mock_feature"].__func__
 
     def __call__(self, func):
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
-        caller_path = mod.__name__
-
         def wrapper(*args, **kwargs):
             self._start_a_test_server()
             with grpc.insecure_channel(f"localhost:{self.port}") as channel:
-                with patch(caller_path + ".aggregate_lookup") as agg_mock:
+                with patch(
+                    "fennel.aggregate.aggregate.aggregate_lookup"
+                ) as agg_mock:
                     agg_mock.side_effect = partial(
                         self.agg_mock_method(), self.aggregate_mock
                     )
                     with patch(
-                        caller_path + ".feature_extract"
+                        "fennel.feature.feature.feature_extract"
                     ) as feature_mock:
                         feature_mock.side_effect = partial(
                             self.feature_mock_method(), self.feature_mock
