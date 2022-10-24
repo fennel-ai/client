@@ -4,14 +4,15 @@ import inspect
 from typing import Any, List, Optional, Union
 
 import pandas as pd
+from pydantic import BaseModel
 
 import fennel.gen.aggregate_pb2 as proto
 from fennel.errors import NameException
-from fennel.gen.aggregate_pb2 import CreateAggregateRequest
+from fennel.gen.aggregate_pb2 import WindowSpec
 from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.gen.status_pb2 import Status
+from fennel.lib import windows
 from fennel.lib.schema import Schema
-from fennel.lib.windows import Window
 from fennel.utils import fennel_pickle
 
 
@@ -61,11 +62,76 @@ class AggregateMetaclass(type):
 
 KeyType = Union[str, List[str]]
 
+SEC_TO_MS = 1000
 
-@dataclasses.dataclass(frozen=True)
-class AggregateFunction:
+
+class Window(BaseModel):
+    start: windows.WindowLen
+    end: windows.WindowLen
+
+    def to_proto(self) -> WindowSpec:
+        return proto.Window(
+            start=self.start.total_seconds() * SEC_TO_MS,
+            end=self.end.total_seconds() * SEC_TO_MS,
+        )
+
+
+class DeltaWindow(BaseModel):
+    baseline: Window
+    target: Window
+
+
+def window_to_proto(windows: List[Union[Window, DeltaWindow,
+                                        windows.WindowLen]]):
+    proto_windows = []
+    for window in windows:
+        if isinstance(window, Window):
+            proto_windows.append(
+                proto.Window(
+                    start=window.start.to_proto(),
+                    end=window.end.to_proto(),
+                )
+            )
+        elif isinstance(window, DeltaWindow):
+            proto_windows.append(
+                proto.WindowSpec(
+                    delta_window=proto.DeltaWindow(
+                        baseline=proto.Window(
+                            start=window.baseline.start.to_proto(),
+                            end=window.baseline.end.to_proto(),
+                        ),
+                        target=proto.Window(
+                            start=window.target.start.to_proto(),
+                            end=window.target.end.to_proto(),
+                        ),
+                    )
+                )
+            )
+        elif isinstance(window, windows.WindowLen):
+            if window == windows.FOREVER:
+                proto_windows.append(
+                    WindowSpec(forever=True, )),
+                continue
+
+            proto_windows.append(
+                proto.Window(
+                    start=proto.WindowLen(
+                        value=0,
+                        unit=proto.WindowLen.Unit.Value("DAY"),
+                    ),
+                    end=window.to_proto(),
+                )
+            )
+        else:
+            raise Exception("Unknown window type")
+    return proto_windows
+
+
+class AggregateFunction(BaseModel):
     key: KeyType
+    value: str
     timestamp: str
+    windows: List[Union[Window, DeltaWindow, windows.WindowLen]]
 
     def validate(self, agg: Any) -> List[Exception]:
         exceptions = []
@@ -73,14 +139,21 @@ class AggregateFunction:
             exceptions.append(Exception("key not provided"))
         if self.timestamp is None:
             exceptions.append(Exception("timestamp not provided"))
+        if self.windows is None:
+            exceptions.append(Exception("windows not provided"))
         return exceptions
 
     def to_proto(self) -> proto.AggregateFunction:
-        raise NotImplementedError
+        return proto.AggregateType(
+            function=self.agg_func,
+            key_fields=self.key if isinstance(self.key, list) else [self.key],
+            timestamp_field=self.timestamp,
+            value_field=self.value,
+            window_config=window_to_proto(self.windows),
+        )
 
 
 def aggregate_lookup(agg_name: str, **kwargs):
-    print(agg_name)
     raise Exception("Aggregate lookup incorrectly patched.")
 
 
@@ -90,7 +163,7 @@ class Aggregate(metaclass=AggregateMetaclass):
     stream: str = None
     mode: str = "pandas"
     schema: Schema = None
-    aggregate_type: AggregateFunction = None
+    aggregation: AggregateFunction = None
 
     @classmethod
     def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
@@ -103,7 +176,7 @@ class Aggregate(metaclass=AggregateMetaclass):
             version=cls.version,
             stream=cls.stream,
             mode=cls.mode,
-            aggregate_type=cls.aggregate_type.to_proto(),
+            aggregate_type=cls.aggregation.to_proto(),
             agg_cls=fennel_pickle(cls),
             function_source_code=inspect.getsource(cls.og_preaggregate),
             schema=cls.schema.to_proto(),
@@ -159,7 +232,7 @@ class Aggregate(metaclass=AggregateMetaclass):
                     f"{cls.__class__.__name__}"
                 )
             )
-        exceptions.extend(cls.aggregate_type.validate(cls))
+        exceptions.extend(cls.aggregation.validate(cls))
         # Validate the aggregate schema contains a timestamp field
         exceptions.extend(cls.schema.check_timestamp_field_exists())
         # Validate the preaggregate function
@@ -171,73 +244,39 @@ class Aggregate(metaclass=AggregateMetaclass):
         return aggregate_lookup(cls.name, *args, **kwargs)
 
 
-@dataclasses.dataclass(frozen=True)
-class WindowBasedAggregate(AggregateFunction):
-    value: str
-    windows: List[Window] = None
-
-    def validate(self, agg: Aggregate) -> List[Exception]:
-        exceptions = super().validate(agg)
-        if self.windows is None:
-            exceptions.append(Exception("windows not provided"))
-        return exceptions
-
-    def to_proto(self) -> proto.AggregateFunction:
-        return proto.AggregateType(
-            function=self.agg_func,
-            key_fields=self.key if isinstance(self.key, list) else [self.key],
-            timestamp_field=self.timestamp,
-            window_config=proto.WindowConfig(
-                value_field=self.value,
-                windows=[int(w.total_seconds()) for w in self.windows],
-            ),
-        )
-
-
-@dataclasses.dataclass(frozen=True)
-class Count(WindowBasedAggregate):
+# @dataclasses.dataclass(frozen=True)
+class Count(AggregateFunction):
     agg_func = proto.AggregateFunction.COUNT
 
 
 @dataclasses.dataclass(frozen=True)
-class Sum(WindowBasedAggregate):
+class Sum(AggregateFunction):
     agg_func = proto.AggregateFunction.SUM
 
 
 @dataclasses.dataclass(frozen=True)
-class Average(WindowBasedAggregate):
+class Average(AggregateFunction):
     agg_func = proto.AggregateFunction.AVG
 
 
 @dataclasses.dataclass(frozen=True)
-class Max(WindowBasedAggregate):
+class Max(AggregateFunction):
     agg_func = proto.AggregateFunction.MAX
 
 
 @dataclasses.dataclass(frozen=True)
-class Min(WindowBasedAggregate):
+class Min(AggregateFunction):
     agg_func = proto.AggregateFunction.MIN
 
 
 @dataclasses.dataclass(frozen=True)
 class KeyValue(AggregateFunction):
-    value: str
     agg_func = proto.AggregateFunction.KEY_VALUE
-
-    def to_proto(self) -> proto.AggregateType:
-        return proto.AggregateType(
-            function=self.agg_func,
-            key_fields=self.key if isinstance(self.key, list) else [self.key],
-            timestamp_field=self.timestamp,
-            key_value_config=proto.KeyValueConfig(
-                value_field=self.value,
-            ),
-        )
 
 
 @dataclasses.dataclass(frozen=True)
 class Rate(AggregateFunction):
-    agg_func: proto.AggregateFunction.RATE
+    agg_func = proto.AggregateFunction.RATE
 
 
 @dataclasses.dataclass(frozen=True)
@@ -245,7 +284,7 @@ class TopK(AggregateFunction):
     item: KeyType
     score: str
     k: int
-    agg_func: proto.AggregateFunction.TOPK
+    agg_func = proto.AggregateFunction.TOPK
     update_frequency: int = 60
 
     def validate(self, agg: Aggregate) -> List[Exception]:
@@ -265,7 +304,9 @@ class TopK(AggregateFunction):
 class CF(AggregateFunction):
     context: KeyType
     weight: str
-    agg_func: proto.AggregateFunction.CF
+    limit: int
+    agg_func = proto.AggregateFunction.CF
+    update_frequency: int = 60
 
     def validate(self, agg: Aggregate) -> List[Exception]:
         exceptions = super().validate(agg)
@@ -273,6 +314,10 @@ class CF(AggregateFunction):
             exceptions.append(Exception("context not provided"))
         if self.weight is None:
             exceptions.append(Exception("weight not provided"))
+        if self.limit is None:
+            exceptions.append(Exception("limit not provided"))
+        if self.update_frequency is None:
+            exceptions.append(Exception("update_frequency not provided"))
         return exceptions
 
 

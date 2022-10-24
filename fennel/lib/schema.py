@@ -24,7 +24,7 @@ class Type(object):
         return []
 
 
-class F_Int(Type):
+class FInt(Type):
     def __str__(self):
         return "Int"
 
@@ -41,10 +41,10 @@ class F_Int(Type):
         return exceptions
 
 
-Int = F_Int()
+Int = FInt()
 
 
-class F_Bool(Type):
+class FBool(Type):
     def __str__(self):
         return "Bool"
 
@@ -61,10 +61,10 @@ class F_Bool(Type):
         return exceptions
 
 
-Bool = F_Bool()
+Bool = FBool()
 
 
-class F_Double(Type):
+class FDouble(Type):
     def __str__(self):
         return "Double"
 
@@ -81,10 +81,10 @@ class F_Double(Type):
         return exceptions
 
 
-Double = F_Double()
+Double = FDouble()
 
 
-class F_String(Type):
+class FString(Type):
     def __str__(self):
         return "String"
 
@@ -101,10 +101,10 @@ class F_String(Type):
         return exceptions
 
 
-String = F_String()
+String = FString()
 
 
-class F_Timestamp(Type):
+class FTimestamp(Type):
     def __str__(self):
         return "Timestamp"
 
@@ -113,9 +113,9 @@ class F_Timestamp(Type):
 
     def type_check(self, other: "Type") -> bool:
         return (
-            other == pd.Timestamp
-            or other == np.datetime64
-            or other == np.dtype("datetime64[ns]")
+                other == pd.Timestamp
+                or other == np.datetime64
+                or other == np.dtype("datetime64[ns]")
         )
 
     def validate(self, value: Any) -> List[Exception]:
@@ -139,7 +139,7 @@ class F_Timestamp(Type):
         )
 
 
-Timestamp = F_Timestamp()
+Timestamp = FTimestamp()
 
 
 class Map(Type):
@@ -234,12 +234,12 @@ class Array(Type):
 
 class Field:
     def __init__(
-        self,
-        name: str,
-        dtype: Type,
-        default: Any,
-        nullable: bool = False,
-        expectations: List[Expectation] = None,
+            self,
+            name: str,
+            dtype: Type,
+            default: Any,
+            nullable: bool = False,
+            expectations: List[Expectation] = None,
     ):
         self.name = name
         self.dtype = dtype
@@ -248,35 +248,35 @@ class Field:
         self.expectations = expectations
 
     def to_value_proto(self, dtype: Type, value: Any) -> proto.Value:
-        if type(dtype) == F_Int:
+        if type(dtype) == FInt:
             if not isinstance(value, int):
                 raise TypeError(
                     f"Expected default value for field {self.name} to be int, "
                     f"got {value}"
                 )
             return proto.Value(int_value=value)
-        elif type(dtype) == F_Double:
+        elif type(dtype) == FDouble:
             if not isinstance(value, float):
                 raise TypeError(
                     f"Expected default value for field {self.name} to be "
                     f"float, got {value}"
                 )
             return proto.Value(double_value=value)
-        elif type(dtype) == F_String:
+        elif type(dtype) == FString:
             if not isinstance(value, str):
                 raise TypeError(
                     f"Expected default value for field {self.name} to be str, "
                     f"got {value}"
                 )
             return proto.Value(string_value=value)
-        elif type(dtype) == F_Bool:
+        elif type(dtype) == FBool:
             if not isinstance(value, bool):
                 raise TypeError(
                     f"Expected default value for field {self.name} to be "
                     f"bool, got {value}"
                 )
             return proto.Value(bool_value=value)
-        elif type(dtype) == F_Timestamp:
+        elif type(dtype) == FTimestamp:
             if value != Now and not isinstance(value, pd.Timestamp):
                 raise TypeError(
                     f"Expected default value for field {self.name} to be "
@@ -285,7 +285,7 @@ class Field:
             elif value == Now:
                 return proto.Value(timestamp_value=proto.Timestamp(now=True))
             return proto.Value(
-                timestamp_value=F_Timestamp.get_timestamp_proto(value)
+                timestamp_value=FTimestamp.get_timestamp_proto(value)
             )
         elif type(dtype) == Array:
             if not isinstance(value, list):
@@ -318,7 +318,7 @@ class Field:
 
     def validate_default_value(self, dtype: Type, value: Any) -> List:
         errors = []
-        if type(dtype) == F_Int:
+        if type(dtype) == FInt:
             if not isinstance(value, int):
                 errors.append(
                     TypeError(
@@ -326,7 +326,7 @@ class Field:
                         f"got {value}"
                     )
                 )
-        elif type(dtype) == F_Double:
+        elif type(dtype) == FDouble:
             if not isinstance(value, float):
                 errors.append(
                     TypeError(
@@ -334,7 +334,7 @@ class Field:
                         f"float, got {value}"
                     )
                 )
-        elif type(dtype) == F_String:
+        elif type(dtype) == FString:
             if not isinstance(value, str):
                 errors.append(
                     TypeError(
@@ -342,7 +342,7 @@ class Field:
                         f"got {value}"
                     )
                 )
-        elif type(dtype) == F_Bool:
+        elif type(dtype) == FBool:
             if not isinstance(value, bool):
                 errors.append(
                     TypeError(
@@ -350,7 +350,7 @@ class Field:
                         f"bool, got {value}"
                     )
                 )
-        elif type(dtype) == F_Timestamp:
+        elif type(dtype) == FTimestamp:
             if value != Now and not isinstance(value, pd.Timestamp):
                 errors.append(
                     TypeError(
@@ -448,7 +448,7 @@ class Schema:
 
     def check_timestamp_field_exists(self) -> List[Exception]:
         for field in self.fields:
-            if type(field.dtype) == F_Timestamp:
+            if type(field.dtype) == FTimestamp:
                 return []
         return [Exception("No timestamp field provided")]
 

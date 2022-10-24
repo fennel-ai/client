@@ -1,4 +1,3 @@
-import inspect
 from concurrent import futures
 from functools import partial
 from unittest.mock import patch
@@ -37,7 +36,7 @@ def grpc_stub_cls(grpc_channel):
     return FennelFeatureStoreStub
 
 
-class FennelTest:
+class workspace:
     port = 50051
 
     def __init__(self, aggregate_mock=None, feature_mock=None):
@@ -61,6 +60,8 @@ class FennelTest:
 
     @staticmethod
     def mock_feature(feature_mock, feature_name, *args, **kwargs):
+        print("$", feature_mock)
+        print("$", feature_name)
         for k, v in feature_mock.items():
             if type(k) != str:
                 continue
@@ -79,10 +80,6 @@ class FennelTest:
         return self.__class__.__dict__["mock_feature"].__func__
 
     def __call__(self, func):
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
-        caller_path = mod.__name__
-
         def wrapper(*args, **kwargs):
             self._start_a_test_server()
             with grpc.insecure_channel(f"localhost:{self.port}") as channel:
@@ -92,7 +89,7 @@ class FennelTest:
                         self.agg_mock_method(), self.aggregate_mock
                     )
                     with patch(
-                            caller_path + ".feature_extract"
+                            "fennel.feature.feature.feature_extract"
                     ) as feature_mock:
                         feature_mock.side_effect = partial(
                             self.feature_mock_method(), self.feature_mock

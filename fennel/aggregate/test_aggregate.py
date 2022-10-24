@@ -34,11 +34,11 @@ class UserLikeCount(Aggregate):
         ]
     )
 
-    aggregate_type = Count(
+    aggregation = Count(
         key="actor_id",
         value="target_id",
         timestamp="timestamp",
-        windows=[windows.DAY * 7, windows.DAY * 28],
+        windows=[windows.DAY * 7],
     )
 
     @classmethod
@@ -94,7 +94,7 @@ class UserLikeCountInvalidSchema(Aggregate):
             ),
         ]
     )
-    aggregate_type = Count(
+    aggregation = Count(
         key="actor_id",
         value="target_id",
         windows=[
@@ -117,11 +117,11 @@ def test_InvalidSchemaAggregateRegistration(grpc_stub):
         workspace.register_aggregates(UserLikeCountInvalidSchema)
 
     assert (
-        str(e.value)
-        == "[TypeError('Type for uid should be a Fennel Type object such as Int() and not a class such as Int/int'), "
-        "TypeError('Type for count should be a Fennel Type object such as Int() and not a class such as Int/int'), "
-        "TypeError('Type for timestamp1 should be a Fennel Type object such as Int() and not a class such as Int/int'), "
-        "Exception('No timestamp field provided')]"
+            str(e.value)
+            == "[TypeError('Type for uid should be a Fennel Type object such as Int() and not a class such as Int/int'), "
+               "TypeError('Type for count should be a Fennel Type object such as Int() and not a class such as Int/int'), "
+               "TypeError('Type for timestamp1 should be a Fennel Type object such as Int() and not a class such as Int/int'), "
+               "Exception('No timestamp field provided')]"
     )
 
 
@@ -147,7 +147,7 @@ class UserLikeCountInvalidProcessingFunction(Aggregate):
             ),
         ],
     )
-    aggregate_type = Count(
+    aggregation = Count(
         key="actor_id",
         value="target_id",
         timestamp="timestamp",
@@ -158,7 +158,7 @@ class UserLikeCountInvalidProcessingFunction(Aggregate):
 
     @classmethod
     def preaggregate(
-        cls, df: pd.DataFrame, user_df: pd.DataFrame
+            cls, df: pd.DataFrame, user_df: pd.DataFrame
     ) -> pd.DataFrame:
         df = df[df["action_type"] == "like"]
         df["actor_id"].rename("uid")
@@ -171,9 +171,9 @@ def test_InvalidProcessingFunctionAggregateRegistration(grpc_stub):
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(UserLikeCountInvalidProcessingFunction)
     assert (
-        str(e.value)
-        == "[TypeError('preaggregate function should take 2 arguments ( "
-        "cls & df ) but got 3')]"
+            str(e.value)
+            == "[TypeError('preaggregate function should take 2 arguments ( "
+               "cls & df ) but got 3')]"
     )
 
 
@@ -191,7 +191,7 @@ class UserLikeCountInvalidProcessingFunction2(Aggregate):
             Field("timestamp", dtype=Timestamp, default=Now),
         ]
     )
-    aggregate_type = Count(
+    aggregation = Count(
         key="actor_id",
         value="target_id",
         timestamp="timestamp",
@@ -213,7 +213,7 @@ def test_InvalidProcessingFunctionAggregateRegistration2(grpc_stub):
         workspace = InternalTestWorkspace(grpc_stub)
         workspace.register_aggregates(UserLikeCountInvalidProcessingFunction2)
     assert (
-        str(e.value)
-        == "[TypeError('invalid method preprocess2 found in aggregate "
-        "class, only preaggregate is allowed')]"
+            str(e.value)
+            == "[TypeError('invalid method preprocess2 found in aggregate "
+               "class, only preaggregate is allowed')]"
     )

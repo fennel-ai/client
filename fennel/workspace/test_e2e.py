@@ -3,8 +3,8 @@ import unittest
 import pandas as pd
 import pytest
 
+from fennel import feature
 from fennel.aggregate import Aggregate, Count, depends_on, KeyValue
-from fennel.feature import *
 from fennel.lib import Field, Schema, windows
 from fennel.lib.schema import Array, Bool, Int, Map, Now, String, Timestamp
 from fennel.stream import MySQL, populator, Stream
@@ -172,7 +172,7 @@ class UserLikeCount(Aggregate):
             Field("timestamp", dtype=Timestamp, default=Now),
         ]
     )
-    aggregate_type = Count(
+    aggregation = Count(
         key="target_id",
         value="actor_id",
         timestamp="timestamp",
@@ -209,7 +209,7 @@ class UserLikeCountInvalidSchema(Aggregate):
             ),
         ]
     )
-    aggregate_type = Count(
+    aggregation = Count(
         key="target_id",
         value="actor_id",
         windows=[windows.DAY * 7, windows.DAY * 28],
@@ -228,7 +228,7 @@ class UserLikeCountInvalidSchema(Aggregate):
 
 
 class TestAggregateClient(unittest.TestCase):
-    @FennelTest()
+    @workspace()
     def test_AggregatePreprocess(self, workspace):
         workspace.register_aggregates(UserLikeCount)
         now = pd.Timestamp.now()
@@ -247,7 +247,7 @@ class TestAggregateClient(unittest.TestCase):
         assert processed_df["timestamp"].tolist() == [now, yesterday, now]
         assert processed_df["target_id"].tolist() == [1, 2, 5]
 
-    @FennelTest()
+    @workspace()
     def test_AggregatePreprocessInvalidSchema(self, workspace):
         now = pd.Timestamp("2020-01-01")
         yesterday = now - pd.Timedelta(days=1)
@@ -291,7 +291,7 @@ class UserGenderKVAgg(Aggregate):
         ]
     )
 
-    aggregate_type = KeyValue(key="uid", value="gender", timestamp="timestamp")
+    aggregation = KeyValue(key="uid", value="gender", timestamp="timestamp")
 
     @classmethod
     def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
@@ -317,7 +317,8 @@ class GenderLikeCountWithKVAgg(Aggregate):
             Field("timestamp", dtype=Timestamp, default=Now),
         ]
     )
-    aggregate_type = Count(
+
+    aggregation = Count(
         key="gender",
         value="count",
         timestamp="timestamp",
@@ -325,7 +326,7 @@ class GenderLikeCountWithKVAgg(Aggregate):
     )
 
     @classmethod
-    @depends_on(aggregates=[UserGenderKVAgg])
+    @depends_on(aggregates=(UserGenderKVAgg,))
     def preaggregate(cls, df: pd.DataFrame) -> pd.DataFrame:
         filtered_df = df[df["action_type"] == "like"].copy()
         filtered_df.reset_index(inplace=True)
@@ -341,7 +342,7 @@ class GenderLikeCountWithKVAgg(Aggregate):
 
 
 class Testclient(unittest.TestCase):
-    @FennelTest(
+    @workspace(
         aggregate_mock={UserGenderKVAgg: pd.Series(["male", "female", "male"])}
     )
     def test_client_AggregatePreprocess(self, workspace):
@@ -367,7 +368,7 @@ class Testclient(unittest.TestCase):
 ################################################################################
 
 
-@feature(
+@feature.single(
     name="user_like_count",
     schema=Schema([Field("user_like_count_7days", Int, 0)]),
 )
@@ -382,7 +383,7 @@ def user_like_count_3days(uids: pd.Series) -> pd.Series:
     return day7
 
 
-@feature(
+@feature.single(
     name="user_like_count_7days_random_sq",
     schema=Schema(
         [Field("user_like_count_7days_random_sq", Int, 0)],
@@ -402,7 +403,7 @@ def user_like_count_3days_square_random(uids: pd.Series) -> pd.Series:
     return day7_sq + user_count_features_sq
 
 
-class MyCustomFennelTest(FennelTest):
+class MyCustomFennelTest(workspace):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -416,12 +417,14 @@ class MyCustomFennelTest(FennelTest):
 
 
 class TestFeatureClient(unittest.TestCase):
-    @FennelTest(
-        aggregate_mock={
-            UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13]))
-        }
-    )
+    @workspace()
     def test_Feature(self, workspace):
+        uid = random_number()
+        workspace.set_mock_aggregate(
+            UserLikeCount, pd.Series([uid]), pd.Series([1]),
+        )
+        workspace.set_mock_feature(
+        )
         workspace.register_aggregates(UserLikeCount)
         workspace.register_features(user_like_count_3days)
         features = user_like_count_3days.extract(
@@ -430,16 +433,16 @@ class TestFeatureClient(unittest.TestCase):
         assert type(features) == pd.Series
         assert features[0] == 36
 
-    # @FennelTest(
-    #     aggregate_mock={
-    #         UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13]))
-    #     },
-    #     feature_mock={user_like_count_3days: pd.Series([36, 144, 169])},
-    # )
-    @MyCustomFennelTest(
-        aggregate_mock=(pd.Series([6, 12, 13]), pd.Series([5, 12, 13])),
-        feature_mock=pd.Series([36, 144, 169]),
+    @workspace(
+        aggregate_mock={
+            UserLikeCount: (pd.Series([6, 12, 13]), pd.Series([5, 12, 13]))
+        },
+        feature_mock={user_like_count_3days: pd.Series([36, 144, 169])},
     )
+    # @MyCustomFennelTest(
+    #     aggregate_mock=(pd.Series([6, 12, 13]), pd.Series([5, 12, 13])),
+    #     feature_mock=pd.Series([36, 144, 169]),
+    # )
     def test_Feature_Agg_And_FeatureMock(self, workspace):
         workspace.register_aggregates(UserLikeCount)
         workspace.register_features(

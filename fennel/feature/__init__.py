@@ -1,1 +1,1 @@
-from fennel.feature.feature import (feature, feature_extract, feature_pack)
+from fennel.feature.feature import (family, feature_extract, single)

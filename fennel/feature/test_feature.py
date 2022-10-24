@@ -6,7 +6,7 @@ import pytest
 import fennel.gen.feature_pb2 as feature_proto
 from fennel.aggregate import Aggregate, Count, depends_on
 # noinspection PyUnresolvedReferences
-from fennel.feature import feature, feature_pack
+from fennel.feature import family, single
 from fennel.lib import Field, Schema, windows
 from fennel.lib.schema import Int, Now, Timestamp
 from fennel.test_lib import *
@@ -27,7 +27,7 @@ class UserLikeCount(Aggregate):
             Field("timestamp", dtype=Timestamp, default=Now),
         ],
     )
-    aggregate_type = Count(
+    aggregation = Count(
         key="actor_id",
         value="target_id",
         timestamp="timestamp",
@@ -42,7 +42,7 @@ class UserLikeCount(Aggregate):
         return df
 
 
-@feature(
+@single(
     name="user_like_count",
     schema=Schema([Field("user_like_count_7days", Int, 0)]),
 )
@@ -74,7 +74,7 @@ def test_FeatureRegistration2(grpc_stub, mocker):
     assert features[0] == 36
 
 
-@feature_pack(
+@family(
     name="user_like_count",
     schema=Schema(
         [
@@ -132,7 +132,7 @@ def test_FeaturePackRegistration(grpc_stub, mocker):
     assert features["user_like_count_1day"][0] == 6
 
 
-@feature_pack(
+@family(
     name="user_like_count",
     schema=Schema(
         [
@@ -170,7 +170,7 @@ def test_FeaturePackRegistrationInvalid(grpc_stub, mocker):
     assert str(e.value) == "['feature function must return a pandas.Series']"
 
 
-@feature(
+@single(
     name="user_like_count",
     schema=Schema(
         [Field("user_like_count_7days", Int, 0)],

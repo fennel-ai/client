@@ -1,15 +1,14 @@
-import dataclasses
 import json
 from typing import Callable, cast, List, Optional
 
 import pandas as pd
+from pydantic import BaseModel
 
 import fennel.errors as errors
 import fennel.gen.stream_pb2 as proto
 
 
-@dataclasses.dataclass(frozen=True)
-class Source:
+class Source(BaseModel):
     name: str
 
     def type(self):
@@ -22,7 +21,6 @@ class Source:
         return False
 
 
-@dataclasses.dataclass(frozen=True)
 class SQLSource(Source):
     host: str
     db_name: str
@@ -41,19 +39,18 @@ class SQLSource(Source):
         if not isinstance(self.password, str):
             exceptions.append(TypeError("password must be a string"))
         if self.jdbc_params is not None and not isinstance(
-            self.jdbc_params, str
+                self.jdbc_params, str
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
 
 
-@dataclasses.dataclass(frozen=True)
 class S3(Source):
     bucket: str
     path_prefix: str
     aws_access_key_id: str
     aws_secret_access_key: str
-    schema: str
+    src_schema: str
     delimiter: str = ","
     format: str = "csv"
 
@@ -71,7 +68,6 @@ class S3(Source):
         return exceptions
 
 
-@dataclasses.dataclass(frozen=True)
 class BigQuery(Source):
     project_id: str
     dataset_id: str
@@ -86,12 +82,10 @@ class BigQuery(Source):
         return exceptions
 
 
-@dataclasses.dataclass(frozen=True)
 class Postgres(SQLSource):
     port: int = 5432
 
 
-@dataclasses.dataclass(frozen=True)
 class MySQL(SQLSource):
     port: int = 3306
 
@@ -106,7 +100,7 @@ def create_grpc_request(src: Source):
                 path_prefix=src.path_prefix,
                 aws_access_key_id=src.aws_access_key_id,
                 aws_secret_access_key=src.aws_secret_access_key,
-                schema=src.schema,
+                schema=src.src_schema,
                 delimiter=src.delimiter,
                 format=src.format,
             )
@@ -149,7 +143,7 @@ def populator(source: Source, table: Optional[str] = None):
                 raise Exception(
                     fn.__name__, " function must return a pandas DataFrame"
                 )
-            field2types = cls.schema.get_fields_and_types()
+            field2types = cls.src_schema.get_fields_and_types()
             # Basic Type Check
             for col, dtype in zip(result.columns, result.dtypes):
                 if col not in field2types:
@@ -209,7 +203,7 @@ def populator(source: Source, table: Optional[str] = None):
                     )
             grpc_request = create_grpc_request(source)
             if source.type() == "S3":
-                grpc_request.s3.schema = json.dumps(source.schema)
+                grpc_request.s3.src_schema = json.dumps(source.schema)
             return grpc_request
 
         setattr(ret, "create_source_request", create_source_request)
