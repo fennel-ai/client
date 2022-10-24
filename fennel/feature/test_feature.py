@@ -5,6 +5,7 @@ import pytest
 
 import fennel.gen.feature_pb2 as feature_proto
 from fennel.aggregate import Aggregate, Count, depends_on
+
 # noinspection PyUnresolvedReferences
 from fennel.feature import family, single
 from fennel.lib import Field, Schema, windows
@@ -94,10 +95,10 @@ def user_like_count_3days_pack(uids: pd.Series) -> pd.DataFrame:
     day7, day28 = UserLikeCount.lookup(
         uids=uids, window=[windows.DAY, windows.WEEK]
     )
-    day7_sq = day7 ** 2
-    day7_sqrt = day7 ** 0.5
-    day28_sq = day28 ** 2
-    day28_sqrt = day28 ** 0.5
+    day7_sq = day7**2
+    day7_sqrt = day7**0.5
+    day28_sq = day28**2
+    day28_sqrt = day28**0.5
     return pd.DataFrame(
         {
             "user_like_count_1day": day7,
@@ -182,6 +183,7 @@ def user_like_count_3days_invalid_dependency(uids: pd.Series) -> pd.Series:
     )
     day7 = day7.apply(lambda x: x * x)
     return day7
+
 
 # AST checks are disabled for now
 # def test_FeatureRegistrationInvalidDependency(grpc_stub, mocker):

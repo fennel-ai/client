@@ -113,9 +113,9 @@ class FTimestamp(Type):
 
     def type_check(self, other: "Type") -> bool:
         return (
-                other == pd.Timestamp
-                or other == np.datetime64
-                or other == np.dtype("datetime64[ns]")
+            other == pd.Timestamp
+            or other == np.datetime64
+            or other == np.dtype("datetime64[ns]")
         )
 
     def validate(self, value: Any) -> List[Exception]:
@@ -234,12 +234,12 @@ class Array(Type):
 
 class Field:
     def __init__(
-            self,
-            name: str,
-            dtype: Type,
-            default: Any,
-            nullable: bool = False,
-            expectations: List[Expectation] = None,
+        self,
+        name: str,
+        dtype: Type,
+        default: Any,
+        nullable: bool = False,
+        expectations: List[Expectation] = None,
     ):
         self.name = name
         self.dtype = dtype

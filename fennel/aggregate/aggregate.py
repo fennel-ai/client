@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 import fennel.gen.aggregate_pb2 as proto
 from fennel.errors import NameException
-from fennel.gen.aggregate_pb2 import WindowSpec
+from fennel.gen.aggregate_pb2 import CreateAggregateRequest, WindowSpec
 from fennel.gen.services_pb2_grpc import FennelFeatureStoreStub
 from fennel.gen.status_pb2 import Status
 from fennel.lib import windows
@@ -81,8 +81,9 @@ class DeltaWindow(BaseModel):
     target: Window
 
 
-def window_to_proto(windows: List[Union[Window, DeltaWindow,
-                                        windows.WindowLen]]):
+def window_to_proto(
+    windows: List[Union[Window, DeltaWindow, windows.WindowLen]]
+):
     proto_windows = []
     for window in windows:
         if isinstance(window, Window):
@@ -110,7 +111,10 @@ def window_to_proto(windows: List[Union[Window, DeltaWindow,
         elif isinstance(window, windows.WindowLen):
             if window == windows.FOREVER:
                 proto_windows.append(
-                    WindowSpec(forever=True, )),
+                    WindowSpec(
+                        forever=True,
+                    )
+                ),
                 continue
 
             proto_windows.append(
@@ -322,8 +326,8 @@ class CF(AggregateFunction):
 
 
 def depends_on(
-        aggregates: Optional[List[Any]] = None,
-        features: List[Any] = None,
+    aggregates: Optional[List[Any]] = None,
+    features: List[Any] = None,
 ):
     def decorator(func):
         @functools.wraps(func)

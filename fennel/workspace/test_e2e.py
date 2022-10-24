@@ -8,6 +8,7 @@ from fennel.aggregate import Aggregate, Count, depends_on, KeyValue
 from fennel.lib import Field, Schema, windows
 from fennel.lib.schema import Array, Bool, Int, Map, Now, String, Timestamp
 from fennel.stream import MySQL, populator, Stream
+
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -263,8 +264,8 @@ class TestAggregateClient(unittest.TestCase):
             workspace.register_aggregates(UserLikeCountInvalidSchema)
             _ = UserLikeCountInvalidSchema.preaggregate(df)
         assert (
-                str(e.value)
-                == """Column timestamp value 2020-01-01 00:00:00 failed validation: [TypeError("Expected pd.Timestamp, got value 2020-01-01 00:00:00, type : <class 'str'>")]"""
+            str(e.value)
+            == """Column timestamp value 2020-01-01 00:00:00 failed validation: [TypeError("Expected pd.Timestamp, got value 2020-01-01 00:00:00, type : <class 'str'>")]"""
         )
 
 
@@ -421,10 +422,11 @@ class TestFeatureClient(unittest.TestCase):
     def test_Feature(self, workspace):
         uid = random_number()
         workspace.set_mock_aggregate(
-            UserLikeCount, pd.Series([uid]), pd.Series([1]),
+            UserLikeCount,
+            pd.Series([uid]),
+            pd.Series([1]),
         )
-        workspace.set_mock_feature(
-        )
+        workspace.set_mock_feature()
         workspace.register_aggregates(UserLikeCount)
         workspace.register_features(user_like_count_3days)
         features = user_like_count_3days.extract(
@@ -456,6 +458,7 @@ class TestFeatureClient(unittest.TestCase):
         # 144 * 144 + 12 * 12 = 20736 + 144 = 20880
         # 169 * 169 + 13 * 13 = 28561 + 169 = 28730
         assert features.tolist() == [1332, 20880, 28730]
+
 
 ################################################################################
 # Workspace Tests

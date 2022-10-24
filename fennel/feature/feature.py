@@ -16,17 +16,17 @@ def feature_extract(feature_name: str, *args, **kwargs):
 
 def _is_sign_args_and_kwargs(sign):
     return (
-            len(sign.parameters) == 2
-            and "args" in sign.parameters
-            and "kwargs" in sign.parameters
+        len(sign.parameters) == 2
+        and "args" in sign.parameters
+        and "kwargs" in sign.parameters
     )
 
 
 def single(
-        name: str = None,
-        version: int = 1,
-        mode: str = "pandas",
-        schema: Schema = None,
+    name: str = None,
+    version: int = 1,
+    mode: str = "pandas",
+    schema: Schema = None,
 ):
     def decorator(func):
         def ret(*args, **kwargs):
@@ -105,10 +105,10 @@ def single(
 
 
 def family(
-        name: str = None,
-        version: int = 1,
-        mode: str = "pandas",
-        schema: Schema = None,
+    name: str = None,
+    version: int = 1,
+    mode: str = "pandas",
+    schema: Schema = None,
 ):
     def decorator(func):
         def ret(*args, **kwargs):
