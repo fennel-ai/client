@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package fennel.proto;
+
+import "status.proto";
+import "source.proto";
+
+// All integers representing time are in microseconds.
+
+message ExternalSource {
+  Source source = 1;
+  string table_name = 2;
+}
+
+message CreatePipeRequest {
+  string name = 1;
+  oneof source {
+    ExternalSource external_source = 2;
+    string dataset_name = 3;
+  }
+  // Frequency of running the pipeline
+  int32 frequency = 4;
+
+}
+
+message CreatePipeResponse {
+  string name = 1;
+  Status status = 2;
+}

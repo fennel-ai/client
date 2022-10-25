@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package fennel.proto;
+
+import "status.proto";
+
+message CreateFeatureSetRequest {
+  string name = 1;
+}
+
+message CreateFeatureSetResponse {
+  string name = 1;
+  Status status = 2;
+}
+
