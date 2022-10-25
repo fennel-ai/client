@@ -11,19 +11,23 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-import fennel.gen.stream_pb2 as stream__pb2
-import fennel.gen.status_pb2 as status__pb2
-import fennel.gen.aggregate_pb2 as aggregate__pb2
-import fennel.gen.feature_pb2 as feature__pb2
+import fennel.gen.featureset_pb2 as featureset__pb2
+import fennel.gen.dataset_pb2 as dataset__pb2
+import fennel.gen.pipe_pb2 as pipe__pb2
+import fennel.gen.extractor_pb2 as extractor__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0eservices.proto\x12\x0c\x66\x65nnel.proto\x1a\x0cstream.proto\x1a\x0cstatus.proto\x1a\x0f\x61ggregate.proto\x1a\rfeature.proto2\xdd\x02\n\x12\x46\x65nnelFeatureStore\x12I\n\x0eRegisterStream\x12!.fennel.proto.CreateStreamRequest\x1a\x14.fennel.proto.Status\x12O\n\x11RegisterAggregate\x12$.fennel.proto.CreateAggregateRequest\x1a\x14.fennel.proto.Status\x12K\n\x0fRegisterFeature\x12\".fennel.proto.CreateFeatureRequest\x1a\x14.fennel.proto.Status\x12^\n\x0f\x45xtractFeatures\x12$.fennel.proto.ExtractFeaturesRequest\x1a%.fennel.proto.ExtractFeaturesResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0eservices.proto\x12\x0c\x66\x65nnel.proto\x1a\x10\x66\x65\x61tureset.proto\x1a\rdataset.proto\x1a\npipe.proto\x1a\x0f\x65xtractor.proto\"\x8a\x02\n\x0bSyncRequest\x12<\n\x10\x64\x61taset_requests\x18\x01 \x03(\x0b\x32\".fennel.proto.CreateDatasetRequest\x12\x36\n\rpipe_requests\x18\x02 \x03(\x0b\x32\x1f.fennel.proto.CreatePipeRequest\x12\x43\n\x14\x66\x65\x61ture_set_requests\x18\x03 \x03(\x0b\x32%.fennel.proto.CreateFeatureSetRequest\x12@\n\x12\x65xtractor_requests\x18\x04 \x03(\x0b\x32$.fennel.proto.CreateExtractorRequest\"\x93\x02\n\x0cSyncResponse\x12>\n\x11\x64\x61taset_responses\x18\x01 \x03(\x0b\x32#.fennel.proto.CreateDatasetResponse\x12\x38\n\x0epipe_responses\x18\x02 \x03(\x0b\x32 .fennel.proto.CreatePipeResponse\x12\x45\n\x15\x66\x65\x61ture_set_responses\x18\x03 \x03(\x0b\x32&.fennel.proto.CreateFeatureSetResponse\x12\x42\n\x13\x65xtractor_responses\x18\x04 \x03(\x0b\x32%.fennel.proto.CreateExtractorResponse2S\n\x12\x46\x65nnelFeatureStore\x12=\n\x04Sync\x12\x19.fennel.proto.SyncRequest\x1a\x1a.fennel.proto.SyncResponseb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'services_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _FENNELFEATURESTORE._serialized_start=93
-  _FENNELFEATURESTORE._serialized_end=442
+  _SYNCREQUEST._serialized_start=95
+  _SYNCREQUEST._serialized_end=361
+  _SYNCRESPONSE._serialized_start=364
+  _SYNCRESPONSE._serialized_end=639
+  _FENNELFEATURESTORE._serialized_start=641
+  _FENNELFEATURESTORE._serialized_end=724
 # @@protoc_insertion_point(module_scope)

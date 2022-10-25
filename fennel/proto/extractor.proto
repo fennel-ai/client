@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package fennel.proto;
+
+import "status.proto";
+
+
+message CreateExtractorRequest{
+
+}
+
+message CreateExtractorResponse{
+  Status status = 1;
+}
