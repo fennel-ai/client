@@ -18,9 +18,12 @@ message CreatePipeRequest {
     ExternalSource external_source = 2;
     string dataset_name = 3;
   }
+  uint32 version = 4;
   // Frequency of running the pipeline
-  int32 frequency = 4;
-
+  int32 frequency = 5;
+  // The pickled python function to run
+  bytes function = 6;
+  string function_source_code = 7;
 }
 
 message CreatePipeResponse {

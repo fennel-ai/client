@@ -7,8 +7,6 @@ import "status.proto";
 // All integers representing time are in microseconds.
 message DatasetField {
   string name = 1;
-  // TODO: Create Type protos
-  // Type type = 2;
   bool is_key = 4;
   bool is_timestamp = 5;
   string owner = 6;
@@ -28,18 +26,20 @@ message ApiLookup {
 message CreateDatasetRequest {
   string name = 1;
   repeated DatasetField fields = 2;
-  int32 retention_period = 3;
+  // Serialized arrow schema.
+  bytes schema = 3;
+  int32 retention_period = 4;
   // Default mode is pandas.
-  string mode = 4;
-  string description = 5;
-  uint32 version = 6;
+  string mode = 5;
+  string description = 6;
+  uint32 version = 7;
 
   // Fields 7 - 10 are for derived datasets.
-  bool is_derived = 7;
-  string base_dataset = 8;
-  string value_field = 9;
+  bool is_derived = 8;
+  string base_dataset = 9;
+  string value_field = 10;
 
-  repeated ApiLookup api_lookups = 10;
+  repeated ApiLookup api_lookups = 11;
 }
 
 message CreateDatasetResponse{

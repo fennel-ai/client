@@ -15,7 +15,7 @@ import fennel.gen.status_pb2 as status__pb2
 import fennel.gen.source_pb2 as source__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\npipe.proto\x12\x0c\x66\x65nnel.proto\x1a\x0cstatus.proto\x1a\x0csource.proto\"J\n\x0e\x45xternalSource\x12$\n\x06source\x18\x01 \x01(\x0b\x32\x14.fennel.proto.Source\x12\x12\n\ntable_name\x18\x02 \x01(\t\"\x8f\x01\n\x11\x43reatePipeRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x37\n\x0f\x65xternal_source\x18\x02 \x01(\x0b\x32\x1c.fennel.proto.ExternalSourceH\x00\x12\x16\n\x0c\x64\x61taset_name\x18\x03 \x01(\tH\x00\x12\x11\n\tfrequency\x18\x04 \x01(\x05\x42\x08\n\x06source\"H\n\x12\x43reatePipeResponse\x12\x0c\n\x04name\x18\x01 \x01(\t\x12$\n\x06status\x18\x02 \x01(\x0b\x32\x14.fennel.proto.Statusb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\npipe.proto\x12\x0c\x66\x65nnel.proto\x1a\x0cstatus.proto\x1a\x0csource.proto\"J\n\x0e\x45xternalSource\x12$\n\x06source\x18\x01 \x01(\x0b\x32\x14.fennel.proto.Source\x12\x12\n\ntable_name\x18\x02 \x01(\t\"\xd0\x01\n\x11\x43reatePipeRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x37\n\x0f\x65xternal_source\x18\x02 \x01(\x0b\x32\x1c.fennel.proto.ExternalSourceH\x00\x12\x16\n\x0c\x64\x61taset_name\x18\x03 \x01(\tH\x00\x12\x0f\n\x07version\x18\x04 \x01(\r\x12\x11\n\tfrequency\x18\x05 \x01(\x05\x12\x10\n\x08\x66unction\x18\x06 \x01(\x0c\x12\x1c\n\x14\x66unction_source_code\x18\x07 \x01(\tB\x08\n\x06source\"H\n\x12\x43reatePipeResponse\x12\x0c\n\x04name\x18\x01 \x01(\t\x12$\n\x06status\x18\x02 \x01(\x0b\x32\x14.fennel.proto.Statusb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'pipe_pb2', globals())
@@ -25,7 +25,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _EXTERNALSOURCE._serialized_start=56
   _EXTERNALSOURCE._serialized_end=130
   _CREATEPIPEREQUEST._serialized_start=133
-  _CREATEPIPEREQUEST._serialized_end=276
-  _CREATEPIPERESPONSE._serialized_start=278
-  _CREATEPIPERESPONSE._serialized_end=350
+  _CREATEPIPEREQUEST._serialized_end=341
+  _CREATEPIPERESPONSE._serialized_start=343
+  _CREATEPIPERESPONSE._serialized_end=415
 # @@protoc_insertion_point(module_scope)
