@@ -7,4 +7,3 @@ from fennel.stream.sources import (
     Source,
     SQLSource,
 )
-from fennel.stream.stream import Stream
