@@ -3,17 +3,12 @@ from functools import partial
 from unittest.mock import patch
 
 import grpc
-
 # noinspection PyUnresolvedReferences
 import pandas as pd
 import pytest
 from google.protobuf import any_pb2
 
 # noinspection PyUnresolvedReferences
-from fennel.aggregate import aggregate_lookup
-
-# noinspection PyUnresolvedReferences
-from fennel.feature import feature_extract
 from fennel.gen.services_pb2_grpc import (
     add_FennelFeatureStoreServicer_to_server,
     FennelFeatureStoreServicer,
@@ -21,6 +16,9 @@ from fennel.gen.services_pb2_grpc import (
 )
 from fennel.gen.status_pb2 import Status
 from fennel.test_lib.test_workspace import ClientTestWorkspace
+
+
+# noinspection PyUnresolvedReferences
 
 
 @pytest.fixture(scope="module")
@@ -86,13 +84,13 @@ class workspace:
             self._start_a_test_server()
             with grpc.insecure_channel(f"localhost:{self.port}") as channel:
                 with patch(
-                    "fennel.aggregate.aggregate.aggregate_lookup"
+                        "fennel.aggregate.aggregate.aggregate_lookup"
                 ) as agg_mock:
                     agg_mock.side_effect = partial(
                         self.agg_mock_method(), self.aggregate_mock
                     )
                     with patch(
-                        "fennel.feature.feature.feature_extract"
+                            "fennel.feature.feature.feature_extract"
                     ) as feature_mock:
                         feature_mock.side_effect = partial(
                             self.feature_mock_method(), self.feature_mock

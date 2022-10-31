@@ -1,11 +1,10 @@
 import json
-from typing import Callable, cast, List, Optional
+from typing import Callable, List, Optional
 
 import pandas as pd
 from pydantic import BaseModel
 
 import fennel.errors as errors
-import fennel.gen.stream_pb2 as proto
 
 
 class Source(BaseModel):
@@ -39,7 +38,7 @@ class SQLSource(Source):
         if not isinstance(self.password, str):
             exceptions.append(TypeError("password must be a string"))
         if self.jdbc_params is not None and not isinstance(
-            self.jdbc_params, str
+                self.jdbc_params, str
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
@@ -88,50 +87,6 @@ class Postgres(SQLSource):
 
 class MySQL(SQLSource):
     port: int = 3306
-
-
-def create_grpc_request(src: Source):
-    req = proto.CreateSourceRequest(name=src.name)
-    if src.type() == "S3":
-        src = cast(S3, src)
-        req.s3.CopyFrom(
-            proto.S3(
-                bucket=src.bucket,
-                path_prefix=src.path_prefix,
-                aws_access_key_id=src.aws_access_key_id,
-                aws_secret_access_key=src.aws_secret_access_key,
-                schema=src.src_schema,
-                delimiter=src.delimiter,
-                format=src.format,
-            )
-        )
-    elif src.type() == "BigQuery":
-        src = cast(BigQuery, src)
-        req.bigquery.CopFrom(
-            proto.BigQuery(
-                project_id=src.project_id,
-                dataset_id=src.dataset_id,
-                credentials_json=src.credentials_json,
-            )
-        )
-    elif src.type() == "Postgres" or src.type() == "MySQL":
-        src = cast(SQLSource, src)
-        req.sql.CopyFrom(
-            proto.SQL(
-                sql_type=proto.SQL.SQLType.Postgres
-                if src.type() == "Postgres"
-                else proto.SQL.SQLType.MySQL,
-                host=src.host,
-                db=src.db_name,
-                username=src.username,
-                password=src.password,
-                port=src.port,
-                jdbc_params=src.jdbc_params,
-            )
-        )
-    else:
-        raise Exception("Unknown source type")
-    return req
 
 
 def populator(source: Source, table: Optional[str] = None):
@@ -201,7 +156,7 @@ def populator(source: Source, table: Optional[str] = None):
                     raise Exception(
                         "table must be provided since it supports multiple streams/tables"
                     )
-            grpc_request = create_grpc_request(source)
+            grpc_request = None
             if source.type() == "S3":
                 grpc_request.s3.src_schema = json.dumps(source.schema)
             return grpc_request

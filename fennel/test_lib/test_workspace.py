@@ -1,69 +1,14 @@
-from typing import List
-
-from fennel.aggregate import AggregateMetaclass
-from fennel.gen.status_pb2 import Status
-from fennel.stream import Stream
-
 # noinspection PyUnresolvedReferences
-from fennel.workspace import Workspace
+from fennel.workspace import View
 
 
-class ClientTestWorkspace(Workspace):
+class ClientTestWorkspace(View):
     def __init__(self, stub):
         super().__init__(name="test", url="localhost:50051")
         self.stub = stub
 
 
-class InternalTestWorkspace(Workspace):
+class InternalTestView(View):
     def __init__(self, stub):
         super().__init__(name="test", url="localhost:50051")
         self.stub = stub
-
-    def register_streams(self, *streams: List[Stream]):
-        exceptions = []
-        for stream in streams:
-            exceptions.extend(stream.validate())
-
-        if len(exceptions) > 0:
-            raise Exception(exceptions)
-
-        responses = []
-        for stream in streams:
-            resp = stream.register(self.stub)
-            responses.append(resp)
-
-        print("Registered test streams:", [stream.name for stream in streams])
-        return responses
-
-    def register_aggregates(
-        self, *aggregates: List[AggregateMetaclass]
-    ) -> List[Status]:
-        exceptions = []
-        for agg in aggregates:
-            exceptions.extend(agg._validate())
-
-        if len(exceptions) > 0:
-            raise Exception(exceptions)
-
-        responses = []
-        for agg in aggregates:
-            resp = agg.register(self.stub)
-            responses.append(resp)
-
-        print("Registered test aggregates:", [agg.name for agg in aggregates])
-        return responses
-
-    def register_features(self, *features):
-        exceptions = []
-        for feature in features:
-            exceptions.extend(feature.validate())
-        if len(exceptions) > 0:
-            raise Exception(exceptions)
-
-        responses = []
-        for feature in features:
-            print("Registering feature:", feature.name)
-            resp = feature.register(self.stub)
-            responses.append(resp)
-
-        return responses
