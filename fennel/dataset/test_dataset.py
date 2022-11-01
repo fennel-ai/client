@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 from google.protobuf.json_format import ParseDict
 from typing import Optional
 
-from fennel.dataset import Count, dataset, depends_on, field, Sum
+from fennel.dataset import Count, dataset, depends_on, field, Sum, aggregate, \
+    Window
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.test_lib import *
 
@@ -121,22 +122,25 @@ def test_DatasetWithRetention(grpc_stub):
     assert sync_request == expected_sync_request
 
 
+@dataset
+class FraudReport:
+    merchant_id: int = field(key=True)
+    user_id: int
+    user_age: int
+    transaction_amount: float
+    timestamp: datetime
+
+
 def test_AggregatedDataset(grpc_stub):
     @dataset
-    class FraudReport:
-        merchant_id: int = field(key=True)
-        user_id: int
-        user_age: int
-        transaction_amount: float
-        timestamp: datetime
-
-    @dataset.aggregate(FraudReport)
+    @aggregate(FraudReport)
     class FraudReportAggregatedDataset:
         merchant_id: int = field(key=True)
         timestamp: datetime
-        num_merchant_fraudulent_transactions: int = Count(window="forever")
-        num_merchant_fraudulent_transactions_7d: int = Count(window="1w")
-        total_amount_transacted: int = Sum(window="forever",
+        num_merchant_fraudulent_transactions: int = Count(window=Window())
+        num_merchant_fraudulent_transactions_7d: int = Count(
+            window=Window("1w"))
+        total_amount_transacted: int = Sum(window=Window(),
             value=FraudReport.transaction_amount)
 
     assert FraudReportAggregatedDataset._max_staleness == timedelta(days=30)
@@ -204,27 +208,159 @@ def test_AggregatedDataset(grpc_stub):
     assert sync_request == expected_sync_request
 
 
-@dataset
-class FraudReport:
-    merchant_id: int = field(key=True)
-    user_id: int
-    user_age: int
-    transaction_amount: float
-    timestamp: datetime
-
-
 def test_AggregatedDatasetWithRetention(grpc_stub):
-    @dataset(retention="1y").aggregate(FraudReport)
+    @dataset(retention="1y")
+    @aggregate(FraudReport)
     class FraudReportAggregatedDataset:
         merchant_id: int = field(key=True)
         timestamp: datetime
-        num_merchant_fraudulent_transactions: int = Count(window="forever")
-        num_merchant_fraudulent_transactions_7d: int = Count(window="1w")
+        num_merchant_fraudulent_transactions: int = Count(window=Window())
+        num_merchant_fraudulent_transactions_7d: int = Count(
+            window=Window("1w"))
+        total_amount_transacted: int = Sum(window=Window(),
+            value=FraudReport.transaction_amount)
 
-    view = InternalTestView(grpc_stub)
-    view.add(FraudReportAggregatedDataset)
     assert FraudReportAggregatedDataset._max_staleness == timedelta(days=30)
     assert FraudReportAggregatedDataset._retention == timedelta(days=365)
+    view = InternalTestView(grpc_stub)
+    view.add(FraudReportAggregatedDataset)
+    sync_request = view.to_proto()
+    assert len(sync_request.dataset_requests) == 1
+    d = {
+        "datasetRequests": [
+            {
+                "name": "FraudReportAggregatedDataset",
+                "fields": [
+                    {
+                        "name": "merchant_id",
+                        "isKey": True,
+                    },
+                    {
+                        "name": "timestamp",
+                        "isTimestamp": True,
+                    },
+                    {
+                        "name": "num_merchant_fraudulent_transactions",
+                        "aggregation": {
+                            "type": "COUNT",
+                            "window_spec": {
+                                "foreverWindow": True,
+                            }
+                        }
+                    },
+                    {
+                        "name": "num_merchant_fraudulent_transactions_7d",
+                        "aggregation": {
+                            "type": "COUNT",
+                            "window_spec": {
+                                "window": {
+                                    "start": 604800000000
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "total_amount_transacted",
+                        "aggregation": {
+                            "type": "SUM",
+                            "window_spec": {
+                                "foreverWindow": True,
+                            },
+                            "value_field": "transaction_amount"
+                        }
+                    }
+                ],
+                "retention": 31536000000000,
+                "maxStaleness": 2592000000000,
+                "mode": "pandas",
+                "isAggregated": True,
+                "baseDataset": "FraudReport",
+            }
+        ]
+    }
+
+    # Ignoring schema validation since they are bytes and not human readable
+    sync_request.dataset_requests[0].schema = b""
+    expected_sync_request = ParseDict(d, SyncRequest())
+    assert sync_request == expected_sync_request
+
+
+def test_AggregatedDatasetOrderReversed(grpc_stub):
+    @aggregate(FraudReport)
+    @dataset(retention="1y")
+    class FraudReportAggregatedDataset:
+        merchant_id: int = field(key=True)
+        timestamp: datetime
+        num_merchant_fraudulent_transactions: int = Count(window=Window(
+            start=None))
+        num_merchant_fraudulent_transactions_7d: int = Count(
+            window=Window("1w"))
+        total_amount_transacted: int = Sum(window=Window(),
+            value=FraudReport.transaction_amount)
+
+    assert FraudReportAggregatedDataset._max_staleness == timedelta(days=30)
+    assert FraudReportAggregatedDataset._retention == timedelta(days=365)
+    view = InternalTestView(grpc_stub)
+    view.add(FraudReportAggregatedDataset)
+    sync_request = view.to_proto()
+    assert len(sync_request.dataset_requests) == 1
+    d = {
+        "datasetRequests": [
+            {
+                "name": "FraudReportAggregatedDataset",
+                "fields": [
+                    {
+                        "name": "merchant_id",
+                        "isKey": True,
+                    },
+                    {
+                        "name": "timestamp",
+                        "isTimestamp": True,
+                    },
+                    {
+                        "name": "num_merchant_fraudulent_transactions",
+                        "aggregation": {
+                            "type": "COUNT",
+                            "window_spec": {
+                                "foreverWindow": True,
+                            }
+                        }
+                    },
+                    {
+                        "name": "num_merchant_fraudulent_transactions_7d",
+                        "aggregation": {
+                            "type": "COUNT",
+                            "window_spec": {
+                                "window": {
+                                    "start": 604800000000
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "total_amount_transacted",
+                        "aggregation": {
+                            "type": "SUM",
+                            "window_spec": {
+                                "foreverWindow": True,
+                            },
+                            "value_field": "transaction_amount"
+                        }
+                    }
+                ],
+                "retention": 31536000000000,
+                "maxStaleness": 2592000000000,
+                "mode": "pandas",
+                "isAggregated": True,
+                "baseDataset": "FraudReport",
+            }
+        ]
+    }
+
+    # Ignoring schema validation since they are bytes and not human readable
+    sync_request.dataset_requests[0].schema = b""
+    expected_sync_request = ParseDict(d, SyncRequest())
+    assert sync_request == expected_sync_request
 
 
 def test_DatasetWithPull(grpc_stub):
