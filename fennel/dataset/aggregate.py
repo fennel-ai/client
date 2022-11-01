@@ -1,6 +1,5 @@
-from dataclasses import dataclass
-from pydantic import BaseModel
-from typing import List, Union
+from pydantic import BaseModel, Extra
+from typing import List, Union, Optional
 
 import fennel.gen.dataset_pb2 as proto
 from fennel.utils.duration import Duration, duration_to_timedelta, \
@@ -9,8 +8,47 @@ from fennel.utils.duration import Duration, duration_to_timedelta, \
 ItemType = Union[str, List[str]]
 
 
+# ------------------------------------------------------------------------------
+# Windows
+# ------------------------------------------------------------------------------
+
+
+class Window(BaseModel):
+    start: Optional[Duration]
+    end: Duration
+
+    def __init__(self, start: Optional[Duration] = None, end: Duration = "0s"):
+        super().__init__(start=start, end=end)
+
+    def to_proto(self):
+        if self.start is None:
+            return proto.WindowSpec(forever_window=True)
+        return proto.WindowSpec(
+            window=proto.Window(
+                start=timedelta_to_micros(duration_to_timedelta(self.start)),
+                end=timedelta_to_micros(duration_to_timedelta(self.end)),
+            )
+        )
+
+
+class DeltaWindow(Window):
+    base_window: Window
+    target_window: Window
+
+    def to_proto(self):
+        return proto.DeltaWindow(
+            base_window=self.base_window.to_proto(),
+            target_window=self.target_window.to_proto(),
+        )
+
+
+# ------------------------------------------------------------------------------
+# Aggregate Types
+# ------------------------------------------------------------------------------
+
+
 class AggregateType(BaseModel):
-    window: Duration
+    window: Window
 
     def to_proto(self):
         raise NotImplementedError
@@ -18,19 +56,23 @@ class AggregateType(BaseModel):
     def validate(self):
         pass
 
+    class Config:
+        extra = Extra.forbid
+
 
 class Count(AggregateType):
     agg_func = proto.AggregateType.COUNT
 
     def to_proto(self):
+        if self.window is None:
+            raise ValueError("Window must be specified for Count")
+
         return proto.Aggregation(
             type=self.agg_func,
-            window_spec=_window_to_proto(self.window)
+            window_spec=self.window.to_proto(),
         )
 
     def validate(self):
-        print("Count.validate")
-        print(self.__dict__)
         pass
 
 
@@ -41,7 +83,7 @@ class Sum(AggregateType):
     def to_proto(self):
         return proto.Aggregation(
             type=self.agg_func,
-            window_spec=_window_to_proto(self.window),
+            window_spec=self.window.to_proto(),
             value_field=self.value,
         )
 
@@ -56,13 +98,11 @@ class Max(AggregateType):
     agg_func = proto.AggregateType.MAX
 
 
-@dataclass(frozen=True)
 class Min(AggregateType):
     value: str
     agg_func = proto.AggregateType.MIN
 
 
-@dataclass(frozen=True)
 class TopK(AggregateType):
     item: ItemType
     score: str
@@ -71,38 +111,9 @@ class TopK(AggregateType):
     update_frequency: int = 60
 
 
-@dataclass(frozen=True)
 class CF(AggregateType):
     context: ItemType
     weight: str
     limit: int
     agg_func = proto.AggregateType.CF
     update_frequency: int = 60
-
-
-# ------------------------------------------------------------------------------
-# HELPERS
-# ------------------------------------------------------------------------------
-
-
-def _window_to_proto(window) -> proto.WindowSpec:
-    if window == "forever":
-        return proto.WindowSpec(
-            forever_window=True,
-        )
-    elif ":" in window:
-        # TODO: Decide on delta window syntax
-        raise NotImplementedError
-    elif "->" in window:
-        start, end = window.split("->")
-        start_micros = timedelta_to_micros(duration_to_timedelta(start))
-        end_micros = timedelta_to_micros(duration_to_timedelta(end))
-        return proto.WindowSpec(
-            window=proto.Window(
-                start=start_micros,
-                end=end_micros,
-            )
-        )
-    else:
-        window_micros = timedelta_to_micros(duration_to_timedelta(window))
-        return proto.WindowSpec(window=proto.Window(start=window_micros, end=0))

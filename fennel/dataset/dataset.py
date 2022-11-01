@@ -202,6 +202,9 @@ class dataset:
             # We're called as @dataset(*args, *kwargs).
             return super().__new__(cls)
         # We're called as @dataset without parens.
+        base_dataset_cls = getattr(dataset_cls, "_base_dataset", None)
+        if base_dataset_cls is not None:
+            return _create_aggregated_dataset(dataset_cls, base_dataset_cls,)
         return _create_dataset(dataset_cls, *args, **kwargs)
 
     def __init__(self, retention: Duration = DEFAULT_RETENTION,
@@ -215,36 +218,32 @@ class dataset:
 
     def __call__(self, dataset_cls: Optional[Type[T]]):
         """This is called when dataset is called with parens."""
+
+        base_dataset_cls = getattr(dataset_cls, "_base_dataset", None)
+        if base_dataset_cls is not None:
+            return _create_aggregated_dataset(dataset_cls, base_dataset_cls,
+                                              self._retention,
+                                              self._max_staleness)
         return _create_dataset(dataset_cls, self._retention,
             self._max_staleness)
 
-    def aggregate(arg1, arg2: Optional[Type[T]] = None):
-        """aggregate is a decorator that creates a Dataset class that
-        aggregates another dataset.
-        Parameters
-        ----------
-        arg1 : self or Dataset
-            If arg1 is self, arg2 is the base dataset class.
-            else arg1 is the base_dataset_cls.
-        arg2 : Dataset ( Optional )
-            The dataset to aggregate, used when dataset() creates an object
-            and hence arg1 is self.
-        """
 
-        base_dataset_cls = arg2
-        if base_dataset_cls is None:
-            # We are calling it as @dataset.aggregate
-            base_dataset_cls = arg1
 
-        def wrapper(aggregated_cls):
-            if arg2 is not None:
-                return _create_aggregated_dataset(aggregated_cls,
-                    base_dataset_cls,
-                    arg1._retention,
-                    arg1._max_staleness)
-            return _create_aggregated_dataset(aggregated_cls, base_dataset_cls)
+def aggregate(base_dataset_cls: Type[T]):
+    """aggregate is a decorator that creates a Dataset class that
+    aggregates another dataset.
+    """
+    def decorator(cls):
+        if isinstance(cls, Dataset):
+            return AggregateDataset.from_dataset(cls, base_dataset_cls)
+
+        setattr(cls, "_base_dataset", base_dataset_cls)
+        @functools.wraps(cls)
+        def wrapper(*args, **kwargs):
+            raise ValueError("Aggregated datasets cannot be instantiated")
 
         return wrapper
+    return decorator
 
 
 class Dataset(FennelConcept):
@@ -315,7 +314,7 @@ class Dataset(FennelConcept):
         return schema.serialize().to_pybytes()
 
     def __repr__(self):
-        return f"FennelDataset({self.__name__}, {self._fields})"
+        return f"Dataset({self.__name__}, {self._fields})"
 
     def _pull_to_proto(self) -> proto.PullLookup:
         depends_on_datasets = getattr(self.pull_fn, "_depends_on_datasets", [])
@@ -356,9 +355,15 @@ class AggregateDataset(Dataset):
         super().__init__(cls_name, fields, retention, max_staleness, None)
         self._base_dataset_cls_name = base_dataset_cls_name
 
+    @classmethod
+    def from_dataset(cls, dataset: Dataset, base_dataset_cls: str):
+        dataset._base_dataset_cls_name = base_dataset_cls.name
+        dataset.__class__ = AggregateDataset
+        return dataset
+
     def __repr__(self):
         return f"AggregateDataset({self.__name__}, {self._fields}, " \
-               f"{self.base_dataset})"
+               f"Base Dataset : {self._base_dataset_cls_name})"
 
     def to_proto(self) -> proto.CreateDatasetRequest:
         return proto.CreateDatasetRequest(
@@ -381,7 +386,6 @@ class AggregateDataset(Dataset):
 def depends_on(*datasets: Type[Dataset]):
     def decorator(func):
         setattr(func, "_depends_on_datasets", list(datasets))
-
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
