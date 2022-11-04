@@ -237,18 +237,15 @@ def test_DatasetWithPipes(grpc_stub):
     class A:
         a1: int = field(key=True)
         t: datetime
-        pass
 
     @dataset
     class B:
         b1: int = field(key=True)
         t: datetime
-        pass
 
     @dataset
     class C:
         t: datetime
-        pass
 
     @dataset
     class ABCDataset:
@@ -356,7 +353,6 @@ def test_DatasetWithComplexPipe(grpc_stub):
         num_merchant_fraudulent_transactions: int
         num_merchant_fraudulent_transactions_7d: int
 
-        @staticmethod
         @pipeline
         def create_fraud_dataset(activity: Activity,
                                  user_info: UserInfoDataset):

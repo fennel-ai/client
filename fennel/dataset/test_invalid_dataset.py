@@ -59,3 +59,26 @@ def test_DatasetWithPipes(grpc_stub):
     assert str(
         e.value) == "pipeline_func cannot have self as a parameter and should " \
                     "be a static method"
+
+
+def test_DatasetIncorrectJoin(grpc_stub):
+    with pytest.raises(ValueError) as e:
+        @dataset
+        class XYZ:
+            user_id: int
+            name: str
+            timestamp: datetime
+
+        @dataset
+        class ABCDataset:
+            a: int = field(key=True)
+            b: int = field(key=True)
+            c: int
+            d: datetime
+
+            @staticmethod
+            @pipeline
+            def create_pipeline(a: XYZ):
+                b = a.transform(lambda x: x)
+                return a.join(b, on=["user_id"])
+    assert str(e.value) == "Cannot join with an intermediate dataset"
