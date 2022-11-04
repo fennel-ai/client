@@ -363,7 +363,7 @@ class Dataset(_Node):
             pipelines.append(pipeline)
         return pipelines
 
-    def to_proto(self) -> proto.CreateDatasetRequest:
+    def create_dataset_request_proto(self) -> proto.CreateDatasetRequest:
         return proto.CreateDatasetRequest(
             name=self.__name__,
             schema=self._get_schema(),
@@ -387,8 +387,11 @@ def pipeline(pipeline_func):
     sig = inspect.signature(pipeline_func)
     params = []
     for name, param in sig.parameters.items():
+        if param.name == "self":
+            raise TypeError("pipeline_func cannot have self as a parameter "
+                            "and should be a static method")
         if not isinstance(param.annotation, Dataset):
-            raise Exception(f"Parameter {name} is not a Dataset")
+            raise TypeError(f"Parameter {name} is not a Dataset")
         params.append(param.annotation)
     pipeline = Pipeline(node=pipeline_func(*params), inputs=params,
         signature="")
@@ -435,7 +438,6 @@ class Visitor:
 class Printer(Visitor):
     def __init__(self):
         super(Printer, self).__init__()
-        self.cache = {}
         self.lines = []
         self.offset = 0
 
@@ -443,11 +445,7 @@ class Printer(Visitor):
         return " " * self.offset
 
     def visit(self, obj):
-        if obj in self.cache:
-            return self.cache[obj]
-
         ret = super(Printer, self).visit(obj)
-        self.cache[obj] = ret
         return ret
 
     def print(self, obj):
@@ -482,7 +480,6 @@ class Printer(Visitor):
 class Serializer(Visitor):
     def __init__(self):
         super(Serializer, self).__init__()
-        self.cache = {}
 
     def serialize(self, obj: _Node):
         return self.visit(obj)
@@ -499,8 +496,9 @@ class Serializer(Visitor):
     def visitAggregate(self, obj):
         return proto.Node(operator=proto.Operator(aggregate=proto.Aggregate(
             node=self.visit(obj.node),
-            keys=obj.keys, aggregates=[agg.to_proto() for agg in
-                                       obj.aggregates])))
+            keys=obj.keys,
+            aggregates=[agg.to_proto() for agg in
+                        obj.aggregates])))
 
     def visitJoin(self, obj):
         if obj.on is not None:

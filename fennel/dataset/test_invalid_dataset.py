@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime
 from typing import Optional
 
-from fennel.dataset import dataset, field
+from fennel.dataset import dataset, field, pipeline
 from fennel.test_lib import *
 
 
@@ -35,3 +35,27 @@ def test_InvalidRetentionWindow(grpc_stub):
     assert str(
         e.value) == "duration 324 must be a specified as a string for eg. " \
                     "1d/2m/3y."
+
+
+def test_DatasetWithPipes(grpc_stub):
+    with pytest.raises(TypeError) as e:
+        @dataset
+        class XYZ:
+            user_id: int
+            name: str
+            timestamp: datetime
+
+        @dataset
+        class ABCDataset:
+            a: int = field(key=True)
+            b: int = field(key=True)
+            c: int
+            d: datetime
+
+            @pipeline
+            def create_pipeline(self, a: XYZ):
+                return a
+
+    assert str(
+        e.value) == "pipeline_func cannot have self as a parameter and should " \
+                    "be a static method"
