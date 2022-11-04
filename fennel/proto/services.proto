@@ -4,8 +4,6 @@ package fennel.proto;
 
 import "featureset.proto";
 import "dataset.proto";
-import "pipe.proto";
-import "extractor.proto";
 
 
 /*
@@ -19,16 +17,12 @@ https://gist.github.com/aditya-nambiar/87c8b55fe509c1c1cd06d212b8a8ded1
 
 message SyncRequest {
   repeated CreateDatasetRequest dataset_requests = 1;
-  repeated CreatePipeRequest pipe_requests = 2;
   repeated CreateFeatureSetRequest feature_set_requests = 3;
-  repeated CreateExtractorRequest extractor_requests = 4;
 }
 
 message SyncResponse {
   repeated CreateDatasetResponse dataset_responses = 1;
-  repeated CreatePipeResponse pipe_responses = 2;
   repeated CreateFeatureSetResponse feature_set_responses = 3;
-  repeated CreateExtractorResponse extractor_responses = 4;
 }
 
 service FennelFeatureStore {
