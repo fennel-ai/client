@@ -84,6 +84,11 @@ class _Node:
 
     def join(self, other: Dataset, on: Optional[List[str]] = None, left_on:
     Optional[List[str]] = None, right_on: Optional[List[str]] = None) -> _Join:
+        if not isinstance(other, Dataset) and isinstance(other, _Node):
+            print(dir(other))
+            raise ValueError(f"Cannot join with an intermediate dataset")
+        if not isinstance(other, _Node):
+            raise TypeError("Cannot join with a non-dataset object")
         return _Join(self, other, on, left_on, right_on)
 
     def signature(self):
