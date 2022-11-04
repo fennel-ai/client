@@ -1,4 +1,4 @@
-from fennel.utils.duration import duration_to_timedelta
+from fennel.lib.duration.duration import duration_to_timedelta
 
 
 def test_Duration():

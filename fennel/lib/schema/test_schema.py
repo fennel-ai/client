@@ -2,7 +2,7 @@ import pyarrow as pa
 from datetime import datetime
 from typing import Dict, List, Optional, Set, Tuple, Union
 
-from fennel.lib.schema import get_pyarrow_field, get_pyarrow_schema
+from fennel.lib.schema.schema import get_pyarrow_field, get_pyarrow_schema
 
 
 def test_PyArrowSchemaConversion():

@@ -36,7 +36,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 testpaths = [
     "fennel/dataset",
-    "fennel/stream",
     "fennel/lib",
     "fennel/utils",
 ]

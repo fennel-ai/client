@@ -3,12 +3,11 @@ from typing import *
 
 import fennel.gen.services_pb2 as services_pb2
 import fennel.gen.services_pb2_grpc as services_pb2_grpc
-from fennel.concept import FennelConcept
 from fennel.dataset import Dataset
 
 
 # TODO(aditya): how will auth work?
-class View(FennelConcept):
+class View:
     def __init__(self, name: str, url: str):
         self.name = name
         self.url = url

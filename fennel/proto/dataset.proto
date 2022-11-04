@@ -14,40 +14,82 @@ message DatasetField {
   string owner = 5;
   string description = 6;
   bool is_nullable = 7;
-
-  // Only for aggregated datasets.
-  Aggregation aggregation = 8;
 }
 
 message PullLookup {
   string function_source_code = 1;
   bytes function = 2;
-  repeated string depends_on_datasets = 3;
 }
 
 message CreateDatasetRequest {
   string name = 1;
   repeated DatasetField fields = 2;
+  repeated Pipeline pipelines = 3;
   // Serialized arrow schema.
-  bytes schema = 3;
-  int64 retention = 4;
-  int64 max_staleness = 5;
+  bytes schema = 4;
+  int64 retention = 5;
+  int64 max_staleness = 6;
   // Default mode is pandas.
-  string mode = 6;
-  string description = 7;
-  uint32 version = 8;
+  string mode = 7;
+  string description = 8;
+  uint32 version = 9;
 
-  PullLookup pull_lookup = 9;
-
-  // Fields 10 - 12 are for aggregated datasets.
-  bool is_aggregated = 10;
-  string base_dataset = 11;
+  PullLookup pull_lookup = 10;
 }
 
 message CreateDatasetResponse{
-  string dataset_name = 1;
+  string name = 1;
   Status status = 2;
 }
+
+//----------------------------------------------------------------------------------------------
+// Pipeline
+//----------------------------------------------------------------------------------------------
+
+message Pipeline{
+  Node root = 1;
+  string signature = 2;
+  repeated Dataset inputs = 3;
+}
+
+message Node {
+  oneof node {
+    Operator operator = 1;
+    Dataset dataset = 2;
+  }
+}
+
+message Operator  {
+  oneof node {
+    Aggregate aggregate = 1;
+    Join join = 2;
+    Transform transform = 3;
+  }
+}
+
+message Dataset {
+  string name = 1;
+}
+
+message Aggregate {
+  Node node = 1;
+  repeated string keys = 2;
+  repeated Aggregation aggregates = 3;
+}
+
+message Join {
+  Node node = 1;
+  Dataset dataset = 2;
+  // Map of left field name to right field name to join on.
+  map<string, string> on = 3;
+}
+
+message Transform {
+  Node node = 1;
+  bytes function = 2;
+  string function_source_code = 3;
+}
+
 
 // ----------------------------------------------------------------------------
 // Aggregate Definitions
