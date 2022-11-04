@@ -29,7 +29,7 @@ class View:
         datasets = []
         for obj in self.to_register_objects:
             if isinstance(obj, Dataset):
-                datasets.append(obj.to_proto())
+                datasets.append(obj.create_dataset_request_proto())
         return services_pb2.SyncRequest(
             dataset_requests=datasets
         )
