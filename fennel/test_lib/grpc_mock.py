@@ -60,8 +60,6 @@ class workspace:
 
     @staticmethod
     def mock_feature(feature_mock, feature_name, *args, **kwargs):
-        print("$", feature_mock)
-        print("$", feature_name)
         for k, v in feature_mock.items():
             if type(k) != str:
                 continue

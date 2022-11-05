@@ -48,14 +48,17 @@ message CreateDatasetResponse{
 
 message Pipeline{
   Node root = 1;
-  string signature = 2;
-  repeated Dataset inputs = 3;
+  // Sub Nodes that are used by the root node.
+  repeated Node nodes = 2;
+  string signature = 3;
+  repeated Dataset inputs = 4;
 }
 
 message Node {
   oneof node {
     Operator operator = 1;
     Dataset dataset = 2;
+    string node_id = 3;
   }
 }
 
@@ -64,7 +67,9 @@ message Operator  {
     Aggregate aggregate = 1;
     Join join = 2;
     Transform transform = 3;
+    Union union = 4;
   }
+  string id = 5;
 }
 
 message Dataset {
@@ -88,8 +93,12 @@ message Transform {
   Node node = 1;
   bytes function = 2;
   string function_source_code = 3;
+  string timestamp_field = 4;
 }
 
+message Union {
+  repeated Node nodes = 1;
+}
 
 // ----------------------------------------------------------------------------
 // Aggregate Definitions

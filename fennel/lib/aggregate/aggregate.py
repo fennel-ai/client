@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Extra
 from typing import List, Union
+
+from pydantic import BaseModel, Extra
 
 import fennel.gen.dataset_pb2 as proto
 from fennel.lib.window import Window
@@ -18,6 +19,9 @@ class AggregateType(BaseModel):
     def validate(self):
         pass
 
+    def signature(self):
+        raise NotImplementedError
+
     class Config:
         extra = Extra.forbid
 
@@ -27,7 +31,7 @@ class Count(AggregateType):
 
     def to_proto(self):
         if self.window is None:
-            raise ValueError("Window must be specified for Count")
+            raise ValueError('Window must be specified for Count')
 
         return proto.Aggregation(
             type=self.agg_func,
@@ -36,6 +40,9 @@ class Count(AggregateType):
 
     def validate(self):
         pass
+
+    def signature(self):
+        return f"count_{self.window.signature()}"
 
 
 class Sum(AggregateType):
@@ -48,6 +55,9 @@ class Sum(AggregateType):
             window_spec=self.window.to_proto(),
             value_field=self.value,
         )
+
+    def signature(self):
+        return f"sum_{self.value}_{self.window.signature()}"
 
 
 class Average(AggregateType):
