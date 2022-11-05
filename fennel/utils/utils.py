@@ -16,23 +16,24 @@ Tags = Union[List[str], Tuple[str, ...], str]
 T = TypeVar('T')
 
 
-def _json_default(thing: Any):
+def _json_default(item: Any):
     try:
-        return dataclasses.asdict(thing)
+        return dataclasses.asdict(item)
     except TypeError:
         pass
-    if isinstance(thing, datetime.datetime):
-        return thing.isoformat(timespec='microseconds')
+    if isinstance(item, datetime.datetime):
+        return item.isoformat(timespec='microseconds')
 
-    if isinstance(thing, bytes):
-        return thing.hex()
+    if isinstance(item, bytes):
+        return item.hex()
 
-    if callable(thing) and not inspect.isclass(thing):
-        return hashlib.md5(inspect.getsource(thing).encode('utf-8')).hexdigest()
+    if callable(item) and not inspect.isclass(item):
+        return hashlib.md5(inspect.getsource(item).encode('utf-8')).hexdigest()
 
-    if isinstance(thing, datetime.timedelta):
-        return str(thing.total_seconds())
-    raise TypeError(f"object of type {type(thing).__name__} not hashable")
+    if isinstance(item, datetime.timedelta):
+        return str(item.total_seconds())
+
+    raise TypeError(f"object of type {type(item).__name__} not hashable")
 
 
 def _json_dumps(thing: Any):
@@ -46,9 +47,10 @@ def _json_dumps(thing: Any):
     )
 
 
-def fhash(thing: Any):
+def fhash(*items: Any):
     """Fennel Hash that is used to uniquely identify any python object."""
-    return hashlib.md5(_json_dumps(thing).encode('utf-8')).hexdigest()
+    items = list(items)
+    return hashlib.md5(_json_dumps(items).encode('utf-8')).hexdigest()
 
 
 def parse_annotation_comments(cls: Type[T]) -> Mapping[str, str]:
