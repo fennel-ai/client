@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import List, Union, Optional
+
+from pydantic import BaseModel
 
 import fennel.gen.dataset_pb2 as proto
 from fennel.lib.duration.duration import Duration, duration_to_timedelta, \
@@ -29,3 +30,8 @@ class Window(BaseModel):
                 end=timedelta_to_micros(duration_to_timedelta(self.end)),
             )
         )
+
+    def signature(self):
+        if self.start is None:
+            return f"forever_{self.end}"
+        return f"{self.start}_{self.end}"
