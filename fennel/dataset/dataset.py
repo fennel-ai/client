@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import ast
 import datetime
 import inspect
-import textwrap
 from dataclasses import dataclass
-from typing import (Callable, cast, Dict, List, Mapping, Optional, Tuple, Type,
+from typing import (Callable, cast, Dict, List, Optional, Tuple, Type,
                     TypeVar, Union)
 
 import cloudpickle
@@ -16,7 +14,7 @@ from fennel.lib.aggregate import AggregateType
 from fennel.lib.duration.duration import Duration, duration_to_timedelta, \
     timedelta_to_micros
 from fennel.lib.schema.schema import get_pyarrow_field
-from fennel.utils import fhash
+from fennel.utils import fhash, parse_annotation_comments
 
 Tags = Union[List[str], Tuple[str, ...], str]
 
@@ -192,91 +190,16 @@ class _Union(_Node):
 
 
 # ---------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------
-
-def _parse_annotation_comments(cls: Type[T]) -> Mapping[str, str]:
-    try:
-        source = textwrap.dedent(inspect.getsource(cls))
-
-        source_lines = source.splitlines()
-        tree = ast.parse(source)
-        if len(tree.body) != 1:
-            return {}
-
-        comments_for_annotations: Dict[str, str] = {}
-        class_def = tree.body[0]
-        if isinstance(class_def, ast.ClassDef):
-            for stmt in class_def.body:
-                if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target,
-                        ast.Name):
-                    line = stmt.lineno - 2
-                    comments: List[str] = []
-                    while line >= 0 and source_lines[line].strip().startswith(
-                            '#'):
-                        comment = source_lines[line].strip().strip('#').strip()
-                        comments.insert(0, comment)
-                        line -= 1
-
-                    if len(comments) > 0:
-                        comments_for_annotations[
-                            stmt.target.id] = textwrap.dedent(
-                            '\n'.join(comments))
-
-        return comments_for_annotations
-    except Exception:
-        return {}
-
-
-def _get_field(
-        cls: Type,
-        annotation_name: str,
-        dtype: Type,
-        field2comment_map: Dict[str, str],
-):
-    field = getattr(cls, annotation_name, None)
-    if isinstance(field, Field):
-        field.name = annotation_name
-        field.dtype = dtype
-    else:
-        field = Field(name=annotation_name, key=False, timestamp=False,
-            owner=None, description='', pa_field=None, dtype=dtype)
-
-    field.description = field2comment_map.get(annotation_name, '')
-    field.pa_field = get_pyarrow_field(annotation_name, dtype)
-    return field
-
-
-def _create_dataset(cls: Type[T], retention: Duration = DEFAULT_RETENTION,
-                    max_staleness: Duration = DEFAULT_MAX_STALENESS) -> T:
-    cls_annotations = cls.__dict__.get('__annotations__', {})
-    fields = [
-        _get_field(
-            cls=cls,
-            annotation_name=name,
-            dtype=cls_annotations[name],
-            field2comment_map=_parse_annotation_comments(cls),
-        )
-        for name in cls_annotations
-    ]
-
-    pull_fn = getattr(cls, 'pull', None)
-    return Dataset(
-        cls,
-        fields,
-        retention=duration_to_timedelta(retention),
-        max_staleness=duration_to_timedelta(max_staleness),
-        pull_fn=pull_fn,
-    )
-
-
-# ---------------------------------------------------------------------
-# Dataset & Pipeline
+# dataset & pipeline decorators
 # ---------------------------------------------------------------------
 
 
 class dataset:
-    """dataset is a decorator that creates a Dataset class.
+    """
+    dataset is a decorator that creates a Dataset class.
+    A dataset class contains the schema of the dataset, an optional pull
+    function, and a set of pipelines that declare how to generate data for the
+    dataset from other datasets.
     Parameters
     ----------
     retention : Duration ( Optional )
@@ -291,7 +214,7 @@ class dataset:
             # We're called as @dataset(*args, *kwargs).
             return super().__new__(cls)
         # We're called as @dataset without parens.
-        return _create_dataset(dataset_cls, *args, **kwargs)
+        return dataset._create_dataset(dataset_cls, *args, **kwargs)
 
     def __init__(self, retention: Duration = DEFAULT_RETENTION,
                  max_staleness: Duration = DEFAULT_MAX_STALENESS):
@@ -304,8 +227,73 @@ class dataset:
 
     def __call__(self, dataset_cls: Optional[Type[T]]):
         """This is called when dataset is called with parens."""
-        return _create_dataset(dataset_cls, self._retention,
+        return dataset._create_dataset(dataset_cls, self._retention,
             self._max_staleness)
+
+    @staticmethod
+    def _create_dataset(cls: Type[T], retention: Duration = DEFAULT_RETENTION,
+                        max_staleness: Duration = DEFAULT_MAX_STALENESS) -> T:
+        cls_annotations = cls.__dict__.get('__annotations__', {})
+
+        fields = [
+            dataset._get_field(
+                cls=cls,
+                annotation_name=name,
+                dtype=cls_annotations[name],
+                field2comment_map=parse_annotation_comments(cls),
+            )
+            for name in cls_annotations
+        ]
+
+        pull_fn = getattr(cls, 'pull', None)
+        return Dataset(
+            cls,
+            fields,
+            retention=duration_to_timedelta(retention),
+            max_staleness=duration_to_timedelta(max_staleness),
+            pull_fn=pull_fn,
+        )
+
+    @staticmethod
+    def _get_field(
+            cls: Type,
+            annotation_name: str,
+            dtype: Type,
+            field2comment_map: Dict[str, str],
+    ):
+        field = getattr(cls, annotation_name, None)
+        if isinstance(field, Field):
+            field.name = annotation_name
+            field.dtype = dtype
+        else:
+            field = Field(name=annotation_name, key=False, timestamp=False,
+                owner=None, description='', pa_field=None, dtype=dtype)
+
+        field.description = field2comment_map.get(annotation_name, '')
+        field.pa_field = get_pyarrow_field(annotation_name, dtype)
+        return field
+
+
+def pipeline(pipeline_func):
+    if not callable(pipeline_func):
+        raise Exception('pipeline_func must be callable')
+    sig = inspect.signature(pipeline_func)
+    params = []
+    for name, param in sig.parameters.items():
+        if param.name == 'self':
+            raise TypeError('pipeline_func cannot have self as a parameter '
+                            'and should be a static method')
+        if not isinstance(param.annotation, Dataset):
+            raise TypeError(f'Parameter {name} is not a Dataset')
+        params.append(param.annotation)
+    pipeline = Pipeline(node=pipeline_func(*params), inputs=params)
+    pipeline_func.__fennel_pipeline__ = pipeline
+    return pipeline_func
+
+
+# ---------------------------------------------------------------------
+# Dataset & Pipeline
+# ---------------------------------------------------------------------
 
 
 @dataclass
@@ -428,23 +416,6 @@ class Dataset(_Node):
             fields=[field.to_proto() for field in self._fields],
             pull_lookup=self._pull_to_proto() if self.pull_fn else None,
         )
-
-
-def pipeline(pipeline_func):
-    if not callable(pipeline_func):
-        raise Exception('pipeline_func must be callable')
-    sig = inspect.signature(pipeline_func)
-    params = []
-    for name, param in sig.parameters.items():
-        if param.name == 'self':
-            raise TypeError('pipeline_func cannot have self as a parameter '
-                            'and should be a static method')
-        if not isinstance(param.annotation, Dataset):
-            raise TypeError(f'Parameter {name} is not a Dataset')
-        params.append(param.annotation)
-    pipeline = Pipeline(node=pipeline_func(*params), inputs=params)
-    pipeline_func.__fennel_pipeline__ = pipeline
-    return pipeline_func
 
 
 # ---------------------------------------------------------------------
