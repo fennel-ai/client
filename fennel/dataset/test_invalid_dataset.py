@@ -1,8 +1,10 @@
-import pytest
 from datetime import datetime
 from typing import Optional
 
-from fennel.dataset import dataset, field, pipeline
+import pytest
+
+from fennel.dataset import dataset, pipeline
+from fennel.lib.field import field
 from fennel.test_lib import *
 
 

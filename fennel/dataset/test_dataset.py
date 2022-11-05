@@ -7,9 +7,10 @@ import requests
 from google.protobuf.json_format import ParseDict
 
 import fennel.gen.dataset_pb2 as proto
-from fennel.dataset import dataset, field, pipeline
+from fennel.dataset import dataset, pipeline
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
+from fennel.lib.field import field
 from fennel.lib.window import Window
 from fennel.test_lib import *
 
@@ -279,7 +280,6 @@ def test_DatasetWithPipes(grpc_stub):
     view.add(ABCDataset)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
-
     d = {
         "name": "ABCDataset",
         "fields": [
@@ -302,7 +302,7 @@ def test_DatasetWithPipes(grpc_stub):
         "pipelines": [
             {
                 "root": {
-                    "nodeId": "13c0d419337774e6f121b3dbece60f43"
+                    "nodeId": "f87583934b3a3e73fbdafcd5651f1435"
                 },
                 "nodes": [
                     {
@@ -320,11 +320,11 @@ def test_DatasetWithPipes(grpc_stub):
                                     "a1": "b1"
                                 }
                             },
-                            "id": "13c0d419337774e6f121b3dbece60f43"
+                            "id": "f87583934b3a3e73fbdafcd5651f1435"
                         }
                     }
                 ],
-                "signature": "13c0d419337774e6f121b3dbece60f43",
+                "signature": "f87583934b3a3e73fbdafcd5651f1435",
                 "inputs": [
                     {
                         "name": "A"
@@ -357,9 +357,7 @@ def test_DatasetWithPipes(grpc_stub):
         "retention": "63072000000000",
         "maxStaleness": "2592000000000",
         "mode": "pandas",
-        "pullLookup": {
-
-        }
+        "pullLookup": {}
     }
     dataset_req = _clean_function_source_code(sync_request.dataset_requests[0])
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
@@ -426,7 +424,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
         "pipelines": [
             {
                 "root": {
-                    "nodeId": "dc951d37e6c9ca90936c8ce20ace9231"
+                    "nodeId": "7f2cc4ef951bd69d18a49c7a30ed0e41"
                 },
                 "nodes": [
                     {
@@ -438,14 +436,14 @@ def test_DatasetWithComplexPipe(grpc_stub):
                                     }
                                 }
                             },
-                            "id": "5ae551fe033331a8a05f26ec882b319e"
+                            "id": "b91e44d1c810206810296a6770f8d980"
                         }
                     },
                     {
                         "operator": {
                             "join": {
                                 "node": {
-                                    "nodeId": "5ae551fe033331a8a05f26ec882b319e"
+                                    "nodeId": "b91e44d1c810206810296a6770f8d980"
                                 },
                                 "dataset": {
                                     "name": "UserInfoDataset"
@@ -454,24 +452,24 @@ def test_DatasetWithComplexPipe(grpc_stub):
                                     "user_id": "user_id"
                                 }
                             },
-                            "id": "38ee67b85e42419377483191d5cd58b2"
+                            "id": "8383416b089b5f888e92378b602f9026"
                         }
                     },
                     {
                         "operator": {
                             "transform": {
                                 "node": {
-                                    "nodeId": "38ee67b85e42419377483191d5cd58b2"
+                                    "nodeId": "8383416b089b5f888e92378b602f9026"
                                 }
                             },
-                            "id": "e02f638c43418f5e8a89af7d364cfc5d"
+                            "id": "103080cf4e2bc4d9e63e506adf4fb48d"
                         }
                     },
                     {
                         "operator": {
                             "aggregate": {
                                 "node": {
-                                    "nodeId": "e02f638c43418f5e8a89af7d364cfc5d"
+                                    "nodeId": "103080cf4e2bc4d9e63e506adf4fb48d"
                                 },
                                 "keys": [
                                     "merchant_id",
@@ -494,11 +492,11 @@ def test_DatasetWithComplexPipe(grpc_stub):
                                     }
                                 ]
                             },
-                            "id": "dc951d37e6c9ca90936c8ce20ace9231"
+                            "id": "7f2cc4ef951bd69d18a49c7a30ed0e41"
                         }
                     }
                 ],
-                "signature": "dc951d37e6c9ca90936c8ce20ace9231",
+                "signature": "7f2cc4ef951bd69d18a49c7a30ed0e41",
                 "inputs": [
                     {
                         "name": "Activity"
@@ -514,6 +512,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
         "mode": "pandas",
         "pullLookup": {}
     }
+
     # Ignoring schema validation since they are bytes and not human-readable
     dataset_req = _clean_function_source_code(sync_request.dataset_requests[0])
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
@@ -574,7 +573,7 @@ def test_UnionDatasets(grpc_stub):
         "pipelines": [
             {
                 "root": {
-                    "nodeId": "a7e105e5fcd003a6562a0cefd15f265f"
+                    "nodeId": "2f4f3b54dae371420dc3e7d2af18231c"
                 },
                 "nodes": [
                     {
@@ -587,7 +586,7 @@ def test_UnionDatasets(grpc_stub):
                                 },
                                 "timestampField": "t"
                             },
-                            "id": "a4146b5ca835026f8d38ad11d0d259c0"
+                            "id": "a3ae63097ae6c939b989ca93ba90f402"
                         }
                     },
                     {
@@ -600,15 +599,15 @@ def test_UnionDatasets(grpc_stub):
                                         }
                                     },
                                     {
-                                        "nodeId": "a4146b5ca835026f8d38ad11d0d259c0"
+                                        "nodeId": "a3ae63097ae6c939b989ca93ba90f402"
                                     }
                                 ]
                             },
-                            "id": "a7e105e5fcd003a6562a0cefd15f265f"
+                            "id": "2f4f3b54dae371420dc3e7d2af18231c"
                         }
                     }
                 ],
-                "signature": "a7e105e5fcd003a6562a0cefd15f265f",
+                "signature": "2f4f3b54dae371420dc3e7d2af18231c",
                 "inputs": [
                     {
                         "name": "A"
@@ -620,7 +619,7 @@ def test_UnionDatasets(grpc_stub):
             },
             {
                 "root": {
-                    "nodeId": "1d566a7237120ebb7915e90ffa2a4d16"
+                    "nodeId": "24a833c9dfbfef1255c5504d3f0c3e1a"
                 },
                 "nodes": [
                     {
@@ -632,7 +631,7 @@ def test_UnionDatasets(grpc_stub):
                                     }
                                 }
                             },
-                            "id": "b634ba084bceb1189960dd90b4125e2f"
+                            "id": "db4535e458b6ac02067f87a1e6c4ff99"
                         }
                     },
                     {
@@ -644,7 +643,7 @@ def test_UnionDatasets(grpc_stub):
                                     }
                                 }
                             },
-                            "id": "30dee9d73c82508a1c43dcb0e840cf66"
+                            "id": "eaabb504c75b31ab23260fc05baff402"
                         }
                     },
                     {
@@ -652,34 +651,34 @@ def test_UnionDatasets(grpc_stub):
                             "union": {
                                 "nodes": [
                                     {
-                                        "nodeId": "b634ba084bceb1189960dd90b4125e2f"
+                                        "nodeId": "db4535e458b6ac02067f87a1e6c4ff99"
                                     },
                                     {
-                                        "nodeId": "30dee9d73c82508a1c43dcb0e840cf66"
+                                        "nodeId": "eaabb504c75b31ab23260fc05baff402"
                                     }
                                 ]
                             },
-                            "id": "a355e8ff14e236f6872e570fb416f9e8"
+                            "id": "190f7e04b751714e9d9fd3e648785329"
                         }
                     },
                     {
                         "operator": {
                             "transform": {
                                 "node": {
-                                    "nodeId": "a355e8ff14e236f6872e570fb416f9e8"
+                                    "nodeId": "190f7e04b751714e9d9fd3e648785329"
                                 }
                             },
-                            "id": "1ddb237041014cc5b4d4404197e0d55d"
+                            "id": "1affbbbad3bbb56ecd589e8c8f61b3eb"
                         }
                     },
                     {
                         "operator": {
                             "transform": {
                                 "node": {
-                                    "nodeId": "a355e8ff14e236f6872e570fb416f9e8"
+                                    "nodeId": "190f7e04b751714e9d9fd3e648785329"
                                 }
                             },
-                            "id": "19434f7f12999339b786c204f83217bc"
+                            "id": "c6cf0d3ef2b822c8bc7c970a16375d5a"
                         }
                     },
                     {
@@ -687,18 +686,18 @@ def test_UnionDatasets(grpc_stub):
                             "union": {
                                 "nodes": [
                                     {
-                                        "nodeId": "1ddb237041014cc5b4d4404197e0d55d"
+                                        "nodeId": "1affbbbad3bbb56ecd589e8c8f61b3eb"
                                     },
                                     {
-                                        "nodeId": "19434f7f12999339b786c204f83217bc"
+                                        "nodeId": "c6cf0d3ef2b822c8bc7c970a16375d5a"
                                     }
                                 ]
                             },
-                            "id": "1d566a7237120ebb7915e90ffa2a4d16"
+                            "id": "24a833c9dfbfef1255c5504d3f0c3e1a"
                         }
                     }
                 ],
-                "signature": "1d566a7237120ebb7915e90ffa2a4d16",
+                "signature": "24a833c9dfbfef1255c5504d3f0c3e1a",
                 "inputs": [
                     {
                         "name": "A"

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import datetime
 import inspect
-from dataclasses import dataclass
-from typing import (Callable, cast, Dict, List, Optional, Tuple, Type,
+from typing import (Callable, Dict, List, Optional, Tuple, Type,
                     TypeVar, Union)
 
 import cloudpickle
@@ -13,7 +12,8 @@ import fennel.gen.dataset_pb2 as proto
 from fennel.lib.aggregate import AggregateType
 from fennel.lib.duration.duration import Duration, duration_to_timedelta, \
     timedelta_to_micros
-from fennel.lib.schema.schema import get_pyarrow_field
+from fennel.lib.field import Field
+from fennel.lib.schema import get_pyarrow_field
 from fennel.utils import fhash, parse_annotation_comments
 
 Tags = Union[List[str], Tuple[str, ...], str]
@@ -22,53 +22,6 @@ T = TypeVar('T')
 
 DEFAULT_RETENTION = Duration('2y')
 DEFAULT_MAX_STALENESS = Duration('30d')
-
-
-# ---------------------------------------------------------------------
-# Fields
-# ---------------------------------------------------------------------
-
-@dataclass
-class Field:
-    name: str
-    key: bool
-    timestamp: bool
-    owner: str
-    description: str
-    pa_field: pyarrow.lib.Field
-    dtype: Type
-
-    def to_proto(self) -> proto.DatasetField:
-        # Type is passed as part of the dataset schema
-        return proto.DatasetField(
-            name=self.name,
-            is_key=self.key,
-            is_timestamp=self.timestamp,
-            owner=self.owner,
-            description=self.description,
-            is_nullable=self.pa_field.nullable,
-        )
-
-
-def field(
-        key: bool = False,
-        timestamp: bool = False,
-        description: Optional[str] = None,
-        owner: Optional[str] = None,
-) -> T:
-    return cast(
-        T,
-        Field(
-            key=key,
-            timestamp=timestamp,
-            owner=owner,
-            description=description,
-            # These fields will be filled in later.
-            name='',
-            pa_field=None,
-            dtype=None,
-        ),
-    )
 
 
 # ---------------------------------------------------------------------
@@ -114,7 +67,7 @@ class _Transform(_Node):
         self.node.out_edges.append(self)
 
     def signature(self):
-        return fhash([self.node.signature(), self.func, self.timestamp_field])
+        return fhash(self.node.signature(), self.func, self.timestamp_field)
 
 
 class _Aggregate(_Node):
@@ -130,7 +83,7 @@ class _Aggregate(_Node):
 
     def signature(self):
         agg_signature = fhash([agg.signature() for agg in self.aggregates])
-        return fhash([self.node.signature(), self.keys, agg_signature])
+        return fhash(self.node.signature(), self.keys, agg_signature)
 
 
 class _GroupBy:
@@ -142,11 +95,6 @@ class _GroupBy:
 
     def aggregate(self, aggregates: List[AggregateType]) -> _Node:
         return _Aggregate(self.node, self.keys, aggregates)
-
-    def signature(self):
-        return fhash(
-            [self.node.signature(), self.dataset, self.on, self.left_on,
-             self.right_on])
 
 
 class _Join(_Node):
@@ -174,8 +122,8 @@ class _Join(_Node):
                 raise ValueError('Must specify on or left_on/right_on')
 
     def signature(self):
-        return fhash([self.node.signature(), self.dataset.signature(),
-                      self.on, self.left_on, self.right_on])
+        return fhash(self.node.signature(), self.dataset.name,
+            self.on, self.left_on, self.right_on)
 
 
 class _Union(_Node):
@@ -274,7 +222,7 @@ class dataset:
         return field
 
 
-def pipeline(pipeline_func):
+def pipeline(pipeline_func: Callable):
     if not callable(pipeline_func):
         raise Exception('pipeline_func must be callable')
     sig = inspect.signature(pipeline_func)
@@ -295,30 +243,42 @@ def pipeline(pipeline_func):
 # Dataset & Pipeline
 # ---------------------------------------------------------------------
 
-
-@dataclass
 class Pipeline:
     node: _Node
     inputs: List['Dataset']
+    _sign: str
+    _proto: proto.Pipeline
+
+    def __init__(self, node: _Node, inputs: List[Dataset]):
+        self.node = node
+        self.inputs = inputs
+        serializer = Serializer()
+        self._proto = serializer.serialize(self)
+        self._sign = self._proto.signature
+
+    def signature(self):
+        return self._sign
 
     def to_proto(self) -> proto.Pipeline:
-        serializer = Serializer()
-        return serializer.serialize(self)
+        return self._proto
 
 
 class Dataset(_Node):
     """Dataset is a collection of data."""
+    name: str
+    pull_fn: Optional[Callable]
+    signature: str
     # All attributes should start with _ to avoid conflicts with
     # the original attributes defined by the user.
     _retention: datetime.timedelta
     _fields: List[Field]
+    _pipelines: List[Pipeline]
     _key_field: str
     _timestamp_field: str
     _max_staleness: Optional[datetime.timedelta]
     _owner: Optional[str]
+    _description: Optional[str]
     __fennel_original_cls__: Type[T]
-    pull_fn: Optional[Callable]
-    name: str
 
     def __init__(
             self,
@@ -330,18 +290,32 @@ class Dataset(_Node):
     ):
         super().__init__()
         self.name = cls.__name__
+        self.pull_fn = pull_fn
         self.__name__ = cls.__name__
         self._fields = fields
         self._set_timestamp_field()
         self._retention = retention
         self._max_staleness = max_staleness
         self.__fennel_original_cls__ = cls
-        self.pull_fn = pull_fn
+        self._pipelines = self._get_pipelines()
+        self._sign = self._create_signature()
 
     def __getattr__(self, key):
         if key in self.__fennel_original_cls__.__dict__['__annotations__']:
             return str(key)
         return super().__getattribute__(key)
+
+    def lookup(self, key):
+        raise NotImplementedError
+
+    def signature(self):
+        return self._sign
+
+    def _create_signature(self):
+        return fhash(
+            self.name, self._retention, self._max_staleness, self.pull_fn,
+            [f.signature() for f in self._fields], [p.signature for p in
+                                                    self._pipelines])
 
     def _set_timestamp_field(self):
         timestamp_field_set = False
@@ -397,16 +371,13 @@ class Dataset(_Node):
             pipelines.append(pipeline)
         return pipelines
 
-    def signature(self):
-        return fhash([self.__name__, self._retention, self._max_staleness, ])
-
     def create_dataset_request_proto(self) -> proto.CreateDatasetRequest:
         return proto.CreateDatasetRequest(
             name=self.__name__,
             schema=self._get_schema(),
             retention=timedelta_to_micros(self._retention),
             max_staleness=timedelta_to_micros(self._max_staleness),
-            pipelines=[p.to_proto() for p in self._get_pipelines()],
+            pipelines=[p.to_proto() for p in self._pipelines],
             mode='pandas',
             # TODO: Parse description from docstring.
             description='',
@@ -507,14 +478,13 @@ class Serializer(Visitor):
         self.proto_by_node_id = {}
         self.nodes = []
 
-    def _get_signature(self, node):
+    def _get_rootnode_id(self, node):
         if node.HasField('node_id'):
             return node.node_id
         elif node.HasField('dataset'):
             return node.dataset.name
         elif node.HasField('operator'):
             return node.operator.id
-        print(node)
         raise Exception('invalid node type')
 
     def serialize(self, pipe: Pipeline):
@@ -524,7 +494,7 @@ class Serializer(Visitor):
             root=last,
             nodes=self.nodes,
             inputs=[proto.Dataset(name=i.name) for i in pipe.inputs],
-            signature=self._get_signature(last),
+            signature=self._get_rootnode_id(last),
         )
 
     def visit(self, obj):
