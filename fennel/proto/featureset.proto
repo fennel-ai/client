@@ -4,8 +4,32 @@ package fennel.proto;
 
 import "status.proto";
 
-message CreateFeatureSetRequest {
+message Feature {
+  FeatureSet feature_set = 1;
+  string name = 2;
+  // Arrow type
+  string dtype = 3;
+  string owner = 4;
+  string description = 5;
+  repeated string tags = 6;
+}
+
+message Extractor {
   string name = 1;
+  bytes func = 2;
+  string func_source_code = 3;
+  repeated string datasets = 4;
+  repeated Input inputs = 5;
+}
+
+message CreateFeaturesetRequest {
+  string name = 1;
+  repeated Feature features = 2;
+  repeated Extractor extractors = 3;
+  int32 version = 4;
+  string signature = 5 ;
+  string owner = 6;
+  string description = 7;
 }
 
 message CreateFeatureSetResponse {
@@ -13,3 +37,13 @@ message CreateFeatureSetResponse {
   Status status = 2;
 }
 
+message FeatureSet {
+  string name = 1;
+}
+
+message Input {
+  oneof input {
+    FeatureSet feature_set = 1;
+    Feature feature = 2;
+  }
+}

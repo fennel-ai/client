@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import inspect
-from typing import (Callable, Dict, List, Optional, Tuple, Type,
+from typing import (Callable, List, Optional, Tuple, Type,
                     TypeVar, Union)
 
 import cloudpickle
@@ -12,8 +12,7 @@ import fennel.gen.dataset_pb2 as proto
 from fennel.lib.aggregate import AggregateType
 from fennel.lib.duration.duration import Duration, duration_to_timedelta, \
     timedelta_to_micros
-from fennel.lib.field import Field
-from fennel.lib.schema import get_pyarrow_field
+from fennel.lib.field import Field, get_field
 from fennel.utils import fhash, parse_annotation_comments
 
 Tags = Union[List[str], Tuple[str, ...], str]
@@ -167,8 +166,7 @@ class dataset:
     def __init__(self, retention: Duration = DEFAULT_RETENTION,
                  max_staleness: Duration = DEFAULT_MAX_STALENESS):
         """
-        This is called to instantiate a dataset that is called with
-        parens.
+        This is called to instantiate a dataset that is called with parens.
         """
         self._retention = retention
         self._max_staleness = max_staleness
@@ -179,63 +177,44 @@ class dataset:
             self._max_staleness)
 
     @staticmethod
-    def _create_dataset(cls: Type[T], retention: Duration = DEFAULT_RETENTION,
+    def _create_dataset(dataset_cls: Type[T],
+                        retention: Duration = DEFAULT_RETENTION,
                         max_staleness: Duration = DEFAULT_MAX_STALENESS) -> T:
-        cls_annotations = cls.__dict__.get('__annotations__', {})
-
+        cls_annotations = dataset_cls.__dict__.get('__annotations__', {})
         fields = [
-            dataset._get_field(
-                cls=cls,
+            get_field(
+                cls=dataset_cls,
                 annotation_name=name,
                 dtype=cls_annotations[name],
-                field2comment_map=parse_annotation_comments(cls),
+                field2comment_map=parse_annotation_comments(dataset_cls),
             )
             for name in cls_annotations
         ]
 
-        pull_fn = getattr(cls, 'pull', None)
+        pull_fn = getattr(dataset_cls, 'pull', None)
         return Dataset(
-            cls,
+            dataset_cls,
             fields,
             retention=duration_to_timedelta(retention),
             max_staleness=duration_to_timedelta(max_staleness),
             pull_fn=pull_fn,
         )
 
-    @staticmethod
-    def _get_field(
-            cls: Type,
-            annotation_name: str,
-            dtype: Type,
-            field2comment_map: Dict[str, str],
-    ):
-        field = getattr(cls, annotation_name, None)
-        if isinstance(field, Field):
-            field.name = annotation_name
-            field.dtype = dtype
-        else:
-            field = Field(name=annotation_name, key=False, timestamp=False,
-                owner=None, description='', pa_field=None, dtype=dtype)
-
-        field.description = field2comment_map.get(annotation_name, '')
-        field.pa_field = get_pyarrow_field(annotation_name, dtype)
-        return field
-
 
 def pipeline(pipeline_func: Callable):
     if not callable(pipeline_func):
-        raise Exception('pipeline_func must be callable')
+        raise TypeError('pipeline functions must be callable.')
     sig = inspect.signature(pipeline_func)
     params = []
     for name, param in sig.parameters.items():
         if param.name == 'self':
-            raise TypeError('pipeline_func cannot have self as a parameter '
-                            'and should be a static method')
+            raise TypeError('pipeline functions cannot have self as a parameter'
+                            ' and are like static methods.')
         if not isinstance(param.annotation, Dataset):
-            raise TypeError(f'Parameter {name} is not a Dataset')
+            raise TypeError(f'Parameter {name} is not a Dataset.')
         params.append(param.annotation)
-    pipeline = Pipeline(node=pipeline_func(*params), inputs=params)
-    pipeline_func.__fennel_pipeline__ = pipeline
+    setattr(pipeline_func, "__fennel_pipeline__", Pipeline(node=pipeline_func(
+        *params), inputs=params))
     return pipeline_func
 
 
@@ -267,7 +246,6 @@ class Dataset(_Node):
     """Dataset is a collection of data."""
     name: str
     pull_fn: Optional[Callable]
-    signature: str
     # All attributes should start with _ to avoid conflicts with
     # the original attributes defined by the user.
     _retention: datetime.timedelta
@@ -305,11 +283,38 @@ class Dataset(_Node):
             return str(key)
         return super().__getattribute__(key)
 
+    # ---------------------------------------------------------------------
+    # Public Methods
+    # ---------------------------------------------------------------------
+
+    def create_dataset_request_proto(self) -> proto.CreateDatasetRequest:
+        return proto.CreateDatasetRequest(
+            name=self.__name__,
+            schema=self._get_schema(),
+            retention=timedelta_to_micros(self._retention),
+            max_staleness=timedelta_to_micros(self._max_staleness),
+            pipelines=[p.to_proto() for p in self._pipelines],
+            mode='pandas',
+            # TODO: Parse description from docstring.
+            description='',
+            owner='',
+            signature=self.signature(),
+            # Currently we don't support versioning of datasets.
+            # Kept for future use.
+            version=0,
+            fields=[field.to_proto() for field in self._fields],
+            pull_lookup=self._pull_to_proto() if self.pull_fn else None,
+        )
+
     def lookup(self, key):
         raise NotImplementedError
 
     def signature(self):
         return self._sign
+
+    # ---------------------------------------------------------------------
+    # Private Methods
+    # ---------------------------------------------------------------------
 
     def _create_signature(self):
         return fhash(
@@ -367,26 +372,8 @@ class Dataset(_Node):
                 continue
             if not hasattr(method, '__fennel_pipeline__'):
                 continue
-            pipeline = method.__fennel_pipeline__
-            pipelines.append(pipeline)
+            pipelines.append(method.__fennel_pipeline__)
         return pipelines
-
-    def create_dataset_request_proto(self) -> proto.CreateDatasetRequest:
-        return proto.CreateDatasetRequest(
-            name=self.__name__,
-            schema=self._get_schema(),
-            retention=timedelta_to_micros(self._retention),
-            max_staleness=timedelta_to_micros(self._max_staleness),
-            pipelines=[p.to_proto() for p in self._pipelines],
-            mode='pandas',
-            # TODO: Parse description from docstring.
-            description='',
-            # Currently we don't support versioning of datasets.
-            # Kept for future use.
-            version=0,
-            fields=[field.to_proto() for field in self._fields],
-            pull_lookup=self._pull_to_proto() if self.pull_fn else None,
-        )
 
 
 # ---------------------------------------------------------------------

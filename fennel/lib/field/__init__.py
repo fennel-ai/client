@@ -1,1 +1,1 @@
-from fennel.lib.field.field import Field, field
+from fennel.lib.field.field import Field, field, get_field

@@ -6,14 +6,16 @@ import "status.proto";
 
 // All integers representing time are in microseconds and hence should be int64.
 
-message DatasetField {
+message Field {
   string name = 1;
-  bytes schema = 2;
+  // Arrow type
+  bytes dtype = 2;
   bool is_key = 3;
   bool is_timestamp = 4;
   string owner = 5;
   string description = 6;
   bool is_nullable = 7;
+  repeated string tags = 8;
 }
 
 message PullLookup {
@@ -23,18 +25,22 @@ message PullLookup {
 
 message CreateDatasetRequest {
   string name = 1;
-  repeated DatasetField fields = 2;
+  repeated Field fields = 2;
   repeated Pipeline pipelines = 3;
-  // Serialized arrow schema.
-  bytes schema = 4;
-  int64 retention = 5;
-  int64 max_staleness = 6;
+
+  string signature = 4;
+  string owner = 5;
+  string description = 6;
   // Default mode is pandas.
   string mode = 7;
-  string description = 8;
-  uint32 version = 9;
+  uint32 version = 8;
 
-  PullLookup pull_lookup = 10;
+  // Serialized arrow schema.
+  bytes schema = 9;
+  int64 retention = 10;
+  int64 max_staleness = 11;
+
+  PullLookup pull_lookup = 12;
 }
 
 message CreateDatasetResponse{

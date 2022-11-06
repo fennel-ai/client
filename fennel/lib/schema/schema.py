@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import pyarrow as pa
 import types
 from datetime import datetime
 from typing import (get_args, get_origin, Union)
+
+import pyarrow as pa
 
 
 def get_pyarrow_field(name: str, type_: types) -> pa.lib.Field:

@@ -17,7 +17,7 @@ https://gist.github.com/aditya-nambiar/87c8b55fe509c1c1cd06d212b8a8ded1
 
 message SyncRequest {
   repeated CreateDatasetRequest dataset_requests = 1;
-  repeated CreateFeatureSetRequest feature_set_requests = 3;
+  repeated CreateFeaturesetRequest featureset_requests = 3;
 }
 
 message SyncResponse {
