@@ -59,8 +59,8 @@ def test_DatasetWithPipes(grpc_stub):
                 return a
 
     assert str(
-        e.value) == "pipeline_func cannot have self as a parameter and should " \
-                    "be a static method"
+        e.value) == "pipeline functions cannot have self as a parameter and " \
+                    "are like static methods."
 
 
 def test_DatasetIncorrectJoin(grpc_stub):

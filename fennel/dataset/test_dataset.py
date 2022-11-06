@@ -39,6 +39,7 @@ def test_SimpleDataset(grpc_stub):
         'datasetRequests': [
             {
                 'name': 'UserInfoDataset',
+                'signature': 'be97463e5a8eb09c87a55084dac59234',
                 'fields': [
                     {
                         'name': 'user_id',
@@ -78,7 +79,8 @@ def test_SimpleDataset(grpc_stub):
     # Ignoring schema validation since they are bytes and not human readable
     sync_request.dataset_requests[0].schema = b''
     expected_sync_request = ParseDict(d, SyncRequest())
-    assert sync_request == expected_sync_request
+    assert sync_request == expected_sync_request, error_message(sync_request,
+        expected_sync_request)
 
 
 @dataset(retention='4m')
@@ -100,6 +102,7 @@ def test_DatasetWithRetention(grpc_stub):
         'datasetRequests': [
             {
                 'name': 'Activity',
+                'signature': '80a9e6e74588df2c425b67e9d40b046f',
                 'fields': [
                     {
                         'name': 'user_id',
@@ -125,61 +128,8 @@ def test_DatasetWithRetention(grpc_stub):
     # Ignoring schema validation since they are bytes and not human readable
     sync_request.dataset_requests[0].schema = b''
     expected_sync_request = ParseDict(d, SyncRequest())
-    assert sync_request == expected_sync_request
-
-
-def _clean_function_source_code(dataset_req: proto.CreateDatasetRequest) -> \
-        proto.CreateDatasetRequest:
-    def cleanup_node(node):
-        if node.HasField('operator') and node.operator.HasField('transform'):
-            return proto.Node(operator=proto.Operator(
-                transform=proto.Transform(
-                    node=cleanup_node(node.operator.transform.node),
-                    timestamp_field=node.operator.transform.timestamp_field,
-                ), id=node.operator.id))
-        elif node.HasField('operator') and node.operator.HasField('aggregate'):
-            return proto.Node(operator=proto.Operator(
-                aggregate=proto.Aggregate(node=cleanup_node(
-                    node.operator.aggregate.node),
-                    keys=node.operator.aggregate.keys,
-                    aggregates=node.operator.aggregate.aggregates),
-                id=node.operator.id))
-        elif node.HasField('operator') and node.operator.HasField('join'):
-            return proto.Node(operator=proto.Operator(
-                join=proto.Join(node=cleanup_node(
-                    node.operator.join.node),
-                    dataset=node.operator.join.dataset,
-                    on=node.operator.join.on),
-                id=node.operator.id))
-        elif node.HasField('operator') and node.operator.HasField('union'):
-            return proto.Node(operator=proto.Operator(
-                union=proto.Union(nodes=[cleanup_node(n) for n in
-                                         node.operator.union.nodes]),
-                id=node.operator.id))
-
-        return node
-
-    dataset_req.pull_lookup.function_source_code = ''
-    dataset_req.pull_lookup.function = b''
-    pipelines = []
-    for j in range(len(dataset_req.pipelines)):
-        pipelines.append(proto.Pipeline(
-            root=cleanup_node(dataset_req.pipelines[j].root),
-            nodes=[cleanup_node(n) for n in dataset_req.pipelines[j].nodes],
-            signature=dataset_req.pipelines[
-                j].signature,
-            inputs=dataset_req.pipelines[j].inputs,
-        ))
-    return proto.CreateDatasetRequest(
-        name=dataset_req.name,
-        fields=dataset_req.fields,
-        max_staleness=dataset_req.max_staleness,
-        retention=dataset_req.retention,
-        mode=dataset_req.mode,
-        pipelines=pipelines,
-        schema=b'',
-        pull_lookup=dataset_req.pull_lookup,
-    )
+    assert sync_request == expected_sync_request, error_message(sync_request,
+        expected_sync_request)
 
 
 def test_DatasetWithPull(grpc_stub):
@@ -238,10 +188,11 @@ def test_DatasetWithPull(grpc_stub):
     }
 
     # Ignoring schema validation since they are bytes and not human-readable
-    dataset_req = _clean_function_source_code(
+    dataset_req = clean_ds_func_src_code(
         sync_request.dataset_requests[0])
     expected_ds_request = ParseDict(d, proto.CreateDatasetRequest())
-    assert dataset_req == expected_ds_request
+    assert dataset_req == expected_ds_request, error_message(dataset_req,
+        expected_ds_request)
 
 
 def test_DatasetWithPipes(grpc_stub):
@@ -359,9 +310,10 @@ def test_DatasetWithPipes(grpc_stub):
         "mode": "pandas",
         "pullLookup": {}
     }
-    dataset_req = _clean_function_source_code(sync_request.dataset_requests[0])
+    dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
-    assert dataset_req == expected_dataset_request
+    assert dataset_req == expected_dataset_request, error_message(dataset_req,
+        expected_dataset_request)
 
 
 def test_DatasetWithComplexPipe(grpc_stub):
@@ -514,9 +466,10 @@ def test_DatasetWithComplexPipe(grpc_stub):
     }
 
     # Ignoring schema validation since they are bytes and not human-readable
-    dataset_req = _clean_function_source_code(sync_request.dataset_requests[0])
+    dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
-    assert dataset_req == expected_dataset_request
+    assert dataset_req == expected_dataset_request, error_message(dataset_req,
+        expected_dataset_request)
 
 
 def test_UnionDatasets(grpc_stub):
@@ -710,6 +663,7 @@ def test_UnionDatasets(grpc_stub):
         "mode": "pandas",
         "pullLookup": {}
     }
-    dataset_req = _clean_function_source_code(sync_request.dataset_requests[0])
+    dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
-    assert dataset_req == expected_dataset_request
+    assert dataset_req == expected_dataset_request, error_message(dataset_req,
+        expected_dataset_request)
