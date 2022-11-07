@@ -122,9 +122,6 @@ class Feature:
 
     def to_proto(self) -> proto.Feature:
         return proto.Feature(
-            feature_set=proto.FeatureSet(
-                name=self.featureset_name,
-            ),
             name=self.name,
             owner=self.owner,
             description=self.description,
@@ -132,8 +129,8 @@ class Feature:
         )
 
     def to_proto_as_input(self) -> proto.Feature:
-        return proto.Feature(
-            feature_set=proto.FeatureSet(
+        return proto.Input.Feature(
+            feature_set=proto.Input.FeatureSet(
                 name=self.featureset_name,
             ),
             name=self.name,
@@ -191,7 +188,7 @@ class Featureset:
         )
 
     def to_proto(self):
-        return proto.FeatureSet(
+        return proto.Input.FeatureSet(
             name=self.name,
         )
 

@@ -57,38 +57,23 @@ def test_SimpleFeatureSet(grpc_stub):
         "name": "UserInfo",
         "features": [
             {
-                "featureSet": {
-                    "name": "UserInfo"
-                },
                 "name": "userid",
                 "dtype": "int64"
             },
             {
-                "featureSet": {
-                    "name": "UserInfo"
-                },
                 "name": "home_geoid",
                 "dtype": "int64"
             },
             {
-                "featureSet": {
-                    "name": "UserInfo"
-                },
                 "name": "gender",
                 "dtype": "string"
             },
             {
-                "featureSet": {
-                    "name": "UserInfo"
-                },
                 "name": "age",
                 "dtype": "int64",
                 "owner": "aditya@fennel.ai"
             },
             {
-                "featureSet": {
-                    "name": "UserInfo"
-                },
                 "name": "income",
                 "dtype": "int64"
             }
