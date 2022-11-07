@@ -5,7 +5,6 @@ package fennel.proto;
 import "status.proto";
 
 message Feature {
-  FeatureSet feature_set = 1;
   string name = 2;
   // Arrow type
   string dtype = 3;
@@ -37,11 +36,14 @@ message CreateFeatureSetResponse {
   Status status = 2;
 }
 
-message FeatureSet {
-  string name = 1;
-}
-
 message Input {
+  message FeatureSet {
+    string name = 1;
+  }
+  message Feature {
+    FeatureSet feature_set = 1;
+    string name = 2;
+  }
   oneof input {
     FeatureSet feature_set = 1;
     Feature feature = 2;
