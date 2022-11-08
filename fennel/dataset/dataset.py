@@ -179,7 +179,7 @@ class dataset:
     @staticmethod
     def _create_dataset(dataset_cls: Type[T],
                         retention: Duration = DEFAULT_RETENTION,
-                        max_staleness: Duration = DEFAULT_MAX_STALENESS) -> T:
+                        max_staleness: Duration = DEFAULT_MAX_STALENESS):
         cls_annotations = dataset_cls.__dict__.get('__annotations__', {})
         fields = [
             get_field(

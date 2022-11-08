@@ -42,7 +42,7 @@ testpaths = [
 
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.7"
 exclude = '''(pb2\.py$|grpc\.py$)'''
 
 [tool.black]
