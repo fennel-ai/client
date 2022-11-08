@@ -1,14 +1,14 @@
 # noinspection PyUnresolvedReferences
-from fennel.workspace import View
+from fennel.workspace import Client
 
 
-class ClientTestWorkspace(View):
+class ClientTestWorkspace(Client):
     def __init__(self, stub):
         super().__init__(name="test", url="localhost:50051")
         self.stub = stub
 
 
-class InternalTestView(View):
+class InternalTestView(Client):
     def __init__(self, stub):
         super().__init__(name="test", url="localhost:50051")
         self.stub = stub

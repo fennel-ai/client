@@ -9,7 +9,7 @@ from fennel.featureset import Featureset
 
 
 # TODO(aditya): how will auth work?
-class View:
+class Client:
     def __init__(self, name: str, url: str):
         self.name = name
         self.url = url
@@ -18,19 +18,18 @@ class View:
         self.to_register = set()
         self.to_register_objects = []
 
-    def add(self, obj: Union[Dataset]):
+    def add(self, obj: Union[Dataset, Featureset]):
         if isinstance(obj, Dataset):
             if obj.name in self.to_register:
-                return
+                raise ValueError(f"Dataset {obj.name} already registered")
             self.to_register.add(obj.name)
             self.to_register_objects.append(obj)
         elif isinstance(obj, Featureset):
             if obj.name in self.to_register:
-                return
+                raise ValueError(f"Featureset {obj.name} already registered")
             self.to_register.add(obj.name)
             self.to_register_objects.append(obj)
         else:
-            print("Unsupported type", obj)
             raise NotImplementedError
 
     def to_proto(self):
@@ -45,3 +44,12 @@ class View:
             dataset_requests=datasets,
             featureset_requests=featuresets
         )
+
+    def sync(self, datasets: List[Dataset] = [], featuresets: List[
+        Featureset] = []):
+        for dataset in datasets:
+            self.add(dataset)
+        for featureset in featuresets:
+            self.add(featureset)
+        sync_request = self.to_proto()
+        self.stub.Sync(sync_request)
