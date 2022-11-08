@@ -4,9 +4,33 @@ from typing import Optional
 import pytest
 
 from fennel.dataset import dataset, field
-from fennel.sources import source, S3
+from fennel.sources import source, S3, MySQL
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
+
+mysql = MySQL(
+    name="mysql",
+    host="localhost",
+    db_name="test",
+    username="root",
+    password="root",
+)
+
+
+def test_SimpleSource(grpc_stub):
+    @source(mysql, every="1h")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
 
 s3 = S3(
     name='ratings_source',
