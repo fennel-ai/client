@@ -7,10 +7,9 @@ import requests
 from google.protobuf.json_format import ParseDict
 
 import fennel.gen.dataset_pb2 as proto
-from fennel.dataset import dataset, pipeline
+from fennel.dataset import dataset, pipeline, field
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
-from fennel.lib.field import field
 from fennel.lib.window import Window
 from fennel.test_lib import *
 

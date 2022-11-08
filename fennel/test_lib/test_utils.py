@@ -10,6 +10,7 @@ import fennel.gen.featureset_pb2 as fs_proto
 def error_message(actual: Any, expected: Any) -> str:
     expected_dict = MessageToDict(expected)
     actual_dict = MessageToDict(actual)
+    print(actual_dict)
     return jsondiff.diff(expected_dict, actual_dict, syntax='symmetric')
 
 
