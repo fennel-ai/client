@@ -3,7 +3,8 @@ from __future__ import annotations
 import functools
 import inspect
 from dataclasses import dataclass
-from typing import (Callable, Dict, Optional, Type, TypeVar, List, Union)
+from typing import (Callable, Dict, Optional, Type, TypeVar, List,
+                    Union, ForwardRef, Set)
 
 import cloudpickle
 import pyarrow
@@ -54,6 +55,9 @@ def get_feature(
 def featureset(featureset_cls: Type[T]):
     """featureset is a decorator for creating a Featureset class."""
     cls_annotations = featureset_cls.__dict__.get('__annotations__', {})
+    for name, dtype in cls_annotations.items():
+        name = type(str(name), (dtype,), {})
+
     fields = [
         get_feature(
             cls=featureset_cls,
@@ -78,6 +82,7 @@ def extractor(extractor_func: Callable):
     if not callable(extractor_func):
         raise TypeError("extractor can only be applied to functions")
     sig = inspect.signature(extractor_func)
+    extractor_name = extractor_func.__name__
     params = []
     for name, param in sig.parameters.items():
         if param.name == 'self':
@@ -90,9 +95,21 @@ def extractor(extractor_func: Callable):
             raise TypeError(f'Parameter {name} is not a Featureset or a '
                             f'feature but a {type(param.annotation)}')
         params.append(param.annotation)
-    setattr(extractor, "__fennel_extractor__",
-        Extractor(params, extractor_func))
-    return extractor
+    # x = type("userid", (int,), {})
+    return_annotation = extractor_func.__annotations__.get('return', None)
+    outputs = []
+    if return_annotation is not None:
+        if return_annotation.__dict__['_name'] != 'Tuple':
+            raise TypeError('extractor functions must return a tuple')
+        for type_ in return_annotation.__dict__['__args__']:
+            if not isinstance(type_, ForwardRef):
+                raise TypeError(f"extractor {extractor_name}() must "
+                                f"extract features for the Featureset "
+                                f"it is defined in, found {type_}")
+            outputs.append(type_.__forward_arg__)
+    setattr(extractor_func, "__fennel_extractor__",
+        Extractor(extractor_name, params, extractor_func, outputs))
+    return extractor_func
 
 
 def depends_on(*datasets: Type[Dataset]):
@@ -165,6 +182,7 @@ class Featureset:
         self._extractors = self._get_extractors()
         self._owner = None
         self._description = None
+        self._validate()
 
     def __getattr__(self, key):
         if key in self.__fennel_original_cls__.__dict__['__annotations__']:
@@ -206,15 +224,37 @@ class Featureset:
             extractors.append(method.__fennel_extractor__)
         return extractors
 
+    def _validate(self):
+        extracted_features: Set[str] = set()
+        for extractor in self._extractors:
+            if extractor.outputs is None:
+                for feature in self._features:
+                    if feature.name not in extracted_features:
+                        extracted_features.add(feature.name)
+                    else:
+                        raise TypeError(f"Feature {feature.name} is "
+                                        f"extracted multiple times")
+
+            for feature in extractor.outputs:
+                if feature in extracted_features:
+                    raise TypeError(f"Feature {feature} is extracted by "
+                                    f"multiple extractors")
+                extracted_features.add(feature)
+
 
 class Extractor:
+    name: str
     inputs: List[Featureset]
     func: Callable
+    # If outputs is None, entire featureset is being extracted
+    outputs: Optional[List[str]]
 
-    def __init__(self, inputs: List[Union[Feature, Featureset]],
-                 func: Callable):
+    def __init__(self, name: str, inputs: List[Union[Feature, Featureset]],
+                 func: Callable, outputs: Optional[List[str]]):
+        self.name = name
         self.inputs = inputs
         self.func = func
+        self.outputs = outputs if outputs else []
 
     def signature(self) -> str:
         pass
@@ -230,10 +270,12 @@ class Extractor:
                 raise TypeError(f'Extractor input {input} is not a Feature or '
                                 f'Featureset but a {type(input)}')
         return proto.Extractor(
-            name=self.func.__name__,
+            name=self.name,
             func=cloudpickle.dumps(self.func),
             func_source_code=inspect.getsource(self.func),
             datasets=[dataset.name for dataset in
-                      self.func._depends_on_datasets],
+                      self.func._depends_on_datasets] if hasattr(self.func,
+                '_depends_on_datasets') else [],
             inputs=inputs,
+            features=self.outputs,
         )

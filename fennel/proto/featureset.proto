@@ -19,6 +19,8 @@ message Extractor {
   string func_source_code = 3;
   repeated string datasets = 4;
   repeated Input inputs = 5;
+  // The features that this extractor produces
+  repeated string features = 6;
 }
 
 message CreateFeaturesetRequest {
