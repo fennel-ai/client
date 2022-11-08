@@ -106,11 +106,11 @@ class SQLSource(DataConnector):
 
 
 class S3(DataConnector):
-    bucket: str
-    path_prefix: str
+    bucket_name: Optional[str]
+    path_prefix: Optional[str]
     aws_access_key_id: str
     aws_secret_access_key: str
-    src_schema: Dict[str, str]
+    src_schema: Optional[Dict[str, str]]
     delimiter: str = ","
     format: str = "csv"
 
@@ -132,7 +132,7 @@ class S3(DataConnector):
             every=duration_to_micros(self.every))
         source_proto.s3.CopyFrom(
             proto.S3(
-                bucket=self.bucket,
+                bucket=self.bucket_name,
                 path_prefix=self.path_prefix,
                 aws_access_key_id=self.aws_access_key_id,
                 aws_secret_access_key=self.aws_secret_access_key,
@@ -142,6 +142,15 @@ class S3(DataConnector):
             )
         )
         return source_proto
+
+    def bucket(self, bucket_name: str, prefix: str, src_schema: Dict[str, str],
+               delimiter: str = ",", format: str = "csv"):
+        self.bucket_name = bucket_name
+        self.path_prefix = prefix
+        self.src_schema = src_schema
+        self.delimiter = delimiter
+        self.format = format
+        return self
 
 
 class BigQuery(DataConnector):

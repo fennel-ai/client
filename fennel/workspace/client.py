@@ -53,3 +53,6 @@ class Client:
             self.add(featureset)
         sync_request = self.to_proto()
         self.stub.Sync(sync_request)
+
+    def log(self):
+        pass

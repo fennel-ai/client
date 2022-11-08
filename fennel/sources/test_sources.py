@@ -165,7 +165,9 @@ def test_MultipleSources(grpc_stub):
     @source(mysql.table("users_mysql"), every="1h")
     @source(bigquery.table("users_bq"), every="1h")
     @source(snowflake.table("users_Sf"), every="1h")
-    @source(s3, every="1h")
+    @source(s3.bucket("all_ratings", prefix="prod/apac/",
+        src_schema={"Name": "string", "Weight": "number", "Age": "integer"}),
+        every="1h")
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
