@@ -5,12 +5,15 @@ package fennel.proto;
 import "status.proto";
 
 message Feature {
+  int32 id = 1;
   string name = 2;
   // Arrow type
   string dtype = 3;
   string owner = 4;
   string description = 5;
-  repeated string tags = 6;
+  bool wip = 6;
+  bool deprecated = 7;
+  repeated string tags = 8;
 }
 
 message Extractor {

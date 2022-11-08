@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 from dataclasses import dataclass
-from typing import (Callable, Dict, Optional, Type, TypeVar, List,
+from typing import (cast, Callable, Dict, Optional, Type, TypeVar, List,
                     Union, ForwardRef, Set)
 
 import cloudpickle
@@ -11,11 +11,38 @@ import pyarrow
 
 import fennel.gen.featureset_pb2 as proto
 from fennel.dataset import Dataset
-from fennel.lib.field import Field
 from fennel.lib.schema import get_pyarrow_schema
 from fennel.utils import parse_annotation_comments
 
 T = TypeVar('T')
+
+
+# ---------------------------------------------------------------------
+# feature annotation
+# ---------------------------------------------------------------------
+
+
+def feature(
+        id: int,
+        wip: bool = False,
+        deprecated: bool = False,
+        description: Optional[str] = None,
+        owner: Optional[str] = None,
+) -> T:
+    return cast(
+        T,
+        Feature(
+            id=id,
+            wip=wip,
+            deprecated=deprecated,
+            owner=owner,
+            description=description,
+            # These fields will be filled in later.
+            name='',
+            dtype=None,
+            featureset_name='',
+        ),
+    )
 
 
 # ---------------------------------------------------------------------
@@ -27,24 +54,14 @@ def get_feature(
         annotation_name: str,
         dtype: Type,
         field2comment_map: Dict[str, str],
-) -> Field:
-    field = getattr(cls, annotation_name, None)
-    if isinstance(field, Field):
-        feature = Feature(
-            name=annotation_name,
-            featureset_name=cls.__name__,
-            dtype=dtype,
-            owner=field.owner,
-            description=field.description,
-        )
-    else:
-        feature = Feature(
-            name=annotation_name,
-            featureset_name=cls.__name__,
-            dtype=dtype,
-            owner=None,
-            description='',
-        )
+) -> Feature:
+    feature = getattr(cls, annotation_name, None)
+    if not isinstance(feature, Feature):
+        raise TypeError(f'Field {annotation_name} is not a Feature')
+
+    feature.featureset_name = cls.__name__
+    feature.name = annotation_name
+    feature.dtype = dtype
 
     if feature.description is None:
         feature.description = field2comment_map.get(annotation_name, '')
@@ -132,17 +149,23 @@ def depends_on(*datasets: Type[Dataset]):
 @dataclass
 class Feature:
     name: str
+    id: int
     featureset_name: str
     owner: str
     description: str
     dtype: pyarrow.lib.Schema
+    wip: bool = False
+    deprecated: bool = False
 
     def to_proto(self) -> proto.Feature:
         return proto.Feature(
+            id=self.id,
             name=self.name,
+            wip=self.wip,
             owner=self.owner,
             description=self.description,
             dtype=str(self.dtype),
+            deprecated=self.deprecated,
         )
 
     def to_proto_as_input(self) -> proto.Feature:
@@ -163,7 +186,7 @@ class Featureset:
     # All attributes should start with _ to avoid conflicts with
     # the original attributes defined by the user.
     __fennel_original_cls__: Type[T]
-    _features: List[Field]
+    _features: List[Feature]
     _feature_map: Dict[str, Feature] = {}
     _extractors: List[Extractor]
     _owner: Optional[str]
@@ -225,6 +248,16 @@ class Featureset:
         return extractors
 
     def _validate(self):
+
+        # Check that all features have unique ids.
+        feature_id_set = set()
+        for feature in self._features:
+            if feature.id in feature_id_set:
+                raise ValueError(
+                    f"Feature {feature.name} has a duplicate id {feature.id}")
+            feature_id_set.add(feature.id)
+
+        # Check that each feature is extracted by at max one extractor.
         extracted_features: Set[str] = set()
         for extractor in self._extractors:
             if extractor.outputs is None:

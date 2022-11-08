@@ -5,9 +5,8 @@ import pandas as pd
 from google.protobuf.json_format import ParseDict
 
 import fennel.gen.featureset_pb2 as proto
-from fennel.dataset import dataset
-from fennel.featureset import featureset, extractor, depends_on
-from fennel.lib.field import field
+from fennel.dataset import dataset, field
+from fennel.featureset import featureset, extractor, depends_on, feature
 from fennel.test_lib import *
 
 
@@ -26,19 +25,19 @@ class UserInfoDataset:
 
 @featureset
 class User:
-    id: int
-    age: float
+    id: int = feature(id=1)
+    age: float = feature(id=2)
 
 
 def test_SimpleFeatureSet(grpc_stub):
     @featureset
     class UserInfo:
-        userid: int
-        home_geoid: int
+        userid: int = feature(id=1)
+        home_geoid: int = feature(id=2, wip=True)
         # The users gender among male/female/non-binary
-        gender: str
-        age: int = field(owner="aditya@fennel.ai")
-        income: int
+        gender: str = feature(id=3)
+        age: int = feature(id=4, owner="aditya@fennel.ai")
+        income: int = feature(id=5, deprecated=True)
 
         @extractor
         @depends_on(UserInfoDataset)
@@ -48,12 +47,12 @@ def test_SimpleFeatureSet(grpc_stub):
 
     @featureset
     class UserInfoDuplicate:
-        userid: int
-        home_geoid: int
+        userid: int = feature(id=1)
+        home_geoid: int = feature(id=2, wip=True)
         # The users gender among male/female/non-binary
-        gender: str
-        age: int = field(owner="aditya@fennel.ai")
-        income: int
+        gender: str = feature(id=3)
+        age: int = feature(id=4, owner="aditya@fennel.ai")
+        income: int = feature(id=5, deprecated=True)
 
         @extractor
         @depends_on(UserInfoDataset)
@@ -79,25 +78,33 @@ def test_SimpleFeatureSet(grpc_stub):
         "name": "UserInfo",
         "features": [
             {
+                "id": 1,
                 "name": "userid",
                 "dtype": "int64"
             },
             {
+                "id": 2,
                 "name": "home_geoid",
-                "dtype": "int64"
+                "dtype": "int64",
+                "wip": True
             },
             {
+                "id": 3,
                 "name": "gender",
-                "dtype": "string"
+                "dtype": "string",
+                "description": "The users gender among male/female/non-binary"
             },
             {
+                "id": 4,
                 "name": "age",
                 "dtype": "int64",
                 "owner": "aditya@fennel.ai"
             },
             {
+                "id": 5,
                 "name": "income",
-                "dtype": "int64"
+                "dtype": "int64",
+                "deprecated": True
             }
         ],
         "extractors": [
@@ -141,12 +148,12 @@ def test_SimpleFeatureSet(grpc_stub):
 def test_ComplexFeatureSet(grpc_stub):
     @featureset
     class UserInfo:
-        userid: int
-        home_geoid: int
+        userid: int = feature(id=1)
+        home_geoid: int = feature(id=2)
         # The users gender among male/female/non-binary
-        gender: str
-        age: int = field(owner="aditya@fennel.ai")
-        income: int
+        gender: str = feature(id=3)
+        age: int = feature(id=4, owner="aditya@fennel.ai")
+        income: int = feature(id=5)
 
         @extractor
         @depends_on(UserInfoDataset)
@@ -175,23 +182,29 @@ def test_ComplexFeatureSet(grpc_stub):
         "name": "UserInfo",
         "features": [
             {
+                "id": 1,
                 "name": "userid",
                 "dtype": "int64"
             },
             {
+                "id": 2,
                 "name": "home_geoid",
                 "dtype": "int64"
             },
             {
+                "id": 3,
                 "name": "gender",
-                "dtype": "string"
+                "dtype": "string",
+                "description": "The users gender among male/female/non-binary"
             },
             {
+                "id": 4,
                 "name": "age",
                 "dtype": "int64",
                 "owner": "aditya@fennel.ai"
             },
             {
+                "id": 5,
                 "name": "income",
                 "dtype": "int64"
             }

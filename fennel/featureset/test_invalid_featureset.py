@@ -4,14 +4,10 @@ from typing import Optional, Tuple
 import pandas as pd
 import pytest
 
-from fennel.dataset import dataset
-from fennel.featureset import featureset, extractor, depends_on
-from fennel.lib.field import field
+from fennel.dataset import dataset, field
+from fennel.featureset import featureset, extractor, depends_on, feature
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
-
-
-# Don't remove this line. It's used by the test runner to find the tests.
 
 
 @dataset
@@ -29,25 +25,25 @@ class UserInfoDataset:
 
 @featureset
 class User:
-    id: int
-    age: float
+    id: int = feature(id=1)
+    age: float = feature(id=2)
 
 
 def test_ComplexFeatureSet(grpc_stub):
     with pytest.raises(TypeError) as e:
         @featureset
         class UserInfo:
-            userid: int
-            home_geoid: int
+            userid: int = feature(id=1)
+            home_geoid: int = feature(id=2)
 
         @featureset
         class UserInfo:
-            userid: int
-            home_geoid: int
+            userid: int = feature(id=1)
+            home_geoid: int = feature(id=2)
             # The users gender among male/female/non-binary
-            gender: str
-            age: int = field(owner="aditya@fennel.ai")
-            income: int
+            gender: str = feature(id=3)
+            age: int = feature(id=4, owner="aditya@fennel.ai")
+            income: int = feature(id=5)
 
             @extractor
             @depends_on(UserInfoDataset)
@@ -66,3 +62,39 @@ def test_ComplexFeatureSet(grpc_stub):
                 "gender"]:
                 pass
     assert str(e.value) == "Feature gender is extracted by multiple extractors"
+
+
+def test_MissingId(grpc_stub):
+    with pytest.raises(TypeError) as e:
+        @featureset
+        class UserInfo:
+            userid: int = feature()
+            home_geoid: int = feature(id=2)
+
+    assert str(
+        e.value) == "feature() missing 1 required positional argument: 'id'"
+
+
+def test_DuplicateId(grpc_stub):
+    with pytest.raises(ValueError) as e:
+        @featureset
+        class UserInfo:
+            userid: int = feature(id=1)
+            home_geoid: int = feature(id=2)
+            age: int = feature(id=1)
+
+    assert str(
+        e.value) == "Feature age has a duplicate id 1"
+
+
+def test_DeprecatedId(grpc_stub):
+    with pytest.raises(ValueError) as e:
+        @featureset
+        class UserInfo:
+            userid: int = feature(id=1)
+            home_geoid: int = feature(id=2)
+            age: int = feature(id=3, deprecated=True)
+            credit_score: int = feature(id=3)
+
+    assert str(
+        e.value) == "Feature credit_score has a duplicate id 3"

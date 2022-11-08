@@ -1,1 +1,1 @@
-from fennel.dataset.dataset import (dataset, Dataset, pipeline, )
+from fennel.dataset.dataset import (dataset, Dataset, pipeline, field)
