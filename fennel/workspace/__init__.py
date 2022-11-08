@@ -1,1 +1,1 @@
-from fennel.workspace.view import View
+from fennel.workspace.client import Client
