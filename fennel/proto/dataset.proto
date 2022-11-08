@@ -3,6 +3,7 @@ syntax = "proto3";
 package fennel.proto;
 
 import "status.proto";
+import "source.proto";
 
 // All integers representing time are in microseconds and hence should be int64.
 
@@ -27,20 +28,22 @@ message CreateDatasetRequest {
   string name = 1;
   repeated Field fields = 2;
   repeated Pipeline pipelines = 3;
+  repeated DataConnector sources = 4;
+  repeated DataConnector sinks = 5;
 
-  string signature = 4;
-  string owner = 5;
-  string description = 6;
+  string signature = 6;
+  string owner = 7;
+  string description = 8;
   // Default mode is pandas.
-  string mode = 7;
-  uint32 version = 8;
+  string mode = 9;
+  uint32 version = 10;
 
   // Serialized arrow schema.
-  bytes schema = 9;
-  int64 retention = 10;
-  int64 max_staleness = 11;
+  bytes schema = 11;
+  int64 retention = 12;
+  int64 max_staleness = 13;
 
-  PullLookup pull_lookup = 12;
+  PullLookup pull_lookup = 14;
 }
 
 message CreateDatasetResponse{

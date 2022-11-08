@@ -3,7 +3,7 @@ from typing import List, Union, Optional
 from pydantic import BaseModel
 
 import fennel.gen.dataset_pb2 as proto
-from fennel.lib.duration.duration import Duration, duration_to_timedelta, \
+from fennel.lib.duration import Duration, duration_to_timedelta, \
     timedelta_to_micros
 
 ItemType = Union[str, List[str]]

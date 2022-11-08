@@ -30,6 +30,7 @@ class View:
             self.to_register.add(obj.name)
             self.to_register_objects.append(obj)
         else:
+            print("Unsupported type", obj)
             raise NotImplementedError
 
     def to_proto(self):

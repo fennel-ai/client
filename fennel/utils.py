@@ -120,3 +120,13 @@ def parse_annotation_comments(cls: Type[T]) -> Mapping[str, str]:
         return comments_for_annotations
     except Exception:
         return {}
+
+
+def propogate_fennel_attributes(src: Any, dest: Any):
+    """Propogates any  fennel attributes from src to dest."""
+    if not hasattr(src, "__dict__"):
+        return
+
+    for k, v in src.__dict__.items():
+        if k.startswith("__fennel") and k.endswith("__"):
+            setattr(dest, k, v)

@@ -46,3 +46,7 @@ def duration_to_timedelta(duration_string: Duration) -> timedelta:
 
 def timedelta_to_micros(td: timedelta) -> int:
     return int(td.total_seconds() * 1000000)
+
+
+def duration_to_micros(duration_string: Duration) -> int:
+    return timedelta_to_micros(duration_to_timedelta(duration_string))
