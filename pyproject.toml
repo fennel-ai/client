@@ -37,7 +37,8 @@ build-backend = "poetry.core.masonry.api"
 testpaths = [
     "fennel/dataset",
     "fennel/lib",
-    "fennel/featureset"
+    "fennel/featureset",
+    "fennel/sources",
 ]
 
 

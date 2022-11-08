@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 from dataclasses import dataclass
-from typing import (cast, Callable, Dict, Optional, Type, TypeVar, List,
+from typing import (Callable, Dict, Optional, Type, TypeVar, List,
                     Union, ForwardRef, Set)
 
 import cloudpickle
@@ -28,20 +28,17 @@ def feature(
         deprecated: bool = False,
         description: Optional[str] = None,
         owner: Optional[str] = None,
-) -> T:
-    return cast(
-        T,
-        Feature(
-            id=id,
-            wip=wip,
-            deprecated=deprecated,
-            owner=owner,
-            description=description,
-            # These fields will be filled in later.
-            name='',
-            dtype=None,
-            featureset_name='',
-        ),
+) -> Feature:
+    return Feature(
+        id=id,
+        wip=wip,
+        deprecated=deprecated,
+        owner=owner,
+        description=description,
+        # These fields will be filled in later.
+        name='',
+        dtype=None,
+        featureset_name='',
     )
 
 
@@ -72,8 +69,6 @@ def get_feature(
 def featureset(featureset_cls: Type[T]):
     """featureset is a decorator for creating a Featureset class."""
     cls_annotations = featureset_cls.__dict__.get('__annotations__', {})
-    for name, dtype in cls_annotations.items():
-        name = type(str(name), (dtype,), {})
 
     fields = [
         get_feature(
@@ -212,9 +207,7 @@ class Featureset:
             return self._feature_map[key]
         return super().__getattribute__(key)
 
-    # ---------------------------------------------------------------------
     # Public Methods
-    # ---------------------------------------------------------------------
 
     def signature(self) -> str:
         pass
@@ -233,9 +226,7 @@ class Featureset:
             name=self.name,
         )
 
-    # ---------------------------------------------------------------------
     # Private Methods
-    # ---------------------------------------------------------------------
 
     def _get_extractors(self) -> List[Extractor]:
         extractors = []

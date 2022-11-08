@@ -1,9 +1,11 @@
-from fennel.stream.sources import (
+from fennel.sources.sources import (
     BigQuery,
     MySQL,
-    populator,
     Postgres,
     S3,
-    Source,
+    Snowflake,
     SQLSource,
+    source, sink,
+    SOURCE_FIELD,
+    SINK_FIELD,
 )

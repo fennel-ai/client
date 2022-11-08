@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import inspect
 from dataclasses import dataclass
-from typing import (cast, Callable, Dict, List, Optional, Tuple, Type,
+from typing import (Callable, Dict, List, Optional, Tuple, Type,
                     TypeVar, Union)
 
 import cloudpickle
@@ -14,7 +14,9 @@ from fennel.lib.aggregate import AggregateType
 from fennel.lib.duration.duration import Duration, duration_to_timedelta, \
     timedelta_to_micros
 from fennel.lib.schema import get_pyarrow_field
-from fennel.utils import fhash, parse_annotation_comments
+from fennel.sources import SOURCE_FIELD, SINK_FIELD
+from fennel.utils import fhash, parse_annotation_comments, \
+    propogate_fennel_attributes
 
 Tags = Union[List[str], Tuple[str, ...], str]
 
@@ -81,19 +83,16 @@ def field(
         timestamp: bool = False,
         description: Optional[str] = None,
         owner: Optional[str] = None,
-) -> T:
-    return cast(
-        T,
-        Field(
-            key=key,
-            timestamp=timestamp,
-            owner=owner,
-            description=description,
-            # These fields will be filled in later.
-            name='',
-            pa_field=None,
-            dtype=None,
-        ),
+) -> Field:
+    return Field(
+        key=key,
+        timestamp=timestamp,
+        owner=owner,
+        description=description,
+        # These fields will be filled in later.
+        name='',
+        pa_field=None,
+        dtype=None,
     )
 
 
@@ -229,7 +228,7 @@ class dataset:
         The maximum amount of time that data in the dataset can be stale.
     """
 
-    def __new__(cls, dataset_cls: Optional[Type[T]] = None, *args, **kwargs):
+    def __new__(cls, dataset_cls: Optional[T] = None, *args, **kwargs):
         """This is called when dataset is called without parens."""
         if dataset_cls is None:
             # We're called as @dataset(*args, *kwargs).
@@ -245,13 +244,13 @@ class dataset:
         self._retention = retention
         self._max_staleness = max_staleness
 
-    def __call__(self, dataset_cls: Optional[Type[T]]):
+    def __call__(self, dataset_cls: Optional[T]):
         """This is called when dataset is called with parens."""
         return dataset._create_dataset(dataset_cls, self._retention,
             self._max_staleness)
 
     @staticmethod
-    def _create_dataset(dataset_cls: Type[T],
+    def _create_dataset(dataset_cls: T,
                         retention: Duration = DEFAULT_RETENTION,
                         max_staleness: Duration = DEFAULT_MAX_STALENESS):
         cls_annotations = dataset_cls.__dict__.get('__annotations__', {})
@@ -351,6 +350,7 @@ class Dataset(_Node):
         self.__fennel_original_cls__ = cls
         self._pipelines = self._get_pipelines()
         self._sign = self._create_signature()
+        propogate_fennel_attributes(cls, self)
 
     def __getattr__(self, key):
         if key in self.__fennel_original_cls__.__dict__['__annotations__']:
@@ -362,12 +362,21 @@ class Dataset(_Node):
     # ---------------------------------------------------------------------
 
     def create_dataset_request_proto(self) -> proto.CreateDatasetRequest:
+        sources = []
+        if hasattr(self, SOURCE_FIELD):
+            sources = getattr(self, SOURCE_FIELD)
+        sinks = []
+        if hasattr(self, SINK_FIELD):
+            sinks = getattr(self, SINK_FIELD)
+
         return proto.CreateDatasetRequest(
             name=self.__name__,
             schema=self._get_schema(),
             retention=timedelta_to_micros(self._retention),
             max_staleness=timedelta_to_micros(self._max_staleness),
             pipelines=[p.to_proto() for p in self._pipelines],
+            sources=[s.to_proto() for s in sources],
+            sinks=[s.to_proto() for s in sinks],
             mode='pandas',
             # TODO: Parse description from docstring.
             description='',

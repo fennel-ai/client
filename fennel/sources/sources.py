@@ -1,14 +1,71 @@
-import json
-from typing import Callable, List, Optional
+from __future__ import annotations
 
-import pandas as pd
+import json
+from typing import List, Optional, TypeVar, Dict
+
 from pydantic import BaseModel
 
 import fennel.errors as errors
+import fennel.gen.source_pb2 as proto
+from fennel.lib.duration import Duration, duration_to_micros
+
+T = TypeVar('T')
+SOURCE_FIELD = '__fennel_data_sources__'
+SINK_FIELD = '__fennel_data_sinks__'
 
 
-class Source(BaseModel):
+def _data_connector_validate(src: DataConnector) -> List[Exception]:
+    exceptions = []
+    if src.table_name is not None and src.support_single_stream():
+        exceptions.append(
+            errors.IncorrectSourceException(
+                "table must be None since it supports only a single stream"
+            )
+        )
+    elif src.table_name is None and not src.support_single_stream():
+        exceptions.append(
+            errors.IncorrectSourceException(
+                "table must be provided since it supports multiple streams/tables"
+            )
+        )
+    exceptions.extend(src.validate())
+    return exceptions
+
+
+def source(conn: DataConnector, every: Optional[Duration] = None):
+    def decorator(dataset_cls: T):
+        _data_connector_validate(conn)
+        conn.every = every
+        if hasattr(dataset_cls, SOURCE_FIELD):
+            connectors = getattr(dataset_cls, SOURCE_FIELD)
+            connectors.append(conn)
+            setattr(dataset_cls, SOURCE_FIELD, connectors)
+        else:
+            setattr(dataset_cls, SOURCE_FIELD, [conn])
+        return dataset_cls
+
+    return decorator
+
+
+def sink(conn: DataConnector, every: Optional[Duration] = None):
+    def decorator(dataset_cls: T):
+        _data_connector_validate(conn)
+        conn.every = every
+        if hasattr(dataset_cls, SINK_FIELD):
+            connectors = getattr(dataset_cls, SINK_FIELD)
+            connectors.append(conn)
+            setattr(dataset_cls, SINK_FIELD, connectors)
+        else:
+            setattr(dataset_cls, SINK_FIELD, [conn])
+        return dataset_cls
+
+    return decorator
+
+
+class DataConnector(BaseModel):
     name: str
+    table_name: Optional[str] = None
+    every: Optional[Duration] = None
 
     def type(self):
         return str(self.__class__.__name__)
@@ -20,7 +77,7 @@ class Source(BaseModel):
         return False
 
 
-class SQLSource(Source):
+class SQLSource(DataConnector):
     host: str
     db_name: str
     username: str
@@ -43,13 +100,17 @@ class SQLSource(Source):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
 
+    def table(self, table_name: str):
+        self.table_name = table_name
+        return self
 
-class S3(Source):
+
+class S3(DataConnector):
     bucket: str
     path_prefix: str
     aws_access_key_id: str
     aws_secret_access_key: str
-    src_schema: str
+    src_schema: Dict[str, str]
     delimiter: str = ","
     format: str = "csv"
 
@@ -66,8 +127,24 @@ class S3(Source):
             )
         return exceptions
 
+    def to_proto(self):
+        source_proto = proto.DataConnector(name=self.name,
+            every=duration_to_micros(self.every))
+        source_proto.s3.CopyFrom(
+            proto.S3(
+                bucket=self.bucket,
+                path_prefix=self.path_prefix,
+                aws_access_key_id=self.aws_access_key_id,
+                aws_secret_access_key=self.aws_secret_access_key,
+                schema=self.src_schema,
+                delimiter=self.delimiter,
+                format=self.format,
+            )
+        )
+        return source_proto
 
-class BigQuery(Source):
+
+class BigQuery(DataConnector):
     project_id: str
     dataset_id: str
     credentials_json: str
@@ -80,94 +157,110 @@ class BigQuery(Source):
             exceptions.append(e)
         return exceptions
 
+    def table(self, table_name: str):
+        self.table_name = table_name
+        return self
+
+    def to_proto(self):
+        source_proto = proto.DataConnector(name=self.name,
+            every=duration_to_micros(self.every))
+        source_proto.bigquery.CopyFrom(
+            proto.BigQuery(
+                project_id=self.project_id,
+                dataset=self.dataset_id,
+                credentials_json=self.credentials_json,
+            )
+        )
+        return source_proto
+
 
 class Postgres(SQLSource):
     port: int = 5432
+
+    def to_proto(self):
+        source_proto = proto.DataConnector(name=self.name,
+            every=duration_to_micros(self.every))
+        source_proto.sql.CopyFrom(
+            proto.SQL(
+                host=self.host,
+                db=self.db_name,
+                username=self.username,
+                password=self.password,
+                jdbc_params=self.jdbc_params,
+                port=self.port,
+            )
+        )
+        return source_proto
 
 
 class MySQL(SQLSource):
     port: int = 3306
 
+    def to_proto(self):
+        source_proto = proto.DataConnector(name=self.name,
+            every=duration_to_micros(self.every))
+        source_proto.sql.CopyFrom(
+            proto.SQL(
+                host=self.host,
+                db=self.db_name,
+                username=self.username,
+                password=self.password,
+                jdbc_params=self.jdbc_params,
+                port=self.port,
+            )
+        )
+        return source_proto
 
-def populator(source: Source, table: Optional[str] = None):
-    def decorator(fn: Callable):
-        # Runs validation checks on the returned value of the
-        def ret(cls, *args, **kwargs):
-            result = fn(cls, *args, **kwargs)
-            if type(result) != pd.DataFrame:
-                raise Exception(
-                    fn.__name__, " function must return a pandas DataFrame"
-                )
-            field2types = cls.src_schema.get_fields_and_types()
-            # Basic Type Check
-            for col, dtype in zip(result.columns, result.dtypes):
-                if col not in field2types:
-                    raise Exception("Column {} not in schema".format(col))
-                if not field2types[col].type_check(dtype):
-                    raise Exception(
-                        f"Column {col} type mismatch, got {dtype} expected {field2types[col]}"
-                    )
-            # Deeper Type Check
-            for (colname, colvals) in result.items():
-                for val in colvals:
-                    type_errors = field2types[colname].validate(val)
-                    if type_errors:
-                        raise Exception(
-                            f"Column {colname} value {val} failed validation: {type_errors}"
-                        )
-            return result
 
-        def validate() -> List[Exception]:
-            exceptions = []
-            if table is not None:
-                if source.support_single_stream():
-                    exceptions.append(
-                        errors.IncorrectSourceException(
-                            "table must be None since it supports only a single stream"
-                        )
-                    )
-            else:
-                if not source.support_single_stream():
-                    exceptions.append(
-                        errors.IncorrectSourceException(
-                            "table must be provided since it supports multiple streams/tables"
-                        )
-                    )
-            exceptions.extend(source.validate())
-            # exceptions.extend(fn.validate())
-            if fn.__code__.co_argcount != 2:
-                exceptions.append(
-                    Exception(
-                        "fn must have two arguments, self and pandas dataframe"
-                    )
-                )
-            return exceptions
+class Snowflake(DataConnector):
+    account: str
+    db_name: str
+    username: str
+    password: str
+    warehouse: str
+    src_schema: str
+    role: str
+    jdbc_params: Optional[str] = None
 
-        setattr(ret, "validate", validate)
+    def to_proto(self):
+        source_proto = proto.DataConnector(name=self.name,
+            every=duration_to_micros(self.every))
+        source_proto.snowflake.CopyFrom(
+            proto.Snowflake(
+                account=self.account,
+                db=self.db_name,
+                username=self.username,
+                password=self.password,
+                jdbc_params=self.jdbc_params,
+                warehouse=self.warehouse,
+                schema=self.src_schema,
+                role=self.role,
+            )
+        )
+        return source_proto
 
-        def create_source_request():
-            if table is not None:
-                if source.support_single_stream():
-                    raise Exception(
-                        "table must be None since it supports only a single stream"
-                    )
-            else:
-                if not source.support_single_stream():
-                    raise Exception(
-                        "table must be provided since it supports multiple streams/tables"
-                    )
-            grpc_request = None
-            if source.type() == "S3":
-                grpc_request.s3.src_schema = json.dumps(source.schema)
-            return grpc_request
+    def table(self, table_name: str):
+        self.table_name = table_name
+        return self
 
-        setattr(ret, "create_source_request", create_source_request)
-
-        setattr(ret, "source", source)
-        setattr(ret, "table", table)
-        setattr(ret, "populator_func", fn)
-        setattr(ret, "func_name", fn.__name__)
-
-        return ret
-
-    return decorator
+    def validate(self) -> List[Exception]:
+        exceptions = []
+        if not isinstance(self.account, str):
+            exceptions.append(TypeError("account must be a string"))
+        if not isinstance(self.db_name, str):
+            exceptions.append(TypeError("db_name must be a string"))
+        if not isinstance(self.username, str):
+            exceptions.append(TypeError("username must be a string"))
+        if not isinstance(self.password, str):
+            exceptions.append(TypeError("password must be a string"))
+        if not isinstance(self.warehouse, str):
+            exceptions.append(TypeError("warehouse must be a string"))
+        if not isinstance(self.src_schema, str):
+            exceptions.append(TypeError("src_schema must be a string"))
+        if not isinstance(self.role, str):
+            exceptions.append(TypeError("role must be a string"))
+        if self.jdbc_params is not None and not isinstance(
+                self.jdbc_params, str
+        ):
+            exceptions.append(TypeError("jdbc_params must be a string"))
+        return exceptions
