@@ -2,9 +2,12 @@ from typing import List, Union, Optional
 
 from pydantic import BaseModel
 
-import fennel.gen.dataset_pb2 as proto
-from fennel.lib.duration import Duration, duration_to_timedelta, \
-    timedelta_to_micros
+import fennel.gen.dataset_pb2 as proto  # type: ignore
+from fennel.lib.duration import (
+    Duration,
+    duration_to_timedelta,
+    timedelta_to_micros,
+)
 
 ItemType = Union[str, List[str]]
 
@@ -21,7 +24,7 @@ class Window(BaseModel):
     def __init__(self, start: Optional[Duration] = None, end: Duration = "0s"):
         super().__init__(start=start, end=end)
 
-    def to_proto(self):
+    def to_proto(self) -> proto.WindowSpec:
         if self.start is None:
             return proto.WindowSpec(forever_window=True)
         return proto.WindowSpec(
@@ -31,7 +34,7 @@ class Window(BaseModel):
             )
         )
 
-    def signature(self):
+    def signature(self) -> str:
         if self.start is None:
             return f"forever_{self.end}"
         return f"{self.start}_{self.end}"

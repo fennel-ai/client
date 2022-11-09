@@ -8,16 +8,13 @@ import inspect
 import json
 import textwrap
 from typing import Any
-from typing import (Dict, List, Mapping, Tuple, Type,
-                    TypeVar, Union)
+from typing import cast, Dict, List, Tuple, Union
 
 import cloudpickle
 
 from fennel.gen.status_pb2 import Status
 
 Tags = Union[List[str], Tuple[str, ...], str]
-
-T = TypeVar('T')
 
 
 def check_response(response: Status):
@@ -54,13 +51,13 @@ def _json_default(item: Any):
     except TypeError:
         pass
     if isinstance(item, datetime.datetime):
-        return item.isoformat(timespec='microseconds')
+        return item.isoformat(timespec="microseconds")
 
     if isinstance(item, bytes):
         return item.hex()
 
     if callable(item) and not inspect.isclass(item):
-        return hashlib.md5(inspect.getsource(item).encode('utf-8')).hexdigest()
+        return hashlib.md5(inspect.getsource(item).encode("utf-8")).hexdigest()
 
     if isinstance(item, datetime.timedelta):
         return str(item.total_seconds())
@@ -75,17 +72,17 @@ def _json_dumps(thing: Any):
         ensure_ascii=False,
         sort_keys=True,
         indent=None,
-        separators=(',', ':'),
+        separators=(",", ":"),
     )
 
 
 def fhash(*items: Any):
     """Fennel Hash that is used to uniquely identify any python object."""
-    items = list(items)
-    return hashlib.md5(_json_dumps(items).encode('utf-8')).hexdigest()
+    item_list = list(cast(List[Any], items))
+    return hashlib.md5(_json_dumps(item_list).encode("utf-8")).hexdigest()
 
 
-def parse_annotation_comments(cls: Type[T]) -> Mapping[str, str]:
+def parse_annotation_comments(cls: Any) -> Dict[str, str]:
     try:
         source = textwrap.dedent(inspect.getsource(cls))
 
@@ -98,20 +95,22 @@ def parse_annotation_comments(cls: Type[T]) -> Mapping[str, str]:
         class_def = tree.body[0]
         if isinstance(class_def, ast.ClassDef):
             for stmt in class_def.body:
-                if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target,
-                        ast.Name):
+                if isinstance(stmt, ast.AnnAssign) and isinstance(
+                    stmt.target, ast.Name
+                ):
                     line = stmt.lineno - 2
                     comments: List[str] = []
                     while line >= 0 and source_lines[line].strip().startswith(
-                            '#'):
-                        comment = source_lines[line].strip().strip('#').strip()
+                        "#"
+                    ):
+                        comment = source_lines[line].strip().strip("#").strip()
                         comments.insert(0, comment)
                         line -= 1
 
                     if len(comments) > 0:
                         comments_for_annotations[
-                            stmt.target.id] = textwrap.dedent(
-                            '\n'.join(comments))
+                            stmt.target.id
+                        ] = textwrap.dedent("\n".join(comments))
 
         return comments_for_annotations
     except Exception:

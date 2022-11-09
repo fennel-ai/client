@@ -6,6 +6,7 @@ from google.protobuf.json_format import ParseDict
 from fennel.dataset import dataset, field
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.sources import source, MySQL, S3, Snowflake, BigQuery
+
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -43,34 +44,14 @@ def test_SimpleSource(grpc_stub):
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {
-                        "name": "user_id",
-                        "isKey": True
-                    },
-                    {
-                        "name": "name"
-                    },
-                    {
-                        "name": "gender"
-                    },
-                    {
-                        "name": "dob",
-                        "description": "Users date of birth"
-                    },
-                    {
-                        "name": "age"
-                    },
-                    {
-                        "name": "account_creation_date"
-                    },
-                    {
-                        "name": "country",
-                        "isNullable": True
-                    },
-                    {
-                        "name": "timestamp",
-                        "isTimestamp": True
-                    }
+                    {"name": "user_id", "isKey": True},
+                    {"name": "name"},
+                    {"name": "gender"},
+                    {"name": "dob", "description": "Users date of birth"},
+                    {"name": "age"},
+                    {"name": "account_creation_date"},
+                    {"name": "country", "isNullable": True},
+                    {"name": "timestamp", "isTimestamp": True},
                 ],
                 "sources": [
                     {
@@ -80,21 +61,22 @@ def test_SimpleSource(grpc_stub):
                             "db": "test",
                             "username": "root",
                             "password": "root",
-                            "port": 3306
-                        }
+                            "port": 3306,
+                        },
                     }
                 ],
                 "signature": "be97463e5a8eb09c87a55084dac59234",
                 "mode": "pandas",
                 "retention": "63072000000000",
-                "maxStaleness": "2592000000000"
+                "maxStaleness": "2592000000000",
             }
         ]
     }
-    sync_request.dataset_requests[0].schema = b''
+    sync_request.dataset_requests[0].schema = b""
     expected_sync_request = ParseDict(d, SyncRequest())
-    assert sync_request == expected_sync_request, error_message(sync_request,
-        expected_sync_request)
+    assert sync_request == expected_sync_request, error_message(
+        sync_request, expected_sync_request
+    )
 
     @dataset
     @source(mysql.table("users"), every="1h")
@@ -115,18 +97,21 @@ def test_SimpleSource(grpc_stub):
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.sources) == 1
-    sync_request.dataset_requests[0].schema = b''
+    sync_request.dataset_requests[0].schema = b""
     expected_sync_request.dataset_requests[
-        0].name = "UserInfoDatasetInvertedOrder"
+        0
+    ].name = "UserInfoDatasetInvertedOrder"
     expected_sync_request.dataset_requests[
-        0].signature = "41e8c0a165f169fb43281b326ed223c3"
-    assert sync_request == expected_sync_request, error_message(sync_request,
-        expected_sync_request)
+        0
+    ].signature = "41e8c0a165f169fb43281b326ed223c3"
+    assert sync_request == expected_sync_request, error_message(
+        sync_request, expected_sync_request
+    )
 
 
 s3 = S3(
-    name='ratings_source',
-    bucket="all_ratings",
+    name="ratings_source",
+    bucket_name="all_ratings",
     path_prefix="prod/apac/",
     aws_access_key_id="ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
@@ -135,7 +120,7 @@ s3 = S3(
 )
 
 bigquery = BigQuery(
-    name='bq_movie_tags',
+    name="bq_movie_tags",
     project_id="gold-cocoa-356105",
     dataset_id="movie_tags",
     credentials_json="""{
@@ -165,9 +150,14 @@ def test_MultipleSources(grpc_stub):
     @source(mysql.table("users_mysql"), every="1h")
     @source(bigquery.table("users_bq"), every="1h")
     @source(snowflake.table("users_Sf"), every="1h")
-    @source(s3.bucket("all_ratings", prefix="prod/apac/",
-        src_schema={"Name": "string", "Weight": "number", "Age": "integer"}),
-        every="1h")
+    @source(
+        s3.bucket(
+            bucket_name="all_ratings",
+            prefix="prod/apac/",
+            src_schema={"Name": "string", "Weight": "number", "Age": "integer"},
+        ),
+        every="1h",
+    )
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)

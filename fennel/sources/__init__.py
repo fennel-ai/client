@@ -5,7 +5,8 @@ from fennel.sources.sources import (
     S3,
     Snowflake,
     SQLSource,
-    source, sink,
+    source,
+    sink,
     SOURCE_FIELD,
     SINK_FIELD,
 )

@@ -5,6 +5,7 @@ import pytest
 
 from fennel.dataset import dataset, field
 from fennel.sources import source, S3, MySQL
+
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -33,8 +34,8 @@ def test_SimpleSource(grpc_stub):
 
 
 s3 = S3(
-    name='ratings_source',
-    bucket="all_ratings",
+    name="ratings_source",
+    bucket_name="all_ratings",
     path_prefix="prod/apac/",
     aws_access_key_id="ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
@@ -45,6 +46,7 @@ s3 = S3(
 
 def test_MultipleSources(grpc_stub):
     with pytest.raises(AttributeError) as e:
+
         @source(s3.table("user"), every="1h")
         @dataset
         class UserInfoDataset:
