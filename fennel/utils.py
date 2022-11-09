@@ -48,10 +48,6 @@ def fennel_pickle(obj: Any) -> bytes:
     return cloudpickle.dumps(obj)
 
 
-def square(x):
-    return x * x
-
-
 def _json_default(item: Any):
     try:
         return dataclasses.asdict(item)
