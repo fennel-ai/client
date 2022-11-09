@@ -27,6 +27,5 @@ message SyncResponse {
 
 service FennelFeatureStore {
   rpc Sync(SyncRequest) returns (SyncResponse);
-  // rpc ExtractFeatures (ExtractFeaturesRequest) returns (ExtractFeaturesResponse);
 }
 

@@ -58,6 +58,9 @@ def get_feature(
 
     feature.featureset_name = cls.__name__
     feature.name = annotation_name
+    if annotation_name.contains('.'):
+        raise ValueError(f'Feature name {annotation_name} cannot contain a '
+                         f'period')
     feature.dtype = dtype
 
     if feature.description is None:
