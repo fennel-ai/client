@@ -1,17 +1,21 @@
 from typing import *
 
 import grpc
+import pandas as pd
 
 import fennel.gen.services_pb2 as services_pb2
 import fennel.gen.services_pb2_grpc as services_pb2_grpc
 from fennel.dataset import Dataset
 from fennel.featureset import Featureset
+from fennel.utils import check_response
+
+REST_API_VERSION = "/v1"
 
 
-# TODO(aditya): how will auth work?
 class Client:
-    def __init__(self, name: str, url: str):
-        self.name = name
+    def __init__(self, url: str, rest_url: Optional[str] =
+    None):
+        self.rest_url = rest_url if rest_url is not None else url
         self.url = url
         self.channel = grpc.insecure_channel(url)
         self.stub = services_pb2_grpc.FennelFeatureStoreStub(self.channel)
@@ -54,5 +58,15 @@ class Client:
         sync_request = self.to_proto()
         self.stub.Sync(sync_request)
 
-    def log(self):
-        pass
+    def log(self, dataset_name: str, data: pd.DataFrame):
+        """log api uses a REST endpoint to log data to a dataset rather than
+        using a gRPC endpoint."""
+        req = {
+            "dataset": dataset_name,
+            "data": data.to_json(orient="records")
+        }
+        response = self.http.post(self._url("log"), json=req)
+        check_response(response)
+
+    def _url(self, path):
+        return self.rest_url + REST_API_VERSION + "/" + path
