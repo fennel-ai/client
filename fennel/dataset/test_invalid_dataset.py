@@ -1,3 +1,4 @@
+import typing
 from datetime import datetime
 from typing import Optional
 
@@ -9,6 +10,7 @@ from fennel.test_lib import *
 
 def test_MultipleDateTime(grpc_stub):
     with pytest.raises(ValueError) as e:
+
         @dataset
         class UserInfoDataset:
             user_id: int = field(key=True)
@@ -27,19 +29,23 @@ def test_MultipleDateTime(grpc_stub):
 
 def test_InvalidRetentionWindow(grpc_stub):
     with pytest.raises(TypeError) as e:
+
         @dataset(retention=324)
         class Activity:
             user_id: int
             action_type: float
             amount: Optional[float]
             timestamp: datetime
-    assert str(
-        e.value) == "duration 324 must be a specified as a string for eg. " \
-                    "1d/2m/3y."
+
+    assert (
+        str(e.value) == "duration 324 must be a specified as a string for eg. "
+        "1d/2m/3y."
+    )
 
 
 def test_DatasetWithPipes(grpc_stub):
     with pytest.raises(TypeError) as e:
+
         @dataset
         class XYZ:
             user_id: int
@@ -57,13 +63,16 @@ def test_DatasetWithPipes(grpc_stub):
             def create_pipeline(self, a: XYZ):
                 return a
 
-    assert str(
-        e.value) == "pipeline functions cannot have self as a parameter and " \
-                    "are like static methods."
+    assert (
+        str(e.value)
+        == "pipeline functions cannot have self as a parameter and "
+        "are like static methods."
+    )
 
 
 def test_DatasetIncorrectJoin(grpc_stub):
     with pytest.raises(ValueError) as e:
+
         @dataset
         class XYZ:
             user_id: int
@@ -77,9 +86,10 @@ def test_DatasetIncorrectJoin(grpc_stub):
             c: int
             d: datetime
 
-            @staticmethod
             @pipeline
+            @typing.no_type_check
             def create_pipeline(a: XYZ):
                 b = a.transform(lambda x: x)
                 return a.join(b, on=["user_id"])
+
     assert str(e.value) == "Cannot join with an intermediate dataset"

@@ -3,6 +3,7 @@ from functools import partial
 from unittest.mock import patch
 
 import grpc
+
 # noinspection PyUnresolvedReferences
 import pandas as pd
 import pytest
@@ -82,13 +83,13 @@ class workspace:
             self._start_a_test_server()
             with grpc.insecure_channel(f"localhost:{self.port}") as channel:
                 with patch(
-                        "fennel.aggregate.aggregate.aggregate_lookup"
+                    "fennel.aggregate.aggregate.aggregate_lookup"
                 ) as agg_mock:
                     agg_mock.side_effect = partial(
                         self.agg_mock_method(), self.aggregate_mock
                     )
                     with patch(
-                            "fennel.feature.feature.feature_extract"
+                        "fennel.feature.feature.feature_extract"
                     ) as feature_mock:
                         feature_mock.side_effect = partial(
                             self.feature_mock_method(), self.feature_mock

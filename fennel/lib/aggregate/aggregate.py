@@ -31,7 +31,7 @@ class Count(AggregateType):
 
     def to_proto(self):
         if self.window is None:
-            raise ValueError('Window must be specified for Count')
+            raise ValueError("Window must be specified for Count")
 
         return proto.Aggregation(
             type=self.agg_func,

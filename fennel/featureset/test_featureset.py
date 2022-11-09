@@ -41,9 +41,10 @@ def test_SimpleFeatureSet(grpc_stub):
 
         @extractor
         @depends_on(UserInfoDataset)
-        def get_user_info(ts: pd.Series, user: User, user_id: User.id, user_age:
-        User.age):
-            return UserInfoDataset.lookup(ts, user_id=user_id)
+        def get_user_info(
+            ts: pd.Series, user: User, user_id: User.id, user_age: User.age
+        ):
+            return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
 
     @featureset
     class UserInfoDuplicate:
@@ -56,9 +57,10 @@ def test_SimpleFeatureSet(grpc_stub):
 
         @extractor
         @depends_on(UserInfoDataset)
-        def get_user_info(ts: pd.Series, user: User, user_id: User.id, user_age:
-        User.age):
-            return UserInfoDataset.lookup(ts, user_id=user_id)
+        def get_user_info(
+            ts: pd.Series, user: User, user_id: User.id, user_age: User.age
+        ):
+            return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
 
     view = InternalTestView(grpc_stub)
     view.add(UserInfoDataset)
@@ -67,82 +69,56 @@ def test_SimpleFeatureSet(grpc_stub):
     sync_request = view.to_proto()
     assert len(sync_request.featureset_requests) == 2
     featureset_request = clean_fs_func_src_code(
-        sync_request.featureset_requests[0])
+        sync_request.featureset_requests[0]
+    )
 
     # Both requests should be the same, apart from the name.
     sync_request.featureset_requests[1].name = "UserInfo"
-    assert featureset_request == \
-           clean_fs_func_src_code(sync_request.featureset_requests[1])
+    assert featureset_request == clean_fs_func_src_code(
+        sync_request.featureset_requests[1]
+    )
 
     f = {
         "name": "UserInfo",
         "features": [
-            {
-                "id": 1,
-                "name": "userid",
-                "dtype": "int64"
-            },
-            {
-                "id": 2,
-                "name": "home_geoid",
-                "dtype": "int64",
-                "wip": True
-            },
+            {"id": 1, "name": "userid", "dtype": "int64"},
+            {"id": 2, "name": "home_geoid", "dtype": "int64", "wip": True},
             {
                 "id": 3,
                 "name": "gender",
                 "dtype": "string",
-                "description": "The users gender among male/female/non-binary"
+                "description": "The users gender among male/female/non-binary",
             },
             {
                 "id": 4,
                 "name": "age",
                 "dtype": "int64",
-                "owner": "aditya@fennel.ai"
+                "owner": "aditya@fennel.ai",
             },
-            {
-                "id": 5,
-                "name": "income",
-                "dtype": "int64",
-                "deprecated": True
-            }
+            {"id": 5, "name": "income", "dtype": "int64", "deprecated": True},
         ],
         "extractors": [
             {
                 "name": "get_user_info",
-                "datasets": [
-                    "UserInfoDataset"
-                ],
+                "datasets": ["UserInfoDataset"],
                 "inputs": [
-                    {
-                        "featureSet": {
-                            "name": "User"
-                        }
-                    },
+                    {"featureSet": {"name": "User"}},
+                    {"feature": {"featureSet": {"name": "User"}, "name": "id"}},
                     {
                         "feature": {
-                            "featureSet": {
-                                "name": "User"
-                            },
-                            "name": "id"
+                            "featureSet": {"name": "User"},
+                            "name": "age",
                         }
                     },
-                    {
-                        "feature": {
-                            "featureSet": {
-                                "name": "User"
-                            },
-                            "name": "age"
-                        }
-                    }
-                ]
+                ],
             }
-        ]
+        ],
     }
 
     expected_fs_request = ParseDict(f, proto.CreateFeaturesetRequest())
     assert featureset_request == expected_fs_request, error_message(
-        featureset_request, expected_fs_request)
+        featureset_request, expected_fs_request
+    )
 
 
 def test_ComplexFeatureSet(grpc_stub):
@@ -157,14 +133,16 @@ def test_ComplexFeatureSet(grpc_stub):
 
         @extractor
         @depends_on(UserInfoDataset)
-        def get_user_info1(ts: pd.Series, user_id: User.id) -> Tuple[
-            "userid", "home_geoid"]:
+        def get_user_info1(
+            ts: pd.Series, user_id: User.id
+        ) -> Tuple["userid", "home_geoid"]:
             pass
 
         @extractor
         @depends_on(UserInfoDataset)
-        def get_user_info2(ts: pd.Series, user_id: User.id) -> Tuple[
-            "gender", "age"]:
+        def get_user_info2(
+            ts: pd.Series, user_id: User.id
+        ) -> Tuple["gender", "age"]:
             pass
 
         @extractor
@@ -177,98 +155,55 @@ def test_ComplexFeatureSet(grpc_stub):
     sync_request = view.to_proto()
     assert len(sync_request.featureset_requests) == 1
     featureset_request = clean_fs_func_src_code(
-        sync_request.featureset_requests[0])
+        sync_request.featureset_requests[0]
+    )
     f = {
         "name": "UserInfo",
         "features": [
-            {
-                "id": 1,
-                "name": "userid",
-                "dtype": "int64"
-            },
-            {
-                "id": 2,
-                "name": "home_geoid",
-                "dtype": "int64"
-            },
+            {"id": 1, "name": "userid", "dtype": "int64"},
+            {"id": 2, "name": "home_geoid", "dtype": "int64"},
             {
                 "id": 3,
                 "name": "gender",
                 "dtype": "string",
-                "description": "The users gender among male/female/non-binary"
+                "description": "The users gender among male/female/non-binary",
             },
             {
                 "id": 4,
                 "name": "age",
                 "dtype": "int64",
-                "owner": "aditya@fennel.ai"
+                "owner": "aditya@fennel.ai",
             },
-            {
-                "id": 5,
-                "name": "income",
-                "dtype": "int64"
-            }
+            {"id": 5, "name": "income", "dtype": "int64"},
         ],
         "extractors": [
             {
                 "name": "get_user_info1",
-                "datasets": [
-                    "UserInfoDataset"
-                ],
+                "datasets": ["UserInfoDataset"],
                 "inputs": [
-                    {
-                        "feature": {
-                            "featureSet": {
-                                "name": "User"
-                            },
-                            "name": "id"
-                        }
-                    }
+                    {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
                 ],
-                "features": [
-                    "userid",
-                    "home_geoid"
-                ]
+                "features": ["userid", "home_geoid"],
             },
             {
                 "name": "get_user_info2",
-                "datasets": [
-                    "UserInfoDataset"
-                ],
+                "datasets": ["UserInfoDataset"],
                 "inputs": [
-                    {
-                        "feature": {
-                            "featureSet": {
-                                "name": "User"
-                            },
-                            "name": "id"
-                        }
-                    }
+                    {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
                 ],
-                "features": [
-                    "gender",
-                    "age"
-                ]
+                "features": ["gender", "age"],
             },
             {
                 "name": "get_user_info3",
                 "inputs": [
-                    {
-                        "feature": {
-                            "featureSet": {
-                                "name": "User"
-                            },
-                            "name": "id"
-                        }
-                    }
+                    {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
                 ],
-                "features": [
-                    "income"
-                ]
-            }
-        ]
+                "features": ["income"],
+            },
+        ],
     }
     expected_fs_request = ParseDict(f, proto.CreateFeaturesetRequest())
 
     assert featureset_request == expected_fs_request, error_message(
-        featureset_request, expected_fs_request)
+        featureset_request, expected_fs_request
+    )
