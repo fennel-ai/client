@@ -68,5 +68,21 @@ class Client:
         response = self.http.post(self._url("log"), json=req)
         check_response(response)
 
+    def extract_features(self, input_feature_list: List[str],
+                         output_feature_list: List[str], input_df: pd.DataFrame,
+                         timestamps: Optional[
+                             pd.Series] = None) -> pd.DataFrame:
+        """Extract features from a dataframe."""
+        req = {
+            "input_features": input_feature_list,
+            "output_features": output_feature_list,
+            "input_df": input_df.to_json(orient="records"),
+            "timestamps": timestamps.to_json(orient="records") if timestamps
+                                                                  is not None else []
+        }
+        response = self.http.post(self._url("extract_features"), json=req)
+        check_response(response)
+        return response.json()
+
     def _url(self, path):
         return self.rest_url + REST_API_VERSION + "/" + path

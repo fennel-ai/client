@@ -64,6 +64,9 @@ def get_field(
         dtype: Type,
         field2comment_map: Dict[str, str],
 ) -> Field:
+    if annotation_name.contains('.'):
+        raise ValueError(
+            f"Field name {annotation_name} cannot contain a period.")
     field = getattr(cls, annotation_name, None)
     if isinstance(field, Field):
         field.name = annotation_name
