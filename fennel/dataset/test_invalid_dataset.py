@@ -9,6 +9,7 @@ from fennel.test_lib import *
 
 def test_MultipleDateTime(grpc_stub):
     with pytest.raises(ValueError) as e:
+
         @dataset
         class UserInfoDataset:
             user_id: int = field(key=True)
@@ -27,6 +28,7 @@ def test_MultipleDateTime(grpc_stub):
 
 def test_InvalidRetentionWindow(grpc_stub):
     with pytest.raises(TypeError) as e:
+
         @dataset(retention=324)
         class Activity:
             user_id: int
@@ -35,13 +37,14 @@ def test_InvalidRetentionWindow(grpc_stub):
             timestamp: datetime
 
     assert (
-            str(e.value) == "duration 324 must be a specified as a string for eg. "
-                            "1d/2m/3y."
+        str(e.value) == "duration 324 must be a specified as a string for eg. "
+        "1d/2m/3y."
     )
 
 
 def test_DatasetWithPipes(grpc_stub):
     with pytest.raises(Exception) as e:
+
         @dataset
         class XYZ:
             user_id: int
@@ -60,20 +63,12 @@ def test_DatasetWithPipes(grpc_stub):
             def create_pipeline(self, a: Dataset):
                 return a
 
-    assert (
-            str(e.value)
-            == "pipeline must take atleast one Dataset."
-    )
+    assert str(e.value) == "pipeline must take atleast one Dataset."
 
     with pytest.raises(TypeError) as e:
-        @dataset
-        class XYZ:
-            user_id: int
-            name: str
-            timestamp: datetime
 
         @dataset
-        class ABCDataset:
+        class ABCDataset2:
             a: int = field(key=True)
             b: int = field(key=True)
             c: int
@@ -85,14 +80,15 @@ def test_DatasetWithPipes(grpc_stub):
                 return a
 
     assert (
-            str(e.value)
-            == "pipeline functions cannot have self as a parameter and are "
-               "like static methods."
+        str(e.value)
+        == "pipeline functions cannot have self as a parameter and are "
+        "like static methods."
     )
 
 
 def test_DatasetIncorrectJoin(grpc_stub):
     with pytest.raises(ValueError) as e:
+
         @dataset
         class XYZ:
             user_id: int

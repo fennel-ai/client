@@ -25,6 +25,7 @@ pyarrow = "^10.0.0"
 jsondiff = "^2.0.0"
 mypy-protobuf = "^3.4.0"
 astpretty = "^3.0.0"
+astunparse = "^1.6.3"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"

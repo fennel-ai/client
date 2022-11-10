@@ -14,7 +14,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    overload
+    overload,
 )
 
 import cloudpickle
@@ -27,7 +27,7 @@ from fennel.lib.duration.duration import (
     duration_to_timedelta,
     timedelta_to_micros,
 )
-from fennel.lib.schema import get_pyarrow_field
+from fennel.lib.schema import get_pyarrow_field, dtype_to_string
 from fennel.sources import SOURCE_FIELD, SINK_FIELD
 from fennel.utils import (
     fhash,
@@ -62,9 +62,12 @@ class Field:
     def signature(self) -> str:
         if self.dtype is None:
             raise ValueError("dtype is not set")
+
+        if self.dtype is Optional:
+            return f"Optional[{self.pa_field.type}]"
         return fhash(
             self.name,
-            f"{self.dtype}",
+            f"{dtype_to_string(self.dtype)}",
             f"{self.pa_field.nullable}:{self.key}:{self.timestamp}",
         )
 
@@ -81,10 +84,10 @@ class Field:
 
 
 def get_field(
-        cls: F,
-        annotation_name: str,
-        dtype: Type,
-        field2comment_map: Dict[str, str],
+    cls: F,
+    annotation_name: str,
+    dtype: Type,
+    field2comment_map: Dict[str, str],
 ) -> Field:
     if "." in annotation_name:
         raise ValueError(
@@ -112,10 +115,10 @@ def get_field(
 
 
 def field(
-        key: bool = False,
-        timestamp: bool = False,
-        description: str = "",
-        owner: str = "",
+    key: bool = False,
+    timestamp: bool = False,
+    description: str = "",
+    owner: str = "",
 ) -> F:
     return cast(
         F,
@@ -142,7 +145,7 @@ class _Node:
         self.out_edges = []
 
     def transform(
-            self, func: Callable, timestamp: Optional[str] = None
+        self, func: Callable, timestamp: Optional[str] = None
     ) -> _Node:
         return _Transform(self, func, timestamp)
 
@@ -150,11 +153,11 @@ class _Node:
         return _GroupBy(self, *args)
 
     def join(
-            self,
-            other: Dataset,
-            on: Optional[List[str]] = None,
-            left_on: Optional[List[str]] = None,
-            right_on: Optional[List[str]] = None,
+        self,
+        other: Dataset,
+        on: Optional[List[str]] = None,
+        left_on: Optional[List[str]] = None,
+        right_on: Optional[List[str]] = None,
     ) -> _Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError("Cannot join with an intermediate dataset")
@@ -188,7 +191,7 @@ class _Transform(_Node):
 
 class _Aggregate(_Node):
     def __init__(
-            self, node: _Node, keys: List[str], aggregates: List[AggregateType]
+        self, node: _Node, keys: List[str], aggregates: List[AggregateType]
     ):
         super().__init__()
         if len(keys) == 0:
@@ -218,12 +221,12 @@ class _GroupBy:
 
 class _Join(_Node):
     def __init__(
-            self,
-            node: _Node,
-            dataset: Dataset,
-            on: Optional[List[str]] = None,
-            left_on: Optional[List[str]] = None,
-            right_on: Optional[List[str]] = None,
+        self,
+        node: _Node,
+        dataset: Dataset,
+        on: Optional[List[str]] = None,
+        left_on: Optional[List[str]] = None,
+        right_on: Optional[List[str]] = None,
     ):
         super().__init__()
         self.node = node
@@ -279,11 +282,12 @@ class _Union(_Node):
 # dataset & pipeline decorators
 # ---------------------------------------------------------------------
 
+
 @overload
 def dataset(
-        *,
-        retention: Optional[Duration] = DEFAULT_RETENTION,
-        max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
+    *,
+    retention: Optional[Duration] = DEFAULT_RETENTION,
+    max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
 ) -> Callable[[Type[F]], Dataset]:
     ...
 
@@ -294,9 +298,9 @@ def dataset(cls: Type[F]) -> Dataset:
 
 
 def dataset(
-        cls: Optional[Type[F]] = None,
-        retention: Optional[Duration] = DEFAULT_RETENTION,
-        max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
+    cls: Optional[Type[F]] = None,
+    retention: Optional[Duration] = DEFAULT_RETENTION,
+    max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
 ) -> Union[Callable[[Type[F]], Dataset], Dataset]:
     """
     dataset is a decorator that creates a Dataset class.
@@ -312,9 +316,9 @@ def dataset(
     """
 
     def _create_dataset(
-            dataset_cls: Type[F],
-            retention: Duration,
-            max_staleness: Duration,
+        dataset_cls: Type[F],
+        retention: Duration,
+        max_staleness: Duration,
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
         fields = [
@@ -337,8 +341,9 @@ def dataset(
         )
 
     def wrap(c: Type[F]) -> Dataset:
-        return _create_dataset(c, cast(Duration, retention),
-            cast(Duration, max_staleness))
+        return _create_dataset(
+            c, cast(Duration, retention), cast(Duration, max_staleness)
+        )
 
     if cls is None:
         # We're being called as @dataset()
@@ -349,17 +354,16 @@ def dataset(
 
 
 # Handle mypy type check for static functions.
-def pipeline(*params: Dataset) -> Callable[
-    [Callable[..., Any]], staticmethod[Any]]:
+def pipeline(
+    *params: Dataset,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     for param in params:
         if callable(param):
             raise Exception("pipeline must take atleast one Dataset.")
         if not isinstance(param, Dataset):
-            raise TypeError(
-                "pipeline parameters must be Dataset instances."
-            )
+            raise TypeError("pipeline parameters must be Dataset instances.")
 
-    def wrapper(pipeline_func: Callable) -> staticmethod:
+    def wrapper(pipeline_func: Callable) -> Callable:
         if not callable(pipeline_func):
             raise TypeError("pipeline functions must be callable.")
         sig = inspect.signature(pipeline_func)
@@ -376,7 +380,7 @@ def pipeline(*params: Dataset) -> Callable[
             "__fennel_pipeline__",
             Pipeline(node=pipeline_func(*params), inputs=list(params)),
         )
-        return staticmethod(pipeline_func)
+        return pipeline_func
 
     return wrapper
 
@@ -398,6 +402,8 @@ class Pipeline:
         serializer = Serializer()
         self._proto = serializer.serialize(self)
         self._sign = self._proto.signature
+        print("sign", self._sign)
+        print("Inputs", self.inputs)
 
     def signature(self):
         return self._sign
@@ -424,12 +430,12 @@ class Dataset(_Node):
     __fennel_original_cls__: Any
 
     def __init__(
-            self,
-            cls: F,
-            fields: List[Field],
-            retention: datetime.timedelta,
-            max_staleness: datetime.timedelta,
-            pull_fn: Optional[Callable] = None,
+        self,
+        cls: F,
+        fields: List[Field],
+        retention: datetime.timedelta,
+        max_staleness: datetime.timedelta,
+        pull_fn: Optional[Callable] = None,
     ):
         super().__init__()
         self.name = cls.__name__  # type: ignore
@@ -671,7 +677,7 @@ class Serializer(Visitor):
     def visit(self, obj):
         node_id = obj.signature()
         if node_id not in self.proto_by_node_id and not isinstance(
-                obj, Dataset
+            obj, Dataset
         ):
             ret = super(Serializer, self).visit(obj)
             self.nodes.append(ret)

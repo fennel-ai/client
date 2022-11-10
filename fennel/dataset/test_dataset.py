@@ -38,7 +38,7 @@ def test_SimpleDataset(grpc_stub):
         "datasetRequests": [
             {
                 "name": "UserInfoDataset",
-                "signature": "be97463e5a8eb09c87a55084dac59234",
+                "signature": "3cb848e839199cd8161e095dc1ebf536",
                 "fields": [
                     {
                         "name": "user_id",
@@ -99,7 +99,7 @@ def test_DatasetWithRetention(grpc_stub):
         "datasetRequests": [
             {
                 "name": "Activity",
-                "signature": "80a9e6e74588df2c425b67e9d40b046f",
+                "signature": "2ec6c8c90cc6df1b6eb0258a2bdc2b1c",
                 "fields": [
                     {
                         "name": "user_id",
@@ -138,7 +138,7 @@ def test_DatasetWithPull(grpc_stub):
 
         @staticmethod
         def pull(
-                user_id: pd.Series, names: pd.Series, timestamps: pd.Series
+            user_id: pd.Series, names: pd.Series, timestamps: pd.Series
         ) -> pd.DataFrame:
             user_list = user_id.tolist()
             names = names.tolist()
@@ -219,8 +219,8 @@ def test_DatasetWithPipes(grpc_stub):
         def pipeline1(a: Dataset, b: Dataset):
             return a.join(b, left_on=["a1"], right_on=["b1"])
 
-        @pipeline(A, B, C)
         @staticmethod
+        @pipeline(A, B, C)
         def pipeline2(a: Dataset, b: Dataset, c: Dataset):
             return c
 
@@ -282,9 +282,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
 
         @staticmethod
         @pipeline(Activity, UserInfoDataset)
-        def create_fraud_dataset(
-                activity: Dataset, user_info: Dataset
-        ):
+        def create_fraud_dataset(activity: Dataset, user_info: Dataset):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
                 df["metadata_dict"] = (
                     df["metadata"].apply(json.loads).apply(pd.Series)
@@ -342,43 +340,43 @@ def test_DatasetWithComplexPipe(grpc_stub):
         ],
         "pipelines": [
             {
-                "root": {"nodeId": "88f2ca3744539c938468ed3875aeced2"},
+                "root": {"nodeId": "028bc735f8009621f65812885e219b34"},
                 "nodes": [
                     {
                         "operator": {
                             "transform": {
                                 "node": {"dataset": {"name": "Activity"}}
                             },
-                            "id": "3ce7cd3364f302f5c84804e3834a6649",
+                            "id": "44fb25a177c0daa12b22a96e1d0b9b77",
                         }
                     },
                     {
                         "operator": {
                             "join": {
                                 "node": {
-                                    "nodeId": "3ce7cd3364f302f5c84804e3834a6649"
+                                    "nodeId": "44fb25a177c0daa12b22a96e1d0b9b77"
                                 },
                                 "dataset": {"name": "UserInfoDataset"},
                                 "on": {"user_id": "user_id"},
                             },
-                            "id": "86383e405dc4a9a638ca27b6444b9384",
+                            "id": "4839efdf9e0f3526ce9d222c09596b8a",
                         }
                     },
                     {
                         "operator": {
                             "transform": {
                                 "node": {
-                                    "nodeId": "86383e405dc4a9a638ca27b6444b9384"
+                                    "nodeId": "4839efdf9e0f3526ce9d222c09596b8a"
                                 }
                             },
-                            "id": "36374f97b2523d41e62df5bedd69de84",
+                            "id": "24089ee9611046fd829aebce51b9d3a2",
                         }
                     },
                     {
                         "operator": {
                             "aggregate": {
                                 "node": {
-                                    "nodeId": "36374f97b2523d41e62df5bedd69de84"
+                                    "nodeId": "24089ee9611046fd829aebce51b9d3a2"
                                 },
                                 "keys": ["merchant_id", "timestamp"],
                                 "aggregates": [
@@ -394,11 +392,11 @@ def test_DatasetWithComplexPipe(grpc_stub):
                                     },
                                 ],
                             },
-                            "id": "88f2ca3744539c938468ed3875aeced2",
+                            "id": "028bc735f8009621f65812885e219b34",
                         }
                     },
                 ],
-                "signature": "88f2ca3744539c938468ed3875aeced2",
+                "signature": "028bc735f8009621f65812885e219b34",
                 "inputs": [{"name": "Activity"}, {"name": "UserInfoDataset"}],
             }
         ],
@@ -465,7 +463,7 @@ def test_UnionDatasets(grpc_stub):
         ],
         "pipelines": [
             {
-                "root": {"nodeId": "03b6c4403eaec702c28449014c7b9099"},
+                "root": {"nodeId": "8afd27c0a99adea847df61e3b7bcab5e"},
                 "nodes": [
                     {
                         "operator": {
@@ -473,7 +471,7 @@ def test_UnionDatasets(grpc_stub):
                                 "node": {"dataset": {"name": "B"}},
                                 "timestampField": "t",
                             },
-                            "id": "7ed6f7376dfcc5de3f92f26a5231c9d4",
+                            "id": "2ab0c0f6f921e2362d17484f05a2a9a5",
                         }
                     },
                     {
@@ -482,30 +480,30 @@ def test_UnionDatasets(grpc_stub):
                                 "nodes": [
                                     {"dataset": {"name": "A"}},
                                     {
-                                        "nodeId": "7ed6f7376dfcc5de3f92f26a5231c9d4"
+                                        "nodeId": "2ab0c0f6f921e2362d17484f05a2a9a5"
                                     },
                                 ]
                             },
-                            "id": "03b6c4403eaec702c28449014c7b9099",
+                            "id": "8afd27c0a99adea847df61e3b7bcab5e",
                         }
                     },
                 ],
-                "signature": "03b6c4403eaec702c28449014c7b9099",
+                "signature": "8afd27c0a99adea847df61e3b7bcab5e",
                 "inputs": [{"name": "A"}, {"name": "B"}],
             },
             {
-                "root": {"nodeId": "e06da8d90a0bf45075191dd34e31c2f7"},
+                "root": {"nodeId": "bf50512eeb345ab02b8ad15d6b8c8c86"},
                 "nodes": [
                     {
                         "operator": {
                             "transform": {"node": {"dataset": {"name": "A"}}},
-                            "id": "d7fc6b5df9256b0db0bc8affb34d49af",
+                            "id": "62b55ed86a3147da80cc9f6533d804a7",
                         }
                     },
                     {
                         "operator": {
                             "transform": {"node": {"dataset": {"name": "A"}}},
-                            "id": "1b9bdd9c128aa5af52cab7ee67e1fc0a",
+                            "id": "7120ae27df71756bf09abf2c2a056711",
                         }
                     },
                     {
@@ -513,34 +511,34 @@ def test_UnionDatasets(grpc_stub):
                             "union": {
                                 "nodes": [
                                     {
-                                        "nodeId": "d7fc6b5df9256b0db0bc8affb34d49af"
+                                        "nodeId": "62b55ed86a3147da80cc9f6533d804a7"
                                     },
                                     {
-                                        "nodeId": "1b9bdd9c128aa5af52cab7ee67e1fc0a"
+                                        "nodeId": "7120ae27df71756bf09abf2c2a056711"
                                     },
                                 ]
                             },
-                            "id": "dff7e7ce7a347cf76d2fc090bb9923d9",
+                            "id": "88e9b9c78fe82996482c517d8a2d0cc8",
                         }
                     },
                     {
                         "operator": {
                             "transform": {
                                 "node": {
-                                    "nodeId": "dff7e7ce7a347cf76d2fc090bb9923d9"
+                                    "nodeId": "88e9b9c78fe82996482c517d8a2d0cc8"
                                 }
                             },
-                            "id": "7deb097e70beb5fa67fcbe334580ba16",
+                            "id": "2445ff121a8c4f3fcf55cc450a2d3e0b",
                         }
                     },
                     {
                         "operator": {
                             "transform": {
                                 "node": {
-                                    "nodeId": "dff7e7ce7a347cf76d2fc090bb9923d9"
+                                    "nodeId": "88e9b9c78fe82996482c517d8a2d0cc8"
                                 }
                             },
-                            "id": "c5c872b9e957f6ec0262e237b11ca81e",
+                            "id": "32256da42d662b0d99de4acdadc91818",
                         }
                     },
                     {
@@ -548,18 +546,18 @@ def test_UnionDatasets(grpc_stub):
                             "union": {
                                 "nodes": [
                                     {
-                                        "nodeId": "7deb097e70beb5fa67fcbe334580ba16"
+                                        "nodeId": "2445ff121a8c4f3fcf55cc450a2d3e0b"
                                     },
                                     {
-                                        "nodeId": "c5c872b9e957f6ec0262e237b11ca81e"
+                                        "nodeId": "32256da42d662b0d99de4acdadc91818"
                                     },
                                 ]
                             },
-                            "id": "e06da8d90a0bf45075191dd34e31c2f7",
+                            "id": "bf50512eeb345ab02b8ad15d6b8c8c86",
                         }
                     },
                 ],
-                "signature": "e06da8d90a0bf45075191dd34e31c2f7",
+                "signature": "bf50512eeb345ab02b8ad15d6b8c8c86",
                 "inputs": [{"name": "A"}],
             },
         ],
@@ -569,6 +567,7 @@ def test_UnionDatasets(grpc_stub):
         "pullLookup": {},
     }
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
+    print(dataset_req)
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request

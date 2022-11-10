@@ -8,8 +8,9 @@ import inspect
 import json
 import textwrap
 from typing import Any
-from typing import cast, Dict, List, Tuple, Union
+from typing import cast, Callable, Dict, List, Tuple, Union
 
+import astunparse  # type: ignore
 import cloudpickle
 
 from fennel.gen.status_pb2 import Status
@@ -45,6 +46,26 @@ def fennel_pickle(obj: Any) -> bytes:
     return cloudpickle.dumps(obj)
 
 
+class RemoveOffsetsTransformer(ast.NodeTransformer):
+    def generic_visit(self, node):
+        if hasattr(node, "lineno"):
+            node.lineno = 1
+        if hasattr(node, "col_offset"):
+            node.col_offset = 2
+        if hasattr(node, "end_lineno"):
+            node.end_lineno = 3
+        if hasattr(node, "end_col_offset"):
+            node.end_col_offset = 4
+        return super().generic_visit(node)
+
+
+def _fhash_callable(obj: Callable) -> str:
+    tree = ast.parse(textwrap.dedent(inspect.getsource(obj)))
+    new_tree = RemoveOffsetsTransformer().visit(tree)
+    ast_text = astunparse.unparse(new_tree)
+    return fhash(ast_text)
+
+
 def _json_default(item: Any):
     try:
         return dataclasses.asdict(item)
@@ -57,7 +78,7 @@ def _json_default(item: Any):
         return item.hex()
 
     if callable(item) and not inspect.isclass(item):
-        return hashlib.md5(inspect.getsource(item).encode("utf-8")).hexdigest()
+        return _fhash_callable(item)
 
     if isinstance(item, datetime.timedelta):
         return str(item.total_seconds())
@@ -96,12 +117,12 @@ def parse_annotation_comments(cls: Any) -> Dict[str, str]:
         if isinstance(class_def, ast.ClassDef):
             for stmt in class_def.body:
                 if isinstance(stmt, ast.AnnAssign) and isinstance(
-                        stmt.target, ast.Name
+                    stmt.target, ast.Name
                 ):
                     line = stmt.lineno - 2
                     comments: List[str] = []
                     while line >= 0 and source_lines[line].strip().startswith(
-                            "#"
+                        "#"
                     ):
                         comment = source_lines[line].strip().strip("#").strip()
                         comments.insert(0, comment)
