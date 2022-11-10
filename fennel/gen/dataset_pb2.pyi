@@ -194,53 +194,57 @@ class Pipeline(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    ROOT_FIELD_NUMBER: builtins.int
     NODES_FIELD_NUMBER: builtins.int
+    ROOT_FIELD_NUMBER: builtins.int
     SIGNATURE_FIELD_NUMBER: builtins.int
     INPUTS_FIELD_NUMBER: builtins.int
     @property
-    def root(self) -> global___Node: ...
-    @property
     def nodes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Node]:
-        """Sub Nodes that are used by the root node."""
+        """Nodes in the pipeline."""
+    root: builtins.str
+    """Id of the root node."""
     signature: builtins.str
     @property
-    def inputs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Dataset]: ...
+    def inputs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+        """List of input datasets."""
     def __init__(
         self,
         *,
-        root: global___Node | None = ...,
         nodes: collections.abc.Iterable[global___Node] | None = ...,
+        root: builtins.str = ...,
         signature: builtins.str = ...,
-        inputs: collections.abc.Iterable[global___Dataset] | None = ...,
+        inputs: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["root", b"root"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["inputs", b"inputs", "nodes", b"nodes", "root", b"root", "signature", b"signature"]) -> None: ...
 
 global___Pipeline = Pipeline
 
 @typing_extensions.final
 class Node(google.protobuf.message.Message):
+    """Each Node in the pipeline either refers to a dataset or an operator.
+    Each node also has a globally unique id. Operators refer to their inputs via
+    their corresponding node ids.
+    """
+
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    ID_FIELD_NUMBER: builtins.int
     OPERATOR_FIELD_NUMBER: builtins.int
-    DATASET_FIELD_NUMBER: builtins.int
-    NODE_ID_FIELD_NUMBER: builtins.int
+    DATASET_NAME_FIELD_NUMBER: builtins.int
+    id: builtins.str
     @property
     def operator(self) -> global___Operator: ...
-    @property
-    def dataset(self) -> global___Dataset: ...
-    node_id: builtins.str
+    dataset_name: builtins.str
     def __init__(
         self,
         *,
+        id: builtins.str = ...,
         operator: global___Operator | None = ...,
-        dataset: global___Dataset | None = ...,
-        node_id: builtins.str = ...,
+        dataset_name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "node", b"node", "node_id", b"node_id", "operator", b"operator"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "node", b"node", "node_id", b"node_id", "operator", b"operator"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["operator", "dataset", "node_id"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "node", b"node", "operator", b"operator"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "id", b"id", "node", b"node", "operator", b"operator"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["operator", "dataset_name"] | None: ...
 
 global___Node = Node
 
@@ -252,7 +256,6 @@ class Operator(google.protobuf.message.Message):
     JOIN_FIELD_NUMBER: builtins.int
     TRANSFORM_FIELD_NUMBER: builtins.int
     UNION_FIELD_NUMBER: builtins.int
-    ID_FIELD_NUMBER: builtins.int
     @property
     def aggregate(self) -> global___Aggregate: ...
     @property
@@ -261,7 +264,6 @@ class Operator(google.protobuf.message.Message):
     def transform(self) -> global___Transform: ...
     @property
     def union(self) -> global___Union: ...
-    id: builtins.str
     def __init__(
         self,
         *,
@@ -269,38 +271,21 @@ class Operator(google.protobuf.message.Message):
         join: global___Join | None = ...,
         transform: global___Transform | None = ...,
         union: global___Union | None = ...,
-        id: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "join", b"join", "node", b"node", "transform", b"transform", "union", b"union"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "id", b"id", "join", b"join", "node", b"node", "transform", b"transform", "union", b"union"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "join", b"join", "op", b"op", "transform", b"transform", "union", b"union"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "join", b"join", "op", b"op", "transform", b"transform", "union", b"union"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["op", b"op"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union"] | None: ...
 
 global___Operator = Operator
-
-@typing_extensions.final
-class Dataset(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    NAME_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    def __init__(
-        self,
-        *,
-        name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["name", b"name"]) -> None: ...
-
-global___Dataset = Dataset
 
 @typing_extensions.final
 class Aggregate(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    NODE_FIELD_NUMBER: builtins.int
+    OPERAND_NODE_ID_FIELD_NUMBER: builtins.int
     KEYS_FIELD_NUMBER: builtins.int
     AGGREGATES_FIELD_NUMBER: builtins.int
-    @property
-    def node(self) -> global___Node: ...
+    operand_node_id: builtins.str
     @property
     def keys(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
@@ -308,12 +293,11 @@ class Aggregate(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        node: global___Node | None = ...,
+        operand_node_id: builtins.str = ...,
         keys: collections.abc.Iterable[builtins.str] | None = ...,
         aggregates: collections.abc.Iterable[global___Aggregation] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["node", b"node"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aggregates", b"aggregates", "keys", b"keys", "node", b"node"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["aggregates", b"aggregates", "keys", b"keys", "operand_node_id", b"operand_node_id"]) -> None: ...
 
 global___Aggregate = Aggregate
 
@@ -337,25 +321,23 @@ class Join(google.protobuf.message.Message):
         ) -> None: ...
         def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
 
-    NODE_FIELD_NUMBER: builtins.int
-    DATASET_FIELD_NUMBER: builtins.int
+    LHS_NODE_ID_FIELD_NUMBER: builtins.int
+    RHS_DATASET_NAME_FIELD_NUMBER: builtins.int
     ON_FIELD_NUMBER: builtins.int
-    @property
-    def node(self) -> global___Node: ...
-    @property
-    def dataset(self) -> global___Dataset: ...
+    lhs_node_id: builtins.str
+    rhs_dataset_name: builtins.str
+    """RHS of a JOIN can only be a dataset."""
     @property
     def on(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]:
         """Map of left field name to right field name to join on."""
     def __init__(
         self,
         *,
-        node: global___Node | None = ...,
-        dataset: global___Dataset | None = ...,
+        lhs_node_id: builtins.str = ...,
+        rhs_dataset_name: builtins.str = ...,
         on: collections.abc.Mapping[builtins.str, builtins.str] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "node", b"node"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "node", b"node", "on", b"on"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["lhs_node_id", b"lhs_node_id", "on", b"on", "rhs_dataset_name", b"rhs_dataset_name"]) -> None: ...
 
 global___Join = Join
 
@@ -363,25 +345,23 @@ global___Join = Join
 class Transform(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    NODE_FIELD_NUMBER: builtins.int
+    OPERAND_NODE_ID_FIELD_NUMBER: builtins.int
     FUNCTION_FIELD_NUMBER: builtins.int
     FUNCTION_SOURCE_CODE_FIELD_NUMBER: builtins.int
     TIMESTAMP_FIELD_FIELD_NUMBER: builtins.int
-    @property
-    def node(self) -> global___Node: ...
+    operand_node_id: builtins.str
     function: builtins.bytes
     function_source_code: builtins.str
     timestamp_field: builtins.str
     def __init__(
         self,
         *,
-        node: global___Node | None = ...,
+        operand_node_id: builtins.str = ...,
         function: builtins.bytes = ...,
         function_source_code: builtins.str = ...,
         timestamp_field: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["node", b"node"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "function_source_code", b"function_source_code", "node", b"node", "timestamp_field", b"timestamp_field"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "function_source_code", b"function_source_code", "operand_node_id", b"operand_node_id", "timestamp_field", b"timestamp_field"]) -> None: ...
 
 global___Transform = Transform
 
@@ -389,15 +369,15 @@ global___Transform = Transform
 class Union(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    NODES_FIELD_NUMBER: builtins.int
+    OPERAND_NODE_IDS_FIELD_NUMBER: builtins.int
     @property
-    def nodes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Node]: ...
+    def operand_node_ids(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
-        nodes: collections.abc.Iterable[global___Node] | None = ...,
+        operand_node_ids: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["nodes", b"nodes"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["operand_node_ids", b"operand_node_ids"]) -> None: ...
 
 global___Union = Union
 

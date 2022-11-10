@@ -55,59 +55,58 @@ message CreateDatasetResponse{
 // Pipeline
 //----------------------------------------------------------------------------------------------
 
-message Pipeline{
-  Node root = 1;
-  // Sub Nodes that are used by the root node.
-  repeated Node nodes = 2;
+message Pipeline {
+  // Nodes in the pipeline.
+  repeated Node nodes = 1;
+  // Id of the root node.
+  string root = 2;
   string signature = 3;
-  repeated Dataset inputs = 4;
+  // List of input datasets.
+  repeated string inputs = 4;
 }
 
+// Each Node in the pipeline either refers to a dataset or an operator.
+// Each node also has a globally unique id. Operators refer to their inputs via
+// their corresponding node ids.
 message Node {
+  string id = 1;
   oneof node {
-    Operator operator = 1;
-    Dataset dataset = 2;
-    string node_id = 3;
+    Operator operator = 2;
+    string dataset_name = 3;
   }
 }
 
-message Operator  {
-  oneof node {
+message Operator {
+  oneof op {
     Aggregate aggregate = 1;
     Join join = 2;
     Transform transform = 3;
     Union union = 4;
   }
-  string id = 5;
-}
-
-message Dataset {
-  string name = 1;
 }
 
 message Aggregate {
-  Node node = 1;
+  string operand_node_id = 1;
   repeated string keys = 2;
   repeated Aggregation aggregates = 3;
 }
 
 message Join {
-  Node node = 1;
-  Dataset dataset = 2;
+  string lhs_node_id = 1;
+  // RHS of a JOIN can only be a dataset.
+  string rhs_dataset_name = 2;
   // Map of left field name to right field name to join on.
   map<string, string> on = 3;
 }
 
 message Transform {
-  Node node = 1;
+  string operand_node_id = 1;
   bytes function = 2;
   string function_source_code = 3;
   string timestamp_field = 4;
 }
 
-message Union {
-  repeated Node nodes = 1;
-}
+message Union {repeated string operand_node_ids = 1;}
 
 // ----------------------------------------------------------------------------
 // Aggregate Definitions

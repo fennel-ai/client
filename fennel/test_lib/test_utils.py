@@ -37,46 +37,12 @@ def clean_ds_func_src_code(
             return ds_proto.Node(
                 operator=ds_proto.Operator(
                     transform=ds_proto.Transform(
-                        node=cleanup_node(node.operator.transform.node),
+                        operand_node_id=node.operator.transform.operand_node_id,
                         timestamp_field=node.operator.transform.timestamp_field,
                     ),
-                    id=node.operator.id,
-                )
+                ),
+                id=node.id,
             )
-        elif node.HasField("operator") and node.operator.HasField("aggregate"):
-            return ds_proto.Node(
-                operator=ds_proto.Operator(
-                    aggregate=ds_proto.Aggregate(
-                        node=cleanup_node(node.operator.aggregate.node),
-                        keys=node.operator.aggregate.keys,
-                        aggregates=node.operator.aggregate.aggregates,
-                    ),
-                    id=node.operator.id,
-                )
-            )
-        elif node.HasField("operator") and node.operator.HasField("join"):
-            return ds_proto.Node(
-                operator=ds_proto.Operator(
-                    join=ds_proto.Join(
-                        node=cleanup_node(node.operator.join.node),
-                        dataset=node.operator.join.dataset,
-                        on=node.operator.join.on,
-                    ),
-                    id=node.operator.id,
-                )
-            )
-        elif node.HasField("operator") and node.operator.HasField("union"):
-            return ds_proto.Node(
-                operator=ds_proto.Operator(
-                    union=ds_proto.Union(
-                        nodes=[
-                            cleanup_node(n) for n in node.operator.union.nodes
-                        ]
-                    ),
-                    id=node.operator.id,
-                )
-            )
-
         return node
 
     dataset_req.pull_lookup.function_source_code = ""
@@ -85,7 +51,7 @@ def clean_ds_func_src_code(
     for j in range(len(dataset_req.pipelines)):
         pipelines.append(
             ds_proto.Pipeline(
-                root=cleanup_node(dataset_req.pipelines[j].root),
+                root=dataset_req.pipelines[j].root,
                 nodes=[cleanup_node(n) for n in dataset_req.pipelines[j].nodes],
                 signature=dataset_req.pipelines[j].signature,
                 inputs=dataset_req.pipelines[j].inputs,

@@ -238,26 +238,28 @@ def test_DatasetWithPipes(grpc_stub):
         ],
         "pipelines": [
             {
-                "root": {"nodeId": "816d3f87d7dc94cfb4c9d8513e0d9234"},
                 "nodes": [
+                    {"id": "A", "datasetName": "A"},
                     {
+                        "id": "816d3f87d7dc94cfb4c9d8513e0d9234",
                         "operator": {
                             "join": {
-                                "node": {"dataset": {"name": "A"}},
-                                "dataset": {"name": "B"},
+                                "lhsNodeId": "8c6102c438b5f28c1a77c662374cd4cc",
+                                "rhsDatasetName": "B",
                                 "on": {"a1": "b1"},
-                            },
-                            "id": "816d3f87d7dc94cfb4c9d8513e0d9234",
-                        }
-                    }
+                            }
+                        },
+                    },
                 ],
+                "root": "816d3f87d7dc94cfb4c9d8513e0d9234",
                 "signature": "816d3f87d7dc94cfb4c9d8513e0d9234",
-                "inputs": [{"name": "A"}, {"name": "B"}],
+                "inputs": ["A", "B"],
             },
             {
-                "root": {"dataset": {"name": "C"}},
-                "signature": "C",
-                "inputs": [{"name": "A"}, {"name": "B"}, {"name": "C"}],
+                "nodes": [{"id": "C", "datasetName": "C"}],
+                "root": "faf4433502c97da457c9498cf6c4673f",
+                "signature": "faf4433502c97da457c9498cf6c4673f",
+                "inputs": ["A", "B", "C"],
             },
         ],
         "mode": "pandas",
@@ -340,44 +342,39 @@ def test_DatasetWithComplexPipe(grpc_stub):
         ],
         "pipelines": [
             {
-                "root": {"nodeId": "028bc735f8009621f65812885e219b34"},
                 "nodes": [
+                    {"id": "Activity", "datasetName": "Activity"},
                     {
+                        "id": "44fb25a177c0daa12b22a96e1d0b9b77",
                         "operator": {
                             "transform": {
-                                "node": {"dataset": {"name": "Activity"}}
-                            },
-                            "id": "44fb25a177c0daa12b22a96e1d0b9b77",
-                        }
+                                "operandNodeId": "2ec6c8c90cc6df1b6eb0258a2bdc2b1c"
+                            }
+                        },
                     },
                     {
+                        "id": "4839efdf9e0f3526ce9d222c09596b8a",
                         "operator": {
                             "join": {
-                                "node": {
-                                    "nodeId": "44fb25a177c0daa12b22a96e1d0b9b77"
-                                },
-                                "dataset": {"name": "UserInfoDataset"},
+                                "lhsNodeId": "44fb25a177c0daa12b22a96e1d0b9b77",
+                                "rhsDatasetName": "UserInfoDataset",
                                 "on": {"user_id": "user_id"},
-                            },
-                            "id": "4839efdf9e0f3526ce9d222c09596b8a",
-                        }
+                            }
+                        },
                     },
                     {
+                        "id": "24089ee9611046fd829aebce51b9d3a2",
                         "operator": {
                             "transform": {
-                                "node": {
-                                    "nodeId": "4839efdf9e0f3526ce9d222c09596b8a"
-                                }
-                            },
-                            "id": "24089ee9611046fd829aebce51b9d3a2",
-                        }
+                                "operandNodeId": "4839efdf9e0f3526ce9d222c09596b8a"
+                            }
+                        },
                     },
                     {
+                        "id": "028bc735f8009621f65812885e219b34",
                         "operator": {
                             "aggregate": {
-                                "node": {
-                                    "nodeId": "24089ee9611046fd829aebce51b9d3a2"
-                                },
+                                "operandNodeId": "24089ee9611046fd829aebce51b9d3a2",
                                 "keys": ["merchant_id", "timestamp"],
                                 "aggregates": [
                                     {
@@ -391,13 +388,13 @@ def test_DatasetWithComplexPipe(grpc_stub):
                                         },
                                     },
                                 ],
-                            },
-                            "id": "028bc735f8009621f65812885e219b34",
-                        }
+                            }
+                        },
                     },
                 ],
+                "root": "028bc735f8009621f65812885e219b34",
                 "signature": "028bc735f8009621f65812885e219b34",
-                "inputs": [{"name": "Activity"}, {"name": "UserInfoDataset"}],
+                "inputs": ["Activity", "UserInfoDataset"],
             }
         ],
         "mode": "pandas",
@@ -463,102 +460,95 @@ def test_UnionDatasets(grpc_stub):
         ],
         "pipelines": [
             {
-                "root": {"nodeId": "8afd27c0a99adea847df61e3b7bcab5e"},
                 "nodes": [
+                    {"id": "A", "datasetName": "A"},
+                    {"id": "B", "datasetName": "B"},
                     {
+                        "id": "2ab0c0f6f921e2362d17484f05a2a9a5",
                         "operator": {
                             "transform": {
-                                "node": {"dataset": {"name": "B"}},
+                                "operandNodeId": "f423fb8892c67133917d9aedd1616aeb",
                                 "timestampField": "t",
-                            },
-                            "id": "2ab0c0f6f921e2362d17484f05a2a9a5",
-                        }
+                            }
+                        },
                     },
                     {
+                        "id": "8afd27c0a99adea847df61e3b7bcab5e",
                         "operator": {
                             "union": {
-                                "nodes": [
-                                    {"dataset": {"name": "A"}},
-                                    {
-                                        "nodeId": "2ab0c0f6f921e2362d17484f05a2a9a5"
-                                    },
+                                "operandNodeIds": [
+                                    "8c6102c438b5f28c1a77c662374cd4cc",
+                                    "2ab0c0f6f921e2362d17484f05a2a9a5",
                                 ]
-                            },
-                            "id": "8afd27c0a99adea847df61e3b7bcab5e",
-                        }
+                            }
+                        },
                     },
                 ],
+                "root": "8afd27c0a99adea847df61e3b7bcab5e",
                 "signature": "8afd27c0a99adea847df61e3b7bcab5e",
-                "inputs": [{"name": "A"}, {"name": "B"}],
+                "inputs": ["A", "B"],
             },
             {
-                "root": {"nodeId": "bf50512eeb345ab02b8ad15d6b8c8c86"},
                 "nodes": [
+                    {"id": "A", "datasetName": "A"},
                     {
-                        "operator": {
-                            "transform": {"node": {"dataset": {"name": "A"}}},
-                            "id": "62b55ed86a3147da80cc9f6533d804a7",
-                        }
-                    },
-                    {
-                        "operator": {
-                            "transform": {"node": {"dataset": {"name": "A"}}},
-                            "id": "7120ae27df71756bf09abf2c2a056711",
-                        }
-                    },
-                    {
-                        "operator": {
-                            "union": {
-                                "nodes": [
-                                    {
-                                        "nodeId": "62b55ed86a3147da80cc9f6533d804a7"
-                                    },
-                                    {
-                                        "nodeId": "7120ae27df71756bf09abf2c2a056711"
-                                    },
-                                ]
-                            },
-                            "id": "88e9b9c78fe82996482c517d8a2d0cc8",
-                        }
-                    },
-                    {
+                        "id": "62b55ed86a3147da80cc9f6533d804a7",
                         "operator": {
                             "transform": {
-                                "node": {
-                                    "nodeId": "88e9b9c78fe82996482c517d8a2d0cc8"
-                                }
-                            },
-                            "id": "2445ff121a8c4f3fcf55cc450a2d3e0b",
-                        }
+                                "operandNodeId": "8c6102c438b5f28c1a77c662374cd4cc"
+                            }
+                        },
                     },
                     {
+                        "id": "7120ae27df71756bf09abf2c2a056711",
                         "operator": {
                             "transform": {
-                                "node": {
-                                    "nodeId": "88e9b9c78fe82996482c517d8a2d0cc8"
-                                }
-                            },
-                            "id": "32256da42d662b0d99de4acdadc91818",
-                        }
+                                "operandNodeId": "8c6102c438b5f28c1a77c662374cd4cc"
+                            }
+                        },
                     },
                     {
+                        "id": "88e9b9c78fe82996482c517d8a2d0cc8",
                         "operator": {
                             "union": {
-                                "nodes": [
-                                    {
-                                        "nodeId": "2445ff121a8c4f3fcf55cc450a2d3e0b"
-                                    },
-                                    {
-                                        "nodeId": "32256da42d662b0d99de4acdadc91818"
-                                    },
+                                "operandNodeIds": [
+                                    "62b55ed86a3147da80cc9f6533d804a7",
+                                    "7120ae27df71756bf09abf2c2a056711",
                                 ]
-                            },
-                            "id": "bf50512eeb345ab02b8ad15d6b8c8c86",
-                        }
+                            }
+                        },
+                    },
+                    {
+                        "id": "2445ff121a8c4f3fcf55cc450a2d3e0b",
+                        "operator": {
+                            "transform": {
+                                "operandNodeId": "88e9b9c78fe82996482c517d8a2d0cc8"
+                            }
+                        },
+                    },
+                    {
+                        "id": "32256da42d662b0d99de4acdadc91818",
+                        "operator": {
+                            "transform": {
+                                "operandNodeId": "88e9b9c78fe82996482c517d8a2d0cc8"
+                            }
+                        },
+                    },
+                    {
+                        "id": "bf50512eeb345ab02b8ad15d6b8c8c86",
+                        "operator": {
+                            "union": {
+                                "operandNodeIds": [
+                                    "2445ff121a8c4f3fcf55cc450a2d3e0b",
+                                    "32256da42d662b0d99de4acdadc91818",
+                                ]
+                            }
+                        },
                     },
                 ],
+                "root": "bf50512eeb345ab02b8ad15d6b8c8c86",
                 "signature": "bf50512eeb345ab02b8ad15d6b8c8c86",
-                "inputs": [{"name": "A"}],
+                "inputs": ["A"],
             },
         ],
         "mode": "pandas",
@@ -567,7 +557,6 @@ def test_UnionDatasets(grpc_stub):
         "pullLookup": {},
     }
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
-    print(dataset_req)
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
