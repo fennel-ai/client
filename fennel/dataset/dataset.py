@@ -14,8 +14,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    TYPE_CHECKING,
-    no_type_check,
+    overload
 )
 
 import cloudpickle
@@ -82,10 +81,10 @@ class Field:
 
 
 def get_field(
-    cls: Type[T],
-    annotation_name: str,
-    dtype: Type,
-    field2comment_map: Dict[str, str],
+        cls: F,
+        annotation_name: str,
+        dtype: Type,
+        field2comment_map: Dict[str, str],
 ) -> Field:
     if "." in annotation_name:
         raise ValueError(
@@ -113,10 +112,10 @@ def get_field(
 
 
 def field(
-    key: bool = False,
-    timestamp: bool = False,
-    description: str = "",
-    owner: str = "",
+        key: bool = False,
+        timestamp: bool = False,
+        description: str = "",
+        owner: str = "",
 ) -> F:
     return cast(
         F,
@@ -143,7 +142,7 @@ class _Node:
         self.out_edges = []
 
     def transform(
-        self, func: Callable, timestamp: Optional[str] = None
+            self, func: Callable, timestamp: Optional[str] = None
     ) -> _Node:
         return _Transform(self, func, timestamp)
 
@@ -151,11 +150,11 @@ class _Node:
         return _GroupBy(self, *args)
 
     def join(
-        self,
-        other: Dataset,
-        on: Optional[List[str]] = None,
-        left_on: Optional[List[str]] = None,
-        right_on: Optional[List[str]] = None,
+            self,
+            other: Dataset,
+            on: Optional[List[str]] = None,
+            left_on: Optional[List[str]] = None,
+            right_on: Optional[List[str]] = None,
     ) -> _Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError("Cannot join with an intermediate dataset")
@@ -189,7 +188,7 @@ class _Transform(_Node):
 
 class _Aggregate(_Node):
     def __init__(
-        self, node: _Node, keys: List[str], aggregates: List[AggregateType]
+            self, node: _Node, keys: List[str], aggregates: List[AggregateType]
     ):
         super().__init__()
         if len(keys) == 0:
@@ -219,12 +218,12 @@ class _GroupBy:
 
 class _Join(_Node):
     def __init__(
-        self,
-        node: _Node,
-        dataset: Dataset,
-        on: Optional[List[str]] = None,
-        left_on: Optional[List[str]] = None,
-        right_on: Optional[List[str]] = None,
+            self,
+            node: _Node,
+            dataset: Dataset,
+            on: Optional[List[str]] = None,
+            left_on: Optional[List[str]] = None,
+            right_on: Optional[List[str]] = None,
     ):
         super().__init__()
         self.node = node
@@ -280,8 +279,25 @@ class _Union(_Node):
 # dataset & pipeline decorators
 # ---------------------------------------------------------------------
 
+@overload
+def dataset(
+        *,
+        retention: Optional[Duration] = DEFAULT_RETENTION,
+        max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
+) -> Callable[[Type[F]], Dataset]:
+    ...
 
-class dataset:
+
+@overload
+def dataset(cls: Type[F]) -> Dataset:
+    ...
+
+
+def dataset(
+        cls: Optional[Type[F]] = None,
+        retention: Optional[Duration] = DEFAULT_RETENTION,
+        max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
+) -> Union[Callable[[Type[F]], Dataset], Dataset]:
     """
     dataset is a decorator that creates a Dataset class.
     A dataset class contains the schema of the dataset, an optional pull
@@ -295,43 +311,10 @@ class dataset:
         The maximum amount of time that data in the dataset can be stale.
     """
 
-    def __new__(
-        cls, dataset_cls: Optional[Type[T]] = None, *args: Any, **kwargs: Any
-    ):
-        """This is called when dataset is called without parens."""
-        if dataset_cls is None:
-            # We're called as @dataset(*args, *kwargs).
-            return super().__new__(cls)
-        # We're called as @dataset without parens.
-        return dataset._create_dataset(
-            cast(Type[T], dataset_cls), *args, **kwargs
-        )
-
-    def __init__(
-        self,
-        retention: Any = DEFAULT_RETENTION,
-        max_staleness: Any = DEFAULT_MAX_STALENESS,
-    ):
-        """
-        This is called to instantiate a dataset that is called with parens.
-        """
-        self._retention = retention
-        self._max_staleness = max_staleness
-
-    def __call__(self, dataset_cls: Type) -> T:
-        """This is called when dataset is called with parens."""
-        return cast(
-            T,
-            dataset._create_dataset(
-                dataset_cls, self._retention, self._max_staleness
-            ),
-        )
-
-    @staticmethod
     def _create_dataset(
-        dataset_cls: Type[T],
-        retention: Duration = DEFAULT_RETENTION,
-        max_staleness: Duration = DEFAULT_MAX_STALENESS,
+            dataset_cls: Type[F],
+            retention: Duration,
+            max_staleness: Duration,
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
         fields = [
@@ -353,33 +336,49 @@ class dataset:
             pull_fn=pull_fn,
         )
 
+    def wrap(c: Type[F]) -> Dataset:
+        return _create_dataset(c, cast(Duration, retention),
+            cast(Duration, max_staleness))
+
+    if cls is None:
+        # We're being called as @dataset()
+        return wrap
+    cls = cast(Type[F], cls)
+    # @dataset decorator was used without arguments
+    return wrap(cls)
+
 
 # Handle mypy type check for static functions.
-if TYPE_CHECKING:
-    pipeline = staticmethod
-else:
+def pipeline(*params: Dataset) -> Callable[
+    [Callable[..., Any]], staticmethod[Any]]:
+    for param in params:
+        if callable(param):
+            raise Exception("pipeline must take atleast one Dataset.")
+        if not isinstance(param, Dataset):
+            raise TypeError(
+                "pipeline parameters must be Dataset instances."
+            )
 
-    def pipeline(pipeline_func: Callable) -> staticmethod:
+    def wrapper(pipeline_func: Callable) -> staticmethod:
         if not callable(pipeline_func):
             raise TypeError("pipeline functions must be callable.")
-        pipeline_func = no_type_check(pipeline_func)
         sig = inspect.signature(pipeline_func)
-        params = []
         for name, param in sig.parameters.items():
             if param.name == "self":
                 raise TypeError(
                     "pipeline functions cannot have self as a parameter"
                     " and are like static methods."
                 )
-            if not isinstance(param.annotation, Dataset):
+            if param.annotation != Dataset:
                 raise TypeError(f"Parameter {name} is not a Dataset.")
-            params.append(param.annotation)
         setattr(
             pipeline_func,
             "__fennel_pipeline__",
-            Pipeline(node=pipeline_func(*params), inputs=params),
+            Pipeline(node=pipeline_func(*params), inputs=list(params)),
         )
         return staticmethod(pipeline_func)
+
+    return wrapper
 
 
 # ---------------------------------------------------------------------
@@ -389,7 +388,7 @@ else:
 
 class Pipeline:
     node: _Node
-    inputs: List["Dataset"]
+    inputs: List[Dataset]
     _sign: str
     _proto: proto.Pipeline
 
@@ -425,12 +424,12 @@ class Dataset(_Node):
     __fennel_original_cls__: Any
 
     def __init__(
-        self,
-        cls: Type[T],
-        fields: List[Field],
-        retention: datetime.timedelta,
-        max_staleness: datetime.timedelta,
-        pull_fn: Optional[Callable] = None,
+            self,
+            cls: F,
+            fields: List[Field],
+            retention: datetime.timedelta,
+            max_staleness: datetime.timedelta,
+            pull_fn: Optional[Callable] = None,
     ):
         super().__init__()
         self.name = cls.__name__  # type: ignore
@@ -672,7 +671,7 @@ class Serializer(Visitor):
     def visit(self, obj):
         node_id = obj.signature()
         if node_id not in self.proto_by_node_id and not isinstance(
-            obj, Dataset
+                obj, Dataset
         ):
             ret = super(Serializer, self).visit(obj)
             self.nodes.append(ret)

@@ -11,7 +11,7 @@ from fennel.dataset import Dataset
 from fennel.featureset import Featureset
 from fennel.utils import check_response
 
-REST_API_VERSION = "/v1"
+REST_API_VERSION = "/api/v1"
 
 # Connection timeout i.e. the time spent by the client to establish a connection to the remote machine.
 #
@@ -66,7 +66,8 @@ class Client:
         )
 
     def sync(
-        self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
+            self, datasets: List[Dataset] = [],
+            featuresets: List[Featureset] = []
     ):
         for dataset in datasets:
             self.add(dataset)
@@ -81,13 +82,13 @@ class Client:
         req = {"dataset": dataset_name, "data": data.to_json(orient="records")}
         response = self.http.post(self._url("log"), json=req)
         check_response(response)
-
+        
     def extract_features(
-        self,
-        input_feature_list: List[str],
-        output_feature_list: List[str],
-        input_df: pd.DataFrame,
-        timestamps: Optional[pd.Series] = None,
+            self,
+            input_feature_list: List[str],
+            output_feature_list: List[str],
+            input_df: pd.DataFrame,
+            timestamps: Optional[pd.Series] = None,
     ) -> pd.DataFrame:
         """Extract features from a dataframe."""
         ts = []

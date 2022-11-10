@@ -1,5 +1,4 @@
 import json
-import typing
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -8,7 +7,7 @@ import requests  # type: ignore
 from google.protobuf.json_format import ParseDict
 
 import fennel.gen.dataset_pb2 as proto
-from fennel.dataset import dataset, pipeline, field
+from fennel.dataset import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
 from fennel.lib.window import Window
@@ -139,7 +138,7 @@ def test_DatasetWithPull(grpc_stub):
 
         @staticmethod
         def pull(
-            user_id: pd.Series, names: pd.Series, timestamps: pd.Series
+                user_id: pd.Series, names: pd.Series, timestamps: pd.Series
         ) -> pd.DataFrame:
             user_list = user_id.tolist()
             names = names.tolist()
@@ -215,12 +214,14 @@ def test_DatasetWithPipes(grpc_stub):
         c: int
         d: datetime
 
-        @pipeline
-        def pipeline1(a: A, b: B):
-            return a.join(b, left_on=["a1"], right_on=["b1"])  # type: ignore
+        @staticmethod
+        @pipeline(A, B)
+        def pipeline1(a: Dataset, b: Dataset):
+            return a.join(b, left_on=["a1"], right_on=["b1"])
 
-        @pipeline
-        def pipeline2(a: A, b: B, c: C):
+        @pipeline(A, B, C)
+        @staticmethod
+        def pipeline2(a: Dataset, b: Dataset, c: Dataset):
             return c
 
     view = InternalTestView(grpc_stub)
@@ -279,10 +280,10 @@ def test_DatasetWithComplexPipe(grpc_stub):
         num_merchant_fraudulent_transactions: int
         num_merchant_fraudulent_transactions_7d: int
 
-        @pipeline
-        @typing.no_type_check
+        @staticmethod
+        @pipeline(Activity, UserInfoDataset)
         def create_fraud_dataset(
-            activity: Activity, user_info: UserInfoDataset
+                activity: Dataset, user_info: Dataset
         ):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
                 df["metadata_dict"] = (
@@ -313,8 +314,8 @@ def test_DatasetWithComplexPipe(grpc_stub):
                 user_info,
                 on=["user_id"],
             )
-            ds = ds.transform(extract_info)
-            return ds.groupby("merchant_id", "timestamp").aggregate(
+            ds_transform = ds.transform(extract_info)
+            return ds_transform.groupby("merchant_id", "timestamp").aggregate(
                 [
                     Count(
                         window=Window(),
@@ -431,9 +432,9 @@ def test_UnionDatasets(grpc_stub):
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline
-        @typing.no_type_check
-        def pipeline1(a: A, b: B):
+        @staticmethod
+        @pipeline(A, B)
+        def pipeline1(a: Dataset, b: Dataset):
             def convert(df: pd.DataFrame) -> pd.DataFrame:
                 df["a1"] = df["b1"]
                 df["a1"] = df["a1"].astype(int) * 2
@@ -442,9 +443,9 @@ def test_UnionDatasets(grpc_stub):
 
             return a + b.transform(convert, timestamp="t")
 
-        @pipeline
-        @typing.no_type_check
-        def pipeline2_diamond(a: A):
+        @staticmethod
+        @pipeline(A)
+        def pipeline2_diamond(a: Dataset):
             b = a.transform(lambda df: df)
             c = a.transform(lambda df: df * 2)
             d = b + c
