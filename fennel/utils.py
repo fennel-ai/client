@@ -19,7 +19,7 @@ Tags = Union[List[str], Tuple[str, ...], str]
 
 def check_response(response: Status):
     """Check the response from the server and raise an exception if the response is not OK"""
-    if response.code != 0:
+    if response.code != 200:
         raise Exception(response.message)
 
 
@@ -96,12 +96,12 @@ def parse_annotation_comments(cls: Any) -> Dict[str, str]:
         if isinstance(class_def, ast.ClassDef):
             for stmt in class_def.body:
                 if isinstance(stmt, ast.AnnAssign) and isinstance(
-                    stmt.target, ast.Name
+                        stmt.target, ast.Name
                 ):
                     line = stmt.lineno - 2
                     comments: List[str] = []
                     while line >= 0 and source_lines[line].strip().startswith(
-                        "#"
+                            "#"
                     ):
                         comment = source_lines[line].strip().strip("#").strip()
                         comments.insert(0, comment)

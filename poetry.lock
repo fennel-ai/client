@@ -10,6 +10,14 @@ python-versions = ">=3.6"
 python-dateutil = ">=2.7.0"
 
 [[package]]
+name = "astpretty"
+version = "3.0.0"
+description = "Pretty print the output of python stdlib `ast.parse`."
+category = "main"
+optional = false
+python-versions = ">=3.8"
+
+[[package]]
 name = "attrs"
 version = "22.1.0"
 description = "Classes Without Boilerplate"
@@ -469,10 +477,11 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "9245a62f674effa82d67ccae853413264d5ebd9699afb21f1d76d591dc40d0f8"
+content-hash = "73494292346dc9d4f744cd3a9ad433b47d74272419681867bc7aedb20c1526f7"
 
 [metadata.files]
 arrow = []
+astpretty = []
 attrs = []
 black = [
     {file = "black-22.8.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ce957f1d6b78a8a231b18e0dd2d94a33d2ba738cd88a7fe64f53f659eea49fdd"},
