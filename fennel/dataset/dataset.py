@@ -402,8 +402,6 @@ class Pipeline:
         serializer = Serializer()
         self._proto = serializer.serialize(self)
         self._sign = self._proto.signature
-        print("sign", self._sign)
-        print("Inputs", self.inputs)
 
     def signature(self):
         return self._sign
@@ -655,65 +653,49 @@ class Serializer(Visitor):
         self.proto_by_node_id = {}
         self.nodes = []
 
-    def _get_rootnode_id(self, node):
-        if node.HasField("node_id"):
-            return node.node_id
-        elif node.HasField("dataset"):
-            return node.dataset.name
-        elif node.HasField("operator"):
-            return node.operator.id
-        raise Exception("invalid node type")
-
     def serialize(self, pipe: Pipeline):
-        last = self.visit(pipe.node)
-
+        root_id = self.visit(pipe.node)
         return proto.Pipeline(
-            root=last,
+            root=root_id,
             nodes=self.nodes,
-            inputs=[proto.Dataset(name=i.name) for i in pipe.inputs],
-            signature=self._get_rootnode_id(last),
+            inputs=[i.name for i in pipe.inputs],
+            signature=root_id,
         )
 
-    def visit(self, obj):
+    def visit(self, obj) -> str:
         node_id = obj.signature()
-        if node_id not in self.proto_by_node_id and not isinstance(
-            obj, Dataset
-        ):
+        if node_id not in self.proto_by_node_id:
             ret = super(Serializer, self).visit(obj)
             self.nodes.append(ret)
             self.proto_by_node_id[node_id] = ret
-        if isinstance(obj, Dataset):
-            return proto.Node(dataset=proto.Dataset(name=obj.name))
-        return proto.Node(node_id=node_id)
+        return node_id
 
     def visitDataset(self, obj):
-        return proto.Node(
-            dataset=proto.Dataset(name=obj.name),
-        )
+        return proto.Node(dataset_name=obj.name, id=obj.name)
 
     def visitTransform(self, obj):
         return proto.Node(
             operator=proto.Operator(
                 transform=proto.Transform(
-                    node=self.visit(obj.node),
+                    operand_node_id=self.visit(obj.node),
                     function=cloudpickle.dumps(obj.func),
                     function_source_code=inspect.getsource(obj.func),
                     timestamp_field=obj.timestamp_field,
                 ),
-                id=obj.signature(),
             ),
+            id=obj.signature(),
         )
 
     def visitAggregate(self, obj):
         return proto.Node(
             operator=proto.Operator(
                 aggregate=proto.Aggregate(
-                    node=self.visit(obj.node),
+                    operand_node_id=self.visit(obj.node),
                     keys=obj.keys,
                     aggregates=[agg.to_proto() for agg in obj.aggregates],
                 ),
-                id=obj.signature(),
             ),
+            id=obj.signature(),
         )
 
     def visitJoin(self, obj):
@@ -725,20 +707,20 @@ class Serializer(Visitor):
         return proto.Node(
             operator=proto.Operator(
                 join=proto.Join(
-                    node=self.visit(obj.node),
-                    dataset=proto.Dataset(name=obj.dataset.name),
+                    lhs_node_id=self.visit(obj.node),
+                    rhs_dataset_name=obj.dataset.name,
                     on=on,
                 ),
-                id=obj.signature(),
             ),
+            id=obj.signature(),
         )
 
     def visitUnion(self, obj):
         return proto.Node(
             operator=proto.Operator(
                 union=proto.Union(
-                    nodes=[self.visit(node) for node in obj.nodes]
+                    operand_node_ids=[self.visit(node) for node in obj.nodes]
                 ),
-                id=obj.signature(),
             ),
+            id=obj.signature(),
         )
