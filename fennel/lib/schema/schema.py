@@ -16,6 +16,16 @@ def _get_origin(type_: Any) -> Any:
     return getattr(type_, "__origin__", None)
 
 
+def _is_optional(field):
+    return _get_origin(field) is Union and type(None) in _get_args(field)
+
+
+def dtype_to_string(type_: Any) -> str:
+    if _is_optional(type_):
+        return f"Optional[{dtype_to_string(_get_args(type_)[0])}]"
+    return str(type_)
+
+
 def get_pyarrow_field(name: str, type_: Any) -> pa.lib.Field:
     """Convert a field name and python type to a pa field."""
     # typing.Optional[x] is an alias for typing.Union[x, None]

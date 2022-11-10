@@ -18,6 +18,17 @@ optional = false
 python-versions = ">=3.8"
 
 [[package]]
+name = "astunparse"
+version = "1.6.3"
+description = "An AST unparser for Python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+six = ">=1.6.1,<2.0"
+
+[[package]]
 name = "attrs"
 version = "22.1.0"
 description = "Classes Without Boilerplate"
@@ -477,11 +488,12 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "73494292346dc9d4f744cd3a9ad433b47d74272419681867bc7aedb20c1526f7"
+content-hash = "619ed624bf1b5b7c051127ea45ba16e7ad8c26640a7f0836d72e72b9acd6df90"
 
 [metadata.files]
 arrow = []
 astpretty = []
+astunparse = []
 attrs = []
 black = [
     {file = "black-22.8.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ce957f1d6b78a8a231b18e0dd2d94a33d2ba738cd88a7fe64f53f659eea49fdd"},

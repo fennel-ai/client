@@ -65,7 +65,7 @@ def test_SimpleSource(grpc_stub):
                         },
                     }
                 ],
-                "signature": "be97463e5a8eb09c87a55084dac59234",
+                "signature": "3cb848e839199cd8161e095dc1ebf536",
                 "mode": "pandas",
                 "retention": "63072000000000",
                 "maxStaleness": "2592000000000",
@@ -103,7 +103,7 @@ def test_SimpleSource(grpc_stub):
     ].name = "UserInfoDatasetInvertedOrder"
     expected_sync_request.dataset_requests[
         0
-    ].signature = "41e8c0a165f169fb43281b326ed223c3"
+    ].signature = "24e470412bdf36d2da4127440ba729d3"
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )

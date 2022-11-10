@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: [ "3.8", "3.9", "3.10" ]
+        python-version: ["3.7", "3.8", "3.9", "3.10" ]
 
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
