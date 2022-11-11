@@ -19,18 +19,63 @@ mysql = MySQL(
 
 
 def test_SimpleSource(grpc_stub):
-    @source(mysql, every="1h")
-    @dataset
-    class UserInfoDataset:
-        user_id: int = field(key=True)
-        name: str
-        gender: str
-        # Users date of birth
-        dob: str
-        age: int
-        account_creation_date: datetime
-        country: Optional[str]
-        timestamp: datetime = field(timestamp=True)
+    with pytest.raises(TypeError) as e:
+
+        @source(mysql.table("user"), every="1h")
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+    assert str(e.value).endswith(
+        "table() missing 1 required positional argument: 'cursor_field'"
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @source(mysql, every="1h")
+        @dataset
+        class UserInfoDataset2:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+    assert (
+        str(e.value)
+        == "mysql does not specify required fields table, cursor_field."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @source(mysql.table(cursor_field="xyz"), every="1h")
+        @dataset
+        class UserInfoDataset3:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+    assert str(e.value).endswith(
+        "table() missing 1 required positional argument: 'table_name'"
+    )
 
 
 s3 = S3(
@@ -44,7 +89,7 @@ s3 = S3(
 )
 
 
-def test_MultipleSources(grpc_stub):
+def test_InvalidS3Source(grpc_stub):
     with pytest.raises(AttributeError) as e:
 
         @source(s3.table("user"), every="1h")
@@ -60,7 +105,7 @@ def test_MultipleSources(grpc_stub):
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-        view = InternalTestView(grpc_stub)
+        view = InternalTestClient(grpc_stub)
         view.add(UserInfoDataset)
         sync_request = view.to_proto()
         assert len(sync_request.dataset_requests) == 1

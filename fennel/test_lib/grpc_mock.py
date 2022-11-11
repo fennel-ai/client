@@ -16,7 +16,7 @@ from fennel.gen.services_pb2_grpc import (
     FennelFeatureStoreStub,
 )
 from fennel.gen.status_pb2 import Status
-from fennel.test_lib.test_workspace import ClientTestWorkspace
+from fennel.test_lib.test_client import ClientTestClient
 
 
 # noinspection PyUnresolvedReferences
@@ -95,7 +95,7 @@ class workspace:
                             self.feature_mock_method(), self.feature_mock
                         )
                         stub = FennelFeatureStoreStub(channel)
-                        workspace = ClientTestWorkspace(stub)
+                        workspace = ClientTestClient(stub)
                         return func(*args, **kwargs, workspace=workspace)
             self.server.stop(None)
 

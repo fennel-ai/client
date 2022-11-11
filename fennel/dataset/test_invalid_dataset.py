@@ -22,7 +22,7 @@ def test_MultipleDateTime(grpc_stub):
             country: Optional[str]
             timestamp: datetime
 
-    _ = InternalTestView(grpc_stub)
+    _ = InternalTestClient(grpc_stub)
     assert str(e.value) == "Multiple timestamp fields are not supported."
 
 

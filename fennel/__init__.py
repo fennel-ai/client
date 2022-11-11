@@ -1,6 +1,6 @@
-# from fennel.aggregate import *
-# from fennel.feature import *
-# from fennel.lib import *
-# from fennel.lib.schema import *
-# from fennel.stream import *
-# from fennel.test_lib import *
+import fennel.client
+import fennel.sources
+from fennel.dataset import dataset, field, pipeline, Dataset
+from fennel.featureset import featureset, feature, extractor, depends_on
+from fennel.lib.aggregate import Count, Sum, Max, Min, Average, TopK, CF
+from fennel.lib.window import Window

@@ -11,13 +11,28 @@ from fennel.lib.duration import Duration, duration_to_micros
 T = TypeVar("T")
 SOURCE_FIELD = "__fennel_data_sources__"
 SINK_FIELD = "__fennel_data_sinks__"
+DEFAULT_EVERY = "30m"
+
+
+# ------------------------------------------------------------------------------
+# source & sink decorators
+# ------------------------------------------------------------------------------
 
 
 def source(
     conn: DataConnector, every: Optional[Duration] = None
 ) -> Callable[[T], Any]:
+    if not isinstance(conn, DataConnector):
+        if not isinstance(conn, DataSource):
+            raise TypeError("Expected a DataSource, found %s" % type(conn))
+        raise TypeError(
+            f"{conn.name} does not specify required fields "
+            f"{', '.join(conn.required_fields())}."
+        )
+
     def decorator(dataset_cls: T):
-        conn.every = every
+        if every is not None:
+            conn.every = every
         if hasattr(dataset_cls, SOURCE_FIELD):
             connectors = getattr(dataset_cls, SOURCE_FIELD)
             connectors.append(conn)
@@ -33,7 +48,8 @@ def sink(
     conn: DataConnector, every: Optional[Duration] = None
 ) -> Callable[[T], Any]:
     def decorator(dataset_cls: T):
-        conn.every = every
+        if every is not None:
+            conn.every = every
         if hasattr(dataset_cls, SINK_FIELD):
             connectors = getattr(dataset_cls, SINK_FIELD)
             connectors.append(conn)
@@ -45,10 +61,18 @@ def sink(
     return decorator
 
 
-class DataConnector(BaseModel):
+# ------------------------------------------------------------------------------
+# DataSources
+# ------------------------------------------------------------------------------
+
+
+class DataSource(BaseModel):
+    """DataSources are used to define the source of data for a dataset. They
+    primarily contain the credentials for the source and can typically contain
+    multiple tables/physical datasets. DataSources can also be defined
+    through the console and are identified by a unique name."""
+
     name: str
-    table_name: Optional[str] = None
-    every: Optional[Duration] = None
 
     def __post_init__(self):
         exceptions = self._validate()
@@ -59,26 +83,13 @@ class DataConnector(BaseModel):
         return str(self.__class__.__name__)
 
     def _validate(self) -> List[Exception]:
-        exceptions = []
-        if self.table_name is not None and self.support_single_stream():
-            exceptions.append(
-                Exception(
-                    "table must be None since it supports only a single stream"
-                )
-            )
-        elif self.table_name is None and not self.support_single_stream():
-            exceptions.append(
-                Exception(
-                    "table must be provided since it supports multiple streams/tables"
-                )
-            )
-        return exceptions
+        raise NotImplementedError()
 
-    def support_single_stream(self):
-        return False
+    def required_fields(self) -> List[str]:
+        raise NotImplementedError()
 
 
-class SQLSource(DataConnector):
+class SQLSource(DataSource):
     host: str
     db_name: str
     username: str
@@ -86,7 +97,7 @@ class SQLSource(DataConnector):
     jdbc_params: Optional[str] = None
 
     def _validate(self) -> List[Exception]:
-        exceptions = super()._validate()
+        exceptions: List[Exception] = []
         if not isinstance(self.host, str):
             exceptions.append(TypeError("host must be a string"))
         if not isinstance(self.db_name, str):
@@ -101,46 +112,28 @@ class SQLSource(DataConnector):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
 
-    def table(self, table_name: str):
-        self.table_name = table_name
-        return self
+    def table(self, table_name: str, cursor_field: str) -> TableConnector:
+        return TableConnector(self, table_name, cursor_field)
+
+    def required_fields(self) -> List[str]:
+        return ["table", "cursor_field"]
 
 
-class S3(DataConnector):
-    bucket_name: Optional[str]
-    path_prefix: Optional[str]
+class S3(DataSource):
     aws_access_key_id: str
     aws_secret_access_key: str
-    src_schema: Optional[Dict[str, str]]
-    delimiter: str = ","
-    format: str = "csv"
-
-    def support_single_stream(self):
-        return True
 
     def _validate(self) -> List[Exception]:
-        exceptions = super()._validate()
-        if self.format not in ["csv", "json", "parquet"]:
-            exceptions.append(TypeError("format must be csv"))
-        if self.delimiter not in [",", "\t", "|"]:
-            exceptions.append(
-                Exception("delimiter must be one of [',', '\t', '|']")
-            )
-        return exceptions
+        pass
 
     def to_proto(self):
-        source_proto = proto.DataConnector(
-            name=self.name, every=duration_to_micros(self.every)
+        source_proto = proto.DataSource(
+            name=self.name,
         )
         source_proto.s3.CopyFrom(
             proto.S3(
-                bucket=self.bucket_name,
-                path_prefix=self.path_prefix,
                 aws_access_key_id=self.aws_access_key_id,
                 aws_secret_access_key=self.aws_secret_access_key,
-                schema=self.src_schema,
-                delimiter=self.delimiter,
-                format=self.format,
             )
         )
         return source_proto
@@ -152,36 +145,40 @@ class S3(DataConnector):
         src_schema: Dict[str, str],
         delimiter: str = ",",
         format: str = "csv",
-    ):
-        self.bucket_name = bucket_name
-        self.path_prefix = prefix
-        self.src_schema = src_schema
-        self.delimiter = delimiter
-        self.format = format
-        return self
+        cursor_field: Optional[str] = None,
+    ) -> S3Connector:
+        return S3Connector(
+            self,
+            bucket_name,
+            prefix,
+            src_schema,
+            delimiter,
+            format,
+            cursor_field,
+        )
+
+    def required_fields(self) -> List[str]:
+        return ["bucket", "prefix", "src_schema"]
 
 
-class BigQuery(DataConnector):
+class BigQuery(DataSource):
     project_id: str
     dataset_id: str
     credentials_json: str
 
     def _validate(self) -> List[Exception]:
-        exceptions = super()._validate()
+        exceptions = []
         try:
             json.loads(self.credentials_json)
         except Exception as e:
             exceptions.append(e)
         return exceptions
 
-    def table(self, table_name: str):
-        self.table_name = table_name
-        return self
+    def table(self, table_name: str, cursor_field: str) -> TableConnector:
+        return TableConnector(self, table_name, cursor_field)
 
     def to_proto(self):
-        source_proto = proto.DataConnector(
-            name=self.name, every=duration_to_micros(self.every)
-        )
+        source_proto = proto.DataSource(name=self.name)
         source_proto.bigquery.CopyFrom(
             proto.BigQuery(
                 project_id=self.project_id,
@@ -191,13 +188,16 @@ class BigQuery(DataConnector):
         )
         return source_proto
 
+    def required_fields(self) -> List[str]:
+        return ["table", "cursor_field"]
+
 
 class Postgres(SQLSource):
     port: int = 5432
 
     def to_proto(self):
-        source_proto = proto.DataConnector(
-            name=self.name, every=duration_to_micros(self.every)
+        source_proto = proto.DataSource(
+            name=self.name,
         )
         source_proto.sql.CopyFrom(
             proto.SQL(
@@ -207,6 +207,7 @@ class Postgres(SQLSource):
                 password=self.password,
                 jdbc_params=self.jdbc_params,
                 port=self.port,
+                sql_type=proto.SQL.Postgres,
             )
         )
         return source_proto
@@ -216,9 +217,7 @@ class MySQL(SQLSource):
     port: int = 3306
 
     def to_proto(self):
-        source_proto = proto.DataConnector(
-            name=self.name, every=duration_to_micros(self.every)
-        )
+        source_proto = proto.DataSource(name=self.name)
         source_proto.sql.CopyFrom(
             proto.SQL(
                 host=self.host,
@@ -227,12 +226,13 @@ class MySQL(SQLSource):
                 password=self.password,
                 jdbc_params=self.jdbc_params,
                 port=self.port,
+                sql_type=proto.SQL.MySQL,
             )
         )
         return source_proto
 
 
-class Snowflake(DataConnector):
+class Snowflake(DataSource):
     account: str
     db_name: str
     username: str
@@ -243,8 +243,8 @@ class Snowflake(DataConnector):
     jdbc_params: Optional[str] = None
 
     def to_proto(self):
-        source_proto = proto.DataConnector(
-            name=self.name, every=duration_to_micros(self.every)
+        source_proto = proto.DataSource(
+            name=self.name,
         )
         source_proto.snowflake.CopyFrom(
             proto.Snowflake(
@@ -260,12 +260,11 @@ class Snowflake(DataConnector):
         )
         return source_proto
 
-    def table(self, table_name: str):
-        self.table_name = table_name
-        return self
+    def table(self, table_name: str, cursor_field: str) -> TableConnector:
+        return TableConnector(self, table_name, cursor_field)
 
     def _validate(self) -> List[Exception]:
-        exceptions = super()._validate()
+        exceptions: List[Exception] = []
         if not isinstance(self.account, str):
             exceptions.append(TypeError("account must be a string"))
         if not isinstance(self.db_name, str):
@@ -285,3 +284,107 @@ class Snowflake(DataConnector):
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
+
+    def required_fields(self) -> List[str]:
+        return ["table", "cursor_field"]
+
+
+# ------------------------------------------------------------------------------
+# DataConnector
+# ------------------------------------------------------------------------------
+
+
+class DataConnector:
+    """DataConnector is a fully specified data source or sink. It contains
+    all the fields required to fetch data from a source or sink. DataConnectors
+    are only created by code and are attached to a dataset."""
+
+    data_source: DataSource
+    every: Duration
+
+    def __post_init__(self):
+        exceptions = self._validate()
+        if len(exceptions) > 0:
+            raise Exception(exceptions)
+
+    def _validate(self) -> List[Exception]:
+        return []
+
+    def to_proto(self):
+        raise NotImplementedError
+
+
+class TableConnector(DataConnector):
+    """DataConnectors which only need a table name and a cursor_field to be
+    specified.Includes BigQuery, MySQL, Postgres, and Snowflake."""
+
+    table: str
+    cursor_field: str
+
+    def __init__(self, data_source, table, cursor_field):
+        self.data_source = data_source
+        self.table = table
+        self.cursor_field = cursor_field
+        self.every = DEFAULT_EVERY
+
+    def to_proto(self):
+        return proto.DataConnector(
+            source=self.data_source.to_proto(),
+            cursor_field=self.cursor_field,
+            every=duration_to_micros(self.every),
+            table=self.table,
+        )
+
+
+class S3Connector(DataConnector):
+    bucket_name: Optional[str]
+    path_prefix: Optional[str]
+    src_schema: Optional[Dict[str, str]]
+    delimiter: str = ","
+    format: str = "csv"
+    cursor_field: Optional[str] = None
+
+    def __init__(
+        self,
+        data_source,
+        bucket_name,
+        path_prefix,
+        src_schema,
+        delimiter,
+        format,
+        cursor_field,
+    ):
+        self.data_source = data_source
+        self.bucket_name = bucket_name
+        self.path_prefix = path_prefix
+        self.src_schema = src_schema
+        self.delimiter = delimiter
+        self.format = format
+        self.cursor_field = cursor_field
+        self.every = DEFAULT_EVERY
+
+    def _validate(self) -> List[Exception]:
+        exceptions: List[Exception] = []
+        if self.format not in ["csv", "json", "parquet"]:
+            exceptions.append(TypeError("format must be csv"))
+        if self.delimiter not in [",", "\t", "|"]:
+            exceptions.append(
+                Exception("delimiter must be one of [',', '\t', '|']")
+            )
+        return exceptions
+
+    def to_proto(self):
+        s3_conn = proto.DataConnector(
+            source=self.data_source.to_proto(),
+            every=duration_to_micros(self.every),
+            s3_connector=proto.S3Connector(
+                bucket=self.bucket_name,
+                path_prefix=self.path_prefix,
+                schema=self.src_schema,
+                delimiter=self.delimiter,
+                format=self.format,
+            ),
+        )
+        if self.cursor_field is not None:
+            s3_conn.cursorField = self.cursor_field
+        return s3_conn

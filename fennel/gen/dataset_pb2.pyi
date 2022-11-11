@@ -110,8 +110,8 @@ class CreateDatasetRequest(google.protobuf.message.Message):
     NAME_FIELD_NUMBER: builtins.int
     FIELDS_FIELD_NUMBER: builtins.int
     PIPELINES_FIELD_NUMBER: builtins.int
-    SOURCES_FIELD_NUMBER: builtins.int
-    SINKS_FIELD_NUMBER: builtins.int
+    INPUT_CONNECTORS_FIELD_NUMBER: builtins.int
+    OUTPUT_CONNECTORS_FIELD_NUMBER: builtins.int
     SIGNATURE_FIELD_NUMBER: builtins.int
     OWNER_FIELD_NUMBER: builtins.int
     DESCRIPTION_FIELD_NUMBER: builtins.int
@@ -127,9 +127,9 @@ class CreateDatasetRequest(google.protobuf.message.Message):
     @property
     def pipelines(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Pipeline]: ...
     @property
-    def sources(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[source_pb2.DataConnector]: ...
+    def input_connectors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[source_pb2.DataConnector]: ...
     @property
-    def sinks(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[source_pb2.DataConnector]: ...
+    def output_connectors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[source_pb2.DataConnector]: ...
     signature: builtins.str
     owner: builtins.str
     description: builtins.str
@@ -148,8 +148,8 @@ class CreateDatasetRequest(google.protobuf.message.Message):
         name: builtins.str = ...,
         fields: collections.abc.Iterable[global___Field] | None = ...,
         pipelines: collections.abc.Iterable[global___Pipeline] | None = ...,
-        sources: collections.abc.Iterable[source_pb2.DataConnector] | None = ...,
-        sinks: collections.abc.Iterable[source_pb2.DataConnector] | None = ...,
+        input_connectors: collections.abc.Iterable[source_pb2.DataConnector] | None = ...,
+        output_connectors: collections.abc.Iterable[source_pb2.DataConnector] | None = ...,
         signature: builtins.str = ...,
         owner: builtins.str = ...,
         description: builtins.str = ...,
@@ -161,7 +161,7 @@ class CreateDatasetRequest(google.protobuf.message.Message):
         pull_lookup: global___PullLookup | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["pull_lookup", b"pull_lookup"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["description", b"description", "fields", b"fields", "max_staleness", b"max_staleness", "mode", b"mode", "name", b"name", "owner", b"owner", "pipelines", b"pipelines", "pull_lookup", b"pull_lookup", "retention", b"retention", "schema", b"schema", "signature", b"signature", "sinks", b"sinks", "sources", b"sources", "version", b"version"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["description", b"description", "fields", b"fields", "input_connectors", b"input_connectors", "max_staleness", b"max_staleness", "mode", b"mode", "name", b"name", "output_connectors", b"output_connectors", "owner", b"owner", "pipelines", b"pipelines", "pull_lookup", b"pull_lookup", "retention", b"retention", "schema", b"schema", "signature", b"signature", "version", b"version"]) -> None: ...
 
 global___CreateDatasetRequest = CreateDatasetRequest
 

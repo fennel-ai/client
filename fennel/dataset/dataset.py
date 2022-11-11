@@ -471,8 +471,8 @@ class Dataset(_Node):
             retention=timedelta_to_micros(self._retention),
             max_staleness=timedelta_to_micros(self._max_staleness),
             pipelines=[p.to_proto() for p in self._pipelines],
-            sources=[s.to_proto() for s in sources],
-            sinks=[s.to_proto() for s in sinks],
+            input_connectors=[s.to_proto() for s in sources],
+            output_connectors=[s.to_proto() for s in sinks],
             mode="pandas",
             # TODO: Parse description from docstring.
             description="",
@@ -663,6 +663,9 @@ class Serializer(Visitor):
         )
 
     def visit(self, obj) -> str:
+        if isinstance(obj, Dataset):
+            return obj.name
+
         node_id = obj.signature()
         if node_id not in self.proto_by_node_id:
             ret = super(Serializer, self).visit(obj)

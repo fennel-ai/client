@@ -20,7 +20,13 @@ mysql = MySQL(
 
 
 def test_SimpleSource(grpc_stub):
-    @source(mysql.table("users"), every="1h")
+    @source(
+        mysql.table(
+            "users",
+            cursor_field="added_on",
+        ),
+        every="1h",
+    )
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
@@ -33,12 +39,12 @@ def test_SimpleSource(grpc_stub):
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
 
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
-    assert len(dataset_request.sources) == 1
+    assert len(dataset_request.input_connectors) == 1
     d = {
         "datasetRequests": [
             {
@@ -53,16 +59,21 @@ def test_SimpleSource(grpc_stub):
                     {"name": "country", "isNullable": True},
                     {"name": "timestamp", "isTimestamp": True},
                 ],
-                "sources": [
+                "input_connectors": [
                     {
-                        "name": "mysql",
-                        "sql": {
-                            "host": "localhost",
-                            "db": "test",
-                            "username": "root",
-                            "password": "root",
-                            "port": 3306,
+                        "source": {
+                            "name": "mysql",
+                            "sql": {
+                                "sqlType": "MySQL",
+                                "host": "localhost",
+                                "db": "test",
+                                "username": "root",
+                                "password": "root",
+                                "port": 3306,
+                            },
                         },
+                        "cursorField": "added_on",
+                        "table": "users",
                     }
                 ],
                 "signature": "3cb848e839199cd8161e095dc1ebf536",
@@ -79,7 +90,7 @@ def test_SimpleSource(grpc_stub):
     )
 
     @dataset
-    @source(mysql.table("users"), every="1h")
+    @source(mysql.table("users", cursor_field="added_on"), every="1h")
     class UserInfoDatasetInvertedOrder:
         user_id: int = field(key=True)
         name: str
@@ -91,12 +102,12 @@ def test_SimpleSource(grpc_stub):
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
 
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(UserInfoDatasetInvertedOrder)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
-    assert len(dataset_request.sources) == 1
+    assert len(dataset_request.input_connectors) == 1
     sync_request.dataset_requests[0].schema = b""
     expected_sync_request.dataset_requests[
         0
@@ -111,12 +122,8 @@ def test_SimpleSource(grpc_stub):
 
 s3 = S3(
     name="ratings_source",
-    bucket_name="all_ratings",
-    path_prefix="prod/apac/",
     aws_access_key_id="ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
-    src_schema={"Name": "string", "Weight": "number", "Age": "integer"},
-    delimiter=",",
 )
 
 bigquery = BigQuery(
@@ -147,9 +154,9 @@ snowflake = Snowflake(
 
 
 def test_MultipleSources(grpc_stub):
-    @source(mysql.table("users_mysql"), every="1h")
-    @source(bigquery.table("users_bq"), every="1h")
-    @source(snowflake.table("users_Sf"), every="1h")
+    @source(mysql.table("users_mysql", cursor_field="added_on"), every="1h")
+    @source(bigquery.table("users_bq", cursor_field="added_on"), every="1h")
+    @source(snowflake.table("users_Sf", cursor_field="added_on"), every="1h")
     @source(
         s3.bucket(
             bucket_name="all_ratings",
@@ -170,9 +177,9 @@ def test_MultipleSources(grpc_stub):
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
 
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
-    assert len(dataset_request.sources) == 4
+    assert len(dataset_request.input_connectors) == 4

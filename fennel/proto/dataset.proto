@@ -28,8 +28,8 @@ message CreateDatasetRequest {
   string name = 1;
   repeated Field fields = 2;
   repeated Pipeline pipelines = 3;
-  repeated DataConnector sources = 4;
-  repeated DataConnector sinks = 5;
+  repeated DataConnector input_connectors = 4;
+  repeated DataConnector output_connectors = 5;
 
   string signature = 6;
   string owner = 7;
