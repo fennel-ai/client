@@ -5,4 +5,6 @@ from fennel.lib.aggregate.aggregate import (
     Max,
     Average,
     AggregateType,
+    TopK,
+    CF,
 )

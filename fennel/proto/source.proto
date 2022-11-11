@@ -5,6 +5,17 @@ package fennel.proto;
 
 // Next field number: 6
 message DataConnector {
+  DataSource source = 1;
+  string cursor_field = 2;
+  oneof instance {
+    string table = 3;
+    S3Connector s3_connector = 4;
+  }
+  int32 every = 5;
+}
+
+// Next field number: 6
+message DataSource {
   string name = 1;
   oneof source {
     SQL sql = 2;
@@ -12,7 +23,6 @@ message DataConnector {
     BigQuery bigquery = 4;
     Snowflake snowflake = 5;
   }
-  int32 every = 6;
 }
 
 // Next field number: 8
@@ -32,15 +42,17 @@ message SQL {
 
 // Next field number: 6
 message S3 {
-  string bucket = 1;
-  string path_prefix = 2;
-  string aws_access_key_id = 3;
-  string aws_secret_access_key = 4;
-  map<string, string> schema = 5;
-  string delimiter = 6;
-  string format = 7;
+  string aws_access_key_id = 1;
+  string aws_secret_access_key = 2;
 }
 
+message S3Connector {
+  string bucket = 1;
+  string path_prefix = 2;
+  map<string, string> schema = 3;
+  string delimiter = 4;
+  string format = 5;
+}
 
 // Next field number: 4
 message BigQuery {

@@ -62,7 +62,7 @@ def test_SimpleFeatureSet(grpc_stub):
         ):
             return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
 
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserInfo)
     view.add(UserInfoDuplicate)
@@ -149,7 +149,7 @@ def test_ComplexFeatureSet(grpc_stub):
         def get_user_info3(ts: pd.Series, user_id: User.id) -> Tuple["income"]:
             pass
 
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserInfo)
     sync_request = view.to_proto()

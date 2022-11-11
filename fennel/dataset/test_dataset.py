@@ -30,7 +30,7 @@ class UserInfoDataset:
 def test_SimpleDataset(grpc_stub):
     assert UserInfoDataset._max_staleness == timedelta(days=30)
     assert UserInfoDataset._retention == timedelta(days=730)
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
@@ -91,7 +91,7 @@ class Activity:
 def test_DatasetWithRetention(grpc_stub):
     assert Activity._max_staleness == timedelta(days=30)
     assert Activity._retention == timedelta(days=120)
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(Activity)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
@@ -157,7 +157,7 @@ def test_DatasetWithPull(grpc_stub):
 
     assert UserCreditScore._max_staleness == timedelta(days=7)
     assert UserCreditScore._retention == timedelta(days=365)
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(UserCreditScore)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
@@ -224,7 +224,7 @@ def test_DatasetWithPipes(grpc_stub):
         def pipeline2(a: Dataset, b: Dataset, c: Dataset):
             return c
 
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(ABCDataset)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
@@ -239,12 +239,11 @@ def test_DatasetWithPipes(grpc_stub):
         "pipelines": [
             {
                 "nodes": [
-                    {"id": "A", "datasetName": "A"},
                     {
                         "id": "816d3f87d7dc94cfb4c9d8513e0d9234",
                         "operator": {
                             "join": {
-                                "lhsNodeId": "8c6102c438b5f28c1a77c662374cd4cc",
+                                "lhsNodeId": "A",
                                 "rhsDatasetName": "B",
                                 "on": {"a1": "b1"},
                             }
@@ -256,9 +255,8 @@ def test_DatasetWithPipes(grpc_stub):
                 "inputs": ["A", "B"],
             },
             {
-                "nodes": [{"id": "C", "datasetName": "C"}],
-                "root": "faf4433502c97da457c9498cf6c4673f",
-                "signature": "faf4433502c97da457c9498cf6c4673f",
+                "root": "C",
+                "signature": "C",
                 "inputs": ["A", "B", "C"],
             },
         ],
@@ -315,7 +313,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
                 on=["user_id"],
             )
             ds_transform = ds.transform(extract_info)
-            return ds_transform.groupby("merchant_id", "timestamp").aggregate(
+            return ds_transform.groupby("merchant_id").aggregate(
                 [
                     Count(
                         window=Window(),
@@ -328,7 +326,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
                 ]
             )
 
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(FraudReportAggregatedDataset)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
@@ -343,13 +341,10 @@ def test_DatasetWithComplexPipe(grpc_stub):
         "pipelines": [
             {
                 "nodes": [
-                    {"id": "Activity", "datasetName": "Activity"},
                     {
                         "id": "44fb25a177c0daa12b22a96e1d0b9b77",
                         "operator": {
-                            "transform": {
-                                "operandNodeId": "2ec6c8c90cc6df1b6eb0258a2bdc2b1c"
-                            }
+                            "transform": {"operandNodeId": "Activity"}
                         },
                     },
                     {
@@ -371,11 +366,11 @@ def test_DatasetWithComplexPipe(grpc_stub):
                         },
                     },
                     {
-                        "id": "028bc735f8009621f65812885e219b34",
+                        "id": "0e1d7d7f8ecb0ded643709f413ebdd9d",
                         "operator": {
                             "aggregate": {
                                 "operandNodeId": "24089ee9611046fd829aebce51b9d3a2",
-                                "keys": ["merchant_id", "timestamp"],
+                                "keys": ["merchant_id"],
                                 "aggregates": [
                                     {
                                         "type": "COUNT",
@@ -392,8 +387,8 @@ def test_DatasetWithComplexPipe(grpc_stub):
                         },
                     },
                 ],
-                "root": "028bc735f8009621f65812885e219b34",
-                "signature": "028bc735f8009621f65812885e219b34",
+                "root": "0e1d7d7f8ecb0ded643709f413ebdd9d",
+                "signature": "0e1d7d7f8ecb0ded643709f413ebdd9d",
                 "inputs": ["Activity", "UserInfoDataset"],
             }
         ],
@@ -448,7 +443,7 @@ def test_UnionDatasets(grpc_stub):
             f = d.transform(lambda df: df * 4)
             return e + f
 
-    view = InternalTestView(grpc_stub)
+    view = InternalTestClient(grpc_stub)
     view.add(ABCDataset)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
@@ -461,13 +456,11 @@ def test_UnionDatasets(grpc_stub):
         "pipelines": [
             {
                 "nodes": [
-                    {"id": "A", "datasetName": "A"},
-                    {"id": "B", "datasetName": "B"},
                     {
                         "id": "2ab0c0f6f921e2362d17484f05a2a9a5",
                         "operator": {
                             "transform": {
-                                "operandNodeId": "f423fb8892c67133917d9aedd1616aeb",
+                                "operandNodeId": "B",
                                 "timestampField": "t",
                             }
                         },
@@ -477,7 +470,7 @@ def test_UnionDatasets(grpc_stub):
                         "operator": {
                             "union": {
                                 "operandNodeIds": [
-                                    "8c6102c438b5f28c1a77c662374cd4cc",
+                                    "A",
                                     "2ab0c0f6f921e2362d17484f05a2a9a5",
                                 ]
                             }
@@ -490,22 +483,13 @@ def test_UnionDatasets(grpc_stub):
             },
             {
                 "nodes": [
-                    {"id": "A", "datasetName": "A"},
                     {
                         "id": "62b55ed86a3147da80cc9f6533d804a7",
-                        "operator": {
-                            "transform": {
-                                "operandNodeId": "8c6102c438b5f28c1a77c662374cd4cc"
-                            }
-                        },
+                        "operator": {"transform": {"operandNodeId": "A"}},
                     },
                     {
                         "id": "7120ae27df71756bf09abf2c2a056711",
-                        "operator": {
-                            "transform": {
-                                "operandNodeId": "8c6102c438b5f28c1a77c662374cd4cc"
-                            }
-                        },
+                        "operator": {"transform": {"operandNodeId": "A"}},
                     },
                     {
                         "id": "88e9b9c78fe82996482c517d8a2d0cc8",
