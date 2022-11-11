@@ -22,6 +22,9 @@ message DataSource {
     S3 s3 = 3;
     BigQuery bigquery = 4;
     Snowflake snowflake = 5;
+    // When a source has already been created on the console
+    // Or via code and is specified by name ONLY.
+    bool existing = 6;
   }
 }
 

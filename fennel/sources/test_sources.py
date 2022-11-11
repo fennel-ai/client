@@ -5,7 +5,7 @@ from google.protobuf.json_format import ParseDict
 
 from fennel.dataset import dataset, field
 from fennel.gen.services_pb2 import SyncRequest
-from fennel.sources import source, MySQL, S3, Snowflake, BigQuery
+from fennel.sources import source, MySQL, S3, Snowflake, BigQuery, Postgres
 
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
@@ -183,3 +183,112 @@ def test_MultipleSources(grpc_stub):
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 4
+
+
+posgres_console = Postgres.from_name(
+    name="posgres_test",
+)
+mysql_console = MySQL.from_name(
+    name="mysql_test",
+)
+snowflake_console = Snowflake.from_name(
+    name="snowflake_test",
+)
+bigquery_console = BigQuery.from_name(
+    name="bigquery_test",
+)
+s3_console = S3.from_name(
+    name="s3_test",
+)
+
+
+def test_ConsoleSource(grpc_stub):
+    @source(posgres_console.table("users", cursor_field="added_on"), every="1h")
+    @source(mysql_console.table("users", cursor_field="added_on"), every="1h")
+    @source(
+        snowflake_console.table("users", cursor_field="added_on"), every="1h"
+    )
+    @source(
+        bigquery_console.table("users", cursor_field="added_on"), every="1h"
+    )
+    @source(
+        s3_console.bucket(
+            bucket_name="all_ratings",
+            prefix="prod/apac/",
+            src_schema={"Name": "string", "Weight": "number", "Age": "integer"},
+        ),
+        every="1h",
+    )
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient(grpc_stub)
+    view.add(UserInfoDataset)
+    sync_request = view.to_proto()
+    assert len(sync_request.dataset_requests) == 1
+    dataset_request = sync_request.dataset_requests[0]
+    assert len(dataset_request.input_connectors) == 5
+    sync_request.dataset_requests[0].schema = b""
+    d = {
+        "datasetRequests": [
+            {
+                "name": "UserInfoDataset",
+                "fields": [
+                    {"name": "user_id", "isKey": True},
+                    {"name": "timestamp", "isTimestamp": True},
+                ],
+                "inputConnectors": [
+                    {
+                        "source": {"name": "s3_test", "s3": {}},
+                        "s3Connector": {
+                            "bucket": "all_ratings",
+                            "pathPrefix": "prod/apac/",
+                            "schema": {
+                                "Age": "integer",
+                                "Weight": "number",
+                                "Name": "string",
+                            },
+                            "delimiter": ",",
+                            "format": "csv",
+                        },
+                    },
+                    {
+                        "source": {"name": "bigquery_test", "bigquery": {}},
+                        "cursorField": "added_on",
+                        "table": "users",
+                    },
+                    {
+                        "source": {"name": "snowflake_test", "snowflake": {}},
+                        "cursorField": "added_on",
+                        "table": "users",
+                    },
+                    {
+                        "source": {
+                            "name": "mysql_test",
+                            "sql": {"sqlType": "MySQL", "port": 3306},
+                        },
+                        "cursorField": "added_on",
+                        "table": "users",
+                    },
+                    {
+                        "source": {
+                            "name": "posgres_test",
+                            "sql": {"port": 5432},
+                        },
+                        "cursorField": "added_on",
+                        "table": "users",
+                    },
+                ],
+                "signature": "9dbd433616c02fe281cf6238007b6ac3",
+                "mode": "pandas",
+                "retention": "63072000000000",
+                "maxStaleness": "2592000000000",
+            }
+        ]
+    }
+    expected_sync_request = ParseDict(d, SyncRequest())
+    assert sync_request == expected_sync_request, error_message(
+        sync_request, expected_sync_request
+    )
