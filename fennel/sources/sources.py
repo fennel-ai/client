@@ -11,7 +11,7 @@ from fennel.lib.duration import Duration, duration_to_micros
 T = TypeVar("T")
 SOURCE_FIELD = "__fennel_data_sources__"
 SINK_FIELD = "__fennel_data_sinks__"
-DEFAULT_EVERY = "30m"
+DEFAULT_EVERY = Duration("30m")
 
 
 # ------------------------------------------------------------------------------

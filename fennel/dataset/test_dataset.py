@@ -80,7 +80,7 @@ def test_SimpleDataset(grpc_stub):
     )
 
 
-@dataset(retention="4m")
+@dataset(retention="120d")
 class Activity:
     user_id: int
     action_type: float

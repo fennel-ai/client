@@ -62,6 +62,7 @@ class DataSource(google.protobuf.message.Message):
     S3_FIELD_NUMBER: builtins.int
     BIGQUERY_FIELD_NUMBER: builtins.int
     SNOWFLAKE_FIELD_NUMBER: builtins.int
+    EXISTING_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def sql(self) -> global___SQL: ...
@@ -71,6 +72,10 @@ class DataSource(google.protobuf.message.Message):
     def bigquery(self) -> global___BigQuery: ...
     @property
     def snowflake(self) -> global___Snowflake: ...
+    existing: builtins.bool
+    """When a source has already been created on the console
+    Or via code and is specified by name ONLY.
+    """
     def __init__(
         self,
         *,
@@ -79,10 +84,11 @@ class DataSource(google.protobuf.message.Message):
         s3: global___S3 | None = ...,
         bigquery: global___BigQuery | None = ...,
         snowflake: global___Snowflake | None = ...,
+        existing: builtins.bool = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "s3", b"s3", "snowflake", b"snowflake", "source", b"source", "sql", b"sql"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "name", b"name", "s3", b"s3", "snowflake", b"snowflake", "source", b"source", "sql", b"sql"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["source", b"source"]) -> typing_extensions.Literal["sql", "s3", "bigquery", "snowflake"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "existing", b"existing", "s3", b"s3", "snowflake", b"snowflake", "source", b"source", "sql", b"sql"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "existing", b"existing", "name", b"name", "s3", b"s3", "snowflake", b"snowflake", "source", b"source", "sql", b"sql"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["source", b"source"]) -> typing_extensions.Literal["sql", "s3", "bigquery", "snowflake", "existing"] | None: ...
 
 global___DataSource = DataSource
 

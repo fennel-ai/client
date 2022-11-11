@@ -11,7 +11,7 @@ message DataConnector {
     string table = 3;
     S3Connector s3_connector = 4;
   }
-  int32 every = 5;
+  int64 every = 5;
 }
 
 // Next field number: 6

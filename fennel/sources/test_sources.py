@@ -74,6 +74,7 @@ def test_SimpleSource(grpc_stub):
                         },
                         "cursorField": "added_on",
                         "table": "users",
+                        "every": "3600000000",
                     }
                 ],
                 "signature": "3cb848e839199cd8161e095dc1ebf536",
@@ -253,16 +254,19 @@ def test_ConsoleSource(grpc_stub):
                             "delimiter": ",",
                             "format": "csv",
                         },
+                        "every": "3600000000",
                     },
                     {
                         "source": {"name": "bigquery_test", "bigquery": {}},
                         "cursorField": "added_on",
                         "table": "users",
+                        "every": "3600000000",
                     },
                     {
                         "source": {"name": "snowflake_test", "snowflake": {}},
                         "cursorField": "added_on",
                         "table": "users",
+                        "every": "3600000000",
                     },
                     {
                         "source": {
@@ -271,6 +275,7 @@ def test_ConsoleSource(grpc_stub):
                         },
                         "cursorField": "added_on",
                         "table": "users",
+                        "every": "3600000000",
                     },
                     {
                         "source": {
@@ -279,6 +284,7 @@ def test_ConsoleSource(grpc_stub):
                         },
                         "cursorField": "added_on",
                         "table": "users",
+                        "every": "3600000000",
                     },
                 ],
                 "signature": "9dbd433616c02fe281cf6238007b6ac3",
