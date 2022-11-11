@@ -353,7 +353,6 @@ def dataset(
     return wrap(cls)
 
 
-# Handle mypy type check for static functions.
 def pipeline(
     *params: Dataset,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -395,19 +394,30 @@ class Pipeline:
     inputs: List[Dataset]
     _sign: str
     _proto: proto.Pipeline
+    _root: str
+    _nodes: List
+    # Dataset it is part of
+    _dataset_name: str
 
     def __init__(self, node: _Node, inputs: List[Dataset]):
         self.node = node
         self.inputs = inputs
         serializer = Serializer()
-        self._proto = serializer.serialize(self)
-        self._sign = self._proto.signature
+        self._root, self._nodes = serializer.serialize(self)
 
     def signature(self):
-        return self._sign
+        return f"{self._dataset_name}.{self._root}"
 
     def to_proto(self) -> proto.Pipeline:
-        return self._proto
+        return proto.Pipeline(
+            root=self._root,
+            nodes=self._nodes,
+            inputs=[i.name for i in self.inputs],
+            signature=self.signature(),
+        )
+
+    def set_dataset_name(self, ds_name: str):
+        self._dataset_name = ds_name
 
 
 class Dataset(_Node):
@@ -444,7 +454,7 @@ class Dataset(_Node):
         self._retention = retention
         self._max_staleness = max_staleness
         self.__fennel_original_cls__ = cls
-        self._pipelines = self._get_pipelines()
+        self._pipelines = self._get_pipelines(self.name)
         self._sign = self._create_signature()
         propogate_fennel_attributes(cls, self)
 
@@ -549,7 +559,7 @@ class Dataset(_Node):
             function=cloudpickle.dumps(self.pull_fn),
         )
 
-    def _get_pipelines(self) -> List[Pipeline]:
+    def _get_pipelines(self, dataset_name: str) -> List[Pipeline]:
         pipelines = []
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
             if not callable(method):
@@ -559,6 +569,7 @@ class Dataset(_Node):
             if not hasattr(method, "__fennel_pipeline__"):
                 continue
             pipelines.append(method.__fennel_pipeline__)
+            pipelines[-1].set_dataset_name(dataset_name)
         return pipelines
 
 
@@ -655,6 +666,7 @@ class Serializer(Visitor):
 
     def serialize(self, pipe: Pipeline):
         root_id = self.visit(pipe.node)
+        return root_id, self.nodes
         return proto.Pipeline(
             root=root_id,
             nodes=self.nodes,

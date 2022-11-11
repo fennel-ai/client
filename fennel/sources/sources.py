@@ -95,7 +95,7 @@ class SQLSource(DataSource):
     username: str
     password: str
     jdbc_params: Optional[str] = None
-    _from_name: bool = False
+    _get: bool = False
 
     def _validate(self) -> List[Exception]:
         exceptions: List[Exception] = []
@@ -162,10 +162,10 @@ class S3(DataSource):
         return ["bucket", "prefix", "src_schema"]
 
     @staticmethod
-    def from_name(name: str) -> S3:
+    def get(name: str) -> S3:
         return S3(
             name=name,
-            _from_name=True,
+            _get=True,
             aws_access_key_id="",
             aws_secret_access_key="",
         )
@@ -202,10 +202,10 @@ class BigQuery(DataSource):
         return ["table", "cursor_field"]
 
     @staticmethod
-    def from_name(name: str) -> BigQuery:
+    def get(name: str) -> BigQuery:
         return BigQuery(
             name=name,
-            _from_name=True,
+            _get=True,
             project_id="",
             dataset_id="",
             credentials_json="",
@@ -216,7 +216,7 @@ class Postgres(SQLSource):
     port: int = 5432
 
     def to_proto(self):
-        if self._from_name:
+        if self._get:
             return proto.DataSource(name=self.name, existing=True)
 
         source_proto = proto.DataSource(
@@ -236,10 +236,10 @@ class Postgres(SQLSource):
         return source_proto
 
     @staticmethod
-    def from_name(name: str) -> Postgres:
+    def get(name: str) -> Postgres:
         return Postgres(
             name=name,
-            _from_name=True,
+            _get=True,
             host="",
             db_name="",
             username="",
@@ -251,7 +251,7 @@ class MySQL(SQLSource):
     port: int = 3306
 
     def to_proto(self):
-        if self._from_name:
+        if self._get:
             return proto.DataSource(name=self.name, existing=True)
 
         source_proto = proto.DataSource(name=self.name)
@@ -269,10 +269,10 @@ class MySQL(SQLSource):
         return source_proto
 
     @staticmethod
-    def from_name(name: str) -> MySQL:
+    def get(name: str) -> MySQL:
         return MySQL(
             name=name,
-            _from_name=True,
+            _get=True,
             host="",
             db_name="",
             username="",
@@ -337,10 +337,10 @@ class Snowflake(DataSource):
         return ["table", "cursor_field"]
 
     @staticmethod
-    def from_name(name: str) -> Snowflake:
+    def get(name: str) -> Snowflake:
         return Snowflake(
             name=name,
-            _from_name=True,
+            _get=True,
             account="",
             db_name="",
             username="",

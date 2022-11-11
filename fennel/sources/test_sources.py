@@ -185,19 +185,19 @@ def test_MultipleSources(grpc_stub):
     assert len(dataset_request.input_connectors) == 4
 
 
-posgres_console = Postgres.from_name(
+posgres_console = Postgres.get(
     name="posgres_test",
 )
-mysql_console = MySQL.from_name(
+mysql_console = MySQL.get(
     name="mysql_test",
 )
-snowflake_console = Snowflake.from_name(
+snowflake_console = Snowflake.get(
     name="snowflake_test",
 )
-bigquery_console = BigQuery.from_name(
+bigquery_console = BigQuery.get(
     name="bigquery_test",
 )
-s3_console = S3.from_name(
+s3_console = S3.get(
     name="s3_test",
 )
 
