@@ -31,15 +31,13 @@ def duration_to_timedelta(duration_string: Duration) -> timedelta:
                     total_seconds += num * 365 * 24 * 60 * 60
                 elif character == "w":
                     total_seconds += num * 7 * 24 * 60 * 60
-                elif character == "m":
-                    total_seconds += num * 30 * 24 * 60 * 60
                 elif character == "d":
                     total_seconds += num * 60 * 60 * 24
-                elif character == "H":
+                elif character == "h":
                     total_seconds += num * 60 * 60
-                elif character == "M":
+                elif character == "m":
                     total_seconds += num * 60
-                elif character == "S":
+                elif character == "s":
                     total_seconds += num
                 prev_num = []
         elif character.isnumeric() or character == ".":
