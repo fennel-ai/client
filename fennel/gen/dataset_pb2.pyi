@@ -8,6 +8,7 @@ import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
+import metadata_pb2
 import source_pb2
 import status_pb2
 import sys
@@ -59,6 +60,7 @@ class Field(google.protobuf.message.Message):
     DESCRIPTION_FIELD_NUMBER: builtins.int
     IS_NULLABLE_FIELD_NUMBER: builtins.int
     TAGS_FIELD_NUMBER: builtins.int
+    METADATA_FIELD_NUMBER: builtins.int
     name: builtins.str
     dtype: builtins.bytes
     """Arrow type"""
@@ -69,6 +71,8 @@ class Field(google.protobuf.message.Message):
     is_nullable: builtins.bool
     @property
     def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @property
+    def metadata(self) -> metadata_pb2.Metadata: ...
     def __init__(
         self,
         *,
@@ -80,8 +84,10 @@ class Field(google.protobuf.message.Message):
         description: builtins.str = ...,
         is_nullable: builtins.bool = ...,
         tags: collections.abc.Iterable[builtins.str] | None = ...,
+        metadata: metadata_pb2.Metadata | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["description", b"description", "dtype", b"dtype", "is_key", b"is_key", "is_nullable", b"is_nullable", "is_timestamp", b"is_timestamp", "name", b"name", "owner", b"owner", "tags", b"tags"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["description", b"description", "dtype", b"dtype", "is_key", b"is_key", "is_nullable", b"is_nullable", "is_timestamp", b"is_timestamp", "metadata", b"metadata", "name", b"name", "owner", b"owner", "tags", b"tags"]) -> None: ...
 
 global___Field = Field
 
@@ -113,8 +119,7 @@ class CreateDatasetRequest(google.protobuf.message.Message):
     INPUT_CONNECTORS_FIELD_NUMBER: builtins.int
     OUTPUT_CONNECTORS_FIELD_NUMBER: builtins.int
     SIGNATURE_FIELD_NUMBER: builtins.int
-    OWNER_FIELD_NUMBER: builtins.int
-    DESCRIPTION_FIELD_NUMBER: builtins.int
+    METADATA_FIELD_NUMBER: builtins.int
     MODE_FIELD_NUMBER: builtins.int
     VERSION_FIELD_NUMBER: builtins.int
     SCHEMA_FIELD_NUMBER: builtins.int
@@ -131,8 +136,8 @@ class CreateDatasetRequest(google.protobuf.message.Message):
     @property
     def output_connectors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[source_pb2.DataConnector]: ...
     signature: builtins.str
-    owner: builtins.str
-    description: builtins.str
+    @property
+    def metadata(self) -> metadata_pb2.Metadata: ...
     mode: builtins.str
     """Default mode is pandas."""
     version: builtins.int
@@ -151,8 +156,7 @@ class CreateDatasetRequest(google.protobuf.message.Message):
         input_connectors: collections.abc.Iterable[source_pb2.DataConnector] | None = ...,
         output_connectors: collections.abc.Iterable[source_pb2.DataConnector] | None = ...,
         signature: builtins.str = ...,
-        owner: builtins.str = ...,
-        description: builtins.str = ...,
+        metadata: metadata_pb2.Metadata | None = ...,
         mode: builtins.str = ...,
         version: builtins.int = ...,
         schema: builtins.bytes = ...,
@@ -160,8 +164,8 @@ class CreateDatasetRequest(google.protobuf.message.Message):
         max_staleness: builtins.int = ...,
         pull_lookup: global___PullLookup | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["pull_lookup", b"pull_lookup"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["description", b"description", "fields", b"fields", "input_connectors", b"input_connectors", "max_staleness", b"max_staleness", "mode", b"mode", "name", b"name", "output_connectors", b"output_connectors", "owner", b"owner", "pipelines", b"pipelines", "pull_lookup", b"pull_lookup", "retention", b"retention", "schema", b"schema", "signature", b"signature", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "pull_lookup", b"pull_lookup"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields", "input_connectors", b"input_connectors", "max_staleness", b"max_staleness", "metadata", b"metadata", "mode", b"mode", "name", b"name", "output_connectors", b"output_connectors", "pipelines", b"pipelines", "pull_lookup", b"pull_lookup", "retention", b"retention", "schema", b"schema", "signature", b"signature", "version", b"version"]) -> None: ...
 
 global___CreateDatasetRequest = CreateDatasetRequest
 
@@ -197,6 +201,7 @@ class Pipeline(google.protobuf.message.Message):
     NODES_FIELD_NUMBER: builtins.int
     ROOT_FIELD_NUMBER: builtins.int
     SIGNATURE_FIELD_NUMBER: builtins.int
+    METADATA_FIELD_NUMBER: builtins.int
     INPUTS_FIELD_NUMBER: builtins.int
     @property
     def nodes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Node]:
@@ -204,6 +209,8 @@ class Pipeline(google.protobuf.message.Message):
     root: builtins.str
     """Id of the root node."""
     signature: builtins.str
+    @property
+    def metadata(self) -> metadata_pb2.Metadata: ...
     @property
     def inputs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
         """List of input datasets."""
@@ -213,9 +220,11 @@ class Pipeline(google.protobuf.message.Message):
         nodes: collections.abc.Iterable[global___Node] | None = ...,
         root: builtins.str = ...,
         signature: builtins.str = ...,
+        metadata: metadata_pb2.Metadata | None = ...,
         inputs: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["inputs", b"inputs", "nodes", b"nodes", "root", b"root", "signature", b"signature"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["inputs", b"inputs", "metadata", b"metadata", "nodes", b"nodes", "root", b"root", "signature", b"signature"]) -> None: ...
 
 global___Pipeline = Pipeline
 

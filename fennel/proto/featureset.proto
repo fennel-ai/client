@@ -3,6 +3,7 @@ syntax = "proto3";
 package fennel.proto;
 
 import "status.proto";
+import "metadata.proto";
 
 message Feature {
   int32 id = 1;
@@ -14,6 +15,7 @@ message Feature {
   bool wip = 6;
   bool deprecated = 7;
   repeated string tags = 8;
+  Metadata metadata = 9;
 }
 
 message Extractor {
@@ -24,6 +26,7 @@ message Extractor {
   repeated Input inputs = 5;
   // The features that this extractor produces
   repeated string features = 6;
+  Metadata metadata = 7;
 }
 
 message CreateFeaturesetRequest {
@@ -32,8 +35,7 @@ message CreateFeaturesetRequest {
   repeated Extractor extractors = 3;
   int32 version = 4;
   string signature = 5 ;
-  string owner = 6;
-  string description = 7;
+  Metadata metadata = 6;
 }
 
 message CreateFeatureSetResponse {

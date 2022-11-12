@@ -4,6 +4,7 @@ import functools
 import inspect
 from dataclasses import dataclass
 from typing import (
+    Any,
     cast,
     Callable,
     Dict,
@@ -21,8 +22,14 @@ import pyarrow
 
 import fennel.gen.featureset_pb2 as proto
 from fennel.dataset import Dataset
+from fennel.lib.metadata import (
+    meta,
+    get_meta_attr,
+    set_meta_attr,
+    get_metadata_proto,
+)
 from fennel.lib.schema import get_pyarrow_schema
-from fennel.utils import parse_annotation_comments
+from fennel.utils import parse_annotation_comments, propogate_fennel_attributes
 
 T = TypeVar("T")
 
@@ -34,19 +41,11 @@ T = TypeVar("T")
 
 def feature(
     id: int,
-    wip: bool = False,
-    deprecated: bool = False,
-    description: str = "",
-    owner: str = "",
 ) -> T:
     return cast(
         T,
         Feature(
             id=id,
-            wip=wip,
-            deprecated=deprecated,
-            owner=owner,
-            description=description,
             # These fields will be filled in later.
             name="",
             dtype=None,
@@ -77,9 +76,11 @@ def get_feature(
             f"Feature name {annotation_name} cannot contain a " f"period"
         )
     feature.dtype = dtype
+    description = get_meta_attr(feature, "description")
+    if description is None or description == "":
+        description = field2comment_map.get(annotation_name, "")
+        set_meta_attr(feature, "description", description)
 
-    if feature.description is None or feature.description == "":
-        feature.description = field2comment_map.get(annotation_name, "")
     feature.dtype = get_pyarrow_schema(dtype)
     return feature
 
@@ -175,8 +176,6 @@ class Feature:
     name: str
     id: int
     featureset_name: str
-    owner: str
-    description: str
     dtype: pyarrow.lib.Schema
     wip: bool = False
     deprecated: bool = False
@@ -185,11 +184,8 @@ class Feature:
         return proto.Feature(
             id=self.id,
             name=self.name,
-            wip=self.wip,
-            owner=self.owner,
-            description=self.description,
             dtype=str(self.dtype),
-            deprecated=self.deprecated,
+            metadata=get_metadata_proto(self),
         )
 
     def to_proto_as_input(self) -> proto.Input.Feature:
@@ -199,6 +195,9 @@ class Feature:
             ),
             name=self.name,
         )
+
+    def meta(self, **kwargs: Any) -> Feature:
+        return meta(**kwargs)(self)
 
 
 class Featureset:
@@ -214,8 +213,6 @@ class Featureset:
     _features: List[Feature]
     _feature_map: Dict[str, Feature] = {}
     _extractors: List[Extractor]
-    _owner: Optional[str]
-    _description: Optional[str]
 
     def __init__(
         self,
@@ -228,27 +225,29 @@ class Featureset:
         self._features = fields
         self._feature_map = {field.name: field for field in fields}
         self._extractors = self._get_extractors()
-        self._owner = None
-        self._description = None
         self._validate()
+        propogate_fennel_attributes(featureset_cls, self)
 
     def __getattr__(self, key):
         if key in self.__fennel_original_cls__.__dict__["__annotations__"]:
             return self._feature_map[key]
         return super().__getattribute__(key)
 
-    # Public Methods
+    # ------------------- Public Methods --------------------------
 
     def signature(self) -> str:
         pass
 
     def create_featureset_request_proto(self):
+        self._check_owner_exists()
         return proto.CreateFeaturesetRequest(
             name=self.name,
-            owner=self._owner if self._owner else "",
-            description=self._description if self._description else "",
             features=[feature.to_proto() for feature in self._features],
             extractors=[extractor.to_proto() for extractor in self._extractors],
+            # Currently we don't support versioning of featuresets.
+            # Kept for future use.
+            version=0,
+            metadata=get_metadata_proto(self),
         )
 
     def to_proto(self):
@@ -256,7 +255,12 @@ class Featureset:
             name=self.name,
         )
 
-    # Private Methods
+    # ------------------- Private Methods ----------------------------------
+
+    def _check_owner_exists(self):
+        owner = get_meta_attr(self, "owner")
+        if owner is None or owner == "":
+            raise Exception(f"Featureset {self.name} must have an owner.")
 
     def _get_extractors(self) -> List[Extractor]:
         extractors = []
@@ -269,7 +273,6 @@ class Featureset:
         return extractors
 
     def _validate(self):
-
         # Check that all features have unique ids.
         feature_id_set = set()
         for feature in self._features:
@@ -346,4 +349,5 @@ class Extractor:
             else [],
             inputs=inputs,
             features=self.outputs,
+            metadata=get_metadata_proto(self.func),
         )

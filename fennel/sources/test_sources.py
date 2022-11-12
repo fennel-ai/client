@@ -5,6 +5,7 @@ from google.protobuf.json_format import ParseDict
 
 from fennel.dataset import dataset, field
 from fennel.gen.services_pb2 import SyncRequest
+from fennel.lib.metadata import meta
 from fennel.sources import source, MySQL, S3, Snowflake, BigQuery, Postgres
 
 # noinspection PyUnresolvedReferences
@@ -27,6 +28,7 @@ def test_SimpleSource(grpc_stub):
         ),
         every="1h",
     )
+    @meta(owner="test@test.com")
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
@@ -50,16 +52,19 @@ def test_SimpleSource(grpc_stub):
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {"name": "user_id", "isKey": True},
-                    {"name": "name"},
-                    {"name": "gender"},
-                    {"name": "dob", "description": "Users date of birth"},
-                    {"name": "age"},
-                    {"name": "account_creation_date"},
-                    {"name": "country", "isNullable": True},
-                    {"name": "timestamp", "isTimestamp": True},
+                    {"name": "user_id", "isKey": True, "metadata": {}},
+                    {"name": "name", "metadata": {}},
+                    {"name": "gender", "metadata": {}},
+                    {
+                        "name": "dob",
+                        "metadata": {"description": "Users date of birth"},
+                    },
+                    {"name": "age", "metadata": {}},
+                    {"name": "account_creation_date", "metadata": {}},
+                    {"name": "country", "isNullable": True, "metadata": {}},
+                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
                 ],
-                "input_connectors": [
+                "inputConnectors": [
                     {
                         "source": {
                             "name": "mysql",
@@ -78,6 +83,7 @@ def test_SimpleSource(grpc_stub):
                     }
                 ],
                 "signature": "3cb848e839199cd8161e095dc1ebf536",
+                "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
                 "retention": "63072000000000",
                 "maxStaleness": "2592000000000",
@@ -92,6 +98,7 @@ def test_SimpleSource(grpc_stub):
 
     @dataset
     @source(mysql.table("users", cursor_field="added_on"), every="1h")
+    @meta(owner="test@test.com")
     class UserInfoDatasetInvertedOrder:
         user_id: int = field(key=True)
         name: str
@@ -155,6 +162,7 @@ snowflake = Snowflake(
 
 
 def test_MultipleSources(grpc_stub):
+    @meta(owner="test@test.com")
     @source(mysql.table("users_mysql", cursor_field="added_on"), every="1h")
     @source(bigquery.table("users_bq", cursor_field="added_on"), every="1h")
     @source(snowflake.table("users_Sf", cursor_field="added_on"), every="1h")
@@ -220,6 +228,7 @@ def test_ConsoleSource(grpc_stub):
         ),
         every="1h",
     )
+    @meta(owner="test@test.com", tags=["test", "yolo"])
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
@@ -237,8 +246,8 @@ def test_ConsoleSource(grpc_stub):
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {"name": "user_id", "isKey": True},
-                    {"name": "timestamp", "isTimestamp": True},
+                    {"name": "user_id", "isKey": True, "metadata": {}},
+                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
                 ],
                 "inputConnectors": [
                     {
@@ -288,6 +297,10 @@ def test_ConsoleSource(grpc_stub):
                     },
                 ],
                 "signature": "9dbd433616c02fe281cf6238007b6ac3",
+                "metadata": {
+                    "owner": "test@test.com",
+                    "tags": ["test", "yolo"],
+                },
                 "mode": "pandas",
                 "retention": "63072000000000",
                 "maxStaleness": "2592000000000",

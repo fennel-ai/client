@@ -10,6 +10,8 @@ import fennel.gen.featureset_pb2 as fs_proto
 def error_message(actual: Any, expected: Any) -> str:
     expected_dict = MessageToDict(expected)
     actual_dict = MessageToDict(actual)
+    # Don't delete the following line. It is used to debug the test in
+    # case of failure.
     print(actual_dict)
     return jsondiff.diff(expected_dict, actual_dict, syntax="symmetric")
 
@@ -22,10 +24,9 @@ def clean_fs_func_src_code(featureset_req: fs_proto.CreateFeaturesetRequest):
         extractors.append(extractor)
     return fs_proto.CreateFeaturesetRequest(
         name=featureset_req.name,
-        owner=featureset_req.owner,
-        description=featureset_req.description,
         features=featureset_req.features,
         extractors=extractors,
+        metadata=featureset_req.metadata,
     )
 
 
@@ -66,4 +67,5 @@ def clean_ds_func_src_code(
         pipelines=pipelines,
         schema=b"",
         pull_lookup=dataset_req.pull_lookup,
+        metadata=dataset_req.metadata,
     )
