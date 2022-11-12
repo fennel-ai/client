@@ -39,7 +39,7 @@ def test_ComplexFeatureSet(grpc_stub):
             home_geoid: int = feature(id=2)
             # The users gender among male/female/non-binary
             gender: str = feature(id=3)
-            age: int = feature(id=4, owner="aditya@fennel.ai")
+            age: int = feature(id=4).meta(owner="aditya@fennel.ai")
             income: int = feature(id=5)
 
             @extractor
@@ -97,7 +97,7 @@ def test_DeprecatedId(grpc_stub):
         class UserInfo:
             userid: int = feature(id=1)
             home_geoid: int = feature(id=2)
-            age: int = feature(id=3, deprecated=True)
+            age: int = feature(id=3).meta(deprecated=True)
             credit_score: int = feature(id=3)
 
     assert str(e.value) == "Feature credit_score has a duplicate id 3"

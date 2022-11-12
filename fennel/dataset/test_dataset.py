@@ -10,10 +10,12 @@ import fennel.gen.dataset_pb2 as proto
 from fennel.dataset import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
+from fennel.lib.metadata import meta
 from fennel.lib.window import Window
 from fennel.test_lib import *
 
 
+@meta(owner="test@test.com")
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -38,37 +40,24 @@ def test_SimpleDataset(grpc_stub):
         "datasetRequests": [
             {
                 "name": "UserInfoDataset",
-                "signature": "3cb848e839199cd8161e095dc1ebf536",
                 "fields": [
-                    {
-                        "name": "user_id",
-                        "isKey": True,
-                    },
-                    {
-                        "name": "name",
-                    },
-                    {
-                        "name": "gender",
-                    },
+                    {"name": "user_id", "isKey": True, "metadata": {}},
+                    {"name": "name", "metadata": {}},
+                    {"name": "gender", "metadata": {}},
                     {
                         "name": "dob",
-                        "description": "Users date of birth",
+                        "metadata": {"description": "Users date of birth"},
                     },
-                    {
-                        "name": "age",
-                    },
-                    {
-                        "name": "account_creation_date",
-                    },
-                    {"name": "country", "isNullable": True},
-                    {
-                        "name": "timestamp",
-                        "isTimestamp": True,
-                    },
+                    {"name": "age", "metadata": {}},
+                    {"name": "account_creation_date", "metadata": {}},
+                    {"name": "country", "isNullable": True, "metadata": {}},
+                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
                 ],
-                "maxStaleness": 2592000000000,
-                "retention": 63072000000000,
+                "signature": "3cb848e839199cd8161e095dc1ebf536",
+                "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
+                "retention": "63072000000000",
+                "maxStaleness": "2592000000000",
             }
         ]
     }
@@ -80,6 +69,7 @@ def test_SimpleDataset(grpc_stub):
     )
 
 
+@meta(owner="test@test.com")
 @dataset(retention="120d")
 class Activity:
     user_id: int
@@ -99,23 +89,17 @@ def test_DatasetWithRetention(grpc_stub):
         "datasetRequests": [
             {
                 "name": "Activity",
-                "signature": "2ec6c8c90cc6df1b6eb0258a2bdc2b1c",
                 "fields": [
-                    {
-                        "name": "user_id",
-                    },
-                    {
-                        "name": "action_type",
-                    },
-                    {"name": "amount", "isNullable": True},
-                    {
-                        "name": "timestamp",
-                        "isTimestamp": True,
-                    },
+                    {"name": "user_id", "metadata": {}},
+                    {"name": "action_type", "metadata": {}},
+                    {"name": "amount", "isNullable": True, "metadata": {}},
+                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
                 ],
-                "maxStaleness": 2592000000000,
-                "retention": 10368000000000,
+                "signature": "2ec6c8c90cc6df1b6eb0258a2bdc2b1c",
+                "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
+                "retention": "10368000000000",
+                "maxStaleness": "2592000000000",
             }
         ]
     }
@@ -130,6 +114,7 @@ def test_DatasetWithRetention(grpc_stub):
 def test_DatasetWithPull(grpc_stub):
     API_ENDPOINT_URL = "http://transunion.com/v1/credit_score"
 
+    @meta(owner="test@test.com")
     @dataset(retention="1y", max_staleness="7d")
     class UserCreditScore:
         user_id: int = field(key=True)
@@ -164,24 +149,15 @@ def test_DatasetWithPull(grpc_stub):
     d = {
         "name": "UserCreditScore",
         "fields": [
-            {
-                "name": "user_id",
-                "isKey": True,
-            },
-            {
-                "name": "credit_score",
-            },
-            {
-                "name": "timestamp",
-                "isTimestamp": True,
-            },
+            {"name": "user_id", "isKey": True, "metadata": {}},
+            {"name": "credit_score", "metadata": {}},
+            {"name": "timestamp", "isTimestamp": True, "metadata": {}},
         ],
-        "retention": 31536000000000,
-        "maxStaleness": 604800000000,
         "mode": "pandas",
-        "pullLookup": {
-            "functionSourceCode": "",
-        },
+        "metadata": {"owner": "test@test.com"},
+        "retention": "31536000000000",
+        "maxStaleness": "604800000000",
+        "pullLookup": {},
     }
 
     # Ignoring schema validation since they are bytes and not human-readable
@@ -193,20 +169,24 @@ def test_DatasetWithPull(grpc_stub):
 
 
 def test_DatasetWithPipes(grpc_stub):
+    @meta(owner="test@test.com")
     @dataset
     class A:
         a1: int = field(key=True)
         t: datetime
 
+    @meta(owner="test@test.com")
     @dataset
     class B:
         b1: int = field(key=True)
         t: datetime
 
+    @meta(owner="test@test.com")
     @dataset
     class C:
         t: datetime
 
+    @meta(owner="aditya@fennel.ai")
     @dataset
     class ABCDataset:
         a: int = field(key=True)
@@ -231,10 +211,10 @@ def test_DatasetWithPipes(grpc_stub):
     d = {
         "name": "ABCDataset",
         "fields": [
-            {"name": "a", "isKey": True},
-            {"name": "b", "isKey": True},
-            {"name": "c"},
-            {"name": "d", "isTimestamp": True},
+            {"name": "a", "isKey": True, "metadata": {}},
+            {"name": "b", "isKey": True, "metadata": {}},
+            {"name": "c", "metadata": {}},
+            {"name": "d", "isTimestamp": True, "metadata": {}},
         ],
         "pipelines": [
             {
@@ -248,7 +228,7 @@ def test_DatasetWithPipes(grpc_stub):
                                 "on": {"a1": "b1"},
                             }
                         },
-                    },
+                    }
                 ],
                 "root": "816d3f87d7dc94cfb4c9d8513e0d9234",
                 "signature": "ABCDataset.816d3f87d7dc94cfb4c9d8513e0d9234",
@@ -261,6 +241,7 @@ def test_DatasetWithPipes(grpc_stub):
             },
         ],
         "mode": "pandas",
+        "metadata": {"owner": "aditya@fennel.ai"},
         "retention": "63072000000000",
         "maxStaleness": "2592000000000",
         "pullLookup": {},
@@ -273,6 +254,7 @@ def test_DatasetWithPipes(grpc_stub):
 
 
 def test_DatasetWithComplexPipe(grpc_stub):
+    @meta(owner="test@test.com")
     @dataset
     class FraudReportAggregatedDataset:
         merchant_id: int = field(key=True)
@@ -333,10 +315,10 @@ def test_DatasetWithComplexPipe(grpc_stub):
     d = {
         "name": "FraudReportAggregatedDataset",
         "fields": [
-            {"name": "merchant_id", "isKey": True},
-            {"name": "timestamp", "isTimestamp": True},
-            {"name": "num_merchant_fraudulent_transactions"},
-            {"name": "num_merchant_fraudulent_transactions_7d"},
+            {"name": "merchant_id", "isKey": True, "metadata": {}},
+            {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+            {"name": "num_merchant_fraudulent_transactions", "metadata": {}},
+            {"name": "num_merchant_fraudulent_transactions_7d", "metadata": {}},
         ],
         "pipelines": [
             {
@@ -393,6 +375,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
             }
         ],
         "mode": "pandas",
+        "metadata": {"owner": "test@test.com"},
         "retention": "63072000000000",
         "maxStaleness": "2592000000000",
         "pullLookup": {},
@@ -417,6 +400,7 @@ def test_UnionDatasets(grpc_stub):
         b1: int = field(key=True)
         t2: datetime
 
+    @meta(owner="test@test.com")
     @dataset
     class ABCDataset:
         a1: int = field(key=True)
@@ -450,8 +434,12 @@ def test_UnionDatasets(grpc_stub):
     d = {
         "name": "ABCDataset",
         "fields": [
-            {"name": "a1", "isKey": True},
-            {"name": "t", "isTimestamp": True},
+            {"name": "a1", "isKey": True, "metadata": {}},
+            {
+                "name": "t",
+                "isTimestamp": True,
+                "metadata": {},
+            },
         ],
         "pipelines": [
             {
@@ -536,6 +524,7 @@ def test_UnionDatasets(grpc_stub):
             },
         ],
         "mode": "pandas",
+        "metadata": {"owner": "test@test.com"},
         "retention": "63072000000000",
         "maxStaleness": "2592000000000",
         "pullLookup": {},

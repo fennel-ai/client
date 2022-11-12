@@ -27,6 +27,12 @@ from fennel.lib.duration.duration import (
     duration_to_timedelta,
     timedelta_to_micros,
 )
+from fennel.lib.metadata import (
+    meta,
+    get_meta_attr,
+    set_meta_attr,
+    get_metadata_proto,
+)
 from fennel.lib.schema import get_pyarrow_field, dtype_to_string
 from fennel.sources import SOURCE_FIELD, SINK_FIELD
 from fennel.utils import (
@@ -54,8 +60,6 @@ class Field:
     name: str
     key: bool
     timestamp: bool
-    owner: str
-    description: str
     pa_field: pyarrow.lib.Field
     dtype: Optional[Type]
 
@@ -77,10 +81,12 @@ class Field:
             name=self.name,
             is_key=self.key,
             is_timestamp=self.timestamp,
-            owner=self.owner,
-            description=self.description,
             is_nullable=self.pa_field.nullable,
+            metadata=get_metadata_proto(self),
         )
+
+    def meta(self, **kwargs: Any) -> Field:
+        return meta(**kwargs)(self)
 
 
 def get_field(
@@ -102,14 +108,14 @@ def get_field(
             name=annotation_name,
             key=False,
             timestamp=False,
-            owner="",
-            description="",
             pa_field=None,
             dtype=dtype,
         )
 
-    if field.description is None or field.description == "":
-        field.description = field2comment_map.get(annotation_name, "")
+    description = get_meta_attr(field, "description")
+    if description is None or description == "":
+        description = field2comment_map.get(annotation_name, "")
+        set_meta_attr(field, "description", description)
     field.pa_field = get_pyarrow_field(annotation_name, dtype)
     return field
 
@@ -117,16 +123,12 @@ def get_field(
 def field(
     key: bool = False,
     timestamp: bool = False,
-    description: str = "",
-    owner: str = "",
 ) -> F:
     return cast(
         F,
         Field(
             key=key,
             timestamp=timestamp,
-            owner=owner,
-            description=description,
             # These fields will be filled in later.
             name="",
             pa_field=None,
@@ -377,7 +379,11 @@ def pipeline(
         setattr(
             pipeline_func,
             "__fennel_pipeline__",
-            Pipeline(node=pipeline_func(*params), inputs=list(params)),
+            Pipeline(
+                node=pipeline_func(*params),
+                inputs=list(params),
+                func=pipeline_func,
+            ),
         )
         return pipeline_func
 
@@ -398,10 +404,12 @@ class Pipeline:
     _nodes: List
     # Dataset it is part of
     _dataset_name: str
+    func: Callable
 
-    def __init__(self, node: _Node, inputs: List[Dataset]):
+    def __init__(self, node: _Node, inputs: List[Dataset], func: Callable):
         self.node = node
         self.inputs = inputs
+        self.func = func  # type: ignore
         serializer = Serializer()
         self._root, self._nodes = serializer.serialize(self)
 
@@ -414,6 +422,7 @@ class Pipeline:
             nodes=self._nodes,
             inputs=[i.name for i in self.inputs],
             signature=self.signature(),
+            metadata=get_metadata_proto(self.func),
         )
 
     def set_dataset_name(self, ds_name: str):
@@ -433,8 +442,6 @@ class Dataset(_Node):
     _key_field: str
     _timestamp_field: str
     _max_staleness: datetime.timedelta
-    _owner: Optional[str]
-    _description: Optional[str]
     __fennel_original_cls__: Any
 
     def __init__(
@@ -463,11 +470,10 @@ class Dataset(_Node):
             return str(key)
         return super().__getattribute__(key)
 
-    # ---------------------------------------------------------------------
-    # Public Methods
-    # ---------------------------------------------------------------------
+    # ------------------- Public Methods --------------------------
 
     def create_dataset_request_proto(self) -> proto.CreateDatasetRequest:
+        self._check_owner_exists()
         sources = []
         if hasattr(self, SOURCE_FIELD):
             sources = getattr(self, SOURCE_FIELD)
@@ -484,10 +490,8 @@ class Dataset(_Node):
             input_connectors=[s.to_proto() for s in sources],
             output_connectors=[s.to_proto() for s in sinks],
             mode="pandas",
-            # TODO: Parse description from docstring.
-            description="",
-            owner="",
             signature=self.signature(),
+            metadata=get_metadata_proto(self),
             # Currently we don't support versioning of datasets.
             # Kept for future use.
             version=0,
@@ -501,9 +505,12 @@ class Dataset(_Node):
     def signature(self):
         return self._sign
 
-    # ---------------------------------------------------------------------
-    # Private Methods
-    # ---------------------------------------------------------------------
+    # ------------------- Private Methods ----------------------------------
+
+    def _check_owner_exists(self):
+        owner = get_meta_attr(self, "owner")
+        if owner is None or owner == "":
+            raise Exception(f"Dataset {self.name} must have an owner.")
 
     def _create_signature(self):
         return fhash(
@@ -667,12 +674,6 @@ class Serializer(Visitor):
     def serialize(self, pipe: Pipeline):
         root_id = self.visit(pipe.node)
         return root_id, self.nodes
-        return proto.Pipeline(
-            root=root_id,
-            nodes=self.nodes,
-            inputs=[i.name for i in pipe.inputs],
-            signature=root_id,
-        )
 
     def visit(self, obj) -> str:
         if isinstance(obj, Dataset):

@@ -4,6 +4,7 @@ package fennel.proto;
 
 import "status.proto";
 import "source.proto";
+import "metadata.proto";
 
 // All integers representing time are in microseconds and hence should be int64.
 
@@ -17,6 +18,7 @@ message Field {
   string description = 6;
   bool is_nullable = 7;
   repeated string tags = 8;
+  Metadata metadata = 9;
 }
 
 message PullLookup {
@@ -32,18 +34,17 @@ message CreateDatasetRequest {
   repeated DataConnector output_connectors = 5;
 
   string signature = 6;
-  string owner = 7;
-  string description = 8;
+  Metadata metadata = 7;
   // Default mode is pandas.
-  string mode = 9;
-  uint32 version = 10;
+  string mode = 8;
+  uint32 version = 9;
 
   // Serialized arrow schema.
-  bytes schema = 11;
-  int64 retention = 12;
-  int64 max_staleness = 13;
+  bytes schema = 10;
+  int64 retention = 11;
+  int64 max_staleness = 12;
 
-  PullLookup pull_lookup = 14;
+  PullLookup pull_lookup = 13;
 }
 
 message CreateDatasetResponse{
@@ -61,8 +62,9 @@ message Pipeline {
   // Id of the root node.
   string root = 2;
   string signature = 3;
+  Metadata metadata = 4;
   // List of input datasets.
-  repeated string inputs = 4;
+  repeated string inputs = 5;
 }
 
 // Each Node in the pipeline either refers to a dataset or an operator.

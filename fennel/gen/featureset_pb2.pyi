@@ -7,6 +7,7 @@ import collections.abc
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.message
+import metadata_pb2
 import status_pb2
 import sys
 
@@ -29,6 +30,7 @@ class Feature(google.protobuf.message.Message):
     WIP_FIELD_NUMBER: builtins.int
     DEPRECATED_FIELD_NUMBER: builtins.int
     TAGS_FIELD_NUMBER: builtins.int
+    METADATA_FIELD_NUMBER: builtins.int
     id: builtins.int
     name: builtins.str
     dtype: builtins.str
@@ -39,6 +41,8 @@ class Feature(google.protobuf.message.Message):
     deprecated: builtins.bool
     @property
     def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @property
+    def metadata(self) -> metadata_pb2.Metadata: ...
     def __init__(
         self,
         *,
@@ -50,8 +54,10 @@ class Feature(google.protobuf.message.Message):
         wip: builtins.bool = ...,
         deprecated: builtins.bool = ...,
         tags: collections.abc.Iterable[builtins.str] | None = ...,
+        metadata: metadata_pb2.Metadata | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["deprecated", b"deprecated", "description", b"description", "dtype", b"dtype", "id", b"id", "name", b"name", "owner", b"owner", "tags", b"tags", "wip", b"wip"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["deprecated", b"deprecated", "description", b"description", "dtype", b"dtype", "id", b"id", "metadata", b"metadata", "name", b"name", "owner", b"owner", "tags", b"tags", "wip", b"wip"]) -> None: ...
 
 global___Feature = Feature
 
@@ -65,6 +71,7 @@ class Extractor(google.protobuf.message.Message):
     DATASETS_FIELD_NUMBER: builtins.int
     INPUTS_FIELD_NUMBER: builtins.int
     FEATURES_FIELD_NUMBER: builtins.int
+    METADATA_FIELD_NUMBER: builtins.int
     name: builtins.str
     func: builtins.bytes
     func_source_code: builtins.str
@@ -75,6 +82,8 @@ class Extractor(google.protobuf.message.Message):
     @property
     def features(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
         """The features that this extractor produces"""
+    @property
+    def metadata(self) -> metadata_pb2.Metadata: ...
     def __init__(
         self,
         *,
@@ -84,8 +93,10 @@ class Extractor(google.protobuf.message.Message):
         datasets: collections.abc.Iterable[builtins.str] | None = ...,
         inputs: collections.abc.Iterable[global___Input] | None = ...,
         features: collections.abc.Iterable[builtins.str] | None = ...,
+        metadata: metadata_pb2.Metadata | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "features", b"features", "func", b"func", "func_source_code", b"func_source_code", "inputs", b"inputs", "name", b"name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "features", b"features", "func", b"func", "func_source_code", b"func_source_code", "inputs", b"inputs", "metadata", b"metadata", "name", b"name"]) -> None: ...
 
 global___Extractor = Extractor
 
@@ -98,8 +109,7 @@ class CreateFeaturesetRequest(google.protobuf.message.Message):
     EXTRACTORS_FIELD_NUMBER: builtins.int
     VERSION_FIELD_NUMBER: builtins.int
     SIGNATURE_FIELD_NUMBER: builtins.int
-    OWNER_FIELD_NUMBER: builtins.int
-    DESCRIPTION_FIELD_NUMBER: builtins.int
+    METADATA_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def features(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Feature]: ...
@@ -107,8 +117,8 @@ class CreateFeaturesetRequest(google.protobuf.message.Message):
     def extractors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Extractor]: ...
     version: builtins.int
     signature: builtins.str
-    owner: builtins.str
-    description: builtins.str
+    @property
+    def metadata(self) -> metadata_pb2.Metadata: ...
     def __init__(
         self,
         *,
@@ -117,10 +127,10 @@ class CreateFeaturesetRequest(google.protobuf.message.Message):
         extractors: collections.abc.Iterable[global___Extractor] | None = ...,
         version: builtins.int = ...,
         signature: builtins.str = ...,
-        owner: builtins.str = ...,
-        description: builtins.str = ...,
+        metadata: metadata_pb2.Metadata | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["description", b"description", "extractors", b"extractors", "features", b"features", "name", b"name", "owner", b"owner", "signature", b"signature", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["extractors", b"extractors", "features", b"features", "metadata", b"metadata", "name", b"name", "signature", b"signature", "version", b"version"]) -> None: ...
 
 global___CreateFeaturesetRequest = CreateFeaturesetRequest
 
