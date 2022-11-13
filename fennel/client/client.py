@@ -7,8 +7,8 @@ import requests  # type: ignore
 
 import fennel.gen.services_pb2 as services_pb2
 import fennel.gen.services_pb2_grpc as services_pb2_grpc
-from fennel.dataset import Dataset
-from fennel.featureset import Featureset
+from fennel.datasets import Dataset
+from fennel.featuresets import Featureset
 from fennel.utils import check_response
 
 REST_API_VERSION = "/api/v1"

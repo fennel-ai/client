@@ -21,7 +21,7 @@ import cloudpickle
 import pyarrow
 
 import fennel.gen.featureset_pb2 as proto
-from fennel.dataset import Dataset
+from fennel.datasets import Dataset
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
@@ -135,7 +135,11 @@ def extractor(extractor_func: Callable):
     return_annotation = extractor_func.__annotations__.get("return", None)
     outputs = []
     if return_annotation is not None:
-        if return_annotation.__dict__["_name"] != "Tuple":
+        # The _name is right, don't change it.
+        if (
+            "_name" not in return_annotation.__dict__
+            or return_annotation.__dict__["_name"] != "Tuple"
+        ):
             raise TypeError("extractor functions must return a tuple")
         for type_ in return_annotation.__dict__["__args__"]:
             if not isinstance(type_, ForwardRef):

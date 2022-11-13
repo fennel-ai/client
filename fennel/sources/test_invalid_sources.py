@@ -3,7 +3,7 @@ from typing import Optional
 
 import pytest
 
-from fennel.dataset import dataset, field
+from fennel.datasets import dataset, field
 from fennel.sources import source, S3, MySQL
 
 # noinspection PyUnresolvedReferences

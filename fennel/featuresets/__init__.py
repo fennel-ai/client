@@ -1,4 +1,4 @@
-from fennel.featureset.featureset import (
+from fennel.featuresets.featureset import (
     featureset,
     Featureset,
     depends_on,

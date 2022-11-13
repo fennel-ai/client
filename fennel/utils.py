@@ -146,3 +146,10 @@ def propogate_fennel_attributes(src: Any, dest: Any):
     for k, v in src.__dict__.items():
         if k.startswith("__fennel") and k.endswith("__"):
             setattr(dest, k, v)
+
+
+#
+# def dataset_lookup(
+#         ts: pyarrow.Array, properties: List[str], keys: pyarrow.RecordBatch,
+# ) -> pyarrow.RecordBatch:
+#     raise NotImplementedError("dataset_lookup should not be called directly")

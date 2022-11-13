@@ -3,7 +3,7 @@ from typing import Optional
 
 from google.protobuf.json_format import ParseDict
 
-from fennel.dataset import dataset, field
+from fennel.datasets import dataset, field
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.metadata import meta
 from fennel.sources import source, MySQL, S3, Snowflake, BigQuery, Postgres

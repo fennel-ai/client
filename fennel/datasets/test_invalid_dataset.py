@@ -3,7 +3,7 @@ from typing import Optional
 
 import pytest
 
-from fennel.dataset import dataset, pipeline, field, Dataset
+from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.test_lib import *
 
 
