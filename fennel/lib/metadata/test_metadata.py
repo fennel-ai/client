@@ -6,8 +6,8 @@ import pandas as pd
 from google.protobuf.json_format import ParseDict
 
 import fennel.gen.featureset_pb2 as proto
-from fennel.dataset import dataset, pipeline, field, Dataset
-from fennel.featureset import featureset, extractor, depends_on, feature
+from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.metadata import meta
 from fennel.test_lib import *

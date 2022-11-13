@@ -18,6 +18,7 @@ from typing import (
 )
 
 import cloudpickle
+import pandas as pd
 import pyarrow
 
 import fennel.gen.dataset_pb2 as proto
@@ -317,6 +318,61 @@ def dataset(
         The maximum amount of time that data in the dataset can be stale.
     """
 
+    def _create_lookup_function(key_fields: List[str]) -> Optional[Callable]:
+        if len(key_fields) == 0:
+            return None
+
+        def lookup(ts: pd.Series, *args, **kwargs) -> pd.DataFrame:
+            if len(args) > 0:
+                raise ValueError(
+                    f"lookup expects key value arguments and can "
+                    f"optionally include properties, found {args}"
+                )
+            # convert ts to pyarrow Array
+            ts = pyarrow.Array.from_pandas(ts)
+            # extract keys and properties from kwargs
+            arr = []
+            for key, value in kwargs.items():
+                if key != "properties":
+                    if not isinstance(value, pd.Series):
+                        raise ValueError(f"Param {key} is not a pandas Series")
+                    arr.append(value)
+            if "properties" in kwargs:
+                properties = kwargs["properties"]
+            else:
+                properties = []
+
+            # convert keys to a pyarrow RecordBatch
+            df = pd.concat(arr, axis=1)
+            df.columns = key_fields
+            key_recordbatch = pyarrow.RecordBatch.from_pandas(df)
+            res = dataset_lookup(
+                ts,
+                properties,
+                key_recordbatch,
+            )
+            return res.to_pandas()
+
+        args = {k: pd.Series for k in key_fields}
+        args["properties"] = List[str]
+        params = [
+            inspect.Parameter(
+                param, inspect.Parameter.KEYWORD_ONLY, annotation=type_
+            )
+            for param, type_ in args.items()
+        ]
+        args["ts"] = pd.Series
+        params = [
+            inspect.Parameter(
+                "ts",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=pd.Series,
+            )
+        ] + params
+        setattr(lookup, "__signature__", inspect.Signature(params))
+        setattr(lookup, "__annotations__", args)
+        return lookup
+
     def _create_dataset(
         dataset_cls: Type[F],
         retention: Duration,
@@ -333,6 +389,8 @@ def dataset(
             for name in cls_annotations
         ]
 
+        key_fields = [f.name for f in fields if f.key]
+
         pull_fn = getattr(dataset_cls, "pull", None)
         return Dataset(
             dataset_cls,
@@ -340,6 +398,7 @@ def dataset(
             retention=duration_to_timedelta(retention),
             max_staleness=duration_to_timedelta(max_staleness),
             pull_fn=pull_fn,
+            lookup_fn=_create_lookup_function(key_fields),
         )
 
     def wrap(c: Type[F]) -> Dataset:
@@ -388,6 +447,14 @@ def pipeline(
         return pipeline_func
 
     return wrapper
+
+
+def dataset_lookup(
+    ts: pyarrow.Array,
+    properties: List[str],
+    keys: pyarrow.RecordBatch,
+) -> pyarrow.RecordBatch:
+    raise NotImplementedError("dataset_lookup should not be called directly.")
 
 
 # ---------------------------------------------------------------------
@@ -443,6 +510,7 @@ class Dataset(_Node):
     _timestamp_field: str
     _max_staleness: datetime.timedelta
     __fennel_original_cls__: Any
+    lookup: Callable
 
     def __init__(
         self,
@@ -450,6 +518,7 @@ class Dataset(_Node):
         fields: List[Field],
         retention: datetime.timedelta,
         max_staleness: datetime.timedelta,
+        lookup_fn: Optional[Callable] = None,
         pull_fn: Optional[Callable] = None,
     ):
         super().__init__()
@@ -463,12 +532,9 @@ class Dataset(_Node):
         self.__fennel_original_cls__ = cls
         self._pipelines = self._get_pipelines(self.name)
         self._sign = self._create_signature()
+        if lookup_fn is not None:
+            self.lookup = lookup_fn  # type: ignore
         propogate_fennel_attributes(cls, self)
-
-    def __getattr__(self, key):
-        if key in self.__fennel_original_cls__.__dict__["__annotations__"]:
-            return str(key)
-        return super().__getattribute__(key)
 
     # ------------------- Public Methods --------------------------
 
@@ -498,9 +564,6 @@ class Dataset(_Node):
             fields=[field.to_proto() for field in self._fields],
             pull_lookup=self._pull_to_proto() if self.pull_fn else None,
         )
-
-    def lookup(self, key):
-        raise NotImplementedError
 
     def signature(self):
         return self._sign

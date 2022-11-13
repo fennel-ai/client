@@ -41,6 +41,7 @@ testpaths = [
     "fennel/lib",
     "fennel/featureset",
     "fennel/sources",
+    "fennel/e2e_tests",
 ]
 
 

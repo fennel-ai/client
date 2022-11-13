@@ -4,8 +4,8 @@ from typing import Optional, Tuple
 import pandas as pd
 import pytest
 
-from fennel.dataset import dataset, field
-from fennel.featureset import featureset, extractor, depends_on, feature
+from fennel.datasets import dataset, field
+from fennel.featuresets import featureset, extractor, depends_on, feature
 
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *

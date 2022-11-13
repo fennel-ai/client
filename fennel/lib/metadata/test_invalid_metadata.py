@@ -3,7 +3,7 @@ from typing import Optional
 
 import pytest
 
-from fennel.dataset import dataset, field
+from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 
 
