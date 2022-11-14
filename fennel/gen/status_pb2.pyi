@@ -30,7 +30,6 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
 class Status(google.protobuf.message.Message):
     """The `Status` type defines a logical error model that is suitable for
     different programming environments, including REST APIs and RPC APIs. It is

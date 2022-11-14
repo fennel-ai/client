@@ -25,7 +25,7 @@ class _AggregateType:
     ValueType = typing.NewType("ValueType", builtins.int)
     V: typing_extensions.TypeAlias = ValueType
 
-class _AggregateTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_AggregateType.ValueType], builtins.type):
+class _AggregateTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_AggregateType.ValueType], builtins.type):  # noqa: F821
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     SUM: _AggregateType.ValueType  # 0
     AVG: _AggregateType.ValueType  # 1
@@ -46,7 +46,6 @@ TOPK: AggregateType.ValueType  # 5
 CF: AggregateType.ValueType  # 6
 global___AggregateType = AggregateType
 
-@typing_extensions.final
 class Field(google.protobuf.message.Message):
     """All integers representing time are in microseconds and hence should be int64."""
 
@@ -91,7 +90,6 @@ class Field(google.protobuf.message.Message):
 
 global___Field = Field
 
-@typing_extensions.final
 class PullLookup(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -109,7 +107,6 @@ class PullLookup(google.protobuf.message.Message):
 
 global___PullLookup = PullLookup
 
-@typing_extensions.final
 class CreateDatasetRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -169,7 +166,6 @@ class CreateDatasetRequest(google.protobuf.message.Message):
 
 global___CreateDatasetRequest = CreateDatasetRequest
 
-@typing_extensions.final
 class CreateDatasetResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -189,7 +185,6 @@ class CreateDatasetResponse(google.protobuf.message.Message):
 
 global___CreateDatasetResponse = CreateDatasetResponse
 
-@typing_extensions.final
 class Pipeline(google.protobuf.message.Message):
     """----------------------------------------------------------------------------------------------
     Pipeline
@@ -228,7 +223,6 @@ class Pipeline(google.protobuf.message.Message):
 
 global___Pipeline = Pipeline
 
-@typing_extensions.final
 class Node(google.protobuf.message.Message):
     """Each Node in the pipeline either refers to a dataset or an operator.
     Each node also has a globally unique id. Operators refer to their inputs via
@@ -257,7 +251,6 @@ class Node(google.protobuf.message.Message):
 
 global___Node = Node
 
-@typing_extensions.final
 class Operator(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -287,7 +280,6 @@ class Operator(google.protobuf.message.Message):
 
 global___Operator = Operator
 
-@typing_extensions.final
 class Aggregate(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -310,11 +302,9 @@ class Aggregate(google.protobuf.message.Message):
 
 global___Aggregate = Aggregate
 
-@typing_extensions.final
 class Join(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
     class OnEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -350,7 +340,6 @@ class Join(google.protobuf.message.Message):
 
 global___Join = Join
 
-@typing_extensions.final
 class Transform(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -374,7 +363,6 @@ class Transform(google.protobuf.message.Message):
 
 global___Transform = Transform
 
-@typing_extensions.final
 class Union(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -390,7 +378,6 @@ class Union(google.protobuf.message.Message):
 
 global___Union = Union
 
-@typing_extensions.final
 class Aggregation(google.protobuf.message.Message):
     """----------------------------------------------------------------------------
     Aggregate Definitions
@@ -427,7 +414,6 @@ class Aggregation(google.protobuf.message.Message):
 
 global___Aggregation = Aggregation
 
-@typing_extensions.final
 class Window(google.protobuf.message.Message):
     """to = 0 represents last X window."""
 
@@ -447,7 +433,6 @@ class Window(google.protobuf.message.Message):
 
 global___Window = Window
 
-@typing_extensions.final
 class DeltaWindow(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -468,7 +453,6 @@ class DeltaWindow(google.protobuf.message.Message):
 
 global___DeltaWindow = DeltaWindow
 
-@typing_extensions.final
 class WindowSpec(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -493,7 +477,6 @@ class WindowSpec(google.protobuf.message.Message):
 
 global___WindowSpec = WindowSpec
 
-@typing_extensions.final
 class TopKConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -515,7 +498,6 @@ class TopKConfig(google.protobuf.message.Message):
 
 global___TopKConfig = TopKConfig
 
-@typing_extensions.final
 class CFConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
