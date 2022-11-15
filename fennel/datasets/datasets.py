@@ -86,8 +86,8 @@ class Field:
             metadata=get_metadata_proto(self),
         )
 
-    def meta(self, **kwargs: Any) -> Field:
-        return meta(**kwargs)(self)
+    def meta(self, **kwargs: Any) -> F:
+        return cast(F, meta(**kwargs)(self))
 
 
 def get_field(
@@ -614,7 +614,12 @@ class Dataset(_Node):
 
     def _get_schema(self) -> bytes:
         schema = pyarrow.schema(
-            [field.pa_field for field in self._fields if field.pa_field]
+            [
+                field.pa_field
+                for field in self._fields
+                if field.pa_field
+                if not get_meta_attr(field, "deleted")
+            ]
         )
         return schema.serialize().to_pybytes()
 
