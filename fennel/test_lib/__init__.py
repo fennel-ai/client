@@ -1,11 +1,10 @@
 from fennel.test_lib.grpc_mock import (
     grpc_add_to_server,
-    grpc_servicer,
     grpc_stub_cls,
-    workspace,
+    grpc_servicer,
 )
+from fennel.test_lib.mock_client import mock_client
 from fennel.test_lib.test_client import (
-    ClientTestClient,
     InternalTestClient,
 )
 from fennel.test_lib.test_utils import (

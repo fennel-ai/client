@@ -129,3 +129,6 @@ dmypy.json
 
 # Idea files
 .idea/
+
+
+fennel/proto

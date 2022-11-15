@@ -17,7 +17,6 @@ from typing import (
     Set,
 )
 
-import cloudpickle
 import pyarrow
 
 import fennel.gen.featureset_pb2 as proto
@@ -29,7 +28,11 @@ from fennel.lib.metadata import (
     get_metadata_proto,
 )
 from fennel.lib.schema import get_pyarrow_schema
-from fennel.utils import parse_annotation_comments, propogate_fennel_attributes
+from fennel.utils import (
+    parse_annotation_comments,
+    propogate_fennel_attributes,
+    fennel_pickle
+)
 
 T = TypeVar("T")
 
@@ -40,7 +43,7 @@ T = TypeVar("T")
 
 
 def feature(
-    id: int,
+        id: int,
 ) -> T:
     return cast(
         T,
@@ -60,10 +63,10 @@ def feature(
 
 
 def get_feature(
-    cls: Type,
-    annotation_name: str,
-    dtype: Type,
-    field2comment_map: Dict[str, str],
+        cls: Type,
+        annotation_name: str,
+        dtype: Type,
+        field2comment_map: Dict[str, str],
 ) -> Feature:
     feature = getattr(cls, annotation_name, None)
     if not isinstance(feature, Feature):
@@ -124,7 +127,7 @@ def extractor(extractor_func: Callable):
         if param.name == "ts":
             continue
         if not isinstance(param.annotation, Featureset) and not isinstance(
-            param.annotation, Feature
+                param.annotation, Feature
         ):
             raise TypeError(
                 f"Parameter {name} is not a Featureset or a "
@@ -137,8 +140,8 @@ def extractor(extractor_func: Callable):
     if return_annotation is not None:
         # The _name is right, don't change it.
         if (
-            "_name" not in return_annotation.__dict__
-            or return_annotation.__dict__["_name"] != "Tuple"
+                "_name" not in return_annotation.__dict__
+                or return_annotation.__dict__["_name"] != "Tuple"
         ):
             raise TypeError("extractor functions must return a tuple")
         for type_ in return_annotation.__dict__["__args__"]:
@@ -157,7 +160,7 @@ def extractor(extractor_func: Callable):
     return extractor_func
 
 
-def depends_on(*datasets: Type[Dataset]):
+def depends_on(*datasets: Dataset):
     def decorator(func):
         setattr(func, "_depends_on_datasets", list(datasets))
 
@@ -219,9 +222,9 @@ class Featureset:
     _extractors: List[Extractor]
 
     def __init__(
-        self,
-        featureset_cls: Type[T],
-        fields: List[Feature],
+            self,
+            featureset_cls: Type[T],
+            fields: List[Feature],
     ):
         self.__fennel_original_cls__ = featureset_cls
         self.name = featureset_cls.__name__
@@ -316,11 +319,11 @@ class Extractor:
     outputs: Optional[List[str]]
 
     def __init__(
-        self,
-        name: str,
-        inputs: List[Union[Feature, Featureset]],
-        func: Callable,
-        outputs: Optional[List[str]],
+            self,
+            name: str,
+            inputs: List[Union[Feature, Featureset]],
+            func: Callable,
+            outputs: Optional[List[str]],
     ):
         self.name = name
         self.inputs = inputs
@@ -344,7 +347,8 @@ class Extractor:
                 )
         return proto.Extractor(
             name=self.name,
-            func=cloudpickle.dumps(self.func),
+            func=fennel_pickle(self.func),
+            # func=cloudpickle.dumps(self.func),
             func_source_code=inspect.getsource(self.func),
             datasets=[
                 dataset.name for dataset in self.func._depends_on_datasets
