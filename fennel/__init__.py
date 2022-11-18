@@ -1,7 +1,3 @@
-import sys
-
-sys.setrecursionlimit(3000)
-
 import fennel.client
 import fennel.sources
 from fennel.datasets import dataset, field, pipeline, Dataset

@@ -98,10 +98,10 @@ class Field:
 
 
 def get_field(
-        cls: F,
-        annotation_name: str,
-        dtype: Type,
-        field2comment_map: Dict[str, str],
+    cls: F,
+    annotation_name: str,
+    dtype: Type,
+    field2comment_map: Dict[str, str],
 ) -> Field:
     if "." in annotation_name:
         raise ValueError(
@@ -129,8 +129,8 @@ def get_field(
 
 
 def field(
-        key: bool = False,
-        timestamp: bool = False,
+    key: bool = False,
+    timestamp: bool = False,
 ) -> F:
     return cast(
         F,
@@ -155,7 +155,7 @@ class _Node:
         self.out_edges = []
 
     def transform(
-            self, func: Callable, timestamp: Optional[str] = None
+        self, func: Callable, timestamp: Optional[str] = None
     ) -> _Node:
         return _Transform(self, func, timestamp)
 
@@ -163,11 +163,11 @@ class _Node:
         return _GroupBy(self, *args)
 
     def join(
-            self,
-            other: Dataset,
-            on: Optional[List[str]] = None,
-            left_on: Optional[List[str]] = None,
-            right_on: Optional[List[str]] = None,
+        self,
+        other: Dataset,
+        on: Optional[List[str]] = None,
+        left_on: Optional[List[str]] = None,
+        right_on: Optional[List[str]] = None,
     ) -> _Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError("Cannot join with an intermediate dataset")
@@ -201,7 +201,7 @@ class _Transform(_Node):
 
 class _Aggregate(_Node):
     def __init__(
-            self, node: _Node, keys: List[str], aggregates: List[AggregateType]
+        self, node: _Node, keys: List[str], aggregates: List[AggregateType]
     ):
         super().__init__()
         if len(keys) == 0:
@@ -231,12 +231,12 @@ class _GroupBy:
 
 class _Join(_Node):
     def __init__(
-            self,
-            node: _Node,
-            dataset: Dataset,
-            on: Optional[List[str]] = None,
-            left_on: Optional[List[str]] = None,
-            right_on: Optional[List[str]] = None,
+        self,
+        node: _Node,
+        dataset: Dataset,
+        on: Optional[List[str]] = None,
+        left_on: Optional[List[str]] = None,
+        right_on: Optional[List[str]] = None,
     ):
         super().__init__()
         self.node = node
@@ -295,9 +295,9 @@ class _Union(_Node):
 
 @overload
 def dataset(
-        *,
-        retention: Optional[Duration] = DEFAULT_RETENTION,
-        max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
+    *,
+    retention: Optional[Duration] = DEFAULT_RETENTION,
+    max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
 ) -> Callable[[Type[F]], Dataset]:
     ...
 
@@ -308,9 +308,9 @@ def dataset(cls: Type[F]) -> Dataset:
 
 
 def dataset(
-        cls: Optional[Type[F]] = None,
-        retention: Optional[Duration] = DEFAULT_RETENTION,
-        max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
+    cls: Optional[Type[F]] = None,
+    retention: Optional[Duration] = DEFAULT_RETENTION,
+    max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
 ) -> Union[Callable[[Type[F]], Dataset], Dataset]:
     """
     dataset is a decorator that creates a Dataset class.
@@ -325,8 +325,9 @@ def dataset(
         The maximum amount of time that data in the dataset can be stale.
     """
 
-    def _create_lookup_function(cls_name: str, key_fields: List[str]) -> \
-            Optional[Callable]:
+    def _create_lookup_function(
+        cls_name: str, key_fields: List[str]
+    ) -> Optional[Callable]:
         if len(key_fields) == 0:
             return None
 
@@ -381,20 +382,20 @@ def dataset(
         ]
         args["ts"] = pd.Series
         params = [
-                     inspect.Parameter(
-                         "ts",
-                         inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                         annotation=pd.Series,
-                     )
-                 ] + params
+            inspect.Parameter(
+                "ts",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=pd.Series,
+            )
+        ] + params
         setattr(lookup, "__signature__", inspect.Signature(params))
         setattr(lookup, "__annotations__", args)
         return lookup
 
     def _create_dataset(
-            dataset_cls: Type[F],
-            retention: Duration,
-            max_staleness: Duration,
+        dataset_cls: Type[F],
+        retention: Duration,
+        max_staleness: Duration,
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
         fields = [
@@ -433,7 +434,7 @@ def dataset(
 
 
 def pipeline(
-        *params: Dataset,
+    *params: Any,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     for param in params:
         if callable(param):
@@ -468,10 +469,10 @@ def pipeline(
 
 
 def dataset_lookup(
-        cls_name: str,
-        ts: pyarrow.Array,
-        properties: List[str],
-        keys: pyarrow.RecordBatch,
+    cls_name: str,
+    ts: pyarrow.Array,
+    properties: List[str],
+    keys: pyarrow.RecordBatch,
 ) -> pyarrow.RecordBatch:
     raise NotImplementedError("dataset_lookup should not be called directly.")
 
@@ -491,6 +492,7 @@ class Pipeline:
     # Dataset it is part of
     _dataset_name: str
     func: Callable
+    name: str
 
     def __init__(self, node: _Node, inputs: List[Dataset], func: Callable):
         self.node = node
@@ -498,6 +500,7 @@ class Pipeline:
         self.func = func  # type: ignore
         serializer = Serializer()
         self._root, self._nodes = serializer.serialize(self)
+        self.name = func.__name__
 
     def signature(self):
         return f"{self._dataset_name}.{self._root}"
@@ -514,6 +517,13 @@ class Pipeline:
     def set_dataset_name(self, ds_name: str):
         self._dataset_name = ds_name
 
+    def __str__(self):
+        return f"Pipeline({self.signature()})"
+
+    @property
+    def dataset_name(self):
+        return self._dataset_name
+
 
 class Dataset(_Node):
     """Dataset is a collection of data."""
@@ -524,21 +534,21 @@ class Dataset(_Node):
     # the original attributes defined by the user.
     _retention: datetime.timedelta
     _fields: List[Field]
-    _pipelines: List[Pipeline]
     _key_fields: List[str]
+    _pipelines: List[Pipeline]
     _timestamp_field: str
     _max_staleness: datetime.timedelta
     __fennel_original_cls__: Any
     lookup: Callable
 
     def __init__(
-            self,
-            cls: F,
-            fields: List[Field],
-            retention: datetime.timedelta,
-            max_staleness: datetime.timedelta,
-            lookup_fn: Optional[Callable] = None,
-            pull_fn: Optional[Callable] = None,
+        self,
+        cls: F,
+        fields: List[Field],
+        retention: datetime.timedelta,
+        max_staleness: datetime.timedelta,
+        lookup_fn: Optional[Callable] = None,
+        pull_fn: Optional[Callable] = None,
     ):
         super().__init__()
         self.name = cls.__name__  # type: ignore
@@ -547,6 +557,7 @@ class Dataset(_Node):
         self._fields = fields
         _key_fields: List[str]
         self._set_timestamp_field()
+        self._set_key_fields()
         self._retention = retention
         self._max_staleness = max_staleness
         self.__fennel_original_cls__ = cls

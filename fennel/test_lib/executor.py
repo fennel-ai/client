@@ -69,7 +69,7 @@ class Executor(Visitor):
                     past_timestamp = current_timestamp - window_secs
                     filtered_df = filtered_df.loc[
                         df[input_ret.timestamp_field] >= past_timestamp
-                        ]
+                    ]
 
                 if isinstance(aggregate, Count):
                     # Count needs some column to aggregate on, so we use the

@@ -59,20 +59,62 @@ class Sum(AggregateType):
     def signature(self):
         return f"sum_{self.value}_{self.window.signature()}"
 
+    def agg_type(self):
+        return "sum"
+
 
 class Average(AggregateType):
     value: str
     agg_func = proto.AggregateType.AVG
+
+    def to_proto(self):
+        return proto.Aggregation(
+            type=self.agg_func,
+            window_spec=self.window.to_proto(),
+            value_field=self.value,
+        )
+
+    def signature(self):
+        return f"avg_{self.value}_{self.window.signature()}"
+
+    def agg_type(self):
+        return "mean"
 
 
 class Max(AggregateType):
     value: str
     agg_func = proto.AggregateType.MAX
 
+    def to_proto(self):
+        return proto.Aggregation(
+            type=self.agg_func,
+            window_spec=self.window.to_proto(),
+            value_field=self.value,
+        )
+
+    def signature(self):
+        return f"max_{self.value}_{self.window.signature()}"
+
+    def agg_type(self):
+        return "max"
+
 
 class Min(AggregateType):
     value: str
     agg_func = proto.AggregateType.MIN
+
+    def to_proto(self):
+        return proto.Aggregation(
+            type=self.agg_func,
+            window_spec=self.window.to_proto(),
+            value_field=self.value,
+        )
+
+    def signature(self):
+        return f"min_{self.value}_{self.window.signature()}"
+
+    def agg_type(self):
+        return "min"
 
 
 class TopK(AggregateType):

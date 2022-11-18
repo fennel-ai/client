@@ -327,7 +327,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info1(
-                ts: pd.Series, user_id: User.id
+            ts: pd.Series, user_id: User.id
         ) -> Tuple["userid", "home_geoid"]:
             pass
 
@@ -335,7 +335,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @meta(owner="b@xyz.com", description="middle_meta")
         @depends_on(UserInfoDataset)
         def get_user_info2(
-                ts: pd.Series, user_id: User.id
+            ts: pd.Series, user_id: User.id
         ) -> Tuple["gender", "age"]:
             pass
 

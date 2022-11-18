@@ -31,22 +31,6 @@ def del_namespace(obj, depth):
         return
     if "namespace" in obj.__dict__:
         obj.__dict__.pop("namespace")
-    # if "dataset_lookup" in obj.__dict__:
-    #     obj.__dict__.pop("dataset_lookup")
-
-    # new_dict = {}
-    # for k, v in obj.__dict__.items():
-    #     if "lookup" != k:
-    #         new_dict[k] = v
-    #     if "lookup" in k:
-    #         print(k)
-    #
-    # try:
-    #     if type(obj) != type:
-    #         setattr(obj, "__dict__", new_dict)
-    # except Exception as e:
-    #     # print(e)
-    #     pass
 
     for k, v in obj.__dict__.items():
         if isinstance(v, dict):
@@ -136,12 +120,12 @@ def parse_annotation_comments(cls: Any) -> Dict[str, str]:
         if isinstance(class_def, ast.ClassDef):
             for stmt in class_def.body:
                 if isinstance(stmt, ast.AnnAssign) and isinstance(
-                        stmt.target, ast.Name
+                    stmt.target, ast.Name
                 ):
                     line = stmt.lineno - 2
                     comments: List[str] = []
                     while line >= 0 and source_lines[line].strip().startswith(
-                            "#"
+                        "#"
                     ):
                         comment = source_lines[line].strip().strip("#").strip()
                         comments.insert(0, comment)
@@ -165,9 +149,3 @@ def propogate_fennel_attributes(src: Any, dest: Any):
     for k, v in src.__dict__.items():
         if k.startswith("__fennel") and k.endswith("__"):
             setattr(dest, k, v)
-
-# def dataset_lookup(
-#         cls_name: str, ts: pyarrow.Array, properties: List[str], keys:
-#         pyarrow.RecordBatch,
-# ) -> pyarrow.RecordBatch:
-#     raise NotImplementedError("dataset_lookup should not be called directly")

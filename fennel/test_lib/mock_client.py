@@ -1,6 +1,7 @@
 import json
 from collections import defaultdict
 from concurrent import futures
+from dataclasses import dataclass
 from functools import partial
 from typing import Dict, List
 
@@ -28,25 +29,26 @@ TEST_DATA_PORT = 50052
 class FakeResponse(Response):
     def __init__(self, status_code: int, content: str):
         self.status_code = status_code
+
+        self.encoding = "utf-8"
         if status_code == 200:
             self._ok = True
+            self._content = json.dumps({}).encode("utf-8")
             return
         self._content = json.dumps({"error": f"{content}"}, indent=2).encode(
             "utf-8"
         )
-        self.encoding = "utf-8"
 
 
 def lookup_fn(
-        data: Dict[str, pd.DataFrame],
-        datasets: Dict[str, Dataset],
-        cls_name: str,
-        ts: pa.Array,
-        properties: List[str],
-        keys: pa.RecordBatch,
+    data: Dict[str, pd.DataFrame],
+    datasets: Dict[str, Dataset],
+    cls_name: str,
+    ts: pa.Array,
+    properties: List[str],
+    keys: pa.RecordBatch,
 ):
     key_df = keys.to_pandas()
-    print(data[cls_name])
     if cls_name not in data:
         timestamp_col = datasets[cls_name].timestamp_field
         # Create a dataframe with all nulls
@@ -81,13 +83,19 @@ def lookup_fn(
     return pa.RecordBatch.from_pandas(df)
 
 
+@dataclass
+class _DatasetInfo:
+    fields: List
+    timestamp_field: str
+
+
 class MockClient(Client):
     def __init__(self, stub):
         super().__init__(url=f"localhost:{TEST_PORT}")
         self.stub = stub
 
         self.dataset_requests: Dict[str, CreateDatasetRequest] = {}
-        self.datasets: Dict[str, Dataset] = {}
+        self.datasets: Dict[str, _DatasetInfo] = {}
         # Map of dataset name to the dataframe
         self.data: Dict[str, pd.DataFrame] = {}
         # Map of datasets to pipelines it is an input to
@@ -118,13 +126,11 @@ class MockClient(Client):
         )
 
     def log(self, dataset_name: str, df: pd.DataFrame, direct=True):
-        print(f"Logging {dataset_name}")
         if dataset_name not in self.dataset_requests and direct:
             return FakeResponse(404, f"Dataset {dataset_name} not found")
         dataset = self.dataset_requests[dataset_name]
         with pa.ipc.open_stream(dataset.schema) as reader:
             dataset_schema = reader.schema
-            print(f"Logging {dataset_name}")
             try:
                 pa.RecordBatch.from_pandas(df, schema=dataset_schema)
             except Exception as e:
@@ -134,21 +140,13 @@ class MockClient(Client):
                 )
                 return FakeResponse(status_code=400, content=content)
 
-            print("Logging data", dataset_name)
-            print(df)
             self._merge_df(df, dataset_name)
 
             for pipeline in self.listeners[dataset_name]:
-                print(
-                    "Executing pipeline", pipeline.name, pipeline.dataset_name
-                )
                 executor = Executor(self.data)
                 ret = executor.execute(pipeline)
                 if ret is None:
                     continue
-                print("Pipeline", pipeline.name, "dumps", pipeline.dataset_name)
-                print(ret.df)
-                print("*" * 80)
                 # Recursively log the output of the pipeline to the datasets
                 resp = self.log(pipeline.dataset_name, ret.df, direct=False)
                 if resp.status_code != 200:
@@ -156,8 +154,7 @@ class MockClient(Client):
         return FakeResponse(200, "OK")
 
     def sync(
-            self, datasets: List[Dataset] = [],
-            featuresets: List[Featureset] = []
+        self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
     ):
         # TODO: Test for cycles in the graph
 
@@ -165,7 +162,9 @@ class MockClient(Client):
             self.dataset_requests[
                 dataset.name
             ] = dataset.create_dataset_request_proto()
-            self.datasets[dataset.name] = dataset
+            self.datasets[dataset.name] = _DatasetInfo(
+                dataset.fields, dataset.timestamp_field
+            )
             for pipeline in dataset._pipelines:
                 for input in pipeline.inputs:
                     self.listeners[input.name].append(pipeline)
