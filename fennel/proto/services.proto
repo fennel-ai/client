@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package fennel.proto;
+
+import "featureset.proto";
+import "dataset.proto";
+
+
+/*
+The generated code needs to be hand modified to add the following
+import stream_pb2 as stream__pb2 to import fennel.gen.stream_pb2 as stream__pb2
+More info: https://github.com/protocolbuffers/protobuf/issues/1491 & https://github.com/protocolbuffers/protobuf/issues/881
+
+Use the following command from client ( root ) directory to generated the required files -
+https://gist.github.com/aditya-nambiar/87c8b55fe509c1c1cd06d212b8a8ded1
+*/
+
+message SyncRequest {
+  repeated CreateDatasetRequest dataset_requests = 1;
+  repeated CreateFeaturesetRequest featureset_requests = 3;
+}
+
+message SyncResponse {
+  repeated CreateDatasetResponse dataset_responses = 1;
+  repeated CreateFeatureSetResponse feature_set_responses = 3;
+}
+
+service FennelFeatureStore {
+  rpc Sync(SyncRequest) returns (SyncResponse);
+}
+

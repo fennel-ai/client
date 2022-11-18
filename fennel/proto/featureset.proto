@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package fennel.proto;
+
+import "status.proto";
+import "metadata.proto";
+
+message Feature {
+  int32 id = 1;
+  string name = 2;
+  // Arrow type
+  string dtype = 3;
+  string owner = 4;
+  string description = 5;
+  bool wip = 6;
+  bool deprecated = 7;
+  repeated string tags = 8;
+  Metadata metadata = 9;
+}
+
+message Extractor {
+  string name = 1;
+  bytes func = 2;
+  string func_source_code = 3;
+  repeated string datasets = 4;
+  repeated Input inputs = 5;
+  // The features that this extractor produces
+  repeated string features = 6;
+  Metadata metadata = 7;
+}
+
+message CreateFeaturesetRequest {
+  string name = 1;
+  repeated Feature features = 2;
+  repeated Extractor extractors = 3;
+  int32 version = 4;
+  string signature = 5 ;
+  Metadata metadata = 6;
+}
+
+message CreateFeatureSetResponse {
+  string name = 1;
+  Status status = 2;
+}
+
+message Input {
+  message FeatureSet {
+    string name = 1;
+  }
+  message Feature {
+    FeatureSet feature_set = 1;
+    string name = 2;
+  }
+  oneof input {
+    FeatureSet feature_set = 1;
+    Feature feature = 2;
+  }
+}
