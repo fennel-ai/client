@@ -1,11 +1,12 @@
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional
 
 import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
+from fennel.lib.schema import Series, DataFrame
 
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
@@ -45,21 +46,21 @@ def test_ComplexFeatureSet(grpc_stub):
             @extractor
             @depends_on(UserInfoDataset)
             def get_user_info1(
-                ts: pd.Series, user_id: User.id
-            ) -> Tuple["userid", "home_geoid"]:
+                ts: pd.Series, user_id: Series[User.id]
+            ) -> DataFrame[userid, home_geoid]:
                 pass
 
             @extractor
             @depends_on(UserInfoDataset)
             def get_user_info2(
-                ts: pd.Series, user_id: User.id
-            ) -> Tuple["gender", "age"]:
+                ts: pd.Series, user_id: Series[User.id]
+            ) -> DataFrame[gender, age]:
                 pass
 
             @extractor
             def get_user_info3(
-                ts: pd.Series, user_id: User.id
-            ) -> Tuple["gender"]:
+                ts: pd.Series, user_id: Series[User.id]
+            ) -> Series[gender]:
                 pass
 
     assert str(e.value) == "Feature gender is extracted by multiple extractors"

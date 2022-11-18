@@ -8,12 +8,10 @@ from typing import (
     cast,
     Callable,
     Dict,
-    Optional,
     Type,
     TypeVar,
     List,
     Union,
-    ForwardRef,
     Set,
 )
 
@@ -21,7 +19,6 @@ import cloudpickle
 import pyarrow
 
 import fennel.gen.featureset_pb2 as proto
-from fennel.datasets import Dataset
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
@@ -134,24 +131,15 @@ def extractor(extractor_func: Callable):
                 f"feature but a {type(param.annotation)}"
             )
         params.append(param.annotation)
-    # x = type("userid", (int,), {})
     return_annotation = extractor_func.__annotations__.get("return", None)
     outputs = []
     if return_annotation is not None:
-        # The _name is right, don't change it.
-        if (
-            "_name" not in return_annotation.__dict__
-            or return_annotation.__dict__["_name"] != "Tuple"
-        ):
-            raise TypeError("extractor functions must return a tuple")
-        for type_ in return_annotation.__dict__["__args__"]:
-            if not isinstance(type_, ForwardRef):
-                raise TypeError(
-                    f"extractor {extractor_name}() must "
-                    f"extract features for the Featureset "
-                    f"it is defined in, found {type_}"
-                )
-            outputs.append(type_.__forward_arg__)
+        if isinstance(return_annotation, Feature):
+            outputs.append(return_annotation.id)
+        else:
+            for f in return_annotation:
+                outputs.append(f.id)
+
     setattr(
         extractor_func,
         "__fennel_extractor__",
@@ -160,7 +148,7 @@ def extractor(extractor_func: Callable):
     return extractor_func
 
 
-def depends_on(*datasets: Type[Dataset]):
+def depends_on(*datasets: Any):
     def decorator(func):
         setattr(func, "_depends_on_datasets", list(datasets))
 
@@ -203,8 +191,8 @@ class Feature:
             name=self.name,
         )
 
-    def meta(self, **kwargs: Any) -> Feature:
-        return meta(**kwargs)(self)
+    def meta(self, **kwargs: Any) -> T:
+        return cast(T, meta(**kwargs)(self))
 
 
 class Featureset:
@@ -220,20 +208,26 @@ class Featureset:
     _features: List[Feature]
     _feature_map: Dict[str, Feature] = {}
     _extractors: List[Extractor]
+    _id_to_feature_name: Dict[int, str] = {}
 
     def __init__(
         self,
         featureset_cls: Type[T],
-        fields: List[Feature],
+        features: List[Feature],
     ):
         self.__fennel_original_cls__ = featureset_cls
         self.name = featureset_cls.__name__
         self.__name__ = featureset_cls.__name__
-        self._features = fields
-        self._feature_map = {field.name: field for field in fields}
+        self._features = features
+        self._feature_map = {feature.name: feature for feature in features}
         self._extractors = self._get_extractors()
-        self._validate()
         propogate_fennel_attributes(featureset_cls, self)
+        self._id_to_feature_name = {
+            feature.id: feature.name for feature in features
+        }
+        self._validate()
+        for extractor in self._extractors:
+            setattr(self, extractor.name, extractor.func)
 
     def __getattr__(self, key):
         if key in self.__fennel_original_cls__.__dict__["__annotations__"]:
@@ -250,7 +244,10 @@ class Featureset:
         return proto.CreateFeaturesetRequest(
             name=self.name,
             features=[feature.to_proto() for feature in self._features],
-            extractors=[extractor.to_proto() for extractor in self._extractors],
+            extractors=[
+                extractor.to_proto(self._id_to_feature_name)
+                for extractor in self._extractors
+            ],
             # Currently we don't support versioning of featuresets.
             # Kept for future use.
             version=0,
@@ -290,50 +287,52 @@ class Featureset:
             feature_id_set.add(feature.id)
 
         # Check that each feature is extracted by at max one extractor.
-        extracted_features: Set[str] = set()
+        extracted_features: Set[int] = set()
         for extractor in self._extractors:
             if extractor.outputs is None:
                 for feature in self._features:
-                    if feature.name not in extracted_features:
-                        extracted_features.add(feature.name)
+                    if feature.id not in extracted_features:
+                        extracted_features.add(feature.id)
                     else:
                         raise TypeError(
-                            f"Feature {feature.name} is "
+                            f"Feature "
+                            f"{self._id_to_feature_name[feature.id]} is "
                             f"extracted multiple times"
                         )
 
-            for feature in extractor.outputs:
-                if feature in extracted_features:
+            for feature_id in extractor.outputs:
+                if feature_id in extracted_features:
                     raise TypeError(
-                        f"Feature {feature} is extracted by "
-                        f"multiple extractors"
+                        f"Feature {self._id_to_feature_name[feature_id]} is "
+                        f"extracted by multiple extractors"
                     )
-                extracted_features.add(feature)
+                extracted_features.add(feature_id)
 
 
 class Extractor:
     name: str
     inputs: List[Union[Feature, Featureset]]
     func: Callable
-    # If outputs is None, entire featureset is being extracted
-    outputs: Optional[List[str]]
+    # If outputs is empty, entire featureset is being extracted
+    # by this extractor, else stores the ids of the features being extracted.
+    outputs: List[int]
 
     def __init__(
         self,
         name: str,
         inputs: List[Union[Feature, Featureset]],
         func: Callable,
-        outputs: Optional[List[str]],
+        outputs: List[int],
     ):
         self.name = name
         self.inputs = inputs
         self.func = func  # type: ignore
-        self.outputs = outputs if outputs else []
+        self.outputs = outputs
 
     def signature(self) -> str:
         pass
 
-    def to_proto(self):
+    def to_proto(self, id_to_feature_name: Dict[int, str]) -> proto.Extractor:
         inputs = []
         for input in self.inputs:
             if isinstance(input, Feature):
@@ -345,16 +344,15 @@ class Extractor:
                     f"Extractor input {input} is not a Feature or "
                     f"Featureset but a {type(input)}"
                 )
+        depended_datasets = []
+        if hasattr(self.func, "_depends_on_datasets"):
+            depended_datasets = self.func._depends_on_datasets  # type: ignore
         return proto.Extractor(
             name=self.name,
             func=cloudpickle.dumps(self.func),
             func_source_code=inspect.getsource(self.func),
-            datasets=[
-                dataset.name for dataset in self.func._depends_on_datasets
-            ]
-            if hasattr(self.func, "_depends_on_datasets")
-            else [],
+            datasets=[dataset.name for dataset in depended_datasets],
             inputs=inputs,
-            features=self.outputs,
+            features=[id_to_feature_name[id] for id in self.outputs],
             metadata=get_metadata_proto(self.func),
         )

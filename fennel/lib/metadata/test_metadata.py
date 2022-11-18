@@ -1,6 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
-from typing import Optional, Tuple
+from typing import Optional
 
 import pandas as pd
 from google.protobuf.json_format import ParseDict
@@ -10,6 +10,7 @@ from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.metadata import meta
+from fennel.lib.schema import DataFrame, Series
 from fennel.test_lib import *
 
 
@@ -327,22 +328,24 @@ def test_featuresetWithExtractors(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info1(
-            ts: pd.Series, user_id: User.id
-        ) -> Tuple["userid", "home_geoid"]:
+            ts: pd.Series, user_id: Series[User.id]
+        ) -> DataFrame[userid, home_geoid]:
             pass
 
         @extractor
         @meta(owner="b@xyz.com", description="middle_meta")
         @depends_on(UserInfoDataset)
         def get_user_info2(
-            ts: pd.Series, user_id: User.id
-        ) -> Tuple["gender", "age"]:
+            ts: pd.Series, user_id: Series[User.id]
+        ) -> DataFrame[gender, age]:
             pass
 
         @extractor
         @depends_on(UserInfoDataset)
         @meta(owner="c@xyz.com", description="bottom_meta")
-        def get_user_info3(ts: pd.Series, user_id: User.id) -> Tuple["income"]:
+        def get_user_info3(
+            ts: pd.Series, user_id: Series[User.id]
+        ) -> Series[income]:
             pass
 
     view = InternalTestClient(grpc_stub)

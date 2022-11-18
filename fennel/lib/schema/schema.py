@@ -1,9 +1,27 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Union, Any
+from typing import Union, Any, TYPE_CHECKING
 
+import pandas as pd
 import pyarrow as pa  # type: ignore
+
+if TYPE_CHECKING:
+    Series = pd.Series
+else:
+
+    class Series:
+        def __class_getitem__(cls, item):
+            return item
+
+
+if TYPE_CHECKING:
+    DataFrame = pd.DataFrame
+else:
+
+    class DataFrame:
+        def __class_getitem__(cls, item):
+            return item
 
 
 def _get_args(type_: Any) -> Any:

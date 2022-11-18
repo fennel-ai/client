@@ -1,7 +1,6 @@
 import pickle
 import typing
 from datetime import datetime
-from typing import Tuple
 
 import pandas as pd
 import pyarrow
@@ -9,6 +8,7 @@ import pyarrow
 import fennel.utils
 from fennel.featuresets import featureset, feature, extractor, depends_on
 from fennel.lib.metadata import meta
+from fennel.lib.schema import DataFrame, Series
 from fennel.test_lib import *
 
 
@@ -42,7 +42,7 @@ def test_datasetLookup(grpc_stub, mocker):
             ts: pd.Series,
             user_id: userid,
             names: name,
-        ) -> Tuple["age_sq", "gender"]:
+        ) -> DataFrame[age_sq, gender]:
             user_id_plus_one = user_id * 5
             df = UserInfoDataset.lookup(
                 ts,
@@ -60,7 +60,7 @@ def test_datasetLookup(grpc_stub, mocker):
             ts: pd.Series,
             user_id: userid,
             names: name,
-        ) -> Tuple["age_cube"]:
+        ) -> Series[age_cube]:
             user_id_plus_one = user_id * 3
             df = UserInfoDataset.lookup(
                 ts,
