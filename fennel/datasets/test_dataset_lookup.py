@@ -7,7 +7,7 @@ import pandas as pd
 import pyarrow
 
 import fennel.utils
-from fennel.featuresets import featureset, depends_on, feature, extractor
+from fennel.featuresets import featureset, feature, extractor, depends_on
 from fennel.lib.metadata import meta
 from fennel.test_lib import *
 
@@ -70,12 +70,7 @@ def test_datasetLookup(grpc_stub, mocker):
             df["age_cube"] = df["age"] * df["age"] * df["age"]
             return df[["age_cube"]]
 
-    def fake_func(*args):
-        (
-            ts,
-            properties,
-            recordbatch,
-        ) = args
+    def fake_func(cls_name, ts, properties, recordbatch):
         df = recordbatch.to_pandas()
         if len(properties) > 0:
             assert ts == pyarrow.array(
@@ -99,9 +94,7 @@ def test_datasetLookup(grpc_stub, mocker):
             df = pd.DataFrame(lst, columns=["age"])
             return pyarrow.RecordBatch.from_pandas(df)
 
-    mocker.patch.object(
-        fennel.datasets.datasets, "dataset_lookup", side_effect=fake_func
-    )
+    fennel.datasets.datasets.dataset_lookup = fake_func
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserAgeFeatures)

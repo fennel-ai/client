@@ -89,7 +89,7 @@ def test_complexDatasetWithFields(grpc_stub):
         dob: str
         age: int = field().meta(wip=True)
         account_creation_date: datetime
-        country: Optional[str] = field().meta(deleted=True)
+        country: Optional[str] = field()
         timestamp: datetime = field(timestamp=True)
 
     assert YextUserInfoDataset._max_staleness == timedelta(days=30)
@@ -128,7 +128,7 @@ def test_complexDatasetWithFields(grpc_stub):
                     {
                         "name": "country",
                         "isNullable": True,
-                        "metadata": {"deleted": True},
+                        "metadata": {},
                     },
                     {"name": "timestamp", "isTimestamp": True, "metadata": {}},
                 ],

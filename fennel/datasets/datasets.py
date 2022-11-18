@@ -18,6 +18,7 @@ from typing import (
 )
 
 import cloudpickle
+import numpy as np
 import pandas as pd
 import pyarrow
 
@@ -87,7 +88,13 @@ class Field:
         )
 
     def meta(self, **kwargs: Any) -> F:
-        return cast(F, meta(**kwargs)(self))
+        f = cast(F, meta(**kwargs)(self))
+        if get_meta_attr(f, "deleted") or get_meta_attr(f, "deprecated"):
+            raise ValueError(
+                "Dataset currently does not support deleted or "
+                "deprecated fields."
+            )
+        return f
 
 
 def get_field(
@@ -318,15 +325,23 @@ def dataset(
         The maximum amount of time that data in the dataset can be stale.
     """
 
-    def _create_lookup_function(key_fields: List[str]) -> Optional[Callable]:
+    def _create_lookup_function(
+        cls_name: str, key_fields: List[str]
+    ) -> Optional[Callable]:
         if len(key_fields) == 0:
             return None
 
         def lookup(ts: pd.Series, *args, **kwargs) -> pd.DataFrame:
+
             if len(args) > 0:
                 raise ValueError(
                     f"lookup expects key value arguments and can "
                     f"optionally include properties, found {args}"
+                )
+            if len(kwargs) < len(key_fields):
+                raise ValueError(
+                    f"lookup expects keys of the table being looked up and can "
+                    f"optionally include properties, found {kwargs}"
                 )
             # convert ts to pyarrow Array
             ts = pyarrow.Array.from_pandas(ts)
@@ -346,12 +361,16 @@ def dataset(
             df = pd.concat(arr, axis=1)
             df.columns = key_fields
             key_recordbatch = pyarrow.RecordBatch.from_pandas(df)
+
             res = dataset_lookup(
+                cls_name,
                 ts,
                 properties,
                 key_recordbatch,
             )
-            return res.to_pandas()
+
+            df = res.to_pandas()
+            return df.replace({np.nan: None})
 
         args = {k: pd.Series for k in key_fields}
         args["properties"] = List[str]
@@ -398,7 +417,7 @@ def dataset(
             retention=duration_to_timedelta(retention),
             max_staleness=duration_to_timedelta(max_staleness),
             pull_fn=pull_fn,
-            lookup_fn=_create_lookup_function(key_fields),
+            lookup_fn=_create_lookup_function(dataset_cls.__name__, key_fields),
         )
 
     def wrap(c: Type[F]) -> Dataset:
@@ -415,7 +434,7 @@ def dataset(
 
 
 def pipeline(
-    *params: Dataset,
+    *params: Any,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     for param in params:
         if callable(param):
@@ -450,6 +469,7 @@ def pipeline(
 
 
 def dataset_lookup(
+    cls_name: str,
     ts: pyarrow.Array,
     properties: List[str],
     keys: pyarrow.RecordBatch,
@@ -472,6 +492,7 @@ class Pipeline:
     # Dataset it is part of
     _dataset_name: str
     func: Callable
+    name: str
 
     def __init__(self, node: _Node, inputs: List[Dataset], func: Callable):
         self.node = node
@@ -479,6 +500,7 @@ class Pipeline:
         self.func = func  # type: ignore
         serializer = Serializer()
         self._root, self._nodes = serializer.serialize(self)
+        self.name = func.__name__
 
     def signature(self):
         return f"{self._dataset_name}.{self._root}"
@@ -495,6 +517,13 @@ class Pipeline:
     def set_dataset_name(self, ds_name: str):
         self._dataset_name = ds_name
 
+    def __str__(self):
+        return f"Pipeline({self.signature()})"
+
+    @property
+    def dataset_name(self):
+        return self._dataset_name
+
 
 class Dataset(_Node):
     """Dataset is a collection of data."""
@@ -505,8 +534,8 @@ class Dataset(_Node):
     # the original attributes defined by the user.
     _retention: datetime.timedelta
     _fields: List[Field]
+    _key_fields: List[str]
     _pipelines: List[Pipeline]
-    _key_field: str
     _timestamp_field: str
     _max_staleness: datetime.timedelta
     __fennel_original_cls__: Any
@@ -526,7 +555,9 @@ class Dataset(_Node):
         self.pull_fn = pull_fn
         self.__name__ = self.name
         self._fields = fields
+        _key_fields: List[str]
         self._set_timestamp_field()
+        self._set_key_fields()
         self._retention = retention
         self._max_staleness = max_staleness
         self.__fennel_original_cls__ = cls
@@ -589,6 +620,7 @@ class Dataset(_Node):
         timestamp_field_set = False
         for field in self._fields:
             if field.timestamp:
+                self._timestamp_field = field.name
                 if timestamp_field_set:
                     raise ValueError(
                         "Multiple timestamp fields are not supported."
@@ -607,10 +639,18 @@ class Dataset(_Node):
             if not timestamp_field_set:
                 field.timestamp = True
                 timestamp_field_set = True
+                self._timestamp_field = field.name
             else:
                 raise ValueError("Multiple timestamp fields are not supported.")
         if not timestamp_field_set:
             raise ValueError("No timestamp field found.")
+
+    def _set_key_fields(self):
+        key_fields = []
+        for field in self._fields:
+            if field.key:
+                key_fields.append(field.name)
+        self._key_fields = key_fields
 
     def _get_schema(self) -> bytes:
         schema = pyarrow.schema(
@@ -646,6 +686,18 @@ class Dataset(_Node):
             pipelines.append(method.__fennel_pipeline__)
             pipelines[-1].set_dataset_name(dataset_name)
         return pipelines
+
+    @property
+    def timestamp_field(self):
+        return self._timestamp_field
+
+    @property
+    def key_fields(self):
+        return self._key_fields
+
+    @property
+    def fields(self):
+        return self._fields
 
 
 # ---------------------------------------------------------------------

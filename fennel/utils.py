@@ -24,25 +24,28 @@ def check_response(response: Status):
         raise Exception(response.message)
 
 
-def del_namespace(obj):
+def del_namespace(obj, depth):
     if not hasattr(obj, "__dict__"):
+        return
+    if depth > 10:
         return
     if "namespace" in obj.__dict__:
         obj.__dict__.pop("namespace")
+
     for k, v in obj.__dict__.items():
         if isinstance(v, dict):
             for k1, v1 in v.items():
-                del_namespace(v1)
+                del_namespace(v1, depth + 1)
         elif isinstance(v, list):
             for v1 in v:
-                del_namespace(v1)
+                del_namespace(v1, depth + 1)
         else:
-            del_namespace(v)
+            del_namespace(v, depth + 1)
 
 
 def fennel_pickle(obj: Any) -> bytes:
     """Pickle an object using the Fennel protocol"""
-    del_namespace(obj)
+    del_namespace(obj, 0)
     return cloudpickle.dumps(obj)
 
 
@@ -146,10 +149,3 @@ def propogate_fennel_attributes(src: Any, dest: Any):
     for k, v in src.__dict__.items():
         if k.startswith("__fennel") and k.endswith("__"):
             setattr(dest, k, v)
-
-
-#
-# def dataset_lookup(
-#         ts: pyarrow.Array, properties: List[str], keys: pyarrow.RecordBatch,
-# ) -> pyarrow.RecordBatch:
-#     raise NotImplementedError("dataset_lookup should not be called directly")

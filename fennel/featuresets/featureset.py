@@ -29,7 +29,10 @@ from fennel.lib.metadata import (
     get_metadata_proto,
 )
 from fennel.lib.schema import get_pyarrow_schema
-from fennel.utils import parse_annotation_comments, propogate_fennel_attributes
+from fennel.utils import (
+    parse_annotation_comments,
+    propogate_fennel_attributes,
+)
 
 T = TypeVar("T")
 
