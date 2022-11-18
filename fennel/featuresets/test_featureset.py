@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional
 
 import pandas as pd
 from google.protobuf.json_format import ParseDict
@@ -8,6 +8,7 @@ import fennel.gen.featureset_pb2 as proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.lib.metadata import meta
+from fennel.lib.schema import Series, DataFrame
 from fennel.test_lib import *
 
 
@@ -46,7 +47,10 @@ def test_SimpleFeatureSet(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info(
-            ts: pd.Series, user: User, user_id: User.id, user_age: User.age
+            ts: pd.Series,
+            user: DataFrame[User],
+            user_id: Series[User.id],
+            user_age: Series[User.age],
         ):
             return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
 
@@ -74,17 +78,17 @@ def test_SimpleFeatureSet(grpc_stub):
     sync_request = view.to_proto()
     assert len(sync_request.featureset_requests) == 2
     featureset_request = clean_fs_func_src_code(
-        sync_request.featureset_requests[0]
+        sync_request.featureset_requests[1]
     )
 
     # Both requests should be the same, apart from the name.
-    sync_request.featureset_requests[1].name = "UserInfo"
+    sync_request.featureset_requests[0].name = "UserInfo"
     assert featureset_request == clean_fs_func_src_code(
         sync_request.featureset_requests[1]
     )
 
     f = {
-        "name": "UserInfo",
+        "name": "UserInfoDuplicate",
         "features": [
             {"id": 1, "name": "userid", "dtype": "int64", "metadata": {}},
             {
@@ -154,19 +158,21 @@ def test_ComplexFeatureSet(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info1(
-            ts: pd.Series, user_id: User.id
-        ) -> Tuple["userid", "home_geoid"]:
+            ts: pd.Series, user_id: Series[User.id]
+        ) -> DataFrame[userid, home_geoid]:
             pass
 
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info2(
-            ts: pd.Series, user_id: User.id
-        ) -> Tuple["gender", "age"]:
+            ts: pd.Series, user_id: Series[User.id]
+        ) -> DataFrame[gender, age]:
             pass
 
         @extractor
-        def get_user_info3(ts: pd.Series, user_id: User.id) -> Tuple["income"]:
+        def get_user_info3(
+            ts: pd.Series, user_id: Series[User.id]
+        ) -> DataFrame[income]:
             pass
 
     view = InternalTestClient(grpc_stub)
