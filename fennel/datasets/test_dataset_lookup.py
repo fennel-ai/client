@@ -39,9 +39,9 @@ def test_datasetLookup(grpc_stub, mocker):
         @depends_on(UserInfoDataset)
         @typing.no_type_check
         def user_age_sq(
-            ts: pd.Series,
-            user_id: userid,
-            names: name,
+                ts: pd.Series,
+                user_id: userid,
+                names: name,
         ) -> Tuple["age_sq", "gender"]:
             user_id_plus_one = user_id * 5
             df = UserInfoDataset.lookup(
@@ -57,9 +57,9 @@ def test_datasetLookup(grpc_stub, mocker):
         @depends_on(UserInfoDataset)
         @typing.no_type_check
         def user_age_cube(
-            ts: pd.Series,
-            user_id: userid,
-            names: name,
+                ts: pd.Series,
+                user_id: userid,
+                names: name,
         ) -> Tuple["age_cube"]:
             user_id_plus_one = user_id * 3
             df = UserInfoDataset.lookup(
@@ -70,12 +70,7 @@ def test_datasetLookup(grpc_stub, mocker):
             df["age_cube"] = df["age"] * df["age"] * df["age"]
             return df[["age_cube"]]
 
-    def fake_func(*args):
-        (
-            ts,
-            properties,
-            recordbatch,
-        ) = args
+    def fake_func(cls_name, ts, properties, recordbatch):
         df = recordbatch.to_pandas()
         if len(properties) > 0:
             assert ts == pyarrow.array(

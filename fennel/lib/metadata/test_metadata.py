@@ -89,7 +89,7 @@ def test_complexDatasetWithFields(grpc_stub):
         dob: str
         age: int = field().meta(wip=True)
         account_creation_date: datetime
-        country: Optional[str] = field().meta(deleted=True)
+        country: Optional[str] = field()
         timestamp: datetime = field(timestamp=True)
 
     assert YextUserInfoDataset._max_staleness == timedelta(days=30)
@@ -128,7 +128,7 @@ def test_complexDatasetWithFields(grpc_stub):
                     {
                         "name": "country",
                         "isNullable": True,
-                        "metadata": {"deleted": True},
+                        "metadata": {},
                     },
                     {"name": "timestamp", "isTimestamp": True, "metadata": {}},
                 ],
@@ -327,7 +327,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info1(
-            ts: pd.Series, user_id: User.id
+                ts: pd.Series, user_id: User.id
         ) -> Tuple["userid", "home_geoid"]:
             pass
 
@@ -335,7 +335,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @meta(owner="b@xyz.com", description="middle_meta")
         @depends_on(UserInfoDataset)
         def get_user_info2(
-            ts: pd.Series, user_id: User.id
+                ts: pd.Series, user_id: User.id
         ) -> Tuple["gender", "age"]:
             pass
 
