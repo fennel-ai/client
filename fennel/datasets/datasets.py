@@ -331,6 +331,7 @@ def dataset(
             return None
 
         def lookup(ts: pd.Series, *args, **kwargs) -> pd.DataFrame:
+
             if len(args) > 0:
                 raise ValueError(
                     f"lookup expects key value arguments and can "
@@ -359,12 +360,14 @@ def dataset(
             df = pd.concat(arr, axis=1)
             df.columns = key_fields
             key_recordbatch = pyarrow.RecordBatch.from_pandas(df)
+
             res = dataset_lookup(
                 cls_name,
                 ts,
                 properties,
                 key_recordbatch,
             )
+
             df = res.to_pandas()
             return df.replace({np.nan: None})
 
@@ -465,6 +468,7 @@ def pipeline(
 
 
 def dataset_lookup(
+        cls_name: str,
         ts: pyarrow.Array,
         properties: List[str],
         keys: pyarrow.RecordBatch,

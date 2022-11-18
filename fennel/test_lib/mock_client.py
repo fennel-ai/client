@@ -3,7 +3,6 @@ from collections import defaultdict
 from concurrent import futures
 from functools import partial
 from typing import Dict, List
-from unittest.mock import MagicMock
 
 import grpc
 import pandas as pd
@@ -38,7 +37,7 @@ class FakeResponse(Response):
         self.encoding = "utf-8"
 
 
-def lookup(
+def lookup_fn(
         data: Dict[str, pd.DataFrame],
         datasets: Dict[str, Dataset],
         cls_name: str,
@@ -93,8 +92,8 @@ class MockClient(Client):
         self.data: Dict[str, pd.DataFrame] = {}
         # Map of datasets to pipelines it is an input to
         self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
-        fennel.datasets.datasets.dataset_lookup = MagicMock(
-            side_effect=partial(lookup, self.data, self.datasets)
+        fennel.datasets.datasets.dataset_lookup = partial(
+            lookup_fn, self.data, self.datasets
         )
 
     def _merge_df(self, df: pd.DataFrame, dataset_name: str):

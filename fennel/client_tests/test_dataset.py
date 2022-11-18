@@ -29,7 +29,7 @@ class TestDataset(unittest.TestCase):
     @mock_client
     def test_log_to_dataset(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
-        # # Sync the dataset
+        # Sync the dataset
         client.sync(datasets=[UserInformationDataset])
 
         data = [
@@ -38,18 +38,18 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("UserInformationDataset", df)
         assert response.status_code == requests.codes.OK
 
         # Do some lookups
         user_ids = pd.Series([18232, 18234])
         ts = pd.Series([1668500000, 1668500000])
         df = UserInformationDataset.lookup(ts, user_id=user_ids)
-
+        #
         # assert df["name"].tolist() == ["Ross", "Monica"]
         # assert df["age"].tolist() == [32, 24]
         # assert df["country"].tolist() == ["USA", "Chile"]
-        #
+
         # # Do some lookups with a timestamp
         # ts = pd.Series([1668475343, 1668475343])
         # df = UserInfoDataset.lookup(ts, user_id=user_ids)
@@ -82,6 +82,7 @@ class TestDataset(unittest.TestCase):
         # assert df["age"].tolist() == [33, 25]
         # assert df["country"].tolist() == ["Russia", "Columbia"]
 
+    #
     @mock_client
     def test_invalid_dataschema(self, client):
         """Check if invalid data raises an error."""
@@ -92,7 +93,7 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("UserInformationDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         assert len(response.json()["error"]) > 0
 
