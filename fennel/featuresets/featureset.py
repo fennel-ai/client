@@ -89,7 +89,6 @@ def get_feature(
 def featureset(featureset_cls: Type[T]):
     """featureset is a decorator for creating a Featureset class."""
     cls_annotations = featureset_cls.__dict__.get("__annotations__", {})
-
     fields = [
         get_feature(
             cls=featureset_cls,
@@ -196,6 +195,9 @@ class Feature:
     def meta(self, **kwargs: Any) -> T:
         return cast(T, meta(**kwargs)(self))
 
+    def __repr__(self) -> str:
+        return f"{self.featureset_name}.{self.name}"
+
 
 def _add_column_names(func, columns):
     @functools.wraps(func)
@@ -204,6 +206,11 @@ def _add_column_names(func, columns):
         if isinstance(ret, pd.Series):
             ret.name = columns[0]
         elif isinstance(ret, pd.DataFrame):
+            if len(ret.columns) != len(columns):
+                raise ValueError(
+                    f"Expected {len(columns)} columns ({columns}) but got"
+                    f" {len(ret)} columns"
+                )
             ret.columns = columns
         return ret
 
@@ -216,7 +223,7 @@ class Featureset:
     logic of resolving the features it contains from other features/featuresets
     and can depend on on or more Datasets."""
 
-    name: str
+    _name: str
     # All attributes should start with _ to avoid conflicts with
     # the original attributes defined by the user.
     __fennel_original_cls__: Type
@@ -231,15 +238,15 @@ class Featureset:
         features: List[Feature],
     ):
         self.__fennel_original_cls__ = featureset_cls
-        self.name = featureset_cls.__name__
+        self._name = featureset_cls.__name__
         self.__name__ = featureset_cls.__name__
         self._features = features
         self._feature_map = {feature.name: feature for feature in features}
-        self._extractors = self._get_extractors()
-        propogate_fennel_attributes(featureset_cls, self)
         self._id_to_feature_name = {
             feature.id: feature.name for feature in features
         }
+        self._extractors = self._get_extractors()
+        propogate_fennel_attributes(featureset_cls, self)
         self._validate()
         self._set_extractors_as_attributes()
 
@@ -256,7 +263,7 @@ class Featureset:
     def create_featureset_request_proto(self):
         self._check_owner_exists()
         return proto.CreateFeaturesetRequest(
-            name=self.name,
+            name=self._name,
             features=[feature.to_proto() for feature in self._features],
             extractors=[
                 extractor.to_proto(self._id_to_feature_name)
@@ -270,7 +277,7 @@ class Featureset:
 
     def to_proto(self):
         return proto.Input.FeatureSet(
-            name=self.name,
+            name=self._name,
         )
 
     # ------------------- Private Methods ----------------------------------
@@ -278,7 +285,7 @@ class Featureset:
     def _check_owner_exists(self):
         owner = get_meta_attr(self, "owner")
         if owner is None or owner == "":
-            raise Exception(f"Featureset {self.name} must have an owner.")
+            raise Exception(f"Featureset {self._name} must have an owner.")
 
     def _get_extractors(self) -> List[Extractor]:
         extractors = []
@@ -287,7 +294,13 @@ class Featureset:
                 continue
             if not hasattr(method, "__fennel_extractor__"):
                 continue
-            extractors.append(method.__fennel_extractor__)
+            extractor = getattr(method, "__fennel_extractor__")
+            extractor.output_features = [
+                f"{self._name}.{self._id_to_feature_name[fid]}"
+                for fid in extractor.output_feature_ids
+            ]
+            extractor.name = f"{self._name}.{extractor.name}"
+            extractors.append(extractor)
         return extractors
 
     def _validate(self):
@@ -303,7 +316,7 @@ class Featureset:
         # Check that each feature is extracted by at max one extractor.
         extracted_features: Set[int] = set()
         for extractor in self._extractors:
-            if extractor.outputs is None:
+            if extractor.output_feature_ids is None:
                 for feature in self._features:
                     if feature.id not in extracted_features:
                         extracted_features.add(feature.id)
@@ -314,7 +327,7 @@ class Featureset:
                             f"extracted multiple times"
                         )
 
-            for feature_id in extractor.outputs:
+            for feature_id in extractor.output_feature_ids:
                 if feature_id in extracted_features:
                     raise TypeError(
                         f"Feature {self._id_to_feature_name[feature_id]} is "
@@ -325,21 +338,33 @@ class Featureset:
     def _set_extractors_as_attributes(self):
         for extractor in self._extractors:
             columns = [
-                self._id_to_feature_name[output] for output in extractor.outputs
+                self._id_to_feature_name[output]
+                for output in extractor.output_feature_ids
             ]
             if len(columns) == 0:
                 columns = [f.name for f in self._features]
             extractor.func = _add_column_names(extractor.func, columns)
-            setattr(self, extractor.name, extractor.func)
+            setattr(self, extractor.func.__name__, extractor.func)
+
+    @property
+    def extractors(self):
+        return self._extractors
+
+    @property
+    def features(self):
+        return self._features
 
 
 class Extractor:
+    # FQN of the function that implements the extractor.
     name: str
     inputs: List[Union[Feature, Featureset]]
     func: Callable
     # If outputs is empty, entire featureset is being extracted
     # by this extractor, else stores the ids of the features being extracted.
-    outputs: List[int]
+    output_feature_ids: List[int]
+    # List of FQN of features that this extractor produces
+    output_features: List[str]
 
     def __init__(
         self,
@@ -351,7 +376,7 @@ class Extractor:
         self.name = name
         self.inputs = inputs
         self.func = func  # type: ignore
-        self.outputs = outputs
+        self.output_feature_ids = outputs
 
     def signature(self) -> str:
         pass
@@ -377,6 +402,6 @@ class Extractor:
             func_source_code=inspect.getsource(self.func),
             datasets=[dataset.name for dataset in depended_datasets],
             inputs=inputs,
-            features=[id_to_feature_name[id] for id in self.outputs],
+            features=[id_to_feature_name[id] for id in self.output_feature_ids],
             metadata=get_metadata_proto(self.func),
         )

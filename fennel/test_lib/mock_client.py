@@ -3,7 +3,7 @@ from collections import defaultdict
 from concurrent import futures
 from dataclasses import dataclass
 from functools import partial
-from typing import Dict, List
+from typing import Dict, List, Optional, Union
 
 import grpc
 import pandas as pd
@@ -13,13 +13,14 @@ from requests import Response
 import fennel.datasets.datasets
 from fennel.client import Client
 from fennel.datasets import Dataset, Pipeline
-from fennel.featuresets import Featureset
+from fennel.featuresets import Featureset, Feature, Extractor
 from fennel.gen.dataset_pb2 import CreateDatasetRequest
 from fennel.gen.services_pb2_grpc import (
     add_FennelFeatureStoreServicer_to_server,
     FennelFeatureStoreStub,
     FennelFeatureStoreServicer,
 )
+from fennel.lib.graph_algorithms import get_extractor_order
 from fennel.test_lib.executor import Executor
 
 TEST_PORT = 50051
@@ -62,7 +63,6 @@ def lookup_fn(
             columns=val_cols, data=[[None] * len(val_cols)] * len(key_df)
         )
         return pa.RecordBatch.from_pandas(empty_df)
-
     right_df = data[cls_name]
     timestamp_field = datasets[cls_name].timestamp_field
     join_columns = key_df.columns.tolist()
@@ -103,27 +103,9 @@ class MockClient(Client):
         fennel.datasets.datasets.dataset_lookup = partial(
             lookup_fn, self.data, self.datasets
         )
+        self.extractors: List[Extractor] = []
 
-    def _merge_df(self, df: pd.DataFrame, dataset_name: str):
-        # Filter the dataframe to only include the columns in the schema
-        columns = [x.name for x in self.datasets[dataset_name].fields]
-        input_columns = df.columns.tolist()
-        # Check that input columns are a subset of the dataset columns
-        if not set(columns).issubset(set(input_columns)):
-            raise ValueError(
-                f"Dataset columns {columns} are not a subset of "
-                f"Input columns {input_columns}"
-            )
-        df = df[columns]
-        if dataset_name not in self.data:
-            self.data[dataset_name] = df
-        else:
-            self.data[dataset_name] = pd.concat([self.data[dataset_name], df])
-        # Sort by timestamp
-        timestamp_field = self.datasets[dataset_name].timestamp_field
-        self.data[dataset_name] = self.data[dataset_name].sort_values(
-            timestamp_field
-        )
+    # ----------------- Public methods -----------------
 
     def log(self, dataset_name: str, df: pd.DataFrame, direct=True):
         if dataset_name not in self.dataset_requests and direct:
@@ -156,7 +138,7 @@ class MockClient(Client):
     def sync(
         self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
     ):
-        # TODO: Test for cycles in the graph
+        # TODO: Test for cycles in the graph for datasets
 
         for dataset in datasets:
             self.dataset_requests[
@@ -168,6 +150,124 @@ class MockClient(Client):
             for pipeline in dataset._pipelines:
                 for input in pipeline.inputs:
                     self.listeners[input.name].append(pipeline)
+
+        # TODO: Test for cycles in the graph for featuresets
+
+        for featureset in featuresets:
+            self.extractors.extend(featureset.extractors)
+
+    def extract_features(
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_df: pd.DataFrame,
+        timestamps: Optional[pd.Series] = None,
+    ) -> pd.DataFrame:
+        extractors = get_extractor_order(
+            input_feature_list, output_feature_list, self.extractors
+        )
+        return self._run_extractors(
+            extractors, input_df, output_feature_list, timestamps
+        )
+
+    # ----------------- Private methods -----------------
+
+    def _prepare_extractor_args(
+        self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]
+    ):
+        args = []
+        for input in extractor.inputs:
+            if isinstance(input, Feature):
+                if input.name in intermediate_data:
+                    args.append(intermediate_data[input.name])
+                else:
+                    raise Exception(
+                        f"Feature {input.name} could not be "
+                        f"calculated by any extractor"
+                    )
+            elif isinstance(input, Featureset):
+                series = []
+                for feature in input.features:
+                    if feature.name in intermediate_data:
+                        series.append(intermediate_data[feature.name])
+                    else:
+                        raise Exception(
+                            f"Feature {feature.name} could not be "
+                            f"calculated by any extractor"
+                        )
+                args.append(pd.concat(series, axis=1))
+            else:
+                raise Exception(
+                    f"Unknown input type {type(input)} found "
+                    f"during feature extraction."
+                )
+        return args
+
+    def _run_extractors(
+        self,
+        extractors: List[Extractor],
+        input_df: pd.DataFrame,
+        output_feature_list: List[Union[Feature, Featureset]],
+        timestamps: Optional[pd.Series] = None,
+    ):
+        if timestamps is None:
+            timestamps = pd.Series([pd.Timestamp.now()] * len(input_df))
+        # Map of feature name to the pandas series
+        intermediate_data: Dict[str, pd.Series] = {}
+        for col in input_df.columns:
+            intermediate_data[col] = input_df[col]
+
+        for extractor in extractors:
+            prepare_args = self._prepare_extractor_args(
+                extractor, intermediate_data
+            )
+            output = extractor.func(timestamps, *prepare_args)
+            if isinstance(output, pd.Series):
+                intermediate_data[output.name] = output
+            elif isinstance(output, pd.DataFrame):
+                for col in output.columns:
+                    intermediate_data[col] = output[col]
+            else:
+                raise Exception(
+                    f"Extractor {extractor.name} returned "
+                    f"invalid type {type(output)}"
+                )
+
+        # Prepare the output dataframe
+        output_df = pd.DataFrame()
+        for feature in output_feature_list:
+            if isinstance(feature, Feature):
+                output_df[feature.name] = intermediate_data[feature.name]
+            elif isinstance(feature, Featureset):
+                for f in feature.features:
+                    output_df[f.name] = intermediate_data[f.name]
+            else:
+                raise Exception(
+                    f"Unknown feature type {type(feature)} found "
+                    f"during feature extraction."
+                )
+        return output_df
+
+    def _merge_df(self, df: pd.DataFrame, dataset_name: str):
+        # Filter the dataframe to only include the columns in the schema
+        columns = [x.name for x in self.datasets[dataset_name].fields]
+        input_columns = df.columns.tolist()
+        # Check that input columns are a subset of the dataset columns
+        if not set(columns).issubset(set(input_columns)):
+            raise ValueError(
+                f"Dataset columns {columns} are not a subset of "
+                f"Input columns {input_columns}"
+            )
+        df = df[columns]
+        if dataset_name not in self.data:
+            self.data[dataset_name] = df
+        else:
+            self.data[dataset_name] = pd.concat([self.data[dataset_name], df])
+        # Sort by timestamp
+        timestamp_field = self.datasets[dataset_name].timestamp_field
+        self.data[dataset_name] = self.data[dataset_name].sort_values(
+            timestamp_field
+        )
 
 
 class Servicer(FennelFeatureStoreServicer):

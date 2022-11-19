@@ -379,7 +379,7 @@ def test_featuresetWithExtractors(grpc_stub):
         ],
         "extractors": [
             {
-                "name": "get_user_info1",
+                "name": "UserInfo.get_user_info1",
                 "datasets": ["UserInfoDataset"],
                 "inputs": [
                     {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
@@ -388,7 +388,7 @@ def test_featuresetWithExtractors(grpc_stub):
                 "metadata": {"owner": "a@xyz.com", "description": "top_meta"},
             },
             {
-                "name": "get_user_info2",
+                "name": "UserInfo.get_user_info2",
                 "datasets": ["UserInfoDataset"],
                 "inputs": [
                     {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
@@ -400,7 +400,7 @@ def test_featuresetWithExtractors(grpc_stub):
                 },
             },
             {
-                "name": "get_user_info3",
+                "name": "UserInfo.get_user_info3",
                 "datasets": ["UserInfoDataset"],
                 "inputs": [
                     {"feature": {"featureSet": {"name": "User"}, "name": "id"}}

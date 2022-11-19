@@ -54,41 +54,17 @@ def test_SimpleFeatureSet(grpc_stub):
         ):
             return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
 
-    @meta(owner="test@test.com")
-    @featureset
-    class UserInfoDuplicate:
-        userid: int = feature(id=1)
-        home_geoid: int = feature(id=2).meta(wip=True)
-        # The users gender among male/female/non-binary
-        gender: str = feature(id=3)
-        age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-        income: int = feature(id=5).meta(deprecated=True)
-
-        @extractor
-        @depends_on(UserInfoDataset)
-        def get_user_info(
-            ts: pd.Series, user: User, user_id: User.id, user_age: User.age
-        ):
-            return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserInfo)
-    view.add(UserInfoDuplicate)
     sync_request = view.to_proto()
-    assert len(sync_request.featureset_requests) == 2
+    assert len(sync_request.featureset_requests) == 1
     featureset_request = clean_fs_func_src_code(
-        sync_request.featureset_requests[1]
-    )
-
-    # Both requests should be the same, apart from the name.
-    sync_request.featureset_requests[0].name = "UserInfo"
-    assert featureset_request == clean_fs_func_src_code(
-        sync_request.featureset_requests[1]
+        sync_request.featureset_requests[0]
     )
 
     f = {
-        "name": "UserInfoDuplicate",
+        "name": "UserInfo",
         "features": [
             {"id": 1, "name": "userid", "dtype": "int64", "metadata": {}},
             {
@@ -120,7 +96,7 @@ def test_SimpleFeatureSet(grpc_stub):
         ],
         "extractors": [
             {
-                "name": "get_user_info",
+                "name": "UserInfo.get_user_info",
                 "datasets": ["UserInfoDataset"],
                 "inputs": [
                     {"featureSet": {"name": "User"}},
@@ -206,7 +182,7 @@ def test_ComplexFeatureSet(grpc_stub):
         ],
         "extractors": [
             {
-                "name": "get_user_info1",
+                "name": "UserInfo.get_user_info1",
                 "datasets": ["UserInfoDataset"],
                 "inputs": [
                     {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
@@ -215,7 +191,7 @@ def test_ComplexFeatureSet(grpc_stub):
                 "metadata": {},
             },
             {
-                "name": "get_user_info2",
+                "name": "UserInfo.get_user_info2",
                 "datasets": ["UserInfoDataset"],
                 "inputs": [
                     {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
@@ -224,7 +200,7 @@ def test_ComplexFeatureSet(grpc_stub):
                 "metadata": {},
             },
             {
-                "name": "get_user_info3",
+                "name": "UserInfo.get_user_info3",
                 "inputs": [
                     {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
                 ],
