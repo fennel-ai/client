@@ -42,16 +42,19 @@ class UserInfoSingleExtractor:
     @depends_on(UserInfoDataset)
     def get_user_info(ts: pd.Series, user_id: Series[userid]):
         df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
+        df["userid"] = user_id
         df["age_squared"] = df["age"] ** 2
         df["age_cubed"] = df["age"] ** 3
         df["is_name_common"] = df["name"].isin(["John", "Mary", "Bob"])
-        return df
+        return df[
+            ["userid", "age", "age_squared", "age_cubed", "is_name_common"]
+        ]
 
 
 def get_country_geoid(country: str) -> Tuple[int, int]:
-    if country == "US":
+    if country == "Russia":
         return 1, 2
-    elif country == "UK":
+    elif country == "Chile":
         return 3, 4
     else:
         return 5, 6
@@ -71,9 +74,11 @@ class UserInfoMultipleExtractor:
 
     @extractor
     @depends_on(UserInfoDataset)
-    def get_user_age(ts: pd.Series, user_id: Series[userid]) -> Series[age]:
+    def get_user_age_and_name(
+        ts: pd.Series, user_id: Series[userid]
+    ) -> DataFrame[age, name]:
         df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        return df["age"]
+        return df[["age", "name"]]
 
     @extractor
     def get_age_and_name_features(
@@ -86,7 +91,7 @@ class UserInfoMultipleExtractor:
     @depends_on(UserInfoDataset)
     def get_country_geoid(
         ts: pd.Series, user_id: Series[userid]
-    ) -> DataFrame[country_geoid]:
+    ) -> Series[country_geoid]:
         df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df["country"].apply(get_country_geoid)
 
@@ -94,22 +99,79 @@ class UserInfoMultipleExtractor:
 class TestSimpleExtractor(unittest.TestCase):
     def test_get_age_and_name_features(self):
         age = pd.Series([32, 24])
-        name = pd.Series(["John", "Mary"])
+        name = pd.Series(["John", "Rahul"])
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
         df = UserInfoMultipleExtractor.get_age_and_name_features(ts, age, name)
         self.assertEqual(df.shape, (2, 3))
         self.assertEqual(df["age_squared"].tolist(), [1024, 576])
         self.assertEqual(df["age_cubed"].tolist(), [32768, 13824])
-        self.assertEqual(df["is_name_common"].tolist(), [True, True])
+        self.assertEqual(df["is_name_common"].tolist(), [True, False])
 
     @mock_client
     def test_simple_extractor(self, client):
-        client.sync(datasets=[UserInfoDataset])
+        client.sync(
+            datasets=[UserInfoDataset],
+            featuresets=[UserInfoSingleExtractor, UserInfoMultipleExtractor],
+        )
         data = [
-            [18232, "Ross", 32, "USA", 1668475993],
-            [18234, "Monica", 24, "Chile", 1668475343],
+            [18232, "John", 32, "USA", 1010],
+            [18234, "Monica", 24, "Chile", 1010],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
+        ts = pd.Series([1011, 1012])
+        user_ids = pd.Series([18232, 18234])
+        df = UserInfoSingleExtractor.get_user_info(ts, user_ids)
+        self.assertEqual(df.shape, (2, 5))
+        self.assertEqual(df["userid"].tolist(), [18232, 18234])
+        self.assertEqual(df["age"].tolist(), [32, 24])
+        self.assertEqual(df["age_squared"].tolist(), [1024, 576])
+        self.assertEqual(df["age_cubed"].tolist(), [32768, 13824])
+        self.assertEqual(df["is_name_common"].tolist(), [True, False])
+
+        series = UserInfoMultipleExtractor.get_country_geoid(ts, user_ids)
+        assert series.tolist() == [(5, 6), (3, 4)]
+
+
+class TestExtractorDAGResolution(unittest.TestCase):
+    @mock_client
+    def test_dag_resolution(self, client):
+        client.sync(
+            datasets=[UserInfoDataset],
+            featuresets=[UserInfoSingleExtractor, UserInfoMultipleExtractor],
+        )
+        data = [
+            [18232, "John", 32, "USA", 1010],
+            [18234, "Monica", 24, "Chile", 1010],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("UserInfoDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        feature_df = client.extract_features(
+            output_feature_list=[
+                UserInfoMultipleExtractor.userid,
+                UserInfoMultipleExtractor.name,
+                UserInfoMultipleExtractor.country_geoid,
+                UserInfoMultipleExtractor.age,
+                UserInfoMultipleExtractor.age_squared,
+                UserInfoMultipleExtractor.age_cubed,
+                UserInfoMultipleExtractor.is_name_common,
+            ],
+            input_feature_list=[UserInfoMultipleExtractor.userid],
+            input_df=pd.DataFrame({"userid": [18232, 18234]}),
+            timestamps=pd.Series([1011, 1012]),
+        )
+        self.assertEqual(feature_df.shape, (2, 7))
+
+        feature_df = client.extract_features(
+            output_feature_list=[
+                UserInfoMultipleExtractor,
+            ],
+            input_feature_list=[UserInfoMultipleExtractor.userid],
+            input_df=pd.DataFrame({"userid": [18232, 18234]}),
+            timestamps=pd.Series([1011, 1012]),
+        )
+        self.assertEqual(feature_df.shape, (2, 7))

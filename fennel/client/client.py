@@ -8,7 +8,7 @@ import requests  # type: ignore
 import fennel.gen.services_pb2 as services_pb2
 import fennel.gen.services_pb2_grpc as services_pb2_grpc
 from fennel.datasets import Dataset
-from fennel.featuresets import Featureset
+from fennel.featuresets import Featureset, Feature
 from fennel.utils import check_response
 
 REST_API_VERSION = "/api/v1"
@@ -46,9 +46,9 @@ class Client:
             self.to_register.add(obj.name)
             self.to_register_objects.append(obj)
         elif isinstance(obj, Featureset):
-            if obj.name in self.to_register:
-                raise ValueError(f"Featureset {obj.name} already registered")
-            self.to_register.add(obj.name)
+            if obj._name in self.to_register:
+                raise ValueError(f"Featureset {obj._name} already registered")
+            self.to_register.add(obj._name)
             self.to_register_objects.append(obj)
         else:
             raise NotImplementedError
@@ -84,8 +84,8 @@ class Client:
 
     def extract_features(
         self,
-        input_feature_list: List[str],
-        output_feature_list: List[str],
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
         input_df: pd.DataFrame,
         timestamps: Optional[pd.Series] = None,
     ) -> pd.DataFrame:
