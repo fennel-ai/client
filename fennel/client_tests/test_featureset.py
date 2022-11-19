@@ -98,6 +98,9 @@ class TestSimpleExtractor(unittest.TestCase):
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
         df = UserInfoMultipleExtractor.get_age_and_name_features(ts, age, name)
         self.assertEqual(df.shape, (2, 3))
+        self.assertEqual(df["age_squared"].tolist(), [1024, 576])
+        self.assertEqual(df["age_cubed"].tolist(), [32768, 13824])
+        self.assertEqual(df["is_name_common"].tolist(), [True, True])
 
     @mock_client
     def test_simple_extractor(self, client):

@@ -16,6 +16,7 @@ from typing import (
 )
 
 import cloudpickle
+import pandas as pd
 import pyarrow
 
 import fennel.gen.featureset_pb2 as proto
@@ -110,6 +111,7 @@ def extractor(extractor_func: Callable):
     extractor is a decorator for a function that extracts a feature from a
     featureset.
     """
+
     if not callable(extractor_func):
         raise TypeError("extractor can only be applied to functions")
     sig = inspect.signature(extractor_func)
@@ -195,6 +197,19 @@ class Feature:
         return cast(T, meta(**kwargs)(self))
 
 
+def _add_column_names(func, columns):
+    @functools.wraps(func)
+    def inner(*args, **kwargs):
+        ret = func(*args, **kwargs)
+        if isinstance(ret, pd.Series):
+            ret.name = columns[0]
+        elif isinstance(ret, pd.DataFrame):
+            ret.columns = columns
+        return ret
+
+    return inner
+
+
 class Featureset:
     """Featureset is a class that defines a group of features that belong to
     an entity. It contains several extractors that provide the
@@ -226,8 +241,7 @@ class Featureset:
             feature.id: feature.name for feature in features
         }
         self._validate()
-        for extractor in self._extractors:
-            setattr(self, extractor.name, extractor.func)
+        self._set_extractors_as_attributes()
 
     def __getattr__(self, key):
         if key in self.__fennel_original_cls__.__dict__["__annotations__"]:
@@ -307,6 +321,16 @@ class Featureset:
                         f"extracted by multiple extractors"
                     )
                 extracted_features.add(feature_id)
+
+    def _set_extractors_as_attributes(self):
+        for extractor in self._extractors:
+            columns = [
+                self._id_to_feature_name[output] for output in extractor.outputs
+            ]
+            if len(columns) == 0:
+                columns = [f.name for f in self._features]
+            extractor.func = _add_column_names(extractor.func, columns)
+            setattr(self, extractor.name, extractor.func)
 
 
 class Extractor:
