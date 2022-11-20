@@ -16,6 +16,10 @@ class NodeRet:
     key_fields: List[str]
 
 
+def is_subset(subset: List[str], superset: List[str]) -> bool:
+    return set(subset).issubset(set(superset))
+
+
 class Executor(Visitor):
     def __init__(self, data):
         super(Executor, self).__init__()
@@ -48,6 +52,11 @@ class Executor(Visitor):
         if input_ret is None:
             return None
         df = copy.deepcopy(input_ret.df)
+        if len(input_ret.key_fields) > 0:
+            # Pick the latest value for each key
+            df = df.groupby(input_ret.key_fields).apply(
+                lambda x: x.sort_values(input_ret.timestamp_field).iloc[-1]
+            )
         # Run an aggregate for each timestamp in the dataframe
         # So that appropriate windows can be applied and correct
         # timestamps can be assigned
@@ -66,10 +75,10 @@ class Executor(Visitor):
                     window_secs = duration_to_timedelta(
                         aggregate.window.start
                     ).total_seconds()
-                    past_timestamp = current_timestamp - window_secs
-                    filtered_df = filtered_df.loc[
-                        df[input_ret.timestamp_field] >= past_timestamp
-                    ]
+                    select_rows = filtered_df[input_ret.timestamp_field] >= (
+                        current_timestamp - window_secs
+                    )
+                    filtered_df = filtered_df.loc[select_rows]
 
                 if isinstance(aggregate, Count):
                     # Count needs some column to aggregate on, so we use the
@@ -114,11 +123,28 @@ class Executor(Visitor):
         right_df = right_df.rename(
             columns={right_timestamp_field: left_timestamp_field}
         )
+        pd.set_option("display.max_columns", None)
         if obj.on is not None and len(obj.on) > 0:
+            if not is_subset(obj.on, left_df.columns):
+                raise Exception(
+                    f"Join on fields {obj.on} not present in left dataframe"
+                )
+            if not is_subset(obj.on, right_df.columns):
+                raise Exception(
+                    f"Join on fields {obj.on} not present in right dataframe"
+                )
             merged_df = pd.merge_asof(
                 left=left_df, right=right_df, on=left_timestamp_field, by=obj.on
             )
         else:
+            if not is_subset(obj.left_on, left_df.columns):
+                raise Exception(
+                    f"Join keys {obj.left_on} not present in left dataframe"
+                )
+            if not is_subset(obj.right_on, right_df.columns):
+                raise Exception(
+                    f"Join keys {obj.right_on} not present in right dataframe"
+                )
             merged_df = pd.merge_asof(
                 left=left_df,
                 right=right_df,
@@ -128,3 +154,20 @@ class Executor(Visitor):
             )
         sorted_df = merged_df.sort_values(left_timestamp_field)
         return NodeRet(sorted_df, left_timestamp_field, input_ret.key_fields)
+
+    def visitUnion(self, obj):
+        dfs = [self.visit(node) for node in obj.nodes]
+        if all(df is None for df in dfs):
+            return None
+        dfs = [df for df in dfs if df is not None]
+        # Check that all the dataframes have the same timestamp field
+        timestamp_fields = [df.timestamp_field for df in dfs]
+        if not all(x == timestamp_fields[0] for x in timestamp_fields):
+            raise Exception("Union nodes must have same timestamp field")
+        # Check that all the dataframes have the same key fields
+        key_fields = [df.key_fields for df in dfs]
+        if not all(x == key_fields[0] for x in key_fields):
+            raise Exception("Union nodes must have same key fields")
+        df = pd.concat([df.df for df in dfs])
+        sorted_df = df.sort_values(dfs[0].timestamp_field)
+        return NodeRet(sorted_df, dfs[0].timestamp_field, dfs[0].key_fields)
