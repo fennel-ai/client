@@ -1,3 +1,4 @@
+import json
 import unittest
 from datetime import datetime
 from typing import Optional
@@ -19,7 +20,7 @@ from fennel.test_lib import mock_client
 
 @meta(owner="test@test.com")
 @dataset
-class UserInformationDataset:
+class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
     age: Optional[int]
@@ -32,7 +33,7 @@ class TestDataset(unittest.TestCase):
     def test_log_to_dataset(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
-        client.sync(datasets=[UserInformationDataset])
+        client.sync(datasets=[UserInfoDataset])
 
         data = [
             [18232, "Ross", 32, "USA", 1668475993],
@@ -40,13 +41,13 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInformationDataset", df)
+        response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK
 
         # Do some lookups
         user_ids = pd.Series([18232, 18234])
         ts = pd.Series([1668500000, 1668500000])
-        df = UserInformationDataset.lookup(ts, user_id=user_ids)
+        df = UserInfoDataset.lookup(ts, user_id=user_ids)
 
         assert df["name"].tolist() == ["Ross", "Monica"]
         assert df["age"].tolist() == [32, 24]
@@ -54,7 +55,7 @@ class TestDataset(unittest.TestCase):
 
         # Do some lookups with a timestamp
         ts = pd.Series([1668475343, 1668475343])
-        df = UserInformationDataset.lookup(ts, user_id=user_ids)
+        df = UserInfoDataset.lookup(ts, user_id=user_ids)
 
         assert df["name"].tolist() == [None, "Monica"]
         assert df["age"].tolist() == [None, 24]
@@ -66,19 +67,19 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInformationDataset", df)
+        response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK
 
         # Do some lookups
         ts = pd.Series([1668500001, 1668500001])
-        df = UserInformationDataset.lookup(ts, user_id=user_ids)
+        df = UserInfoDataset.lookup(ts, user_id=user_ids)
         assert df.shape == (2, 4)
         assert df["user_id"].tolist() == [18232, 18234]
         assert df["age"].tolist() == [33, 24]
         assert df["country"].tolist() == ["Russia", "Chile"]
 
         ts = pd.Series([1668500004, 1668500004])
-        df = UserInformationDataset.lookup(ts, user_id=user_ids)
+        df = UserInfoDataset.lookup(ts, user_id=user_ids)
         assert df.shape == (2, 4)
         assert df["user_id"].tolist() == [18232, 18234]
         assert df["age"].tolist() == [33, 25]
@@ -88,14 +89,14 @@ class TestDataset(unittest.TestCase):
     @mock_client
     def test_invalid_dataschema(self, client):
         """Check if invalid data raises an error."""
-        client.sync(datasets=[UserInformationDataset])
+        client.sync(datasets=[UserInfoDataset])
         data = [
             [18232, "Ross", "32", "USA", 1668475993],
             [18234, "Monica", 24, "USA", 1668475343],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInformationDataset", df)
+        response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         assert len(response.json()["error"]) > 0
 
@@ -146,10 +147,6 @@ class MovieRating:
     @staticmethod
     @pipeline(RatingActivity)
     def pipeline_aggregate(activity: Dataset):
-        def rename(df: pd.DataFrame) -> pd.DataFrame:
-            df = df.rename(columns={"movie": "name"})
-            return df
-
         ds = activity.groupby("movie").aggregate(
             [
                 Count(window=Window(), name="num_ratings"),
@@ -157,7 +154,7 @@ class MovieRating:
                 Average(window=Window(), value="rating", name="rating"),
             ]
         )
-        return ds.transform(rename)
+        return ds.transform(lambda df: df.rename(columns={"movie": "name"}))
 
 
 @meta(owner="test@test.com")
@@ -358,3 +355,275 @@ class TestE2EPipeline(unittest.TestCase):
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
         assert df["revenue_in_millions"].tolist() == [1, 50]
+
+
+################################################################################
+#                           Dataset & Pipelines Complex Unit Tests
+################################################################################
+
+
+@meta(owner="me@fennel.ai")
+@dataset(retention="4m")
+class Activity:
+    user_id: int
+    action_type: str
+    amount: Optional[float]
+    metadata: str
+    timestamp: datetime
+
+
+@meta(owner="me@fenne.ai")
+@dataset(retention="4m")
+class MerchantInfo:
+    merchant_id: int
+    category: str
+    location: str
+    timestamp: datetime
+
+
+@meta(owner="me@fennel.ai")
+@dataset
+class FraudReportAggregatedDataset:
+    merchant_categ: str = field(key=True)
+    timestamp: datetime
+    num_categ_fraudulent_transactions: int
+    num_categ_fraudulent_transactions_7d: int
+    sum_categ_fraudulent_transactions_7d: int
+
+    @staticmethod
+    @pipeline(Activity, MerchantInfo)
+    def create_fraud_dataset(activity: Dataset, merchant_info: Dataset):
+        filtered_ds = activity.transform(
+            lambda df: df[df["action_type"] == "report"]
+        )
+        ds = filtered_ds.transform(
+            lambda df: df["metadata"].apply(json.loads).apply(pd.Series)
+        )
+        ds = ds.join(
+            merchant_info,
+            on=["merchant_id"],
+        )
+        aggregated_ds = ds.groupby("category").aggregate(
+            [
+                Count(
+                    window=Window(), name="num_categ_fraudulent_transactions"
+                ),
+                Count(
+                    window=Window("1w"),
+                    name="num_categ_fraudulent_transactions_7d",
+                ),
+                Sum(
+                    window=Window("1w"),
+                    value="transaction_amount",
+                    name="sum_categ_fraudulent_transactions_7d",
+                ),
+            ]
+        )
+        return aggregated_ds.transform(
+            lambda df: df.rename(columns={"category": "merchant_categ"})
+        )
+
+
+class TestFraudReportAggregatedDataset(unittest.TestCase):
+    @mock_client
+    def test_fraud(self, client):
+        # # Sync the dataset
+        client.sync(
+            datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset]
+        )
+        data = [
+            [
+                18232,
+                "report",
+                49,
+                '{"transaction_amount": 49, "merchant_id": 1322, "timestamp": 999}',
+                1001,
+            ],
+            [
+                13423,
+                "atm_withdrawal",
+                99,
+                '{"location": "mumbai", "timestamp": 1299}',
+                1001,
+            ],
+            [
+                14325,
+                "report",
+                99,
+                '{"transaction_amount": 99, "merchant_id": 1422, "timestamp": 999}',
+                1001,
+            ],
+            [
+                18347,
+                "atm_withdrawal",
+                209,
+                '{"location": "delhi", "timestamp": 999}',
+                1001,
+            ],
+            [
+                18232,
+                "report",
+                49,
+                '{"transaction_amount": 49, "merchant_id": 1322, "timestamp": 999}',
+                1001,
+            ],
+            [
+                18232,
+                "report",
+                149,
+                '{"transaction_amount": 149, "merchant_id": 1422, "timestamp": '
+                "999}",
+                1001,
+            ],
+            [
+                18232,
+                "report",
+                999,
+                '{"transaction_amount": 999, "merchant_id": 1322, "timestamp": '
+                "999}",
+                1001,
+            ],
+            [
+                18232,
+                "report",
+                199,
+                '{"transaction_amount": 199, "merchant_id": 1322, "timestamp": '
+                "1002}",
+                1001,
+            ],
+        ]
+        columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("Activity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        data = [
+            [1322, "grocery", "mumbai", 501],
+            [1422, "entertainment", "delhi", 501],
+        ]
+
+        columns = ["merchant_id", "category", "location", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("MerchantInfo", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        ts = pd.Series([3001, 3001])
+        categories = pd.Series(["grocery", "entertainment"])
+        df = FraudReportAggregatedDataset.lookup(ts, merchant_categ=categories)
+        assert df.shape == (2, 4)
+        assert df["merchant_categ"].tolist() == ["grocery", "entertainment"]
+        assert df["num_categ_fraudulent_transactions"].tolist() == [4, 2]
+        assert df["num_categ_fraudulent_transactions_7d"].tolist() == [4, 2]
+        assert df["sum_categ_fraudulent_transactions_7d"].tolist() == [
+            1296,
+            248,
+        ]
+
+
+@meta(owner="me@fennel.ai")
+@dataset
+class UserAge:
+    name: str = field(key=True)
+    age: int
+    city: str
+    timestamp: datetime
+
+
+@meta(owner="me@fennel.ai")
+@dataset
+class UserAgeNonTable:
+    name: str
+    age: int
+    city: str
+    timestamp: datetime
+
+
+@meta(owner="me@fennel.ai")
+@dataset
+class UserAgeAggregated:
+    city: str = field(key=True)
+    timestamp: datetime
+    sum_age: int
+
+    @staticmethod
+    @pipeline(UserAge)
+    def create_user_age_aggregated(user_age: Dataset):
+        return user_age.groupby("city").aggregate(
+            [
+                Sum(
+                    window=Window("1w"),
+                    value="age",
+                    name="sum_age",
+                )
+            ]
+        )
+
+    @staticmethod
+    @pipeline(UserAgeNonTable)
+    def create_user_age_aggregated2(user_age: Dataset):
+        return user_age.groupby("city").aggregate(
+            [
+                Sum(
+                    window=Window("1w"),
+                    value="age",
+                    name="sum_age",
+                )
+            ]
+        )
+
+
+class TestAggregateTableDataset(unittest.TestCase):
+    @mock_client
+    def test_table_aggregation(self, client):
+        client.sync(datasets=[UserAge, UserAgeNonTable, UserAgeAggregated])
+        data = [
+            ["Sonu", 24, "mumbai", 500],
+            ["Monu", 25, "delhi", 500],
+        ]
+
+        columns = ["name", "age", "city", "timestamp"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("UserAge", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        ts = pd.Series([501, 501])
+        names = pd.Series(["mumbai", "delhi"])
+        df = UserAgeAggregated.lookup(ts, name=names)
+        assert df.shape == (2, 2)
+        assert df["city"].tolist() == ["mumbai", "delhi"]
+        assert df["sum_age"].tolist() == [24, 25]
+
+        input_df["timestamp"] = 502
+        response = client.log("UserAgeNonTable", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        df = UserAgeAggregated.lookup(ts, name=names)
+        assert df.shape == (2, 2)
+        assert df["city"].tolist() == ["mumbai", "delhi"]
+        assert df["sum_age"].tolist() == [24, 25]
+
+        # Change the age of Sonu and Monu
+        input_df["age"] = [30, 40]
+        input_df["timestamp"] = 503
+        response = client.log("UserAge", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        ts = pd.Series([504, 504])
+        df = UserAgeAggregated.lookup(ts, name=names)
+        assert df.shape == (2, 2)
+        assert df["city"].tolist() == ["mumbai", "delhi"]
+        # The value has updated from [24, 25] to [30, 40]
+        # since UserAge is keyed on the name hence the aggregate
+        # value is updated from [24, 25] to [30, 40]
+        assert df["sum_age"].tolist() == [30, 40]
+
+        input_df["timestamp"] = 505
+        response = client.log("UserAgeNonTable", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        ts = pd.Series([506, 506])
+        df = UserAgeAggregated.lookup(ts, name=names)
+        assert df.shape == (2, 2)
+        assert df["city"].tolist() == ["mumbai", "delhi"]
+        # The value has NOT updated but increased from
+        # [24, 25] to [24+30, 25+40]
+        assert df["sum_age"].tolist() == [54, 65]
