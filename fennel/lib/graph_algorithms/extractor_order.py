@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import List, Union, Dict, Set, Tuple
 
 from fennel.featuresets import Extractor, Featureset, Feature
+from fennel.lib.graph_algorithms.utils import extractor_graph
 
 
 def _get_features(feature: Union[Feature, Featureset]) -> set:
@@ -23,7 +24,6 @@ def _topological_sort_util(
     graph: Dict[str, List[str]],
 ):
     visited[extractor_name] = True
-
     for extractor_neighbour in graph[extractor_name]:
         if not visited[extractor_neighbour]:
             _topological_sort_util(extractor_neighbour, visited, stack, graph)
@@ -43,23 +43,7 @@ def _topological_sort(
     """
     visited: Dict[str, bool] = defaultdict(bool)
     stack: List[str] = []
-    graph: Dict[str, List[str]] = defaultdict(list)
-
-    feature_to_extractor_map = {}
-    for extractor in extractors:
-        for output in extractor.output_features:
-            feature_to_extractor_map[output] = extractor
-
-    # Create a graph,  using adjacency list representation
-    for extractor in extractors:
-        graph[extractor.name] = []
-        for inp in extractor.inputs:
-            # If the given input feature doesn't have an extractor, then
-            # it is a user-resolved feature.
-            if str(inp) not in feature_to_extractor_map:
-                continue
-            extractor_producer = feature_to_extractor_map[str(inp)]
-            graph[extractor_producer.name].append(extractor.name)
+    graph, feature_to_extractor_map = extractor_graph(extractors)
 
     for extractor in extractors:
         if not visited[extractor.name]:

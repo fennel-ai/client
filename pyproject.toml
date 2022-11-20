@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "fennel"
+name = "fennel-ai"
 version = "0.1.4"
 description = ""
 authors = ["Fennel AI <developers@fennel.ai>"]

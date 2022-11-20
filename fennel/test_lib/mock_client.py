@@ -20,7 +20,10 @@ from fennel.gen.services_pb2_grpc import (
     FennelFeatureStoreStub,
     FennelFeatureStoreServicer,
 )
-from fennel.lib.graph_algorithms import get_extractor_order
+from fennel.lib.graph_algorithms import (
+    get_extractor_order,
+    is_extractor_graph_cyclic,
+)
 from fennel.test_lib.executor import Executor
 
 TEST_PORT = 50051
@@ -138,7 +141,6 @@ class MockClient(Client):
     def sync(
         self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
     ):
-        # TODO: Test for cycles in the graph for datasets
 
         for dataset in datasets:
             self.dataset_requests[
@@ -151,10 +153,11 @@ class MockClient(Client):
                 for input in pipeline.inputs:
                     self.listeners[input.name].append(pipeline)
 
-        # TODO: Test for cycles in the graph for featuresets
-
         for featureset in featuresets:
             self.extractors.extend(featureset.extractors)
+
+        if is_extractor_graph_cyclic(self.extractors):
+            raise Exception("Cyclic graph detected in extractors")
 
     def extract_features(
         self,

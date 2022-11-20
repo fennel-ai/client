@@ -136,9 +136,21 @@ def extractor(extractor_func: Callable):
     outputs = []
     if return_annotation is not None:
         if isinstance(return_annotation, Feature):
+            # If feature name is set, it means that the feature is from another
+            # featureset.
+            if str(return_annotation) != ".":
+                raise TypeError(
+                    "Extractors can only extract a feature defined "
+                    f"in the same featureset, found {str(return_annotation)}"
+                )
             outputs.append(return_annotation.id)
         else:
             for f in return_annotation:
+                if str(f) != ".":
+                    raise TypeError(
+                        "Extractors can only extract a feature"
+                        f"defined in the same featureset, found {str(f)}"
+                    )
                 outputs.append(f.id)
 
     setattr(
