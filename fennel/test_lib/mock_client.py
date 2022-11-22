@@ -93,7 +93,7 @@ class _DatasetInfo:
 
 
 class MockClient(Client):
-    def __init__(self, stub):
+    def __init__(self, stub, server: Optional[grpc.Server] = None):
         super().__init__(url=f"localhost:{TEST_PORT}")
         self.stub = stub
 
@@ -107,6 +107,7 @@ class MockClient(Client):
             lookup_fn, self.data, self.datasets
         )
         self.extractors: List[Extractor] = []
+        self.server = server
 
     # ----------------- Public methods -----------------
 
@@ -172,6 +173,12 @@ class MockClient(Client):
         return self._run_extractors(
             extractors, input_df, output_feature_list, timestamps
         )
+
+    def stop(self):
+        if self.server is not None:
+            self.server.stop(None)
+        else:
+            raise Exception("Server is not running")
 
     # ----------------- Private methods -----------------
 
@@ -278,14 +285,15 @@ class Servicer(FennelFeatureStoreServicer):
         pass
 
 
-def mock_client(test_func):
-    def _start_a_test_server():
-        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        add_FennelFeatureStoreServicer_to_server(Servicer(), server)
-        server.add_insecure_port(f"[::]:{TEST_PORT}")
-        server.start()
-        return server
+def _start_a_test_server():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    add_FennelFeatureStoreServicer_to_server(Servicer(), server)
+    server.add_insecure_port(f"[::]:{TEST_PORT}")
+    server.start()
+    return server
 
+
+def mock_client(test_func):
     def wrapper(*args, **kwargs):
         server = _start_a_test_server()
         with grpc.insecure_channel(f"localhost:{TEST_PORT}") as channel:
@@ -296,3 +304,11 @@ def mock_client(test_func):
             return f
 
     return wrapper
+
+
+def create_mock_client():
+    server = _start_a_test_server()
+    channel = grpc.insecure_channel(f"localhost:{TEST_PORT}")
+    stub = FennelFeatureStoreStub(channel)
+    client = MockClient(stub, server)
+    return client

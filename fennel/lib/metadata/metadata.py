@@ -8,6 +8,9 @@ never be part of the signature.
 These meta flags are available to all the constructs
 (datasets, pipelines, fields, featuresets, extractors, individual features,
 pipelines etc.)
+
+Meta flags are used to indicate the status of the object. They are used to
+indicate whether the object is deprecated, deleted, or a work in progress.
 """
 
 import functools

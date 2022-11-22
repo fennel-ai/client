@@ -144,14 +144,29 @@ def extractor(extractor_func: Callable):
                     f"in the same featureset, found {str(return_annotation)}"
                 )
             outputs.append(return_annotation.id)
-        else:
+        elif isinstance(return_annotation, str):
+            raise TypeError(
+                "str datatype not supported, please ensure "
+                "from __future__ import annotations is disabled"
+            )
+        elif isinstance(return_annotation, tuple):
             for f in return_annotation:
+                if not isinstance(f, Feature) and not isinstance(f, Featureset):
+                    raise TypeError(
+                        "Extractors can only return a Series[feature] or a "
+                        "DataFrame[featureset]."
+                    )
                 if str(f) != ".":
                     raise TypeError(
                         "Extractors can only extract a feature"
                         f"defined in the same featureset, found {str(f)}"
                     )
                 outputs.append(f.id)
+        else:
+            raise TypeError(
+                f"Return annotation {return_annotation} is not a "
+                f"Series or DataFrame, found {type(return_annotation)}"
+            )
 
     setattr(
         extractor_func,
