@@ -111,8 +111,8 @@ class MockClient(Client):
 
     # ----------------- Public methods -----------------
 
-    def log(self, dataset_name: str, df: pd.DataFrame, direct=True):
-        if dataset_name not in self.dataset_requests and direct:
+    def log(self, dataset_name: str, df: pd.DataFrame):
+        if dataset_name not in self.dataset_requests:
             return FakeResponse(404, f"Dataset {dataset_name} not found")
         dataset = self.dataset_requests[dataset_name]
         with pa.ipc.open_stream(dataset.schema) as reader:
@@ -133,8 +133,9 @@ class MockClient(Client):
                 ret = executor.execute(pipeline)
                 if ret is None:
                     continue
+                print("Sending data to dataset", pipeline.dataset_name)
                 # Recursively log the output of the pipeline to the datasets
-                resp = self.log(pipeline.dataset_name, ret.df, direct=False)
+                resp = self.log(pipeline.dataset_name, ret.df)
                 if resp.status_code != 200:
                     return resp
         return FakeResponse(200, "OK")

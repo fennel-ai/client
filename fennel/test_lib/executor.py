@@ -57,6 +57,7 @@ class Executor(Visitor):
             df = df.groupby(input_ret.key_fields).apply(
                 lambda x: x.sort_values(input_ret.timestamp_field).iloc[-1]
             )
+            df = df.reset_index(drop=True)
         # Run an aggregate for each timestamp in the dataframe
         # So that appropriate windows can be applied and correct
         # timestamps can be assigned
