@@ -20,9 +20,9 @@ def is_cyclic_util(
     for neighbour in graph[v]:
         if not visited[neighbour]:
             if is_cyclic_util(neighbour, visited, rec_stack, graph):
-                return True
+                raise ValueError(f"Cyclic dependency found for {v}")
         elif rec_stack[neighbour]:
-            return True
+            raise ValueError(f"Cyclic dependency found for {v}")
 
     rec_stack[v] = False
     return False
@@ -35,7 +35,10 @@ def is_cyclic(graph: Dict[str, List[str]]) -> bool:
     for vertex in vertices:
         if not visited[vertex]:
             if is_cyclic_util(vertex, visited, rec_stack, graph):
-                return True
+                raise ValueError(
+                    f"Cycle detected in extractor graph with extractor"
+                    f" {vertex}"
+                )
     return False
 
 

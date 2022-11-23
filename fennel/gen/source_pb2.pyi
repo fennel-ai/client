@@ -18,6 +18,7 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+@typing_extensions.final
 class DataConnector(google.protobuf.message.Message):
     """Next field number: 6"""
 
@@ -50,6 +51,7 @@ class DataConnector(google.protobuf.message.Message):
 
 global___DataConnector = DataConnector
 
+@typing_extensions.final
 class DataSource(google.protobuf.message.Message):
     """Next field number: 6"""
 
@@ -90,6 +92,7 @@ class DataSource(google.protobuf.message.Message):
 
 global___DataSource = DataSource
 
+@typing_extensions.final
 class SQL(google.protobuf.message.Message):
     """Next field number: 8"""
 
@@ -137,6 +140,7 @@ class SQL(google.protobuf.message.Message):
 
 global___SQL = SQL
 
+@typing_extensions.final
 class S3(google.protobuf.message.Message):
     """Next field number: 6"""
 
@@ -156,9 +160,11 @@ class S3(google.protobuf.message.Message):
 
 global___S3 = S3
 
+@typing_extensions.final
 class S3Connector(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
     class SchemaEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -198,6 +204,7 @@ class S3Connector(google.protobuf.message.Message):
 
 global___S3Connector = S3Connector
 
+@typing_extensions.final
 class BigQuery(google.protobuf.message.Message):
     """Next field number: 4"""
 
@@ -220,6 +227,7 @@ class BigQuery(google.protobuf.message.Message):
 
 global___BigQuery = BigQuery
 
+@typing_extensions.final
 class Snowflake(google.protobuf.message.Message):
     """Next field number: 9"""
 
