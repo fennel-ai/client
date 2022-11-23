@@ -3,7 +3,7 @@ from collections import defaultdict
 from concurrent import futures
 from dataclasses import dataclass
 from functools import partial
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import grpc
 import pandas as pd
@@ -12,7 +12,7 @@ from requests import Response
 
 import fennel.datasets.datasets
 from fennel.client import Client
-from fennel.datasets import Dataset, Pipeline
+from fennel.datasets import Dataset, Pipeline, OnDemand
 from fennel.featuresets import Featureset, Feature, Extractor
 from fennel.gen.dataset_pb2 import CreateDatasetRequest
 from fennel.gen.services_pb2_grpc import (
@@ -44,15 +44,26 @@ class FakeResponse(Response):
         )
 
 
-def lookup_fn(
+def dataset_lookup_impl(
     data: Dict[str, pd.DataFrame],
     datasets: Dict[str, Dataset],
     cls_name: str,
     ts: pa.Array,
     properties: List[str],
     keys: pa.RecordBatch,
-):
+) -> Tuple[pa.RecordBatch, pa.Array]:
     key_df = keys.to_pandas()
+    right_key_fields = datasets[cls_name].key_fields
+    if len(right_key_fields) == 0:
+        raise ValueError(
+            f"Dataset {cls_name} does not have any key fields. "
+            f"Cannot perform lookup operation on it."
+        )
+    if len(right_key_fields) != len(key_df.columns):
+        raise ValueError(
+            f"Dataset {cls_name} has {len(right_key_fields)} key fields, "
+            f"but {len(key_df.columns)} key fields were provided."
+        )
     if cls_name not in data:
         timestamp_col = datasets[cls_name].timestamp_field
         # Create a dataframe with all nulls
@@ -69,6 +80,12 @@ def lookup_fn(
     right_df = data[cls_name]
     timestamp_field = datasets[cls_name].timestamp_field
     join_columns = key_df.columns.tolist()
+    timestamp_length = len(ts)
+    if timestamp_length != key_df.shape[0]:
+        raise ValueError(
+            f"Timestamp length {timestamp_length} does not match key length "
+            f"{key_df.shape[0]} for dataset {cls_name}."
+        )
     key_df[timestamp_field] = ts.to_pandas()
     # Sort the keys by timestamp
     key_df = key_df.sort_values(timestamp_field)
@@ -79,17 +96,50 @@ def lookup_fn(
         by=join_columns,
         direction="backward",
     )
+    # Find keys that don't have a match in the dataset
+    # Condense the right_df to the latest timestamp for each key
+    condense_right_df = right_df.groupby(right_key_fields).apply(
+        lambda x: x.sort_values(timestamp_field).iloc[-1]
+    )
+    condense_right_df = condense_right_df.reset_index(drop=True)
+    left_join_df = pd.merge(
+        left=key_df,
+        right=condense_right_df,
+        on=join_columns,
+        how="left",
+        indicator="__fennel_lookup_exists__",
+    )
+    found = left_join_df["__fennel_lookup_exists__"] == "both"
+    # Check if an on_demand is found
+    if datasets[cls_name].on_demand:
+        on_demand_keys = key_df[~found].reset_index(drop=True)
+        args = [
+            on_demand_keys[col]
+            for col in key_df.columns
+            if col != timestamp_field
+        ]
+        on_demand_df = datasets[cls_name].on_demand.func(
+            on_demand_keys[timestamp_field], *args
+        )
+        # Filter out the columns that are not in the dataset
+        df = df[found]
+        df = pd.concat([df, on_demand_df], ignore_index=True, axis=0)
     # drop the timestamp column
     df = df.drop(columns=[timestamp_field])
     if len(properties) > 0:
         df = df[properties]
-    return pa.RecordBatch.from_pandas(df)
+        print(df)
+    return pa.RecordBatch.from_pandas(df), pa.array(
+        left_join_df["__fennel_lookup_exists__"] == "both"
+    )
 
 
 @dataclass
 class _DatasetInfo:
     fields: List[str]
+    key_fields: List[str]
     timestamp_field: str
+    on_demand: OnDemand
 
 
 class MockClient(Client):
@@ -104,7 +154,7 @@ class MockClient(Client):
         # Map of datasets to pipelines it is an input to
         self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
         fennel.datasets.datasets.dataset_lookup = partial(
-            lookup_fn, self.data, self.datasets
+            dataset_lookup_impl, self.data, self.datasets
         )
         self.extractors: List[Extractor] = []
         self.server = server
@@ -145,14 +195,17 @@ class MockClient(Client):
 
         for dataset in datasets:
             self.dataset_requests[
-                dataset.name
+                dataset._name
             ] = dataset.create_dataset_request_proto()
-            self.datasets[dataset.name] = _DatasetInfo(
-                dataset.fields(), dataset.timestamp_field
+            self.datasets[dataset._name] = _DatasetInfo(
+                dataset.fields(),
+                dataset.key_fields,
+                dataset.timestamp_field,
+                dataset.on_demand,
             )
             for pipeline in dataset._pipelines:
                 for input in pipeline.inputs:
-                    self.listeners[input.name].append(pipeline)
+                    self.listeners[input._name].append(pipeline)
 
         for featureset in featuresets:
             self.extractors.extend(featureset.extractors)
@@ -165,14 +218,11 @@ class MockClient(Client):
         input_feature_list: List[Union[Feature, Featureset]],
         output_feature_list: List[Union[Feature, Featureset]],
         input_df: pd.DataFrame,
-        timestamps: Optional[pd.Series] = None,
     ) -> pd.DataFrame:
         extractors = get_extractor_order(
             input_feature_list, output_feature_list, self.extractors
         )
-        return self._run_extractors(
-            extractors, input_df, output_feature_list, timestamps
-        )
+        return self._run_extractors(extractors, input_df, output_feature_list)
 
     def stop(self):
         if self.server is not None:
@@ -218,10 +268,8 @@ class MockClient(Client):
         extractors: List[Extractor],
         input_df: pd.DataFrame,
         output_feature_list: List[Union[Feature, Featureset]],
-        timestamps: Optional[pd.Series] = None,
     ):
-        if timestamps is None:
-            timestamps = pd.Series([pd.Timestamp.now()] * len(input_df))
+        timestamps = pd.Series([pd.Timestamp.now()] * len(input_df))
         # Map of feature name to the pandas series
         intermediate_data: Dict[str, pd.Series] = {}
         for col in input_df.columns:

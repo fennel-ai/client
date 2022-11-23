@@ -24,7 +24,7 @@ def clean_fs_func_src_code(featureset_req: fs_proto.CreateFeaturesetRequest):
         extractors.append(extractor)
     return fs_proto.CreateFeaturesetRequest(
         name=featureset_req.name,
-        features=[f for f in featureset_req.features],
+        features=featureset_req.features,
         extractors=extractors,
         metadata=featureset_req.metadata,
     )
@@ -46,8 +46,8 @@ def clean_ds_func_src_code(
             )
         return node
 
-    dataset_req.pull_lookup.function_source_code = ""
-    dataset_req.pull_lookup.function = b""
+    dataset_req.on_demand.function_source_code = ""
+    dataset_req.on_demand.function = b""
     pipelines = []
     for j in range(len(dataset_req.pipelines)):
         pipelines.append(
@@ -66,6 +66,6 @@ def clean_ds_func_src_code(
         mode=dataset_req.mode,
         pipelines=pipelines,
         schema=b"",
-        pull_lookup=dataset_req.pull_lookup,
+        on_demand=dataset_req.on_demand,
         metadata=dataset_req.metadata,
     )

@@ -92,22 +92,25 @@ class Field(google.protobuf.message.Message):
 global___Field = Field
 
 @typing_extensions.final
-class PullLookup(google.protobuf.message.Message):
+class OnDemand(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     FUNCTION_SOURCE_CODE_FIELD_NUMBER: builtins.int
     FUNCTION_FIELD_NUMBER: builtins.int
+    EXPIRES_AFTER_FIELD_NUMBER: builtins.int
     function_source_code: builtins.str
     function: builtins.bytes
+    expires_after: builtins.int
     def __init__(
         self,
         *,
         function_source_code: builtins.str = ...,
         function: builtins.bytes = ...,
+        expires_after: builtins.int = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "function_source_code", b"function_source_code"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["expires_after", b"expires_after", "function", b"function", "function_source_code", b"function_source_code"]) -> None: ...
 
-global___PullLookup = PullLookup
+global___OnDemand = OnDemand
 
 @typing_extensions.final
 class CreateDatasetRequest(google.protobuf.message.Message):
@@ -125,7 +128,7 @@ class CreateDatasetRequest(google.protobuf.message.Message):
     SCHEMA_FIELD_NUMBER: builtins.int
     RETENTION_FIELD_NUMBER: builtins.int
     MAX_STALENESS_FIELD_NUMBER: builtins.int
-    PULL_LOOKUP_FIELD_NUMBER: builtins.int
+    ON_DEMAND_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def fields(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Field]: ...
@@ -146,7 +149,7 @@ class CreateDatasetRequest(google.protobuf.message.Message):
     retention: builtins.int
     max_staleness: builtins.int
     @property
-    def pull_lookup(self) -> global___PullLookup: ...
+    def on_demand(self) -> global___OnDemand: ...
     def __init__(
         self,
         *,
@@ -162,10 +165,10 @@ class CreateDatasetRequest(google.protobuf.message.Message):
         schema: builtins.bytes = ...,
         retention: builtins.int = ...,
         max_staleness: builtins.int = ...,
-        pull_lookup: global___PullLookup | None = ...,
+        on_demand: global___OnDemand | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "pull_lookup", b"pull_lookup"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields", "input_connectors", b"input_connectors", "max_staleness", b"max_staleness", "metadata", b"metadata", "mode", b"mode", "name", b"name", "output_connectors", b"output_connectors", "pipelines", b"pipelines", "pull_lookup", b"pull_lookup", "retention", b"retention", "schema", b"schema", "signature", b"signature", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "on_demand", b"on_demand"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields", "input_connectors", b"input_connectors", "max_staleness", b"max_staleness", "metadata", b"metadata", "mode", b"mode", "name", b"name", "on_demand", b"on_demand", "output_connectors", b"output_connectors", "pipelines", b"pipelines", "retention", b"retention", "schema", b"schema", "signature", b"signature", "version", b"version"]) -> None: ...
 
 global___CreateDatasetRequest = CreateDatasetRequest
 

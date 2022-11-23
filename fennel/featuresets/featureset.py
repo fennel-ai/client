@@ -33,6 +33,8 @@ from fennel.utils import (
 )
 
 T = TypeVar("T")
+EXTRACTOR_ATTR = "__fennel_extractor__"
+DEPENDS_ON_DATASETS_ATTR = "__fennel_depends_on_datasets"
 
 
 # ---------------------------------------------------------------------
@@ -184,21 +186,19 @@ def extractor(extractor_func: Callable):
             )
     setattr(
         extractor_func,
-        "__fennel_extractor__",
+        EXTRACTOR_ATTR,
         Extractor(extractor_name, params, extractor_func, outputs),
     )
     return extractor_func
 
 
 def depends_on(*datasets: Any):
+    if len(datasets) == 0:
+        raise TypeError("depends_on must have at least one dataset")
+
     def decorator(func):
-        setattr(func, "_depends_on_datasets", list(datasets))
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-
-        return wrapper
+        setattr(func, DEPENDS_ON_DATASETS_ATTR, list(datasets))
+        return func
 
     return decorator
 
@@ -344,9 +344,9 @@ class Featureset:
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
             if not callable(method):
                 continue
-            if not hasattr(method, "__fennel_extractor__"):
+            if not hasattr(method, EXTRACTOR_ATTR):
                 continue
-            extractor = getattr(method, "__fennel_extractor__")
+            extractor = getattr(method, EXTRACTOR_ATTR)
             if (
                 extractor.output_feature_ids is None
                 or len(extractor.output_feature_ids) == 0
@@ -442,13 +442,13 @@ class Extractor:
                     f"Featureset but a {type(input)}"
                 )
         depended_datasets = []
-        if hasattr(self.func, "_depends_on_datasets"):
-            depended_datasets = self.func._depends_on_datasets  # type: ignore
+        if hasattr(self.func, DEPENDS_ON_DATASETS_ATTR):
+            depended_datasets = getattr(self.func, DEPENDS_ON_DATASETS_ATTR)
         return proto.Extractor(
             name=self.name,
             func=cloudpickle.dumps(self.func),
             func_source_code=inspect.getsource(self.func),
-            datasets=[dataset.name for dataset in depended_datasets],
+            datasets=[dataset._name for dataset in depended_datasets],
             inputs=inputs,
             # Output features are stored as names and NOT FQN.
             features=[

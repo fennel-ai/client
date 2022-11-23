@@ -44,7 +44,7 @@ class UserInfoSingleExtractor:
     def get_user_info(
         ts: pd.Series, user_id: Series[userid]
     ) -> DataFrame[age, age_squared, age_cubed, is_name_common]:
-        df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
+        df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df["userid"] = user_id
         df["age_squared"] = df["age"] ** 2
         df["age_cubed"] = df["age"] ** 3
@@ -78,7 +78,7 @@ class UserInfoMultipleExtractor:
     def get_user_age_and_name(
         ts: pd.Series, user_id: Series[userid]
     ) -> DataFrame[age, name]:
-        df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
+        df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df[["age", "name"]]
 
     @extractor
@@ -93,7 +93,7 @@ class UserInfoMultipleExtractor:
     def get_country_geoid(
         ts: pd.Series, user_id: Series[userid]
     ) -> Series[country_geoid]:
-        df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
+        df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df["country"].apply(get_country_geoid)
 
 
@@ -155,9 +155,10 @@ class TestExtractorDAGResolution(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoSingleExtractor, UserInfoMultipleExtractor],
         )
+        now = datetime.now()
         data = [
-            [18232, "John", 32, "USA", 1010],
-            [18234, "Monica", 24, "Chile", 1010],
+            [18232, "John", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", now],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
@@ -177,7 +178,6 @@ class TestExtractorDAGResolution(unittest.TestCase):
             input_df=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
-            timestamps=pd.Series([1011, 1012]),
         )
         self.assertEqual(feature_df.shape, (2, 7))
 
@@ -189,7 +189,6 @@ class TestExtractorDAGResolution(unittest.TestCase):
             input_df=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
-            timestamps=pd.Series([1011, 1012]),
         )
         self.assertEqual(feature_df.shape, (2, 7))
 
@@ -201,7 +200,6 @@ class TestExtractorDAGResolution(unittest.TestCase):
             input_df=pd.DataFrame(
                 {UserInfoMultipleExtractor.userid: [18232, 18234]}
             ),
-            timestamps=pd.Series([1011, 1012]),
         )
         self.assertEqual(feature_df.shape, (2, 7))
 
@@ -231,7 +229,7 @@ class DocumentFeatures:
     def get_doc_features(
         ts: Series[datetime], doc_id: Series[doc_id]
     ) -> DataFrame[num_words, bert_embedding, fast_text_embedding]:
-        df = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore
+        df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore
         return df[["bert_embedding", "fast_text_embedding", "num_words"]]
 
 
@@ -269,6 +267,5 @@ class TestDocumentDataset(unittest.TestCase):
             ],
             input_feature_list=[DocumentFeatures.doc_id],
             input_df=pd.DataFrame({DocumentFeatures.doc_id: [18232, 18234]}),
-            timestamps=pd.Series([now, now]),
         )
         self.assertEqual(feature_df.shape, (2, 4))

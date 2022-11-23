@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
 from fennel.lib.aggregate import Count, Sum, Average
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding
+from fennel.lib.schema import Embedding, Series
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
@@ -47,18 +47,19 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK
 
         # Do some lookups
-        user_ids = pd.Series([18232, 18234])
-        ts = pd.Series([1668500000, 1668500000])
-        df = UserInfoDataset.lookup(ts, user_id=user_ids)
-
-        assert df["name"].tolist() == ["Ross", "Monica"]
-        assert df["age"].tolist() == [32, 24]
-        assert df["country"].tolist() == ["USA", "Chile"]
+        user_ids = pd.Series([18232, 18234, 1920])
+        ts = pd.Series([1668500000, 1668500000, 1668500000])
+        df, found = UserInfoDataset.lookup(ts, user_id=user_ids)
+        assert found.tolist() == [True, True, False]
+        assert df["name"].tolist() == ["Ross", "Monica", None]
+        assert df["age"].tolist() == [32, 24, None]
+        assert df["country"].tolist() == ["USA", "Chile", None]
 
         # Do some lookups with a timestamp
+        user_ids = pd.Series([18232, 18234])
         ts = pd.Series([1668475343, 1668475343])
-        df = UserInfoDataset.lookup(ts, user_id=user_ids)
-
+        df, found = UserInfoDataset.lookup(ts, user_id=user_ids)
+        assert found.tolist() == [True, True]
         assert df["name"].tolist() == [None, "Monica"]
         assert df["age"].tolist() == [None, 24]
         assert df["country"].tolist() == [None, "Chile"]
@@ -74,14 +75,16 @@ class TestDataset(unittest.TestCase):
 
         # Do some lookups
         ts = pd.Series([1668500001, 1668500001])
-        df = UserInfoDataset.lookup(ts, user_id=user_ids)
+        df, found = UserInfoDataset.lookup(ts, user_id=user_ids)
+        assert found.tolist() == [True, True]
         assert df.shape == (2, 4)
         assert df["user_id"].tolist() == [18232, 18234]
         assert df["age"].tolist() == [33, 24]
         assert df["country"].tolist() == ["Russia", "Chile"]
 
         ts = pd.Series([1668500004, 1668500004])
-        df = UserInfoDataset.lookup(ts, user_id=user_ids)
+        df, lookup = UserInfoDataset.lookup(ts, user_id=user_ids)
+        assert lookup.tolist() == [True, True]
         assert df.shape == (2, 4)
         assert df["user_id"].tolist() == [18232, 18234]
         assert df["age"].tolist() == [33, 25]
@@ -132,6 +135,32 @@ class DocumentContentDataset:
     num_words: int
     timestamp: datetime = field(timestamp=True)
 
+    @on_demand(expires_after="3d")
+    def get_embedding(ts: Series[datetime], doc_ids: Series[int]):
+        data = []
+        print("get_embedding called")
+        print(ts)
+        print(doc_ids)
+        doc_ids = doc_ids.tolist()
+        for i in range(len(ts)):
+            data.append(
+                [
+                    doc_ids[i],
+                    [0.1, 0.2, 0.3, 0.4],
+                    [1.1, 1.2, 1.3],
+                    10 * i,
+                    ts[i],
+                ]
+            )
+        columns = [
+            "doc_id",
+            "bert_embedding",
+            "fast_text_embedding",
+            "num_words",
+            "timestamp",
+        ]
+        return pd.DataFrame(data, columns=columns)
+
 
 class TestDocumentDataset(unittest.TestCase):
     @mock_client
@@ -163,19 +192,11 @@ class TestDocumentDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups
-        doc_ids = pd.Series([18232, 18234, 18934])
-        ts = pd.Series([now, now, now])
-        df = DocumentContentDataset.lookup(ts, doc_id=doc_ids)
-        assert df.shape == (3, 4)
-        expected_bert = np.array(
-            [[1, 2, 3, 4], [1, 2.2, 0.213, 0.343], [1, 2.2, 0.213, 0.343]]
-        )
-        assert np.allclose(df["bert_embedding"].tolist(), expected_bert)
-        expected_fast_text = np.array([[1, 2, 3], [0.87, 2, 3], [0.87, 2, 3]])
-        assert np.allclose(
-            df["fast_text_embedding"].tolist(), expected_fast_text
-        )
-        assert df["num_words"].tolist() == [10, 9, 12]
+        doc_ids = pd.Series([18232, 1728, 18234, 18934, 19200, 91012])
+        ts = pd.Series([now, now, now, now, now, now])
+        df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_ids)
+        assert df.shape == (6, 4)
+        assert df["num_words"].tolist() == [10.0, 9.0, 12, 0, 10.0, 20.0]
 
 
 ################################################################################
@@ -251,10 +272,11 @@ class TestBasicTransform(unittest.TestCase):
         # Do some lookups to verify pipeline_transform is working as expected
         ts = pd.Series([1000, 1000])
         names = pd.Series(["Jumanji", "Titanic"])
-        df = MovieRatingTransformed.lookup(
+        df, found = MovieRatingTransformed.lookup(
             ts,
             names=names,
         )
+        assert found.tolist() == [True, True]
         assert df.shape == (2, 4)
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating_sq"].tolist() == [16, None]
@@ -263,7 +285,7 @@ class TestBasicTransform(unittest.TestCase):
 
         ts = pd.Series([1002, 1002])
         names = pd.Series(["Jumanji", "Titanic"])
-        df = MovieRatingTransformed.lookup(
+        df, _ = MovieRatingTransformed.lookup(
             ts,
             names=names,
         )
@@ -323,7 +345,7 @@ class TestBasicJoin(unittest.TestCase):
         # Do some lookups to verify pipeline_join is working as expected
         ts = pd.Series([1002, 1002])
         names = pd.Series(["Jumanji", "Titanic"])
-        df = MovieStats.lookup(
+        df, _ = MovieStats.lookup(
             ts,
             names=names,
         )
@@ -359,7 +381,7 @@ class TestBasicAggregate(unittest.TestCase):
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([1005, 1005])
         names = pd.Series(["Jumanji", "Titanic"])
-        df = MovieRating.lookup(
+        df, _ = MovieRating.lookup(
             ts,
             names=names,
         )
@@ -403,7 +425,7 @@ class TestE2EPipeline(unittest.TestCase):
         # Do some lookups to verify data flow is working as expected
         ts = pd.Series([1005, 1005])
         names = pd.Series(["Jumanji", "Titanic"])
-        df = MovieStats.lookup(
+        df, _ = MovieStats.lookup(
             ts,
             names=names,
         )
@@ -567,7 +589,9 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
 
         ts = pd.Series([3001, 3001])
         categories = pd.Series(["grocery", "entertainment"])
-        df = FraudReportAggregatedDataset.lookup(ts, merchant_categ=categories)
+        df, _ = FraudReportAggregatedDataset.lookup(
+            ts, merchant_categ=categories
+        )
         assert df.shape == (2, 4)
         assert df["merchant_categ"].tolist() == ["grocery", "entertainment"]
         assert df["num_categ_fraudulent_transactions"].tolist() == [4, 2]
@@ -646,7 +670,7 @@ class TestAggregateTableDataset(unittest.TestCase):
 
         ts = pd.Series([501, 501])
         names = pd.Series(["mumbai", "delhi"])
-        df = UserAgeAggregated.lookup(ts, name=names)
+        df, _ = UserAgeAggregated.lookup(ts, name=names)
         assert df.shape == (2, 2)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         assert df["sum_age"].tolist() == [24, 25]
@@ -654,7 +678,7 @@ class TestAggregateTableDataset(unittest.TestCase):
         input_df["timestamp"] = 502
         response = client.log("UserAgeNonTable", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        df = UserAgeAggregated.lookup(ts, name=names)
+        df, _ = UserAgeAggregated.lookup(ts, name=names)
         assert df.shape == (2, 2)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         assert df["sum_age"].tolist() == [24, 25]
@@ -666,7 +690,7 @@ class TestAggregateTableDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
         ts = pd.Series([504, 504])
-        df = UserAgeAggregated.lookup(ts, name=names)
+        df, _ = UserAgeAggregated.lookup(ts, name=names)
         assert df.shape == (2, 2)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         # The value has updated from [24, 25] to [30, 40]
@@ -679,7 +703,7 @@ class TestAggregateTableDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
         ts = pd.Series([506, 506])
-        df = UserAgeAggregated.lookup(ts, name=names)
+        df, _ = UserAgeAggregated.lookup(ts, name=names)
         assert df.shape == (2, 2)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         # The value has NOT updated but increased from

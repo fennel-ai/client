@@ -41,9 +41,9 @@ class Client:
 
     def add(self, obj: Union[Dataset, Featureset]):
         if isinstance(obj, Dataset):
-            if obj.name in self.to_register:
-                raise ValueError(f"Dataset {obj.name} already registered")
-            self.to_register.add(obj.name)
+            if obj._name in self.to_register:
+                raise ValueError(f"Dataset {obj._name} already registered")
+            self.to_register.add(obj._name)
             self.to_register_objects.append(obj)
         elif isinstance(obj, Featureset):
             if obj._name in self.to_register:
@@ -87,18 +87,13 @@ class Client:
         input_feature_list: List[Union[Feature, Featureset]],
         output_feature_list: List[Union[Feature, Featureset]],
         input_df: pd.DataFrame,
-        timestamps: Optional[pd.Series] = None,
     ) -> pd.DataFrame:
         """Extract features from a dataframe."""
-        ts = []
-        if timestamps is not None:
-            ts = timestamps.to_json(orient="records")
 
         req = {
             "input_features": input_feature_list,
             "output_features": output_feature_list,
             "input_df": input_df.to_json(orient="records"),
-            "timestamps": ts,
         }
         response = self.http.post(self._url("extract_features"), json=req)
         check_response(response)

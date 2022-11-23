@@ -82,11 +82,10 @@ def test_SimpleSource(grpc_stub):
                         "every": "3600000000",
                     }
                 ],
-                "signature": "3cb848e839199cd8161e095dc1ebf536",
+                "signature": "b7cb8565c45b59f577d655496226cdae",
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
                 "retention": "63072000000000",
-                "maxStaleness": "2592000000000",
             }
         ]
     }
@@ -122,7 +121,7 @@ def test_SimpleSource(grpc_stub):
     ].name = "UserInfoDatasetInvertedOrder"
     expected_sync_request.dataset_requests[
         0
-    ].signature = "24e470412bdf36d2da4127440ba729d3"
+    ].signature = "895490181110ce7573a73c460205d0d8"
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
@@ -296,14 +295,13 @@ def test_ConsoleSource(grpc_stub):
                         "every": "3600000000",
                     },
                 ],
-                "signature": "9dbd433616c02fe281cf6238007b6ac3",
+                "signature": "c0ddc846ab843b58026953df3828cbba",
                 "metadata": {
                     "owner": "test@test.com",
                     "tags": ["test", "yolo"],
                 },
                 "mode": "pandas",
                 "retention": "63072000000000",
-                "maxStaleness": "2592000000000",
             }
         ]
     }

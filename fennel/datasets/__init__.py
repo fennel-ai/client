@@ -4,5 +4,7 @@ from fennel.datasets.datasets import (
     pipeline,
     Pipeline,
     field,
+    on_demand,
+    OnDemand,
     Visitor,
 )
