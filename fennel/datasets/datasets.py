@@ -339,7 +339,9 @@ def dataset(
         if len(key_fields) == 0:
             return None
 
-        def lookup(ts: pd.Series, *args, **kwargs) -> pd.DataFrame:
+        def lookup(
+            ts: pd.Series, *args, **kwargs
+        ) -> Tuple[pd.DataFrame, pd.Series]:
 
             if len(args) > 0:
                 raise ValueError(
@@ -370,7 +372,7 @@ def dataset(
             df.columns = key_fields
             key_recordbatch = pyarrow.RecordBatch.from_pandas(df)
 
-            res = dataset_lookup(
+            res, found = dataset_lookup(
                 cls_name,
                 ts,
                 properties,
@@ -378,7 +380,7 @@ def dataset(
             )
 
             df = res.to_pandas()
-            return df.replace({np.nan: None})
+            return df.replace({np.nan: None}), found.to_pandas()
 
         args = {k: pd.Series for k in key_fields}
         args["properties"] = List[str]
@@ -481,7 +483,7 @@ def dataset_lookup(
     ts: pyarrow.Array,
     properties: List[str],
     keys: pyarrow.RecordBatch,
-) -> pyarrow.RecordBatch:
+) -> Tuple[pyarrow.RecordBatch, pyarrow.Array]:
     raise NotImplementedError("dataset_lookup should not be called directly.")
 
 
@@ -563,7 +565,6 @@ class Dataset(_Node):
         self.pull_fn = pull_fn
         self.__name__ = self.name
         self._fields = fields
-        _key_fields: List[str]
         self._set_timestamp_field()
         self._set_key_fields()
         self._retention = retention

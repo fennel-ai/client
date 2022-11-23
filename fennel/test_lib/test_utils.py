@@ -24,7 +24,7 @@ def clean_fs_func_src_code(featureset_req: fs_proto.CreateFeaturesetRequest):
         extractors.append(extractor)
     return fs_proto.CreateFeaturesetRequest(
         name=featureset_req.name,
-        features=[f for f in featureset_req.features],
+        features=featureset_req.features,
         extractors=extractors,
         metadata=featureset_req.metadata,
     )

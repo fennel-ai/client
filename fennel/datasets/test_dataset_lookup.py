@@ -44,7 +44,7 @@ def test_datasetLookup(grpc_stub, mocker):
             names: name,
         ) -> DataFrame[age_sq, gender]:
             user_id_plus_one = user_id * 5
-            df = UserInfoDataset.lookup(
+            df, _ = UserInfoDataset.lookup(
                 ts,
                 user_id=user_id_plus_one,
                 name=names,
@@ -61,10 +61,10 @@ def test_datasetLookup(grpc_stub, mocker):
             user_id: userid,
             names: name,
         ) -> Series[age_cube]:
-            user_id_plus_one = user_id * 3
-            df = UserInfoDataset.lookup(
+            user_id_into_three = user_id * 3
+            df, _ = UserInfoDataset.lookup(
                 ts,
-                user_id=user_id_plus_one,
+                user_id=user_id_into_three,
                 name=names,
             )
             df["age_cube"] = df["age"] * df["age"] * df["age"]
@@ -81,8 +81,9 @@ def test_datasetLookup(grpc_stub, mocker):
             assert df["name"].tolist() == ["a", "b", "c"]
             lst = [[24, "female"], [23, "female"], [45, "male"]]
             df = pd.DataFrame(lst, columns=properties)
-            return pyarrow.RecordBatch.from_pandas(df)
-            return df
+            return pyarrow.RecordBatch.from_pandas(df), pyarrow.array(
+                [True, True, True]
+            )
         else:
             assert ts == pyarrow.array(
                 pd.Series([1668368655, 1667364625, 1648561623])
@@ -92,7 +93,9 @@ def test_datasetLookup(grpc_stub, mocker):
             assert df["name"].tolist() == ["a2", "b2", "c2"]
             lst = [[24], [23], [45]]
             df = pd.DataFrame(lst, columns=["age"])
-            return pyarrow.RecordBatch.from_pandas(df)
+            return pyarrow.RecordBatch.from_pandas(df), pyarrow.array(
+                [True, True, True]
+            )
 
     fennel.datasets.datasets.dataset_lookup = fake_func
     view = InternalTestClient(grpc_stub)

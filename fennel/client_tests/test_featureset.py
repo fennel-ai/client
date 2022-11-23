@@ -44,7 +44,7 @@ class UserInfoSingleExtractor:
     def get_user_info(
         ts: pd.Series, user_id: Series[userid]
     ) -> DataFrame[age, age_squared, age_cubed, is_name_common]:
-        df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
+        df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df["userid"] = user_id
         df["age_squared"] = df["age"] ** 2
         df["age_cubed"] = df["age"] ** 3
@@ -78,7 +78,7 @@ class UserInfoMultipleExtractor:
     def get_user_age_and_name(
         ts: pd.Series, user_id: Series[userid]
     ) -> DataFrame[age, name]:
-        df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
+        df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df[["age", "name"]]
 
     @extractor
@@ -93,7 +93,7 @@ class UserInfoMultipleExtractor:
     def get_country_geoid(
         ts: pd.Series, user_id: Series[userid]
     ) -> Series[country_geoid]:
-        df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
+        df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df["country"].apply(get_country_geoid)
 
 
@@ -231,7 +231,7 @@ class DocumentFeatures:
     def get_doc_features(
         ts: Series[datetime], doc_id: Series[doc_id]
     ) -> DataFrame[num_words, bert_embedding, fast_text_embedding]:
-        df = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore
+        df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore
         return df[["bert_embedding", "fast_text_embedding", "num_words"]]
 
 
