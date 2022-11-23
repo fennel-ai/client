@@ -56,7 +56,7 @@ def lookup_fn(
     if cls_name not in data:
         timestamp_col = datasets[cls_name].timestamp_field
         # Create a dataframe with all nulls
-        val_cols = [x.name for x in datasets[cls_name].fields]
+        val_cols = datasets[cls_name].fields()
         if len(properties) > 0:
             val_cols = [
                 x for x in val_cols if x in properties or x in key_df.columns
@@ -88,7 +88,7 @@ def lookup_fn(
 
 @dataclass
 class _DatasetInfo:
-    fields: List
+    fields: List[str]
     timestamp_field: str
 
 
@@ -149,7 +149,7 @@ class MockClient(Client):
                 dataset.name
             ] = dataset.create_dataset_request_proto()
             self.datasets[dataset.name] = _DatasetInfo(
-                dataset.fields, dataset.timestamp_field
+                dataset.fields(), dataset.timestamp_field
             )
             for pipeline in dataset._pipelines:
                 for input in pipeline.inputs:
@@ -189,21 +189,21 @@ class MockClient(Client):
         args = []
         for input in extractor.inputs:
             if isinstance(input, Feature):
-                if input.name in intermediate_data:
-                    args.append(intermediate_data[input.name])
+                if input.fqn in intermediate_data:
+                    args.append(intermediate_data[input.fqn])
                 else:
                     raise Exception(
-                        f"Feature {input.name} could not be "
+                        f"Feature {input} could not be "
                         f"calculated by any extractor"
                     )
             elif isinstance(input, Featureset):
                 series = []
                 for feature in input.features:
-                    if feature.name in intermediate_data:
-                        series.append(intermediate_data[feature.name])
+                    if feature.fqn in intermediate_data:
+                        series.append(intermediate_data[feature.fqn])
                     else:
                         raise Exception(
-                            f"Feature {feature.name} could not be "
+                            f"Feature {feature} could not be "
                             f"calculated by any extractor"
                         )
                 args.append(pd.concat(series, axis=1))
@@ -227,7 +227,6 @@ class MockClient(Client):
         intermediate_data: Dict[str, pd.Series] = {}
         for col in input_df.columns:
             intermediate_data[col] = input_df[col]
-
         for extractor in extractors:
             prepare_args = self._prepare_extractor_args(
                 extractor, intermediate_data
@@ -248,10 +247,10 @@ class MockClient(Client):
         output_df = pd.DataFrame()
         for feature in output_feature_list:
             if isinstance(feature, Feature):
-                output_df[feature.name] = intermediate_data[feature.name]
+                output_df[feature.fqn] = intermediate_data[feature.fqn]
             elif isinstance(feature, Featureset):
                 for f in feature.features:
-                    output_df[f.name] = intermediate_data[f.name]
+                    output_df[f.fqn] = intermediate_data[f.fqn]
             else:
                 raise Exception(
                     f"Unknown feature type {type(feature)} found "
@@ -261,7 +260,7 @@ class MockClient(Client):
 
     def _merge_df(self, df: pd.DataFrame, dataset_name: str):
         # Filter the dataframe to only include the columns in the schema
-        columns = [x.name for x in self.datasets[dataset_name].fields]
+        columns = self.datasets[dataset_name].fields
         input_columns = df.columns.tolist()
         # Check that input columns are a subset of the dataset columns
         if not set(columns).issubset(set(input_columns)):

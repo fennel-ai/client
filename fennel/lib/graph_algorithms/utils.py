@@ -11,7 +11,6 @@ def extractor_graph(
     for extractor in extractors:
         for output in extractor.output_features:
             feature_to_extractor_map[output] = extractor
-
     graph: Dict[str, List[str]] = defaultdict(list)
 
     # Create a graph, using adjacency list representation

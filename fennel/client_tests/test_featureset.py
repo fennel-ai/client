@@ -103,9 +103,16 @@ class TestSimpleExtractor(unittest.TestCase):
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
         df = UserInfoMultipleExtractor.get_age_and_name_features(ts, age, name)
         self.assertEqual(df.shape, (2, 3))
-        self.assertEqual(df["age_squared"].tolist(), [1024, 576])
-        self.assertEqual(df["age_cubed"].tolist(), [32768, 13824])
-        self.assertEqual(df["is_name_common"].tolist(), [True, False])
+        self.assertEqual(
+            df["UserInfoMultipleExtractor.age_squared"].tolist(), [1024, 576]
+        )
+        self.assertEqual(
+            df["UserInfoMultipleExtractor.age_cubed"].tolist(), [32768, 13824]
+        )
+        self.assertEqual(
+            df["UserInfoMultipleExtractor.is_name_common"].tolist(),
+            [True, False],
+        )
 
     @mock_client
     def test_simple_extractor(self, client):
@@ -125,11 +132,19 @@ class TestSimpleExtractor(unittest.TestCase):
         user_ids = pd.Series([18232, 18234])
         df = UserInfoSingleExtractor.get_user_info(ts, user_ids)
         self.assertEqual(df.shape, (2, 5))
-        self.assertEqual(df["userid"].tolist(), [18232, 18234])
-        self.assertEqual(df["age"].tolist(), [32, 24])
-        self.assertEqual(df["age_squared"].tolist(), [1024, 576])
-        self.assertEqual(df["age_cubed"].tolist(), [32768, 13824])
-        self.assertEqual(df["is_name_common"].tolist(), [True, False])
+        self.assertEqual(
+            df["UserInfoSingleExtractor.userid"].tolist(), [18232, 18234]
+        )
+        self.assertEqual(df["UserInfoSingleExtractor.age"].tolist(), [32, 24])
+        self.assertEqual(
+            df["UserInfoSingleExtractor.age_squared"].tolist(), [1024, 576]
+        )
+        self.assertEqual(
+            df["UserInfoSingleExtractor.age_cubed"].tolist(), [32768, 13824]
+        )
+        self.assertEqual(
+            df["UserInfoSingleExtractor.is_name_common"].tolist(), [True, False]
+        )
 
         series = UserInfoMultipleExtractor.get_country_geoid(ts, user_ids)
         assert series.tolist() == [(5, 6), (3, 4)]
@@ -161,7 +176,9 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 UserInfoMultipleExtractor.is_name_common,
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
-            input_df=pd.DataFrame({"userid": [18232, 18234]}),
+            input_df=pd.DataFrame(
+                {"UserInfoMultipleExtractor.userid": [18232, 18234]}
+            ),
             timestamps=pd.Series([1011, 1012]),
         )
         self.assertEqual(feature_df.shape, (2, 7))
@@ -171,7 +188,20 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 UserInfoMultipleExtractor,
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
-            input_df=pd.DataFrame({"userid": [18232, 18234]}),
+            input_df=pd.DataFrame(
+                {"UserInfoMultipleExtractor.userid": [18232, 18234]}
+            ),
             timestamps=pd.Series([1011, 1012]),
         )
         self.assertEqual(feature_df.shape, (2, 7))
+        #
+        # feature_df = client.extract_features(
+        #     output_feature_list=[
+        #         UserInfoMultipleExtractor,
+        #     ],
+        #     input_feature_list=[UserInfoMultipleExtractor.userid],
+        #     input_df=pd.DataFrame(
+        #         {UserInfoMultipleExtractor.userid: [18232, 18234]}),
+        #     timestamps=pd.Series([1011, 1012]),
+        # )
+        # self.assertEqual(feature_df.shape, (2, 7))

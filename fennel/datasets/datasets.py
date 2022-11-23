@@ -599,6 +599,9 @@ class Dataset(_Node):
     def signature(self):
         return self._sign
 
+    def fields(self):
+        return [f.name for f in self._fields]
+
     # ------------------- Private Methods ----------------------------------
 
     def _check_owner_exists(self):
@@ -694,10 +697,6 @@ class Dataset(_Node):
     @property
     def key_fields(self):
         return self._key_fields
-
-    @property
-    def fields(self):
-        return self._fields
 
 
 # ---------------------------------------------------------------------
