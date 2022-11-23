@@ -109,3 +109,15 @@ def test_DatasetIncorrectJoin(grpc_stub):
                 return a.join(b, on=["user_id"])  # type: ignore
 
     assert str(e.value) == "Cannot join with an intermediate dataset"
+
+
+def test_DatasetOptionalKey(grpc_stub):
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class XYZ:
+            user_id: int
+            name: Optional[str] = field(key=True)
+            timestamp: datetime
+
+    assert str(e.value) == "Key name in dataset XYZ cannot be Optional."

@@ -125,6 +125,11 @@ def get_field(
         description = field2comment_map.get(annotation_name, "")
         set_meta_attr(field, "description", description)
     field.pa_field = get_pyarrow_field(annotation_name, dtype)
+    if field.key and field.pa_field.nullable:
+        raise ValueError(
+            f"Key {annotation_name} in dataset {cls.__name__} cannot be "  # type: ignore
+            f"Optional."
+        )
     return field
 
 
