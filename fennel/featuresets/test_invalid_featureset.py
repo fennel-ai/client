@@ -69,6 +69,75 @@ def test_ComplexFeatureSet(grpc_stub):
     )
 
 
+def test_ExtractAnoatherFeatureset(grpc_stub):
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class UserInfo:
+            userid: int = feature(id=1)
+            home_geoid: int = feature(id=2)
+            # The users gender among male/female/non-binary
+            gender: str = feature(id=3)
+            age: int = feature(id=4).meta(owner="aditya@fennel.ai")
+            income: int = feature(id=5)
+
+            @extractor
+            def get_user_info3(
+                ts: pd.Series, user_id: Series[User.id]
+            ) -> Series[User.age]:
+                pass
+
+    assert (
+        str(e.value) == "Extractors can only extract a feature defined in "
+        "the same featureset, found User.age"
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class UserInfo2:
+            userid: int = feature(id=1)
+            home_geoid: int = feature(id=2)
+            # The users gender among male/female/non-binary
+            gender: str = feature(id=3)
+            age: int = feature(id=4).meta(owner="aditya@fennel.ai")
+            income: int = feature(id=5)
+
+            @extractor
+            def get_user_info3(
+                ts: pd.Series, user_id: Series[User.id]
+            ) -> DataFrame[User]:
+                pass
+
+    assert (
+        str(e.value) == "Extractors can only return a Series[feature] or "
+        "a DataFrame[<list of features defined in this "
+        "Featureset>]."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class UserInfo3:
+            userid: int = feature(id=1)
+            home_geoid: int = feature(id=2)
+            # The users gender among male/female/non-binary
+            gender: str = feature(id=3)
+            age: int = feature(id=4).meta(owner="aditya@fennel.ai")
+            income: int = feature(id=5)
+
+            @extractor
+            def get_user_info3(
+                ts: pd.Series, user_id: Series[User.id]
+            ) -> DataFrame[User.age, User.id]:
+                pass
+
+    assert (
+        str(e.value) == "Extractors can only extract a feature defined in "
+        "the same featureset, found (User.age, User.id)."
+    )
+
+
 def test_MissingId(grpc_stub):
     with pytest.raises(TypeError) as e:
 

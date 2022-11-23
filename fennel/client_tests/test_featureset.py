@@ -194,14 +194,15 @@ class TestExtractorDAGResolution(unittest.TestCase):
             timestamps=pd.Series([1011, 1012]),
         )
         self.assertEqual(feature_df.shape, (2, 7))
-        #
-        # feature_df = client.extract_features(
-        #     output_feature_list=[
-        #         UserInfoMultipleExtractor,
-        #     ],
-        #     input_feature_list=[UserInfoMultipleExtractor.userid],
-        #     input_df=pd.DataFrame(
-        #         {UserInfoMultipleExtractor.userid: [18232, 18234]}),
-        #     timestamps=pd.Series([1011, 1012]),
-        # )
-        # self.assertEqual(feature_df.shape, (2, 7))
+
+        feature_df = client.extract_features(
+            output_feature_list=[
+                UserInfoMultipleExtractor,
+            ],
+            input_feature_list=[UserInfoMultipleExtractor.userid],
+            input_df=pd.DataFrame(
+                {UserInfoMultipleExtractor.userid: [18232, 18234]}
+            ),
+            timestamps=pd.Series([1011, 1012]),
+        )
+        self.assertEqual(feature_df.shape, (2, 7))

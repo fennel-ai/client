@@ -140,12 +140,14 @@ def extractor(extractor_func: Callable):
         if isinstance(return_annotation, Feature):
             # If feature name is set, it means that the feature is from another
             # featureset.
-            # if str(return_annotation) != ".":
-            #     print(return_annotation)
-            #     raise TypeError(
-            #         "Extractors can only extract a feature defined "
-            #         f"in the same featureset, found {str(return_annotation)}"
-            #     )
+            if (
+                "." in str(return_annotation)
+                and len(str(return_annotation)) > 0
+            ):
+                raise TypeError(
+                    "Extractors can only extract a feature defined "
+                    f"in the same featureset, found {str(return_annotation)}"
+                )
             outputs.append(return_annotation.id)
         elif isinstance(return_annotation, str):
             raise TypeError(
@@ -159,12 +161,18 @@ def extractor(extractor_func: Callable):
                         "Extractors can only return a Series[feature] or a "
                         "DataFrame[featureset]."
                     )
-                # if str(f) != ".":
-                #     raise TypeError(
-                #         "Extractors can only extract a feature"
-                #         f"defined in the same featureset, found {str(f)}"
-                #     )
+                if "." in str(f) and len(str(f)) > 0:
+                    raise TypeError(
+                        "Extractors can only extract a feature defined "
+                        f"in the same featureset, found "
+                        f"{str(return_annotation)}."
+                    )
                 outputs.append(f.id)
+        elif isinstance(return_annotation, Featureset):
+            raise TypeError(
+                "Extractors can only return a Series[feature] or a "
+                "DataFrame[<list of features defined in this Featureset>]."
+            )
         else:
             raise TypeError(
                 f"Return annotation {return_annotation} is not a "
@@ -228,6 +236,16 @@ class Feature:
 
     def __repr__(self) -> str:
         return f"{self.fqn}"
+
+    def __hash__(self) -> int:
+        return hash(self.fqn)
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Feature):
+            return self.fqn == other.fqn
+        if isinstance(other, str):
+            return self.fqn == other
+        return False
 
 
 def _add_column_names(func, columns):

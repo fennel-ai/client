@@ -133,7 +133,6 @@ class MockClient(Client):
                 ret = executor.execute(pipeline)
                 if ret is None:
                     continue
-                print("Sending data to dataset", pipeline.dataset_name)
                 # Recursively log the output of the pipeline to the datasets
                 resp = self.log(pipeline.dataset_name, ret.df)
                 if resp.status_code != 200:
@@ -194,7 +193,7 @@ class MockClient(Client):
                 else:
                     raise Exception(
                         f"Feature {input} could not be "
-                        f"calculated by any extractor"
+                        f"calculated by any extractor."
                     )
             elif isinstance(input, Featureset):
                 series = []
@@ -203,8 +202,8 @@ class MockClient(Client):
                         series.append(intermediate_data[feature.fqn])
                     else:
                         raise Exception(
-                            f"Feature {feature} could not be "
-                            f"calculated by any extractor"
+                            f"Feature {feature} couldn't be "
+                            f"calculated by any extractor."
                         )
                 args.append(pd.concat(series, axis=1))
             else:
