@@ -3,13 +3,14 @@ from datetime import datetime
 from typing import Optional
 from typing import Tuple
 
+import numpy as np
 import pandas as pd
 import requests
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import Series, DataFrame, Embedding
 from fennel.test_lib import mock_client
 
 
@@ -40,15 +41,15 @@ class UserInfoSingleExtractor:
 
     @extractor
     @depends_on(UserInfoDataset)
-    def get_user_info(ts: pd.Series, user_id: Series[userid]):
+    def get_user_info(
+        ts: pd.Series, user_id: Series[userid]
+    ) -> DataFrame[age, age_squared, age_cubed, is_name_common]:
         df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df["userid"] = user_id
         df["age_squared"] = df["age"] ** 2
         df["age_cubed"] = df["age"] ** 3
         df["is_name_common"] = df["name"].isin(["John", "Mary", "Bob"])
-        return df[
-            ["userid", "age", "age_squared", "age_cubed", "is_name_common"]
-        ]
+        return df[["age", "age_squared", "age_cubed", "is_name_common"]]
 
 
 def get_country_geoid(country: str) -> Tuple[int, int]:
@@ -131,10 +132,7 @@ class TestSimpleExtractor(unittest.TestCase):
         ts = pd.Series([1011, 1012])
         user_ids = pd.Series([18232, 18234])
         df = UserInfoSingleExtractor.get_user_info(ts, user_ids)
-        self.assertEqual(df.shape, (2, 5))
-        self.assertEqual(
-            df["UserInfoSingleExtractor.userid"].tolist(), [18232, 18234]
-        )
+        self.assertEqual(df.shape, (2, 4))
         self.assertEqual(df["UserInfoSingleExtractor.age"].tolist(), [32, 24])
         self.assertEqual(
             df["UserInfoSingleExtractor.age_squared"].tolist(), [1024, 576]
@@ -206,3 +204,71 @@ class TestExtractorDAGResolution(unittest.TestCase):
             timestamps=pd.Series([1011, 1012]),
         )
         self.assertEqual(feature_df.shape, (2, 7))
+
+
+# Embedding tests
+
+
+@meta(owner="aditya@fennel.ai")
+@dataset
+class DocumentContentDataset:
+    doc_id: int = field(key=True)
+    bert_embedding: Embedding[4]
+    fast_text_embedding: Embedding[3]
+    num_words: int
+    timestamp: datetime = field(timestamp=True)
+
+
+@featureset
+class DocumentFeatures:
+    doc_id: int = feature(id=1)
+    bert_embedding: Embedding[4] = feature(id=2)
+    fast_text_embedding: Embedding[3] = feature(id=3)
+    num_words: int = feature(id=4)
+
+    @extractor
+    @depends_on(DocumentContentDataset)
+    def get_doc_features(
+        ts: Series[datetime], doc_id: Series[doc_id]
+    ) -> DataFrame[num_words, bert_embedding, fast_text_embedding]:
+        df = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore
+        return df[["bert_embedding", "fast_text_embedding", "num_words"]]
+
+
+class TestDocumentDataset(unittest.TestCase):
+    @mock_client
+    def test_document_featureset(self, client):
+        client.sync(
+            datasets=[DocumentContentDataset], featuresets=[DocumentFeatures]
+        )
+        now = datetime.now()
+        data = [
+            [18232, np.array([1, 2, 3, 4]), np.array([1, 2, 3]), 10, now],
+            [
+                18234,
+                np.array([1, 2.2, 0.213, 0.343]),
+                np.array([0.87, 2, 3]),
+                9,
+                now,
+            ],
+            [18934, [1, 2.2, 0.213, 0.343], [0.87, 2, 3], 12, now],
+        ]
+        columns = [
+            "doc_id",
+            "bert_embedding",
+            "fast_text_embedding",
+            "num_words",
+            "timestamp",
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("DocumentContentDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        feature_df = client.extract_features(
+            output_feature_list=[
+                DocumentFeatures,
+            ],
+            input_feature_list=[DocumentFeatures.doc_id],
+            input_df=pd.DataFrame({DocumentFeatures.doc_id: [18232, 18234]}),
+            timestamps=pd.Series([now, now]),
+        )
+        self.assertEqual(feature_df.shape, (2, 4))

@@ -20,6 +20,7 @@ def test_PyArrowSchemaConversion():
     x: bytes = b"hello"
     assert get_pyarrow_schema(type(x)) == pa.binary()
     x: datetime = datetime.now()
+
     assert get_pyarrow_schema(type(x)) == pa.timestamp("ns")
     assert get_pyarrow_field("x", Union[int, str]) == pa.union(
         [

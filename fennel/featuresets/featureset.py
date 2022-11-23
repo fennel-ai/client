@@ -83,15 +83,19 @@ def get_feature(
     if description is None or description == "":
         description = field2comment_map.get(annotation_name, "")
         set_meta_attr(feature, "description", description)
-
-    feature.dtype = get_pyarrow_schema(dtype)
+    try:
+        feature.dtype = get_pyarrow_schema(dtype)
+    except Exception as e:
+        raise TypeError(
+            f"Feature {annotation_name} has an unsupported type {dtype}"
+        ) from e
     return feature
 
 
 def featureset(featureset_cls: Type[T]):
     """featureset is a decorator for creating a Featureset class."""
     cls_annotations = featureset_cls.__dict__.get("__annotations__", {})
-    fields = [
+    features = [
         get_feature(
             cls=featureset_cls,
             annotation_name=name,
@@ -103,7 +107,7 @@ def featureset(featureset_cls: Type[T]):
 
     return Featureset(
         featureset_cls,
-        fields,
+        features,
     )
 
 
@@ -178,7 +182,6 @@ def extractor(extractor_func: Callable):
                 f"Return annotation {return_annotation} is not a "
                 f"Series or DataFrame, found {type(return_annotation)}"
             )
-
     setattr(
         extractor_func,
         "__fennel_extractor__",
@@ -344,6 +347,13 @@ class Featureset:
             if not hasattr(method, "__fennel_extractor__"):
                 continue
             extractor = getattr(method, "__fennel_extractor__")
+            if (
+                extractor.output_feature_ids is None
+                or len(extractor.output_feature_ids) == 0
+            ):
+                extractor.output_feature_ids = [
+                    feature.id for feature in self._features
+                ]
             extractor.output_features = [
                 f"{self._id_to_feature_fqn[fid]}"
                 for fid in extractor.output_feature_ids
@@ -365,17 +375,6 @@ class Featureset:
         # Check that each feature is extracted by at max one extractor.
         extracted_features: Set[int] = set()
         for extractor in self._extractors:
-            if extractor.output_feature_ids is None:
-                for feature in self._features:
-                    if feature.id not in extracted_features:
-                        extracted_features.add(feature.id)
-                    else:
-                        raise TypeError(
-                            f"Feature "
-                            f"{self._id_to_feature_fqn[feature.id]} is "
-                            f"extracted multiple times"
-                        )
-
             for feature_id in extractor.output_feature_ids:
                 if feature_id in extracted_features:
                     raise TypeError(

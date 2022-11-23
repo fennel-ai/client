@@ -4,4 +4,5 @@ from fennel.lib.schema.schema import (
     dtype_to_string,
     Series,
     DataFrame,
+    Embedding,
 )

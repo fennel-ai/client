@@ -3,12 +3,14 @@ import unittest
 from datetime import datetime
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 import requests
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum, Average
 from fennel.lib.metadata import meta
+from fennel.lib.schema import Embedding
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
@@ -119,6 +121,61 @@ class TestDataset(unittest.TestCase):
             str(e.exception)
             == "Dataset currently does not support deleted or deprecated fields."
         )
+
+
+@meta(owner="aditya@fennel.ai")
+@dataset
+class DocumentContentDataset:
+    doc_id: int = field(key=True)
+    bert_embedding: Embedding[4]
+    fast_text_embedding: Embedding[3]
+    num_words: int
+    timestamp: datetime = field(timestamp=True)
+
+
+class TestDocumentDataset(unittest.TestCase):
+    @mock_client
+    def test_log_to_document_dataset(self, client):
+        """Log some data to the dataset and check if it is logged correctly."""
+        # Sync the dataset
+        client.sync(datasets=[DocumentContentDataset])
+        now = datetime.now()
+        data = [
+            [18232, np.array([1, 2, 3, 4]), np.array([1, 2, 3]), 10, now],
+            [
+                18234,
+                np.array([1, 2.2, 0.213, 0.343]),
+                np.array([0.87, 2, 3]),
+                9,
+                now,
+            ],
+            [18934, [1, 2.2, 0.213, 0.343], [0.87, 2, 3], 12, now],
+        ]
+        columns = [
+            "doc_id",
+            "bert_embedding",
+            "fast_text_embedding",
+            "num_words",
+            "timestamp",
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("DocumentContentDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        # Do some lookups
+        doc_ids = pd.Series([18232, 18234, 18934])
+        ts = pd.Series([now, now, now])
+        df = DocumentContentDataset.lookup(ts, doc_id=doc_ids)
+        assert df.shape == (3, 4)
+        expected_bert = np.array(
+            [[1, 2, 3, 4], [1, 2.2, 0.213, 0.343], [1, 2.2, 0.213, 0.343]]
+        )
+        assert np.allclose(df["bert_embedding"].tolist(), expected_bert)
+        expected_fast_text = np.array([[1, 2, 3], [0.87, 2, 3], [0.87, 2, 3]])
+        assert np.allclose(
+            df["fast_text_embedding"].tolist(), expected_fast_text
+        )
+        assert df["num_words"].tolist() == [10, 9, 12]
 
 
 ################################################################################

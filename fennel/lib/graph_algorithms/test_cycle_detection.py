@@ -1,5 +1,7 @@
 from datetime import datetime
 
+import pytest
+
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.graph_algorithms import is_extractor_graph_cyclic
 from fennel.lib.schema import Series, DataFrame
@@ -28,4 +30,6 @@ class A:
 
 
 def test_simpleCycleDetection():
-    assert is_extractor_graph_cyclic(A.extractors) is True
+    with pytest.raises(ValueError) as e:
+        is_extractor_graph_cyclic(A.extractors)
+    assert str(e.value) == "Cyclic dependency found for A.a2_a3"

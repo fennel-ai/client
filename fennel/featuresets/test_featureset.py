@@ -108,6 +108,7 @@ def test_SimpleFeatureSet(grpc_stub):
                         }
                     },
                 ],
+                "features": ["userid", "home_geoid", "gender", "age", "income"],
                 "metadata": {},
             }
         ],

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Union, Any, TYPE_CHECKING
 
@@ -44,6 +45,27 @@ def dtype_to_string(type_: Any) -> str:
     return str(type_)
 
 
+@dataclass
+class _Embedding:
+    dim: int
+
+
+if TYPE_CHECKING:
+    # Some type that can take an integer and keep mypy happy :)
+    Embedding = pd.Series
+else:
+
+    class Embedding:
+        def __init__(self, dim: int):
+            raise TypeError(
+                "Embedding is a type only and is meant to be used as "
+                "a type hint, for example: Embedding[32]"
+            )
+
+        def __class_getitem__(cls, dimensions: int):
+            return _Embedding(dimensions)
+
+
 def get_pyarrow_field(name: str, type_: Any) -> pa.lib.Field:
     """Convert a field name and python type to a pa field."""
     # typing.Optional[x] is an alias for typing.Union[x, None]
@@ -83,6 +105,8 @@ def get_pyarrow_schema(type_: Any) -> pa.lib.Schema:
                 for i, t in enumerate(_get_args(type_))
             ]
         )
+    elif isinstance(type_, _Embedding):
+        return pa.list_(pa.float64(), type_.dim)
     elif _get_origin(type_) is list:
         return pa.list_(get_pyarrow_schema(_get_args(type_)[0]))
     elif _get_origin(type_) is set:
