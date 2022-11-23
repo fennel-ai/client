@@ -109,9 +109,8 @@ def test_datasetLookup(grpc_stub, mocker):
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a", "b", "c"])
     df = user_sq_extractor_func(ts, user_id, names)
-
-    assert df["age_sq"].tolist() == [576, 529, 2025]
-    assert df["gender"].tolist() == ["female", "female", "male"]
+    assert df["UserAgeFeatures.age_sq"].tolist() == [576, 529, 2025]
+    assert df["UserAgeFeatures.gender"].tolist() == ["female", "female", "male"]
 
     user_age_cube = sync_request.featureset_requests[0].extractors[0]
     assert user_age_cube.name == "UserAgeFeatures.user_age_cube"
@@ -122,5 +121,4 @@ def test_datasetLookup(grpc_stub, mocker):
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a2", "b2", "c2"])
     df = user_age_cube_func(ts, user_id, names)
-
-    assert df["age_cube"].tolist() == [13824, 12167, 91125]
+    assert df["UserAgeFeatures.age_cube"].tolist() == [13824, 12167, 91125]

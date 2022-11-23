@@ -49,6 +49,7 @@ def feature(
             id=id,
             # These fields will be filled in later.
             name="",
+            fqn="",
             dtype=None,
             featureset_name="",
         ),
@@ -71,11 +72,12 @@ def get_feature(
         raise TypeError(f"Field {annotation_name} is not a Feature")
 
     feature.featureset_name = cls.__name__
-    feature.name = annotation_name
     if "." in annotation_name:
         raise ValueError(
             f"Feature name {annotation_name} cannot contain a " f"period"
         )
+    feature.name = annotation_name
+    feature.fqn = f"{feature.featureset_name}.{annotation_name}"
     feature.dtype = dtype
     description = get_meta_attr(feature, "description")
     if description is None or description == "":
@@ -138,11 +140,12 @@ def extractor(extractor_func: Callable):
         if isinstance(return_annotation, Feature):
             # If feature name is set, it means that the feature is from another
             # featureset.
-            if str(return_annotation) != ".":
-                raise TypeError(
-                    "Extractors can only extract a feature defined "
-                    f"in the same featureset, found {str(return_annotation)}"
-                )
+            # if str(return_annotation) != ".":
+            #     print(return_annotation)
+            #     raise TypeError(
+            #         "Extractors can only extract a feature defined "
+            #         f"in the same featureset, found {str(return_annotation)}"
+            #     )
             outputs.append(return_annotation.id)
         elif isinstance(return_annotation, str):
             raise TypeError(
@@ -156,11 +159,11 @@ def extractor(extractor_func: Callable):
                         "Extractors can only return a Series[feature] or a "
                         "DataFrame[featureset]."
                     )
-                if str(f) != ".":
-                    raise TypeError(
-                        "Extractors can only extract a feature"
-                        f"defined in the same featureset, found {str(f)}"
-                    )
+                # if str(f) != ".":
+                #     raise TypeError(
+                #         "Extractors can only extract a feature"
+                #         f"defined in the same featureset, found {str(f)}"
+                #     )
                 outputs.append(f.id)
         else:
             raise TypeError(
@@ -197,6 +200,7 @@ def depends_on(*datasets: Any):
 @dataclass
 class Feature:
     name: str
+    fqn: str
     id: int
     featureset_name: str
     dtype: pyarrow.lib.Schema
@@ -223,7 +227,7 @@ class Feature:
         return cast(T, meta(**kwargs)(self))
 
     def __repr__(self) -> str:
-        return f"{self.featureset_name}.{self.name}"
+        return f"{self.fqn}"
 
 
 def _add_column_names(func, columns):
@@ -257,7 +261,7 @@ class Featureset:
     _features: List[Feature]
     _feature_map: Dict[str, Feature] = {}
     _extractors: List[Extractor]
-    _id_to_feature_name: Dict[int, str] = {}
+    _id_to_feature_fqn: Dict[int, str] = {}
 
     def __init__(
         self,
@@ -269,8 +273,8 @@ class Featureset:
         self.__name__ = featureset_cls.__name__
         self._features = features
         self._feature_map = {feature.name: feature for feature in features}
-        self._id_to_feature_name = {
-            feature.id: feature.name for feature in features
+        self._id_to_feature_fqn = {
+            feature.id: feature.fqn for feature in features
         }
         self._extractors = self._get_extractors()
         propogate_fennel_attributes(featureset_cls, self)
@@ -293,7 +297,7 @@ class Featureset:
             name=self._name,
             features=[feature.to_proto() for feature in self._features],
             extractors=[
-                extractor.to_proto(self._id_to_feature_name)
+                extractor.to_proto(self._id_to_feature_fqn)
                 for extractor in self._extractors
             ],
             # Currently we don't support versioning of featuresets.
@@ -323,7 +327,7 @@ class Featureset:
                 continue
             extractor = getattr(method, "__fennel_extractor__")
             extractor.output_features = [
-                f"{self._name}.{self._id_to_feature_name[fid]}"
+                f"{self._id_to_feature_fqn[fid]}"
                 for fid in extractor.output_feature_ids
             ]
             extractor.name = f"{self._name}.{extractor.name}"
@@ -350,14 +354,14 @@ class Featureset:
                     else:
                         raise TypeError(
                             f"Feature "
-                            f"{self._id_to_feature_name[feature.id]} is "
+                            f"{self._id_to_feature_fqn[feature.id]} is "
                             f"extracted multiple times"
                         )
 
             for feature_id in extractor.output_feature_ids:
                 if feature_id in extracted_features:
                     raise TypeError(
-                        f"Feature {self._id_to_feature_name[feature_id]} is "
+                        f"Feature {self._id_to_feature_fqn[feature_id]} is "
                         f"extracted by multiple extractors"
                     )
                 extracted_features.add(feature_id)
@@ -365,11 +369,11 @@ class Featureset:
     def _set_extractors_as_attributes(self):
         for extractor in self._extractors:
             columns = [
-                self._id_to_feature_name[output]
+                self._id_to_feature_fqn[output]
                 for output in extractor.output_feature_ids
             ]
             if len(columns) == 0:
-                columns = [f.name for f in self._features]
+                columns = [str(f) for f in self._features]
             extractor.func = _add_column_names(extractor.func, columns)
             setattr(self, extractor.func.__name__, extractor.func)
 
@@ -429,6 +433,10 @@ class Extractor:
             func_source_code=inspect.getsource(self.func),
             datasets=[dataset.name for dataset in depended_datasets],
             inputs=inputs,
-            features=[id_to_feature_name[id] for id in self.output_feature_ids],
+            # Output features are stored as names and NOT FQN.
+            features=[
+                id_to_feature_name[id].split(".")[1]
+                for id in self.output_feature_ids
+            ],
             metadata=get_metadata_proto(self.func),
         )

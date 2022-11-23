@@ -63,7 +63,10 @@ def test_ComplexFeatureSet(grpc_stub):
             ) -> Series[gender]:
                 pass
 
-    assert str(e.value) == "Feature gender is extracted by multiple extractors"
+    assert (
+        str(e.value) == "Feature UserInfo.gender is extracted by multiple "
+        "extractors"
+    )
 
 
 def test_MissingId(grpc_stub):
