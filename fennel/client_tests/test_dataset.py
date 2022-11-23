@@ -149,9 +149,9 @@ class MovieRating:
     def pipeline_aggregate(activity: Dataset):
         ds = activity.groupby("movie").aggregate(
             [
-                Count(window=Window(), name="num_ratings"),
-                Sum(window=Window(), value="rating", name="sum_ratings"),
-                Average(window=Window(), value="rating", name="rating"),
+                Count(window=Window(), into_field="num_ratings"),
+                Sum(window=Window(), of="rating", into_field="sum_ratings"),
+                Average(window=Window(), of="rating", into_field="rating"),
             ]
         )
         return ds.transform(lambda df: df.rename(columns={"movie": "name"}))
@@ -406,16 +406,17 @@ class FraudReportAggregatedDataset:
         aggregated_ds = ds.groupby("category").aggregate(
             [
                 Count(
-                    window=Window(), name="num_categ_fraudulent_transactions"
+                    window=Window(),
+                    into_field="num_categ_fraudulent_transactions",
                 ),
                 Count(
                     window=Window("1w"),
-                    name="num_categ_fraudulent_transactions_7d",
+                    into_field="num_categ_fraudulent_transactions_7d",
                 ),
                 Sum(
                     window=Window("1w"),
-                    value="transaction_amount",
-                    name="sum_categ_fraudulent_transactions_7d",
+                    of="transaction_amount",
+                    into_field="sum_categ_fraudulent_transactions_7d",
                 ),
             ]
         )
@@ -552,8 +553,8 @@ class UserAgeAggregated:
             [
                 Sum(
                     window=Window("1w"),
-                    value="age",
-                    name="sum_age",
+                    of="age",
+                    into_field="sum_age",
                 )
             ]
         )
@@ -565,8 +566,8 @@ class UserAgeAggregated:
             [
                 Sum(
                     window=Window("1w"),
-                    value="age",
-                    name="sum_age",
+                    of="age",
+                    into_field="sum_age",
                 )
             ]
         )

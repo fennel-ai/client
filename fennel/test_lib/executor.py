@@ -84,24 +84,24 @@ class Executor(Visitor):
                 if isinstance(aggregate, Count):
                     # Count needs some column to aggregate on, so we use the
                     # timestamp field
-                    aggs[aggregate.name] = pd.NamedAgg(
+                    aggs[aggregate.into_field] = pd.NamedAgg(
                         column=input_ret.timestamp_field, aggfunc="count"
                     )
                 elif isinstance(aggregate, Sum):
-                    aggs[aggregate.name] = pd.NamedAgg(
-                        column=aggregate.value, aggfunc="sum"
+                    aggs[aggregate.into_field] = pd.NamedAgg(
+                        column=aggregate.of, aggfunc="sum"
                     )
                 elif isinstance(aggregate, Average):
-                    aggs[aggregate.name] = pd.NamedAgg(
-                        column=aggregate.value, aggfunc="mean"
+                    aggs[aggregate.into_field] = pd.NamedAgg(
+                        column=aggregate.of, aggfunc="mean"
                     )
                 elif isinstance(aggregate, Min):
-                    aggs[aggregate.name] = pd.NamedAgg(
-                        column=aggregate.value, aggfunc="min"
+                    aggs[aggregate.into_field] = pd.NamedAgg(
+                        column=aggregate.of, aggfunc="min"
                     )
                 elif isinstance(aggregate, Max):
-                    aggs[aggregate.name] = pd.NamedAgg(
-                        column=aggregate.value, aggfunc="max"
+                    aggs[aggregate.into_field] = pd.NamedAgg(
+                        column=aggregate.of, aggfunc="max"
                     )
             agg_df = filtered_df.groupby(obj.keys).agg(**aggs).reset_index()
             agg_df[input_ret.timestamp_field] = current_timestamp

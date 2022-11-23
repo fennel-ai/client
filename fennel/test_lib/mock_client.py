@@ -232,7 +232,7 @@ class MockClient(Client):
             )
             output = extractor.func(timestamps, *prepare_args)
             if isinstance(output, pd.Series):
-                intermediate_data[output.name] = output
+                intermediate_data[output.into_field] = output
             elif isinstance(output, pd.DataFrame):
                 for col in output.columns:
                     intermediate_data[col] = output[col]
