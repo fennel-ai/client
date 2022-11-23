@@ -253,7 +253,7 @@ def _add_column_names(func, columns):
     def inner(*args, **kwargs):
         ret = func(*args, **kwargs)
         if isinstance(ret, pd.Series):
-            ret.name = columns[0]
+            ret.into_field = columns[0]
         elif isinstance(ret, pd.DataFrame):
             if len(ret.columns) != len(columns):
                 raise ValueError(

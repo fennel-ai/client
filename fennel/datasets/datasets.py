@@ -759,7 +759,7 @@ class Printer(Visitor):
         print("\n".join(self.lines))
 
     def visitDataset(self, obj):
-        return f"{self.indent()}{obj.name}\n"
+        return f"{self.indent()}{obj.into_field}\n"
 
     def visitTransform(self, obj):
         self.offset += 1
@@ -806,7 +806,7 @@ class Serializer(Visitor):
         return node_id
 
     def visitDataset(self, obj):
-        return proto.Node(dataset_name=obj.name, id=obj.name)
+        return proto.Node(dataset_name=obj.into_field, id=obj.into_field)
 
     def visitTransform(self, obj):
         return proto.Node(

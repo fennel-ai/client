@@ -299,11 +299,11 @@ def test_DatasetWithComplexPipe(grpc_stub):
                 [
                     Count(
                         window=Window(),
-                        name="num_merchant_fraudulent_transactions",
+                        into_field="num_merchant_fraudulent_transactions",
                     ),
                     Count(
                         window=Window("1w"),
-                        name="num_merchant_fraudulent_transactions_7d",
+                        into_field="num_merchant_fraudulent_transactions_7d",
                     ),
                 ]
             )

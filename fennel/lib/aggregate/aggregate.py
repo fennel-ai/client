@@ -11,7 +11,7 @@ ItemType = Union[str, List[str]]
 class AggregateType(BaseModel):
     window: Window
     # Name of the field the aggregate will  be assigned to
-    name: str
+    into_field: str
 
     def to_proto(self):
         raise NotImplementedError
@@ -46,72 +46,72 @@ class Count(AggregateType):
 
 
 class Sum(AggregateType):
-    value: str
+    of: str
     agg_func = proto.AggregateType.SUM
 
     def to_proto(self):
         return proto.Aggregation(
             type=self.agg_func,
             window_spec=self.window.to_proto(),
-            value_field=self.value,
+            value_field=self.of,
         )
 
     def signature(self):
-        return f"sum_{self.value}_{self.window.signature()}"
+        return f"sum_{self.of}_{self.window.signature()}"
 
     def agg_type(self):
         return "sum"
 
 
 class Average(AggregateType):
-    value: str
+    of: str
     agg_func = proto.AggregateType.AVG
 
     def to_proto(self):
         return proto.Aggregation(
             type=self.agg_func,
             window_spec=self.window.to_proto(),
-            value_field=self.value,
+            value_field=self.of,
         )
 
     def signature(self):
-        return f"avg_{self.value}_{self.window.signature()}"
+        return f"avg_{self.of}_{self.window.signature()}"
 
     def agg_type(self):
         return "mean"
 
 
 class Max(AggregateType):
-    value: str
+    of: str
     agg_func = proto.AggregateType.MAX
 
     def to_proto(self):
         return proto.Aggregation(
             type=self.agg_func,
             window_spec=self.window.to_proto(),
-            value_field=self.value,
+            value_field=self.of,
         )
 
     def signature(self):
-        return f"max_{self.value}_{self.window.signature()}"
+        return f"max_{self.of}_{self.window.signature()}"
 
     def agg_type(self):
         return "max"
 
 
 class Min(AggregateType):
-    value: str
+    of: str
     agg_func = proto.AggregateType.MIN
 
     def to_proto(self):
         return proto.Aggregation(
             type=self.agg_func,
             window_spec=self.window.to_proto(),
-            value_field=self.value,
+            value_field=self.of,
         )
 
     def signature(self):
-        return f"min_{self.value}_{self.window.signature()}"
+        return f"min_{self.of}_{self.window.signature()}"
 
     def agg_type(self):
         return "min"
