@@ -17,6 +17,8 @@ from fennel.gen.status_pb2 import Status
 
 Tags = Union[List[str], Tuple[str, ...], str]
 
+FHASH_ATTR = "__fennel_fhash__"
+
 
 def check_response(response: Status):
     """Check the response from the server and raise an exception if the response is not OK"""
@@ -76,6 +78,9 @@ def _json_default(item: Any):
         pass
     if isinstance(item, datetime.datetime):
         return item.isoformat(timespec="microseconds")
+
+    if hasattr(item, FHASH_ATTR):
+        return getattr(item, FHASH_ATTR)(item)
 
     if isinstance(item, bytes):
         return item.hex()

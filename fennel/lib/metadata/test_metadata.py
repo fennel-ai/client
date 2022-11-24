@@ -34,7 +34,6 @@ class UserInfoDataset:
 
 
 def test_simpleDataset(grpc_stub):
-    assert UserInfoDataset._max_staleness == timedelta(days=30)
     assert UserInfoDataset._retention == timedelta(days=730)
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
@@ -57,7 +56,7 @@ def test_simpleDataset(grpc_stub):
                     {"name": "country", "isNullable": True, "metadata": {}},
                     {"name": "timestamp", "isTimestamp": True, "metadata": {}},
                 ],
-                "signature": "3cb848e839199cd8161e095dc1ebf536",
+                "signature": "b7cb8565c45b59f577d655496226cdae",
                 "metadata": {
                     "owner": "aditya@fennel.ai",
                     "description": "test",
@@ -66,7 +65,6 @@ def test_simpleDataset(grpc_stub):
                 },
                 "mode": "pandas",
                 "retention": "63072000000000",
-                "maxStaleness": "2592000000000",
             }
         ]
     }
@@ -93,7 +91,6 @@ def test_complexDatasetWithFields(grpc_stub):
         country: Optional[str] = field()
         timestamp: datetime = field(timestamp=True)
 
-    assert YextUserInfoDataset._max_staleness == timedelta(days=30)
     assert YextUserInfoDataset._retention == timedelta(days=365)
     view = InternalTestClient(grpc_stub)
     view.add(YextUserInfoDataset)
@@ -133,7 +130,7 @@ def test_complexDatasetWithFields(grpc_stub):
                     },
                     {"name": "timestamp", "isTimestamp": True, "metadata": {}},
                 ],
-                "signature": "0f07d1d76a5e303ecf9a25e2ef21da22",
+                "signature": "e9aff01fdc03b162a75056a4cdfff438",
                 "metadata": {
                     "owner": "daniel@yext.com",
                     "description": "test",
@@ -141,7 +138,6 @@ def test_complexDatasetWithFields(grpc_stub):
                 },
                 "mode": "pandas",
                 "retention": "31536000000000",
-                "maxStaleness": "2592000000000",
             }
         ]
     }
@@ -228,14 +224,13 @@ def test_DatasetWithPipes(grpc_stub):
                         "inputs": ["A", "B", "C"],
                     },
                 ],
-                "signature": "5d8a1821f15cddcdb0f8c0bb93637695",
+                "signature": "90c6d47cba9c621df5221fe1126ee606",
                 "metadata": {
                     "owner": "aditya@fennel.ai",
                     "description": "test",
                 },
                 "mode": "pandas",
                 "retention": "63072000000000",
-                "maxStaleness": "2592000000000",
             }
         ]
     }

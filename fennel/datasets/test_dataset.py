@@ -3,11 +3,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import pandas as pd
+import pytest
 import requests  # type: ignore
 from google.protobuf.json_format import ParseDict
 
 import fennel.gen.dataset_pb2 as proto
-from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.datasets import dataset, pipeline, field, Dataset, on_demand
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
@@ -30,7 +31,6 @@ class UserInfoDataset:
 
 
 def test_SimpleDataset(grpc_stub):
-    assert UserInfoDataset._max_staleness == timedelta(days=30)
     assert UserInfoDataset._retention == timedelta(days=730)
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
@@ -53,11 +53,10 @@ def test_SimpleDataset(grpc_stub):
                     {"name": "country", "isNullable": True, "metadata": {}},
                     {"name": "timestamp", "isTimestamp": True, "metadata": {}},
                 ],
-                "signature": "3cb848e839199cd8161e095dc1ebf536",
+                "signature": "b7cb8565c45b59f577d655496226cdae",
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
                 "retention": "63072000000000",
-                "maxStaleness": "2592000000000",
             }
         ]
     }
@@ -79,7 +78,6 @@ class Activity:
 
 
 def test_DatasetWithRetention(grpc_stub):
-    assert Activity._max_staleness == timedelta(days=30)
     assert Activity._retention == timedelta(days=120)
     view = InternalTestClient(grpc_stub)
     view.add(Activity)
@@ -95,11 +93,10 @@ def test_DatasetWithRetention(grpc_stub):
                     {"name": "amount", "isNullable": True, "metadata": {}},
                     {"name": "timestamp", "isTimestamp": True, "metadata": {}},
                 ],
-                "signature": "2ec6c8c90cc6df1b6eb0258a2bdc2b1c",
+                "signature": "5a57b6ca0a79ba56b0d3e5ce95a6bbd0",
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
                 "retention": "10368000000000",
-                "maxStaleness": "2592000000000",
             }
         ]
     }
@@ -115,14 +112,17 @@ def test_DatasetWithPull(grpc_stub):
     API_ENDPOINT_URL = "http://transunion.com/v1/credit_score"
 
     @meta(owner="test@test.com")
-    @dataset(retention="1y", max_staleness="7d")
+    @dataset(
+        retention="1y",
+    )
     class UserCreditScore:
         user_id: int = field(key=True)
         credit_score: float
         timestamp: datetime
 
         @staticmethod
-        def pull(
+        @on_demand(expires_after="7d")
+        def pull_from_api(
             user_id: pd.Series, names: pd.Series, timestamps: pd.Series
         ) -> pd.DataFrame:
             user_list = user_id.tolist()
@@ -140,7 +140,6 @@ def test_DatasetWithPull(grpc_stub):
             df["credit_score"] = pd.Series(results)
             return df
 
-    assert UserCreditScore._max_staleness == timedelta(days=7)
     assert UserCreditScore._retention == timedelta(days=365)
     view = InternalTestClient(grpc_stub)
     view.add(UserCreditScore)
@@ -156,8 +155,7 @@ def test_DatasetWithPull(grpc_stub):
         "mode": "pandas",
         "metadata": {"owner": "test@test.com"},
         "retention": "31536000000000",
-        "maxStaleness": "604800000000",
-        "pullLookup": {},
+        "onDemand": {"expiresAfter": "604800000000"},
     }
 
     # Ignoring schema validation since they are bytes and not human-readable
@@ -165,6 +163,27 @@ def test_DatasetWithPull(grpc_stub):
     expected_ds_request = ParseDict(d, proto.CreateDatasetRequest())
     assert dataset_req == expected_ds_request, error_message(
         dataset_req, expected_ds_request
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset(retention="1y")
+        class UserCreditScore2:
+            user_id: int = field(key=True)
+            credit_score: float
+            timestamp: datetime
+
+            @staticmethod
+            @on_demand
+            def pull_from_api(
+                user_id: pd.Series, names: pd.Series, timestamps: pd.Series
+            ) -> pd.DataFrame:
+                pass
+
+    assert (
+        str(e.value) == "on_demand must be defined with a parameter "
+        "expires_after of type Duration for eg: 30d."
     )
 
 
@@ -243,8 +262,7 @@ def test_DatasetWithPipes(grpc_stub):
         "mode": "pandas",
         "metadata": {"owner": "aditya@fennel.ai"},
         "retention": "63072000000000",
-        "maxStaleness": "2592000000000",
-        "pullLookup": {},
+        "onDemand": {},
     }
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
@@ -377,8 +395,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
         "mode": "pandas",
         "metadata": {"owner": "test@test.com"},
         "retention": "63072000000000",
-        "maxStaleness": "2592000000000",
-        "pullLookup": {},
+        "onDemand": {},
     }
 
     # Ignoring schema validation since they are bytes and not human-readable
@@ -454,7 +471,7 @@ def test_UnionDatasets(grpc_stub):
                         },
                     },
                     {
-                        "id": "8afd27c0a99adea847df61e3b7bcab5e",
+                        "id": "ad529863b94ec1b0199d176704721af5",
                         "operator": {
                             "union": {
                                 "operandNodeIds": [
@@ -465,8 +482,8 @@ def test_UnionDatasets(grpc_stub):
                         },
                     },
                 ],
-                "root": "8afd27c0a99adea847df61e3b7bcab5e",
-                "signature": "ABCDataset.8afd27c0a99adea847df61e3b7bcab5e",
+                "root": "ad529863b94ec1b0199d176704721af5",
+                "signature": "ABCDataset.ad529863b94ec1b0199d176704721af5",
                 "inputs": ["A", "B"],
             },
             {
@@ -526,8 +543,7 @@ def test_UnionDatasets(grpc_stub):
         "mode": "pandas",
         "metadata": {"owner": "test@test.com"},
         "retention": "63072000000000",
-        "maxStaleness": "2592000000000",
-        "pullLookup": {},
+        "onDemand": {},
     }
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())

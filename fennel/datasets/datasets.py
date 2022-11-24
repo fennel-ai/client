@@ -28,6 +28,7 @@ from fennel.lib.duration.duration import (
     Duration,
     duration_to_timedelta,
     timedelta_to_micros,
+    duration_to_micros,
 )
 from fennel.lib.metadata import (
     meta,
@@ -48,8 +49,11 @@ Tags = Union[List[str], Tuple[str, ...], str]
 T = TypeVar("T", bound="Dataset")
 F = TypeVar("F")
 
+PIPELINE_ATTR = "__fennel_pipeline__"
+ON_DEMAND_ATTR = "__fennel_on_demand__"
+
 DEFAULT_RETENTION = Duration("2y")
-DEFAULT_MAX_STALENESS = Duration("30d")
+DEFAULT_EXPIRATION = Duration("30d")
 
 
 # ---------------------------------------------------------------------
@@ -203,7 +207,7 @@ class _Transform(_Node):
 
     def signature(self):
         if isinstance(self.node, Dataset):
-            return fhash(self.node.name, self.func, self.timestamp_field)
+            return fhash(self.node._name, self.func, self.timestamp_field)
         return fhash(self.node.signature(), self.func, self.timestamp_field)
 
 
@@ -222,7 +226,7 @@ class _Aggregate(_Node):
     def signature(self):
         agg_signature = fhash([agg.signature() for agg in self.aggregates])
         if isinstance(self.node, Dataset):
-            return fhash(self.node.name, self.keys, agg_signature)
+            return fhash(self.node._name, self.keys, agg_signature)
         return fhash(self.node.signature(), self.keys, agg_signature)
 
 
@@ -270,15 +274,15 @@ class _Join(_Node):
     def signature(self):
         if isinstance(self.node, Dataset):
             return fhash(
-                self.node.name,
-                self.dataset.name,
+                self.node._name,
+                self.dataset._name,
                 self.on,
                 self.left_on,
                 self.right_on,
             )
         return fhash(
             self.node.signature(),
-            self.dataset.name,
+            self.dataset._name,
             self.on,
             self.left_on,
             self.right_on,
@@ -305,7 +309,6 @@ class _Union(_Node):
 def dataset(
     *,
     retention: Optional[Duration] = DEFAULT_RETENTION,
-    max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
 ) -> Callable[[Type[F]], Dataset]:
     ...
 
@@ -318,7 +321,6 @@ def dataset(cls: Type[F]) -> Dataset:
 def dataset(
     cls: Optional[Type[F]] = None,
     retention: Optional[Duration] = DEFAULT_RETENTION,
-    max_staleness: Optional[Duration] = DEFAULT_MAX_STALENESS,
 ) -> Union[Callable[[Type[F]], Dataset], Dataset]:
     """
     dataset is a decorator that creates a Dataset class.
@@ -405,7 +407,6 @@ def dataset(
     def _create_dataset(
         dataset_cls: Type[F],
         retention: Duration,
-        max_staleness: Duration,
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
         fields = [
@@ -420,20 +421,15 @@ def dataset(
 
         key_fields = [f.name for f in fields if f.key]
 
-        pull_fn = getattr(dataset_cls, "pull", None)
         return Dataset(
             dataset_cls,
             fields,
             retention=duration_to_timedelta(retention),
-            max_staleness=duration_to_timedelta(max_staleness),
-            pull_fn=pull_fn,
             lookup_fn=_create_lookup_function(dataset_cls.__name__, key_fields),
         )
 
     def wrap(c: Type[F]) -> Dataset:
-        return _create_dataset(
-            c, cast(Duration, retention), cast(Duration, max_staleness)
-        )
+        return _create_dataset(c, cast(Duration, retention))
 
     if cls is None:
         # We're being called as @dataset()
@@ -466,7 +462,7 @@ def pipeline(
                 raise TypeError(f"Parameter {name} is not a Dataset.")
         setattr(
             pipeline_func,
-            "__fennel_pipeline__",
+            PIPELINE_ATTR,
             Pipeline(
                 node=pipeline_func(*params),
                 inputs=list(params),
@@ -476,6 +472,26 @@ def pipeline(
         return pipeline_func
 
     return wrapper
+
+
+@dataclass
+class OnDemand:
+    func: Callable
+    expires_after: Duration = DEFAULT_EXPIRATION
+
+
+def on_demand(expires_after: Duration):
+    if not isinstance(expires_after, Duration):
+        raise TypeError(
+            "on_demand must be defined with a parameter "
+            "expires_after of type Duration for eg: 30d."
+        )
+
+    def decorator(func):
+        setattr(func, ON_DEMAND_ATTR, OnDemand(func, expires_after))
+        return func
+
+    return decorator
 
 
 def dataset_lookup(
@@ -519,7 +535,7 @@ class Pipeline:
         return proto.Pipeline(
             root=self._root,
             nodes=self._nodes,
-            inputs=[i.name for i in self.inputs],
+            inputs=[i._name for i in self.inputs],
             signature=self.signature(),
             metadata=get_metadata_proto(self.func),
         )
@@ -538,16 +554,15 @@ class Pipeline:
 class Dataset(_Node):
     """Dataset is a collection of data."""
 
-    name: str
-    pull_fn: Optional[Callable]
     # All attributes should start with _ to avoid conflicts with
     # the original attributes defined by the user.
+    _name: str
+    _on_demand: Optional[OnDemand]
     _retention: datetime.timedelta
     _fields: List[Field]
     _key_fields: List[str]
     _pipelines: List[Pipeline]
     _timestamp_field: str
-    _max_staleness: datetime.timedelta
     __fennel_original_cls__: Any
     lookup: Callable
 
@@ -556,21 +571,18 @@ class Dataset(_Node):
         cls: F,
         fields: List[Field],
         retention: datetime.timedelta,
-        max_staleness: datetime.timedelta,
         lookup_fn: Optional[Callable] = None,
-        pull_fn: Optional[Callable] = None,
     ):
         super().__init__()
-        self.name = cls.__name__  # type: ignore
-        self.pull_fn = pull_fn
-        self.__name__ = self.name
+        self._name = cls.__name__  # type: ignore
+        self.__name__ = self._name
         self._fields = fields
         self._set_timestamp_field()
         self._set_key_fields()
         self._retention = retention
-        self._max_staleness = max_staleness
         self.__fennel_original_cls__ = cls
-        self._pipelines = self._get_pipelines(self.name)
+        self._pipelines = self._get_pipelines()
+        self._on_demand = self._get_on_demand()
         self._sign = self._create_signature()
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
@@ -591,7 +603,6 @@ class Dataset(_Node):
             name=self.__name__,
             schema=self._get_schema(),
             retention=timedelta_to_micros(self._retention),
-            max_staleness=timedelta_to_micros(self._max_staleness),
             pipelines=[p.to_proto() for p in self._pipelines],
             input_connectors=[s.to_proto() for s in sources],
             output_connectors=[s.to_proto() for s in sinks],
@@ -602,7 +613,7 @@ class Dataset(_Node):
             # Kept for future use.
             version=0,
             fields=[field.to_proto() for field in self._fields],
-            pull_lookup=self._pull_to_proto() if self.pull_fn else None,
+            on_demand=self._on_demand_to_proto(),
         )
 
     def signature(self):
@@ -616,14 +627,13 @@ class Dataset(_Node):
     def _check_owner_exists(self):
         owner = get_meta_attr(self, "owner")
         if owner is None or owner == "":
-            raise Exception(f"Dataset {self.name} must have an owner.")
+            raise Exception(f"Dataset {self._name} must have an owner.")
 
     def _create_signature(self):
         return fhash(
-            self.name,
+            self._name,
             self._retention,
-            self._max_staleness,
-            self.pull_fn,
+            self._on_demand,
             [f.signature() for f in self._fields],
             [p.signature for p in self._pipelines],
         )
@@ -678,24 +688,41 @@ class Dataset(_Node):
     def __repr__(self):
         return f"Dataset({self.__name__}, {self._fields})"
 
-    def _pull_to_proto(self) -> proto.PullLookup:
-        return proto.PullLookup(
+    def _on_demand_to_proto(self) -> Optional[proto.OnDemand]:
+        if self._on_demand is None:
+            return None
+        return proto.OnDemand(
             function_source_code=inspect.getsource(
-                cast(Callable, self.pull_fn)
+                cast(Callable, self._on_demand.func)
             ),
-            function=cloudpickle.dumps(self.pull_fn),
+            function=cloudpickle.dumps(self._on_demand.func),
+            expires_after=duration_to_micros(self._on_demand.expires_after),
         )
 
-    def _get_pipelines(self, dataset_name: str) -> List[Pipeline]:
-        pipelines = []
+    def _get_on_demand(self) -> Optional[OnDemand]:
+        on_demand: Optional[OnDemand] = None
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
             if not callable(method):
                 continue
-            if name == "pull":
+            if not hasattr(method, ON_DEMAND_ATTR):
                 continue
-            if not hasattr(method, "__fennel_pipeline__"):
+            if on_demand is not None:
+                raise ValueError(
+                    f"Multiple on_demand methods are not supported for "
+                    f"dataset {self._name}."
+                )
+            on_demand = getattr(method, ON_DEMAND_ATTR)
+        return on_demand
+
+    def _get_pipelines(self) -> List[Pipeline]:
+        pipelines = []
+        dataset_name = self._name
+        for name, method in inspect.getmembers(self.__fennel_original_cls__):
+            if not callable(method):
                 continue
-            pipelines.append(method.__fennel_pipeline__)
+            if not hasattr(method, PIPELINE_ATTR):
+                continue
+            pipelines.append(getattr(method, PIPELINE_ATTR))
             pipelines[-1].set_dataset_name(dataset_name)
         return pipelines
 
@@ -706,6 +733,10 @@ class Dataset(_Node):
     @property
     def key_fields(self):
         return self._key_fields
+
+    @property
+    def on_demand(self):
+        return self._on_demand
 
 
 # ---------------------------------------------------------------------
@@ -805,7 +836,7 @@ class Serializer(Visitor):
 
     def visit(self, obj) -> str:
         if isinstance(obj, Dataset):
-            return obj.name
+            return obj._name
 
         node_id = obj.signature()
         if node_id not in self.proto_by_node_id:
@@ -852,7 +883,7 @@ class Serializer(Visitor):
             operator=proto.Operator(
                 join=proto.Join(
                     lhs_node_id=self.visit(obj.node),
-                    rhs_dataset_name=obj.dataset.name,
+                    rhs_dataset_name=obj.dataset._name,
                     on=on,
                 ),
             ),

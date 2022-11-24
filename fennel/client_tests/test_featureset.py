@@ -155,9 +155,10 @@ class TestExtractorDAGResolution(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoSingleExtractor, UserInfoMultipleExtractor],
         )
+        now = datetime.now()
         data = [
-            [18232, "John", 32, "USA", 1010],
-            [18234, "Monica", 24, "Chile", 1010],
+            [18232, "John", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", now],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
@@ -177,7 +178,6 @@ class TestExtractorDAGResolution(unittest.TestCase):
             input_df=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
-            timestamps=pd.Series([1011, 1012]),
         )
         self.assertEqual(feature_df.shape, (2, 7))
 
@@ -189,7 +189,6 @@ class TestExtractorDAGResolution(unittest.TestCase):
             input_df=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
-            timestamps=pd.Series([1011, 1012]),
         )
         self.assertEqual(feature_df.shape, (2, 7))
 
@@ -201,7 +200,6 @@ class TestExtractorDAGResolution(unittest.TestCase):
             input_df=pd.DataFrame(
                 {UserInfoMultipleExtractor.userid: [18232, 18234]}
             ),
-            timestamps=pd.Series([1011, 1012]),
         )
         self.assertEqual(feature_df.shape, (2, 7))
 
@@ -269,6 +267,5 @@ class TestDocumentDataset(unittest.TestCase):
             ],
             input_feature_list=[DocumentFeatures.doc_id],
             input_df=pd.DataFrame({DocumentFeatures.doc_id: [18232, 18234]}),
-            timestamps=pd.Series([now, now]),
         )
         self.assertEqual(feature_df.shape, (2, 4))

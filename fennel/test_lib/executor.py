@@ -33,9 +33,11 @@ class Executor(Visitor):
         return ret
 
     def visitDataset(self, obj) -> Optional[NodeRet]:
-        if obj.name not in self.data:
+        if obj._name not in self.data:
             return None
-        return NodeRet(self.data[obj.name], obj.timestamp_field, obj.key_fields)
+        return NodeRet(
+            self.data[obj._name], obj.timestamp_field, obj.key_fields
+        )
 
     def visitTransform(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)

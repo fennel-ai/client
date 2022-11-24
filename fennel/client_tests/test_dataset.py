@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
 from fennel.lib.aggregate import Count, Sum, Average
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding
+from fennel.lib.schema import Embedding, Series
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
@@ -135,6 +135,32 @@ class DocumentContentDataset:
     num_words: int
     timestamp: datetime = field(timestamp=True)
 
+    @on_demand(expires_after="3d")
+    def get_embedding(ts: Series[datetime], doc_ids: Series[int]):
+        data = []
+        print("get_embedding called")
+        print(ts)
+        print(doc_ids)
+        doc_ids = doc_ids.tolist()
+        for i in range(len(ts)):
+            data.append(
+                [
+                    doc_ids[i],
+                    [0.1, 0.2, 0.3, 0.4],
+                    [1.1, 1.2, 1.3],
+                    10 * i,
+                    ts[i],
+                ]
+            )
+        columns = [
+            "doc_id",
+            "bert_embedding",
+            "fast_text_embedding",
+            "num_words",
+            "timestamp",
+        ]
+        return pd.DataFrame(data, columns=columns)
+
 
 class TestDocumentDataset(unittest.TestCase):
     @mock_client
@@ -166,19 +192,11 @@ class TestDocumentDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups
-        doc_ids = pd.Series([18232, 18234, 18934])
-        ts = pd.Series([now, now, now])
+        doc_ids = pd.Series([18232, 1728, 18234, 18934, 19200, 91012])
+        ts = pd.Series([now, now, now, now, now, now])
         df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_ids)
-        assert df.shape == (3, 4)
-        expected_bert = np.array(
-            [[1, 2, 3, 4], [1, 2.2, 0.213, 0.343], [1, 2.2, 0.213, 0.343]]
-        )
-        assert np.allclose(df["bert_embedding"].tolist(), expected_bert)
-        expected_fast_text = np.array([[1, 2, 3], [0.87, 2, 3], [0.87, 2, 3]])
-        assert np.allclose(
-            df["fast_text_embedding"].tolist(), expected_fast_text
-        )
-        assert df["num_words"].tolist() == [10, 9, 12]
+        assert df.shape == (6, 4)
+        assert df["num_words"].tolist() == [10.0, 9.0, 12, 0, 10.0, 20.0]
 
 
 ################################################################################
