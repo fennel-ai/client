@@ -1,6 +1,6 @@
 import json
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import numpy as np
@@ -36,10 +36,11 @@ class TestDataset(unittest.TestCase):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset])
-
+        now = datetime.now()
+        yesterday = now - pd.Timedelta(days=1)
         data = [
-            [18232, "Ross", 32, "USA", 1668475993],
-            [18234, "Monica", 24, "Chile", 1668475343],
+            [18232, "Ross", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", yesterday],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
@@ -48,7 +49,7 @@ class TestDataset(unittest.TestCase):
 
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
-        ts = pd.Series([1668500000, 1668500000, 1668500000])
+        ts = pd.Series([now, now, now])
         df, found = UserInfoDataset.lookup(ts, user_id=user_ids)
         assert found.tolist() == [True, True, False]
         assert df["name"].tolist() == ["Ross", "Monica", None]
@@ -57,16 +58,19 @@ class TestDataset(unittest.TestCase):
 
         # Do some lookups with a timestamp
         user_ids = pd.Series([18232, 18234])
-        ts = pd.Series([1668475343, 1668475343])
+        six_hours_ago = now - pd.Timedelta(hours=6)
+        ts = pd.Series([six_hours_ago, six_hours_ago])
         df, found = UserInfoDataset.lookup(ts, user_id=user_ids)
         assert found.tolist() == [True, True]
         assert df["name"].tolist() == [None, "Monica"]
         assert df["age"].tolist() == [None, 24]
         assert df["country"].tolist() == [None, "Chile"]
 
+        tomorrow = now + pd.Timedelta(days=1)
+        three_days_from_now = now + pd.Timedelta(days=3)
         data = [
-            [18232, "Ross", 33, "Russia", 1668500001],
-            [18234, "Monica", 25, "Columbia", 1668500004],
+            [18232, "Ross", 33, "Russia", tomorrow],
+            [18234, "Monica", 25, "Columbia", three_days_from_now],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
@@ -74,15 +78,17 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK
 
         # Do some lookups
-        ts = pd.Series([1668500001, 1668500001])
+        one_day_from_now = now + pd.Timedelta(days=1)
+        three_days_from_now = now + pd.Timedelta(days=3)
+        ts = pd.Series([three_days_from_now, one_day_from_now])
         df, found = UserInfoDataset.lookup(ts, user_id=user_ids)
         assert found.tolist() == [True, True]
         assert df.shape == (2, 4)
-        assert df["user_id"].tolist() == [18232, 18234]
-        assert df["age"].tolist() == [33, 24]
-        assert df["country"].tolist() == ["Russia", "Chile"]
+        assert df["user_id"].tolist() == [18234, 18232]
+        assert df["age"].tolist() == [24, 33]
+        assert df["country"].tolist() == ["Chile", "Russia"]
 
-        ts = pd.Series([1668500004, 1668500004])
+        ts = pd.Series([three_days_from_now, three_days_from_now])
         df, lookup = UserInfoDataset.lookup(ts, user_id=user_ids)
         assert lookup.tolist() == [True, True]
         assert df.shape == (2, 4)
@@ -138,9 +144,6 @@ class DocumentContentDataset:
     @on_demand(expires_after="3d")
     def get_embedding(ts: Series[datetime], doc_ids: Series[int]):
         data = []
-        print("get_embedding called")
-        print(ts)
-        print(doc_ids)
         doc_ids = doc_ids.tolist()
         for i in range(len(ts)):
             data.append(
@@ -263,14 +266,20 @@ class TestBasicTransform(unittest.TestCase):
         client.sync(
             datasets=[MovieRating, MovieRatingTransformed],
         )
-        data = [["Jumanji", 4, 343, 789, 1000], ["Titanic", 5, 729, 1232, 1002]]
+        now = datetime.now()
+        two_hours_ago = now - timedelta(hours=2)
+        data = [
+            ["Jumanji", 4, 343, 789, two_hours_ago],
+            ["Titanic", 5, 729, 1232, now],
+        ]
         columns = ["name", "rating", "num_ratings", "sum_ratings", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRating", df)
         assert response.status_code == requests.codes.OK
 
         # Do some lookups to verify pipeline_transform is working as expected
-        ts = pd.Series([1000, 1000])
+        an_hour_ago = now - timedelta(hours=1)
+        ts = pd.Series([an_hour_ago, an_hour_ago])
         names = pd.Series(["Jumanji", "Titanic"])
         df, found = MovieRatingTransformed.lookup(
             ts,
@@ -283,7 +292,7 @@ class TestBasicTransform(unittest.TestCase):
         assert df["rating_cube"].tolist() == [64, None]
         assert df["rating_into_5"].tolist() == [20, None]
 
-        ts = pd.Series([1002, 1002])
+        ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
         df, _ = MovieRatingTransformed.lookup(
             ts,
@@ -330,20 +339,25 @@ class TestBasicJoin(unittest.TestCase):
         client.sync(
             datasets=[MovieRating, MovieRevenue, MovieStats],
         )
-        data = [["Jumanji", 4, 343, 789, 1000], ["Titanic", 5, 729, 1232, 1002]]
+        now = datetime.now()
+        two_hours_ago = now - timedelta(hours=2)
+        data = [
+            ["Jumanji", 4, 343, 789, two_hours_ago],
+            ["Titanic", 5, 729, 1232, now],
+        ]
         columns = ["name", "rating", "num_ratings", "sum_ratings", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRating", df)
         assert response.status_code == requests.codes.OK
 
-        data = [["Jumanji", 1000000, 1000], ["Titanic", 50000000, 1002]]
+        data = [["Jumanji", 1000000, two_hours_ago], ["Titanic", 50000000, now]]
         columns = ["name", "revenue", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRevenue", df)
         assert response.status_code == requests.codes.OK
 
         # Do some lookups to verify pipeline_join is working as expected
-        ts = pd.Series([1002, 1002])
+        ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
         df, _ = MovieStats.lookup(
             ts,
@@ -362,16 +376,23 @@ class TestBasicAggregate(unittest.TestCase):
         client.sync(
             datasets=[MovieRating, RatingActivity],
         )
+        now = datetime.now()
+        one_hour_ago = now - timedelta(hours=1)
+        two_hours_ago = now - timedelta(hours=2)
+        three_hours_ago = now - timedelta(hours=3)
+        four_hours_ago = now - timedelta(hours=4)
+        five_hours_ago = now - timedelta(hours=5)
+
         data = [
-            [18231, 2, "Jumanji", 1000],
-            [18231, 3, "Jumanji", 1001],
-            [18231, 2, "Jumanji", 1002],
-            [18231, 5, "Jumanji", 1000],
-            [18231, 4, "Titanic", 1002],
-            [18231, 3, "Titanic", 1003],
-            [18231, 5, "Titanic", 1004],
-            [18231, 5, "Titanic", 1005],
-            [18231, 3, "Titanic", 1003],
+            [18231, 2, "Jumanji", five_hours_ago],
+            [18231, 3, "Jumanji", four_hours_ago],
+            [18231, 2, "Jumanji", three_hours_ago],
+            [18231, 5, "Jumanji", five_hours_ago],
+            [18231, 4, "Titanic", three_hours_ago],
+            [18231, 3, "Titanic", two_hours_ago],
+            [18231, 5, "Titanic", one_hour_ago],
+            [18231, 5, "Titanic", now],
+            [18231, 3, "Titanic", two_hours_ago],
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
@@ -379,7 +400,7 @@ class TestBasicAggregate(unittest.TestCase):
         assert response.status_code == requests.codes.OK
 
         # Do some lookups to verify pipeline_aggregate is working as expected
-        ts = pd.Series([1005, 1005])
+        ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
         df, _ = MovieRating.lookup(
             ts,
@@ -400,30 +421,39 @@ class TestE2EPipeline(unittest.TestCase):
         client.sync(
             datasets=[MovieRating, MovieRevenue, RatingActivity, MovieStats],
         )
+        now = datetime.now()
+        one_hour_ago = now - timedelta(hours=1)
+        two_hours_ago = now - timedelta(hours=2)
+        three_hours_ago = now - timedelta(hours=3)
+        four_hours_ago = now - timedelta(hours=4)
+        five_hours_ago = now - timedelta(hours=5)
         data = [
-            [18231, 2, "Jumanji", 1000],
-            [18231, 3, "Jumanji", 1001],
-            [18231, 2, "Jumanji", 1002],
-            [18231, 5, "Jumanji", 1000],
-            [18231, 4, "Titanic", 1002],
-            [18231, 3, "Titanic", 1003],
-            [18231, 5, "Titanic", 1004],
-            [18231, 5, "Titanic", 1005],
-            [18231, 3, "Titanic", 1003],
+            [18231, 2, "Jumanji", five_hours_ago],
+            [18231, 3, "Jumanji", four_hours_ago],
+            [18231, 2, "Jumanji", three_hours_ago],
+            [18231, 5, "Jumanji", five_hours_ago],
+            [18231, 4, "Titanic", three_hours_ago],
+            [18231, 3, "Titanic", two_hours_ago],
+            [18231, 5, "Titanic", one_hour_ago],
+            [18231, 5, "Titanic", now],
+            [18231, 3, "Titanic", two_hours_ago],
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("RatingActivity", df)
-        assert response.status_code == requests.codes.OK
+        assert response.status_code == requests.codes.OK, response.json()
 
-        data = [["Jumanji", 1000000, 1000], ["Titanic", 50000000, 1002]]
+        data = [
+            ["Jumanji", 1000000, five_hours_ago],
+            ["Titanic", 50000000, three_hours_ago],
+        ]
         columns = ["name", "revenue", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRevenue", df)
         assert response.status_code == requests.codes.OK
 
         # Do some lookups to verify data flow is working as expected
-        ts = pd.Series([1005, 1005])
+        ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
         df, _ = MovieStats.lookup(
             ts,
@@ -472,12 +502,15 @@ class FraudReportAggregatedDataset:
     @staticmethod
     @pipeline(Activity, MerchantInfo)
     def create_fraud_dataset(activity: Dataset, merchant_info: Dataset):
+        def extract_info(df: pd.DataFrame) -> pd.DataFrame:
+            df_json = df["metadata"].apply(json.loads).apply(pd.Series)
+            df_timestamp = pd.concat([df_json, df["timestamp"]], axis=1)
+            return df_timestamp
+
         filtered_ds = activity.transform(
             lambda df: df[df["action_type"] == "report"]
         )
-        ds = filtered_ds.transform(
-            lambda df: df["metadata"].apply(json.loads).apply(pd.Series)
-        )
+        ds = filtered_ds.transform(extract_info)
         ds = ds.join(
             merchant_info,
             on=["merchant_id"],
@@ -511,65 +544,63 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         client.sync(
             datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset]
         )
+        now = datetime.now()
         data = [
             [
                 18232,
                 "report",
                 49,
-                '{"transaction_amount": 49, "merchant_id": 1322, "timestamp": 999}',
-                1001,
+                '{"transaction_amount": 49, "merchant_id": 1322}',
+                now,
             ],
             [
                 13423,
                 "atm_withdrawal",
                 99,
-                '{"location": "mumbai", "timestamp": 1299}',
-                1001,
+                '{"location": "mumbai"}',
+                now,
             ],
             [
                 14325,
                 "report",
                 99,
-                '{"transaction_amount": 99, "merchant_id": 1422, "timestamp": 999}',
-                1001,
+                '{"transaction_amount": 99, "merchant_id": 1422}',
+                now,
             ],
             [
                 18347,
                 "atm_withdrawal",
                 209,
-                '{"location": "delhi", "timestamp": 999}',
-                1001,
+                '{"location": "delhi"}',
+                now,
             ],
             [
                 18232,
                 "report",
                 49,
-                '{"transaction_amount": 49, "merchant_id": 1322, "timestamp": 999}',
-                1001,
+                '{"transaction_amount": 49, "merchant_id": 1322}',
+                now,
             ],
             [
                 18232,
                 "report",
                 149,
-                '{"transaction_amount": 149, "merchant_id": 1422, "timestamp": '
-                "999}",
-                1001,
+                '{"transaction_amount": 149, "merchant_id": 1422}',
+                now,
             ],
             [
                 18232,
                 "report",
                 999,
-                '{"transaction_amount": 999, "merchant_id": 1322, "timestamp": '
-                "999}",
-                1001,
+                '{"transaction_amount": 999, "merchant_id": 1322}',
+                now,
             ],
             [
                 18232,
                 "report",
                 199,
-                '{"transaction_amount": 199, "merchant_id": 1322, "timestamp": '
-                "1002}",
-                1001,
+                '{"transaction_amount": 199, "merchant_id": 1322}',
+                now,
             ],
         ]
         columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
@@ -577,9 +608,10 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         response = client.log("Activity", df)
         assert response.status_code == requests.codes.OK, response.json()
 
+        two_days_ago = now - timedelta(days=2)
         data = [
-            [1322, "grocery", "mumbai", 501],
-            [1422, "entertainment", "delhi", 501],
+            [1322, "grocery", "mumbai", two_days_ago],
+            [1422, "entertainment", "delhi", two_days_ago],
         ]
 
         columns = ["merchant_id", "category", "location", "timestamp"]
@@ -587,7 +619,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         response = client.log("MerchantInfo", df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        ts = pd.Series([3001, 3001])
+        ts = pd.Series([now, now])
         categories = pd.Series(["grocery", "entertainment"])
         df, _ = FraudReportAggregatedDataset.lookup(
             ts, merchant_categ=categories
@@ -658,9 +690,13 @@ class TestAggregateTableDataset(unittest.TestCase):
     @mock_client
     def test_table_aggregation(self, client):
         client.sync(datasets=[UserAge, UserAgeNonTable, UserAgeAggregated])
+        yesterday = datetime.now() - timedelta(days=1)
+        now = datetime.now()
+        tomorrow = datetime.now() + timedelta(days=1)
+
         data = [
-            ["Sonu", 24, "mumbai", 500],
-            ["Monu", 25, "delhi", 500],
+            ["Sonu", 24, "mumbai", yesterday],
+            ["Monu", 25, "delhi", yesterday],
         ]
 
         columns = ["name", "age", "city", "timestamp"]
@@ -668,14 +704,14 @@ class TestAggregateTableDataset(unittest.TestCase):
         response = client.log("UserAge", input_df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        ts = pd.Series([501, 501])
+        ts = pd.Series([now, now])
         names = pd.Series(["mumbai", "delhi"])
         df, _ = UserAgeAggregated.lookup(ts, name=names)
         assert df.shape == (2, 2)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         assert df["sum_age"].tolist() == [24, 25]
 
-        input_df["timestamp"] = 502
+        input_df["timestamp"] = tomorrow
         response = client.log("UserAgeNonTable", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         df, _ = UserAgeAggregated.lookup(ts, name=names)
@@ -685,11 +721,13 @@ class TestAggregateTableDataset(unittest.TestCase):
 
         # Change the age of Sonu and Monu
         input_df["age"] = [30, 40]
-        input_df["timestamp"] = 503
+        two_days_from_now = datetime.now() + timedelta(days=2)
+        input_df["timestamp"] = two_days_from_now
         response = client.log("UserAge", input_df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        ts = pd.Series([504, 504])
+        three_days_from_now = datetime.now() + timedelta(days=3)
+        ts = pd.Series([three_days_from_now, three_days_from_now])
         df, _ = UserAgeAggregated.lookup(ts, name=names)
         assert df.shape == (2, 2)
         assert df["city"].tolist() == ["mumbai", "delhi"]
@@ -698,11 +736,13 @@ class TestAggregateTableDataset(unittest.TestCase):
         # value is updated from [24, 25] to [30, 40]
         assert df["sum_age"].tolist() == [30, 40]
 
-        input_df["timestamp"] = 505
+        four_days_from_now = datetime.now() + timedelta(days=4)
+        input_df["timestamp"] = four_days_from_now
         response = client.log("UserAgeNonTable", input_df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        ts = pd.Series([506, 506])
+        five_days_from_now = datetime.now() + timedelta(days=5)
+        ts = pd.Series([five_days_from_now, five_days_from_now])
         df, _ = UserAgeAggregated.lookup(ts, name=names)
         assert df.shape == (2, 2)
         assert df["city"].tolist() == ["mumbai", "delhi"]
