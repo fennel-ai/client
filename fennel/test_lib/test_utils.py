@@ -39,7 +39,15 @@ def clean_ds_func_src_code(
                 operator=ds_proto.Operator(
                     transform=ds_proto.Transform(
                         operand_node_id=node.operator.transform.operand_node_id,
-                        timestamp_field=node.operator.transform.timestamp_field,
+                    ),
+                ),
+                id=node.id,
+            )
+        if node.HasField("operator") and node.operator.HasField("filter"):
+            return ds_proto.Node(
+                operator=ds_proto.Operator(
+                    filter=ds_proto.Filter(
+                        operand_node_id=node.operator.transform.operand_node_id,
                     ),
                 ),
                 id=node.id,

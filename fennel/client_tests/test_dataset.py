@@ -507,7 +507,7 @@ class FraudReportAggregatedDataset:
             df_timestamp = pd.concat([df_json, df["timestamp"]], axis=1)
             return df_timestamp
 
-        filtered_ds = activity.transform(
+        filtered_ds = activity.filter(
             lambda df: df[df["action_type"] == "report"]
         )
         ds = filtered_ds.transform(extract_info)

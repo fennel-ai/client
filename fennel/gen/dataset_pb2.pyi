@@ -268,6 +268,7 @@ class Operator(google.protobuf.message.Message):
     JOIN_FIELD_NUMBER: builtins.int
     TRANSFORM_FIELD_NUMBER: builtins.int
     UNION_FIELD_NUMBER: builtins.int
+    FILTER_FIELD_NUMBER: builtins.int
     @property
     def aggregate(self) -> global___Aggregate: ...
     @property
@@ -276,6 +277,8 @@ class Operator(google.protobuf.message.Message):
     def transform(self) -> global___Transform: ...
     @property
     def union(self) -> global___Union: ...
+    @property
+    def filter(self) -> global___Filter: ...
     def __init__(
         self,
         *,
@@ -283,10 +286,11 @@ class Operator(google.protobuf.message.Message):
         join: global___Join | None = ...,
         transform: global___Transform | None = ...,
         union: global___Union | None = ...,
+        filter: global___Filter | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "join", b"join", "op", b"op", "transform", b"transform", "union", b"union"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "join", b"join", "op", b"op", "transform", b"transform", "union", b"union"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["op", b"op"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "filter", b"filter", "join", b"join", "op", b"op", "transform", b"transform", "union", b"union"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "filter", b"filter", "join", b"join", "op", b"op", "transform", b"transform", "union", b"union"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["op", b"op"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union", "filter"] | None: ...
 
 global___Operator = Operator
 
@@ -360,22 +364,40 @@ class Transform(google.protobuf.message.Message):
     OPERAND_NODE_ID_FIELD_NUMBER: builtins.int
     FUNCTION_FIELD_NUMBER: builtins.int
     FUNCTION_SOURCE_CODE_FIELD_NUMBER: builtins.int
-    TIMESTAMP_FIELD_FIELD_NUMBER: builtins.int
     operand_node_id: builtins.str
     function: builtins.bytes
     function_source_code: builtins.str
-    timestamp_field: builtins.str
     def __init__(
         self,
         *,
         operand_node_id: builtins.str = ...,
         function: builtins.bytes = ...,
         function_source_code: builtins.str = ...,
-        timestamp_field: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "function_source_code", b"function_source_code", "operand_node_id", b"operand_node_id", "timestamp_field", b"timestamp_field"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "function_source_code", b"function_source_code", "operand_node_id", b"operand_node_id"]) -> None: ...
 
 global___Transform = Transform
+
+@typing_extensions.final
+class Filter(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    OPERAND_NODE_ID_FIELD_NUMBER: builtins.int
+    FUNCTION_FIELD_NUMBER: builtins.int
+    FUNCTION_SOURCE_CODE_FIELD_NUMBER: builtins.int
+    operand_node_id: builtins.str
+    function: builtins.bytes
+    function_source_code: builtins.str
+    def __init__(
+        self,
+        *,
+        operand_node_id: builtins.str = ...,
+        function: builtins.bytes = ...,
+        function_source_code: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "function_source_code", b"function_source_code", "operand_node_id", b"operand_node_id"]) -> None: ...
+
+global___Filter = Filter
 
 @typing_extensions.final
 class Union(google.protobuf.message.Message):
