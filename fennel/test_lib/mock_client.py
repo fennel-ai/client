@@ -128,7 +128,6 @@ def dataset_lookup_impl(
     df = df.drop(columns=[timestamp_field])
     if len(properties) > 0:
         df = df[properties]
-        print(df)
     return pa.RecordBatch.from_pandas(df), pa.array(
         left_join_df["__fennel_lookup_exists__"] == "both"
     )
@@ -164,8 +163,21 @@ class MockClient(Client):
     def log(self, dataset_name: str, df: pd.DataFrame):
         if dataset_name not in self.dataset_requests:
             return FakeResponse(404, f"Dataset {dataset_name} not found")
-        dataset = self.dataset_requests[dataset_name]
-        with pa.ipc.open_stream(dataset.schema) as reader:
+        dataset_req = self.dataset_requests[dataset_name]
+        timestamp_field = self.datasets[dataset_name].timestamp_field
+        if timestamp_field not in df.columns:
+            return FakeResponse(
+                400,
+                f"Timestamp field {timestamp_field} not found in dataframe",
+            )
+        if str(df[timestamp_field].dtype) != "datetime64[ns]":
+            return FakeResponse(
+                400,
+                f"Timestamp field {timestamp_field} is not of type "
+                f"datetime64[ns] but found {df[timestamp_field].dtype} in "
+                f"dataset {dataset_name}",
+            )
+        with pa.ipc.open_stream(dataset_req.schema) as reader:
             dataset_schema = reader.schema
             try:
                 pa.RecordBatch.from_pandas(df, schema=dataset_schema)

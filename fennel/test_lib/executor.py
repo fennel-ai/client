@@ -2,6 +2,7 @@ import copy
 from dataclasses import dataclass
 from typing import Optional, List
 
+import numpy as np
 import pandas as pd
 
 from fennel.datasets import Visitor, Pipeline
@@ -78,8 +79,11 @@ class Executor(Visitor):
                     window_secs = duration_to_timedelta(
                         aggregate.window.start
                     ).total_seconds()
+                    past_timestamp = current_timestamp - np.timedelta64(
+                        int(window_secs), "s"
+                    )
                     select_rows = filtered_df[input_ret.timestamp_field] >= (
-                        current_timestamp - window_secs
+                        past_timestamp
                     )
                     filtered_df = filtered_df.loc[select_rows]
 

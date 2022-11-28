@@ -121,15 +121,16 @@ class TestSimpleExtractor(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoSingleExtractor, UserInfoMultipleExtractor],
         )
+        now = datetime.now()
         data = [
-            [18232, "John", 32, "USA", 1010],
-            [18234, "Monica", 24, "Chile", 1010],
+            [18232, "John", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", now],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
-        ts = pd.Series([1011, 1012])
+        ts = pd.Series([now, now])
         user_ids = pd.Series([18232, 18234])
         df = UserInfoSingleExtractor.get_user_info(ts, user_ids)
         self.assertEqual(df.shape, (2, 4))
