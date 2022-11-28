@@ -166,10 +166,11 @@ class _Node:
     def __init__(self):
         self.out_edges = []
 
-    def transform(
-        self, func: Callable, timestamp: Optional[str] = None
-    ) -> _Node:
-        return _Transform(self, func, timestamp)
+    def transform(self, func: Callable) -> _Node:
+        return _Transform(self, func)
+
+    def filter(self, func: Callable) -> _Node:
+        return _Filter(self, func)
 
     def groupby(self, *args) -> _GroupBy:
         return _GroupBy(self, *args)
@@ -198,17 +199,29 @@ class _Node:
 
 
 class _Transform(_Node):
-    def __init__(self, node: _Node, func: Callable, timestamp: Optional[str]):
+    def __init__(self, node: _Node, func: Callable):
         super().__init__()
         self.func = func
         self.node = node
-        self.timestamp_field = timestamp
         self.node.out_edges.append(self)
 
     def signature(self):
         if isinstance(self.node, Dataset):
-            return fhash(self.node._name, self.func, self.timestamp_field)
-        return fhash(self.node.signature(), self.func, self.timestamp_field)
+            return fhash(self.node._name, self.func)
+        return fhash(self.node.signature(), self.func)
+
+
+class _Filter(_Node):
+    def __init__(self, node: _Node, func: Callable):
+        super().__init__()
+        self.func = func
+        self.node = node
+        self.node.out_edges.append(self)
+
+    def signature(self):
+        if isinstance(self.node, Dataset):
+            return fhash(self.node._name, self.func)
+        return fhash(self.node.signature(), self.func)
 
 
 class _Aggregate(_Node):
@@ -750,6 +763,8 @@ class Visitor:
             return self.visitDataset(obj)
         elif isinstance(obj, _Transform):
             return self.visitTransform(obj)
+        elif isinstance(obj, _Filter):
+            return self.visitFilter(obj)
         elif isinstance(obj, _GroupBy):
             return self.visitGroupBy(obj)
         elif isinstance(obj, _Aggregate):
@@ -765,6 +780,9 @@ class Visitor:
         raise NotImplementedError()
 
     def visitTransform(self, obj):
+        raise NotImplementedError()
+
+    def visitFilter(self, obj):
         raise NotImplementedError()
 
     def visitGroupBy(self, obj):
@@ -806,6 +824,12 @@ class Printer(Visitor):
         pipe_str = self.visit(obj.pipe)
         self.offset -= 1
         return f"{self.indent()}Transform(\n{pipe_str}{self.indent()})\n"
+
+    def visitFilter(self, obj):
+        self.offset += 1
+        pipe_str = self.visit(obj.pipe)
+        self.offset -= 1
+        return f"{self.indent()}Filter(\n{pipe_str}{self.indent()})\n"
 
     def visitAggregate(self, obj):
         self.offset += 1
@@ -855,7 +879,18 @@ class Serializer(Visitor):
                     operand_node_id=self.visit(obj.node),
                     function=cloudpickle.dumps(obj.func),
                     function_source_code=inspect.getsource(obj.func),
-                    timestamp_field=obj.timestamp_field,
+                ),
+            ),
+            id=obj.signature(),
+        )
+
+    def visitFilter(self, obj):
+        return proto.Node(
+            operator=proto.Operator(
+                filter=proto.Filter(
+                    operand_node_id=self.visit(obj.node),
+                    function=cloudpickle.dumps(obj.func),
+                    function_source_code=inspect.getsource(obj.func),
                 ),
             ),
             id=obj.signature(),

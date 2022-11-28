@@ -305,7 +305,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
                     ]
                 ]
 
-            filtered_ds = activity.transform(
+            filtered_ds = activity.filter(
                 lambda df: df[df["action_type"] == "report_txn"]
             )
             ds = filtered_ds.join(
@@ -330,6 +330,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
     view.add(FraudReportAggregatedDataset)
     sync_request = view.to_proto()
     assert len(sync_request.dataset_requests) == 1
+
     d = {
         "name": "FraudReportAggregatedDataset",
         "fields": [
@@ -342,34 +343,32 @@ def test_DatasetWithComplexPipe(grpc_stub):
             {
                 "nodes": [
                     {
-                        "id": "44fb25a177c0daa12b22a96e1d0b9b77",
-                        "operator": {
-                            "transform": {"operandNodeId": "Activity"}
-                        },
+                        "id": "227c9aa16517c6c73371a71dfa8aacd2",
+                        "operator": {"filter": {}},
                     },
                     {
-                        "id": "4839efdf9e0f3526ce9d222c09596b8a",
+                        "id": "d41e03e92a5a7e4a01fa04ce487c46ef",
                         "operator": {
                             "join": {
-                                "lhsNodeId": "44fb25a177c0daa12b22a96e1d0b9b77",
+                                "lhsNodeId": "227c9aa16517c6c73371a71dfa8aacd2",
                                 "rhsDatasetName": "UserInfoDataset",
                                 "on": {"user_id": "user_id"},
                             }
                         },
                     },
                     {
-                        "id": "24089ee9611046fd829aebce51b9d3a2",
+                        "id": "273b322b23d9316ccd54d3eb61c1039d",
                         "operator": {
                             "transform": {
-                                "operandNodeId": "4839efdf9e0f3526ce9d222c09596b8a"
+                                "operandNodeId": "d41e03e92a5a7e4a01fa04ce487c46ef"
                             }
                         },
                     },
                     {
-                        "id": "0e1d7d7f8ecb0ded643709f413ebdd9d",
+                        "id": "04b74f251fd2ca9c97c01eb7d48a2dd7",
                         "operator": {
                             "aggregate": {
-                                "operandNodeId": "24089ee9611046fd829aebce51b9d3a2",
+                                "operandNodeId": "273b322b23d9316ccd54d3eb61c1039d",
                                 "keys": ["merchant_id"],
                                 "aggregates": [
                                     {
@@ -387,17 +386,16 @@ def test_DatasetWithComplexPipe(grpc_stub):
                         },
                     },
                 ],
-                "root": "0e1d7d7f8ecb0ded643709f413ebdd9d",
-                "signature": "FraudReportAggregatedDataset.0e1d7d7f8ecb0ded643709f413ebdd9d",
+                "root": "04b74f251fd2ca9c97c01eb7d48a2dd7",
+                "signature": "FraudReportAggregatedDataset.04b74f251fd2ca9c97c01eb7d48a2dd7",
                 "inputs": ["Activity", "UserInfoDataset"],
             }
         ],
-        "mode": "pandas",
         "metadata": {"owner": "test@test.com"},
+        "mode": "pandas",
         "retention": "63072000000000",
         "onDemand": {},
     }
-
     # Ignoring schema validation since they are bytes and not human-readable
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
@@ -415,7 +413,7 @@ def test_UnionDatasets(grpc_stub):
     @dataset
     class B:
         b1: int = field(key=True)
-        t2: datetime
+        t: datetime
 
     @meta(owner="test@test.com")
     @dataset
@@ -432,7 +430,7 @@ def test_UnionDatasets(grpc_stub):
                 df["t"] = df["t2"]
                 return df[["a1", "t"]]
 
-            return a + b.transform(convert, timestamp="t")
+            return a + b.transform(convert)
 
         @staticmethod
         @pipeline(A)
@@ -452,96 +450,87 @@ def test_UnionDatasets(grpc_stub):
         "name": "ABCDataset",
         "fields": [
             {"name": "a1", "isKey": True, "metadata": {}},
-            {
-                "name": "t",
-                "isTimestamp": True,
-                "metadata": {},
-            },
+            {"name": "t", "isTimestamp": True, "metadata": {}},
         ],
         "pipelines": [
             {
                 "nodes": [
                     {
-                        "id": "2ab0c0f6f921e2362d17484f05a2a9a5",
-                        "operator": {
-                            "transform": {
-                                "operandNodeId": "B",
-                                "timestampField": "t",
-                            }
-                        },
+                        "id": "4177990d6cc07916bc6eba47462799ff",
+                        "operator": {"transform": {"operandNodeId": "B"}},
                     },
                     {
-                        "id": "ad529863b94ec1b0199d176704721af5",
+                        "id": "8fc1b61dbdc39e3704650442e8c61617",
                         "operator": {
                             "union": {
                                 "operandNodeIds": [
                                     "A",
-                                    "2ab0c0f6f921e2362d17484f05a2a9a5",
+                                    "4177990d6cc07916bc6eba47462799ff",
                                 ]
                             }
                         },
                     },
                 ],
-                "root": "ad529863b94ec1b0199d176704721af5",
-                "signature": "ABCDataset.ad529863b94ec1b0199d176704721af5",
+                "root": "8fc1b61dbdc39e3704650442e8c61617",
+                "signature": "ABCDataset.8fc1b61dbdc39e3704650442e8c61617",
                 "inputs": ["A", "B"],
             },
             {
                 "nodes": [
                     {
-                        "id": "62b55ed86a3147da80cc9f6533d804a7",
+                        "id": "c11a7a6052cdbb1759969dd10613ac8b",
                         "operator": {"transform": {"operandNodeId": "A"}},
                     },
                     {
-                        "id": "7120ae27df71756bf09abf2c2a056711",
+                        "id": "b1f19f0df67793dfec442938232b07c4",
                         "operator": {"transform": {"operandNodeId": "A"}},
                     },
                     {
-                        "id": "88e9b9c78fe82996482c517d8a2d0cc8",
+                        "id": "3e00aad7fe8a3f2c35b3abeb42540705",
                         "operator": {
                             "union": {
                                 "operandNodeIds": [
-                                    "62b55ed86a3147da80cc9f6533d804a7",
-                                    "7120ae27df71756bf09abf2c2a056711",
+                                    "c11a7a6052cdbb1759969dd10613ac8b",
+                                    "b1f19f0df67793dfec442938232b07c4",
                                 ]
                             }
                         },
                     },
                     {
-                        "id": "2445ff121a8c4f3fcf55cc450a2d3e0b",
+                        "id": "bbea68029557c9f85a5f7fa8f92d632b",
                         "operator": {
                             "transform": {
-                                "operandNodeId": "88e9b9c78fe82996482c517d8a2d0cc8"
+                                "operandNodeId": "3e00aad7fe8a3f2c35b3abeb42540705"
                             }
                         },
                     },
                     {
-                        "id": "32256da42d662b0d99de4acdadc91818",
+                        "id": "95a98aebceb48a64d9b2a8a7001d10df",
                         "operator": {
                             "transform": {
-                                "operandNodeId": "88e9b9c78fe82996482c517d8a2d0cc8"
+                                "operandNodeId": "3e00aad7fe8a3f2c35b3abeb42540705"
                             }
                         },
                     },
                     {
-                        "id": "bf50512eeb345ab02b8ad15d6b8c8c86",
+                        "id": "281385065b983e434ee8dd13c934cc08",
                         "operator": {
                             "union": {
                                 "operandNodeIds": [
-                                    "2445ff121a8c4f3fcf55cc450a2d3e0b",
-                                    "32256da42d662b0d99de4acdadc91818",
+                                    "bbea68029557c9f85a5f7fa8f92d632b",
+                                    "95a98aebceb48a64d9b2a8a7001d10df",
                                 ]
                             }
                         },
                     },
                 ],
-                "root": "bf50512eeb345ab02b8ad15d6b8c8c86",
-                "signature": "ABCDataset.bf50512eeb345ab02b8ad15d6b8c8c86",
+                "root": "281385065b983e434ee8dd13c934cc08",
+                "signature": "ABCDataset.281385065b983e434ee8dd13c934cc08",
                 "inputs": ["A"],
             },
         ],
-        "mode": "pandas",
         "metadata": {"owner": "test@test.com"},
+        "mode": "pandas",
         "retention": "63072000000000",
         "onDemand": {},
     }

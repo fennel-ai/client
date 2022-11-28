@@ -50,6 +50,16 @@ class Executor(Visitor):
             sorted_df, input_ret.timestamp_field, input_ret.key_fields
         )
 
+    def visitFilter(self, obj) -> Optional[NodeRet]:
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        f_df = obj.func(copy.deepcopy(input_ret.df))
+        sorted_df = f_df.sort_values(input_ret.timestamp_field)
+        return NodeRet(
+            sorted_df, input_ret.timestamp_field, input_ret.key_fields
+        )
+
     def visitAggregate(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)
         if input_ret is None:
