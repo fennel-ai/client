@@ -1,11 +1,9 @@
-# This is a basic workflow to help you get started with Actions
-
-name: unit-tests-linux-x64
+name: Packagr Publish
 
 # Controls when the workflow will run
 on:
-  # These tests are quite cheap, run them on every PR
-  pull_request:
+  # Triggers the workflow on push but only for the main branch
+  push:
     branches: [ main ]
 
   # Allows you to run this workflow manually from the Actions tab
@@ -15,27 +13,24 @@ on:
 jobs:
   # This workflow contains a single job called "build"
   build:
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10" ]
-
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
-    name: Unit tests with py-version ${{ matrix.python-version }}
+    name: Run tests and publish latest version if succcessful
     steps:
       #----------------------------------------------
       #       check-out repo and set-up python
       #----------------------------------------------
       - name: Check out repository
         uses: actions/checkout@v2
-      - name: Set up python ${{ matrix.python-version }}
+
+      - name: Set up python
         id: setup-python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.x
+
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
@@ -44,6 +39,7 @@ jobs:
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
+
       #----------------------------------------------
       #       load cached venv if cache exists
       #----------------------------------------------
@@ -53,20 +49,41 @@ jobs:
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
       #----------------------------------------------
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
+
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
         run: poetry install --no-interaction
+
       # Run test suite
       - name: Run tests
         run: |
           source .venv/bin/activate
           poetry run pytest .
           poetry run python -m unittest discover fennel
+
+      - name: Install packages
+        run: pip install "flake8>=4.0.1" "black>=22.6.0" "mypy>=0.961"
+      - name: flake8 lint
+        run: flake8 .
+      - name: black lint
+        run: black --diff --check .
+#      - name: mypy typechecking
+#        run: mypy .
+
+      #----------------------------------------------
+      # publish to packagr - this is run only if the previous steps are successful
+      #----------------------------------------------
+      - name: Publish to Packagr
+        run: |
+          poetry config repositories.packagr ${{ secrets.PACKAGR_URL }}
+          # Build and publish the package
+          poetry publish --build -r packagr -u __token__ -p ${{ secrets.PACKAGR_ACCESS_TOKEN }}
