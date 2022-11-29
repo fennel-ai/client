@@ -725,6 +725,40 @@ class Dataset(_Node):
                     f"dataset {self._name}."
                 )
             on_demand = getattr(method, ON_DEMAND_ATTR)
+        # Validate on_demand function signature.
+        if on_demand is not None:
+            if not inspect.isfunction(on_demand.func):
+                raise ValueError(
+                    f"on_demand method {on_demand.func} is not a function."
+                )
+            sig = inspect.signature(on_demand.func)
+            if len(sig.parameters) <= 1:
+                raise ValueError(
+                    f"on_demand method {on_demand.func} must take at least "
+                    f"ts as first parameter, followed by key fields."
+                )
+            check_timestamp = False
+            key_fields = [f for f in self._fields if f.key]
+            key_index = 0
+            for name, param in sig.parameters.items():
+                if not check_timestamp:
+                    if param.annotation == datetime.datetime:
+                        check_timestamp = True
+                        continue
+                    raise ValueError(
+                        f"on_demand method {on_demand.func.__name__} must take "
+                        f"timestamp as first parameter with type Series[datetime]."
+                    )
+                if param.annotation != key_fields[key_index].dtype:
+                    raise ValueError(
+                        f"on_demand method {on_demand.func.__name__} must take "
+                        f"key fields in the same order as defined in the "
+                        f"dataset with the same type, parameter "
+                        f"{key_fields[key_index].name} has type"
+                        f" {param.annotation} but expected "
+                        f" {key_fields[key_index].dtype} "
+                    )
+                key_index += 1
         return on_demand
 
     def _get_pipelines(self) -> List[Pipeline]:

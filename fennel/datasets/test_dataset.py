@@ -12,6 +12,7 @@ from fennel.datasets import dataset, pipeline, field, Dataset, on_demand
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
+from fennel.lib.schema import Series
 from fennel.lib.window import Window
 from fennel.test_lib import *
 
@@ -117,13 +118,14 @@ def test_DatasetWithPull(grpc_stub):
     )
     class UserCreditScore:
         user_id: int = field(key=True)
+        name: str = field(key=True)
         credit_score: float
         timestamp: datetime
 
         @staticmethod
         @on_demand(expires_after="7d")
         def pull_from_api(
-            user_id: pd.Series, names: pd.Series, timestamps: pd.Series
+            ts: Series[datetime], user_id: Series[int], names: Series[str]
         ) -> pd.DataFrame:
             user_list = user_id.tolist()
             names = names.tolist()
@@ -136,9 +138,9 @@ def test_DatasetWithPull(grpc_stub):
             results = resp.json()["results"]
             df["user_id"] = user_id
             df["names"] = names
-            df["timestamp"] = timestamps
+            df["timestamp"] = ts
             df["credit_score"] = pd.Series(results)
-            return df
+            return df, pd.Series([True] * len(df))
 
     assert UserCreditScore._retention == timedelta(days=365)
     view = InternalTestClient(grpc_stub)
@@ -149,6 +151,7 @@ def test_DatasetWithPull(grpc_stub):
         "name": "UserCreditScore",
         "fields": [
             {"name": "user_id", "isKey": True, "metadata": {}},
+            {"name": "name", "isKey": True, "metadata": {}},
             {"name": "credit_score", "metadata": {}},
             {"name": "timestamp", "isTimestamp": True, "metadata": {}},
         ],
@@ -316,7 +319,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
             return ds_transform.groupby("merchant_id").aggregate(
                 [
                     Count(
-                        window=Window(),
+                        window=Window("forever"),
                         into_field="num_merchant_fraudulent_transactions",
                     ),
                     Count(

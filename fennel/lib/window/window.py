@@ -20,7 +20,7 @@ class Window(BaseModel):
     start: Duration
     end: Duration
 
-    def __init__(self, start: Duration = "forever", end: Duration = "0s"):
+    def __init__(self, start: Duration, end: Duration = "0s"):
         super().__init__(start=start, end=end)
 
     def to_proto(self) -> proto.WindowSpec:
