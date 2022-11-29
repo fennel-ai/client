@@ -119,7 +119,7 @@ class TestSimpleExtractor(unittest.TestCase):
     def test_simple_extractor(self, client):
         client.sync(
             datasets=[UserInfoDataset],
-            featuresets=[UserInfoSingleExtractor, UserInfoMultipleExtractor],
+            featuresets=[UserInfoMultipleExtractor],
         )
         now = datetime.now()
         data = [
@@ -154,7 +154,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
     def test_dag_resolution(self, client):
         client.sync(
             datasets=[UserInfoDataset],
-            featuresets=[UserInfoSingleExtractor, UserInfoMultipleExtractor],
+            featuresets=[UserInfoMultipleExtractor],
         )
         now = datetime.now()
         data = [

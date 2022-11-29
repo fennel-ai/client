@@ -72,10 +72,9 @@ def test_datasetLookup(grpc_stub, mocker):
 
     def fake_func(cls_name, ts, properties, recordbatch):
         df = recordbatch.to_pandas()
+        now = datetime.fromtimestamp(1668368655)
         if len(properties) > 0:
-            assert ts == pyarrow.array(
-                pd.Series([1668368655, 1667364625, 1648561623])
-            )
+            assert ts == pyarrow.array(pd.Series([now, now, now]))
             assert properties == ["age", "gender"]
             assert df["user_id"].tolist() == [5, 10, 15]
             assert df["name"].tolist() == ["a", "b", "c"]
@@ -85,9 +84,7 @@ def test_datasetLookup(grpc_stub, mocker):
                 [True, True, True]
             )
         else:
-            assert ts == pyarrow.array(
-                pd.Series([1668368655, 1667364625, 1648561623])
-            )
+            assert ts == pyarrow.array(pd.Series([now, now, now]))
             assert properties == []
             assert df["user_id"].tolist() == [3, 6, 9]
             assert df["name"].tolist() == ["a2", "b2", "c2"]
@@ -108,7 +105,8 @@ def test_datasetLookup(grpc_stub, mocker):
 
     # Call to the extractor function
     user_sq_extractor_func = pickle.loads(user_sq_extractor.func)
-    ts = pd.Series([1668368655, 1667364625, 1648561623])
+    now = datetime.fromtimestamp(1668368655)
+    ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a", "b", "c"])
     df = user_sq_extractor_func(ts, user_id, names)
@@ -120,7 +118,7 @@ def test_datasetLookup(grpc_stub, mocker):
 
     # Call to the extractor function
     user_age_cube_func = pickle.loads(user_age_cube.func)
-    ts = pd.Series([1668368655, 1667364625, 1648561623])
+    ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a2", "b2", "c2"])
     df = user_age_cube_func(ts, user_id, names)

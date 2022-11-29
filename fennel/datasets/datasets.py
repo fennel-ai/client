@@ -368,6 +368,15 @@ def dataset(
                     f"lookup expects keys of the table being looked up and can "
                     f"optionally include properties, found {kwargs}"
                 )
+            # Check that ts is a series of datetime64[ns]
+            if not isinstance(ts, pd.Series):
+                raise ValueError(
+                    f"lookup expects a series of timestamps, found {type(ts)}"
+                )
+            if not np.issubdtype(ts.dtype, np.datetime64):
+                raise ValueError(
+                    f"lookup expects a series of timestamps, found {ts.dtype}"
+                )
             # convert ts to pyarrow Array
             ts = pyarrow.Array.from_pandas(ts)
             # extract keys and properties from kwargs
