@@ -6,6 +6,7 @@ from functools import partial
 from typing import Dict, List, Optional, Tuple, Union
 
 import grpc
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 from requests import Response
@@ -28,6 +29,7 @@ from fennel.test_lib.executor import Executor
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
+FENNEL_LOOKUP = "__fennel_lookup_exists__"
 
 
 class FakeResponse(Response):
@@ -89,6 +91,7 @@ def dataset_lookup_impl(
     key_df[timestamp_field] = ts.to_pandas()
     # Sort the keys by timestamp
     key_df = key_df.sort_values(timestamp_field)
+    right_df[FENNEL_LOOKUP] = True
     df = pd.merge_asof(
         left=key_df,
         right=right_df,
@@ -96,20 +99,7 @@ def dataset_lookup_impl(
         by=join_columns,
         direction="backward",
     )
-    # Find keys that don't have a match in the dataset
-    # Condense the right_df to the latest timestamp for each key
-    condense_right_df = right_df.groupby(right_key_fields).apply(
-        lambda x: x.sort_values(timestamp_field).iloc[-1]
-    )
-    condense_right_df = condense_right_df.reset_index(drop=True)
-    left_join_df = pd.merge(
-        left=key_df,
-        right=condense_right_df,
-        on=join_columns,
-        how="left",
-        indicator="__fennel_lookup_exists__",
-    )
-    found = left_join_df["__fennel_lookup_exists__"] == "both"
+    found = df[FENNEL_LOOKUP].apply(lambda x: x is not np.nan)
     # Check if an on_demand is found
     if datasets[cls_name].on_demand:
         on_demand_keys = key_df[~found].reset_index(drop=True)
@@ -118,19 +108,18 @@ def dataset_lookup_impl(
             for col in key_df.columns
             if col != timestamp_field
         ]
-        on_demand_df = datasets[cls_name].on_demand.func(
+        on_demand_df, on_demand_found = datasets[cls_name].on_demand.func(
             on_demand_keys[timestamp_field], *args
         )
         # Filter out the columns that are not in the dataset
         df = df[found]
         df = pd.concat([df, on_demand_df], ignore_index=True, axis=0)
+        found = pd.concat([found, on_demand_found])
     # drop the timestamp column
-    df = df.drop(columns=[timestamp_field])
+    df = df.drop(columns=[timestamp_field, FENNEL_LOOKUP])
     if len(properties) > 0:
         df = df[properties]
-    return pa.RecordBatch.from_pandas(df), pa.array(
-        left_join_df["__fennel_lookup_exists__"] == "both"
-    )
+    return pa.RecordBatch.from_pandas(df), pa.array(found)
 
 
 @dataclass

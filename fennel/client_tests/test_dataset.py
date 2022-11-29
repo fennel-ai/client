@@ -61,7 +61,7 @@ class TestDataset(unittest.TestCase):
         six_hours_ago = now - pd.Timedelta(hours=6)
         ts = pd.Series([six_hours_ago, six_hours_ago])
         df, found = UserInfoDataset.lookup(ts, user_id=user_ids)
-        assert found.tolist() == [True, True]
+        assert found.tolist() == [False, True]
         assert df["name"].tolist() == [None, "Monica"]
         assert df["age"].tolist() == [None, 24]
         assert df["country"].tolist() == [None, "Chile"]
@@ -162,13 +162,48 @@ class DocumentContentDataset:
             "num_words",
             "timestamp",
         ]
-        return pd.DataFrame(data, columns=columns)
+        return pd.DataFrame(data, columns=columns), pd.Series([True] * len(ts))
 
 
 class TestDocumentDataset(unittest.TestCase):
     @mock_client
     def test_log_to_document_dataset(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
+
+        @meta(owner="aditya@fennel.ai")
+        @dataset
+        class DocumentContentDataset:
+            doc_id: int = field(key=True)
+            bert_embedding: Embedding[4]
+            fast_text_embedding: Embedding[3]
+            num_words: int
+            timestamp: datetime = field(timestamp=True)
+
+            @on_demand(expires_after="3d")
+            def get_embedding(ts: Series[datetime], doc_ids: Series[int]):
+                data = []
+                doc_ids = doc_ids.tolist()
+                for i in range(len(ts)):
+                    data.append(
+                        [
+                            doc_ids[i],
+                            [0.1, 0.2, 0.3, 0.4],
+                            [1.1, 1.2, 1.3],
+                            10 * i,
+                            ts[i],
+                        ]
+                    )
+                columns = [
+                    "doc_id",
+                    "bert_embedding",
+                    "fast_text_embedding",
+                    "num_words",
+                    "timestamp",
+                ]
+                return pd.DataFrame(data, columns=columns), pd.Series(
+                    [True] * len(ts)
+                )
+
         # Sync the dataset
         client.sync(datasets=[DocumentContentDataset])
         now = datetime.now()
@@ -230,9 +265,15 @@ class MovieRating:
     def pipeline_aggregate(activity: Dataset):
         ds = activity.groupby("movie").aggregate(
             [
-                Count(window=Window(), into_field="num_ratings"),
-                Sum(window=Window(), of="rating", into_field="sum_ratings"),
-                Average(window=Window(), of="rating", into_field="rating"),
+                Count(window=Window("forever"), into_field="num_ratings"),
+                Sum(
+                    window=Window("forever"),
+                    of="rating",
+                    into_field="sum_ratings",
+                ),
+                Average(
+                    window=Window("forever"), of="rating", into_field="rating"
+                ),
             ]
         )
         return ds.transform(lambda df: df.rename(columns={"movie": "name"}))
@@ -285,7 +326,7 @@ class TestBasicTransform(unittest.TestCase):
             ts,
             names=names,
         )
-        assert found.tolist() == [True, True]
+        assert found.tolist() == [True, False]
         assert df.shape == (2, 4)
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating_sq"].tolist() == [16, None]
@@ -518,7 +559,7 @@ class FraudReportAggregatedDataset:
         aggregated_ds = ds.groupby("category").aggregate(
             [
                 Count(
-                    window=Window(),
+                    window=Window("forever"),
                     into_field="num_categ_fraudulent_transactions",
                 ),
                 Count(
