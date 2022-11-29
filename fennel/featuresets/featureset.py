@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 from dataclasses import dataclass
+from datetime import datetime
 from typing import (
     Any,
     cast,
@@ -124,14 +125,23 @@ def extractor(extractor_func: Callable):
     sig = inspect.signature(extractor_func)
     extractor_name = extractor_func.__name__
     params = []
+    check_timestamp = False
     for name, param in sig.parameters.items():
         if param.name == "self":
             raise TypeError(
                 "extractor functions cannot have self as a "
                 "parameter and are like static methods"
             )
-        if param.name == "ts":
-            continue
+        if not check_timestamp:
+            if param.annotation == datetime:
+                check_timestamp = True
+                continue
+            raise TypeError(
+                "extractor functions must have timestamp ( of type Series["
+                "datetime] ) as the first parameter, found {} instead".format(
+                    param.annotation
+                )
+            )
         if not isinstance(param.annotation, Featureset) and not isinstance(
             param.annotation, Feature
         ):

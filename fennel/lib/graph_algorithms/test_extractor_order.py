@@ -1,4 +1,4 @@
-import pandas as pd
+from datetime import datetime
 
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.graph_algorithms import get_extractor_order
@@ -12,7 +12,7 @@ class A:
     root: int = feature(id=3)
 
     @extractor
-    def a1_a2(ts: pd.Series, root: Series[root]) -> DataFrame[a1, a2]:
+    def a1_a2(ts: Series[datetime], root: Series[root]) -> DataFrame[a1, a2]:
         pass
 
 
@@ -23,7 +23,7 @@ class B:
 
     @extractor
     def b1_b2(
-        ts: pd.Series, a1: Series[A.a1], a2: Series[A.a2]
+        ts: Series[datetime], a1: Series[A.a1], a2: Series[A.a2]
     ) -> DataFrame[b1, b2]:
         pass
 
@@ -57,11 +57,11 @@ class C:
     c4: int = feature(id=4)
 
     @extractor
-    def c1_from_root(ts: pd.Series, a1: Series[A.root]) -> Series[c1]:
+    def c1_from_root(ts: Series[datetime], a1: Series[A.root]) -> Series[c1]:
         pass
 
     @extractor
-    def from_c1(ts: pd.Series, c1: Series[c1]) -> DataFrame[c2, c3, c4]:
+    def from_c1(ts: Series[datetime], c1: Series[c1]) -> DataFrame[c2, c3, c4]:
         pass
 
 
@@ -99,19 +99,19 @@ class UserInfo:
 
     @extractor
     def get_user_age_and_name(
-        ts: pd.Series, user_id: Series[userid]
+        ts: Series[datetime], user_id: Series[userid]
     ) -> DataFrame[age, name]:
         pass
 
     @extractor
     def get_age_and_name_features(
-        ts: pd.Series, user_age: Series[age], name: Series[name]
+        ts: Series[datetime], user_age: Series[age], name: Series[name]
     ) -> DataFrame[age_squared, age_cubed, is_name_common]:
         pass
 
     @extractor
     def get_country_geoid(
-        ts: pd.Series, user_id: Series[userid]
+        ts: Series[datetime], user_id: Series[userid]
     ) -> Series[country_geoid]:
         pass
 

@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Optional
 
-import pandas as pd
 from google.protobuf.json_format import ParseDict
 
 import fennel.gen.featureset_pb2 as proto
@@ -47,7 +46,7 @@ def test_SimpleFeatureSet(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info(
-            ts: pd.Series,
+            ts: Series[datetime],
             user: DataFrame[User],
             user_id: Series[User.id],
             user_age: Series[User.age],
@@ -135,20 +134,20 @@ def test_ComplexFeatureSet(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info1(
-            ts: pd.Series, user_id: Series[User.id]
+            ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[userid, home_geoid]:
             pass
 
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info2(
-            ts: pd.Series, user_id: Series[User.id]
+            ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[gender, age]:
             pass
 
         @extractor
         def get_user_info3(
-            ts: pd.Series, user_id: Series[User.id]
+            ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[income]:
             pass
 

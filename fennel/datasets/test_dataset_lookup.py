@@ -39,9 +39,9 @@ def test_datasetLookup(grpc_stub, mocker):
         @depends_on(UserInfoDataset)
         @typing.no_type_check
         def user_age_sq(
-            ts: pd.Series,
-            user_id: userid,
-            names: name,
+            ts: Series[datetime],
+            user_id: Series[userid],
+            names: Series[name],
         ) -> DataFrame[age_sq, gender]:
             user_id_plus_one = user_id * 5
             df, _ = UserInfoDataset.lookup(
@@ -57,9 +57,9 @@ def test_datasetLookup(grpc_stub, mocker):
         @depends_on(UserInfoDataset)
         @typing.no_type_check
         def user_age_cube(
-            ts: pd.Series,
-            user_id: userid,
-            names: name,
+            ts: Series[datetime],
+            user_id: Series[userid],
+            names: Series[name],
         ) -> Series[age_cube]:
             user_id_into_three = user_id * 3
             df, _ = UserInfoDataset.lookup(
