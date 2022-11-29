@@ -2,7 +2,6 @@ from datetime import datetime
 from datetime import timedelta
 from typing import Optional
 
-import pandas as pd
 from google.protobuf.json_format import ParseDict
 
 import fennel.gen.featureset_pb2 as proto
@@ -323,7 +322,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info1(
-            ts: pd.Series, user_id: Series[User.id]
+            ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[userid, home_geoid]:
             pass
 
@@ -331,7 +330,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @meta(owner="b@xyz.com", description="middle_meta")
         @depends_on(UserInfoDataset)
         def get_user_info2(
-            ts: pd.Series, user_id: Series[User.id]
+            ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[gender, age]:
             pass
 
@@ -339,7 +338,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @depends_on(UserInfoDataset)
         @meta(owner="c@xyz.com", description="bottom_meta")
         def get_user_info3(
-            ts: pd.Series, user_id: Series[User.id]
+            ts: Series[datetime], user_id: Series[User.id]
         ) -> Series[income]:
             pass
 

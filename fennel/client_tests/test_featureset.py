@@ -42,7 +42,7 @@ class UserInfoSingleExtractor:
     @extractor
     @depends_on(UserInfoDataset)
     def get_user_info(
-        ts: pd.Series, user_id: Series[userid]
+        ts: Series[datetime], user_id: Series[userid]
     ) -> DataFrame[age, age_squared, age_cubed, is_name_common]:
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df["userid"] = user_id
@@ -76,14 +76,14 @@ class UserInfoMultipleExtractor:
     @extractor
     @depends_on(UserInfoDataset)
     def get_user_age_and_name(
-        ts: pd.Series, user_id: Series[userid]
+        ts: Series[datetime], user_id: Series[userid]
     ) -> DataFrame[age, name]:
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df[["age", "name"]]
 
     @extractor
     def get_age_and_name_features(
-        ts: pd.Series, user_age: Series[age], name: Series[name]
+        ts: Series[datetime], user_age: Series[age], name: Series[name]
     ) -> DataFrame[age_squared, age_cubed, is_name_common]:
         is_name_common = name.isin(["John", "Mary", "Bob"])
         return pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
@@ -91,7 +91,7 @@ class UserInfoMultipleExtractor:
     @extractor
     @depends_on(UserInfoDataset)
     def get_country_geoid(
-        ts: pd.Series, user_id: Series[userid]
+        ts: Series[datetime], user_id: Series[userid]
     ) -> Series[country_geoid]:
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df["country"].apply(get_country_geoid)
