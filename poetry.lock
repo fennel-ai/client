@@ -147,6 +147,20 @@ pycodestyle = ">=2.8.0,<2.9.0"
 pyflakes = ">=2.4.0,<2.5.0"
 
 [[package]]
+name = "grandalf"
+version = "0.7"
+description = "Graph and drawing algorithms framework"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+pyparsing = "*"
+
+[package.extras]
+full = ["numpy", "ply"]
+
+[[package]]
 name = "grpcio"
 version = "1.50.0"
 description = "HTTP/2-based RPC framework"
@@ -533,7 +547,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "dab66e08ee24a6be566ba27d485dc33940e31b5a116166752d3442a806ad88c1"
+content-hash = "79799641084c230a5c829d70d2263e2d25ec3205c33e88715f7e269efa70818b"
 
 [metadata.files]
 arrow = []
@@ -557,6 +571,7 @@ flake8 = [
     {file = "flake8-4.0.1-py2.py3-none-any.whl", hash = "sha256:479b1304f72536a55948cb40a32dce8bb0ffe3501e26eaf292c7e60eb5e0428d"},
     {file = "flake8-4.0.1.tar.gz", hash = "sha256:806e034dda44114815e23c16ef92f95c91e4c71100ff52813adf7132a6ad870d"},
 ]
+grandalf = []
 grpcio = []
 grpcio-tools = []
 idna = [
