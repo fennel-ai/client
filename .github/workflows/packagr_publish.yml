@@ -70,15 +70,6 @@ jobs:
           poetry run pytest .
           poetry run python -m unittest discover fennel
 
-      - name: Install packages
-        run: pip install "flake8>=4.0.1" "black>=22.6.0" "mypy>=0.961"
-      - name: flake8 lint
-        run: flake8 .
-      - name: black lint
-        run: black --diff --check .
-#      - name: mypy typechecking
-#        run: mypy .
-
       #----------------------------------------------
       # publish to packagr - this is run only if the previous steps are successful
       #----------------------------------------------
