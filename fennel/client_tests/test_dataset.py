@@ -23,8 +23,8 @@ from fennel.test_lib import mock_client
 @meta(owner="test@test.com")
 @dataset
 class UserInfoDataset:
-    user_id: int = field(key=True)
-    name: str
+    user_id: int = field(key=True).meta(description="User ID")  # type: ignore
+    name: str = field().meta(description="User name")  # type: ignore
     age: Optional[int]
     country: Optional[str]
     timestamp: datetime = field(timestamp=True)

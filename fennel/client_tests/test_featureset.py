@@ -15,7 +15,7 @@ from fennel.test_lib import mock_client
 
 
 ################################################################################
-#                           Feature Single Extracator Unit Tests
+#                           Feature Single Extractor Unit Tests
 ################################################################################
 
 
@@ -86,7 +86,9 @@ class UserInfoMultipleExtractor:
         ts: Series[datetime], user_age: Series[age], name: Series[name]
     ) -> DataFrame[age_squared, age_cubed, is_name_common]:
         is_name_common = name.isin(["John", "Mary", "Bob"])
-        return pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
+        df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
+        df.columns = ["age_squared", "age_cubed", "is_name_common"]
+        return df
 
     @extractor
     @depends_on(UserInfoDataset)

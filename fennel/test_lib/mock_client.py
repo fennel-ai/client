@@ -1,11 +1,9 @@
 import json
 from collections import defaultdict
-from concurrent import futures
 from dataclasses import dataclass
 from functools import partial
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
-import grpc
 import numpy as np
 import pandas as pd
 import pyarrow as pa
@@ -16,11 +14,6 @@ from fennel.client import Client
 from fennel.datasets import Dataset, Pipeline, OnDemand
 from fennel.featuresets import Featureset, Feature, Extractor
 from fennel.gen.dataset_pb2 import CreateDatasetRequest
-from fennel.gen.services_pb2_grpc import (
-    add_FennelFeatureStoreServicer_to_server,
-    FennelFeatureStoreStub,
-    FennelFeatureStoreServicer,
-)
 from fennel.lib.graph_algorithms import (
     get_extractor_order,
     is_extractor_graph_cyclic,
@@ -55,6 +48,10 @@ def dataset_lookup_impl(
     keys: pa.RecordBatch,
 ) -> Tuple[pa.RecordBatch, pa.Array]:
     key_df = keys.to_pandas()
+    if cls_name not in datasets:
+        raise ValueError(
+            f"Dataset {cls_name} not found, please ensure it is " f"synced."
+        )
     right_key_fields = datasets[cls_name].key_fields
     if len(right_key_fields) == 0:
         raise ValueError(
@@ -131,10 +128,8 @@ class _DatasetInfo:
 
 
 class MockClient(Client):
-    def __init__(self, stub, server: Optional[grpc.Server] = None):
+    def __init__(self):
         super().__init__(url=f"localhost:{TEST_PORT}")
-        self.stub = stub
-
         self.dataset_requests: Dict[str, CreateDatasetRequest] = {}
         self.datasets: Dict[str, _DatasetInfo] = {}
         # Map of dataset name to the dataframe
@@ -145,7 +140,6 @@ class MockClient(Client):
             dataset_lookup_impl, self.data, self.datasets
         )
         self.extractors: List[Extractor] = []
-        self.server = server
 
     # ----------------- Public methods -----------------
 
@@ -176,7 +170,6 @@ class MockClient(Client):
                     f"{dataset_name}: {str(e)}"
                 )
                 return FakeResponse(status_code=400, content=content)
-
             self._merge_df(df, dataset_name)
 
             for pipeline in self.listeners[dataset_name]:
@@ -220,16 +213,39 @@ class MockClient(Client):
         output_feature_list: List[Union[Feature, Featureset]],
         input_df: pd.DataFrame,
     ) -> pd.DataFrame:
+        if input_df.empty:
+            return pd.DataFrame()
+        input_feature_names = []
+        for input_feature in input_feature_list:
+            if isinstance(input_feature, Feature):
+                input_feature_names.append(input_feature.fqn)
+            elif isinstance(input_feature, Featureset):
+                input_feature_names.extend(
+                    [f.fqn for f in input_feature.features]
+                )
+        # Check if the input dataframe has all the required features
+        if not set(input_feature_names).issubset(set(input_df.columns)):
+            raise Exception(
+                f"Input dataframe does not contain all the required features. "
+                f"Required features: {input_feature_names}. "
+                f"Input dataframe columns: {input_df.columns}"
+            )
         extractors = get_extractor_order(
             input_feature_list, output_feature_list, self.extractors
         )
         return self._run_extractors(extractors, input_df, output_feature_list)
 
-    def stop(self):
-        if self.server is not None:
-            self.server.stop(None)
-        else:
-            raise Exception("Server is not running")
+    def reset(self):
+        self.dataset_requests: Dict[str, CreateDatasetRequest] = {}
+        self.datasets: Dict[str, _DatasetInfo] = {}
+        # Map of dataset name to the dataframe
+        self.data: Dict[str, pd.DataFrame] = {}
+        # Map of datasets to pipelines it is an input to
+        self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
+        fennel.datasets.datasets.dataset_lookup = partial(
+            dataset_lookup_impl, self.data, self.datasets
+        )
+        self.extractors: List[Extractor] = []
 
     # ----------------- Private methods -----------------
 
@@ -281,7 +297,7 @@ class MockClient(Client):
             )
             output = extractor.func(timestamps, *prepare_args)
             if isinstance(output, pd.Series):
-                intermediate_data[output.into_field] = output
+                intermediate_data[output.name] = output
             elif isinstance(output, pd.DataFrame):
                 for col in output.columns:
                     intermediate_data[col] = output[col]
@@ -328,35 +344,10 @@ class MockClient(Client):
         )
 
 
-class Servicer(FennelFeatureStoreServicer):
-    def Sync(self, request, context):
-        pass
-
-
-def _start_a_test_server():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    add_FennelFeatureStoreServicer_to_server(Servicer(), server)
-    server.add_insecure_port(f"[::]:{TEST_PORT}")
-    server.start()
-    return server
-
-
 def mock_client(test_func):
     def wrapper(*args, **kwargs):
-        server = _start_a_test_server()
-        with grpc.insecure_channel(f"localhost:{TEST_PORT}") as channel:
-            stub = FennelFeatureStoreStub(channel)
-            client = MockClient(stub)
-            f = test_func(*args, **kwargs, client=client)
-            server.stop(0)
-            return f
+        client = MockClient()
+        f = test_func(*args, **kwargs, client=client)
+        return f
 
     return wrapper
-
-
-def create_mock_client():
-    server = _start_a_test_server()
-    channel = grpc.insecure_channel(f"localhost:{TEST_PORT}")
-    stub = FennelFeatureStoreStub(channel)
-    client = MockClient(stub, server)
-    return client
