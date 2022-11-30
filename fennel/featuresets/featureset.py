@@ -261,19 +261,23 @@ class Feature:
         return False
 
 
-def _add_column_names(func, columns):
+def _add_column_names(func, columns, fs_name):
     @functools.wraps(func)
     def inner(*args, **kwargs):
         ret = func(*args, **kwargs)
         if isinstance(ret, pd.Series):
-            ret.into_field = columns[0]
+            ret.name = columns[0]
         elif isinstance(ret, pd.DataFrame):
-            if len(ret.columns) != len(columns):
+            expected_columns = [x.split(".")[1] for x in columns]
+            if len(ret.columns) != len(expected_columns) or set(
+                ret.columns
+            ) != set(expected_columns):
                 raise ValueError(
-                    f"Expected {len(columns)} columns ({columns}) but got"
-                    f" {len(ret)} columns"
+                    f"Expected {len(expected_columns)} columns ({expected_columns}) but got"
+                    f" {len(ret.columns)} columns {ret.columns} in"
+                    f" {func.__name__}"
                 )
-            ret.columns = columns
+            ret.columns = [f"{fs_name}.{x}" for x in ret.columns]
         return ret
 
     return inner
@@ -401,7 +405,9 @@ class Featureset:
             ]
             if len(columns) == 0:
                 columns = [str(f) for f in self._features]
-            extractor.func = _add_column_names(extractor.func, columns)
+            extractor.func = _add_column_names(
+                extractor.func, columns, self._name
+            )
             setattr(self, extractor.func.__name__, extractor.func)
 
     @property
