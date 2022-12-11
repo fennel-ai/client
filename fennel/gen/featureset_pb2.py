@@ -13,28 +13,27 @@ _sym_db = _symbol_database.Default()
 
 import fennel.gen.status_pb2 as status__pb2
 import fennel.gen.metadata_pb2 as metadata__pb2
-import fennel.gen.schema_pb2 as schema__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x66\x65\x61tureset.proto\x12\x0c\x66\x65nnel.proto\x1a\x0cstatus.proto\x1a\x0emetadata.proto\x1a\x0cschema.proto\"M\n\x07\x46\x65\x61ture\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12(\n\x08metadata\x18\x04 \x01(\x0b\x32\x16.fennel.proto.Metadata\"\xb4\x01\n\tExtractor\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04\x66unc\x18\x02 \x01(\x0c\x12\x18\n\x10\x66unc_source_code\x18\x03 \x01(\t\x12\x10\n\x08\x64\x61tasets\x18\x04 \x03(\t\x12#\n\x06inputs\x18\x05 \x03(\x0b\x32\x13.fennel.proto.Input\x12\x10\n\x08\x66\x65\x61tures\x18\x06 \x03(\t\x12(\n\x08metadata\x18\x07 \x01(\x0b\x32\x16.fennel.proto.Metadata\"\xcb\x01\n\x17\x43reateFeaturesetRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\'\n\x08\x66\x65\x61tures\x18\x02 \x03(\x0b\x32\x15.fennel.proto.Feature\x12+\n\nextractors\x18\x03 \x03(\x0b\x32\x17.fennel.proto.Extractor\x12\x0f\n\x07version\x18\x04 \x01(\x05\x12\x11\n\tsignature\x18\x05 \x01(\t\x12(\n\x08metadata\x18\x06 \x01(\x0b\x32\x16.fennel.proto.Metadata\"N\n\x18\x43reateFeatureSetResponse\x12\x0c\n\x04name\x18\x01 \x01(\t\x12$\n\x06status\x18\x02 \x01(\x0b\x32\x14.fennel.proto.Status\"\xe1\x01\n\x05Input\x12\x35\n\x0b\x66\x65\x61ture_set\x18\x01 \x01(\x0b\x32\x1e.fennel.proto.Input.FeatureSetH\x00\x12.\n\x07\x66\x65\x61ture\x18\x02 \x01(\x0b\x32\x1b.fennel.proto.Input.FeatureH\x00\x1a\x1a\n\nFeatureSet\x12\x0c\n\x04name\x18\x01 \x01(\t\x1aL\n\x07\x46\x65\x61ture\x12\x33\n\x0b\x66\x65\x61ture_set\x18\x01 \x01(\x0b\x32\x1e.fennel.proto.Input.FeatureSet\x12\x0c\n\x04name\x18\x02 \x01(\tB\x07\n\x05inputb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x66\x65\x61tureset.proto\x12\x0c\x66\x65nnel.proto\x1a\x0cstatus.proto\x1a\x0emetadata.proto\"M\n\x07\x46\x65\x61ture\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12(\n\x08metadata\x18\x03 \x01(\x0b\x32\x16.fennel.proto.Metadata\"\xb4\x01\n\tExtractor\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04\x66unc\x18\x02 \x01(\x0c\x12\x18\n\x10\x66unc_source_code\x18\x03 \x01(\t\x12\x10\n\x08\x64\x61tasets\x18\x04 \x03(\t\x12#\n\x06inputs\x18\x05 \x03(\x0b\x32\x13.fennel.proto.Input\x12\x10\n\x08\x66\x65\x61tures\x18\x06 \x03(\t\x12(\n\x08metadata\x18\x07 \x01(\x0b\x32\x16.fennel.proto.Metadata\"\xdb\x01\n\x17\x43reateFeaturesetRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\'\n\x08\x66\x65\x61tures\x18\x02 \x03(\x0b\x32\x15.fennel.proto.Feature\x12+\n\nextractors\x18\x03 \x03(\x0b\x32\x17.fennel.proto.Extractor\x12\x0f\n\x07version\x18\x04 \x01(\x05\x12\x11\n\tsignature\x18\x05 \x01(\t\x12(\n\x08metadata\x18\x06 \x01(\x0b\x32\x16.fennel.proto.Metadata\x12\x0e\n\x06schema\x18\x07 \x01(\x0c\"N\n\x18\x43reateFeatureSetResponse\x12\x0c\n\x04name\x18\x01 \x01(\t\x12$\n\x06status\x18\x02 \x01(\x0b\x32\x14.fennel.proto.Status\"\xe1\x01\n\x05Input\x12\x35\n\x0b\x66\x65\x61ture_set\x18\x01 \x01(\x0b\x32\x1e.fennel.proto.Input.FeatureSetH\x00\x12.\n\x07\x66\x65\x61ture\x18\x02 \x01(\x0b\x32\x1b.fennel.proto.Input.FeatureH\x00\x1a\x1a\n\nFeatureSet\x12\x0c\n\x04name\x18\x01 \x01(\t\x1aL\n\x07\x46\x65\x61ture\x12\x33\n\x0b\x66\x65\x61ture_set\x18\x01 \x01(\x0b\x32\x1e.fennel.proto.Input.FeatureSet\x12\x0c\n\x04name\x18\x02 \x01(\tB\x07\n\x05inputb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'featureset_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _FEATURE._serialized_start=78
-  _FEATURE._serialized_end=155
-  _EXTRACTOR._serialized_start=158
-  _EXTRACTOR._serialized_end=338
-  _CREATEFEATURESETREQUEST._serialized_start=341
-  _CREATEFEATURESETREQUEST._serialized_end=544
-  _CREATEFEATURESETRESPONSE._serialized_start=546
-  _CREATEFEATURESETRESPONSE._serialized_end=624
-  _INPUT._serialized_start=627
-  _INPUT._serialized_end=852
-  _INPUT_FEATURESET._serialized_start=739
-  _INPUT_FEATURESET._serialized_end=765
-  _INPUT_FEATURE._serialized_start=767
-  _INPUT_FEATURE._serialized_end=843
+  _FEATURE._serialized_start=64
+  _FEATURE._serialized_end=141
+  _EXTRACTOR._serialized_start=144
+  _EXTRACTOR._serialized_end=324
+  _CREATEFEATURESETREQUEST._serialized_start=327
+  _CREATEFEATURESETREQUEST._serialized_end=546
+  _CREATEFEATURESETRESPONSE._serialized_start=548
+  _CREATEFEATURESETRESPONSE._serialized_end=626
+  _INPUT._serialized_start=629
+  _INPUT._serialized_end=854
+  _INPUT_FEATURESET._serialized_start=741
+  _INPUT_FEATURESET._serialized_end=767
+  _INPUT_FEATURE._serialized_start=769
+  _INPUT_FEATURE._serialized_end=845
 # @@protoc_insertion_point(module_scope)

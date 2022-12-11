@@ -36,7 +36,7 @@ from fennel.lib.metadata import (
     set_meta_attr,
     get_metadata_proto,
 )
-from fennel.lib.schema import get_pyarrow_field, dtype_to_string, get_datatype
+from fennel.lib.schema import get_pyarrow_field, dtype_to_string
 from fennel.sources import SOURCE_FIELD, SINK_FIELD
 from fennel.utils import (
     fhash,
@@ -83,11 +83,21 @@ class Field:
 
     def to_proto(self) -> proto.Field:
         # Type is passed as part of the dataset schema
+        ftype = None
+        if self.key + self.timestamp > 1:
+            raise ValueError("Field cannot be both a key and a timestamp")
+
+        if self.key:
+            ftype = proto.FieldType.Key
+        elif self.timestamp:
+            ftype = proto.FieldType.Timestamp
+        else:
+            ftype = proto.FieldType.Val
+
         return proto.Field(
             name=self.name,
-            is_key=self.key,
-            is_timestamp=self.timestamp,
-            dtype=get_datatype(self.dtype),
+            ftype=ftype,
+            is_optional=self.pa_field.nullable,
             metadata=get_metadata_proto(self),
         )
 

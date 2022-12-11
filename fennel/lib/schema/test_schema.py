@@ -6,9 +6,7 @@ import pyarrow as pa
 from fennel.lib.schema.schema import (
     get_pyarrow_field,
     get_pyarrow_datatype,
-    get_datatype,
 )
-import fennel.gen.schema_pb2 as proto
 
 
 def test_PyArrowSchemaConversion():
@@ -45,55 +43,4 @@ def test_PyArrowSchemaConversion():
     )
     assert get_pyarrow_datatype(List[Dict[str, List[float]]]) == pa.list_(
         pa.map_(pa.string(), pa.list_(pa.float64()))
-    )
-
-
-def test_ProtoSchemaConversion():
-    assert get_datatype(int) == proto.DataType(scalar_type=proto.ScalarType.INT)
-    assert get_datatype(Optional[int]) == proto.DataType(
-        scalar_type=proto.ScalarType.INT, is_nullable=True
-    )
-    x: float = 1.0
-    assert get_datatype(type(x)) == proto.DataType(
-        scalar_type=proto.ScalarType.FLOAT
-    )
-    x: bool = True
-    assert get_datatype(type(x)) == proto.DataType(
-        scalar_type=proto.ScalarType.BOOLEAN
-    )
-    x: str = "hello"
-    assert get_datatype(type(x)) == proto.DataType(
-        scalar_type=proto.ScalarType.STRING
-    )
-    x: datetime = datetime.now()
-    assert get_datatype(type(x)) == proto.DataType(
-        scalar_type=proto.ScalarType.TIMESTAMP
-    )
-    assert get_datatype(List[int]) == proto.DataType(
-        array_type=proto.ArrayType(
-            of=proto.DataType(scalar_type=proto.ScalarType.INT)
-        )
-    )
-    assert get_datatype(Dict[str, float]) == proto.DataType(
-        map_type=proto.MapType(
-            key=proto.DataType(scalar_type=proto.ScalarType.STRING),
-            value=proto.DataType(scalar_type=proto.ScalarType.FLOAT),
-        )
-    )
-    assert get_datatype(Dict[str, Dict[str, List[float]]]) == proto.DataType(
-        map_type=proto.MapType(
-            key=proto.DataType(scalar_type=proto.ScalarType.STRING),
-            value=proto.DataType(
-                map_type=proto.MapType(
-                    key=proto.DataType(scalar_type=proto.ScalarType.STRING),
-                    value=proto.DataType(
-                        array_type=proto.ArrayType(
-                            of=proto.DataType(
-                                scalar_type=proto.ScalarType.FLOAT
-                            )
-                        )
-                    ),
-                )
-            ),
-        )
     )

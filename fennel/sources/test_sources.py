@@ -54,44 +54,43 @@ def test_SimpleSource(grpc_stub):
                 "fields": [
                     {
                         "name": "user_id",
-                        "dtype": {"scalarType": "INT"},
-                        "isKey": True,
+                        "ftype": "Key",
                         "metadata": {},
                     },
                     {
                         "name": "name",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "gender",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "dob",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {"description": "Users date of birth"},
                     },
                     {
                         "name": "age",
-                        "dtype": {"scalarType": "INT"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "account_creation_date",
-                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "country",
-                        "dtype": {"isNullable": True, "scalarType": "STRING"},
+                        "ftype": "Val",
+                        "isOptional": True,
                         "metadata": {},
                     },
                     {
                         "name": "timestamp",
-                        "dtype": {"scalarType": "TIMESTAMP"},
-                        "isTimestamp": True,
+                        "ftype": "Timestamp",
                         "metadata": {},
                     },
                 ],
@@ -278,14 +277,12 @@ def test_ConsoleSource(grpc_stub):
                 "fields": [
                     {
                         "name": "user_id",
-                        "dtype": {"scalarType": "INT"},
-                        "isKey": True,
+                        "ftype": "Key",
                         "metadata": {},
                     },
                     {
                         "name": "timestamp",
-                        "dtype": {"scalarType": "TIMESTAMP"},
-                        "isTimestamp": True,
+                        "ftype": "Timestamp",
                         "metadata": {},
                     },
                 ],

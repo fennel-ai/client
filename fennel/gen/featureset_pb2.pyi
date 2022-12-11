@@ -28,8 +28,7 @@ class Feature(google.protobuf.message.Message):
     id: builtins.int
     name: builtins.str
     @property
-    def metadata(self) -> metadata_pb2.Metadata:
-        """DataType dtype = 3;"""
+    def metadata(self) -> metadata_pb2.Metadata: ...
     def __init__(
         self,
         *,
@@ -91,6 +90,7 @@ class CreateFeaturesetRequest(google.protobuf.message.Message):
     VERSION_FIELD_NUMBER: builtins.int
     SIGNATURE_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
+    SCHEMA_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def features(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Feature]: ...
@@ -100,6 +100,8 @@ class CreateFeaturesetRequest(google.protobuf.message.Message):
     signature: builtins.str
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
+    schema: builtins.bytes
+    """Serialized arrow schema."""
     def __init__(
         self,
         *,
@@ -109,9 +111,10 @@ class CreateFeaturesetRequest(google.protobuf.message.Message):
         version: builtins.int = ...,
         signature: builtins.str = ...,
         metadata: metadata_pb2.Metadata | None = ...,
+        schema: builtins.bytes = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["extractors", b"extractors", "features", b"features", "metadata", b"metadata", "name", b"name", "signature", b"signature", "version", b"version"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["extractors", b"extractors", "features", b"features", "metadata", b"metadata", "name", b"name", "schema", b"schema", "signature", b"signature", "version", b"version"]) -> None: ...
 
 global___CreateFeaturesetRequest = CreateFeaturesetRequest
 

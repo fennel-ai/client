@@ -9,7 +9,6 @@ import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import metadata_pb2
-import schema_pb2
 import source_pb2
 import status_pb2
 import sys
@@ -21,6 +20,24 @@ else:
     import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+
+class _FieldType:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _FieldTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_FieldType.ValueType], builtins.type):
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    Key: _FieldType.ValueType  # 0
+    Val: _FieldType.ValueType  # 1
+    Timestamp: _FieldType.ValueType  # 2
+
+class FieldType(_FieldType, metaclass=_FieldTypeEnumTypeWrapper):
+    """All integers representing time are in microseconds and hence should be int64."""
+
+Key: FieldType.ValueType  # 0
+Val: FieldType.ValueType  # 1
+Timestamp: FieldType.ValueType  # 2
+global___FieldType = FieldType
 
 class _AggregateType:
     ValueType = typing.NewType("ValueType", builtins.int)
@@ -49,33 +66,27 @@ global___AggregateType = AggregateType
 
 @typing_extensions.final
 class Field(google.protobuf.message.Message):
-    """All integers representing time are in microseconds and hence should be int64."""
-
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     NAME_FIELD_NUMBER: builtins.int
-    IS_KEY_FIELD_NUMBER: builtins.int
-    IS_TIMESTAMP_FIELD_NUMBER: builtins.int
-    DTYPE_FIELD_NUMBER: builtins.int
+    FTYPE_FIELD_NUMBER: builtins.int
+    IS_OPTIONAL_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     name: builtins.str
-    is_key: builtins.bool
-    is_timestamp: builtins.bool
-    @property
-    def dtype(self) -> schema_pb2.DataType: ...
+    ftype: global___FieldType.ValueType
+    is_optional: builtins.bool
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
     def __init__(
         self,
         *,
         name: builtins.str = ...,
-        is_key: builtins.bool = ...,
-        is_timestamp: builtins.bool = ...,
-        dtype: schema_pb2.DataType | None = ...,
+        ftype: global___FieldType.ValueType = ...,
+        is_optional: builtins.bool = ...,
         metadata: metadata_pb2.Metadata | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "is_key", b"is_key", "is_timestamp", b"is_timestamp", "metadata", b"metadata", "name", b"name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["ftype", b"ftype", "is_optional", b"is_optional", "metadata", b"metadata", "name", b"name"]) -> None: ...
 
 global___Field = Field
 

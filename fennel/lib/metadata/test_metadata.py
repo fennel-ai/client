@@ -45,44 +45,43 @@ def test_simpleDataset(grpc_stub):
                 "fields": [
                     {
                         "name": "user_id",
-                        "dtype": {"scalarType": "INT"},
-                        "isKey": True,
+                        "ftype": "Key",
                         "metadata": {},
                     },
                     {
                         "name": "name",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "gender",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "dob",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {"description": "Users date of birth"},
                     },
                     {
                         "name": "age",
-                        "dtype": {"scalarType": "INT"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "account_creation_date",
-                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "country",
-                        "dtype": {"isNullable": True, "scalarType": "STRING"},
+                        "ftype": "Val",
+                        "isOptional": True,
                         "metadata": {},
                     },
                     {
                         "name": "timestamp",
-                        "dtype": {"scalarType": "TIMESTAMP"},
-                        "isTimestamp": True,
+                        "ftype": "Timestamp",
                         "metadata": {},
                     },
                 ],
@@ -133,8 +132,7 @@ def test_complexDatasetWithFields(grpc_stub):
                 "fields": [
                     {
                         "name": "user_id",
-                        "isKey": True,
-                        "dtype": {"scalarType": "INT"},
+                        "ftype": "Key",
                         "metadata": {
                             "owner": "jack@yext.com",
                             "description": "test",
@@ -142,12 +140,12 @@ def test_complexDatasetWithFields(grpc_stub):
                     },
                     {
                         "name": "name",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "gender",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {
                             "description": "sex",
                             "tags": ["senstive"],
@@ -155,47 +153,28 @@ def test_complexDatasetWithFields(grpc_stub):
                     },
                     {
                         "name": "dob",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {"description": "Users date of birth"},
                     },
                     {
                         "name": "age",
-                        "dtype": {"scalarType": "INT"},
+                        "ftype": "Val",
                         "metadata": {"wip": True},
                     },
                     {
                         "name": "account_creation_date",
-                        "dtype": {
-                            "scalarType": "TIMESTAMP",
-                        },
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "country",
-                        "dtype": {
-                            "isNullable": True,
-                            "mapType": {
-                                "key": {"scalarType": "STRING"},
-                                "value": {
-                                    "arrayType": {
-                                        "of": {
-                                            "mapType": {
-                                                "key": {"scalarType": "STRING"},
-                                                "value": {
-                                                    "scalarType": "FLOAT"
-                                                },
-                                            }
-                                        }
-                                    }
-                                },
-                            },
-                        },
+                        "ftype": "Val",
+                        "isOptional": True,
                         "metadata": {},
                     },
                     {
                         "name": "timestamp",
-                        "dtype": {"scalarType": "TIMESTAMP"},
-                        "isTimestamp": True,
+                        "ftype": "Timestamp",
                         "metadata": {},
                     },
                 ],
@@ -269,25 +248,22 @@ def test_DatasetWithPipes(grpc_stub):
                 "fields": [
                     {
                         "name": "a",
-                        "isKey": True,
-                        "dtype": {"scalarType": "INT"},
+                        "ftype": "Key",
                         "metadata": {},
                     },
                     {
                         "name": "b",
-                        "isKey": True,
-                        "dtype": {"scalarType": "INT"},
+                        "ftype": "Key",
                         "metadata": {"description": "test"},
                     },
                     {
                         "name": "c",
-                        "dtype": {"scalarType": "INT"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "d",
-                        "dtype": {"scalarType": "TIMESTAMP"},
-                        "isTimestamp": True,
+                        "ftype": "Timestamp",
                         "metadata": {},
                     },
                 ],

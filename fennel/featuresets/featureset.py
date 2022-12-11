@@ -27,7 +27,7 @@ from fennel.lib.metadata import (
     set_meta_attr,
     get_metadata_proto,
 )
-from fennel.lib.schema import get_pyarrow_datatype, get_datatype
+from fennel.lib.schema import get_pyarrow_datatype
 from fennel.utils import (
     parse_annotation_comments,
     propogate_fennel_attributes,
@@ -81,7 +81,6 @@ def get_feature(
         )
     feature.name = annotation_name
     feature.fqn = f"{feature.featureset_name}.{annotation_name}"
-    feature.dtype = get_datatype(dtype)
     description = get_meta_attr(feature, "description")
     if description is None or description == "":
         description = field2comment_map.get(annotation_name, "")

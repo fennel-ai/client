@@ -44,44 +44,43 @@ def test_SimpleDataset(grpc_stub):
                 "fields": [
                     {
                         "name": "user_id",
-                        "dtype": {"scalarType": "INT"},
-                        "isKey": True,
+                        "ftype": "Key",
                         "metadata": {},
                     },
                     {
                         "name": "name",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "gender",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "dob",
-                        "dtype": {"scalarType": "STRING"},
+                        "ftype": "Val",
                         "metadata": {"description": "Users date of birth"},
                     },
                     {
                         "name": "age",
-                        "dtype": {"scalarType": "INT"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "account_creation_date",
-                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "country",
-                        "dtype": {"isNullable": True, "scalarType": "STRING"},
+                        "ftype": "Val",
+                        "isOptional": True,
                         "metadata": {},
                     },
                     {
                         "name": "timestamp",
-                        "dtype": {"scalarType": "TIMESTAMP"},
-                        "isTimestamp": True,
+                        "ftype": "Timestamp",
                         "metadata": {},
                     },
                 ],
@@ -122,23 +121,23 @@ def test_DatasetWithRetention(grpc_stub):
                 "fields": [
                     {
                         "name": "user_id",
-                        "dtype": {"scalarType": "INT"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "action_type",
-                        "dtype": {"scalarType": "FLOAT"},
+                        "ftype": "Val",
                         "metadata": {},
                     },
                     {
                         "name": "amount",
-                        "dtype": {"scalarType": "FLOAT", "isNullable": True},
+                        "ftype": "Val",
+                        "isOptional": True,
                         "metadata": {},
                     },
                     {
                         "name": "timestamp",
-                        "dtype": {"scalarType": "TIMESTAMP"},
-                        "isTimestamp": True,
+                        "ftype": "Timestamp",
                         "metadata": {},
                     },
                 ],
@@ -200,25 +199,22 @@ def test_DatasetWithPull(grpc_stub):
         "fields": [
             {
                 "name": "user_id",
-                "isKey": True,
-                "dtype": {"scalarType": "INT"},
+                "ftype": "Key",
                 "metadata": {},
             },
             {
                 "name": "name",
-                "isKey": True,
-                "dtype": {"scalarType": "STRING"},
+                "ftype": "Key",
                 "metadata": {},
             },
             {
                 "name": "credit_score",
-                "dtype": {"scalarType": "FLOAT"},
+                "ftype": "Val",
                 "metadata": {},
             },
             {
                 "name": "timestamp",
-                "isTimestamp": True,
-                "dtype": {"scalarType": "TIMESTAMP"},
+                "ftype": "Timestamp",
                 "metadata": {},
             },
         ],
@@ -302,21 +298,18 @@ def test_DatasetWithPipes(grpc_stub):
         "fields": [
             {
                 "name": "a",
-                "isKey": True,
-                "dtype": {"scalarType": "INT"},
+                "ftype": "Key",
                 "metadata": {},
             },
             {
                 "name": "b",
-                "isKey": True,
-                "dtype": {"scalarType": "INT"},
+                "ftype": "Key",
                 "metadata": {},
             },
-            {"name": "c", "dtype": {"scalarType": "INT"}, "metadata": {}},
+            {"name": "c", "ftype": "Val", "metadata": {}},
             {
                 "name": "d",
-                "dtype": {"scalarType": "TIMESTAMP"},
-                "isTimestamp": True,
+                "ftype": "Timestamp",
                 "metadata": {},
             },
         ],
@@ -421,24 +414,22 @@ def test_DatasetWithComplexPipe(grpc_stub):
         "fields": [
             {
                 "name": "merchant_id",
-                "isKey": True,
-                "dtype": {"scalarType": "INT"},
+                "ftype": "Key",
                 "metadata": {},
             },
             {
                 "name": "timestamp",
-                "isTimestamp": True,
-                "dtype": {"scalarType": "TIMESTAMP"},
+                "ftype": "Timestamp",
                 "metadata": {},
             },
             {
                 "name": "num_merchant_fraudulent_transactions",
-                "dtype": {"scalarType": "INT"},
+                "ftype": "Val",
                 "metadata": {},
             },
             {
                 "name": "num_merchant_fraudulent_transactions_7d",
-                "dtype": {"scalarType": "INT"},
+                "ftype": "Val",
                 "metadata": {},
             },
         ],
@@ -554,14 +545,12 @@ def test_UnionDatasets(grpc_stub):
         "fields": [
             {
                 "name": "a1",
-                "isKey": True,
-                "dtype": {"scalarType": "INT"},
+                "ftype": "Key",
                 "metadata": {},
             },
             {
                 "name": "t",
-                "isTimestamp": True,
-                "dtype": {"scalarType": "TIMESTAMP"},
+                "ftype": "Timestamp",
                 "metadata": {},
             },
         ],
