@@ -42,17 +42,48 @@ def test_SimpleDataset(grpc_stub):
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {"name": "user_id", "isKey": True, "metadata": {}},
-                    {"name": "name", "metadata": {}},
-                    {"name": "gender", "metadata": {}},
+                    {
+                        "name": "user_id",
+                        "dtype": {"scalarType": "INT"},
+                        "isKey": True,
+                        "metadata": {},
+                    },
+                    {
+                        "name": "name",
+                        "dtype": {"scalarType": "STRING"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "gender",
+                        "dtype": {"scalarType": "STRING"},
+                        "metadata": {},
+                    },
                     {
                         "name": "dob",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {"description": "Users date of birth"},
                     },
-                    {"name": "age", "metadata": {}},
-                    {"name": "account_creation_date", "metadata": {}},
-                    {"name": "country", "isNullable": True, "metadata": {}},
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "age",
+                        "dtype": {"scalarType": "INT"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "account_creation_date",
+                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "country",
+                        "dtype": {"isNullable": True, "scalarType": "STRING"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "isTimestamp": True,
+                        "metadata": {},
+                    },
                 ],
                 "signature": "b7cb8565c45b59f577d655496226cdae",
                 "metadata": {"owner": "test@test.com"},
@@ -89,10 +120,27 @@ def test_DatasetWithRetention(grpc_stub):
             {
                 "name": "Activity",
                 "fields": [
-                    {"name": "user_id", "metadata": {}},
-                    {"name": "action_type", "metadata": {}},
-                    {"name": "amount", "isNullable": True, "metadata": {}},
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "user_id",
+                        "dtype": {"scalarType": "INT"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "action_type",
+                        "dtype": {"scalarType": "FLOAT"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "amount",
+                        "dtype": {"scalarType": "FLOAT", "isNullable": True},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "isTimestamp": True,
+                        "metadata": {},
+                    },
                 ],
                 "signature": "5a57b6ca0a79ba56b0d3e5ce95a6bbd0",
                 "metadata": {"owner": "test@test.com"},
@@ -150,10 +198,29 @@ def test_DatasetWithPull(grpc_stub):
     d = {
         "name": "UserCreditScore",
         "fields": [
-            {"name": "user_id", "isKey": True, "metadata": {}},
-            {"name": "name", "isKey": True, "metadata": {}},
-            {"name": "credit_score", "metadata": {}},
-            {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+            {
+                "name": "user_id",
+                "isKey": True,
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
+            {
+                "name": "name",
+                "isKey": True,
+                "dtype": {"scalarType": "STRING"},
+                "metadata": {},
+            },
+            {
+                "name": "credit_score",
+                "dtype": {"scalarType": "FLOAT"},
+                "metadata": {},
+            },
+            {
+                "name": "timestamp",
+                "isTimestamp": True,
+                "dtype": {"scalarType": "TIMESTAMP"},
+                "metadata": {},
+            },
         ],
         "mode": "pandas",
         "metadata": {"owner": "test@test.com"},
@@ -233,10 +300,25 @@ def test_DatasetWithPipes(grpc_stub):
     d = {
         "name": "ABCDataset",
         "fields": [
-            {"name": "a", "isKey": True, "metadata": {}},
-            {"name": "b", "isKey": True, "metadata": {}},
-            {"name": "c", "metadata": {}},
-            {"name": "d", "isTimestamp": True, "metadata": {}},
+            {
+                "name": "a",
+                "isKey": True,
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
+            {
+                "name": "b",
+                "isKey": True,
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
+            {"name": "c", "dtype": {"scalarType": "INT"}, "metadata": {}},
+            {
+                "name": "d",
+                "dtype": {"scalarType": "TIMESTAMP"},
+                "isTimestamp": True,
+                "metadata": {},
+            },
         ],
         "pipelines": [
             {
@@ -337,10 +419,28 @@ def test_DatasetWithComplexPipe(grpc_stub):
     d = {
         "name": "FraudReportAggregatedDataset",
         "fields": [
-            {"name": "merchant_id", "isKey": True, "metadata": {}},
-            {"name": "timestamp", "isTimestamp": True, "metadata": {}},
-            {"name": "num_merchant_fraudulent_transactions", "metadata": {}},
-            {"name": "num_merchant_fraudulent_transactions_7d", "metadata": {}},
+            {
+                "name": "merchant_id",
+                "isKey": True,
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
+            {
+                "name": "timestamp",
+                "isTimestamp": True,
+                "dtype": {"scalarType": "TIMESTAMP"},
+                "metadata": {},
+            },
+            {
+                "name": "num_merchant_fraudulent_transactions",
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
+            {
+                "name": "num_merchant_fraudulent_transactions_7d",
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
         ],
         "pipelines": [
             {
@@ -452,8 +552,18 @@ def test_UnionDatasets(grpc_stub):
     d = {
         "name": "ABCDataset",
         "fields": [
-            {"name": "a1", "isKey": True, "metadata": {}},
-            {"name": "t", "isTimestamp": True, "metadata": {}},
+            {
+                "name": "a1",
+                "isKey": True,
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
+            {
+                "name": "t",
+                "isTimestamp": True,
+                "dtype": {"scalarType": "TIMESTAMP"},
+                "metadata": {},
+            },
         ],
         "pipelines": [
             {

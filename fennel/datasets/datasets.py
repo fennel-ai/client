@@ -36,7 +36,7 @@ from fennel.lib.metadata import (
     set_meta_attr,
     get_metadata_proto,
 )
-from fennel.lib.schema import get_pyarrow_field, dtype_to_string
+from fennel.lib.schema import get_pyarrow_field, dtype_to_string, get_datatype
 from fennel.sources import SOURCE_FIELD, SINK_FIELD
 from fennel.utils import (
     fhash,
@@ -87,7 +87,7 @@ class Field:
             name=self.name,
             is_key=self.key,
             is_timestamp=self.timestamp,
-            is_nullable=self.pa_field.nullable,
+            dtype=get_datatype(self.dtype),
             metadata=get_metadata_proto(self),
         )
 

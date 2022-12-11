@@ -6,6 +6,7 @@ from typing import Union, Any, TYPE_CHECKING
 
 import pandas as pd
 import pyarrow as pa  # type: ignore
+import fennel.gen.schema_pb2 as proto
 
 if TYPE_CHECKING:
     Series = pd.Series
@@ -71,15 +72,15 @@ def get_pyarrow_field(name: str, type_: Any) -> pa.lib.Field:
     # typing.Optional[x] is an alias for typing.Union[x, None]
     if _get_origin(type_) is Union and type(None) == _get_args(type_)[1]:
         return pa.field(
-            name, get_pyarrow_schema(_get_args(type_)[0]), nullable=True
+            name, get_pyarrow_datatype(_get_args(type_)[0]), nullable=True
         )
     elif _get_origin(type_) is Union:
         x = [get_pyarrow_field(name, t) for t in _get_args(type_)]
         return pa.union(x, mode="dense")
-    return pa.field(name, get_pyarrow_schema(type_), nullable=False)
+    return pa.field(name, get_pyarrow_datatype(type_), nullable=False)
 
 
-def get_pyarrow_schema(type_: Any) -> pa.lib.Schema:
+def get_pyarrow_datatype(type_: Any) -> pa.lib.DataType:
     """
     Convert a python type to a pa type (
     https://arrow.apache.org/docs/3.0/python/api/datatypes.html ).
@@ -94,34 +95,59 @@ def get_pyarrow_schema(type_: Any) -> pa.lib.Schema:
         return pa.float64()
     elif type_ is str:
         return pa.string()
-    elif type_ is bytes:
-        return pa.binary()
     elif type_ is datetime:
         return pa.timestamp("ns")
     elif _get_origin(type_) is tuple:
-        return pa.struct(
-            [
-                get_pyarrow_field(f"f{i}", t)
-                for i, t in enumerate(_get_args(type_))
-            ]
-        )
+        raise ValueError("Tuple is not supported currently, please use List.")
     elif isinstance(type_, _Embedding):
         return pa.list_(pa.float64(), type_.dim)
     elif _get_origin(type_) is list:
-        return pa.list_(get_pyarrow_schema(_get_args(type_)[0]))
+        return pa.list_(get_pyarrow_datatype(_get_args(type_)[0]))
     elif _get_origin(type_) is set:
-        return pa.map_(get_pyarrow_schema(_get_args(type_)[0]), pa.null())
+        # return pa.map_(get_pyarrow_schema(_get_args(type_)[0]), pa.null())
+        raise ValueError("Set is not supported currently.")
     elif _get_origin(type_) is dict:
+        if _get_args(type_)[0] is not str:
+            raise ValueError("Dict keys must be strings.")
         return pa.map_(
-            get_pyarrow_schema(_get_args(type_)[0]),
-            get_pyarrow_schema(_get_args(type_)[1]),
-        )
-    elif hasattr(type_, "__dataclass_fields__"):
-        return pa.struct(
-            [
-                (k, get_pyarrow_schema(v.type))
-                for k, v in type_.__dataclass_fields__.items()
-            ]
+            get_pyarrow_datatype(_get_args(type_)[0]),
+            get_pyarrow_datatype(_get_args(type_)[1]),
         )
     else:
         raise ValueError(f"Cannot convert type {type_} to pa schema.")
+
+
+def get_datatype(type_: Any) -> proto.DataType:
+    # typing.Optional[x] is an alias for typing.Union[x, None]
+    if _get_origin(type_) is Union and type(None) == _get_args(type_)[1]:
+        dtype = get_datatype(_get_args(type_)[0])
+        dtype.is_nullable = True
+        return dtype
+    elif type_ is int:
+        return proto.DataType(scalar_type=proto.ScalarType.INT)
+    elif type_ is float:
+        return proto.DataType(scalar_type=proto.ScalarType.FLOAT)
+    elif type_ is str:
+        return proto.DataType(scalar_type=proto.ScalarType.STRING)
+    elif type_ is datetime:
+        return proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP)
+    elif type_ is bool:
+        return proto.DataType(scalar_type=proto.ScalarType.BOOLEAN)
+    elif _get_origin(type_) is list:
+        return proto.DataType(
+            array_type=proto.ArrayType(of=get_datatype(_get_args(type_)[0]))
+        )
+    elif _get_origin(type_) is dict:
+        if _get_args(type_)[0] is not str:
+            raise ValueError("Dict keys must be strings.")
+        return proto.DataType(
+            map_type=proto.MapType(
+                key=get_datatype(_get_args(type_)[0]),
+                value=get_datatype(_get_args(type_)[1]),
+            )
+        )
+    elif isinstance(type_, _Embedding):
+        return proto.DataType(
+            embedding_type=proto.EmbeddingType(embedding_size=type_.dim)
+        )
+    raise ValueError(f"Cannot serialize type {type_}.")

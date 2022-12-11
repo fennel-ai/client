@@ -24,40 +24,21 @@ class Feature(google.protobuf.message.Message):
 
     ID_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
-    DTYPE_FIELD_NUMBER: builtins.int
-    OWNER_FIELD_NUMBER: builtins.int
-    DESCRIPTION_FIELD_NUMBER: builtins.int
-    WIP_FIELD_NUMBER: builtins.int
-    DEPRECATED_FIELD_NUMBER: builtins.int
-    TAGS_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     id: builtins.int
     name: builtins.str
-    dtype: builtins.str
-    """Arrow type"""
-    owner: builtins.str
-    description: builtins.str
-    wip: builtins.bool
-    deprecated: builtins.bool
     @property
-    def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    @property
-    def metadata(self) -> metadata_pb2.Metadata: ...
+    def metadata(self) -> metadata_pb2.Metadata:
+        """DataType dtype = 3;"""
     def __init__(
         self,
         *,
         id: builtins.int = ...,
         name: builtins.str = ...,
-        dtype: builtins.str = ...,
-        owner: builtins.str = ...,
-        description: builtins.str = ...,
-        wip: builtins.bool = ...,
-        deprecated: builtins.bool = ...,
-        tags: collections.abc.Iterable[builtins.str] | None = ...,
         metadata: metadata_pb2.Metadata | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["deprecated", b"deprecated", "description", b"description", "dtype", b"dtype", "id", b"id", "metadata", b"metadata", "name", b"name", "owner", b"owner", "tags", b"tags", "wip", b"wip"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["id", b"id", "metadata", b"metadata", "name", b"name"]) -> None: ...
 
 global___Feature = Feature
 

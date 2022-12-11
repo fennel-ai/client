@@ -1,6 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, Dict, List
 
 from google.protobuf.json_format import ParseDict  # type: ignore
 
@@ -43,17 +43,48 @@ def test_simpleDataset(grpc_stub):
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {"name": "user_id", "isKey": True, "metadata": {}},
-                    {"name": "name", "metadata": {}},
-                    {"name": "gender", "metadata": {}},
+                    {
+                        "name": "user_id",
+                        "dtype": {"scalarType": "INT"},
+                        "isKey": True,
+                        "metadata": {},
+                    },
+                    {
+                        "name": "name",
+                        "dtype": {"scalarType": "STRING"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "gender",
+                        "dtype": {"scalarType": "STRING"},
+                        "metadata": {},
+                    },
                     {
                         "name": "dob",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {"description": "Users date of birth"},
                     },
-                    {"name": "age", "metadata": {}},
-                    {"name": "account_creation_date", "metadata": {}},
-                    {"name": "country", "isNullable": True, "metadata": {}},
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "age",
+                        "dtype": {"scalarType": "INT"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "account_creation_date",
+                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "country",
+                        "dtype": {"isNullable": True, "scalarType": "STRING"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "isTimestamp": True,
+                        "metadata": {},
+                    },
                 ],
                 "signature": "b7cb8565c45b59f577d655496226cdae",
                 "metadata": {
@@ -87,7 +118,7 @@ def test_complexDatasetWithFields(grpc_stub):
         dob: str
         age: int = field().meta(wip=True)
         account_creation_date: datetime
-        country: Optional[str] = field()
+        country: Optional[Dict[str, List[Dict[str, float]]]] = field()
         timestamp: datetime = field(timestamp=True)
 
     assert YextUserInfoDataset._retention == timedelta(days=365)
@@ -103,14 +134,20 @@ def test_complexDatasetWithFields(grpc_stub):
                     {
                         "name": "user_id",
                         "isKey": True,
+                        "dtype": {"scalarType": "INT"},
                         "metadata": {
                             "owner": "jack@yext.com",
                             "description": "test",
                         },
                     },
-                    {"name": "name", "metadata": {}},
+                    {
+                        "name": "name",
+                        "dtype": {"scalarType": "STRING"},
+                        "metadata": {},
+                    },
                     {
                         "name": "gender",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {
                             "description": "sex",
                             "tags": ["senstive"],
@@ -118,18 +155,51 @@ def test_complexDatasetWithFields(grpc_stub):
                     },
                     {
                         "name": "dob",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {"description": "Users date of birth"},
                     },
-                    {"name": "age", "metadata": {"wip": True}},
-                    {"name": "account_creation_date", "metadata": {}},
                     {
-                        "name": "country",
-                        "isNullable": True,
+                        "name": "age",
+                        "dtype": {"scalarType": "INT"},
+                        "metadata": {"wip": True},
+                    },
+                    {
+                        "name": "account_creation_date",
+                        "dtype": {
+                            "scalarType": "TIMESTAMP",
+                        },
                         "metadata": {},
                     },
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "country",
+                        "dtype": {
+                            "isNullable": True,
+                            "mapType": {
+                                "key": {"scalarType": "STRING"},
+                                "value": {
+                                    "arrayType": {
+                                        "of": {
+                                            "mapType": {
+                                                "key": {"scalarType": "STRING"},
+                                                "value": {
+                                                    "scalarType": "FLOAT"
+                                                },
+                                            }
+                                        }
+                                    }
+                                },
+                            },
+                        },
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "isTimestamp": True,
+                        "metadata": {},
+                    },
                 ],
-                "signature": "e9aff01fdc03b162a75056a4cdfff438",
+                "signature": "203421af01d980b5bc20e73454eb4d1b",
                 "metadata": {
                     "owner": "daniel@yext.com",
                     "description": "test",
@@ -142,6 +212,9 @@ def test_complexDatasetWithFields(grpc_stub):
     }
     sync_request.dataset_requests[0].schema = b""
     expected_sync_request = ParseDict(d, SyncRequest())
+    print(sync_request)
+    print("---")
+    print(expected_sync_request)
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
@@ -194,14 +267,29 @@ def test_DatasetWithPipes(grpc_stub):
             {
                 "name": "ABCDataset",
                 "fields": [
-                    {"name": "a", "isKey": True, "metadata": {}},
+                    {
+                        "name": "a",
+                        "isKey": True,
+                        "dtype": {"scalarType": "INT"},
+                        "metadata": {},
+                    },
                     {
                         "name": "b",
                         "isKey": True,
+                        "dtype": {"scalarType": "INT"},
                         "metadata": {"description": "test"},
                     },
-                    {"name": "c", "metadata": {}},
-                    {"name": "d", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "c",
+                        "dtype": {"scalarType": "INT"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "d",
+                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "isTimestamp": True,
+                        "metadata": {},
+                    },
                 ],
                 "pipelines": [
                     {
@@ -261,17 +349,15 @@ def test_simpleFeatureSet(grpc_stub):
     f = {
         "name": "UserInfoSimple",
         "features": [
-            {"id": 1, "name": "userid", "dtype": "int64", "metadata": {}},
+            {"id": 1, "name": "userid", "metadata": {}},
             {
                 "id": 2,
                 "name": "home_geoid",
-                "dtype": "int64",
                 "metadata": {"wip": True},
             },
             {
                 "id": 3,
                 "name": "gender",
-                "dtype": "string",
                 "metadata": {
                     "description": "The users gender among male/female"
                 },
@@ -279,13 +365,11 @@ def test_simpleFeatureSet(grpc_stub):
             {
                 "id": 4,
                 "name": "age_no_bar",
-                "dtype": "int64",
                 "metadata": {"owner": "srk@bollywood.com"},
             },
             {
                 "id": 5,
                 "name": "income",
-                "dtype": "int64",
                 "metadata": {"deprecated": True},
             },
         ],
@@ -353,12 +437,11 @@ def test_featuresetWithExtractors(grpc_stub):
     f = {
         "name": "UserInfo",
         "features": [
-            {"id": 1, "name": "userid", "dtype": "int64", "metadata": {}},
-            {"id": 2, "name": "home_geoid", "dtype": "int64", "metadata": {}},
+            {"id": 1, "name": "userid", "metadata": {}},
+            {"id": 2, "name": "home_geoid", "metadata": {}},
             {
                 "id": 3,
                 "name": "gender",
-                "dtype": "string",
                 "metadata": {
                     "description": "The users gender among male/female"
                 },
@@ -366,10 +449,9 @@ def test_featuresetWithExtractors(grpc_stub):
             {
                 "id": 4,
                 "name": "age",
-                "dtype": "int64",
                 "metadata": {"owner": "aditya@fennel.ai"},
             },
-            {"id": 5, "name": "income", "dtype": "int64", "metadata": {}},
+            {"id": 5, "name": "income", "metadata": {}},
         ],
         "extractors": [
             {

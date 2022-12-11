@@ -9,6 +9,7 @@ import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import metadata_pb2
+import schema_pb2
 import source_pb2
 import status_pb2
 import sys
@@ -53,41 +54,28 @@ class Field(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     NAME_FIELD_NUMBER: builtins.int
-    DTYPE_FIELD_NUMBER: builtins.int
     IS_KEY_FIELD_NUMBER: builtins.int
     IS_TIMESTAMP_FIELD_NUMBER: builtins.int
-    OWNER_FIELD_NUMBER: builtins.int
-    DESCRIPTION_FIELD_NUMBER: builtins.int
-    IS_NULLABLE_FIELD_NUMBER: builtins.int
-    TAGS_FIELD_NUMBER: builtins.int
+    DTYPE_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     name: builtins.str
-    dtype: builtins.bytes
-    """Arrow type"""
     is_key: builtins.bool
     is_timestamp: builtins.bool
-    owner: builtins.str
-    description: builtins.str
-    is_nullable: builtins.bool
     @property
-    def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    def dtype(self) -> schema_pb2.DataType: ...
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
     def __init__(
         self,
         *,
         name: builtins.str = ...,
-        dtype: builtins.bytes = ...,
         is_key: builtins.bool = ...,
         is_timestamp: builtins.bool = ...,
-        owner: builtins.str = ...,
-        description: builtins.str = ...,
-        is_nullable: builtins.bool = ...,
-        tags: collections.abc.Iterable[builtins.str] | None = ...,
+        dtype: schema_pb2.DataType | None = ...,
         metadata: metadata_pb2.Metadata | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["description", b"description", "dtype", b"dtype", "is_key", b"is_key", "is_nullable", b"is_nullable", "is_timestamp", b"is_timestamp", "metadata", b"metadata", "name", b"name", "owner", b"owner", "tags", b"tags"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "is_key", b"is_key", "is_timestamp", b"is_timestamp", "metadata", b"metadata", "name", b"name"]) -> None: ...
 
 global___Field = Field
 

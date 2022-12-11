@@ -52,17 +52,48 @@ def test_SimpleSource(grpc_stub):
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {"name": "user_id", "isKey": True, "metadata": {}},
-                    {"name": "name", "metadata": {}},
-                    {"name": "gender", "metadata": {}},
+                    {
+                        "name": "user_id",
+                        "dtype": {"scalarType": "INT"},
+                        "isKey": True,
+                        "metadata": {},
+                    },
+                    {
+                        "name": "name",
+                        "dtype": {"scalarType": "STRING"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "gender",
+                        "dtype": {"scalarType": "STRING"},
+                        "metadata": {},
+                    },
                     {
                         "name": "dob",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {"description": "Users date of birth"},
                     },
-                    {"name": "age", "metadata": {}},
-                    {"name": "account_creation_date", "metadata": {}},
-                    {"name": "country", "isNullable": True, "metadata": {}},
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "age",
+                        "dtype": {"scalarType": "INT"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "account_creation_date",
+                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "country",
+                        "dtype": {"isNullable": True, "scalarType": "STRING"},
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "isTimestamp": True,
+                        "metadata": {},
+                    },
                 ],
                 "inputConnectors": [
                     {
@@ -245,8 +276,18 @@ def test_ConsoleSource(grpc_stub):
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {"name": "user_id", "isKey": True, "metadata": {}},
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "user_id",
+                        "dtype": {"scalarType": "INT"},
+                        "isKey": True,
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "dtype": {"scalarType": "TIMESTAMP"},
+                        "isTimestamp": True,
+                        "metadata": {},
+                    },
                 ],
                 "inputConnectors": [
                     {

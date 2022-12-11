@@ -65,17 +65,15 @@ def test_SimpleFeatureSet(grpc_stub):
     f = {
         "name": "UserInfo",
         "features": [
-            {"id": 1, "name": "userid", "dtype": "int64", "metadata": {}},
+            {"id": 1, "name": "userid", "metadata": {}},
             {
                 "id": 2,
                 "name": "home_geoid",
-                "dtype": "int64",
                 "metadata": {"wip": True},
             },
             {
                 "id": 3,
                 "name": "gender",
-                "dtype": "string",
                 "metadata": {
                     "description": "The users gender among male/female/non-binary"
                 },
@@ -83,13 +81,11 @@ def test_SimpleFeatureSet(grpc_stub):
             {
                 "id": 4,
                 "name": "age",
-                "dtype": "int64",
                 "metadata": {"owner": "aditya@fennel.ai"},
             },
             {
                 "id": 5,
                 "name": "income",
-                "dtype": "int64",
                 "metadata": {"deprecated": True},
             },
         ],
@@ -162,12 +158,11 @@ def test_ComplexFeatureSet(grpc_stub):
     f = {
         "name": "UserInfo",
         "features": [
-            {"id": 1, "name": "userid", "dtype": "int64", "metadata": {}},
-            {"id": 2, "name": "home_geoid", "dtype": "int64", "metadata": {}},
+            {"id": 1, "name": "userid", "metadata": {}},
+            {"id": 2, "name": "home_geoid", "metadata": {}},
             {
                 "id": 3,
                 "name": "gender",
-                "dtype": "string",
                 "metadata": {
                     "description": "The users gender among male/female/non-binary"
                 },
@@ -175,10 +170,9 @@ def test_ComplexFeatureSet(grpc_stub):
             {
                 "id": 4,
                 "name": "age",
-                "dtype": "int64",
                 "metadata": {"owner": "aditya@fennel.ai"},
             },
-            {"id": 5, "name": "income", "dtype": "int64", "metadata": {}},
+            {"id": 5, "name": "income", "metadata": {}},
         ],
         "extractors": [
             {
