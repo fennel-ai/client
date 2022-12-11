@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from google.protobuf.json_format import ParseDict
+from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as proto
 from fennel.datasets import dataset, field
@@ -56,7 +56,7 @@ def test_SimpleFeatureSet(grpc_stub):
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserInfo)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.featureset_requests) == 1
     featureset_request = clean_fs_func_src_code(
         sync_request.featureset_requests[0]
@@ -154,7 +154,7 @@ def test_ComplexFeatureSet(grpc_stub):
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserInfo)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.featureset_requests) == 1
     featureset_request = clean_fs_func_src_code(
         sync_request.featureset_requests[0]

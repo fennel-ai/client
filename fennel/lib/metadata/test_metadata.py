@@ -2,7 +2,7 @@ from datetime import datetime
 from datetime import timedelta
 from typing import Optional
 
-from google.protobuf.json_format import ParseDict
+from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as proto
 from fennel.datasets import dataset, pipeline, field, Dataset
@@ -36,7 +36,7 @@ def test_simpleDataset(grpc_stub):
     assert UserInfoDataset._retention == timedelta(days=730)
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "datasetRequests": [
@@ -93,7 +93,7 @@ def test_complexDatasetWithFields(grpc_stub):
     assert YextUserInfoDataset._retention == timedelta(days=365)
     view = InternalTestClient(grpc_stub)
     view.add(YextUserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "datasetRequests": [
@@ -187,7 +187,7 @@ def test_DatasetWithPipes(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(ABCDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "datasetRequests": [
@@ -253,7 +253,7 @@ def test_simpleFeatureSet(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoSimple)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.featureset_requests) == 1
     featureset_request = clean_fs_func_src_code(
         sync_request.featureset_requests[0]
@@ -345,7 +345,7 @@ def test_featuresetWithExtractors(grpc_stub):
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserInfo)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.featureset_requests) == 1
     featureset_request = clean_fs_func_src_code(
         sync_request.featureset_requests[0]

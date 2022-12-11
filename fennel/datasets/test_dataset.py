@@ -5,7 +5,7 @@ from typing import Optional
 import pandas as pd
 import pytest
 import requests  # type: ignore
-from google.protobuf.json_format import ParseDict
+from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.dataset_pb2 as proto
 from fennel.datasets import dataset, pipeline, field, Dataset, on_demand
@@ -35,7 +35,7 @@ def test_SimpleDataset(grpc_stub):
     assert UserInfoDataset._retention == timedelta(days=730)
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "datasetRequests": [
@@ -82,7 +82,7 @@ def test_DatasetWithRetention(grpc_stub):
     assert Activity._retention == timedelta(days=120)
     view = InternalTestClient(grpc_stub)
     view.add(Activity)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "datasetRequests": [
@@ -145,7 +145,7 @@ def test_DatasetWithPull(grpc_stub):
     assert UserCreditScore._retention == timedelta(days=365)
     view = InternalTestClient(grpc_stub)
     view.add(UserCreditScore)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "name": "UserCreditScore",
@@ -228,7 +228,7 @@ def test_DatasetWithPipes(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(ABCDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "name": "ABCDataset",
@@ -331,7 +331,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(FraudReportAggregatedDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
 
     d = {
@@ -447,7 +447,7 @@ def test_UnionDatasets(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(ABCDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "name": "ABCDataset",

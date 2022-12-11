@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from google.protobuf.json_format import ParseDict
+from google.protobuf.json_format import ParseDict  # type: ignore
 
 from fennel.datasets import dataset, field
 from fennel.gen.services_pb2 import SyncRequest
@@ -43,7 +43,7 @@ def test_SimpleSource(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 1
@@ -111,7 +111,7 @@ def test_SimpleSource(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDatasetInvertedOrder)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 1
@@ -187,7 +187,7 @@ def test_MultipleSources(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 4
@@ -235,7 +235,7 @@ def test_ConsoleSource(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 5

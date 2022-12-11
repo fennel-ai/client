@@ -107,7 +107,7 @@ def test_InvalidS3Source(grpc_stub):
 
         view = InternalTestClient(grpc_stub)
         view.add(UserInfoDataset)
-        sync_request = view.to_proto()
+        sync_request = view._get_sync_request_proto()
         assert len(sync_request.dataset_requests) == 1
         dataset_request = sync_request.dataset_requests[0]
         assert len(dataset_request.sources) == 3
