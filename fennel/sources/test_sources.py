@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from google.protobuf.json_format import ParseDict
+from google.protobuf.json_format import ParseDict  # type: ignore
 
 from fennel.datasets import dataset, field
 from fennel.gen.services_pb2 import SyncRequest
@@ -43,7 +43,7 @@ def test_SimpleSource(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 1
@@ -52,17 +52,47 @@ def test_SimpleSource(grpc_stub):
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {"name": "user_id", "isKey": True, "metadata": {}},
-                    {"name": "name", "metadata": {}},
-                    {"name": "gender", "metadata": {}},
+                    {
+                        "name": "user_id",
+                        "ftype": "Key",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "name",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "gender",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
                     {
                         "name": "dob",
+                        "ftype": "Val",
                         "metadata": {"description": "Users date of birth"},
                     },
-                    {"name": "age", "metadata": {}},
-                    {"name": "account_creation_date", "metadata": {}},
-                    {"name": "country", "isNullable": True, "metadata": {}},
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "age",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "account_creation_date",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "country",
+                        "ftype": "Val",
+                        "isOptional": True,
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "ftype": "Timestamp",
+                        "metadata": {},
+                    },
                 ],
                 "inputConnectors": [
                     {
@@ -111,7 +141,7 @@ def test_SimpleSource(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDatasetInvertedOrder)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 1
@@ -187,7 +217,7 @@ def test_MultipleSources(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 4
@@ -235,7 +265,7 @@ def test_ConsoleSource(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 5
@@ -245,8 +275,16 @@ def test_ConsoleSource(grpc_stub):
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {"name": "user_id", "isKey": True, "metadata": {}},
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "user_id",
+                        "ftype": "Key",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "ftype": "Timestamp",
+                        "metadata": {},
+                    },
                 ],
                 "inputConnectors": [
                     {

@@ -5,7 +5,7 @@ from typing import Optional
 import pandas as pd
 import pytest
 import requests  # type: ignore
-from google.protobuf.json_format import ParseDict
+from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.dataset_pb2 as proto
 from fennel.datasets import dataset, pipeline, field, Dataset, on_demand
@@ -35,24 +35,54 @@ def test_SimpleDataset(grpc_stub):
     assert UserInfoDataset._retention == timedelta(days=730)
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "datasetRequests": [
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {"name": "user_id", "isKey": True, "metadata": {}},
-                    {"name": "name", "metadata": {}},
-                    {"name": "gender", "metadata": {}},
+                    {
+                        "name": "user_id",
+                        "ftype": "Key",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "name",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "gender",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
                     {
                         "name": "dob",
+                        "ftype": "Val",
                         "metadata": {"description": "Users date of birth"},
                     },
-                    {"name": "age", "metadata": {}},
-                    {"name": "account_creation_date", "metadata": {}},
-                    {"name": "country", "isNullable": True, "metadata": {}},
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "age",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "account_creation_date",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "country",
+                        "ftype": "Val",
+                        "isOptional": True,
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "ftype": "Timestamp",
+                        "metadata": {},
+                    },
                 ],
                 "signature": "b7cb8565c45b59f577d655496226cdae",
                 "metadata": {"owner": "test@test.com"},
@@ -82,17 +112,34 @@ def test_DatasetWithRetention(grpc_stub):
     assert Activity._retention == timedelta(days=120)
     view = InternalTestClient(grpc_stub)
     view.add(Activity)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "datasetRequests": [
             {
                 "name": "Activity",
                 "fields": [
-                    {"name": "user_id", "metadata": {}},
-                    {"name": "action_type", "metadata": {}},
-                    {"name": "amount", "isNullable": True, "metadata": {}},
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "user_id",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "action_type",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "amount",
+                        "ftype": "Val",
+                        "isOptional": True,
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "ftype": "Timestamp",
+                        "metadata": {},
+                    },
                 ],
                 "signature": "5a57b6ca0a79ba56b0d3e5ce95a6bbd0",
                 "metadata": {"owner": "test@test.com"},
@@ -145,15 +192,31 @@ def test_DatasetWithPull(grpc_stub):
     assert UserCreditScore._retention == timedelta(days=365)
     view = InternalTestClient(grpc_stub)
     view.add(UserCreditScore)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "name": "UserCreditScore",
         "fields": [
-            {"name": "user_id", "isKey": True, "metadata": {}},
-            {"name": "name", "isKey": True, "metadata": {}},
-            {"name": "credit_score", "metadata": {}},
-            {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+            {
+                "name": "user_id",
+                "ftype": "Key",
+                "metadata": {},
+            },
+            {
+                "name": "name",
+                "ftype": "Key",
+                "metadata": {},
+            },
+            {
+                "name": "credit_score",
+                "ftype": "Val",
+                "metadata": {},
+            },
+            {
+                "name": "timestamp",
+                "ftype": "Timestamp",
+                "metadata": {},
+            },
         ],
         "mode": "pandas",
         "metadata": {"owner": "test@test.com"},
@@ -228,15 +291,27 @@ def test_DatasetWithPipes(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(ABCDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "name": "ABCDataset",
         "fields": [
-            {"name": "a", "isKey": True, "metadata": {}},
-            {"name": "b", "isKey": True, "metadata": {}},
-            {"name": "c", "metadata": {}},
-            {"name": "d", "isTimestamp": True, "metadata": {}},
+            {
+                "name": "a",
+                "ftype": "Key",
+                "metadata": {},
+            },
+            {
+                "name": "b",
+                "ftype": "Key",
+                "metadata": {},
+            },
+            {"name": "c", "ftype": "Val", "metadata": {}},
+            {
+                "name": "d",
+                "ftype": "Timestamp",
+                "metadata": {},
+            },
         ],
         "pipelines": [
             {
@@ -331,16 +406,32 @@ def test_DatasetWithComplexPipe(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(FraudReportAggregatedDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
 
     d = {
         "name": "FraudReportAggregatedDataset",
         "fields": [
-            {"name": "merchant_id", "isKey": True, "metadata": {}},
-            {"name": "timestamp", "isTimestamp": True, "metadata": {}},
-            {"name": "num_merchant_fraudulent_transactions", "metadata": {}},
-            {"name": "num_merchant_fraudulent_transactions_7d", "metadata": {}},
+            {
+                "name": "merchant_id",
+                "ftype": "Key",
+                "metadata": {},
+            },
+            {
+                "name": "timestamp",
+                "ftype": "Timestamp",
+                "metadata": {},
+            },
+            {
+                "name": "num_merchant_fraudulent_transactions",
+                "ftype": "Val",
+                "metadata": {},
+            },
+            {
+                "name": "num_merchant_fraudulent_transactions_7d",
+                "ftype": "Val",
+                "metadata": {},
+            },
         ],
         "pipelines": [
             {
@@ -447,13 +538,21 @@ def test_UnionDatasets(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(ABCDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "name": "ABCDataset",
         "fields": [
-            {"name": "a1", "isKey": True, "metadata": {}},
-            {"name": "t", "isTimestamp": True, "metadata": {}},
+            {
+                "name": "a1",
+                "ftype": "Key",
+                "metadata": {},
+            },
+            {
+                "name": "t",
+                "ftype": "Timestamp",
+                "metadata": {},
+            },
         ],
         "pipelines": [
             {

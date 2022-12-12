@@ -1,8 +1,8 @@
 from datetime import datetime
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, Dict, List
 
-from google.protobuf.json_format import ParseDict
+from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as proto
 from fennel.datasets import dataset, pipeline, field, Dataset
@@ -36,24 +36,54 @@ def test_simpleDataset(grpc_stub):
     assert UserInfoDataset._retention == timedelta(days=730)
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "datasetRequests": [
             {
                 "name": "UserInfoDataset",
                 "fields": [
-                    {"name": "user_id", "isKey": True, "metadata": {}},
-                    {"name": "name", "metadata": {}},
-                    {"name": "gender", "metadata": {}},
+                    {
+                        "name": "user_id",
+                        "ftype": "Key",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "name",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "gender",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
                     {
                         "name": "dob",
+                        "ftype": "Val",
                         "metadata": {"description": "Users date of birth"},
                     },
-                    {"name": "age", "metadata": {}},
-                    {"name": "account_creation_date", "metadata": {}},
-                    {"name": "country", "isNullable": True, "metadata": {}},
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "age",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "account_creation_date",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "country",
+                        "ftype": "Val",
+                        "isOptional": True,
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "ftype": "Timestamp",
+                        "metadata": {},
+                    },
                 ],
                 "signature": "b7cb8565c45b59f577d655496226cdae",
                 "metadata": {
@@ -87,13 +117,13 @@ def test_complexDatasetWithFields(grpc_stub):
         dob: str
         age: int = field().meta(wip=True)
         account_creation_date: datetime
-        country: Optional[str] = field()
+        country: Optional[Dict[str, List[Dict[str, float]]]] = field()
         timestamp: datetime = field(timestamp=True)
 
     assert YextUserInfoDataset._retention == timedelta(days=365)
     view = InternalTestClient(grpc_stub)
     view.add(YextUserInfoDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "datasetRequests": [
@@ -102,15 +132,20 @@ def test_complexDatasetWithFields(grpc_stub):
                 "fields": [
                     {
                         "name": "user_id",
-                        "isKey": True,
+                        "ftype": "Key",
                         "metadata": {
                             "owner": "jack@yext.com",
                             "description": "test",
                         },
                     },
-                    {"name": "name", "metadata": {}},
+                    {
+                        "name": "name",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
                     {
                         "name": "gender",
+                        "ftype": "Val",
                         "metadata": {
                             "description": "sex",
                             "tags": ["senstive"],
@@ -118,18 +153,32 @@ def test_complexDatasetWithFields(grpc_stub):
                     },
                     {
                         "name": "dob",
+                        "ftype": "Val",
                         "metadata": {"description": "Users date of birth"},
                     },
-                    {"name": "age", "metadata": {"wip": True}},
-                    {"name": "account_creation_date", "metadata": {}},
                     {
-                        "name": "country",
-                        "isNullable": True,
+                        "name": "age",
+                        "ftype": "Val",
+                        "metadata": {"wip": True},
+                    },
+                    {
+                        "name": "account_creation_date",
+                        "ftype": "Val",
                         "metadata": {},
                     },
-                    {"name": "timestamp", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "country",
+                        "ftype": "Val",
+                        "isOptional": True,
+                        "metadata": {},
+                    },
+                    {
+                        "name": "timestamp",
+                        "ftype": "Timestamp",
+                        "metadata": {},
+                    },
                 ],
-                "signature": "e9aff01fdc03b162a75056a4cdfff438",
+                "signature": "203421af01d980b5bc20e73454eb4d1b",
                 "metadata": {
                     "owner": "daniel@yext.com",
                     "description": "test",
@@ -142,6 +191,9 @@ def test_complexDatasetWithFields(grpc_stub):
     }
     sync_request.dataset_requests[0].schema = b""
     expected_sync_request = ParseDict(d, SyncRequest())
+    print(sync_request)
+    print("---")
+    print(expected_sync_request)
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
@@ -187,21 +239,33 @@ def test_DatasetWithPipes(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(ABCDataset)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
     d = {
         "datasetRequests": [
             {
                 "name": "ABCDataset",
                 "fields": [
-                    {"name": "a", "isKey": True, "metadata": {}},
+                    {
+                        "name": "a",
+                        "ftype": "Key",
+                        "metadata": {},
+                    },
                     {
                         "name": "b",
-                        "isKey": True,
+                        "ftype": "Key",
                         "metadata": {"description": "test"},
                     },
-                    {"name": "c", "metadata": {}},
-                    {"name": "d", "isTimestamp": True, "metadata": {}},
+                    {
+                        "name": "c",
+                        "ftype": "Val",
+                        "metadata": {},
+                    },
+                    {
+                        "name": "d",
+                        "ftype": "Timestamp",
+                        "metadata": {},
+                    },
                 ],
                 "pipelines": [
                     {
@@ -253,7 +317,7 @@ def test_simpleFeatureSet(grpc_stub):
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoSimple)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.featureset_requests) == 1
     featureset_request = clean_fs_func_src_code(
         sync_request.featureset_requests[0]
@@ -261,17 +325,15 @@ def test_simpleFeatureSet(grpc_stub):
     f = {
         "name": "UserInfoSimple",
         "features": [
-            {"id": 1, "name": "userid", "dtype": "int64", "metadata": {}},
+            {"id": 1, "name": "userid", "metadata": {}},
             {
                 "id": 2,
                 "name": "home_geoid",
-                "dtype": "int64",
                 "metadata": {"wip": True},
             },
             {
                 "id": 3,
                 "name": "gender",
-                "dtype": "string",
                 "metadata": {
                     "description": "The users gender among male/female"
                 },
@@ -279,13 +341,11 @@ def test_simpleFeatureSet(grpc_stub):
             {
                 "id": 4,
                 "name": "age_no_bar",
-                "dtype": "int64",
                 "metadata": {"owner": "srk@bollywood.com"},
             },
             {
                 "id": 5,
                 "name": "income",
-                "dtype": "int64",
                 "metadata": {"deprecated": True},
             },
         ],
@@ -345,7 +405,7 @@ def test_featuresetWithExtractors(grpc_stub):
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserInfo)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.featureset_requests) == 1
     featureset_request = clean_fs_func_src_code(
         sync_request.featureset_requests[0]
@@ -353,12 +413,11 @@ def test_featuresetWithExtractors(grpc_stub):
     f = {
         "name": "UserInfo",
         "features": [
-            {"id": 1, "name": "userid", "dtype": "int64", "metadata": {}},
-            {"id": 2, "name": "home_geoid", "dtype": "int64", "metadata": {}},
+            {"id": 1, "name": "userid", "metadata": {}},
+            {"id": 2, "name": "home_geoid", "metadata": {}},
             {
                 "id": 3,
                 "name": "gender",
-                "dtype": "string",
                 "metadata": {
                     "description": "The users gender among male/female"
                 },
@@ -366,10 +425,9 @@ def test_featuresetWithExtractors(grpc_stub):
             {
                 "id": 4,
                 "name": "age",
-                "dtype": "int64",
                 "metadata": {"owner": "aditya@fennel.ai"},
             },
-            {"id": 5, "name": "income", "dtype": "int64", "metadata": {}},
+            {"id": 5, "name": "income", "metadata": {}},
         ],
         "extractors": [
             {

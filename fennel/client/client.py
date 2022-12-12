@@ -53,7 +53,7 @@ class Client:
         else:
             raise NotImplementedError
 
-    def to_proto(self):
+    def _get_sync_request_proto(self):
         datasets = []
         featuresets = []
         for obj in self.to_register_objects:
@@ -72,7 +72,7 @@ class Client:
             self.add(dataset)
         for featureset in featuresets:
             self.add(featureset)
-        sync_request = self.to_proto()
+        sync_request = self._get_sync_request_proto()
         self.stub.Sync(sync_request)
 
     def log(self, dataset_name: str, data: pd.DataFrame):

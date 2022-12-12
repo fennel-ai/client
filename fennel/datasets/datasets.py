@@ -83,11 +83,21 @@ class Field:
 
     def to_proto(self) -> proto.Field:
         # Type is passed as part of the dataset schema
+        ftype = None
+        if self.key + self.timestamp > 1:
+            raise ValueError("Field cannot be both a key and a timestamp")
+
+        if self.key:
+            ftype = proto.FieldType.Key
+        elif self.timestamp:
+            ftype = proto.FieldType.Timestamp
+        else:
+            ftype = proto.FieldType.Val
+
         return proto.Field(
             name=self.name,
-            is_key=self.key,
-            is_timestamp=self.timestamp,
-            is_nullable=self.pa_field.nullable,
+            ftype=ftype,
+            is_optional=self.pa_field.nullable,
             metadata=get_metadata_proto(self),
         )
 

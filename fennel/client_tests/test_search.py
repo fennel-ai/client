@@ -264,7 +264,7 @@ class UserBehaviorFeatures:
     @extractor
     @depends_on(UserEngagementDataset)
     def get_features(ts: Series[datetime], user_id: Series[Query.user_id]):
-        df, found = UserEngagementDataset.lookup(
+        df, found = UserEngagementDataset.lookup(  # type: ignore
             ts, user_id=user_id  # type: ignore
         )
         return df
@@ -281,7 +281,7 @@ class DocumentFeatures:
     @extractor
     @depends_on(DocumentEngagementDataset)
     def get_features(ts: Series[datetime], doc_id: Series[Query.doc_id]):
-        df, found = DocumentEngagementDataset.lookup(
+        df, found = DocumentEngagementDataset.lookup(  # type: ignore
             ts, user_id=doc_id  # type: ignore
         )
         df["total_timespent_minutes"] = df["total_timespent"] / 60
@@ -301,7 +301,7 @@ class DocumentContentFeatures:
     @extractor
     @depends_on(DocumentContentDataset)
     def get_features(ts: Series[datetime], doc_id: Series[Query.doc_id]):
-        df, found = DocumentContentDataset.lookup(
+        df, found = DocumentContentDataset.lookup(  # type: ignore
             ts, user_id=doc_id  # type: ignore
         )
         return df

@@ -1,3 +1,4 @@
 .pytest_cache/
 .mypy_cache/
 proto/
+test_lib/gen_rust_lib/*.whl

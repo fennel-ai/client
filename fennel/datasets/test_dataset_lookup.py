@@ -98,7 +98,7 @@ def test_datasetLookup(grpc_stub, mocker):
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserAgeFeatures)
-    sync_request = view.to_proto()
+    sync_request = view._get_sync_request_proto()
     assert len(sync_request.featureset_requests) == 1
     user_sq_extractor = sync_request.featureset_requests[0].extractors[1]
     assert user_sq_extractor.name == "UserAgeFeatures.user_age_sq"
