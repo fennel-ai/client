@@ -230,7 +230,7 @@ global___Pipeline = Pipeline
 
 @typing_extensions.final
 class Node(google.protobuf.message.Message):
-    """Each Node in the pipeline either refers to a dataset or an operator.
+    """Each Node in the pipeline either refers to an operator.
     Each node also has a globally unique id. Operators refer to their inputs via
     their corresponding node ids.
     """
@@ -239,21 +239,22 @@ class Node(google.protobuf.message.Message):
 
     ID_FIELD_NUMBER: builtins.int
     OPERATOR_FIELD_NUMBER: builtins.int
-    DATASET_NAME_FIELD_NUMBER: builtins.int
+    DATASET_FIELD_NUMBER: builtins.int
     id: builtins.str
+    """For a dataset node, this is the name of the dataset"""
     @property
     def operator(self) -> global___Operator: ...
-    dataset_name: builtins.str
+    dataset: builtins.str
     def __init__(
         self,
         *,
         id: builtins.str = ...,
         operator: global___Operator | None = ...,
-        dataset_name: builtins.str = ...,
+        dataset: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "node", b"node", "operator", b"operator"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "id", b"id", "node", b"node", "operator", b"operator"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["operator", "dataset_name"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "node_type", b"node_type", "operator", b"operator"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "id", b"id", "node_type", b"node_type", "operator", b"operator"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["node_type", b"node_type"]) -> typing_extensions.Literal["operator", "dataset"] | None: ...
 
 global___Node = Node
 
@@ -421,14 +422,16 @@ class Aggregation(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    TYPE_FIELD_NUMBER: builtins.int
+    AGG_TYPE_FIELD_NUMBER: builtins.int
     WINDOW_SPEC_FIELD_NUMBER: builtins.int
+    FIELD_FIELD_NUMBER: builtins.int
     VALUE_FIELD_FIELD_NUMBER: builtins.int
     TOPK_FIELD_NUMBER: builtins.int
     CF_FIELD_NUMBER: builtins.int
-    type: global___AggregateType.ValueType
+    agg_type: global___AggregateType.ValueType
     @property
     def window_spec(self) -> global___WindowSpec: ...
+    field: builtins.str
     value_field: builtins.str
     @property
     def topk(self) -> global___TopKConfig: ...
@@ -437,14 +440,15 @@ class Aggregation(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        type: global___AggregateType.ValueType = ...,
+        agg_type: global___AggregateType.ValueType = ...,
         window_spec: global___WindowSpec | None = ...,
+        field: builtins.str = ...,
         value_field: builtins.str = ...,
         topk: global___TopKConfig | None = ...,
         cf: global___CFConfig | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["cf", b"cf", "config", b"config", "topk", b"topk", "value_field", b"value_field", "window_spec", b"window_spec"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["cf", b"cf", "config", b"config", "topk", b"topk", "type", b"type", "value_field", b"value_field", "window_spec", b"window_spec"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["agg_type", b"agg_type", "cf", b"cf", "config", b"config", "field", b"field", "topk", b"topk", "value_field", b"value_field", "window_spec", b"window_spec"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["config", b"config"]) -> typing_extensions.Literal["value_field", "topk", "cf"] | None: ...
 
 global___Aggregation = Aggregation

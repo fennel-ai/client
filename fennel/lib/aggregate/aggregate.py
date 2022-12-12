@@ -34,7 +34,8 @@ class Count(AggregateType):
             raise ValueError("Window must be specified for Count")
 
         return proto.Aggregation(
-            type=self.agg_func,
+            agg_type=self.agg_func,
+            field=self.into_field,
             window_spec=self.window.to_proto(),
         )
 
@@ -51,7 +52,8 @@ class Sum(AggregateType):
 
     def to_proto(self):
         return proto.Aggregation(
-            type=self.agg_func,
+            agg_type=self.agg_func,
+            field=self.into_field,
             window_spec=self.window.to_proto(),
             value_field=self.of,
         )
@@ -69,7 +71,8 @@ class Average(AggregateType):
 
     def to_proto(self):
         return proto.Aggregation(
-            type=self.agg_func,
+            agg_type=self.agg_func,
+            field=self.into_field,
             window_spec=self.window.to_proto(),
             value_field=self.of,
         )
@@ -87,7 +90,8 @@ class Max(AggregateType):
 
     def to_proto(self):
         return proto.Aggregation(
-            type=self.agg_func,
+            agg_type=self.agg_func,
+            field=self.into_field,
             window_spec=self.window.to_proto(),
             value_field=self.of,
         )
@@ -105,7 +109,8 @@ class Min(AggregateType):
 
     def to_proto(self):
         return proto.Aggregation(
-            type=self.agg_func,
+            agg_type=self.agg_func,
+            field=self.into_field,
             window_spec=self.window.to_proto(),
             value_field=self.of,
         )

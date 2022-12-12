@@ -337,6 +337,10 @@ def test_DatasetWithPipes(grpc_stub):
             {
                 "nodes": [
                     {
+                        "id": "A",
+                        "dataset": "A",
+                    },
+                    {
                         "id": "816d3f87d7dc94cfb4c9d8513e0d9234",
                         "operator": {
                             "join": {
@@ -345,7 +349,7 @@ def test_DatasetWithPipes(grpc_stub):
                                 "on": {"a1": "b1"},
                             }
                         },
-                    }
+                    },
                 ],
                 "root": "816d3f87d7dc94cfb4c9d8513e0d9234",
                 "signature": "ABCDataset.816d3f87d7dc94cfb4c9d8513e0d9234",
@@ -353,6 +357,12 @@ def test_DatasetWithPipes(grpc_stub):
             },
             {
                 "root": "C",
+                "nodes": [
+                    {
+                        "id": "C",
+                        "dataset": "C",
+                    }
+                ],
                 "signature": "ABCDataset.C",
                 "inputs": ["A", "B", "C"],
             },
@@ -434,7 +444,6 @@ def test_DatasetWithComplexPipe(grpc_stub):
         "fields": [
             {
                 "name": "merchant_id",
-                "ftype": "Key",
                 "dtype": {"scalarType": "INT"},
                 "metadata": {},
             },
@@ -460,6 +469,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
         "pipelines": [
             {
                 "nodes": [
+                    {"id": "Activity", "dataset": "Activity"},
                     {
                         "id": "227c9aa16517c6c73371a71dfa8aacd2",
                         "operator": {"filter": {}},
@@ -490,14 +500,16 @@ def test_DatasetWithComplexPipe(grpc_stub):
                                 "keys": ["merchant_id"],
                                 "aggregates": [
                                     {
-                                        "type": "COUNT",
+                                        "aggType": "COUNT",
                                         "windowSpec": {"foreverWindow": True},
+                                        "field": "num_merchant_fraudulent_transactions",
                                     },
                                     {
-                                        "type": "COUNT",
+                                        "aggType": "COUNT",
                                         "windowSpec": {
                                             "window": {"start": "604800000000"}
                                         },
+                                        "field": "num_merchant_fraudulent_transactions_7d",
                                     },
                                 ],
                             }
@@ -584,6 +596,14 @@ def test_UnionDatasets(grpc_stub):
             {
                 "nodes": [
                     {
+                        "id": "A",
+                        "dataset": "A",
+                    },
+                    {
+                        "id": "B",
+                        "dataset": "B",
+                    },
+                    {
                         "id": "4177990d6cc07916bc6eba47462799ff",
                         "operator": {"transform": {"operandNodeId": "B"}},
                     },
@@ -605,6 +625,10 @@ def test_UnionDatasets(grpc_stub):
             },
             {
                 "nodes": [
+                    {
+                        "id": "A",
+                        "dataset": "A",
+                    },
                     {
                         "id": "c11a7a6052cdbb1759969dd10613ac8b",
                         "operator": {"transform": {"operandNodeId": "A"}},

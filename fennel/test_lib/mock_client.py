@@ -24,7 +24,7 @@ from fennel.lib.graph_algorithms import (
 from fennel.test_lib.executor import Executor
 from fennel.lib.schema import schema_check
 
-# from fennel.test_lib.integration_client import IntegrationClient
+from fennel.test_lib.integration_client import IntegrationClient
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -209,6 +209,8 @@ class MockClient(Client):
         if is_extractor_graph_cyclic(self.extractors):
             raise Exception("Cyclic graph detected in extractors")
 
+        return FakeResponse(200, "OK")
+
     def extract_features(
         self,
         input_feature_list: List[Union[Feature, Featureset]],
@@ -350,13 +352,13 @@ def mock_client(test_func):
     def wrapper(*args, **kwargs):
         client = MockClient()
         f = test_func(*args, **kwargs, client=client)
-        # if (
-        #     "USE_INT_CLIENT" in os.environ
-        #     and int(os.environ.get("USE_INT_CLIENT")) == 1
-        # ):
-        #     print("Running rust client tests")
-        #     client = IntegrationClient()
-        #     f = test_func(*args, **kwargs, client=client)
+        if (
+            "USE_INT_CLIENT" in os.environ
+            and int(os.environ.get("USE_INT_CLIENT")) == 1
+        ):
+            print("Running rust client tests")
+            client = IntegrationClient()
+            f = test_func(*args, **kwargs, client=client)
         return f
 
     return wrapper

@@ -32,6 +32,13 @@ class UserInfoDataset:
 
 class TestDataset(unittest.TestCase):
     @mock_client
+    def test_sync_dataset(self, client):
+        """Sync the dataset and check if it is synced correctly."""
+        # Sync the dataset
+        response = client.sync(datasets=[UserInfoDataset])
+        assert response.status_code == requests.codes.OK, response.json()
+
+    @mock_client
     def test_log_to_dataset(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
