@@ -36,7 +36,7 @@ from fennel.lib.metadata import (
     set_meta_attr,
     get_metadata_proto,
 )
-from fennel.lib.schema import get_pyarrow_field, dtype_to_string
+from fennel.lib.schema import get_datatype, dtype_to_string
 from fennel.sources import SOURCE_FIELD, SINK_FIELD
 from fennel.utils import (
     fhash,
@@ -66,7 +66,6 @@ class Field:
     name: str
     key: bool
     timestamp: bool
-    pa_field: pyarrow.lib.Field
     dtype: Optional[Type]
 
     def signature(self) -> str:
@@ -97,7 +96,7 @@ class Field:
         return proto.Field(
             name=self.name,
             ftype=ftype,
-            is_optional=self.pa_field.nullable,
+            dtype=get_datatype(self.dtype),
             metadata=get_metadata_proto(self),
         )
 
