@@ -300,6 +300,12 @@ def test_DatasetWithPipes(grpc_stub):
                 "pipelines": [
                     {
                         "root": "C",
+                        "nodes": [
+                            {
+                                "id": "C",
+                                "dataset": "C",
+                            }
+                        ],
                         "signature": "ABCDataset.C",
                         "metadata": {
                             "owner": "a@xyz.com",
@@ -309,6 +315,12 @@ def test_DatasetWithPipes(grpc_stub):
                     },
                     {
                         "root": "C",
+                        "nodes": [
+                            {
+                                "id": "C",
+                                "dataset": "C",
+                            }
+                        ],
                         "signature": "ABCDataset.C",
                         "metadata": {
                             "owner": "b@xyz.com",

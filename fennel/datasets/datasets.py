@@ -908,7 +908,10 @@ class Serializer(Visitor):
 
     def visit(self, obj) -> str:
         if isinstance(obj, Dataset):
-            return obj._name
+            if obj._name not in self.proto_by_node_id:
+                self.proto_by_node_id[obj._name] = obj
+                self.nodes.append(proto.Node(id=obj._name, dataset=obj._name))
+            return self.visitDataset(obj)
 
         node_id = obj.signature()
         if node_id not in self.proto_by_node_id:
@@ -918,7 +921,7 @@ class Serializer(Visitor):
         return node_id
 
     def visitDataset(self, obj):
-        return proto.Node(dataset_name=obj.into_field, id=obj.into_field)
+        return obj._name
 
     def visitTransform(self, obj):
         return proto.Node(
