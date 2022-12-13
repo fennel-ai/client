@@ -73,7 +73,6 @@ def clean_ds_func_src_code(
         retention=dataset_req.retention,
         mode=dataset_req.mode,
         pipelines=pipelines,
-        schema=b"",
         on_demand=dataset_req.on_demand,
         metadata=dataset_req.metadata,
     )
