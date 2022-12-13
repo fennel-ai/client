@@ -36,7 +36,7 @@ from fennel.lib.metadata import (
     set_meta_attr,
     get_metadata_proto,
 )
-from fennel.lib.schema import get_pyarrow_field, dtype_to_string
+from fennel.lib.schema import get_datatype, dtype_to_string
 from fennel.sources import SOURCE_FIELD, SINK_FIELD
 from fennel.utils import (
     fhash,
@@ -66,19 +66,16 @@ class Field:
     name: str
     key: bool
     timestamp: bool
-    pa_field: pyarrow.lib.Field
     dtype: Optional[Type]
 
     def signature(self) -> str:
         if self.dtype is None:
             raise ValueError("dtype is not set")
 
-        if self.dtype is Optional:
-            return f"Optional[{self.pa_field.type}]"
         return fhash(
             self.name,
             f"{dtype_to_string(self.dtype)}",
-            f"{self.pa_field.nullable}:{self.key}:{self.timestamp}",
+            f"{self.is_optional()}:{self.key}:{self.timestamp}",
         )
 
     def to_proto(self) -> proto.Field:
@@ -97,7 +94,7 @@ class Field:
         return proto.Field(
             name=self.name,
             ftype=ftype,
-            is_optional=self.pa_field.nullable,
+            dtype=get_datatype(self.dtype),
             metadata=get_metadata_proto(self),
         )
 
@@ -109,6 +106,21 @@ class Field:
                 "deprecated fields."
             )
         return f
+
+    def is_optional(self) -> bool:
+        def _get_origin(type_: Any) -> Any:
+            return getattr(type_, "__origin__", None)
+
+        def _get_args(type_: Any) -> Any:
+            return getattr(type_, "__args__", None)
+
+        if (
+            _get_origin(self.dtype) is Union
+            and type(None) == _get_args(self.dtype)[1]
+        ):
+            return True
+
+        return False
 
 
 def get_field(
@@ -130,7 +142,6 @@ def get_field(
             name=annotation_name,
             key=False,
             timestamp=False,
-            pa_field=None,
             dtype=dtype,
         )
 
@@ -138,11 +149,8 @@ def get_field(
     if description is None or description == "":
         description = field2comment_map.get(annotation_name, "")
         set_meta_attr(field, "description", description)
-    try:
-        field.pa_field = get_pyarrow_field(annotation_name, dtype)
-    except ValueError as e:
-        raise ValueError(f"Error in field {annotation_name}: {e}")
-    if field.key and field.pa_field.nullable:
+
+    if field.key and field.is_optional():
         raise ValueError(
             f"Key {annotation_name} in dataset {cls.__name__} cannot be "  # type: ignore
             f"Optional."
@@ -161,7 +169,6 @@ def field(
             timestamp=timestamp,
             # These fields will be filled in later.
             name="",
-            pa_field=None,
             dtype=None,
         ),
     )
@@ -528,10 +535,10 @@ def on_demand(expires_after: Duration):
 
 def dataset_lookup(
     cls_name: str,
-    ts: pyarrow.Array,
+    ts: Any,
     properties: List[str],
-    keys: pyarrow.RecordBatch,
-) -> Tuple[pyarrow.RecordBatch, pyarrow.Array]:
+    keys: Any,
+) -> Tuple[Any, Any]:
     raise NotImplementedError("dataset_lookup should not be called directly.")
 
 
@@ -633,7 +640,6 @@ class Dataset(_Node):
 
         return proto.CreateDatasetRequest(
             name=self.__name__,
-            schema=self._get_schema(),
             retention=timedelta_to_micros(self._retention),
             pipelines=[p.to_proto() for p in self._pipelines],
             input_connectors=[s.to_proto() for s in sources],
@@ -705,17 +711,6 @@ class Dataset(_Node):
             if field.key:
                 key_fields.append(field.name)
         self._key_fields = key_fields
-
-    def _get_schema(self) -> bytes:
-        schema = pyarrow.schema(
-            [
-                field.pa_field
-                for field in self._fields
-                if field.pa_field
-                if not get_meta_attr(field, "deleted")
-            ]
-        )
-        return schema.serialize().to_pybytes()
 
     def __repr__(self):
         return f"Dataset({self.__name__}, {self._fields})"

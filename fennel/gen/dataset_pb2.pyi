@@ -9,6 +9,7 @@ import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import metadata_pb2
+import schema_pb2
 import source_pb2
 import status_pb2
 import sys
@@ -70,11 +71,12 @@ class Field(google.protobuf.message.Message):
 
     NAME_FIELD_NUMBER: builtins.int
     FTYPE_FIELD_NUMBER: builtins.int
-    IS_OPTIONAL_FIELD_NUMBER: builtins.int
+    DTYPE_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     name: builtins.str
     ftype: global___FieldType.ValueType
-    is_optional: builtins.bool
+    @property
+    def dtype(self) -> schema_pb2.DataType: ...
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
     def __init__(
@@ -82,11 +84,11 @@ class Field(google.protobuf.message.Message):
         *,
         name: builtins.str = ...,
         ftype: global___FieldType.ValueType = ...,
-        is_optional: builtins.bool = ...,
+        dtype: schema_pb2.DataType | None = ...,
         metadata: metadata_pb2.Metadata | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["ftype", b"ftype", "is_optional", b"is_optional", "metadata", b"metadata", "name", b"name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "ftype", b"ftype", "metadata", b"metadata", "name", b"name"]) -> None: ...
 
 global___Field = Field
 
@@ -124,7 +126,6 @@ class CreateDatasetRequest(google.protobuf.message.Message):
     METADATA_FIELD_NUMBER: builtins.int
     MODE_FIELD_NUMBER: builtins.int
     VERSION_FIELD_NUMBER: builtins.int
-    SCHEMA_FIELD_NUMBER: builtins.int
     RETENTION_FIELD_NUMBER: builtins.int
     MAX_STALENESS_FIELD_NUMBER: builtins.int
     ON_DEMAND_FIELD_NUMBER: builtins.int
@@ -143,8 +144,6 @@ class CreateDatasetRequest(google.protobuf.message.Message):
     mode: builtins.str
     """Default mode is pandas."""
     version: builtins.int
-    schema: builtins.bytes
-    """Serialized arrow schema."""
     retention: builtins.int
     max_staleness: builtins.int
     @property
@@ -161,13 +160,12 @@ class CreateDatasetRequest(google.protobuf.message.Message):
         metadata: metadata_pb2.Metadata | None = ...,
         mode: builtins.str = ...,
         version: builtins.int = ...,
-        schema: builtins.bytes = ...,
         retention: builtins.int = ...,
         max_staleness: builtins.int = ...,
         on_demand: global___OnDemand | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "on_demand", b"on_demand"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields", "input_connectors", b"input_connectors", "max_staleness", b"max_staleness", "metadata", b"metadata", "mode", b"mode", "name", b"name", "on_demand", b"on_demand", "output_connectors", b"output_connectors", "pipelines", b"pipelines", "retention", b"retention", "schema", b"schema", "signature", b"signature", "version", b"version"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields", "input_connectors", b"input_connectors", "max_staleness", b"max_staleness", "metadata", b"metadata", "mode", b"mode", "name", b"name", "on_demand", b"on_demand", "output_connectors", b"output_connectors", "pipelines", b"pipelines", "retention", b"retention", "signature", b"signature", "version", b"version"]) -> None: ...
 
 global___CreateDatasetRequest = CreateDatasetRequest
 

@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Union, Any, TYPE_CHECKING
+from typing import Union, Dict, Any, List, TYPE_CHECKING
 
 import pandas as pd
-import pyarrow as pa  # type: ignore
+import numpy as np
+
+import fennel.gen.schema_pb2 as proto
+from fennel.gen.dataset_pb2 import CreateDatasetRequest
 
 if TYPE_CHECKING:
     Series = pd.Series
@@ -66,51 +69,196 @@ else:
             return _Embedding(dimensions)
 
 
-def get_pyarrow_field(name: str, type_: Any) -> pa.lib.Field:
-    """Convert a field name and python type to a pa field."""
+def get_datatype(type_: Any) -> proto.DataType:
     # typing.Optional[x] is an alias for typing.Union[x, None]
     if _get_origin(type_) is Union and type(None) == _get_args(type_)[1]:
-        return pa.field(
-            name, get_pyarrow_datatype(_get_args(type_)[0]), nullable=True
-        )
-    elif _get_origin(type_) is Union:
-        x = [get_pyarrow_field(name, t) for t in _get_args(type_)]
-        return pa.union(x, mode="dense")
-    return pa.field(name, get_pyarrow_datatype(type_), nullable=False)
-
-
-def get_pyarrow_datatype(type_: Any) -> pa.lib.DataType:
-    """
-    Convert a python type to a pa type (
-    https://arrow.apache.org/docs/3.0/python/api/datatypes.html ).
-    """
-    if type_ is None:
-        return None
-    elif type_ is bool:
-        return pa.bool_()
+        dtype = get_datatype(_get_args(type_)[0])
+        dtype.is_nullable = True
+        return dtype
     elif type_ is int:
-        return pa.int64()
+        return proto.DataType(scalar_type=proto.ScalarType.INT)
     elif type_ is float:
-        return pa.float64()
+        return proto.DataType(scalar_type=proto.ScalarType.FLOAT)
     elif type_ is str:
-        return pa.string()
+        return proto.DataType(scalar_type=proto.ScalarType.STRING)
     elif type_ is datetime:
-        return pa.timestamp("ns")
-    elif _get_origin(type_) is tuple:
-        raise ValueError("Tuple is not supported currently, please use List.")
-    elif isinstance(type_, _Embedding):
-        return pa.list_(pa.float64(), type_.dim)
+        return proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP)
+    elif type_ is bool:
+        return proto.DataType(scalar_type=proto.ScalarType.BOOLEAN)
     elif _get_origin(type_) is list:
-        return pa.list_(get_pyarrow_datatype(_get_args(type_)[0]))
-    elif _get_origin(type_) is set:
-        # return pa.map_(get_pyarrow_schema(_get_args(type_)[0]), pa.null())
-        raise ValueError("Set is not supported currently.")
+        return proto.DataType(
+            array_type=proto.ArrayType(of=get_datatype(_get_args(type_)[0]))
+        )
     elif _get_origin(type_) is dict:
         if _get_args(type_)[0] is not str:
             raise ValueError("Dict keys must be strings.")
-        return pa.map_(
-            get_pyarrow_datatype(_get_args(type_)[0]),
-            get_pyarrow_datatype(_get_args(type_)[1]),
+        return proto.DataType(
+            map_type=proto.MapType(
+                key=get_datatype(_get_args(type_)[0]),
+                value=get_datatype(_get_args(type_)[1]),
+            )
         )
-    else:
-        raise ValueError(f"Cannot convert type {type_} to pa schema.")
+    elif isinstance(type_, _Embedding):
+        return proto.DataType(
+            embedding_type=proto.EmbeddingType(embedding_size=type_.dim)
+        )
+    raise ValueError(f"Cannot serialize type {type_}.")
+
+
+# TODO: Add support for nested schema checks for arrays and maps
+def schema_check(
+    schema: Dict[str, proto.DataType], df: pd.DataFrame
+) -> List[ValueError]:
+    exceptions = []
+    # Check schema of fields with the dataframe
+    for name, dtype in schema.items():
+        if name not in df.columns:
+            exceptions.append(
+                ValueError(
+                    f"Field {name} not found in dataframe. "
+                    f"Please ensure the dataframe has the same schema as the "
+                    f"dataset."
+                )
+            )
+
+        if not dtype.is_nullable:
+            if df[name].isnull().any():
+                exceptions.append(
+                    ValueError(
+                        f"Field {name} is not nullable, but the "
+                        f"column in the dataframe has null values."
+                    )
+                )
+        else:
+            if dtype == proto.DataType(
+                scalar_type=proto.ScalarType.INT, is_nullable=True
+            ):
+                if df[name].dtype != np.int64 and df[name].dtype != np.float64:
+                    exceptions.append(
+                        ValueError(
+                            f"Field {name} is of type int, but the "
+                            f"column in the dataframe is of type "
+                            f"{df[name].dtype}."
+                        )
+                    )
+                continue
+
+        dtype.is_nullable = False
+        if dtype == proto.DataType(scalar_type=proto.ScalarType.INT):
+            if df[name].dtype != np.int64:
+                exceptions.append(
+                    ValueError(
+                        f"Field {name} is of type int, but the "
+                        f"column in the dataframe is of type "
+                        f"{df[name].dtype}."
+                    )
+                )
+        elif dtype == proto.DataType(scalar_type=proto.ScalarType.FLOAT):
+            if df[name].dtype != np.float64 and df[name].dtype != np.int64:
+                exceptions.append(
+                    ValueError(
+                        f"Field {name} is of type float, but the "
+                        f"column in the dataframe is of type "
+                        f"{df[name].dtype}."
+                    )
+                )
+        elif dtype == proto.DataType(scalar_type=proto.ScalarType.STRING):
+            if df[name].dtype != object:
+                exceptions.append(
+                    ValueError(
+                        f"Field {name} is of type str, but the "
+                        f"column in the dataframe is of type "
+                        f"{df[name].dtype}."
+                    )
+                )
+        elif dtype == proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP):
+            if df[name].dtype != "datetime64[ns]":
+                exceptions.append(
+                    ValueError(
+                        f"Field {name} is of type timestamp, but the "
+                        f"column in the dataframe is of type "
+                        f"{df[name].dtype}."
+                    )
+                )
+        elif dtype == proto.DataType(scalar_type=proto.ScalarType.BOOLEAN):
+            if df[name].dtype != np.bool_:
+                exceptions.append(
+                    ValueError(
+                        f"Field {name} is of type bool, but the "
+                        f"column in the dataframe is of type "
+                        f"{df[name].dtype}."
+                    )
+                )
+        elif dtype.embedding_type.embedding_size > 0:
+            if df[name].dtype != object:
+                exceptions.append(
+                    ValueError(
+                        f"Field {name} is of type embedding, but the "
+                        f"column in the dataframe is of type "
+                        f"{df[name].dtype}."
+                    )
+                )
+            # Check that the embedding is a list of floats of size embedding_size
+            for i, row in df[name].items():
+                if not isinstance(row, np.ndarray) and not isinstance(
+                    row, list
+                ):
+                    exceptions.append(
+                        ValueError(
+                            f"Field {name} is of type embedding, but the "
+                            f"column in the dataframe is not a list."
+                        )
+                    )
+                    break
+                if len(row) != dtype.embedding_type.embedding_size:
+                    exceptions.append(
+                        ValueError(
+                            f"Field {name} is of type embedding, of size "
+                            f"{dtype.embedding_type.embedding_size}, but the "
+                            "column in the dataframe has a list of size "
+                            f"{len(row)}."
+                        )
+                    )
+        elif dtype.array_type.of != proto.DataType():
+            if df[name].dtype != object:
+                exceptions.append(
+                    ValueError(
+                        f"Field {name} is of type array, but the "
+                        f"column in the dataframe is of type "
+                        f"{df[name].dtype}."
+                    )
+                )
+            for i, row in df[name].items():
+                if not isinstance(row, np.ndarray) and not isinstance(
+                    row, list
+                ):
+                    exceptions.append(
+                        ValueError(
+                            f"Field {name} is of type array, but the "
+                            f"column in the dataframe is not a list."
+                        )
+                    )
+                    break
+        elif dtype.map_type.key != proto.DataType():
+            if df[name].dtype != object:
+                exceptions.append(
+                    ValueError(
+                        f"Field {name} is of type map, but the "
+                        f"column in the dataframe is of type "
+                        f"{df[name].dtype}."
+                    )
+                )
+            for i, row in df[name].items():
+                if not isinstance(row, dict):
+                    exceptions.append(
+                        ValueError(
+                            f"Field {name} is of type map, but the "
+                            f"column in the dataframe is not a dict."
+                        )
+                    )
+                    break
+        else:
+            exceptions.append(
+                ValueError(f"Field {name} has unknown data type " f"{dtype}.")
+            )
+    return exceptions

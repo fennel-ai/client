@@ -45,7 +45,19 @@ class TestDataset(unittest.TestCase):
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
-        assert response.status_code == requests.codes.OK
+        assert response.status_code == requests.codes.OK, response.json()
+
+        data = [
+            [18232, "Ross", "32", "USA", now],
+            [18234, "Monica", 24, "Chile", yesterday],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("UserInfoDataset", df)
+        assert response.status_code == requests.codes.BAD_REQUEST
+        assert (
+            response.json()["error"]
+            == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
+        )
 
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
@@ -316,7 +328,7 @@ class TestBasicTransform(unittest.TestCase):
         columns = ["name", "rating", "num_ratings", "sum_ratings", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRating", df)
-        assert response.status_code == requests.codes.OK
+        assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups to verify pipeline_transform is working as expected
         an_hour_ago = now - timedelta(hours=1)
@@ -359,7 +371,7 @@ class MovieRevenue:
 class MovieStats:
     name: str = field(key=True)
     rating: float
-    revenue_in_millions: int
+    revenue_in_millions: float
     t: datetime
 
     @staticmethod
@@ -389,13 +401,13 @@ class TestBasicJoin(unittest.TestCase):
         columns = ["name", "rating", "num_ratings", "sum_ratings", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRating", df)
-        assert response.status_code == requests.codes.OK
+        assert response.status_code == requests.codes.OK, response.json()
 
         data = [["Jumanji", 1000000, two_hours_ago], ["Titanic", 50000000, now]]
         columns = ["name", "revenue", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRevenue", df)
-        assert response.status_code == requests.codes.OK
+        assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups to verify pipeline_join is working as expected
         ts = pd.Series([now, now])

@@ -27,7 +27,7 @@ from fennel.lib.metadata import (
     set_meta_attr,
     get_metadata_proto,
 )
-from fennel.lib.schema import get_pyarrow_datatype
+from fennel.lib.schema import get_datatype
 from fennel.utils import (
     parse_annotation_comments,
     propogate_fennel_attributes,
@@ -86,7 +86,7 @@ def get_feature(
         description = field2comment_map.get(annotation_name, "")
         set_meta_attr(feature, "description", description)
     try:
-        feature.dtype = get_pyarrow_datatype(dtype)
+        feature.dtype = dtype
     except Exception as e:
         raise TypeError(
             f"Feature {annotation_name} has an unsupported type {dtype}"

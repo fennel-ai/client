@@ -55,42 +55,49 @@ def test_SimpleSource(grpc_stub):
                     {
                         "name": "user_id",
                         "ftype": "Key",
+                        "dtype": {"scalarType": "INT"},
                         "metadata": {},
                     },
                     {
                         "name": "name",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {},
                     },
                     {
                         "name": "gender",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {},
                     },
                     {
                         "name": "dob",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {"description": "Users date of birth"},
                     },
                     {
                         "name": "age",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "INT"},
                         "metadata": {},
                     },
                     {
                         "name": "account_creation_date",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "TIMESTAMP"},
                         "metadata": {},
                     },
                     {
                         "name": "country",
                         "ftype": "Val",
-                        "isOptional": True,
+                        "dtype": {"isNullable": True, "scalarType": "STRING"},
                         "metadata": {},
                     },
                     {
                         "name": "timestamp",
                         "ftype": "Timestamp",
+                        "dtype": {"scalarType": "TIMESTAMP"},
                         "metadata": {},
                     },
                 ],
@@ -119,7 +126,6 @@ def test_SimpleSource(grpc_stub):
             }
         ]
     }
-    sync_request.dataset_requests[0].schema = b""
     expected_sync_request = ParseDict(d, SyncRequest())
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
@@ -145,7 +151,6 @@ def test_SimpleSource(grpc_stub):
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 1
-    sync_request.dataset_requests[0].schema = b""
     expected_sync_request.dataset_requests[
         0
     ].name = "UserInfoDatasetInvertedOrder"
@@ -269,7 +274,6 @@ def test_ConsoleSource(grpc_stub):
     assert len(sync_request.dataset_requests) == 1
     dataset_request = sync_request.dataset_requests[0]
     assert len(dataset_request.input_connectors) == 5
-    sync_request.dataset_requests[0].schema = b""
     d = {
         "datasetRequests": [
             {
@@ -278,11 +282,13 @@ def test_ConsoleSource(grpc_stub):
                     {
                         "name": "user_id",
                         "ftype": "Key",
+                        "dtype": {"scalarType": "INT"},
                         "metadata": {},
                     },
                     {
                         "name": "timestamp",
                         "ftype": "Timestamp",
+                        "dtype": {"scalarType": "TIMESTAMP"},
                         "metadata": {},
                     },
                 ],

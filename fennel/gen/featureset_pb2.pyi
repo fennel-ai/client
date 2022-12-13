@@ -8,6 +8,7 @@ import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.message
 import metadata_pb2
+import schema_pb2
 import status_pb2
 import sys
 
@@ -24,9 +25,12 @@ class Feature(google.protobuf.message.Message):
 
     ID_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
+    DTYPE_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     id: builtins.int
     name: builtins.str
+    @property
+    def dtype(self) -> schema_pb2.DataType: ...
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
     def __init__(
@@ -34,10 +38,11 @@ class Feature(google.protobuf.message.Message):
         *,
         id: builtins.int = ...,
         name: builtins.str = ...,
+        dtype: schema_pb2.DataType | None = ...,
         metadata: metadata_pb2.Metadata | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["id", b"id", "metadata", b"metadata", "name", b"name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "id", b"id", "metadata", b"metadata", "name", b"name"]) -> None: ...
 
 global___Feature = Feature
 

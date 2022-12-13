@@ -45,42 +45,49 @@ def test_SimpleDataset(grpc_stub):
                     {
                         "name": "user_id",
                         "ftype": "Key",
+                        "dtype": {"scalarType": "INT"},
                         "metadata": {},
                     },
                     {
                         "name": "name",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {},
                     },
                     {
                         "name": "gender",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {},
                     },
                     {
                         "name": "dob",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "STRING"},
                         "metadata": {"description": "Users date of birth"},
                     },
                     {
                         "name": "age",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "INT"},
                         "metadata": {},
                     },
                     {
                         "name": "account_creation_date",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "TIMESTAMP"},
                         "metadata": {},
                     },
                     {
                         "name": "country",
                         "ftype": "Val",
-                        "isOptional": True,
+                        "dtype": {"isNullable": True, "scalarType": "STRING"},
                         "metadata": {},
                     },
                     {
                         "name": "timestamp",
                         "ftype": "Timestamp",
+                        "dtype": {"scalarType": "TIMESTAMP"},
                         "metadata": {},
                     },
                 ],
@@ -92,7 +99,6 @@ def test_SimpleDataset(grpc_stub):
         ]
     }
     # Ignoring schema validation since they are bytes and not human readable
-    sync_request.dataset_requests[0].schema = b""
     expected_sync_request = ParseDict(d, SyncRequest())
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
@@ -122,22 +128,25 @@ def test_DatasetWithRetention(grpc_stub):
                     {
                         "name": "user_id",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "INT"},
                         "metadata": {},
                     },
                     {
                         "name": "action_type",
                         "ftype": "Val",
+                        "dtype": {"scalarType": "FLOAT"},
                         "metadata": {},
                     },
                     {
                         "name": "amount",
                         "ftype": "Val",
-                        "isOptional": True,
+                        "dtype": {"isNullable": True, "scalarType": "FLOAT"},
                         "metadata": {},
                     },
                     {
                         "name": "timestamp",
                         "ftype": "Timestamp",
+                        "dtype": {"scalarType": "TIMESTAMP"},
                         "metadata": {},
                     },
                 ],
@@ -149,7 +158,6 @@ def test_DatasetWithRetention(grpc_stub):
         ]
     }
     # Ignoring schema validation since they are bytes and not human readable
-    sync_request.dataset_requests[0].schema = b""
     expected_sync_request = ParseDict(d, SyncRequest())
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
@@ -200,21 +208,25 @@ def test_DatasetWithPull(grpc_stub):
             {
                 "name": "user_id",
                 "ftype": "Key",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {},
             },
             {
                 "name": "name",
                 "ftype": "Key",
+                "dtype": {"scalarType": "STRING"},
                 "metadata": {},
             },
             {
                 "name": "credit_score",
                 "ftype": "Val",
+                "dtype": {"scalarType": "FLOAT"},
                 "metadata": {},
             },
             {
                 "name": "timestamp",
                 "ftype": "Timestamp",
+                "dtype": {"scalarType": "TIMESTAMP"},
                 "metadata": {},
             },
         ],
@@ -299,17 +311,25 @@ def test_DatasetWithPipes(grpc_stub):
             {
                 "name": "a",
                 "ftype": "Key",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {},
             },
             {
                 "name": "b",
                 "ftype": "Key",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {},
             },
-            {"name": "c", "ftype": "Val", "metadata": {}},
+            {
+                "name": "c",
+                "ftype": "Val",
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
             {
                 "name": "d",
                 "ftype": "Timestamp",
+                "dtype": {"scalarType": "TIMESTAMP"},
                 "metadata": {},
             },
         ],
@@ -415,21 +435,25 @@ def test_DatasetWithComplexPipe(grpc_stub):
             {
                 "name": "merchant_id",
                 "ftype": "Key",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {},
             },
             {
                 "name": "timestamp",
                 "ftype": "Timestamp",
+                "dtype": {"scalarType": "TIMESTAMP"},
                 "metadata": {},
             },
             {
                 "name": "num_merchant_fraudulent_transactions",
                 "ftype": "Val",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {},
             },
             {
                 "name": "num_merchant_fraudulent_transactions_7d",
                 "ftype": "Val",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {},
             },
         ],
@@ -546,11 +570,13 @@ def test_UnionDatasets(grpc_stub):
             {
                 "name": "a1",
                 "ftype": "Key",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {},
             },
             {
                 "name": "t",
                 "ftype": "Timestamp",
+                "dtype": {"scalarType": "TIMESTAMP"},
                 "metadata": {},
             },
         ],

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import json
 import os
 
@@ -16,11 +17,13 @@ from fennel.client import Client
 from fennel.datasets import Dataset, Pipeline, OnDemand
 from fennel.featuresets import Featureset, Feature, Extractor
 from fennel.gen.dataset_pb2 import CreateDatasetRequest
+import fennel.gen.schema_pb2 as proto
 from fennel.lib.graph_algorithms import (
     get_extractor_order,
     is_extractor_graph_cyclic,
 )
 from fennel.test_lib.executor import Executor
+from fennel.lib.schema import schema_check
 
 # from fennel.test_lib.integration_client import IntegrationClient
 
@@ -45,7 +48,7 @@ class FakeResponse(Response):
 
 def dataset_lookup_impl(
     data: Dict[str, pd.DataFrame],
-    datasets: Dict[str, Dataset],
+    datasets: Dict[str, _DatasetInfo],
     cls_name: str,
     ts: pa.Array,
     properties: List[str],
@@ -70,7 +73,7 @@ def dataset_lookup_impl(
     if cls_name not in data:
         timestamp_col = datasets[cls_name].timestamp_field
         # Create a dataframe with all nulls
-        val_cols = datasets[cls_name].fields()
+        val_cols = datasets[cls_name].fields
         if len(properties) > 0:
             val_cols = [
                 x for x in val_cols if x in properties or x in key_df.columns
@@ -79,7 +82,9 @@ def dataset_lookup_impl(
         empty_df = pd.DataFrame(
             columns=val_cols, data=[[None] * len(val_cols)] * len(key_df)
         )
-        return pa.RecordBatch.from_pandas(empty_df)
+        return pa.RecordBatch.from_pandas(empty_df), pa.array(
+            [False] * len(key_df)
+        )
     right_df = data[cls_name]
     timestamp_field = datasets[cls_name].timestamp_field
     join_columns = key_df.columns.tolist()
@@ -164,27 +169,24 @@ class MockClient(Client):
                 f"datetime64[ns] but found {df[timestamp_field].dtype} in "
                 f"dataset {dataset_name}",
             )
-        with pa.ipc.open_stream(dataset_req.schema) as reader:
-            dataset_schema = reader.schema
-            try:
-                pa.RecordBatch.from_pandas(df, schema=dataset_schema)
-            except Exception as e:
-                content = (
-                    f"Dataframe does not match schema for dataset "
-                    f"{dataset_name}: {str(e)}"
-                )
-                return FakeResponse(status_code=400, content=content)
-            self._merge_df(df, dataset_name)
+        # Check if the dataframe has the same schema as the dataset
+        schema = {}
+        for field in dataset_req.fields:
+            schema[field.name] = field.dtype
+        exceptions = schema_check(schema, df)
+        if len(exceptions) > 0:
+            return FakeResponse(400, str(exceptions))
+        self._merge_df(df, dataset_name)
 
-            for pipeline in self.listeners[dataset_name]:
-                executor = Executor(self.data)
-                ret = executor.execute(pipeline)
-                if ret is None:
-                    continue
-                # Recursively log the output of the pipeline to the datasets
-                resp = self.log(pipeline.dataset_name, ret.df)
-                if resp.status_code != 200:
-                    return resp
+        for pipeline in self.listeners[dataset_name]:
+            executor = Executor(self.data)
+            ret = executor.execute(pipeline)
+            if ret is None:
+                continue
+            # Recursively log the output of the pipeline to the datasets
+            resp = self.log(pipeline.dataset_name, ret.df)
+            if resp.status_code != 200:
+                return resp
         return FakeResponse(200, "OK")
 
     def sync(
