@@ -65,15 +65,22 @@ def test_SimpleFeatureSet(grpc_stub):
     f = {
         "name": "UserInfo",
         "features": [
-            {"id": 1, "name": "userid", "metadata": {}},
+            {
+                "id": 1,
+                "name": "userid",
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
             {
                 "id": 2,
                 "name": "home_geoid",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {"wip": True},
             },
             {
                 "id": 3,
                 "name": "gender",
+                "dtype": {"scalarType": "STRING"},
                 "metadata": {
                     "description": "The users gender among male/female/non-binary"
                 },
@@ -81,11 +88,13 @@ def test_SimpleFeatureSet(grpc_stub):
             {
                 "id": 4,
                 "name": "age",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {"owner": "aditya@fennel.ai"},
             },
             {
                 "id": 5,
                 "name": "income",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {"deprecated": True},
             },
         ],
@@ -158,11 +167,22 @@ def test_ComplexFeatureSet(grpc_stub):
     f = {
         "name": "UserInfo",
         "features": [
-            {"id": 1, "name": "userid", "metadata": {}},
-            {"id": 2, "name": "home_geoid", "metadata": {}},
+            {
+                "id": 1,
+                "name": "userid",
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
+            {
+                "id": 2,
+                "name": "home_geoid",
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
             {
                 "id": 3,
                 "name": "gender",
+                "dtype": {"scalarType": "STRING"},
                 "metadata": {
                     "description": "The users gender among male/female/non-binary"
                 },
@@ -170,9 +190,15 @@ def test_ComplexFeatureSet(grpc_stub):
             {
                 "id": 4,
                 "name": "age",
+                "dtype": {"scalarType": "INT"},
                 "metadata": {"owner": "aditya@fennel.ai"},
             },
-            {"id": 5, "name": "income", "metadata": {}},
+            {
+                "id": 5,
+                "name": "income",
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
         ],
         "extractors": [
             {
