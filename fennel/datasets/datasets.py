@@ -20,7 +20,6 @@ from typing import (
 import cloudpickle
 import numpy as np
 import pandas as pd
-import pyarrow
 
 import fennel.gen.dataset_pb2 as proto
 from fennel.lib.aggregate import AggregateType
@@ -394,8 +393,6 @@ def dataset(
                 raise ValueError(
                     f"lookup expects a series of timestamps, found {ts.dtype}"
                 )
-            # convert ts to pyarrow Array
-            ts = pyarrow.Array.from_pandas(ts)
             # extract keys and properties from kwargs
             arr = []
             for key, value in kwargs.items():
@@ -408,20 +405,16 @@ def dataset(
             else:
                 properties = []
 
-            # convert keys to a pyarrow RecordBatch
             df = pd.concat(arr, axis=1)
             df.columns = key_fields
-            key_recordbatch = pyarrow.RecordBatch.from_pandas(df)
-
             res, found = dataset_lookup(
                 cls_name,
                 ts,
                 properties,
-                key_recordbatch,
+                df,
             )
 
-            df = res.to_pandas()
-            return df.replace({np.nan: None}), found.to_pandas()
+            return res.replace({np.nan: None}), found
 
         args = {k: pd.Series for k in key_fields}
         args["properties"] = List[str]
@@ -535,10 +528,10 @@ def on_demand(expires_after: Duration):
 
 def dataset_lookup(
     cls_name: str,
-    ts: Any,
+    ts: pd.Series,
     properties: List[str],
-    keys: Any,
-) -> Tuple[Any, Any]:
+    keys: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.Series]:
     raise NotImplementedError("dataset_lookup should not be called directly.")
 
 

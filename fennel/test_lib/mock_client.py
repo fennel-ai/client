@@ -9,7 +9,6 @@ from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
-import pyarrow as pa
 from requests import Response
 
 import fennel.datasets.datasets
@@ -50,11 +49,10 @@ def dataset_lookup_impl(
     data: Dict[str, pd.DataFrame],
     datasets: Dict[str, _DatasetInfo],
     cls_name: str,
-    ts: pa.Array,
+    ts: pd.Series,
     properties: List[str],
-    keys: pa.RecordBatch,
-) -> Tuple[pa.RecordBatch, pa.Array]:
-    key_df = keys.to_pandas()
+    keys: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.Series]:
     if cls_name not in datasets:
         raise ValueError(
             f"Dataset {cls_name} not found, please ensure it is " f"synced."
@@ -65,10 +63,10 @@ def dataset_lookup_impl(
             f"Dataset {cls_name} does not have any key fields. "
             f"Cannot perform lookup operation on it."
         )
-    if len(right_key_fields) != len(key_df.columns):
+    if len(right_key_fields) != len(keys.columns):
         raise ValueError(
             f"Dataset {cls_name} has {len(right_key_fields)} key fields, "
-            f"but {len(key_df.columns)} key fields were provided."
+            f"but {len(keys.columns)} key fields were provided."
         )
     if cls_name not in data:
         timestamp_col = datasets[cls_name].timestamp_field
@@ -76,30 +74,28 @@ def dataset_lookup_impl(
         val_cols = datasets[cls_name].fields
         if len(properties) > 0:
             val_cols = [
-                x for x in val_cols if x in properties or x in key_df.columns
+                x for x in val_cols if x in properties or x in keys.columns
             ]
         val_cols.remove(timestamp_col)
         empty_df = pd.DataFrame(
-            columns=val_cols, data=[[None] * len(val_cols)] * len(key_df)
+            columns=val_cols, data=[[None] * len(val_cols)] * len(keys)
         )
-        return pa.RecordBatch.from_pandas(empty_df), pa.array(
-            [False] * len(key_df)
-        )
+        return empty_df, pd.Series(np.array([False] * len(keys)))
     right_df = data[cls_name]
     timestamp_field = datasets[cls_name].timestamp_field
-    join_columns = key_df.columns.tolist()
+    join_columns = keys.columns.tolist()
     timestamp_length = len(ts)
-    if timestamp_length != key_df.shape[0]:
+    if timestamp_length != keys.shape[0]:
         raise ValueError(
             f"Timestamp length {timestamp_length} does not match key length "
-            f"{key_df.shape[0]} for dataset {cls_name}."
+            f"{keys.shape[0]} for dataset {cls_name}."
         )
-    key_df[timestamp_field] = ts.to_pandas()
+    keys[timestamp_field] = ts
     # Sort the keys by timestamp
-    key_df = key_df.sort_values(timestamp_field)
+    keys = keys.sort_values(timestamp_field)
     right_df[FENNEL_LOOKUP] = True
     df = pd.merge_asof(
-        left=key_df,
+        left=keys,
         right=right_df,
         on=timestamp_field,
         by=join_columns,
@@ -108,10 +104,10 @@ def dataset_lookup_impl(
     found = df[FENNEL_LOOKUP].apply(lambda x: x is not np.nan)
     # Check if an on_demand is found
     if datasets[cls_name].on_demand:
-        on_demand_keys = key_df[~found].reset_index(drop=True)
+        on_demand_keys = keys[~found].reset_index(drop=True)
         args = [
             on_demand_keys[col]
-            for col in key_df.columns
+            for col in keys.columns
             if col != timestamp_field
         ]
         on_demand_df, on_demand_found = datasets[cls_name].on_demand.func(
@@ -125,7 +121,7 @@ def dataset_lookup_impl(
     df = df.drop(columns=[timestamp_field, FENNEL_LOOKUP])
     if len(properties) > 0:
         df = df[properties]
-    return pa.RecordBatch.from_pandas(df), pa.array(found)
+    return df, found
 
 
 @dataclass

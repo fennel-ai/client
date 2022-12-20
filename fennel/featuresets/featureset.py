@@ -18,7 +18,6 @@ from typing import (
 
 import cloudpickle
 import pandas as pd
-import pyarrow
 
 import fennel.gen.featureset_pb2 as proto
 from fennel.lib.metadata import (
@@ -85,12 +84,8 @@ def get_feature(
     if description is None or description == "":
         description = field2comment_map.get(annotation_name, "")
         set_meta_attr(feature, "description", description)
-    try:
-        feature.dtype = dtype
-    except Exception as e:
-        raise TypeError(
-            f"Feature {annotation_name} has an unsupported type {dtype}"
-        ) from e
+
+    feature.dtype = dtype
     return feature
 
 
@@ -223,7 +218,7 @@ class Feature:
     fqn: str
     id: int
     featureset_name: str
-    dtype: pyarrow.lib.Schema
+    dtype: Type
     wip: bool = False
     deprecated: bool = False
 
@@ -232,6 +227,7 @@ class Feature:
             id=self.id,
             name=self.name,
             metadata=get_metadata_proto(self),
+            dtype=get_datatype(self.dtype),
         )
 
     def to_proto_as_input(self) -> proto.Input.Feature:
