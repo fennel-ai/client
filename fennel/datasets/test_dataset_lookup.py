@@ -69,7 +69,9 @@ def test_datasetLookup(grpc_stub, mocker):
             df["age_cube"] = df["age"] * df["age"] * df["age"]
             return df[["age_cube"]]
 
-    def fake_func(cls_name, ts: pd.Series, properties: typing.List[str], df: pd.DataFrame):
+    def fake_func(
+        cls_name, ts: pd.Series, properties: typing.List[str], df: pd.DataFrame
+    ):
         now = datetime.fromtimestamp(1668368655)
         if len(properties) > 0:
             assert ts.equals(pd.Series([now, now, now]))
