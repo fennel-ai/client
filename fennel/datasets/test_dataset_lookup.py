@@ -3,7 +3,6 @@ import typing
 from datetime import datetime
 
 import pandas as pd
-import pyarrow
 
 import fennel.utils
 from fennel.featuresets import featureset, feature, extractor, depends_on
@@ -70,29 +69,24 @@ def test_datasetLookup(grpc_stub, mocker):
             df["age_cube"] = df["age"] * df["age"] * df["age"]
             return df[["age_cube"]]
 
-    def fake_func(cls_name, ts, properties, recordbatch):
-        df = recordbatch.to_pandas()
+    def fake_func(cls_name, ts: pd.Series, properties: typing.List[str], df: pd.DataFrame):
         now = datetime.fromtimestamp(1668368655)
         if len(properties) > 0:
-            assert ts == pyarrow.array(pd.Series([now, now, now]))
+            assert ts.equals(pd.Series([now, now, now]))
             assert properties == ["age", "gender"]
             assert df["user_id"].tolist() == [5, 10, 15]
             assert df["name"].tolist() == ["a", "b", "c"]
             lst = [[24, "female"], [23, "female"], [45, "male"]]
             df = pd.DataFrame(lst, columns=properties)
-            return pyarrow.RecordBatch.from_pandas(df), pyarrow.array(
-                [True, True, True]
-            )
+            return df, pd.Series([True, True, True])
         else:
-            assert ts == pyarrow.array(pd.Series([now, now, now]))
+            assert ts.equals(pd.Series([now, now, now]))
             assert properties == []
             assert df["user_id"].tolist() == [3, 6, 9]
             assert df["name"].tolist() == ["a2", "b2", "c2"]
             lst = [[24], [23], [45]]
             df = pd.DataFrame(lst, columns=["age"])
-            return pyarrow.RecordBatch.from_pandas(df), pyarrow.array(
-                [True, True, True]
-            )
+            return df, pd.Series([True, True, True])
 
     fennel.datasets.datasets.dataset_lookup = fake_func
     view = InternalTestClient(grpc_stub)
