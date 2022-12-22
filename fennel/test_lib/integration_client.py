@@ -1,13 +1,27 @@
-from client_lib import RustClient  # type: ignore
-
-from dataclasses import dataclass
-from typing import Dict, List, Tuple, Set, Union
+import json
+from typing import List, Set, Union
 
 import pandas as pd
-from fennel.client import Client
+from client_lib import RustClient  # type: ignore
+from requests import Response
+
+import fennel.gen.services_pb2 as services_pb2
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
-import fennel.gen.services_pb2 as services_pb2
+
+
+class FakeResponse(Response):
+    def __init__(self, status_code: int, content: str):
+        self.status_code = status_code
+
+        self.encoding = "utf-8"
+        if status_code == 200:
+            self._ok = True
+            self._content = json.dumps({}).encode("utf-8")
+            return
+        self._content = json.dumps({"error": f"{content}"}, indent=2).encode(
+            "utf-8"
+        )
 
 
 class IntegrationClient:
@@ -17,7 +31,9 @@ class IntegrationClient:
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
 
     def log(self, dataset_name: str, df: pd.DataFrame):
-        self._client.log(dataset_name)
+        print("Logging dataset", dataset_name)
+        df_json = df.to_json(orient="records")
+        self._client.log(dataset_name, df_json)
 
     def sync(
         self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
@@ -28,6 +44,7 @@ class IntegrationClient:
             self.add(featureset)
         sync_request = self._get_sync_request_proto()
         self._client.sync(sync_request.SerializeToString())
+        return FakeResponse(200, "OK")
 
     def extract_features(
         self,

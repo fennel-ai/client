@@ -107,18 +107,6 @@ python-versions = ">=3.7"
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
-name = "client_lib"
-version = "0.1.0"
-description = ""
-category = "dev"
-optional = false
-python-versions = "*"
-
-[package.source]
-type = "file"
-url = "fennel/test_lib/gen_rust_lib/client_lib-0.1.0-cp39-cp39-macosx_11_0_arm64.whl"
-
-[[package]]
 name = "cloudpickle"
 version = "2.2.0"
 description = "Extended pickling support for Python objects"
@@ -573,9 +561,6 @@ charset-normalizer = [
 click = [
     {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
     {file = "click-8.1.3.tar.gz", hash = "sha256:7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"},
-]
-client_lib = [
-    {file = "client_lib-0.1.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:d657b986732b3410f1fca97cd91658079e6443cf58e976b584b7264a6db249c3"},
 ]
 cloudpickle = []
 colorama = []

@@ -20,6 +20,7 @@ import cloudpickle
 import pandas as pd
 
 import fennel.gen.featureset_pb2 as proto
+from fennel.gen.schema_pb2 import DataType, ScalarType
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
@@ -52,7 +53,7 @@ def feature(
             # These fields will be filled in later.
             name="",
             fqn="",
-            dtype=None,
+            dtype=DataType(scalar_type=ScalarType.INT),
             featureset_name="",
         ),
     )
