@@ -1,5 +1,4 @@
 import json
-import sys
 from typing import List, Set, Union
 
 import pandas as pd
@@ -44,7 +43,6 @@ class IntegrationClient:
         for featureset in featuresets:
             self.add(featureset)
         sync_request = self._get_sync_request_proto()
-        print(sys.path)
         self._client.sync(sync_request.SerializeToString())
         return FakeResponse(200, "OK")
 

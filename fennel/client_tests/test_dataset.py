@@ -1,4 +1,5 @@
 import json
+import time
 import unittest
 from datetime import datetime, timedelta
 from typing import Optional
@@ -39,6 +40,21 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
     @mock_client
+    def test_simple_log(self, client):
+        # Sync the dataset
+        client.sync(datasets=[UserInfoDataset])
+        now = datetime.now()
+        yesterday = now - pd.Timedelta(days=1)
+        data = [
+            [18232, "Ross", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", yesterday],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("UserInfoDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+    @mock_client
     def test_log_to_dataset(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
@@ -51,6 +67,7 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
+        time.sleep(2)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 

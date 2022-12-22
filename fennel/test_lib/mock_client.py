@@ -1,7 +1,6 @@
 from __future__ import annotations
-import json
-import os
 
+import json
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import partial
@@ -16,15 +15,12 @@ from fennel.client import Client
 from fennel.datasets import Dataset, Pipeline, OnDemand
 from fennel.featuresets import Featureset, Feature, Extractor
 from fennel.gen.dataset_pb2 import CreateDatasetRequest
-import fennel.gen.schema_pb2 as proto
 from fennel.lib.graph_algorithms import (
     get_extractor_order,
     is_extractor_graph_cyclic,
 )
-from fennel.test_lib.executor import Executor
 from fennel.lib.schema import schema_check
-
-from fennel.test_lib.integration_client import IntegrationClient
+from fennel.test_lib.executor import Executor
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -352,13 +348,13 @@ def mock_client(test_func):
     def wrapper(*args, **kwargs):
         client = MockClient()
         f = test_func(*args, **kwargs, client=client)
-        if (
-            "USE_INT_CLIENT" in os.environ
-            and int(os.environ.get("USE_INT_CLIENT")) == 1
-        ):
-            print("Running rust client tests")
-            client = IntegrationClient()
-            f = test_func(*args, **kwargs, client=client)
+        # if (
+        #     "USE_INT_CLIENT" in os.environ
+        #     and int(os.environ.get("USE_INT_CLIENT")) == 1
+        # ):
+        #     print("Running rust client tests")
+        #     client = IntegrationClient()
+        #    f = test_func(*args, **kwargs, client=client)
         return f
 
     return wrapper
