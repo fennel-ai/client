@@ -90,17 +90,47 @@ class Document:
     @staticmethod
     @pipeline(NotionDocs)
     def notion_pipe(ds: Dataset):
-        return ds.transform(lambda df: doc_pipeline_helper(df, "Notion"))
+        return ds.transform(
+            lambda df: doc_pipeline_helper(df, "Notion"),
+            schema={
+                "doc_id": int,
+                "body": str,
+                "title": str,
+                "owner": str,
+                "creation_timestamp": datetime,
+                "origin": str,
+            },
+        )
 
     @staticmethod
     @pipeline(CodaDocs)
     def coda_pipe(ds: Dataset):
-        return ds.transform(lambda df: doc_pipeline_helper(df, "Coda"))
+        return ds.transform(
+            lambda df: doc_pipeline_helper(df, "Coda"),
+            schema={
+                "doc_id": int,
+                "body": str,
+                "title": str,
+                "owner": str,
+                "creation_timestamp": datetime,
+                "origin": str,
+            },
+        )
 
     @staticmethod
     @pipeline(GoogleDocs)
     def google_docs_pipe(ds: Dataset):
-        return ds.transform(lambda df: doc_pipeline_helper(df, "GoogleDocs"))
+        return ds.transform(
+            lambda df: doc_pipeline_helper(df, "GoogleDocs"),
+            schema={
+                "doc_id": int,
+                "body": str,
+                "title": str,
+                "owner": str,
+                "creation_timestamp": datetime,
+                "origin": str,
+            },
+        )
 
 
 class HuggingFace:
@@ -165,7 +195,18 @@ class DocumentContentDataset:
     def content_features(
         ds: Dataset,
     ):
-        return ds.transform(get_content_features)
+        return ds.transform(
+            get_content_features,
+            schema={
+                "doc_id": int,
+                "bert_embedding": Embedding[128],
+                "fast_text_embedding": Embedding[256],
+                "num_words": int,
+                "num_stop_words": int,
+                "top_10_unique_words": List[str],
+                "creation_timestamp": datetime,
+            },
+        )
 
 
 @meta(owner="aditya@fennel.ai")
@@ -196,7 +237,18 @@ class UserEngagementDataset:
             df["is_long_click"] = df["view_time"] >= 5
             return df
 
-        click_type = ds.transform(create_short_click)
+        click_type = ds.transform(
+            create_short_click,
+            schema={
+                "user_id": int,
+                "doc_id": int,
+                "action_type": str,
+                "view_time": float,
+                "timestamp": datetime,
+                "is_short_click": bool,
+                "is_long_click": bool,
+            },
+        )
         return click_type.groupby("user_id").aggregate(
             [
                 Count(window=Window("forever"), into_field="num_views"),

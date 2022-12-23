@@ -359,20 +359,42 @@ global___Join = Join
 class Transform(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
+    class SchemaEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> schema_pb2.DataType: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: schema_pb2.DataType | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
     OPERAND_NODE_ID_FIELD_NUMBER: builtins.int
     FUNCTION_FIELD_NUMBER: builtins.int
     FUNCTION_SOURCE_CODE_FIELD_NUMBER: builtins.int
+    SCHEMA_FIELD_NUMBER: builtins.int
     operand_node_id: builtins.str
     function: builtins.bytes
     function_source_code: builtins.str
+    @property
+    def schema(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, schema_pb2.DataType]: ...
     def __init__(
         self,
         *,
         operand_node_id: builtins.str = ...,
         function: builtins.bytes = ...,
         function_source_code: builtins.str = ...,
+        schema: collections.abc.Mapping[builtins.str, schema_pb2.DataType] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "function_source_code", b"function_source_code", "operand_node_id", b"operand_node_id"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "function_source_code", b"function_source_code", "operand_node_id", b"operand_node_id", "schema", b"schema"]) -> None: ...
 
 global___Transform = Transform
 

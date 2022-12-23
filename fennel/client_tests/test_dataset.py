@@ -312,7 +312,16 @@ class MovieRating:
                 ),
             ]
         )
-        return ds.transform(lambda df: df.rename(columns={"movie": "name"}))
+        return ds.transform(
+            lambda df: df.rename(columns={"movie": "name"}),
+            schema={
+                "name": str,
+                "num_ratings": float,
+                "sum_ratings": float,
+                "rating": float,
+                "t": datetime,
+            },
+        )
 
 
 @meta(owner="test@test.com")
@@ -333,7 +342,19 @@ class MovieRatingTransformed:
             df["rating_into_5"] = df["rating"] * 5
             return df
 
-        return m.transform(t)
+        return m.transform(
+            t,
+            schema={
+                "name": str,
+                "rating": float,
+                "num_ratings": float,
+                "sum_ratings": float,
+                "t": datetime,
+                "rating_sq": float,
+                "rating_cube": float,
+                "rating_into_5": float,
+            },
+        )
 
 
 class TestBasicTransform(unittest.TestCase):
@@ -406,7 +427,19 @@ class MovieStats:
             return df
 
         c = rating.join(revenue, on=["name"])
-        return c.transform(to_millions)
+        # Transform provides additional columns which will be filtered out.
+        return c.transform(
+            to_millions,
+            schema={
+                "name": str,
+                "rating": float,
+                "num_ratings": int,
+                "sum_ratings": float,
+                "t": datetime,
+                "revenue": int,
+                "revenue_in_millions": float,
+            },
+        )
 
 
 class TestBasicJoin(unittest.TestCase):
@@ -587,7 +620,14 @@ class FraudReportAggregatedDataset:
         filtered_ds = activity.filter(
             lambda df: df[df["action_type"] == "report"]
         )
-        ds = filtered_ds.transform(extract_info)
+        ds = filtered_ds.transform(
+            extract_info,
+            schema={
+                "transaction_amount": float,
+                "merchant_id": int,
+                "timestamp": datetime,
+            },
+        )
         ds = ds.join(
             merchant_info,
             on=["merchant_id"],
@@ -610,7 +650,14 @@ class FraudReportAggregatedDataset:
             ]
         )
         return aggregated_ds.transform(
-            lambda df: df.rename(columns={"category": "merchant_categ"})
+            lambda df: df.rename(columns={"category": "merchant_categ"}),
+            schema={
+                "merchant_categ": str,
+                "num_categ_fraudulent_transactions": int,
+                "num_categ_fraudulent_transactions_7d": int,
+                "sum_categ_fraudulent_transactions_7d": int,
+                "timestamp": datetime,
+            },
         )
 
 
