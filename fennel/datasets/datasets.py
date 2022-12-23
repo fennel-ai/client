@@ -182,8 +182,10 @@ class _Node:
     def __init__(self):
         self.out_edges = []
 
-    def transform(self, func: Callable) -> _Node:
-        return _Transform(self, func)
+    def transform(self, func: Callable, schema: Dict = {}) -> _Node:
+        if schema == {}:
+            return _Transform(self, func, None)
+        return _Transform(self, func, schema)
 
     def filter(self, func: Callable) -> _Node:
         return _Filter(self, func)
@@ -215,11 +217,12 @@ class _Node:
 
 
 class _Transform(_Node):
-    def __init__(self, node: _Node, func: Callable):
+    def __init__(self, node: _Node, func: Callable, schema: Optional[Dict]):
         super().__init__()
         self.func = func
         self.node = node
         self.node.out_edges.append(self)
+        self.schema = schema
 
     def signature(self):
         if isinstance(self.node, Dataset):
@@ -917,12 +920,28 @@ class Serializer(Visitor):
         return obj._name
 
     def visitTransform(self, obj):
+        if obj.schema is None:
+            return proto.Node(
+                operator=proto.Operator(
+                    transform=proto.Transform(
+                        operand_node_id=self.visit(obj.node),
+                        function=cloudpickle.dumps(obj.func),
+                        function_source_code=inspect.getsource(obj.func),
+                    ),
+                ),
+                id=obj.signature(),
+            )
+
         return proto.Node(
             operator=proto.Operator(
                 transform=proto.Transform(
                     operand_node_id=self.visit(obj.node),
                     function=cloudpickle.dumps(obj.func),
                     function_source_code=inspect.getsource(obj.func),
+                    schema={
+                        col: get_datatype(dtype)
+                        for col, dtype in obj.schema.items()
+                    },
                 ),
             ),
             id=obj.signature(),

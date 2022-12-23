@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 
 import pandas as pd
 import pytest
@@ -12,6 +12,7 @@ from fennel.datasets import dataset, pipeline, field, Dataset, on_demand
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
+from fennel.lib.schema import Embedding
 from fennel.lib.schema import Series
 from fennel.lib.window import Window
 from fennel.test_lib import *
@@ -687,6 +688,145 @@ def test_UnionDatasets(grpc_stub):
         "onDemand": {},
     }
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
+    expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+
+@meta(owner="e2@company.com")
+@dataset
+class Document:
+    doc_id: int = field(key=True).meta(owner="aditya@fennel.ai")  # type: ignore
+    body: str
+    title: str
+    owner: str
+    origin: str
+    creation_timestamp: datetime
+
+
+def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
+    pass
+
+
+def test_SearchDataset(grpc_stub):
+    @meta(owner="aditya@oslash.ai")
+    @dataset
+    class DocumentContentDataset:
+        doc_id: int = field(key=True)
+        bert_embedding: Embedding[128]
+        fast_text_embedding: Embedding[256]
+        num_words: int
+        num_stop_words: int
+        top_10_unique_words: List[str]
+        creation_timestamp: datetime
+
+        @staticmethod
+        @pipeline(Document)
+        def content_features(
+            ds: Dataset,
+        ):
+            return ds.transform(
+                get_content_features,
+                schema={
+                    "doc_id": int,
+                    "bert_embedding": Embedding[128],
+                    "fast_text_embedding": Embedding[256],
+                    "num_words": int,
+                    "num_stop_words": int,
+                    "top_10_unique_words": List[str],
+                    "creation_timestamp": datetime,
+                },
+            )
+
+    view = InternalTestClient(grpc_stub)
+    view.add(DocumentContentDataset)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.dataset_requests) == 1
+    dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
+    d = {
+        "name": "DocumentContentDataset",
+        "fields": [
+            {"name": "doc_id", "dtype": {"scalarType": "INT"}, "metadata": {}},
+            {
+                "name": "bert_embedding",
+                "ftype": "Val",
+                "dtype": {"embeddingType": {"embeddingSize": 128}},
+                "metadata": {},
+            },
+            {
+                "name": "fast_text_embedding",
+                "ftype": "Val",
+                "dtype": {"embeddingType": {"embeddingSize": 256}},
+                "metadata": {},
+            },
+            {
+                "name": "num_words",
+                "ftype": "Val",
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
+            {
+                "name": "num_stop_words",
+                "ftype": "Val",
+                "dtype": {"scalarType": "INT"},
+                "metadata": {},
+            },
+            {
+                "name": "top_10_unique_words",
+                "ftype": "Val",
+                "dtype": {"arrayType": {"of": {"scalarType": "STRING"}}},
+                "metadata": {},
+            },
+            {
+                "name": "creation_timestamp",
+                "ftype": "Timestamp",
+                "dtype": {"scalarType": "TIMESTAMP"},
+                "metadata": {},
+            },
+        ],
+        "pipelines": [
+            {
+                "nodes": [
+                    {"id": "Document", "dataset": "Document"},
+                    {
+                        "id": "ad1a76eb67071a839ac8ec856e90c97c",
+                        "operator": {
+                            "transform": {
+                                "operandNodeId": "Document",
+                                "schema": {
+                                    "num_words": {"scalarType": "INT"},
+                                    "bert_embedding": {
+                                        "embeddingType": {"embeddingSize": 128}
+                                    },
+                                    "num_stop_words": {"scalarType": "INT"},
+                                    "fast_text_embedding": {
+                                        "embeddingType": {"embeddingSize": 256}
+                                    },
+                                    "creation_timestamp": {
+                                        "scalarType": "TIMESTAMP"
+                                    },
+                                    "doc_id": {"scalarType": "INT"},
+                                    "top_10_unique_words": {
+                                        "arrayType": {
+                                            "of": {"scalarType": "STRING"}
+                                        }
+                                    },
+                                },
+                            }
+                        },
+                    },
+                ],
+                "root": "ad1a76eb67071a839ac8ec856e90c97c",
+                "signature": "DocumentContentDataset.ad1a76eb67071a839ac8ec856e90c97c",
+                "inputs": ["Document"],
+            }
+        ],
+        "metadata": {"owner": "aditya@oslash.ai"},
+        "mode": "pandas",
+        "retention": "63072000000000",
+        "onDemand": {},
+    }
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request

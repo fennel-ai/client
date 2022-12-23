@@ -39,6 +39,7 @@ def clean_ds_func_src_code(
                 operator=ds_proto.Operator(
                     transform=ds_proto.Transform(
                         operand_node_id=node.operator.transform.operand_node_id,
+                        schema=node.operator.transform.schema,
                     ),
                 ),
                 id=node.id,

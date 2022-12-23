@@ -21,12 +21,17 @@ def is_subset(subset: List[str], superset: List[str]) -> bool:
     return set(subset).issubset(set(superset))
 
 
+def set_match(a: List[str], b: List[str]) -> bool:
+    return set(a) == set(b)
+
+
 class Executor(Visitor):
     def __init__(self, data):
         super(Executor, self).__init__()
         self.data = data
 
     def execute(self, pipeline: Pipeline) -> Optional[NodeRet]:
+        self.cur_pipeline_name = pipeline.name
         return self.visit(pipeline.node)
 
     def visit(self, obj) -> Optional[NodeRet]:
@@ -45,6 +50,29 @@ class Executor(Visitor):
         if input_ret is None:
             return None
         t_df = obj.func(copy.deepcopy(input_ret.df))
+        # Check if input_ret.df and t_df have the exactly same columns.
+        input_column_names = input_ret.df.columns.values.tolist()
+        output_column_names = t_df.columns.values.tolist()
+        if not set_match(input_column_names, output_column_names):
+            if obj.schema is None:
+                raise ValueError(
+                    f"Schema change detected in transform of pipeline "
+                    f"{self.cur_pipeline_name}. Input columns: "
+                    f"{input_column_names}, output columns: {output_column_names}"
+                    ". Please provide output schema explicitly."
+                )
+            else:
+                output_expected_column_names = obj.schema.keys()
+                if not set_match(
+                    output_expected_column_names, output_column_names
+                ):
+                    raise ValueError(
+                        "Output schema doesnt match in transform of pipeline "
+                        f"{self.cur_pipeline_name}. Got output columns: "
+                        f"{output_column_names}. Expected output columns:"
+                        f" {output_expected_column_names}"
+                    )
+
         sorted_df = t_df.sort_values(input_ret.timestamp_field)
         return NodeRet(
             sorted_df, input_ret.timestamp_field, input_ret.key_fields
