@@ -136,6 +136,17 @@ python-versions = ">=3.7"
 test = ["pytest (>=6)"]
 
 [[package]]
+name = "execnet"
+version = "1.9.0"
+description = "execnet: rapid multi-Python deployment"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[package.extras]
+testing = ["pre-commit"]
+
+[[package]]
 name = "flake8"
 version = "4.0.1"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -441,6 +452,34 @@ pytest = ">=5.0"
 dev = ["pre-commit", "tox", "pytest-asyncio"]
 
 [[package]]
+name = "pytest-timeout"
+version = "2.1.0"
+description = "pytest plugin to abort hanging tests"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+pytest = ">=5.0.0"
+
+[[package]]
+name = "pytest-xdist"
+version = "3.1.0"
+description = "pytest xdist plugin for distributed testing, most importantly across multiple CPUs"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+execnet = ">=1.1"
+pytest = ">=6.2.0"
+
+[package.extras]
+psutil = ["psutil (>=3.0)"]
+setproctitle = ["setproctitle"]
+testing = ["filelock"]
+
+[[package]]
 name = "python-dateutil"
 version = "2.8.2"
 description = "Extensions to the standard Python datetime module"
@@ -544,7 +583,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "a96055a622fbbcbc9e38cc324c7f146b30d6a1e64c6810c8e98ee25c9c4dc818"
+content-hash = "9ca6ba636c7cd3047d65333cfff601b12e3374965896432819a55df729181d32"
 
 [metadata.files]
 arrow = []
@@ -564,6 +603,7 @@ click = [
 cloudpickle = []
 colorama = []
 exceptiongroup = []
+execnet = []
 flake8 = [
     {file = "flake8-4.0.1-py2.py3-none-any.whl", hash = "sha256:479b1304f72536a55948cb40a32dce8bb0ffe3501e26eaf292c7e60eb5e0428d"},
     {file = "flake8-4.0.1.tar.gz", hash = "sha256:806e034dda44114815e23c16ef92f95c91e4c71100ff52813adf7132a6ad870d"},
@@ -630,6 +670,8 @@ pyparsing = [
 pytest = []
 pytest-grpc = []
 pytest-mock = []
+pytest-timeout = []
+pytest-xdist = []
 python-dateutil = [
     {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
     {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},

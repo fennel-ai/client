@@ -319,6 +319,7 @@ class UserBehaviorFeatures:
         df, found = UserEngagementDataset.lookup(  # type: ignore
             ts, user_id=user_id  # type: ignore
         )
+        df.drop("timestamp", axis=1, inplace=True)
         return df
 
 
@@ -338,6 +339,7 @@ class DocumentFeatures:
         )
         df["total_timespent_minutes"] = df["total_timespent"] / 60
         df.drop("total_timespent", axis=1, inplace=True)
+        df.drop("timestamp", axis=1, inplace=True)
         return df
 
 
@@ -356,6 +358,7 @@ class DocumentContentFeatures:
         df, found = DocumentContentDataset.lookup(  # type: ignore
             ts, user_id=doc_id  # type: ignore
         )
+        df.drop("creation_timestamp", axis=1, inplace=True)
         return df
 
 
@@ -452,13 +455,13 @@ class TestSearchExample(unittest.TestCase):
         doc_ids = pd.Series([141234, 143354, 33234, 11111])
         ts = pd.Series([now, now, now, now])
         df, found = Document.lookup(ts, doc_id=doc_ids)
-        assert df.shape == (4, 5)
+        assert df.shape == (4, 6)
         assert found.tolist() == [True, True, True, False]
 
         doc_ids = pd.Series([141234, 143354, 33234, 11111])
         ts = pd.Series([yesterday, yesterday, yesterday, yesterday])
         df, found = Document.lookup(ts, doc_id=doc_ids)
-        assert df.shape == (4, 5)
+        assert df.shape == (4, 6)
         assert found.tolist() == [False, False, True, False]
 
         client.reset()
@@ -475,13 +478,13 @@ class TestSearchExample(unittest.TestCase):
         ts = pd.Series([now, now])
         user_ids = pd.Series([123, 342])
         df, found = UserEngagementDataset.lookup(ts, user_id=user_ids)
-        assert df.shape == (2, 4)
+        assert df.shape == (2, 5)
         assert found.tolist() == [True, True]
 
         ts = pd.Series([now, now, now])
         doc_ids = pd.Series([31234, 143354, 33234])
         df, found = DocumentEngagementDataset.lookup(ts, doc_id=doc_ids)
-        assert df.shape == (3, 5)
+        assert df.shape == (3, 6)
         assert found.tolist() == [True, True, True]
 
         # Reset the client
