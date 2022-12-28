@@ -1,5 +1,4 @@
 import json
-import time
 import unittest
 from datetime import datetime, timedelta
 from typing import Optional
@@ -67,10 +66,8 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        time.sleep(2)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
-
         data = [
             [18232, "Ross", "32", "USA", now],
             [18234, "Monica", 24, "Chile", yesterday],
@@ -78,30 +75,38 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
-        assert (
-            response.json()["error"]
-            == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
-        )
+        if client.is_integration_client():
+            assert (
+                response.json()["error"]
+                == """error: expected Int, but got String("32")"""
+            )
+        else:
+            assert (
+                response.json()["error"]
+                == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
+            )
 
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
         ts = pd.Series([now, now, now])
-        df, found = UserInfoDataset.lookup(ts, user_id=user_ids)
+        df, found = UserInfoDataset.lookup(
+            ts, user_id=user_ids, properties=["name", "age", "country"]
+        )
         assert found.tolist() == [True, True, False]
         assert df["name"].tolist() == ["Ross", "Monica", None]
         assert df["age"].tolist() == [32, 24, None]
         assert df["country"].tolist() == ["USA", "Chile", None]
-
         # Do some lookups with a timestamp
         user_ids = pd.Series([18232, 18234])
         six_hours_ago = now - pd.Timedelta(hours=6)
         ts = pd.Series([six_hours_ago, six_hours_ago])
-        df, found = UserInfoDataset.lookup(ts, user_id=user_ids)
+        df, found = UserInfoDataset.lookup(
+            ts, user_id=user_ids, properties=["name", "age", "country"]
+        )
         assert found.tolist() == [False, True]
         assert df["name"].tolist() == [None, "Monica"]
         assert df["age"].tolist() == [None, 24]
         assert df["country"].tolist() == [None, "Chile"]
-
         tomorrow = now + pd.Timedelta(days=1)
         three_days_from_now = now + pd.Timedelta(days=3)
         data = [
@@ -112,20 +117,25 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK
-
         # Do some lookups
         one_day_from_now = now + pd.Timedelta(days=1)
         three_days_from_now = now + pd.Timedelta(days=3)
         ts = pd.Series([three_days_from_now, one_day_from_now])
-        df, found = UserInfoDataset.lookup(ts, user_id=user_ids)
+        df, found = UserInfoDataset.lookup(
+            ts, user_id=user_ids, properties=["name", "age", "country"]
+        )
         assert found.tolist() == [True, True]
-        assert df.shape == (2, 4)
-        assert df["user_id"].tolist() == [18234, 18232]
-        assert df["age"].tolist() == [24, 33]
-        assert df["country"].tolist() == ["Chile", "Russia"]
+        assert df.shape == (2, 3)
+        assert df["age"].tolist() == [33, 24]
+        assert df["country"].tolist() == ["Russia", "Chile"]
+        assert df["name"].tolist() == ["Ross", "Monica"]
 
         ts = pd.Series([three_days_from_now, three_days_from_now])
-        df, lookup = UserInfoDataset.lookup(ts, user_id=user_ids)
+        df, lookup = UserInfoDataset.lookup(
+            ts,
+            user_id=user_ids,
+            properties=["user_id", "name", "age", "country"],
+        )
         assert lookup.tolist() == [True, True]
         assert df.shape == (2, 4)
         assert df["user_id"].tolist() == [18232, 18234]
