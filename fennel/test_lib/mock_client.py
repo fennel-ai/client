@@ -25,6 +25,7 @@ from fennel.test_lib.executor import Executor
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
 FENNEL_LOOKUP = "__fennel_lookup_exists__"
+FENNEL_ORDER = "__fennel_order__"
 
 
 class FakeResponse(Response):
@@ -87,6 +88,8 @@ def dataset_lookup_impl(
             f"{keys.shape[0]} for dataset {cls_name}."
         )
     keys[timestamp_field] = ts
+    keys[FENNEL_ORDER] = np.arange(len(keys))
+
     # Sort the keys by timestamp
     keys = keys.sort_values(timestamp_field)
     right_df[FENNEL_LOOKUP] = True
@@ -97,6 +100,8 @@ def dataset_lookup_impl(
         by=join_columns,
         direction="backward",
     )
+    df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
+    keys = keys.drop(columns=[FENNEL_ORDER])
     found = df[FENNEL_LOOKUP].apply(lambda x: x is not np.nan)
     # Check if an on_demand is found
     if datasets[cls_name].on_demand:
@@ -143,6 +148,9 @@ class MockClient(Client):
         self.extractors: List[Extractor] = []
 
     # ----------------- Public methods -----------------
+
+    def is_integration_client(self) -> bool:
+        return False
 
     def log(self, dataset_name: str, df: pd.DataFrame):
         if dataset_name not in self.dataset_requests:
@@ -349,12 +357,12 @@ def mock_client(test_func):
         client = MockClient()
         f = test_func(*args, **kwargs, client=client)
         # if (
-        #     "USE_INT_CLIENT" in os.environ
-        #     and int(os.environ.get("USE_INT_CLIENT")) == 1
+        #         "USE_INT_CLIENT" in os.environ
+        #         and int(os.environ.get("USE_INT_CLIENT")) == 1
         # ):
         #     print("Running rust client tests")
         #     client = IntegrationClient()
-        #    f = test_func(*args, **kwargs, client=client)
+        #     f = test_func(*args, **kwargs, client=client)
         return f
 
     return wrapper

@@ -1,10 +1,14 @@
 import json
-from typing import List, Set, Union
+import time
+from typing import List, Set, Tuple, Union
 
 import pandas as pd
+import pyarrow as pa
 from client_lib import RustClient  # type: ignore
+from fennel_dataset import lookup  # type: ignore
 from requests import Response
 
+import fennel.datasets.datasets
 import fennel.gen.services_pb2 as services_pb2
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
@@ -24,16 +28,37 @@ class FakeResponse(Response):
         )
 
 
+def lookup_wrapper(
+    ds_name: str, ts: pd.Series, properties: List[str], keys: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.Series]:
+    # convert to pyarrow datastructures
+    ts_pa = pa.Array.from_pandas(ts)
+    keys_pa = pa.RecordBatch.from_pandas(keys)
+
+    ret_pa, found_pa = lookup(ds_name, ts_pa, properties, keys_pa)
+
+    # convert back to pandas
+    return ret_pa.to_pandas(), found_pa.to_pandas()
+
+
 class IntegrationClient:
     def __init__(self):
         self._client = RustClient(tier_id=1234)
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
+        fennel.datasets.datasets.dataset_lookup = lookup_wrapper
+
+    def is_integration_client(self):
+        return True
 
     def log(self, dataset_name: str, df: pd.DataFrame):
         print("Logging dataset", dataset_name)
         df_json = df.to_json(orient="records")
-        self._client.log(dataset_name, df_json)
+        try:
+            self._client.log(dataset_name, df_json)
+        except Exception as e:
+            return FakeResponse(400, str(e))
+        return FakeResponse(200, "OK")
 
     def sync(
         self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
@@ -44,6 +69,7 @@ class IntegrationClient:
             self.add(featureset)
         sync_request = self._get_sync_request_proto()
         self._client.sync(sync_request.SerializeToString())
+        time.sleep(1.01)
         return FakeResponse(200, "OK")
 
     def extract_features(
