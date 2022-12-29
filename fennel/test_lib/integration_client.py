@@ -34,7 +34,6 @@ def lookup_wrapper(
     # convert to pyarrow datastructures
     ts_pa = pa.Array.from_pandas(ts)
     keys_pa = pa.RecordBatch.from_pandas(keys)
-
     ret_pa, found_pa = lookup(ds_name, ts_pa, properties, keys_pa)
 
     # convert back to pandas
@@ -78,7 +77,40 @@ class IntegrationClient:
         output_feature_list: List[Union[Feature, Featureset]],
         input_df: pd.DataFrame,
     ) -> pd.DataFrame:
-        raise NotImplementedError
+        if input_df.empty:
+            return pd.DataFrame()
+
+        input_feature_names = []
+        for input_feature in input_feature_list:
+            if isinstance(input_feature, Feature):
+                input_feature_names.append(input_feature.fqn)
+            elif isinstance(input_feature, Featureset):
+                input_feature_names.extend(
+                    [f.fqn for f in input_feature.features]
+                )
+
+        # Check if the input dataframe has all the required features
+        if not set(input_feature_names).issubset(set(input_df.columns)):
+            raise Exception(
+                f"Input dataframe does not contain all the required features. "
+                f"Required features: {input_feature_names}. "
+                f"Input dataframe columns: {input_df.columns}"
+            )
+        output_feature_names = []
+        for output_feature in output_feature_list:
+            if isinstance(output_feature, Feature):
+                output_feature_names.append(output_feature.fqn)
+            elif isinstance(output_feature, Featureset):
+                output_feature_names.extend(
+                    [f.fqn for f in output_feature.features]
+                )
+
+        input_df_json = input_df.to_json(orient="records")
+        output_record_batch = self._client.extract_features(
+            input_feature_names, output_feature_names, input_df_json
+        )
+        output_df = output_record_batch[0].to_pandas()
+        return output_df
 
     def add(self, obj: Union[Dataset, Featureset]):
         if isinstance(obj, Dataset):

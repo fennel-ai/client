@@ -1,10 +1,10 @@
 import unittest
 from datetime import datetime
 from typing import Optional
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
+import pytest
 import requests
 
 from fennel.datasets import dataset, field
@@ -52,13 +52,13 @@ class UserInfoSingleExtractor:
         return df[["age", "age_squared", "age_cubed", "is_name_common"]]
 
 
-def get_country_geoid(country: str) -> Tuple[int, int]:
+def get_country_geoid(country: str) -> int:
     if country == "Russia":
-        return 1, 2
+        return 1
     elif country == "Chile":
-        return 3, 4
+        return 3
     else:
-        return 5, 6
+        return 5
 
 
 @meta(owner="test@test.com")
@@ -100,6 +100,7 @@ class UserInfoMultipleExtractor:
 
 
 class TestSimpleExtractor(unittest.TestCase):
+    @pytest.mark.integration
     def test_get_age_and_name_features(self):
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
@@ -117,6 +118,7 @@ class TestSimpleExtractor(unittest.TestCase):
             [True, False],
         )
 
+    @pytest.mark.integration
     @mock_client
     def test_simple_extractor(self, client):
         client.sync(
@@ -148,10 +150,11 @@ class TestSimpleExtractor(unittest.TestCase):
         )
 
         series = UserInfoMultipleExtractor.get_country_geoid(ts, user_ids)
-        assert series.tolist() == [(5, 6), (3, 4)]
+        assert series.tolist() == [5, 3]
 
 
 class TestExtractorDAGResolution(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_dag_resolution(self, client):
         client.sync(
@@ -220,6 +223,7 @@ class DocumentContentDataset:
     timestamp: datetime = field(timestamp=True)
 
 
+@meta(owner="aditya@fennel.ai")
 @featureset
 class DocumentFeatures:
     doc_id: int = feature(id=1)
