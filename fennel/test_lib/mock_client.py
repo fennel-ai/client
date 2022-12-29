@@ -119,9 +119,10 @@ def dataset_lookup_impl(
         df = pd.concat([df, on_demand_df], ignore_index=True, axis=0)
         found = pd.concat([found, on_demand_found])
     # drop the timestamp column
-    df = df.drop(columns=[timestamp_field, FENNEL_LOOKUP])
+    df = df.drop(columns=[FENNEL_LOOKUP])
     if len(properties) > 0:
         df = df[properties]
+    df = df.reset_index(drop=True)
     return df, found
 
 
@@ -357,8 +358,8 @@ def mock_client(test_func):
         client = MockClient()
         f = test_func(*args, **kwargs, client=client)
         # if (
-        #         "USE_INT_CLIENT" in os.environ
-        #         and int(os.environ.get("USE_INT_CLIENT")) == 1
+        #     "USE_INT_CLIENT" in os.environ
+        #     and int(os.environ.get("USE_INT_CLIENT")) == 1
         # ):
         #     print("Running rust client tests")
         #     client = IntegrationClient()

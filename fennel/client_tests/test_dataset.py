@@ -5,6 +5,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+import pytest
 import requests
 
 from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
@@ -31,6 +32,7 @@ class UserInfoDataset:
 
 
 class TestDataset(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_sync_dataset(self, client):
         """Sync the dataset and check if it is synced correctly."""
@@ -38,6 +40,7 @@ class TestDataset(unittest.TestCase):
         response = client.sync(datasets=[UserInfoDataset])
         assert response.status_code == requests.codes.OK, response.json()
 
+    @pytest.mark.integration
     @mock_client
     def test_simple_log(self, client):
         # Sync the dataset
@@ -53,6 +56,7 @@ class TestDataset(unittest.TestCase):
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
+    @pytest.mark.integration
     @mock_client
     def test_log_to_dataset(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
@@ -85,7 +89,6 @@ class TestDataset(unittest.TestCase):
                 response.json()["error"]
                 == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
             )
-
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
         ts = pd.Series([now, now, now])
@@ -142,7 +145,7 @@ class TestDataset(unittest.TestCase):
         assert df["age"].tolist() == [33, 25]
         assert df["country"].tolist() == ["Russia", "Columbia"]
 
-    #
+    @pytest.mark.integration
     @mock_client
     def test_invalid_dataschema(self, client):
         """Check if invalid data raises an error."""
@@ -157,6 +160,7 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         assert len(response.json()["error"]) > 0
 
+    @pytest.mark.integration
     @mock_client
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
@@ -279,7 +283,7 @@ class TestDocumentDataset(unittest.TestCase):
         doc_ids = pd.Series([18232, 1728, 18234, 18934, 19200, 91012])
         ts = pd.Series([now, now, now, now, now, now])
         df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_ids)
-        assert df.shape == (6, 4)
+        assert df.shape == (6, 5)
         assert df["num_words"].tolist() == [10.0, 9.0, 12, 0, 10.0, 20.0]
 
 
@@ -394,7 +398,7 @@ class TestBasicTransform(unittest.TestCase):
             names=names,
         )
         assert found.tolist() == [True, False]
-        assert df.shape == (2, 4)
+        assert df.shape == (2, 5)
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating_sq"].tolist() == [16, None]
         assert df["rating_cube"].tolist() == [64, None]
@@ -406,7 +410,7 @@ class TestBasicTransform(unittest.TestCase):
             ts,
             names=names,
         )
-        assert df.shape == (2, 4)
+        assert df.shape == (2, 5)
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating_sq"].tolist() == [16, 25]
         assert df["rating_cube"].tolist() == [64, 125]
@@ -483,7 +487,7 @@ class TestBasicJoin(unittest.TestCase):
             ts,
             names=names,
         )
-        assert df.shape == (2, 3)
+        assert df.shape == (2, 4)
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [4, 5]
         assert df["revenue_in_millions"].tolist() == [1, 50]
@@ -526,7 +530,7 @@ class TestBasicAggregate(unittest.TestCase):
             ts,
             names=names,
         )
-        assert df.shape == (2, 4)
+        assert df.shape == (2, 5)
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
         assert df["num_ratings"].tolist() == [4, 5]
@@ -580,7 +584,7 @@ class TestE2EPipeline(unittest.TestCase):
             names=names,
         )
 
-        assert df.shape == (2, 3)
+        assert df.shape == (2, 4)
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
         assert df["revenue_in_millions"].tolist() == [1, 50]
@@ -758,7 +762,8 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         df, _ = FraudReportAggregatedDataset.lookup(
             ts, merchant_categ=categories
         )
-        assert df.shape == (2, 4)
+
+        assert df.shape == (2, 5)
         assert df["merchant_categ"].tolist() == ["grocery", "entertainment"]
         assert df["num_categ_fraudulent_transactions"].tolist() == [4, 2]
         assert df["num_categ_fraudulent_transactions_7d"].tolist() == [4, 2]
@@ -841,7 +846,6 @@ class TestAggregateTableDataset(unittest.TestCase):
         ts = pd.Series([now, now])
         names = pd.Series(["mumbai", "delhi"])
         df, _ = UserAgeAggregated.lookup(ts, name=names)
-        assert df.shape == (2, 2)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         assert df["sum_age"].tolist() == [24, 25]
 
@@ -849,7 +853,7 @@ class TestAggregateTableDataset(unittest.TestCase):
         response = client.log("UserAgeNonTable", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         df, _ = UserAgeAggregated.lookup(ts, name=names)
-        assert df.shape == (2, 2)
+        assert df.shape == (2, 3)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         assert df["sum_age"].tolist() == [24, 25]
 
@@ -863,7 +867,7 @@ class TestAggregateTableDataset(unittest.TestCase):
         three_days_from_now = datetime.now() + timedelta(days=3)
         ts = pd.Series([three_days_from_now, three_days_from_now])
         df, _ = UserAgeAggregated.lookup(ts, name=names)
-        assert df.shape == (2, 2)
+        assert df.shape == (2, 3)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         # The value has updated from [24, 25] to [30, 40]
         # since UserAge is keyed on the name hence the aggregate
@@ -878,7 +882,7 @@ class TestAggregateTableDataset(unittest.TestCase):
         five_days_from_now = datetime.now() + timedelta(days=5)
         ts = pd.Series([five_days_from_now, five_days_from_now])
         df, _ = UserAgeAggregated.lookup(ts, name=names)
-        assert df.shape == (2, 2)
+        assert df.shape == (2, 3)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         # The value has NOT updated but increased from
         # [24, 25] to [24+30, 25+40]

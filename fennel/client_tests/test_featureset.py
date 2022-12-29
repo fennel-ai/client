@@ -1,10 +1,10 @@
 import unittest
 from datetime import datetime
 from typing import Optional
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
+import pytest
 import requests
 
 from fennel.datasets import dataset, field
@@ -33,7 +33,6 @@ class UserInfoDataset:
 @featureset
 class UserInfoSingleExtractor:
     userid: int = feature(id=1)
-    # The users gender among male/female/non-binary
     age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
     age_squared: int = feature(id=5)
     age_cubed: int = feature(id=6)
@@ -52,13 +51,13 @@ class UserInfoSingleExtractor:
         return df[["age", "age_squared", "age_cubed", "is_name_common"]]
 
 
-def get_country_geoid(country: str) -> Tuple[int, int]:
+def get_country_geoid(country: str) -> int:
     if country == "Russia":
-        return 1, 2
+        return 1
     elif country == "Chile":
-        return 3, 4
+        return 3
     else:
-        return 5, 6
+        return 5
 
 
 @meta(owner="test@test.com")
@@ -67,7 +66,6 @@ class UserInfoMultipleExtractor:
     userid: int = feature(id=1)
     name: str = feature(id=2)
     country_geoid: int = feature(id=3).meta(wip=True)  # type: ignore
-    # The users gender among male/female/non-binary
     age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
     age_squared: int = feature(id=5)
     age_cubed: int = feature(id=6)
@@ -100,6 +98,7 @@ class UserInfoMultipleExtractor:
 
 
 class TestSimpleExtractor(unittest.TestCase):
+    @pytest.mark.integration
     def test_get_age_and_name_features(self):
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
@@ -117,6 +116,7 @@ class TestSimpleExtractor(unittest.TestCase):
             [True, False],
         )
 
+    @pytest.mark.integration
     @mock_client
     def test_simple_extractor(self, client):
         client.sync(
@@ -148,10 +148,11 @@ class TestSimpleExtractor(unittest.TestCase):
         )
 
         series = UserInfoMultipleExtractor.get_country_geoid(ts, user_ids)
-        assert series.tolist() == [(5, 6), (3, 4)]
+        assert series.tolist() == [5, 3]
 
 
 class TestExtractorDAGResolution(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_dag_resolution(self, client):
         client.sync(
@@ -207,6 +208,82 @@ class TestExtractorDAGResolution(unittest.TestCase):
         self.assertEqual(feature_df.shape, (2, 7))
 
 
+@meta(owner="test@test.com")
+@featureset
+class UserInfoTransformedFeatures:
+    age_power_four: int = feature(id=1)
+    is_name_common: bool = feature(id=2)
+    country_geoid_square: int = feature(id=3)
+
+    @extractor
+    def get_user_transformed_features(
+        ts: Series[datetime],
+        user_features: DataFrame[UserInfoMultipleExtractor],
+    ):
+        age = user_features["UserInfoMultipleExtractor.age"]
+        is_name_common = user_features[
+            "UserInfoMultipleExtractor.is_name_common"
+        ]
+        age_power_four = age**4
+        country_geoid = (
+            user_features["UserInfoMultipleExtractor.country_geoid"] ** 2
+        )
+        return pd.DataFrame(
+            {
+                "age_power_four": age_power_four,
+                "is_name_common": is_name_common,
+                "country_geoid_square": country_geoid,
+            }
+        )
+
+
+class TestExtractorDAGResolutionComplex(unittest.TestCase):
+    @pytest.mark.integration
+    @mock_client
+    def test_dag_resolution_complex(self, client):
+        client.sync(
+            datasets=[UserInfoDataset],
+            featuresets=[
+                UserInfoMultipleExtractor,
+                UserInfoTransformedFeatures,
+            ],
+        )
+        now = datetime.now()
+        data = [
+            [18232, "John", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", now],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("UserInfoDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        feature_df = client.extract_features(
+            output_feature_list=[
+                UserInfoTransformedFeatures,
+            ],
+            input_feature_list=[UserInfoMultipleExtractor.userid],
+            input_df=pd.DataFrame(
+                {"UserInfoMultipleExtractor.userid": [18232, 18234]}
+            ),
+        )
+        self.assertEqual(feature_df.shape, (2, 3))
+        self.assertEqual(
+            feature_df["UserInfoTransformedFeatures.age_power_four"].tolist(),
+            [1048576, 331776],
+        )
+        self.assertEqual(
+            feature_df["UserInfoTransformedFeatures.is_name_common"].tolist(),
+            [True, False],
+        )
+        self.assertEqual(
+            feature_df[
+                "UserInfoTransformedFeatures.country_geoid_square"
+            ].tolist(),
+            [25, 9],
+        )
+
+
 # Embedding tests
 
 
@@ -220,6 +297,7 @@ class DocumentContentDataset:
     timestamp: datetime = field(timestamp=True)
 
 
+@meta(owner="aditya@fennel.ai")
 @featureset
 class DocumentFeatures:
     doc_id: int = feature(id=1)
