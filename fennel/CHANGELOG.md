@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.2.1] - 2022-12-29
+- Enable featuresets as inputs to an extractor 
+
 ## [0.2.0] - 2022-12-27
 - Preserve ordering of key lookup 
 

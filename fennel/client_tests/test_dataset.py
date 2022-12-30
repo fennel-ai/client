@@ -56,6 +56,7 @@ class TestDataset(unittest.TestCase):
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
+    @pytest.mark.integration
     @mock_client
     def test_log_to_dataset(self, client):
         """Log some data to the dataset and check if it is logged correctly."""

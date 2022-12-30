@@ -1,5 +1,7 @@
 from datetime import datetime
 
+import pandas as pd
+
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.graph_algorithms import get_extractor_order
 from fennel.lib.schema import Series, DataFrame
@@ -126,3 +128,41 @@ def test_AgeFeatureExtraction():
         {"UserInfo.get_user_age_and_name", "UserInfo.get_country_geoid"}
     )
     assert extractors_to_run[2] == "UserInfo.get_age_and_name_features"
+
+
+@featureset
+class UserInfoTransformedFeatures:
+    age_power_four: int = feature(id=1)
+    is_name_common: bool = feature(id=2)
+
+    @extractor
+    def get_user_transformed_features(
+        ts: Series[datetime], user_features: DataFrame[UserInfo]
+    ):
+        age = user_features["UserInfo.age"]
+        is_name_common = user_features["UserInfo.is_name_common"]
+        age_power_four = age**4
+        return pd.DataFrame(
+            {
+                "age_power_four": age_power_four,
+                "is_name_common": is_name_common,
+            }
+        )
+
+
+def test_AgeFeatureExtractionComplex():
+    extractors = get_extractor_order(
+        [UserInfo.userid],
+        [UserInfoTransformedFeatures],
+        UserInfo.extractors + UserInfoTransformedFeatures.extractors,
+    )
+    extractors_to_run = [e.name for e in extractors]
+    assert len(extractors_to_run) == 4
+    assert set(extractors_to_run[0:2]) == set(
+        {"UserInfo.get_user_age_and_name", "UserInfo.get_country_geoid"}
+    )
+    assert extractors_to_run[2] == "UserInfo.get_age_and_name_features"
+    assert (
+        extractors_to_run[3]
+        == "UserInfoTransformedFeatures.get_user_transformed_features"
+    )

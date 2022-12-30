@@ -120,7 +120,6 @@ def get_extractor_order(
     to_find = set()
     for f in output_features:
         to_find.update(_get_features(f))
-
     # Find the extractors that need to be run to produce the output features.
     extractor_names: Set[str] = set()
     # Run a BFS from resolved_features to to_find features.
@@ -144,9 +143,15 @@ def get_extractor_order(
             for output in extractor.output_features:
                 resolved_features.add(output)
             for inp in extractor.inputs:
-                fqn = str(inp)
-                if fqn not in resolved_features:
-                    next_to_find.add(fqn)
+                if isinstance(inp, Feature):
+                    fqn = str(inp)
+                    if fqn not in resolved_features:
+                        next_to_find.add(fqn)
+                elif isinstance(inp, Featureset):
+                    for f in inp.features:
+                        fqn = str(f)
+                        if fqn not in resolved_features:
+                            next_to_find.add(fqn)
         to_find = next_to_find
 
     ret: List[Extractor] = []

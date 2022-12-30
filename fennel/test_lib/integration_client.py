@@ -68,7 +68,7 @@ class IntegrationClient:
             self.add(featureset)
         sync_request = self._get_sync_request_proto()
         self._client.sync(sync_request.SerializeToString())
-        time.sleep(1.01)
+        time.sleep(1.1)
         return FakeResponse(200, "OK")
 
     def extract_features(
