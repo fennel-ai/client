@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import partial
@@ -21,6 +22,7 @@ from fennel.lib.graph_algorithms import (
 )
 from fennel.lib.schema import schema_check
 from fennel.test_lib.executor import Executor
+from fennel.test_lib.integration_client import IntegrationClient
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -43,12 +45,12 @@ class FakeResponse(Response):
 
 
 def dataset_lookup_impl(
-    data: Dict[str, pd.DataFrame],
-    datasets: Dict[str, _DatasetInfo],
-    cls_name: str,
-    ts: pd.Series,
-    properties: List[str],
-    keys: pd.DataFrame,
+        data: Dict[str, pd.DataFrame],
+        datasets: Dict[str, _DatasetInfo],
+        cls_name: str,
+        ts: pd.Series,
+        properties: List[str],
+        keys: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     if cls_name not in datasets:
         raise ValueError(
@@ -191,7 +193,8 @@ class MockClient(Client):
         return FakeResponse(200, "OK")
 
     def sync(
-        self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
+            self, datasets: List[Dataset] = [],
+            featuresets: List[Featureset] = []
     ):
 
         for dataset in datasets:
@@ -217,10 +220,10 @@ class MockClient(Client):
         return FakeResponse(200, "OK")
 
     def extract_features(
-        self,
-        input_feature_list: List[Union[Feature, Featureset]],
-        output_feature_list: List[Union[Feature, Featureset]],
-        input_df: pd.DataFrame,
+            self,
+            input_feature_list: List[Union[Feature, Featureset]],
+            output_feature_list: List[Union[Feature, Featureset]],
+            input_df: pd.DataFrame,
     ) -> pd.DataFrame:
         if input_df.empty:
             return pd.DataFrame()
@@ -259,7 +262,7 @@ class MockClient(Client):
     # ----------------- Private methods -----------------
 
     def _prepare_extractor_args(
-        self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]
+            self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]
     ):
         args = []
         for input in extractor.inputs:
@@ -290,10 +293,10 @@ class MockClient(Client):
         return args
 
     def _run_extractors(
-        self,
-        extractors: List[Extractor],
-        input_df: pd.DataFrame,
-        output_feature_list: List[Union[Feature, Featureset]],
+            self,
+            extractors: List[Extractor],
+            input_df: pd.DataFrame,
+            output_feature_list: List[Union[Feature, Featureset]],
     ):
         timestamps = pd.Series([pd.Timestamp.now()] * len(input_df))
         # Map of feature name to the pandas series
@@ -357,13 +360,13 @@ def mock_client(test_func):
     def wrapper(*args, **kwargs):
         client = MockClient()
         f = test_func(*args, **kwargs, client=client)
-        # if (
-        #     "USE_INT_CLIENT" in os.environ
-        #     and int(os.environ.get("USE_INT_CLIENT")) == 1
-        # ):
-        #     print("Running rust client tests")
-        #     client = IntegrationClient()
-        #     f = test_func(*args, **kwargs, client=client)
+        if (
+                "USE_INT_CLIENT" in os.environ
+                and int(os.environ.get("USE_INT_CLIENT")) == 1
+        ):
+            print("Running rust client tests")
+            client = IntegrationClient()
+            f = test_func(*args, **kwargs, client=client)
         return f
 
     return wrapper
