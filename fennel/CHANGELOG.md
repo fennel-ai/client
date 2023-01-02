@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.2.2] - 2023-01-02
+- Added error checks covering cases when extractor depends on incorrect dataset. 
+
 ## [0.2.1] - 2022-12-29
 - Enable featuresets as inputs to an extractor 
 

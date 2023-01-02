@@ -4,7 +4,7 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import partial
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -45,6 +45,7 @@ class FakeResponse(Response):
 def dataset_lookup_impl(
     data: Dict[str, pd.DataFrame],
     datasets: Dict[str, _DatasetInfo],
+    allowed_datasets: Optional[List[str]],
     cls_name: str,
     ts: pd.Series,
     properties: List[str],
@@ -52,7 +53,12 @@ def dataset_lookup_impl(
 ) -> Tuple[pd.DataFrame, pd.Series]:
     if cls_name not in datasets:
         raise ValueError(
-            f"Dataset {cls_name} not found, please ensure it is " f"synced."
+            f"Dataset {cls_name} not found, please ensure it is synced."
+        )
+    if allowed_datasets is not None and cls_name not in allowed_datasets:
+        raise ValueError(
+            f"Extractor is not allowed to access dataset {cls_name}, enabled "
+            f"datasets are {allowed_datasets}"
         )
     right_key_fields = datasets[cls_name].key_fields
     if len(right_key_fields) == 0:
@@ -144,7 +150,7 @@ class MockClient(Client):
         # Map of datasets to pipelines it is an input to
         self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
         fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl, self.data, self.datasets
+            dataset_lookup_impl, self.data, self.datasets, None
         )
         self.extractors: List[Extractor] = []
 
@@ -193,7 +199,7 @@ class MockClient(Client):
     def sync(
         self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
     ):
-
+        self._reset()
         for dataset in datasets:
             self.dataset_requests[
                 dataset._name
@@ -209,6 +215,16 @@ class MockClient(Client):
                     self.listeners[input._name].append(pipeline)
 
         for featureset in featuresets:
+            # Check if the dataset used by the extractor is registered
+            for extractor in featureset.extractors:
+                datasets = [
+                    x.name for x in extractor.get_dataset_dependencies()
+                ]
+                for dataset in datasets:
+                    if dataset not in self.dataset_requests:
+                        raise ValueError(
+                            f"Dataset {dataset} not found in sync call"
+                        )
             self.extractors.extend(featureset.extractors)
 
         if is_extractor_graph_cyclic(self.extractors):
@@ -243,18 +259,6 @@ class MockClient(Client):
             input_feature_list, output_feature_list, self.extractors
         )
         return self._run_extractors(extractors, input_df, output_feature_list)
-
-    def reset(self):
-        self.dataset_requests: Dict[str, CreateDatasetRequest] = {}
-        self.datasets: Dict[str, _DatasetInfo] = {}
-        # Map of dataset name to the dataframe
-        self.data: Dict[str, pd.DataFrame] = {}
-        # Map of datasets to pipelines it is an input to
-        self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
-        fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl, self.data, self.datasets
-        )
-        self.extractors: List[Extractor] = []
 
     # ----------------- Private methods -----------------
 
@@ -304,6 +308,16 @@ class MockClient(Client):
             prepare_args = self._prepare_extractor_args(
                 extractor, intermediate_data
             )
+            allowed_datasets = [
+                x.name for x in extractor.get_dataset_dependencies()
+            ]
+            print(
+                f"Running extractor {extractor} on datasets "
+                f"{allowed_datasets}"
+            )
+            fennel.datasets.datasets.dataset_lookup = partial(
+                dataset_lookup_impl, self.data, self.datasets, allowed_datasets
+            )
             output = extractor.func(timestamps, *prepare_args)
             if isinstance(output, pd.Series):
                 intermediate_data[output.name] = output
@@ -352,14 +366,26 @@ class MockClient(Client):
             timestamp_field
         )
 
+    def _reset(self):
+        self.dataset_requests: Dict[str, CreateDatasetRequest] = {}
+        self.datasets: Dict[str, _DatasetInfo] = {}
+        # Map of dataset name to the dataframe
+        self.data: Dict[str, pd.DataFrame] = {}
+        # Map of datasets to pipelines it is an input to
+        self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
+        fennel.datasets.datasets.dataset_lookup = partial(
+            dataset_lookup_impl, self.data, self.datasets, None
+        )
+        self.extractors: List[Extractor] = []
+
 
 def mock_client(test_func):
     def wrapper(*args, **kwargs):
         client = MockClient()
         f = test_func(*args, **kwargs, client=client)
         # if (
-        #     "USE_INT_CLIENT" in os.environ
-        #     and int(os.environ.get("USE_INT_CLIENT")) == 1
+        #         "USE_INT_CLIENT" in os.environ
+        #         and int(os.environ.get("USE_INT_CLIENT")) == 1
         # ):
         #     print("Running rust client tests")
         #     client = IntegrationClient()

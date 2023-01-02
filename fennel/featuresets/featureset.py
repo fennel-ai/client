@@ -20,6 +20,7 @@ import cloudpickle
 import pandas as pd
 
 import fennel.gen.featureset_pb2 as proto
+from fennel.datasets import Dataset
 from fennel.gen.schema_pb2 import DataType, ScalarType
 from fennel.lib.metadata import (
     meta,
@@ -439,6 +440,12 @@ class Extractor:
 
     def signature(self) -> str:
         pass
+
+    def get_dataset_dependencies(self) -> List[Dataset]:
+        depended_datasets = []
+        if hasattr(self.func, DEPENDS_ON_DATASETS_ATTR):
+            depended_datasets = getattr(self.func, DEPENDS_ON_DATASETS_ATTR)
+        return depended_datasets
 
     def to_proto(self, id_to_feature_name: Dict[int, str]) -> proto.Extractor:
         inputs = []
