@@ -795,6 +795,10 @@ class Dataset(_Node):
     def on_demand(self):
         return self._on_demand
 
+    @property
+    def name(self):
+        return self._name
+
 
 # ---------------------------------------------------------------------
 # Visitor

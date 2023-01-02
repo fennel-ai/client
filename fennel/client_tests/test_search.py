@@ -464,7 +464,7 @@ class TestSearchExample(unittest.TestCase):
         assert df.shape == (4, 6)
         assert found.tolist() == [False, False, True, False]
 
-        client.reset()
+        client._reset()
         client.sync(
             datasets=[
                 UserActivity,
@@ -488,7 +488,7 @@ class TestSearchExample(unittest.TestCase):
         assert found.tolist() == [True, True, True]
 
         # Reset the client
-        client.reset()
+        client._reset()
         client.sync(
             datasets=[
                 NotionDocs,
