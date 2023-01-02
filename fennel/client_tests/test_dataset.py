@@ -310,30 +310,32 @@ class MovieRating:
     sum_ratings: float
     t: datetime
 
-    @staticmethod
+    @classmethod
     @pipeline(RatingActivity)
-    def pipeline_aggregate(activity: Dataset):
+    def pipeline_aggregate(cls, activity: Dataset):
         ds = activity.groupby("movie").aggregate(
             [
-                Count(window=Window("forever"), into_field="num_ratings"),
+                Count(window=Window("forever"), into_field=cls.num_ratings),
                 Sum(
                     window=Window("forever"),
                     of="rating",
-                    into_field="sum_ratings",
+                    into_field=cls.sum_ratings,
                 ),
                 Average(
-                    window=Window("forever"), of="rating", into_field="rating"
+                    window=Window("forever"),
+                    of="rating",
+                    into_field=cls.rating,
                 ),
             ]
         )
         return ds.transform(
-            lambda df: df.rename(columns={"movie": "name"}),
+            lambda df: df.rename(columns={"movie": cls.name}),
             schema={
-                "name": str,
-                "num_ratings": float,
-                "sum_ratings": float,
-                "rating": float,
-                "t": datetime,
+                cls.name: str,
+                cls.num_ratings: float,
+                cls.sum_ratings: float,
+                cls.rating: float,
+                cls.t: datetime,
             },
         )
 
@@ -347,22 +349,21 @@ class MovieRatingTransformed:
     rating_into_5: float
     t: datetime
 
-    @staticmethod
+    @classmethod
     @pipeline(MovieRating)
-    def pipeline_transform(m: Dataset):
+    def pipeline_transform(cls, m: Dataset):
         def t(df: pd.DataFrame) -> pd.DataFrame:
             df["rating_sq"] = df["rating"] * df["rating"]
             df["rating_cube"] = df["rating_sq"] * df["rating"]
             df["rating_into_5"] = df["rating"] * 5
-            return df
+            return df[
+                ["name", "t", "rating_sq", "rating_cube", "rating_into_5"]
+            ]
 
         return m.transform(
             t,
             schema={
                 "name": str,
-                "rating": float,
-                "num_ratings": float,
-                "sum_ratings": float,
                 "t": datetime,
                 "rating_sq": float,
                 "rating_cube": float,
@@ -433,9 +434,9 @@ class MovieStats:
     revenue_in_millions: float
     t: datetime
 
-    @staticmethod
+    @classmethod
     @pipeline(MovieRating, MovieRevenue)
-    def pipeline_join(rating: Dataset, revenue: Dataset):
+    def pipeline_join(cls, rating: Dataset, revenue: Dataset):
         def to_millions(df: pd.DataFrame) -> pd.DataFrame:
             df["revenue_in_millions"] = df["revenue"] / 1000000
             return df
@@ -457,6 +458,7 @@ class MovieStats:
 
 
 class TestBasicJoin(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_basic_join(self, client):
         # # Sync the dataset
@@ -623,9 +625,9 @@ class FraudReportAggregatedDataset:
     num_categ_fraudulent_transactions_7d: int
     sum_categ_fraudulent_transactions_7d: int
 
-    @staticmethod
+    @classmethod
     @pipeline(Activity, MerchantInfo)
-    def create_fraud_dataset(activity: Dataset, merchant_info: Dataset):
+    def create_fraud_dataset(cls, activity: Dataset, merchant_info: Dataset):
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
             df_json = df["metadata"].apply(json.loads).apply(pd.Series)
             df_timestamp = pd.concat([df_json, df["timestamp"]], axis=1)
@@ -650,27 +652,27 @@ class FraudReportAggregatedDataset:
             [
                 Count(
                     window=Window("forever"),
-                    into_field="num_categ_fraudulent_transactions",
+                    into_field=cls.num_categ_fraudulent_transactions,
                 ),
                 Count(
                     window=Window("1w"),
-                    into_field="num_categ_fraudulent_transactions_7d",
+                    into_field=cls.num_categ_fraudulent_transactions_7d,
                 ),
                 Sum(
                     window=Window("1w"),
                     of="transaction_amount",
-                    into_field="sum_categ_fraudulent_transactions_7d",
+                    into_field=cls.sum_categ_fraudulent_transactions_7d,
                 ),
             ]
         )
         return aggregated_ds.transform(
             lambda df: df.rename(columns={"category": "merchant_categ"}),
             schema={
-                "merchant_categ": str,
-                "num_categ_fraudulent_transactions": int,
-                "num_categ_fraudulent_transactions_7d": int,
-                "sum_categ_fraudulent_transactions_7d": int,
-                "timestamp": datetime,
+                cls.merchant_categ: str,
+                cls.num_categ_fraudulent_transactions: int,
+                cls.num_categ_fraudulent_transactions_7d: int,
+                cls.sum_categ_fraudulent_transactions_7d: int,
+                cls.timestamp: datetime,
             },
         )
 
@@ -798,9 +800,9 @@ class UserAgeAggregated:
     timestamp: datetime
     sum_age: int
 
-    @staticmethod
+    @classmethod
     @pipeline(UserAge)
-    def create_user_age_aggregated(user_age: Dataset):
+    def create_user_age_aggregated(cls, user_age: Dataset):
         return user_age.groupby("city").aggregate(
             [
                 Sum(
@@ -811,9 +813,9 @@ class UserAgeAggregated:
             ]
         )
 
-    @staticmethod
+    @classmethod
     @pipeline(UserAgeNonTable)
-    def create_user_age_aggregated2(user_age: Dataset):
+    def create_user_age_aggregated2(cls, user_age: Dataset):
         return user_age.groupby("city").aggregate(
             [
                 Sum(

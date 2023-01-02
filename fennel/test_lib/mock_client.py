@@ -72,14 +72,12 @@ def dataset_lookup_impl(
             f"but {len(keys.columns)} key fields were provided."
         )
     if cls_name not in data:
-        timestamp_col = datasets[cls_name].timestamp_field
         # Create a dataframe with all nulls
         val_cols = datasets[cls_name].fields
         if len(properties) > 0:
             val_cols = [
                 x for x in val_cols if x in properties or x in keys.columns
             ]
-        val_cols.remove(timestamp_col)
         empty_df = pd.DataFrame(
             columns=val_cols, data=[[None] * len(val_cols)] * len(keys)
         )
@@ -124,7 +122,6 @@ def dataset_lookup_impl(
         df = df[found]
         df = pd.concat([df, on_demand_df], ignore_index=True, axis=0)
         found = pd.concat([found, on_demand_found])
-    # drop the timestamp column
     df = df.drop(columns=[FENNEL_LOOKUP])
     if len(properties) > 0:
         df = df[properties]
@@ -218,7 +215,7 @@ class MockClient(Client):
             # Check if the dataset used by the extractor is registered
             for extractor in featureset.extractors:
                 datasets = [
-                    x.name for x in extractor.get_dataset_dependencies()
+                    x._name for x in extractor.get_dataset_dependencies()
                 ]
                 for dataset in datasets:
                     if dataset not in self.dataset_requests:
@@ -309,16 +306,15 @@ class MockClient(Client):
                 extractor, intermediate_data
             )
             allowed_datasets = [
-                x.name for x in extractor.get_dataset_dependencies()
+                x._name for x in extractor.get_dataset_dependencies()
             ]
-            print(
-                f"Running extractor {extractor} on datasets "
-                f"{allowed_datasets}"
-            )
             fennel.datasets.datasets.dataset_lookup = partial(
                 dataset_lookup_impl, self.data, self.datasets, allowed_datasets
             )
             output = extractor.func(timestamps, *prepare_args)
+            fennel.datasets.datasets.dataset_lookup = partial(
+                dataset_lookup_impl, self.data, self.datasets, None
+            )
             if isinstance(output, pd.Series):
                 intermediate_data[output.name] = output
             elif isinstance(output, pd.DataFrame):
