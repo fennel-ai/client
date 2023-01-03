@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple, Union, Optional
 import numpy as np
 import pandas as pd
 from requests import Response
+import hashlib
 
 import fennel.datasets.datasets
 from fennel.client import Client
@@ -21,6 +22,7 @@ from fennel.lib.graph_algorithms import (
 )
 from fennel.lib.schema import schema_check
 from fennel.test_lib.executor import Executor
+from fennel.test_lib.integration_client import IntegrationClient
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -384,7 +386,11 @@ def mock_client(test_func):
         #         and int(os.environ.get("USE_INT_CLIENT")) == 1
         # ):
         #     print("Running rust client tests")
-        #     client = IntegrationClient()
+        #     test_base_hash = "random_unused_string"
+        #     fname = f.__name__
+        #     tier_id = int(hashlib.sha256((tester+fname).encode('utf-8')).hexdigest(), 16) % 10**9
+        #     exists = True
+        #     client = IntegrationClient(tier_id, exists)
         #     f = test_func(*args, **kwargs, client=client)
         return f
 
