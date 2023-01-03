@@ -181,7 +181,7 @@ def test_DatasetWithPull(grpc_stub):
         @staticmethod
         @on_demand(expires_after="7d")
         def pull_from_api(
-            ts: Series[datetime], user_id: Series[int], names: Series[str]
+                ts: Series[datetime], user_id: Series[int], names: Series[str]
         ) -> pd.DataFrame:
             user_list = user_id.tolist()
             names = names.tolist()
@@ -245,7 +245,6 @@ def test_DatasetWithPull(grpc_stub):
     )
 
     with pytest.raises(TypeError) as e:
-
         @meta(owner="test@test.com")
         @dataset(retention="1y")
         class UserCreditScore2:
@@ -256,13 +255,13 @@ def test_DatasetWithPull(grpc_stub):
             @staticmethod
             @on_demand
             def pull_from_api(
-                user_id: pd.Series, names: pd.Series, timestamps: pd.Series
+                    user_id: pd.Series, names: pd.Series, timestamps: pd.Series
             ) -> pd.DataFrame:
                 pass
 
     assert (
-        str(e.value) == "on_demand must be defined with a parameter "
-        "expires_after of type Duration for eg: 30d."
+            str(e.value) == "on_demand must be defined with a parameter "
+                            "expires_after of type Duration for eg: 30d."
     )
 
 
@@ -337,6 +336,10 @@ def test_DatasetWithPipes(grpc_stub):
         "pipelines": [
             {
                 "nodes": [
+                    {
+                        "id": "B",
+                        "dataset": "B",
+                    },
                     {
                         "id": "A",
                         "dataset": "A",
@@ -470,6 +473,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
         "pipelines": [
             {
                 "nodes": [
+                    {"id": "UserInfoDataset", "dataset": "UserInfoDataset"},
                     {"id": "Activity", "dataset": "Activity"},
                     {
                         "id": "227c9aa16517c6c73371a71dfa8aacd2",
@@ -724,8 +728,8 @@ def test_SearchDataset(grpc_stub):
         @classmethod
         @pipeline(Document)
         def content_features(
-            cls,
-            ds: Dataset,
+                cls,
+                ds: Dataset,
         ):
             return ds.transform(
                 get_content_features,

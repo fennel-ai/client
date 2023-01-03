@@ -81,13 +81,13 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                response.json()["error"]
-                == """error: expected Int, but got String("32")"""
+                    response.json()["error"]
+                    == """error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                response.json()["error"]
-                == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
+                    response.json()["error"]
+                    == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
             )
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
@@ -164,7 +164,6 @@ class TestDataset(unittest.TestCase):
     @mock_client
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
-
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -177,8 +176,8 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-            str(e.exception)
-            == "Dataset currently does not support deleted or deprecated fields."
+                str(e.exception)
+                == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
