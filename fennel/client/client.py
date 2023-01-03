@@ -78,8 +78,12 @@ class Client:
     def log(self, dataset_name: str, data: pd.DataFrame):
         """log api uses a REST endpoint to log data to a dataset rather than
         using a gRPC endpoint."""
-        req = {"dataset": dataset_name, "data": data.to_json(orient="records")}
+        req = {
+            "dataset_name": dataset_name,
+            "payload": data.to_json(orient="records"),
+        }
         response = self.http.post(self._url("log"), json=req)
+        print(response)
         check_response(response)
 
     def extract_features(

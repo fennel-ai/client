@@ -6,6 +6,7 @@ import datetime
 import hashlib
 import inspect
 import json
+import requests  # type: ignore
 import textwrap
 from typing import Any
 from typing import cast, Callable, Dict, List, Tuple, Union
@@ -13,17 +14,15 @@ from typing import cast, Callable, Dict, List, Tuple, Union
 import astunparse  # type: ignore
 import cloudpickle
 
-from fennel.gen.status_pb2 import Status
-
 Tags = Union[List[str], Tuple[str, ...], str]
 
 FHASH_ATTR = "__fennel_fhash__"
 
 
-def check_response(response: Status):
+def check_response(response: requests.Response):
     """Check the response from the server and raise an exception if the response is not OK"""
-    if response.code != 200:
-        raise Exception(response.message)
+    if response.status_code != 200:
+        raise Exception(response.reason)
 
 
 def del_namespace(obj, depth):
