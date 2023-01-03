@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.2.3] - 2023-01-02
+- Use dataset field names rather than strings in pipelines. 
+
 ## [0.2.2] - 2023-01-02
 - Added error checks covering cases when extractor depends on incorrect dataset. 
 

@@ -50,9 +50,9 @@ class DomainUsageAggregatedByMemberDataset:
     DOMAIN_USED_COUNT: int
     time: datetime = field(timestamp=True)
 
-    @staticmethod
+    @classmethod
     @pipeline(MemberActivityDataset)
-    def aggregation(ds: Dataset):
+    def aggregation(cls, ds: Dataset):
         return ds
 
 

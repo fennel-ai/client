@@ -58,9 +58,9 @@ def test_DatasetWithPipes(grpc_stub):
             c: int
             d: datetime
 
-            @staticmethod
+            @classmethod
             @pipeline
-            def create_pipeline(self, a: Dataset):
+            def create_pipeline(cls, a: Dataset):
                 return a
 
     assert str(e.value) == "pipeline must take atleast one Dataset."
@@ -76,13 +76,33 @@ def test_DatasetWithPipes(grpc_stub):
 
             @staticmethod
             @pipeline(XYZ)
-            def create_pipeline(self, a: Dataset):
+            def create_pipeline(a: Dataset):
                 return a
 
     assert (
         str(e.value)
-        == "pipeline functions cannot have self as a parameter and are "
-        "like static methods."
+        == "pipeline functions are classmethods and must have cls as the "
+        "first parameter, found a."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @dataset
+        class ABCDataset3:
+            a: int = field(key=True)
+            b: int = field(key=True)
+            c: int
+            d: datetime
+
+            @staticmethod
+            @pipeline(XYZ)
+            def create_pipeline(a: Dataset):
+                return a
+
+    assert (
+        str(e.value)
+        == "pipeline functions are classmethods and must have cls as the "
+        "first parameter, found a."
     )
 
 
@@ -102,9 +122,9 @@ def test_DatasetIncorrectJoin(grpc_stub):
             c: int
             d: datetime
 
-            @staticmethod
+            @classmethod
             @pipeline(XYZ)
-            def create_pipeline(a: Dataset):
+            def create_pipeline(cls, a: Dataset):
                 b = a.transform(lambda x: x)
                 return a.join(b, on=["user_id"])  # type: ignore
 

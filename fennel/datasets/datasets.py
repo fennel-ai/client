@@ -487,21 +487,26 @@ def pipeline(
         if not callable(pipeline_func):
             raise TypeError("pipeline functions must be callable.")
         sig = inspect.signature(pipeline_func)
+        cls_param = False
         for name, param in sig.parameters.items():
-            if param.name == "self":
+            if not cls_param and param.name != "cls":
                 raise TypeError(
-                    "pipeline functions cannot have self as a parameter"
-                    " and are like static methods."
+                    f"pipeline functions are classmethods and must have cls "
+                    f"as the first parameter, found {name}."
                 )
+            elif not cls_param:
+                cls_param = True
+                continue
+
             if param.annotation != Dataset:
                 raise TypeError(f"Parameter {name} is not a Dataset.")
         setattr(
             pipeline_func,
             PIPELINE_ATTR,
             Pipeline(
-                node=pipeline_func(*params),
                 inputs=list(params),
                 func=pipeline_func,
+                cls_param=cls_param,
             ),
         )
         return pipeline_func
@@ -554,14 +559,16 @@ class Pipeline:
     _dataset_name: str
     func: Callable
     name: str
+    # Is self a parameter to this pipeline
+    cls_param: bool
 
-    def __init__(self, node: _Node, inputs: List[Dataset], func: Callable):
-        self.node = node
+    def __init__(
+        self, inputs: List[Dataset], func: Callable, cls_param: bool = False
+    ):
         self.inputs = inputs
         self.func = func  # type: ignore
-        serializer = Serializer()
-        self._root, self._nodes = serializer.serialize(self)
         self.name = func.__name__
+        self.cls_param = cls_param
 
     def signature(self):
         return f"{self._dataset_name}.{self._root}"
@@ -574,6 +581,15 @@ class Pipeline:
             signature=self.signature(),
             metadata=get_metadata_proto(self.func),
         )
+
+    def set_node(self, node: _Node):
+        self.node = node
+        self._serialize()
+
+    def _serialize(self):
+        serializer = Serializer()
+        self._root, self._nodes = serializer.serialize(self)
+        return self._root, self._nodes
 
     def set_dataset_name(self, ds_name: str):
         self._dataset_name = ds_name
@@ -612,6 +628,7 @@ class Dataset(_Node):
         self._name = cls.__name__  # type: ignore
         self.__name__ = self._name
         self._fields = fields
+        self._add_fields_to_class()
         self._set_timestamp_field()
         self._set_key_fields()
         self._retention = retention
@@ -657,6 +674,10 @@ class Dataset(_Node):
         return [f.name for f in self._fields]
 
     # ------------------- Private Methods ----------------------------------
+
+    def _add_fields_to_class(self):
+        for field in self._fields:
+            setattr(self, field.name, field.name)
 
     def _check_owner_exists(self):
         owner = get_meta_attr(self, "owner")
@@ -779,7 +800,12 @@ class Dataset(_Node):
                 continue
             if not hasattr(method, PIPELINE_ATTR):
                 continue
-            pipelines.append(getattr(method, PIPELINE_ATTR))
+            pipeline = getattr(method, PIPELINE_ATTR)
+            if pipeline.cls_param:
+                pipeline.set_node(pipeline.func(self, *pipeline.inputs))
+            else:
+                pipeline.set_node(pipeline.func(*pipeline.inputs))
+            pipelines.append(pipeline)
             pipelines[-1].set_dataset_name(dataset_name)
         return pipelines
 
@@ -794,10 +820,6 @@ class Dataset(_Node):
     @property
     def on_demand(self):
         return self._on_demand
-
-    @property
-    def name(self):
-        return self._name
 
 
 # ---------------------------------------------------------------------

@@ -251,16 +251,16 @@ def test_DatasetWithPipes(grpc_stub):
         c: int
         d: datetime
 
-        @staticmethod
+        @classmethod
         @meta(owner="a@xyz.com", description="top_meta")
         @pipeline(A, B, C)
-        def pipeline2(a: Dataset, b: Dataset, c: Dataset):
+        def pipeline2(cls, a: Dataset, b: Dataset, c: Dataset):
             return c
 
-        @staticmethod
+        @classmethod
         @pipeline(A, B, C)
         @meta(owner="b@xyz.com", description="bottom_meta")
-        def pipeline3(a: Dataset, b: Dataset, c: Dataset):
+        def pipeline3(cls, a: Dataset, b: Dataset, c: Dataset):
             return c
 
     view = InternalTestClient(grpc_stub)

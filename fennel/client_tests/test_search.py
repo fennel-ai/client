@@ -87,9 +87,9 @@ class Document:
     origin: str
     creation_timestamp: datetime
 
-    @staticmethod
+    @classmethod
     @pipeline(NotionDocs)
-    def notion_pipe(ds: Dataset):
+    def notion_pipe(cls, ds: Dataset):
         return ds.transform(
             lambda df: doc_pipeline_helper(df, "Notion"),
             schema={
@@ -102,9 +102,9 @@ class Document:
             },
         )
 
-    @staticmethod
+    @classmethod
     @pipeline(CodaDocs)
-    def coda_pipe(ds: Dataset):
+    def coda_pipe(cls, ds: Dataset):
         return ds.transform(
             lambda df: doc_pipeline_helper(df, "Coda"),
             schema={
@@ -117,9 +117,9 @@ class Document:
             },
         )
 
-    @staticmethod
+    @classmethod
     @pipeline(GoogleDocs)
-    def google_docs_pipe(ds: Dataset):
+    def google_docs_pipe(cls, ds: Dataset):
         return ds.transform(
             lambda df: doc_pipeline_helper(df, "GoogleDocs"),
             schema={
@@ -190,9 +190,10 @@ class DocumentContentDataset:
     top_10_unique_words: List[str]
     creation_timestamp: datetime
 
-    @staticmethod
+    @classmethod
     @pipeline(Document)
     def content_features(
+        cls,
         ds: Dataset,
     ):
         return ds.transform(
@@ -229,12 +230,12 @@ class UserEngagementDataset:
     num_long_views: int
     timestamp: datetime
 
-    @staticmethod
+    @classmethod
     @pipeline(UserActivity)
-    def user_engagement_pipeline(ds: Dataset):
+    def user_engagement_pipeline(cls, ds: Dataset):
         def create_short_click(df: pd.DataFrame) -> pd.DataFrame:
-            df["is_short_click"] = df["view_time"] < 5
-            df["is_long_click"] = df["view_time"] >= 5
+            df["is_short_click"] = df[UserActivity.view_time] < 5
+            df["is_long_click"] = df[UserActivity.view_time] >= 5
             return df
 
         click_type = ds.transform(
@@ -251,16 +252,16 @@ class UserEngagementDataset:
         )
         return click_type.groupby("user_id").aggregate(
             [
-                Count(window=Window("forever"), into_field="num_views"),
+                Count(window=Window("forever"), into_field=cls.num_views),
                 Sum(
                     window=Window("7d"),
                     of="is_short_click",
-                    into_field="num_short_views_7d",
+                    into_field=cls.num_short_views_7d,
                 ),
                 Sum(
                     window=Window("forever"),
                     of="is_long_click",
-                    into_field="num_long_views",
+                    into_field=cls.num_long_views,
                 ),
             ]
         )
@@ -276,18 +277,18 @@ class DocumentEngagementDataset:
     total_timespent: float
     timestamp: datetime
 
-    @staticmethod
+    @classmethod
     @pipeline(UserActivity)
-    def doc_engagement_pipeline(ds: Dataset):
+    def doc_engagement_pipeline(cls, ds: Dataset):
         return ds.groupby("doc_id").aggregate(
             [
-                Count(window=Window("forever"), into_field="num_views"),
-                Count(window=Window("7d"), into_field="num_views_7d"),
-                Count(window=Window("28d"), into_field="num_views_28d"),
+                Count(window=Window("forever"), into_field=cls.num_views),
+                Count(window=Window("7d"), into_field=cls.num_views_7d),
+                Count(window=Window("28d"), into_field=cls.num_views_28d),
                 Sum(
                     window=Window("forever"),
                     of="view_time",
-                    into_field="total_timespent",
+                    into_field=cls.total_timespent,
                 ),
             ]
         )

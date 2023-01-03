@@ -292,14 +292,14 @@ def test_DatasetWithPipes(grpc_stub):
         c: int
         d: datetime
 
-        @staticmethod
+        @classmethod
         @pipeline(A, B)
-        def pipeline1(a: Dataset, b: Dataset):
+        def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(b, left_on=["a1"], right_on=["b1"])
 
-        @staticmethod
+        @classmethod
         @pipeline(A, B, C)
-        def pipeline2(a: Dataset, b: Dataset, c: Dataset):
+        def pipeline2(cls, a: Dataset, b: Dataset, c: Dataset):
             return c
 
     view = InternalTestClient(grpc_stub)
@@ -389,9 +389,9 @@ def test_DatasetWithComplexPipe(grpc_stub):
         num_merchant_fraudulent_transactions: int
         num_merchant_fraudulent_transactions_7d: int
 
-        @staticmethod
+        @classmethod
         @pipeline(Activity, UserInfoDataset)
-        def create_fraud_dataset(activity: Dataset, user_info: Dataset):
+        def create_fraud_dataset(cls, activity: Dataset, user_info: Dataset):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
                 df["metadata_dict"] = (
                     df["metadata"].apply(json.loads).apply(pd.Series)
@@ -426,11 +426,11 @@ def test_DatasetWithComplexPipe(grpc_stub):
                 [
                     Count(
                         window=Window("forever"),
-                        into_field="num_merchant_fraudulent_transactions",
+                        into_field=cls.num_merchant_fraudulent_transactions,
                     ),
                     Count(
                         window=Window("1w"),
-                        into_field="num_merchant_fraudulent_transactions_7d",
+                        into_field=cls.num_merchant_fraudulent_transactions_7d,
                     ),
                 ]
             )
@@ -552,9 +552,9 @@ def test_UnionDatasets(grpc_stub):
         a1: int = field(key=True)
         t: datetime
 
-        @staticmethod
+        @classmethod
         @pipeline(A, B)
-        def pipeline1(a: Dataset, b: Dataset):
+        def pipeline1(cls, a: Dataset, b: Dataset):
             def convert(df: pd.DataFrame) -> pd.DataFrame:
                 df["a1"] = df["b1"]
                 df["a1"] = df["a1"].astype(int) * 2
@@ -563,9 +563,9 @@ def test_UnionDatasets(grpc_stub):
 
             return a + b.transform(convert)
 
-        @staticmethod
+        @classmethod
         @pipeline(A)
-        def pipeline2_diamond(a: Dataset):
+        def pipeline2_diamond(cls, a: Dataset):
             b = a.transform(lambda df: df)
             c = a.transform(lambda df: df * 2)
             d = b + c
@@ -721,9 +721,10 @@ def test_SearchDataset(grpc_stub):
         top_10_unique_words: List[str]
         creation_timestamp: datetime
 
-        @staticmethod
+        @classmethod
         @pipeline(Document)
         def content_features(
+            cls,
             ds: Dataset,
         ):
             return ds.transform(
