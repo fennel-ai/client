@@ -29,7 +29,7 @@ class FakeResponse(Response):
 
 
 def lookup_wrapper(
-        ds_name: str, ts: pd.Series, properties: List[str], keys: pd.DataFrame
+    ds_name: str, ts: pd.Series, properties: List[str], keys: pd.DataFrame
 ) -> Tuple[pd.DataFrame, pd.Series]:
     # convert to pyarrow datastructures
     ts_pa = pa.Array.from_pandas(ts)
@@ -60,8 +60,7 @@ class IntegrationClient:
         return FakeResponse(200, "OK")
 
     def sync(
-            self, datasets: List[Dataset] = [],
-            featuresets: List[Featureset] = []
+        self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
     ):
         for dataset in datasets:
             self.add(dataset)
@@ -73,10 +72,10 @@ class IntegrationClient:
         return FakeResponse(200, "OK")
 
     def extract_features(
-            self,
-            input_feature_list: List[Union[Feature, Featureset]],
-            output_feature_list: List[Union[Feature, Featureset]],
-            input_df: pd.DataFrame,
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_df: pd.DataFrame,
     ) -> pd.DataFrame:
         if input_df.empty:
             return pd.DataFrame()

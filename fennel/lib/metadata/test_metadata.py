@@ -434,7 +434,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info1(
-                ts: Series[datetime], user_id: Series[User.id]
+            ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[userid, home_geoid]:
             pass
 
@@ -442,7 +442,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @meta(owner="b@xyz.com", description="middle_meta")
         @depends_on(UserInfoDataset)
         def get_user_info2(
-                ts: Series[datetime], user_id: Series[User.id]
+            ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[gender, age]:
             pass
 
@@ -450,7 +450,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @depends_on(UserInfoDataset)
         @meta(owner="c@xyz.com", description="bottom_meta")
         def get_user_info3(
-                ts: Series[datetime], user_id: Series[User.id]
+            ts: Series[datetime], user_id: Series[User.id]
         ) -> Series[income]:
             pass
 

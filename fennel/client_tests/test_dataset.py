@@ -10,7 +10,7 @@ import pytest
 import requests
 
 from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
-from fennel.lib.aggregate import Count, Sum
+from fennel.lib.aggregate import Count, Sum, Average
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, Series
 from fennel.lib.window import Window
@@ -82,13 +82,13 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                    response.json()["error"]
-                    == """error: expected Int, but got String("32")"""
+                response.json()["error"]
+                == """error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                    response.json()["error"]
-                    == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
+                response.json()["error"]
+                == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
             )
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
@@ -165,6 +165,7 @@ class TestDataset(unittest.TestCase):
     @mock_client
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
+
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -177,8 +178,8 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-                str(e.exception)
-                == "Dataset currently does not support deleted or deprecated fields."
+            str(e.exception)
+            == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
@@ -310,34 +311,34 @@ class MovieRating:
     sum_ratings: float
     t: datetime
 
-    # @classmethod
-    # @pipeline(RatingActivity)
-    # def pipeline_aggregate(cls, activity: Dataset):
-    #     ds = activity.groupby("movie").aggregate(
-    #         [
-    #             Count(window=Window("forever"), into_field=cls.num_ratings),
-    #             Sum(
-    #                 window=Window("forever"),
-    #                 of="rating",
-    #                 into_field=cls.sum_ratings,
-    #             ),
-    #             Average(
-    #                 window=Window("forever"),
-    #                 of="rating",
-    #                 into_field=cls.rating,
-    #             ),
-    #         ]
-    #     )
-    #     return ds.transform(
-    #         lambda df: df.rename(columns={"movie": cls.name}),
-    #         schema={
-    #             cls.name: str,
-    #             cls.num_ratings: float,
-    #             cls.sum_ratings: float,
-    #             cls.rating: float,
-    #             cls.t: datetime,
-    #         },
-    #     )
+    @classmethod
+    @pipeline(RatingActivity)
+    def pipeline_aggregate(cls, activity: Dataset):
+        ds = activity.groupby("movie").aggregate(
+            [
+                Count(window=Window("forever"), into_field=cls.num_ratings),
+                Sum(
+                    window=Window("forever"),
+                    of="rating",
+                    into_field=cls.sum_ratings,
+                ),
+                Average(
+                    window=Window("forever"),
+                    of="rating",
+                    into_field=cls.rating,
+                ),
+            ]
+        )
+        return ds.transform(
+            lambda df: df.rename(columns={"movie": cls.name}),
+            schema={
+                cls.name: str,
+                cls.num_ratings: float,
+                cls.sum_ratings: float,
+                cls.rating: float,
+                cls.t: datetime,
+            },
+        )
 
 
 @meta(owner="test@test.com")

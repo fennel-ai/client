@@ -114,8 +114,8 @@ class Field:
             return getattr(type_, "__args__", None)
 
         if (
-                _get_origin(self.dtype) is Union
-                and type(None) == _get_args(self.dtype)[1]
+            _get_origin(self.dtype) is Union
+            and type(None) == _get_args(self.dtype)[1]
         ):
             return True
 
@@ -123,10 +123,10 @@ class Field:
 
 
 def get_field(
-        cls: F,
-        annotation_name: str,
-        dtype: Type,
-        field2comment_map: Dict[str, str],
+    cls: F,
+    annotation_name: str,
+    dtype: Type,
+    field2comment_map: Dict[str, str],
 ) -> Field:
     if "." in annotation_name:
         raise ValueError(
@@ -158,8 +158,8 @@ def get_field(
 
 
 def field(
-        key: bool = False,
-        timestamp: bool = False,
+    key: bool = False,
+    timestamp: bool = False,
 ) -> F:
     return cast(
         F,
@@ -194,11 +194,11 @@ class _Node:
         return _GroupBy(self, *args)
 
     def join(
-            self,
-            other: Dataset,
-            on: Optional[List[str]] = None,
-            left_on: Optional[List[str]] = None,
-            right_on: Optional[List[str]] = None,
+        self,
+        other: Dataset,
+        on: Optional[List[str]] = None,
+        left_on: Optional[List[str]] = None,
+        right_on: Optional[List[str]] = None,
     ) -> _Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError("Cannot join with an intermediate dataset")
@@ -245,7 +245,7 @@ class _Filter(_Node):
 
 class _Aggregate(_Node):
     def __init__(
-            self, node: _Node, keys: List[str], aggregates: List[AggregateType]
+        self, node: _Node, keys: List[str], aggregates: List[AggregateType]
     ):
         super().__init__()
         if len(keys) == 0:
@@ -275,12 +275,12 @@ class _GroupBy:
 
 class _Join(_Node):
     def __init__(
-            self,
-            node: _Node,
-            dataset: Dataset,
-            on: Optional[List[str]] = None,
-            left_on: Optional[List[str]] = None,
-            right_on: Optional[List[str]] = None,
+        self,
+        node: _Node,
+        dataset: Dataset,
+        on: Optional[List[str]] = None,
+        left_on: Optional[List[str]] = None,
+        right_on: Optional[List[str]] = None,
     ):
         super().__init__()
         self.node = node
@@ -339,8 +339,8 @@ class _Union(_Node):
 
 @overload
 def dataset(
-        *,
-        retention: Optional[Duration] = DEFAULT_RETENTION,
+    *,
+    retention: Optional[Duration] = DEFAULT_RETENTION,
 ) -> Callable[[Type[F]], Dataset]:
     ...
 
@@ -351,8 +351,8 @@ def dataset(cls: Type[F]) -> Dataset:
 
 
 def dataset(
-        cls: Optional[Type[F]] = None,
-        retention: Optional[Duration] = DEFAULT_RETENTION,
+    cls: Optional[Type[F]] = None,
+    retention: Optional[Duration] = DEFAULT_RETENTION,
 ) -> Union[Callable[[Type[F]], Dataset], Dataset]:
     """
     dataset is a decorator that creates a Dataset class.
@@ -368,13 +368,13 @@ def dataset(
     """
 
     def _create_lookup_function(
-            cls_name: str, key_fields: List[str]
+        cls_name: str, key_fields: List[str]
     ) -> Optional[Callable]:
         if len(key_fields) == 0:
             return None
 
         def lookup(
-                ts: pd.Series, *args, **kwargs
+            ts: pd.Series, *args, **kwargs
         ) -> Tuple[pd.DataFrame, pd.Series]:
 
             if len(args) > 0:
@@ -429,19 +429,19 @@ def dataset(
         ]
         args["ts"] = pd.Series
         params = [
-                     inspect.Parameter(
-                         "ts",
-                         inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                         annotation=pd.Series,
-                     )
-                 ] + params
+            inspect.Parameter(
+                "ts",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=pd.Series,
+            )
+        ] + params
         setattr(lookup, "__signature__", inspect.Signature(params))
         setattr(lookup, "__annotations__", args)
         return lookup
 
     def _create_dataset(
-            dataset_cls: Type[F],
-            retention: Duration,
+        dataset_cls: Type[F],
+        retention: Duration,
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
         fields = [
@@ -475,7 +475,7 @@ def dataset(
 
 
 def pipeline(
-        *params: Any,
+    *params: Any,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     for param in params:
         if callable(param):
@@ -535,10 +535,10 @@ def on_demand(expires_after: Duration):
 
 
 def dataset_lookup(
-        cls_name: str,
-        ts: pd.Series,
-        properties: List[str],
-        keys: pd.DataFrame,
+    cls_name: str,
+    ts: pd.Series,
+    properties: List[str],
+    keys: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     raise NotImplementedError("dataset_lookup should not be called directly.")
 
@@ -563,7 +563,7 @@ class Pipeline:
     cls_param: bool
 
     def __init__(
-            self, inputs: List[Dataset], func: Callable, cls_param: bool = False
+        self, inputs: List[Dataset], func: Callable, cls_param: bool = False
     ):
         self.inputs = inputs
         self.func = func  # type: ignore
@@ -619,11 +619,11 @@ class Dataset(_Node):
     lookup: Callable
 
     def __init__(
-            self,
-            cls: F,
-            fields: List[Field],
-            retention: datetime.timedelta,
-            lookup_fn: Optional[Callable] = None,
+        self,
+        cls: F,
+        fields: List[Field],
+        retention: datetime.timedelta,
+        lookup_fn: Optional[Callable] = None,
     ):
         super().__init__()
         self._name = cls.__name__  # type: ignore
@@ -1006,8 +1006,9 @@ class Serializer(Visitor):
 
         if obj.dataset._name not in self.proto_by_node_id:
             self.proto_by_node_id[obj.dataset._name] = obj.dataset
-            self.nodes.append(proto.Node(id=obj.dataset._name,
-                dataset=obj.dataset._name))
+            self.nodes.append(
+                proto.Node(id=obj.dataset._name, dataset=obj.dataset._name)
+            )
 
         return proto.Node(
             operator=proto.Operator(

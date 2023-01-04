@@ -31,7 +31,7 @@ def clean_fs_func_src_code(featureset_req: fs_proto.CreateFeaturesetRequest):
 
 
 def clean_ds_func_src_code(
-        dataset_req: ds_proto.CreateDatasetRequest,
+    dataset_req: ds_proto.CreateDatasetRequest,
 ) -> ds_proto.CreateDatasetRequest:
     def cleanup_node(node):
         if node.HasField("operator") and node.operator.HasField("transform"):
