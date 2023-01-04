@@ -41,8 +41,10 @@ def lookup_wrapper(
 
 
 class IntegrationClient:
-    def __init__(self, tier_id, exists):
-        self._client = RustClient(tier_id=tier_id, exists=exists)
+    def __init__(self, tier_id, db_exists, is_airbyte_test):
+        self._client = RustClient(
+            tier_id=tier_id, db_exists=db_exists, airbyte=is_airbyte_test
+        )
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
         fennel.datasets.datasets.dataset_lookup = lookup_wrapper
