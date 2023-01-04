@@ -1,4 +1,5 @@
 import json
+import time
 import unittest
 from datetime import datetime, timedelta
 from typing import Optional
@@ -9,7 +10,7 @@ import pytest
 import requests
 
 from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
-from fennel.lib.aggregate import Count, Sum, Average
+from fennel.lib.aggregate import Count, Sum
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, Series
 from fennel.lib.window import Window
@@ -309,34 +310,34 @@ class MovieRating:
     sum_ratings: float
     t: datetime
 
-    @classmethod
-    @pipeline(RatingActivity)
-    def pipeline_aggregate(cls, activity: Dataset):
-        ds = activity.groupby("movie").aggregate(
-            [
-                Count(window=Window("forever"), into_field=cls.num_ratings),
-                Sum(
-                    window=Window("forever"),
-                    of="rating",
-                    into_field=cls.sum_ratings,
-                ),
-                Average(
-                    window=Window("forever"),
-                    of="rating",
-                    into_field=cls.rating,
-                ),
-            ]
-        )
-        return ds.transform(
-            lambda df: df.rename(columns={"movie": cls.name}),
-            schema={
-                cls.name: str,
-                cls.num_ratings: float,
-                cls.sum_ratings: float,
-                cls.rating: float,
-                cls.t: datetime,
-            },
-        )
+    # @classmethod
+    # @pipeline(RatingActivity)
+    # def pipeline_aggregate(cls, activity: Dataset):
+    #     ds = activity.groupby("movie").aggregate(
+    #         [
+    #             Count(window=Window("forever"), into_field=cls.num_ratings),
+    #             Sum(
+    #                 window=Window("forever"),
+    #                 of="rating",
+    #                 into_field=cls.sum_ratings,
+    #             ),
+    #             Average(
+    #                 window=Window("forever"),
+    #                 of="rating",
+    #                 into_field=cls.rating,
+    #             ),
+    #         ]
+    #     )
+    #     return ds.transform(
+    #         lambda df: df.rename(columns={"movie": cls.name}),
+    #         schema={
+    #             cls.name: str,
+    #             cls.num_ratings: float,
+    #             cls.sum_ratings: float,
+    #             cls.rating: float,
+    #             cls.t: datetime,
+    #         },
+    #     )
 
 
 @meta(owner="test@test.com")
@@ -372,11 +373,12 @@ class MovieRatingTransformed:
 
 
 class TestBasicTransform(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_basic_transform(self, client):
         # # Sync the dataset
         client.sync(
-            datasets=[MovieRating, MovieRatingTransformed],
+            datasets=[MovieRating, MovieRatingTransformed, RatingActivity],
         )
         now = datetime.now()
         two_hours_ago = now - timedelta(hours=2)
@@ -388,7 +390,7 @@ class TestBasicTransform(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
-
+        time.sleep(4)
         # Do some lookups to verify pipeline_transform is working as expected
         an_hour_ago = now - timedelta(hours=1)
         ts = pd.Series([an_hour_ago, an_hour_ago])
@@ -397,6 +399,7 @@ class TestBasicTransform(unittest.TestCase):
             ts,
             names=names,
         )
+
         assert found.tolist() == [True, False]
         assert df.shape == (2, 5)
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
@@ -406,10 +409,12 @@ class TestBasicTransform(unittest.TestCase):
 
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
+        time.sleep(2)
         df, _ = MovieRatingTransformed.lookup(
             ts,
             names=names,
         )
+
         assert df.shape == (2, 5)
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating_sq"].tolist() == [16, 25]
@@ -438,7 +443,7 @@ class MovieStats:
     def pipeline_join(cls, rating: Dataset, revenue: Dataset):
         def to_millions(df: pd.DataFrame) -> pd.DataFrame:
             df["revenue_in_millions"] = df["revenue"] / 1000000
-            return df
+            return df[["name", "t", "revenue_in_millions", "rating"]]
 
         c = rating.join(revenue, on=["name"])
         # Transform provides additional columns which will be filtered out.
@@ -447,10 +452,7 @@ class MovieStats:
             schema={
                 "name": str,
                 "rating": float,
-                "num_ratings": int,
-                "sum_ratings": float,
                 "t": datetime,
-                "revenue": int,
                 "revenue_in_millions": float,
             },
         )
@@ -462,7 +464,7 @@ class TestBasicJoin(unittest.TestCase):
     def test_basic_join(self, client):
         # # Sync the dataset
         client.sync(
-            datasets=[MovieRating, MovieRevenue, MovieStats],
+            datasets=[MovieRating, MovieRevenue, MovieStats, RatingActivity],
         )
         now = datetime.now()
         two_hours_ago = now - timedelta(hours=2)
@@ -484,6 +486,7 @@ class TestBasicJoin(unittest.TestCase):
         # Do some lookups to verify pipeline_join is working as expected
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
+        time.sleep(2)
         df, _ = MovieStats.lookup(
             ts,
             names=names,

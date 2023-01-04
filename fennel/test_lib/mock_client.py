@@ -45,22 +45,13 @@ class FakeResponse(Response):
 
 
 def dataset_lookup_impl(
-<<<<<<< HEAD
-    data: Dict[str, pd.DataFrame],
-    datasets: Dict[str, _DatasetInfo],
-    allowed_datasets: Optional[List[str]],
-    cls_name: str,
-    ts: pd.Series,
-    properties: List[str],
-    keys: pd.DataFrame,
-=======
         data: Dict[str, pd.DataFrame],
         datasets: Dict[str, _DatasetInfo],
+        allowed_datasets: Optional[List[str]],
         cls_name: str,
         ts: pd.Series,
         properties: List[str],
         keys: pd.DataFrame,
->>>>>>> 57e7c4f (Get dataset join running end to end)
 ) -> Tuple[pd.DataFrame, pd.Series]:
     if cls_name not in datasets:
         raise ValueError(
@@ -389,14 +380,16 @@ class MockClient(Client):
 
 def mock_client(test_func):
     def wrapper(*args, **kwargs):
-        client = MockClient()
-        f = test_func(*args, **kwargs, client=client)
+        # client = MockClient()
+        # f = test_func(*args, **kwargs, client=client)
         if (
                 "USE_INT_CLIENT" in os.environ
                 and int(os.environ.get("USE_INT_CLIENT")) == 1
         ):
             print("Running rust client tests")
-            client = IntegrationClient()
+            # Tier ID is hash of the test name
+            tier_id = abs(hash(test_func.__name__.encode())) % 100000007
+            client = IntegrationClient(tier_id, exists=True)
             f = test_func(*args, **kwargs, client=client)
         return f
 

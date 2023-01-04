@@ -563,7 +563,7 @@ class Pipeline:
     cls_param: bool
 
     def __init__(
-        self, inputs: List[Dataset], func: Callable, cls_param: bool = False
+            self, inputs: List[Dataset], func: Callable, cls_param: bool = False
     ):
         self.inputs = inputs
         self.func = func  # type: ignore

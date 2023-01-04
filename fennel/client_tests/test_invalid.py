@@ -8,7 +8,6 @@ from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import featureset, extractor, feature, depends_on
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Series, DataFrame
-
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -65,7 +64,7 @@ class DomainFeatures:
     @extractor
     @depends_on(DomainUsageAggregatedByMemberDataset)
     def get_domain_feature(
-        ts: Series[datetime], domain: Series[Query.domain]
+            ts: Series[datetime], domain: Series[Query.domain]
     ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
         df, found = DomainUsageAggregatedByMemberDataset.lookup(  # type: ignore
             ts, domain=domain
@@ -80,8 +79,8 @@ class TestInvalidSync(unittest.TestCase):
             client.sync(featuresets=[DomainFeatures])
 
         assert (
-            str(e.value) == "Dataset DomainUsageAggregatedByMemberDataset "
-            "not found in sync call"
+                str(e.value) == "Dataset DomainUsageAggregatedByMemberDataset "
+                                "not found in sync call"
         )
 
 
@@ -94,7 +93,7 @@ class DomainFeatures2:
     @extractor
     @depends_on(MemberDataset)
     def get_domain_feature(
-        ts: Series[datetime], domain: Series[Query.domain]
+            ts: Series[datetime], domain: Series[Query.domain]
     ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
         df, found = DomainUsageAggregatedByMemberDataset.lookup(  # type: ignore
             ts, domain=domain
@@ -103,7 +102,6 @@ class DomainFeatures2:
 
 
 class TestInvalidExtractorDependsOn(unittest.TestCase):
-    @pytest.mark.integration
     @mock_client
     def test_invalid_extractor(self, client):
         with pytest.raises(Exception) as e:
@@ -122,8 +120,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
 
         assert (
-            "Input dataframe does not contain all the required features"
-            in str(e.value)
+                "Input dataframe does not contain all the required features"
+                in str(e.value)
         )
 
         with pytest.raises(Exception) as e:
@@ -142,8 +140,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
 
         assert (
-            "Dataset DomainUsageAggregatedByMemberDataset not found, please ensure it is synced."
-            == str(e.value)
+                "Dataset DomainUsageAggregatedByMemberDataset not found, please ensure it is synced."
+                == str(e.value)
         )
 
         with pytest.raises(Exception) as e:
@@ -165,6 +163,6 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
 
         assert (
-            "Extractor is not allowed to access dataset DomainUsageAggregatedByMemberDataset, enabled datasets are ['MemberDataset']"
-            == str(e.value)
+                "Extractor is not allowed to access dataset DomainUsageAggregatedByMemberDataset, enabled datasets are ['MemberDataset']"
+                == str(e.value)
         )
