@@ -65,6 +65,7 @@ def clean_ds_func_src_code(
                 nodes=[cleanup_node(n) for n in dataset_req.pipelines[j].nodes],
                 signature=dataset_req.pipelines[j].signature,
                 inputs=dataset_req.pipelines[j].inputs,
+                name=dataset_req.pipelines[j].name,
             )
         )
     return ds_proto.CreateDatasetRequest(

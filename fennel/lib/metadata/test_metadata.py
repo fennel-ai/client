@@ -307,6 +307,7 @@ def test_DatasetWithPipes(grpc_stub):
                             }
                         ],
                         "signature": "ABCDataset.C",
+                        "name": "pipeline2",
                         "metadata": {
                             "owner": "a@xyz.com",
                             "description": "top_meta",
@@ -322,6 +323,7 @@ def test_DatasetWithPipes(grpc_stub):
                             }
                         ],
                         "signature": "ABCDataset.C",
+                        "name": "pipeline3",
                         "metadata": {
                             "owner": "b@xyz.com",
                             "description": "bottom_meta",

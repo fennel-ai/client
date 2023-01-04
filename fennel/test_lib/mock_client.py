@@ -380,11 +380,13 @@ def mock_client(test_func):
         client = MockClient()
         f = test_func(*args, **kwargs, client=client)
         # if (
-        #         "USE_INT_CLIENT" in os.environ
-        #         and int(os.environ.get("USE_INT_CLIENT")) == 1
+        #     "USE_INT_CLIENT" in os.environ
+        #     and int(os.environ.get("USE_INT_CLIENT")) == 1
         # ):
         #     print("Running rust client tests")
-        #     client = IntegrationClient()
+        #     # Tier ID is hash of the test name
+        #     tier_id = abs(hash(test_func.__name__.encode())) % 100000007
+        #     client = IntegrationClient(tier_id, exists=True)
         #     f = test_func(*args, **kwargs, client=client)
         return f
 

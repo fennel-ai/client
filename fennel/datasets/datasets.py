@@ -580,6 +580,7 @@ class Pipeline:
             inputs=[i._name for i in self.inputs],
             signature=self.signature(),
             metadata=get_metadata_proto(self.func),
+            name=self.name,
         )
 
     def set_node(self, node: _Node):
@@ -1002,6 +1003,12 @@ class Serializer(Visitor):
             on = {k: k for k in obj.on}
         else:
             on = {l_on: r_on for l_on, r_on in zip(obj.left_on, obj.right_on)}
+
+        if obj.dataset._name not in self.proto_by_node_id:
+            self.proto_by_node_id[obj.dataset._name] = obj.dataset
+            self.nodes.append(
+                proto.Node(id=obj.dataset._name, dataset=obj.dataset._name)
+            )
 
         return proto.Node(
             operator=proto.Operator(

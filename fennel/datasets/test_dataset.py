@@ -338,6 +338,10 @@ def test_DatasetWithPipes(grpc_stub):
             {
                 "nodes": [
                     {
+                        "id": "B",
+                        "dataset": "B",
+                    },
+                    {
                         "id": "A",
                         "dataset": "A",
                     },
@@ -353,6 +357,7 @@ def test_DatasetWithPipes(grpc_stub):
                     },
                 ],
                 "root": "816d3f87d7dc94cfb4c9d8513e0d9234",
+                "name": "pipeline1",
                 "signature": "ABCDataset.816d3f87d7dc94cfb4c9d8513e0d9234",
                 "inputs": ["A", "B"],
             },
@@ -365,6 +370,7 @@ def test_DatasetWithPipes(grpc_stub):
                     }
                 ],
                 "signature": "ABCDataset.C",
+                "name": "pipeline2",
                 "inputs": ["A", "B", "C"],
             },
         ],
@@ -470,6 +476,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
         "pipelines": [
             {
                 "nodes": [
+                    {"id": "UserInfoDataset", "dataset": "UserInfoDataset"},
                     {"id": "Activity", "dataset": "Activity"},
                     {
                         "id": "227c9aa16517c6c73371a71dfa8aacd2",
@@ -518,6 +525,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
                     },
                 ],
                 "root": "04b74f251fd2ca9c97c01eb7d48a2dd7",
+                "name": "create_fraud_dataset",
                 "signature": "FraudReportAggregatedDataset.04b74f251fd2ca9c97c01eb7d48a2dd7",
                 "inputs": ["Activity", "UserInfoDataset"],
             }
@@ -621,6 +629,7 @@ def test_UnionDatasets(grpc_stub):
                     },
                 ],
                 "root": "8fc1b61dbdc39e3704650442e8c61617",
+                "name": "pipeline1",
                 "signature": "ABCDataset.8fc1b61dbdc39e3704650442e8c61617",
                 "inputs": ["A", "B"],
             },
@@ -678,6 +687,7 @@ def test_UnionDatasets(grpc_stub):
                     },
                 ],
                 "root": "281385065b983e434ee8dd13c934cc08",
+                "name": "pipeline2_diamond",
                 "signature": "ABCDataset.281385065b983e434ee8dd13c934cc08",
                 "inputs": ["A"],
             },
@@ -819,6 +829,7 @@ def test_SearchDataset(grpc_stub):
                     },
                 ],
                 "root": "ad1a76eb67071a839ac8ec856e90c97c",
+                "name": "content_features",
                 "signature": "DocumentContentDataset.ad1a76eb67071a839ac8ec856e90c97c",
                 "inputs": ["Document"],
             }

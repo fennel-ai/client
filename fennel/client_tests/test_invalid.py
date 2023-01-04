@@ -103,7 +103,6 @@ class DomainFeatures2:
 
 
 class TestInvalidExtractorDependsOn(unittest.TestCase):
-    @pytest.mark.integration
     @mock_client
     def test_invalid_extractor(self, client):
         with pytest.raises(Exception) as e:
