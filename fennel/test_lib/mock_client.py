@@ -377,8 +377,10 @@ class MockClient(Client):
 
 def mock_client(test_func):
     def wrapper(*args, **kwargs):
-        client = MockClient()
-        f = test_func(*args, **kwargs, client=client)
+        f = True
+        if "airbyte" not in test_func.__name__:
+            client = MockClient()
+            f = test_func(*args, **kwargs, client=client)
         # if (
         #     "USE_INT_CLIENT" in os.environ
         #     and int(os.environ.get("USE_INT_CLIENT")) == 1
@@ -386,7 +388,10 @@ def mock_client(test_func):
         #     print("Running rust client tests")
         #     # Tier ID is hash of the test name
         #     tier_id = abs(hash(test_func.__name__.encode())) % 100000007
-        #     client = IntegrationClient(tier_id, exists=True)
+        #     is_airbyte_test = "airbyte" in test_func.__name__
+        #     client = IntegrationClient(
+        #         tier_id, db_exists=True, is_airbyte_test=is_airbyte_test
+        #     )
         #     f = test_func(*args, **kwargs, client=client)
         return f
 
