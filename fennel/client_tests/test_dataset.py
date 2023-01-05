@@ -391,7 +391,8 @@ class TestBasicTransform(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
-        time.sleep(4)
+        if client.is_integration_client():
+            time.sleep(2)
         # Do some lookups to verify pipeline_transform is working as expected
         an_hour_ago = now - timedelta(hours=1)
         ts = pd.Series([an_hour_ago, an_hour_ago])
@@ -410,7 +411,8 @@ class TestBasicTransform(unittest.TestCase):
 
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
-        time.sleep(2)
+        if client.is_integration_client():
+            time.sleep(2)
         df, _ = MovieRatingTransformed.lookup(
             ts,
             names=names,
@@ -444,17 +446,18 @@ class MovieStats:
     def pipeline_join(cls, rating: Dataset, revenue: Dataset):
         def to_millions(df: pd.DataFrame) -> pd.DataFrame:
             df["revenue_in_millions"] = df["revenue"] / 1000000
+            df["revenue_in_millions"].fillna(-1, inplace=True)
             return df[["name", "t", "revenue_in_millions", "rating"]]
 
-        c = rating.join(revenue, on=["name"])
+        c = rating.join(revenue, on=[cls.name])
         # Transform provides additional columns which will be filtered out.
         return c.transform(
             to_millions,
             schema={
-                "name": str,
-                "rating": float,
-                "t": datetime,
-                "revenue_in_millions": float,
+                cls.name: str,
+                cls.rating: float,
+                cls.t: datetime,
+                cls.revenue_in_millions: float,
             },
         )
 
@@ -468,9 +471,9 @@ class TestBasicJoin(unittest.TestCase):
             datasets=[MovieRating, MovieRevenue, MovieStats, RatingActivity],
         )
         now = datetime.now()
-        two_hours_ago = now - timedelta(hours=2)
+        one_hour_ago = now - timedelta(hours=1)
         data = [
-            ["Jumanji", 4, 343, 789, two_hours_ago],
+            ["Jumanji", 4, 343, 789, one_hour_ago],
             ["Titanic", 5, 729, 1232, now],
         ]
         columns = ["name", "rating", "num_ratings", "sum_ratings", "t"]
@@ -478,7 +481,8 @@ class TestBasicJoin(unittest.TestCase):
         response = client.log("MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        data = [["Jumanji", 1000000, two_hours_ago], ["Titanic", 50000000, now]]
+        two_hours_ago = now - timedelta(hours=2)
+        data = [["Jumanji", 2000000, two_hours_ago], ["Titanic", 50000000, now]]
         columns = ["name", "revenue", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRevenue", df)
@@ -487,7 +491,8 @@ class TestBasicJoin(unittest.TestCase):
         # Do some lookups to verify pipeline_join is working as expected
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
-        time.sleep(2)
+        if client.is_integration_client():
+            time.sleep(2)
         df, _ = MovieStats.lookup(
             ts,
             names=names,
@@ -495,7 +500,24 @@ class TestBasicJoin(unittest.TestCase):
         assert df.shape == (2, 4)
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [4, 5]
-        assert df["revenue_in_millions"].tolist() == [1, 50]
+        assert df["revenue_in_millions"].tolist() == [2, 50]
+
+        # Do some lookup at various timestamps in the past
+        ts = pd.Series([two_hours_ago, one_hour_ago, one_hour_ago, now])
+        names = pd.Series(["Jumanji", "Jumanji", "Titanic", "Titanic"])
+        df, _ = MovieStats.lookup(
+            ts,
+            names=names,
+        )
+        assert df.shape == (4, 4)
+        assert df["name"].tolist() == [
+            "Jumanji",
+            "Jumanji",
+            "Titanic",
+            "Titanic",
+        ]
+        assert df["rating"].tolist() == [None, 4, None, 5]
+        assert df["revenue_in_millions"].tolist() == [None, 2, None, 50]
 
 
 class TestBasicAggregate(unittest.TestCase):
@@ -593,6 +615,79 @@ class TestE2EPipeline(unittest.TestCase):
         assert df["name"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
         assert df["revenue_in_millions"].tolist() == [1, 50]
+
+
+@meta(owner="test@test.com")
+@dataset
+class PositiveRatingActivity:
+    userid: int
+    rating: float
+    movie: str = field(key=True)
+    t: datetime
+
+    @classmethod
+    @pipeline(RatingActivity)
+    def filter_positive_ratings(cls, rating: Dataset):
+        return rating.filter(lambda df: df[df["rating"] >= 3.5])
+
+
+class TestBasicFilter(unittest.TestCase):
+    @pytest.mark.integration
+    @mock_client
+    def test_basic_filter(self, client):
+        # # Sync the dataset
+        client.sync(
+            datasets=[PositiveRatingActivity, RatingActivity],
+        )
+        now = datetime.now()
+        one_hour_ago = now - timedelta(hours=1)
+        two_hours_ago = now - timedelta(hours=2)
+        three_hours_ago = now - timedelta(hours=3)
+        four_hours_ago = now - timedelta(hours=4)
+        five_hours_ago = now - timedelta(hours=5)
+
+        data = [
+            [18231, 4.5, "Jumanji", five_hours_ago],
+            [18231, 3, "Jumanji", four_hours_ago],
+            [18231, 3.5, "Jumanji", three_hours_ago],
+            [18231, 5, "Jumanji", five_hours_ago],
+            [18231, 4, "Titanic", three_hours_ago],
+            [18231, 3, "Titanic", two_hours_ago],
+            [18231, 5, "Titanic", one_hour_ago],
+            [18231, 4.5, "Titanic", now],
+            [18231, 3, "Titanic", two_hours_ago],
+            [18231, 2, "RaOne", one_hour_ago],
+            [18231, 3, "RaOne", now],
+            [18231, 1, "RaOne", two_hours_ago],
+        ]
+        columns = ["userid", "rating", "movie", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("RatingActivity", df)
+        assert response.status_code == requests.codes.OK
+        if client.is_integration_client():
+            time.sleep(3)
+
+        # Do some lookups to verify pipeline_aggregate is working as expected
+        ts = pd.Series([now, now, now])
+        names = pd.Series(["Jumanji", "Titanic", "RaOne"])
+        df, _ = PositiveRatingActivity.lookup(
+            ts,
+            names=names,
+        )
+        assert df.shape == (3, 4)
+        assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
+        assert df["rating"].tolist() == [3.5, 4.5, None]
+        assert df["userid"].tolist() == [18231, 18231, None]
+
+        ts = pd.Series([two_hours_ago, two_hours_ago, two_hours_ago])
+        df, _ = PositiveRatingActivity.lookup(
+            ts,
+            names=names,
+        )
+        assert df.shape == (3, 4)
+        assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
+        assert df["rating"].tolist() == [3.5, 4.0, None]
+        assert df["userid"].tolist() == [18231, 18231, None]
 
 
 ################################################################################
