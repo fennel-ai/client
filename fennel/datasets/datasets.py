@@ -676,7 +676,7 @@ class Dataset(_Node):
 
     # ------------------- Private Methods ----------------------------------
 
-    def _add_fields_to_class(self):
+    def _add_fields_to_class(self) -> None:
         for field in self._fields:
             setattr(self, field.name, field.name)
 
