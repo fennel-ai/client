@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import partial
@@ -21,6 +22,7 @@ from fennel.lib.graph_algorithms import (
 )
 from fennel.lib.schema import schema_check
 from fennel.test_lib.executor import Executor
+from fennel.test_lib.integration_client import IntegrationClient
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -381,18 +383,18 @@ def mock_client(test_func):
         if "airbyte" not in test_func.__name__:
             client = MockClient()
             f = test_func(*args, **kwargs, client=client)
-        # if (
-        #     "USE_INT_CLIENT" in os.environ
-        #     and int(os.environ.get("USE_INT_CLIENT")) == 1
-        # ):
-        #     print("Running rust client tests")
-        #     # Tier ID is hash of the test name
-        #     tier_id = abs(hash(test_func.__name__.encode())) % 100000007
-        #     is_airbyte_test = "airbyte" in test_func.__name__
-        #     client = IntegrationClient(
-        #         tier_id, db_exists=True, is_airbyte_test=is_airbyte_test
-        #     )
-        #     f = test_func(*args, **kwargs, client=client)
+        if (
+            "USE_INT_CLIENT" in os.environ
+            and int(os.environ.get("USE_INT_CLIENT")) == 1
+        ):
+            print("Running rust client tests")
+            # Tier ID is hash of the test name
+            tier_id = abs(hash(test_func.__name__.encode())) % 100000007
+            is_airbyte_test = "airbyte" in test_func.__name__
+            client = IntegrationClient(
+                tier_id, db_exists=True, is_airbyte_test=is_airbyte_test
+            )
+            f = test_func(*args, **kwargs, client=client)
         return f
 
     return wrapper
