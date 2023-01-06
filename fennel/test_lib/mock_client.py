@@ -393,7 +393,7 @@ def mock_client(test_func):
             tier_id = (
                 int(
                     hashlib.sha256(
-                        (test_func.__name__).encode('utf-8')
+                        (test_func.__name__).encode("utf-8")
                     ).hexdigest(),
                     16,
                 )
