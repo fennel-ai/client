@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from collections import defaultdict
@@ -389,10 +390,18 @@ def mock_client(test_func):
         ):
             print("Running rust client tests")
             # Tier ID is hash of the test name
-            tier_id = abs(hash(test_func.__name__.encode())) % 100000007
+            tier_id = (
+                int(
+                    hashlib.sha256(
+                        (test_func.__name__).encode("utf-8")
+                    ).hexdigest(),
+                    16,
+                )
+                % 10**9
+            )
             is_airbyte_test = "airbyte" in test_func.__name__
             client = IntegrationClient(
-                tier_id, db_exists=True, is_airbyte_test=is_airbyte_test
+                tier_id, reset_db=True, is_airbyte_test=is_airbyte_test
             )
             f = test_func(*args, **kwargs, client=client)
         return f
