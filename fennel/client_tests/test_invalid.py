@@ -74,15 +74,23 @@ class DomainFeatures:
 
 
 class TestInvalidSync(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_invalid_sync(self, client):
         with pytest.raises(ValueError) as e:
             client.sync(featuresets=[DomainFeatures])
 
-        assert (
-            str(e.value) == "Dataset DomainUsageAggregatedByMemberDataset "
-            "not found in sync call"
-        )
+        if client.is_integration_client():
+            assert (
+                str(e.value)
+                == "error: extractor DomainFeatures.get_domain_feature "
+                "of featureset DomainFeatures depends on unknown feature domain"
+            )
+        else:
+            assert (
+                str(e.value) == "Dataset DomainUsageAggregatedByMemberDataset "
+                "not found in sync call"
+            )
 
 
 @meta(owner="sagar.chudamani@oslash.com")
@@ -103,8 +111,9 @@ class DomainFeatures2:
 
 
 class TestInvalidExtractorDependsOn(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
-    def test_invalid_extractor(self, client):
+    def test_missing_features(self, client):
         with pytest.raises(Exception) as e:
             client.sync(datasets=[MemberDataset], featuresets=[DomainFeatures2])
             client.extract_features(
@@ -120,11 +129,21 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 ),
             )
 
-        assert (
-            "Input dataframe does not contain all the required features"
-            in str(e.value)
-        )
+        if client.is_integration_client():
+            assert (
+                "error: extractor DomainFeatures2.get_domain_feature of featureset "
+                "DomainFeatures2 depends on unknown feature domain"
+                == str(e.value)
+            )
+        else:
+            assert (
+                "Input dataframe does not contain all the required features"
+                in str(e.value)
+            )
 
+    @pytest.mark.integration
+    @mock_client
+    def test_missing_dataset(self, client):
         with pytest.raises(Exception) as e:
             client.sync(datasets=[MemberDataset], featuresets=[DomainFeatures2])
             client.extract_features(
@@ -140,11 +159,20 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 ),
             )
 
-        assert (
-            "Dataset DomainUsageAggregatedByMemberDataset not found, please ensure it is synced."
-            == str(e.value)
-        )
+        if client.is_integration_client():
+            assert (
+                "error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
+                "depends on unknown feature domain" == str(e.value)
+            )
+        else:
+            assert (
+                "Dataset DomainUsageAggregatedByMemberDataset not found, please ensure it is synced."
+                == str(e.value)
+            )
 
+    @pytest.mark.integration
+    @mock_client
+    def test_no_access(self, client):
         with pytest.raises(Exception) as e:
             client.sync(
                 datasets=[MemberDataset, DomainUsageAggregatedByMemberDataset],
@@ -163,7 +191,13 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 ),
             )
 
-        assert (
-            "Extractor is not allowed to access dataset DomainUsageAggregatedByMemberDataset, enabled datasets are ['MemberDataset']"
-            == str(e.value)
-        )
+        if client.is_integration_client():
+            assert (
+                "error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
+                "depends on unknown feature domain" == str(e.value)
+            )
+        else:
+            assert (
+                "Extractor is not allowed to access dataset DomainUsageAggregatedByMemberDataset, enabled datasets are ['MemberDataset']"
+                == str(e.value)
+            )
