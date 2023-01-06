@@ -390,7 +390,15 @@ def mock_client(test_func):
         ):
             print("Running rust client tests")
             # Tier ID is hash of the test name
-            tier_id = int(hashlib.sha256((test_func.__name__).encode('utf-8')).hexdigest(), 16) % 10**9
+            tier_id = (
+                int(
+                    hashlib.sha256(
+                        (test_func.__name__).encode('utf-8')
+                    ).hexdigest(),
+                    16,
+                )
+                % 10**9
+            )
             is_airbyte_test = "airbyte" in test_func.__name__
             client = IntegrationClient(
                 tier_id, reset_db=True, is_airbyte_test=is_airbyte_test
