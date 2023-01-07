@@ -50,6 +50,10 @@ class Executor(Visitor):
         if input_ret is None:
             return None
         t_df = obj.func(copy.deepcopy(input_ret.df))
+        if t_df is None:
+            raise Exception(
+                f"Transform function {obj.func.__name__} returned " f"None"
+            )
         # Check if input_ret.df and t_df have the exactly same columns.
         input_column_names = input_ret.df.columns.values.tolist()
         output_column_names = t_df.columns.values.tolist()
@@ -83,6 +87,15 @@ class Executor(Visitor):
         if input_ret is None:
             return None
         f_df = obj.func(copy.deepcopy(input_ret.df))
+        if (
+            type(f_df) == pd.Series
+            or input_ret.timestamp_field not in f_df.columns
+        ):
+            raise Exception(
+                f"Timestamp field {input_ret.timestamp_field} not present in "
+                f"filtered dataframe, please check your filter function and "
+                f"ensure that the output is a dataframe and not a boolean array"
+            )
         sorted_df = f_df.sort_values(input_ret.timestamp_field)
         return NodeRet(
             sorted_df, input_ret.timestamp_field, input_ret.key_fields

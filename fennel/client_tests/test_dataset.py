@@ -305,7 +305,7 @@ class RatingActivity:
 @meta(owner="test@test.com")
 @dataset
 class MovieRating:
-    name: str = field(key=True)
+    movie: str = field(key=True)
     rating: float
     num_ratings: int
     sum_ratings: float
@@ -314,7 +314,7 @@ class MovieRating:
     @classmethod
     @pipeline(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
-        ds = activity.groupby("movie").aggregate(
+        return activity.groupby("movie").aggregate(
             [
                 Count(window=Window("forever"), into_field=cls.num_ratings),
                 Sum(
@@ -329,22 +329,12 @@ class MovieRating:
                 ),
             ]
         )
-        return ds.transform(
-            lambda df: df.rename(columns={"movie": cls.name}),
-            schema={
-                cls.name: str,
-                cls.num_ratings: float,
-                cls.sum_ratings: float,
-                cls.rating: float,
-                cls.t: datetime,
-            },
-        )
 
 
 @meta(owner="test@test.com")
 @dataset
 class MovieRatingTransformed:
-    name: str = field(key=True)
+    movie: str = field(key=True)
     rating_sq: float
     rating_cube: float
     rating_into_5: float
@@ -358,13 +348,13 @@ class MovieRatingTransformed:
             df["rating_cube"] = df["rating_sq"] * df["rating"]
             df["rating_into_5"] = df["rating"] * 5
             return df[
-                ["name", "t", "rating_sq", "rating_cube", "rating_into_5"]
+                ["movie", "t", "rating_sq", "rating_cube", "rating_into_5"]
             ]
 
         return m.transform(
             t,
             schema={
-                "name": str,
+                "movie": str,
                 "t": datetime,
                 "rating_sq": float,
                 "rating_cube": float,
@@ -387,7 +377,7 @@ class TestBasicTransform(unittest.TestCase):
             ["Jumanji", 4, 343, 789, two_hours_ago],
             ["Titanic", 5, 729, 1232, now],
         ]
-        columns = ["name", "rating", "num_ratings", "sum_ratings", "t"]
+        columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
@@ -404,7 +394,7 @@ class TestBasicTransform(unittest.TestCase):
 
         assert found.tolist() == [True, False]
         assert df.shape == (2, 5)
-        assert df["name"].tolist() == ["Jumanji", "Titanic"]
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating_sq"].tolist() == [16, None]
         assert df["rating_cube"].tolist() == [64, None]
         assert df["rating_into_5"].tolist() == [20, None]
@@ -419,7 +409,7 @@ class TestBasicTransform(unittest.TestCase):
         )
 
         assert df.shape == (2, 5)
-        assert df["name"].tolist() == ["Jumanji", "Titanic"]
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating_sq"].tolist() == [16, 25]
         assert df["rating_cube"].tolist() == [64, 125]
         assert df["rating_into_5"].tolist() == [20, 25]
@@ -428,7 +418,7 @@ class TestBasicTransform(unittest.TestCase):
 @meta(owner="test@test.com")
 @dataset
 class MovieRevenue:
-    name: str = field(key=True)
+    movie: str = field(key=True)
     revenue: int
     t: datetime
 
@@ -436,7 +426,7 @@ class MovieRevenue:
 @meta(owner="aditya@fennel.ai")
 @dataset
 class MovieStats:
-    name: str = field(key=True)
+    movie: str = field(key=True)
     rating: float
     revenue_in_millions: float
     t: datetime
@@ -447,14 +437,14 @@ class MovieStats:
         def to_millions(df: pd.DataFrame) -> pd.DataFrame:
             df["revenue_in_millions"] = df["revenue"] / 1000000
             df["revenue_in_millions"].fillna(-1, inplace=True)
-            return df[["name", "t", "revenue_in_millions", "rating"]]
+            return df[["movie", "t", "revenue_in_millions", "rating"]]
 
-        c = rating.join(revenue, on=[cls.name])
+        c = rating.join(revenue, on=[cls.movie])
         # Transform provides additional columns which will be filtered out.
         return c.transform(
             to_millions,
             schema={
-                cls.name: str,
+                cls.movie: str,
                 cls.rating: float,
                 cls.t: datetime,
                 cls.revenue_in_millions: float,
@@ -476,14 +466,14 @@ class TestBasicJoin(unittest.TestCase):
             ["Jumanji", 4, 343, 789, one_hour_ago],
             ["Titanic", 5, 729, 1232, now],
         ]
-        columns = ["name", "rating", "num_ratings", "sum_ratings", "t"]
+        columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         two_hours_ago = now - timedelta(hours=2)
         data = [["Jumanji", 2000000, two_hours_ago], ["Titanic", 50000000, now]]
-        columns = ["name", "revenue", "t"]
+        columns = ["movie", "revenue", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRevenue", df)
         assert response.status_code == requests.codes.OK, response.json()
@@ -498,7 +488,7 @@ class TestBasicJoin(unittest.TestCase):
             names=names,
         )
         assert df.shape == (2, 4)
-        assert df["name"].tolist() == ["Jumanji", "Titanic"]
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [4, 5]
         assert df["revenue_in_millions"].tolist() == [2, 50]
 
@@ -510,7 +500,7 @@ class TestBasicJoin(unittest.TestCase):
             names=names,
         )
         assert df.shape == (4, 4)
-        assert df["name"].tolist() == [
+        assert df["movie"].tolist() == [
             "Jumanji",
             "Jumanji",
             "Titanic",
@@ -558,7 +548,7 @@ class TestBasicAggregate(unittest.TestCase):
             names=names,
         )
         assert df.shape == (2, 5)
-        assert df["name"].tolist() == ["Jumanji", "Titanic"]
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
         assert df["num_ratings"].tolist() == [4, 5]
         assert df["sum_ratings"].tolist() == [12, 20]
@@ -598,7 +588,7 @@ class TestE2EPipeline(unittest.TestCase):
             ["Jumanji", 1000000, five_hours_ago],
             ["Titanic", 50000000, three_hours_ago],
         ]
-        columns = ["name", "revenue", "t"]
+        columns = ["movie", "revenue", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRevenue", df)
         assert response.status_code == requests.codes.OK
@@ -612,7 +602,7 @@ class TestE2EPipeline(unittest.TestCase):
         )
 
         assert df.shape == (2, 4)
-        assert df["name"].tolist() == ["Jumanji", "Titanic"]
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
         assert df["revenue_in_millions"].tolist() == [1, 50]
 
@@ -987,3 +977,158 @@ class TestAggregateTableDataset(unittest.TestCase):
         # The value has NOT updated but increased from
         # [24, 25] to [24+30, 25+40]
         assert df["sum_age"].tolist() == [54, 65]
+
+
+################################################################################
+#                           Dataset & Pipelines Complex E2E Tests
+################################################################################
+
+
+@meta(owner="gianni@fifa.com")
+@dataset
+class PlayerInfo:
+    name: str = field(key=True)
+    age: int
+    height: int = field().meta(description="in inches")  # type: ignore
+    weight: int = field().meta(description="in pounds")  # type: ignore
+    club: str
+    timestamp: datetime
+
+
+@meta(owner="gianni@fifa.com")
+@dataset
+class ClubSalary:
+    club: str = field(key=True)
+    timestamp: datetime
+    salary: int
+
+
+@meta(owner="gianni@fifa.com")
+@dataset
+class WAG:
+    name: str = field(key=True)
+    timestamp: datetime
+    wag: str
+
+
+@meta(owner="gianni@fifa.com")
+@dataset
+class ManchesterUnitedPlayerInfo:
+    name: str = field(key=True)
+    timestamp: datetime
+    age: int
+    height: float = field().meta(description="in cm")  # type: ignore
+    weight: float = field().meta(description="in kg")  # type: ignore
+    club: str
+    salary: Optional[int]
+    wag: Optional[str]
+
+    @classmethod
+    @pipeline(PlayerInfo, ClubSalary, WAG)
+    def create_player_detailed_info(
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+    ):
+        def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
+            df["height"] = df["height"] * 2.54
+            df["weight"] = df["weight"] * 0.453592
+            return df
+
+        metric_stats = player_info.transform(
+            convert_to_metric_stats,
+            schema={
+                "name": str,
+                "age": int,
+                "height": float,
+                "weight": float,
+                "club": str,
+                "timestamp": datetime,
+            },
+        )
+        player_info_with_salary = metric_stats.join(club_salary, on=["club"])
+        manchester_players = player_info_with_salary.filter(
+            lambda df: df[df["club"] == "Manchester United"]
+        )
+        return manchester_players.join(wag, on=["name"])
+
+
+class TestE2eIntegrationTestMUInfo(unittest.TestCase):
+    @mock_client
+    def test_muinfo_e2e_test(self, client):
+        client.sync(
+            datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo]
+        )
+        now = datetime.now()
+        yesterday = datetime.now() - timedelta(days=1)
+        data = [
+            ["Rashford", 25, 71, 154, "Manchester United", now],
+            ["Maguire", 29, 76, 198, "Manchester United", now],
+            ["Messi", 35, 67, 148, "PSG", now],
+            ["Christiano Ronaldo", 37, 74, 187, "Al-Nassr", now],
+            ["Christiano Ronaldo", 30, 74, 177, "Manchester United", yesterday],
+            ["Antony", 22, 69, 139, "Manchester United", now],
+        ]
+        columns = ["name", "age", "height", "weight", "club", "timestamp"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("PlayerInfo", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        if client.is_integration_client():
+            time.sleep(3)
+        data = [
+            ["Manchester United", yesterday, 1000000],
+            ["PSG", yesterday, 2000000],
+            ["Al-Nassr", yesterday, 3000000],
+        ]
+        columns = ["club", "timestamp", "salary"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("ClubSalary", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        if client.is_integration_client():
+            time.sleep(3)
+        data = [
+            ["Rashford", yesterday, "Lucia"],
+            ["Maguire", yesterday, "Fern"],
+            ["Messi", yesterday, "Antonela"],
+            ["Christiano Ronaldo", yesterday, "Georgina"],
+            ["Antony", yesterday, "Rosilene"],
+        ]
+        columns = ["name", "timestamp", "wag"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("WAG", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        # Do a lookup
+        # Check with Nikhil on timestamp for CR7 - yesterday
+        ts = pd.Series([now, now, now, now, now])
+        names = pd.Series(
+            [
+                "Rashford",
+                "Maguire",
+                "Messi",
+                "Christiano Ronaldo",
+                "Antony",
+            ]
+        )
+        if client.is_integration_client():
+            time.sleep(3)
+        df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
+        assert df.shape == (5, 8)
+        assert df["club"].tolist() == [
+            "Manchester United",
+            "Manchester United",
+            None,
+            "Manchester United",
+            "Manchester United",
+        ]
+        assert df["salary"].tolist() == [
+            1000000,
+            1000000,
+            None,
+            1000000,
+            1000000,
+        ]
+        assert df["wag"].tolist() == [
+            "Lucia",
+            "Fern",
+            None,
+            "Georgina",
+            "Rosilene",
+        ]

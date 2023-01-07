@@ -73,6 +73,9 @@ class IntegrationClient:
         time.sleep(1.1)
         return FakeResponse(200, "OK")
 
+    def __del__(self):
+        self._client.close()
+
     def extract_features(
         self,
         input_feature_list: List[Union[Feature, Featureset]],
