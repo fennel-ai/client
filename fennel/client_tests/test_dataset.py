@@ -1052,6 +1052,7 @@ class ManchesterUnitedPlayerInfo:
 
 
 class TestE2eIntegrationTestMUInfo(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_muinfo_e2e_test(self, client):
         client.sync(
