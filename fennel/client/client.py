@@ -83,25 +83,58 @@ class Client:
             "payload": data.to_json(orient="records"),
         }
         response = self.http.post(self._url("log"), json=req)
-        print(response)
-        check_response(response)
+        return response
 
     def extract_features(
         self,
         input_feature_list: List[Union[Feature, Featureset]],
         output_feature_list: List[Union[Feature, Featureset]],
         input_df: pd.DataFrame,
-    ) -> pd.DataFrame:
+    ) -> Union[pd.DataFrame, pd.Series]:
         """Extract features from a dataframe."""
+        if input_df.empty:
+            return pd.DataFrame()
+
+        input_feature_names = []
+        for input_feature in input_feature_list:
+            if isinstance(input_feature, Feature):
+                input_feature_names.append(input_feature.fqn)
+            elif isinstance(input_feature, Featureset):
+                input_feature_names.extend(
+                    [f.fqn for f in input_feature.features]
+                )
+
+        # Check if the input dataframe has all the required features
+        if not set(input_feature_names).issubset(set(input_df.columns)):
+            raise Exception(
+                f"Input dataframe does not contain all the required features. "
+                f"Required features: {input_feature_names}. "
+                f"Input dataframe columns: {input_df.columns}"
+            )
+
+        output_feature_names = []
+        for output_feature in output_feature_list:
+            if isinstance(output_feature, Feature):
+                output_feature_names.append(output_feature.fqn)
+            elif isinstance(output_feature, Featureset):
+                output_feature_names.extend(
+                    [f.fqn for f in output_feature.features]
+                )
 
         req = {
-            "input_features": input_feature_list,
-            "output_features": output_feature_list,
-            "input_df": input_df.to_json(orient="records"),
+            "input_features": input_feature_names,
+            "output_features": output_feature_names,
+            "data": input_df.to_json(orient="records"),
         }
-        response = self.http.post(self._url("extract_features"), json=req)
+        response = self.http.post(
+            self._url("extract_features"),
+            json=req,
+        )
         check_response(response)
-        return response.json()
+        if len(output_feature_list) > 1:
+            return pd.DataFrame(response.json())
+        else:
+            return pd.Series(response.json())
 
     def _url(self, path):
         return self.rest_url + REST_API_VERSION + "/" + path
