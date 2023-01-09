@@ -251,9 +251,7 @@ class TestDocumentDataset(unittest.TestCase):
                     "num_words",
                     "timestamp",
                 ]
-                return pd.DataFrame(data, columns=columns), pd.Series(
-                    [True] * len(ts)
-                )
+                return pd.DataFrame(data, columns=columns), pd.Series([True] * len(ts))
 
         # Sync the dataset
         client.sync(datasets=[DocumentContentDataset])
@@ -347,9 +345,7 @@ class MovieRatingTransformed:
             df["rating_sq"] = df["rating"] * df["rating"]
             df["rating_cube"] = df["rating_sq"] * df["rating"]
             df["rating_into_5"] = df["rating"] * 5
-            return df[
-                ["movie", "t", "rating_sq", "rating_cube", "rating_into_5"]
-            ]
+            return df[["movie", "t", "rating_sq", "rating_cube", "rating_into_5"]]
 
         return m.transform(
             t,
@@ -511,6 +507,7 @@ class TestBasicJoin(unittest.TestCase):
 
 
 class TestBasicAggregate(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_basic_aggregate(self, client):
         # # Sync the dataset
@@ -532,7 +529,7 @@ class TestBasicAggregate(unittest.TestCase):
             [18231, 4, "Titanic", three_hours_ago],
             [18231, 3, "Titanic", two_hours_ago],
             [18231, 5, "Titanic", one_hour_ago],
-            [18231, 5, "Titanic", now],
+            [18231, 5, "Titanic", now - timedelta(seconds=1)],
             [18231, 3, "Titanic", two_hours_ago],
         ]
         columns = ["userid", "rating", "movie", "t"]
@@ -540,6 +537,8 @@ class TestBasicAggregate(unittest.TestCase):
         response = client.log("RatingActivity", df)
         assert response.status_code == requests.codes.OK
 
+        # sleep for a bit to make sure the data is ingested
+        time.sleep(1)
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
