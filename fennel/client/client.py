@@ -130,6 +130,7 @@ class Client:
             self._url("extract_features"),
             json=req,
         )
+        print(response.json())
         check_response(response)
         if len(output_feature_list) > 1:
             return pd.DataFrame(response.json())

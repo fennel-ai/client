@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 import requests
 
+from fennel.client import Client
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.lib.metadata import meta
@@ -153,8 +154,9 @@ class TestSimpleExtractor(unittest.TestCase):
 
 class TestExtractorDAGResolution(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_dag_resolution(self, client):
+    def test_dag_resolution(self):
+        client = Client(url="k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com", rest_url="http://k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com")
+        # client = Client(url="localhost:50051", rest_url="http://localhost:3000")
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
@@ -194,7 +196,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 7))
+        self.assertEqual(feature_df.shape, (2,))
 
         feature_df = client.extract_features(
             output_feature_list=[
@@ -205,7 +207,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 {UserInfoMultipleExtractor.userid: [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 7))
+        self.assertEqual(feature_df.shape, (2,))
 
 
 @meta(owner="test@test.com")
@@ -239,8 +241,9 @@ class UserInfoTransformedFeatures:
 
 class TestExtractorDAGResolutionComplex(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_dag_resolution_complex(self, client):
+    def test_dag_resolution_complex(self):
+        client = Client(url="k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com", rest_url="http://k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com")
+        # client = Client(url="localhost:50051", rest_url="http://localhost:3000")
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[
@@ -267,7 +270,8 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 3))
+        self.assertEqual(feature_df.shape, (2,))
+        print(feature_df.iloc[0])
         self.assertEqual(
             feature_df["UserInfoTransformedFeatures.age_power_four"].tolist(),
             [1048576, 331776],

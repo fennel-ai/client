@@ -9,10 +9,12 @@ import pandas as pd
 import pytest
 import requests
 
+from fennel.client import Client
 from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
+from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.lib.aggregate import Count, Sum, Average
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, Series
+from fennel.lib.schema import Embedding, Series, DataFrame
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
@@ -56,6 +58,31 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
+
+    # @pytest.mark.integration
+    # def test_sync_dataset(self):
+    #     """Sync the dataset and check if it is synced correctly."""
+    #     # Sync the dataset
+    #     client = Client(url="0.0.0.0:50051", rest_url="http://0.0.0.0:3000")
+    #     response = client.sync(datasets=[UserInfoDataset])
+    #     assert response.status_code == requests.codes.OK, response.json()
+
+    # @pytest.mark.integration
+    # def test_simple_log(self):
+    #     # Sync the dataset
+    #     client = Client(url="k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com", rest_url="http://k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com")
+    #     # client = Client(url="0.0.0.0:50051", rest_url="http://0.0.0.0:3000")
+    #     client.sync(datasets=[UserInfoDataset])
+    #     now = datetime.now()
+    #     yesterday = now - pd.Timedelta(days=1)
+    #     data = [
+    #         [18232, "Ross", 32, "USA", now],
+    #         [18234, "Monica", 24, "Chile", yesterday],
+    #     ]
+    #     columns = ["user_id", "name", "age", "country", "timestamp"]
+    #     df = pd.DataFrame(data, columns=columns)
+    #     response = client.log("UserInfoDataset", df)
+    #     assert response.status_code == requests.codes.OK, response.json()
 
     @pytest.mark.integration
     @mock_client
@@ -365,9 +392,10 @@ class MovieRatingTransformed:
 
 class TestBasicTransform(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_basic_transform(self, client):
+    def test_basic_transform(self):
         # # Sync the dataset
+        client = Client(url="k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com", rest_url="http://k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com")
+        # client = Client(url="localhost:50051", rest_url="http://localhost:3000")
         client.sync(
             datasets=[MovieRating, MovieRatingTransformed, RatingActivity],
         )
@@ -381,8 +409,8 @@ class TestBasicTransform(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(2)
+        # if client.is_integration_client():
+        time.sleep(2)
         # Do some lookups to verify pipeline_transform is working as expected
         an_hour_ago = now - timedelta(hours=1)
         ts = pd.Series([an_hour_ago, an_hour_ago])
@@ -999,7 +1027,7 @@ class PlayerInfo:
 @dataset
 class ClubSalary:
     club: str = field(key=True)
-    timestamp: datetime
+    timestamp2: datetime
     salary: int
 
 
@@ -1007,7 +1035,7 @@ class ClubSalary:
 @dataset
 class WAG:
     name: str = field(key=True)
-    timestamp: datetime
+    timestamp3: datetime
     wag: str
 
 
@@ -1015,7 +1043,7 @@ class WAG:
 @dataset
 class ManchesterUnitedPlayerInfo:
     name: str = field(key=True)
-    timestamp: datetime
+    timestamp4: datetime
     age: int
     height: float = field().meta(description="in cm")  # type: ignore
     weight: float = field().meta(description="in kg")  # type: ignore
@@ -1051,12 +1079,34 @@ class ManchesterUnitedPlayerInfo:
         return manchester_players.join(wag, on=["name"])
 
 
+@meta(owner="test@test.com")
+@featureset
+class ManUPlayerInfo:
+    name: str = feature(id=1)
+    age: int = feature(id=2)
+    height: float = feature(id=3)
+    weight: float = feature(id=4)
+    club: str = feature(id=5)
+    salary: Optional[int] = feature(id=6)
+    wag: Optional[str] = feature(id=7)
+
+    @extractor
+    @depends_on(ManchesterUnitedPlayerInfo)
+    def get_info(
+        ts: Series[datetime], name: Series[name]
+    ) -> DataFrame[name, age, height, weight, club, salary, wag]:
+        df, _ = ManchesterUnitedPlayerInfo.lookup(ts, user_id=user_id)  # type: ignore
+        return df[["name", "age", "height", "weight", "club", "salary", "wag"]]
+
+
 class TestE2eIntegrationTestMUInfo(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_muinfo_e2e_test(self, client):
+    def test_muinfo_e2e_test(self):
+        client = Client(url="k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com", rest_url="http://k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com")
+        # client = Client(url="localhost:50051", rest_url="http://localhost:3000")
         client.sync(
-            datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo]
+            datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo],
+            featuresets=[ManUPlayerInfo]
         )
         now = datetime.now()
         yesterday = datetime.now() - timedelta(days=1)
@@ -1072,19 +1122,18 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         input_df = pd.DataFrame(data, columns=columns)
         response = client.log("PlayerInfo", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        time.sleep(3)
         data = [
             ["Manchester United", yesterday, 1000000],
             ["PSG", yesterday, 2000000],
             ["Al-Nassr", yesterday, 3000000],
         ]
-        columns = ["club", "timestamp", "salary"]
+        columns = ["club", "timestamp2", "salary"]
         input_df = pd.DataFrame(data, columns=columns)
         response = client.log("ClubSalary", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        # if client.is_integration_client():
+        time.sleep(3)
         data = [
             ["Rashford", yesterday, "Lucia"],
             ["Maguire", yesterday, "Fern"],
@@ -1092,25 +1141,27 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
             ["Christiano Ronaldo", yesterday, "Georgina"],
             ["Antony", yesterday, "Rosilene"],
         ]
-        columns = ["name", "timestamp", "wag"]
+        columns = ["name", "timestamp3", "wag"]
         input_df = pd.DataFrame(data, columns=columns)
         response = client.log("WAG", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         # Do a lookup
         # Check with Nikhil on timestamp for CR7 - yesterday
-        ts = pd.Series([now, now, now, now, now])
-        names = pd.Series(
-            [
-                "Rashford",
-                "Maguire",
-                "Messi",
-                "Christiano Ronaldo",
-                "Antony",
-            ]
+        names = [
+            "Rashford",
+            "Maguire",
+            "Messi",
+            "Christiano Ronaldo",
+            "Antony",
+        ]
+        time.sleep(3)
+        df = client.extract_features(
+            input_feature_list=[ManUPlayerInfo.name],
+            output_feature_list=[ManUPlayerInfo],
+            input_df=pd.DataFrame({"ManUPlayerInfo.name": names}),
         )
-        if client.is_integration_client():
-            time.sleep(3)
-        df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
+        print(df)
+        print(df.iloc[0])
         assert df.shape == (5, 8)
         assert df["club"].tolist() == [
             "Manchester United",
