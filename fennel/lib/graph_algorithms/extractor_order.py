@@ -19,10 +19,10 @@ def _get_features(feature: Union[Feature, Featureset]) -> set:
 
 
 def _topological_sort_util(
-    extractor_name: str,
-    visited: Dict[str, bool],
-    stack: List[str],
-    graph: Dict[str, List[str]],
+        extractor_name: str,
+        visited: Dict[str, bool],
+        stack: List[str],
+        graph: Dict[str, List[str]],
 ):
     visited[extractor_name] = True
     for extractor_neighbour in graph[extractor_name]:
@@ -33,7 +33,7 @@ def _topological_sort_util(
 
 
 def _topological_sort(
-    extractors: List[Extractor],
+        extractors: List[Extractor],
 ) -> Tuple[List[str], Dict[str, Extractor]]:
     """
     Topologically sort the extractors.
@@ -45,6 +45,8 @@ def _topological_sort(
     visited: Dict[str, bool] = defaultdict(bool)
     stack: List[str] = []
     graph, feature_to_extractor_map = extractor_graph(extractors)
+    print(f"Graph: {graph}")
+    print(f"Feature to extractor map: {feature_to_extractor_map}")
     for extractor in extractors:
         if not visited[extractor.name]:
             _topological_sort_util(extractor.name, visited, stack, graph)
@@ -53,7 +55,7 @@ def _topological_sort(
 
 
 def get_vertices_and_eges(
-    extractors: List[Extractor],
+        extractors: List[Extractor],
 ) -> Tuple[Set[str], Set[Tuple[str, str]]]:
     """
     Get the vertices and edges from the graph.
@@ -101,9 +103,9 @@ def get_vertices_and_eges(
 
 
 def get_extractor_order(
-    input_features: List[Union[Feature, Featureset]],
-    output_features: List[Union[Feature, Featureset]],
-    extractors: List[Extractor],
+        input_features: List[Union[Feature, Featureset]],
+        output_features: List[Union[Feature, Featureset]],
+        extractors: List[Extractor],
 ) -> List[Extractor]:
     """
     Given a list of input features and output features find the most optimal

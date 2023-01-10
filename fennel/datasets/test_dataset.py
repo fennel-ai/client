@@ -181,7 +181,7 @@ def test_DatasetWithPull(grpc_stub):
         @staticmethod
         @on_demand(expires_after="7d")
         def pull_from_api(
-            ts: Series[datetime], user_id: Series[int], names: Series[str]
+                ts: Series[datetime], user_id: Series[int], names: Series[str]
         ) -> pd.DataFrame:
             user_list = user_id.tolist()
             names = names.tolist()
@@ -245,7 +245,6 @@ def test_DatasetWithPull(grpc_stub):
     )
 
     with pytest.raises(TypeError) as e:
-
         @meta(owner="test@test.com")
         @dataset(retention="1y")
         class UserCreditScore2:
@@ -256,13 +255,13 @@ def test_DatasetWithPull(grpc_stub):
             @staticmethod
             @on_demand
             def pull_from_api(
-                user_id: pd.Series, names: pd.Series, timestamps: pd.Series
+                    user_id: pd.Series, names: pd.Series, timestamps: pd.Series
             ) -> pd.DataFrame:
                 pass
 
     assert (
-        str(e.value) == "on_demand must be defined with a parameter "
-        "expires_after of type Duration for eg: 30d."
+            str(e.value) == "on_demand must be defined with a parameter "
+                            "expires_after of type Duration for eg: 30d."
     )
 
 
@@ -432,11 +431,12 @@ def test_DatasetWithComplexPipe(grpc_stub):
                 [
                     Count(
                         window=Window("forever"),
-                        into_field=cls.num_merchant_fraudulent_transactions,
+                        into_field=cls.num_merchant_fraudulent_transactions
+                        .str(),
                     ),
                     Count(
                         window=Window("1w"),
-                        into_field=cls.num_merchant_fraudulent_transactions_7d,
+                        into_field=cls.num_merchant_fraudulent_transactions_7d.str(),
                     ),
                 ]
             )
@@ -734,8 +734,8 @@ def test_SearchDataset(grpc_stub):
         @classmethod
         @pipeline(Document)
         def content_features(
-            cls,
-            ds: Dataset,
+                cls,
+                ds: Dataset,
         ):
             return ds.transform(
                 get_content_features,

@@ -38,10 +38,11 @@ class UserInfoSingleExtractor:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
 
+    @classmethod
     @extractor
     @depends_on(UserInfoDataset)
     def get_user_info(
-        ts: Series[datetime], user_id: Series[userid]
+            cls, ts: Series[datetime], user_id: Series[userid]
     ) -> DataFrame[age, age_squared, age_cubed, is_name_common]:
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df["userid"] = user_id
@@ -71,27 +72,30 @@ class UserInfoMultipleExtractor:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
 
+    @classmethod
     @extractor
     @depends_on(UserInfoDataset)
     def get_user_age_and_name(
-        ts: Series[datetime], user_id: Series[userid]
+            cls, ts: Series[datetime], user_id: Series[userid]
     ) -> DataFrame[age, name]:
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df[["age", "name"]]
 
+    @classmethod
     @extractor
     def get_age_and_name_features(
-        ts: Series[datetime], user_age: Series[age], name: Series[name]
+            cls, ts: Series[datetime], user_age: Series[age], name: Series[name]
     ) -> DataFrame[age_squared, age_cubed, is_name_common]:
         is_name_common = name.isin(["John", "Mary", "Bob"])
-        df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
+        df = pd.concat([user_age ** 2, user_age ** 3, is_name_common], axis=1)
         df.columns = ["age_squared", "age_cubed", "is_name_common"]
         return df
 
+    @classmethod
     @extractor
     @depends_on(UserInfoDataset)
     def get_country_geoid(
-        ts: Series[datetime], user_id: Series[userid]
+            cls, ts: Series[datetime], user_id: Series[userid]
     ) -> Series[country_geoid]:
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df["country"].apply(get_country_geoid)
@@ -215,18 +219,20 @@ class UserInfoTransformedFeatures:
     is_name_common: bool = feature(id=2)
     country_geoid_square: int = feature(id=3)
 
+    @classmethod
     @extractor
     def get_user_transformed_features(
-        ts: Series[datetime],
-        user_features: DataFrame[UserInfoMultipleExtractor],
+            cls,
+            ts: Series[datetime],
+            user_features: DataFrame[UserInfoMultipleExtractor],
     ):
         age = user_features["UserInfoMultipleExtractor.age"]
         is_name_common = user_features[
             "UserInfoMultipleExtractor.is_name_common"
         ]
-        age_power_four = age**4
+        age_power_four = age ** 4
         country_geoid = (
-            user_features["UserInfoMultipleExtractor.country_geoid"] ** 2
+                user_features["UserInfoMultipleExtractor.country_geoid"] ** 2
         )
         return pd.DataFrame(
             {
@@ -305,10 +311,11 @@ class DocumentFeatures:
     fast_text_embedding: Embedding[3] = feature(id=3)
     num_words: int = feature(id=4)
 
+    @classmethod
     @extractor
     @depends_on(DocumentContentDataset)
     def get_doc_features(
-        ts: Series[datetime], doc_id: Series[doc_id]
+            cls, ts: Series[datetime], doc_id: Series[doc_id]
     ) -> DataFrame[num_words, bert_embedding, fast_text_embedding]:
         df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore
         return df[["bert_embedding", "fast_text_embedding", "num_words"]]

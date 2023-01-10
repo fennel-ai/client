@@ -193,8 +193,8 @@ class DocumentContentDataset:
     @classmethod
     @pipeline(Document)
     def content_features(
-        cls,
-        ds: Dataset,
+            cls,
+            ds: Dataset,
     ):
         return ds.transform(
             get_content_features,
@@ -252,16 +252,16 @@ class UserEngagementDataset:
         )
         return click_type.groupby("user_id").aggregate(
             [
-                Count(window=Window("forever"), into_field=cls.num_views),
+                Count(window=Window("forever"), into_field=cls.num_views.str()),
                 Sum(
                     window=Window("7d"),
                     of="is_short_click",
-                    into_field=cls.num_short_views_7d,
+                    into_field=cls.num_short_views_7d.str(),
                 ),
                 Sum(
                     window=Window("forever"),
                     of="is_long_click",
-                    into_field=cls.num_long_views,
+                    into_field=cls.num_long_views.str(),
                 ),
             ]
         )
@@ -282,13 +282,13 @@ class DocumentEngagementDataset:
     def doc_engagement_pipeline(cls, ds: Dataset):
         return ds.groupby("doc_id").aggregate(
             [
-                Count(window=Window("forever"), into_field=cls.num_views),
-                Count(window=Window("7d"), into_field=cls.num_views_7d),
-                Count(window=Window("28d"), into_field=cls.num_views_28d),
+                Count(window=Window("forever"), into_field=cls.num_views.str()),
+                Count(window=Window("7d"), into_field=cls.num_views_7d.str()),
+                Count(window=Window("28d"), into_field=cls.num_views_28d.str()),
                 Sum(
                     window=Window("forever"),
                     of="view_time",
-                    into_field=cls.total_timespent,
+                    into_field=cls.total_timespent.str(),
                 ),
             ]
         )
@@ -314,9 +314,10 @@ class UserBehaviorFeatures:
     num_short_views_7d: int = feature(id=3)
     num_long_views: int = feature(id=4)
 
+    @classmethod
     @extractor
     @depends_on(UserEngagementDataset)
-    def get_features(ts: Series[datetime], user_id: Series[Query.user_id]):
+    def get_features(cls, ts: Series[datetime], user_id: Series[Query.user_id]):
         df, found = UserEngagementDataset.lookup(  # type: ignore
             ts, user_id=user_id  # type: ignore
         )
@@ -332,9 +333,10 @@ class DocumentFeatures:
     total_timespent_minutes: float = feature(id=4)
     num_views_28d: int = feature(id=5)
 
+    @classmethod
     @extractor
     @depends_on(DocumentEngagementDataset)
-    def get_features(ts: Series[datetime], doc_id: Series[Query.doc_id]):
+    def get_features(cls, ts: Series[datetime], doc_id: Series[Query.doc_id]):
         df, found = DocumentEngagementDataset.lookup(  # type: ignore
             ts, user_id=doc_id  # type: ignore
         )
@@ -353,9 +355,10 @@ class DocumentContentFeatures:
     num_stop_words: int = feature(id=5)
     top_10_unique_words: List[str] = feature(id=6)
 
+    @classmethod
     @extractor
     @depends_on(DocumentContentDataset)
-    def get_features(ts: Series[datetime], doc_id: Series[Query.doc_id]):
+    def get_features(cls, ts: Series[datetime], doc_id: Series[Query.doc_id]):
         df, found = DocumentContentDataset.lookup(  # type: ignore
             ts, user_id=doc_id  # type: ignore
         )

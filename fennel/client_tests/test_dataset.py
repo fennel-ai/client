@@ -82,13 +82,13 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                response.json()["error"]
-                == """error: expected Int, but got String("32")"""
+                    response.json()["error"]
+                    == """error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                response.json()["error"]
-                == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
+                    response.json()["error"]
+                    == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
             )
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
@@ -165,7 +165,6 @@ class TestDataset(unittest.TestCase):
     @mock_client
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
-
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -178,8 +177,8 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-            str(e.exception)
-            == "Dataset currently does not support deleted or deprecated fields."
+                str(e.exception)
+                == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
@@ -316,16 +315,17 @@ class MovieRating:
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
             [
-                Count(window=Window("forever"), into_field=cls.num_ratings),
+                Count(window=Window("forever"),
+                    into_field=cls.num_ratings.str()),
                 Sum(
                     window=Window("forever"),
                     of="rating",
-                    into_field=cls.sum_ratings,
+                    into_field=cls.sum_ratings.str(),
                 ),
                 Average(
                     window=Window("forever"),
                     of="rating",
-                    into_field=cls.rating,
+                    into_field=cls.rating.str(),
                 ),
             ]
         )
@@ -439,15 +439,15 @@ class MovieStats:
             df["revenue_in_millions"].fillna(-1, inplace=True)
             return df[["movie", "t", "revenue_in_millions", "rating"]]
 
-        c = rating.join(revenue, on=[cls.movie])
+        c = rating.join(revenue, on=[cls.movie.str()])
         # Transform provides additional columns which will be filtered out.
         return c.transform(
             to_millions,
             schema={
-                cls.movie: str,
-                cls.rating: float,
-                cls.t: datetime,
-                cls.revenue_in_millions: float,
+                cls.movie.str(): str,
+                cls.rating.str(): float,
+                cls.t.str(): datetime,
+                cls.revenue_in_millions.str(): float,
             },
         )
 
@@ -740,27 +740,27 @@ class FraudReportAggregatedDataset:
             [
                 Count(
                     window=Window("forever"),
-                    into_field=cls.num_categ_fraudulent_transactions,
+                    into_field=cls.num_categ_fraudulent_transactions.str(),
                 ),
                 Count(
                     window=Window("1w"),
-                    into_field=cls.num_categ_fraudulent_transactions_7d,
+                    into_field=cls.num_categ_fraudulent_transactions_7d.str(),
                 ),
                 Sum(
                     window=Window("1w"),
                     of="transaction_amount",
-                    into_field=cls.sum_categ_fraudulent_transactions_7d,
+                    into_field=cls.sum_categ_fraudulent_transactions_7d.str(),
                 ),
             ]
         )
         return aggregated_ds.transform(
             lambda df: df.rename(columns={"category": "merchant_categ"}),
             schema={
-                cls.merchant_categ: str,
-                cls.num_categ_fraudulent_transactions: int,
-                cls.num_categ_fraudulent_transactions_7d: int,
-                cls.sum_categ_fraudulent_transactions_7d: int,
-                cls.timestamp: datetime,
+                cls.merchant_categ.str(): str,
+                cls.num_categ_fraudulent_transactions.str(): int,
+                cls.num_categ_fraudulent_transactions_7d.str(): int,
+                cls.sum_categ_fraudulent_transactions_7d.str(): int,
+                cls.timestamp.str(): datetime,
             },
         )
 
@@ -1026,7 +1026,7 @@ class ManchesterUnitedPlayerInfo:
     @classmethod
     @pipeline(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54

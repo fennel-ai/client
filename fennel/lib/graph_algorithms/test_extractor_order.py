@@ -13,8 +13,10 @@ class A:
     a2: int = feature(id=2)
     root: int = feature(id=3)
 
+    @classmethod
     @extractor
-    def a1_a2(ts: Series[datetime], root: Series[root]) -> DataFrame[a1, a2]:
+    def a1_a2(cls, ts: Series[datetime], root: Series[root]) -> DataFrame[a1,
+                                                                          a2]:
         pass
 
 
@@ -23,9 +25,10 @@ class B:
     b1: int = feature(id=1)
     b2: int = feature(id=2)
 
+    @classmethod
     @extractor
     def b1_b2(
-        ts: Series[datetime], a1: Series[A.a1], a2: Series[A.a2]
+            cls, ts: Series[datetime], a1: Series[A.a1], a2: Series[A.a2]
     ) -> DataFrame[b1, b2]:
         pass
 
@@ -58,12 +61,16 @@ class C:
     c3: int = feature(id=3)
     c4: int = feature(id=4)
 
+    @classmethod
     @extractor
-    def c1_from_root(ts: Series[datetime], a1: Series[A.root]) -> Series[c1]:
+    def c1_from_root(cls, ts: Series[datetime], a1: Series[A.root]) -> Series[
+        c1]:
         pass
 
+    @classmethod
     @extractor
-    def from_c1(ts: Series[datetime], c1: Series[c1]) -> DataFrame[c2, c3, c4]:
+    def from_c1(cls, ts: Series[datetime], c1: Series[c1]) -> DataFrame[c2, c3,
+                                                                        c4]:
         pass
 
 
@@ -99,21 +106,24 @@ class UserInfo:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
 
+    @classmethod
     @extractor
     def get_user_age_and_name(
-        ts: Series[datetime], user_id: Series[userid]
+            cls, ts: Series[datetime], user_id: Series[userid]
     ) -> DataFrame[age, name]:
         pass
 
+    @classmethod
     @extractor
     def get_age_and_name_features(
-        ts: Series[datetime], user_age: Series[age], name: Series[name]
+            cls, ts: Series[datetime], user_age: Series[age], name: Series[name]
     ) -> DataFrame[age_squared, age_cubed, is_name_common]:
         pass
 
+    @classmethod
     @extractor
     def get_country_geoid(
-        ts: Series[datetime], user_id: Series[userid]
+            cls, ts: Series[datetime], user_id: Series[userid]
     ) -> Series[country_geoid]:
         pass
 
@@ -136,12 +146,13 @@ class UserInfoTransformedFeatures:
     is_name_common: bool = feature(id=2)
 
     @extractor
+    @extractor
     def get_user_transformed_features(
-        ts: Series[datetime], user_features: DataFrame[UserInfo]
+            cls, ts: Series[datetime], user_features: DataFrame[UserInfo]
     ):
-        age = user_features["UserInfo.age"]
-        is_name_common = user_features["UserInfo.is_name_common"]
-        age_power_four = age**4
+        age = user_features[UserInfo.age.fqn()]
+        is_name_common = user_features[UserInfo.is_name_common.fqn()]
+        age_power_four = age ** 4
         return pd.DataFrame(
             {
                 "age_power_four": age_power_four,
@@ -163,6 +174,6 @@ def test_AgeFeatureExtractionComplex():
     )
     assert extractors_to_run[2] == "UserInfo.get_age_and_name_features"
     assert (
-        extractors_to_run[3]
-        == "UserInfoTransformedFeatures.get_user_transformed_features"
+            extractors_to_run[3]
+            == "UserInfoTransformedFeatures.get_user_transformed_features"
     )
