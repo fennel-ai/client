@@ -22,6 +22,7 @@ from fennel.lib.graph_algorithms import (
     is_extractor_graph_cyclic,
 )
 from fennel.lib.schema import schema_check
+from fennel.lib.to_proto import dataset_to_proto
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.integration_client import IntegrationClient
 
@@ -201,9 +202,7 @@ class MockClient(Client):
     ):
         self._reset()
         for dataset in datasets:
-            self.dataset_requests[
-                dataset._name
-            ] = dataset.create_dataset_request_proto()
+            self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
             self.datasets[dataset._name] = _DatasetInfo(
                 dataset.fields(),
                 dataset.key_fields,

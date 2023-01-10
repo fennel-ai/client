@@ -6,5 +6,11 @@ from fennel.datasets.datasets import (
     field,
     on_demand,
     OnDemand,
-    Visitor,
+    Field,
+    Transform,
+    Filter,
+    GroupBy,
+    Aggregate,
+    Join,
+    Union_,
 )

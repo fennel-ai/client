@@ -21,22 +21,17 @@ import cloudpickle
 import numpy as np
 import pandas as pd
 
-import fennel.gen.dataset_pb2 as proto
 from fennel.lib.aggregate import AggregateType
 from fennel.lib.duration.duration import (
     Duration,
     duration_to_timedelta,
-    timedelta_to_micros,
-    duration_to_micros,
 )
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
     set_meta_attr,
-    get_metadata_proto,
 )
-from fennel.lib.schema import get_datatype, dtype_to_string
-from fennel.sources import SOURCE_FIELD, SINK_FIELD
+from fennel.lib.schema import dtype_to_string
 from fennel.utils import (
     fhash,
     parse_annotation_comments,
@@ -77,26 +72,6 @@ class Field:
             f"{self.is_optional()}:{self.key}:{self.timestamp}",
         )
 
-    def to_proto(self) -> proto.Field:
-        # Type is passed as part of the dataset schema
-        ftype = None
-        if self.key + self.timestamp > 1:
-            raise ValueError("Field cannot be both a key and a timestamp")
-
-        if self.key:
-            ftype = proto.FieldType.Key
-        elif self.timestamp:
-            ftype = proto.FieldType.Timestamp
-        else:
-            ftype = proto.FieldType.Val
-
-        return proto.Field(
-            name=self.name,
-            ftype=ftype,
-            dtype=get_datatype(self.dtype),
-            metadata=get_metadata_proto(self),
-        )
-
     def meta(self, **kwargs: Any) -> F:
         f = cast(F, meta(**kwargs)(self))
         if get_meta_attr(f, "deleted") or get_meta_attr(f, "deprecated"):
@@ -113,6 +88,8 @@ class Field:
         def _get_args(type_: Any) -> Any:
             return getattr(type_, "__args__", None)
 
+        print(self.name, self.dtype, type(self.dtype))
+        print(_get_origin(self.dtype) is Union)
         if (
             _get_origin(self.dtype) is Union
             and type(None) == _get_args(self.dtype)[1]
@@ -149,6 +126,7 @@ def get_field(
         description = field2comment_map.get(annotation_name, "")
         set_meta_attr(field, "description", description)
 
+    print(field.key, field.is_optional(), field.name)
     if field.key and field.is_optional():
         raise ValueError(
             f"Key {annotation_name} in dataset {cls.__name__} cannot be "  # type: ignore
@@ -184,14 +162,14 @@ class _Node:
 
     def transform(self, func: Callable, schema: Dict = {}) -> _Node:
         if schema == {}:
-            return _Transform(self, func, None)
-        return _Transform(self, func, schema)
+            return Transform(self, func, None)
+        return Transform(self, func, schema)
 
     def filter(self, func: Callable) -> _Node:
-        return _Filter(self, func)
+        return Filter(self, func)
 
-    def groupby(self, *args) -> _GroupBy:
-        return _GroupBy(self, *args)
+    def groupby(self, *args) -> GroupBy:
+        return GroupBy(self, *args)
 
     def join(
         self,
@@ -199,15 +177,15 @@ class _Node:
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
-    ) -> _Join:
+    ) -> Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError("Cannot join with an intermediate dataset")
         if not isinstance(other, _Node):
             raise TypeError("Cannot join with a non-dataset object")
-        return _Join(self, other, on, left_on, right_on)
+        return Join(self, other, on, left_on, right_on)
 
     def __add__(self, other):
-        return _Union(self, other)
+        return Union_(self, other)
 
     def isignature(self):
         raise NotImplementedError
@@ -216,13 +194,15 @@ class _Node:
         return len(self.out_edges)
 
 
-class _Transform(_Node):
+class Transform(_Node):
     def __init__(self, node: _Node, func: Callable, schema: Optional[Dict]):
         super().__init__()
         self.func = func
         self.node = node
         self.node.out_edges.append(self)
         self.schema = schema
+        cloudpickle.register_pickle_by_value(inspect.getmodule(func))
+        self.pickled_func = cloudpickle.dumps(func)
 
     def signature(self):
         if isinstance(self.node, Dataset):
@@ -230,12 +210,14 @@ class _Transform(_Node):
         return fhash(self.node.signature(), self.func)
 
 
-class _Filter(_Node):
+class Filter(_Node):
     def __init__(self, node: _Node, func: Callable):
         super().__init__()
         self.func = func
         self.node = node
         self.node.out_edges.append(self)
+        cloudpickle.register_pickle_by_value(inspect.getmodule(func))
+        self.pickled_func = cloudpickle.dumps(func)
 
     def signature(self):
         if isinstance(self.node, Dataset):
@@ -243,7 +225,7 @@ class _Filter(_Node):
         return fhash(self.node.signature(), self.func)
 
 
-class _Aggregate(_Node):
+class Aggregate(_Node):
     def __init__(
         self, node: _Node, keys: List[str], aggregates: List[AggregateType]
     ):
@@ -262,7 +244,7 @@ class _Aggregate(_Node):
         return fhash(self.node.signature(), self.keys, agg_signature)
 
 
-class _GroupBy:
+class GroupBy:
     def __init__(self, node: _Node, *args):
         super().__init__()
         self.keys = args
@@ -270,10 +252,10 @@ class _GroupBy:
         self.node.out_edges.append(self)
 
     def aggregate(self, aggregates: List[AggregateType]) -> _Node:
-        return _Aggregate(self.node, list(self.keys), aggregates)
+        return Aggregate(self.node, list(self.keys), aggregates)
 
 
-class _Join(_Node):
+class Join(_Node):
     def __init__(
         self,
         node: _Node,
@@ -321,7 +303,7 @@ class _Join(_Node):
         )
 
 
-class _Union(_Node):
+class Union_(_Node):
     def __init__(self, node: _Node, other: _Node):
         super().__init__()
         self.nodes = [node, other]
@@ -517,6 +499,7 @@ def pipeline(
 @dataclass
 class OnDemand:
     func: Callable
+    pickled_func: bytes
     expires_after: Duration = DEFAULT_EXPIRATION
 
 
@@ -528,7 +511,7 @@ def on_demand(expires_after: Duration):
         )
 
     def decorator(func):
-        setattr(func, ON_DEMAND_ATTR, OnDemand(func, expires_after))
+        setattr(func, ON_DEMAND_ATTR, OnDemand(func, b"", expires_after))
         return func
 
     return decorator
@@ -552,7 +535,6 @@ class Pipeline:
     node: _Node
     inputs: List[Dataset]
     _sign: str
-    _proto: proto.Pipeline
     _root: str
     _nodes: List
     # Dataset it is part of
@@ -573,24 +555,8 @@ class Pipeline:
     def signature(self):
         return f"{self._dataset_name}.{self._root}"
 
-    def to_proto(self) -> proto.Pipeline:
-        return proto.Pipeline(
-            root=self._root,
-            nodes=self._nodes,
-            inputs=[i._name for i in self.inputs],
-            signature=self.signature(),
-            metadata=get_metadata_proto(self.func),
-            name=self.name,
-        )
-
     def set_node(self, node: _Node):
         self.node = node
-        self._serialize()
-
-    def _serialize(self):
-        serializer = Serializer()
-        self._root, self._nodes = serializer.serialize(self)
-        return self._root, self._nodes
 
     def set_dataset_name(self, ds_name: str):
         self._dataset_name = ds_name
@@ -636,37 +602,13 @@ class Dataset(_Node):
         self.__fennel_original_cls__ = cls
         self._pipelines = self._get_pipelines()
         self._on_demand = self._get_on_demand()
+
         self._sign = self._create_signature()
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
         propogate_fennel_attributes(cls, self)
 
     # ------------------- Public Methods --------------------------
-
-    def create_dataset_request_proto(self) -> proto.CreateDatasetRequest:
-        self._check_owner_exists()
-        sources = []
-        if hasattr(self, SOURCE_FIELD):
-            sources = getattr(self, SOURCE_FIELD)
-        sinks = []
-        if hasattr(self, SINK_FIELD):
-            sinks = getattr(self, SINK_FIELD)
-
-        return proto.CreateDatasetRequest(
-            name=self.__name__,
-            retention=timedelta_to_micros(self._retention),
-            pipelines=[p.to_proto() for p in self._pipelines],
-            input_connectors=[s.to_proto() for s in sources],
-            output_connectors=[s.to_proto() for s in sinks],
-            mode="pandas",
-            signature=self.signature(),
-            metadata=get_metadata_proto(self),
-            # Currently we don't support versioning of datasets.
-            # Kept for future use.
-            version=0,
-            fields=[field.to_proto() for field in self._fields],
-            on_demand=self._on_demand_to_proto(),
-        )
 
     def signature(self):
         return self._sign
@@ -733,17 +675,6 @@ class Dataset(_Node):
     def __repr__(self):
         return f"Dataset({self.__name__}, {self._fields})"
 
-    def _on_demand_to_proto(self) -> Optional[proto.OnDemand]:
-        if self._on_demand is None:
-            return None
-        return proto.OnDemand(
-            function_source_code=inspect.getsource(
-                cast(Callable, self._on_demand.func)
-            ),
-            function=cloudpickle.dumps(self._on_demand.func),
-            expires_after=duration_to_micros(self._on_demand.expires_after),
-        )
-
     def _get_on_demand(self) -> Optional[OnDemand]:
         on_demand: Optional[OnDemand] = None
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
@@ -791,6 +722,10 @@ class Dataset(_Node):
                         f" {key_fields[key_index].dtype} "
                     )
                 key_index += 1
+            cloudpickle.register_pickle_by_value(
+                inspect.getmodule(on_demand.func)
+            )
+            on_demand.pickled_func = cloudpickle.dumps(on_demand.func)
         return on_demand
 
     def _get_pipelines(self) -> List[Pipeline]:
@@ -821,212 +756,3 @@ class Dataset(_Node):
     @property
     def on_demand(self):
         return self._on_demand
-
-
-# ---------------------------------------------------------------------
-# Visitor
-# ---------------------------------------------------------------------
-
-
-class Visitor:
-    def visit(self, obj):
-        if isinstance(obj, Dataset):
-            return self.visitDataset(obj)
-        elif isinstance(obj, _Transform):
-            return self.visitTransform(obj)
-        elif isinstance(obj, _Filter):
-            return self.visitFilter(obj)
-        elif isinstance(obj, _GroupBy):
-            return self.visitGroupBy(obj)
-        elif isinstance(obj, _Aggregate):
-            return self.visitAggregate(obj)
-        elif isinstance(obj, _Join):
-            return self.visitJoin(obj)
-        elif isinstance(obj, _Union):
-            return self.visitUnion(obj)
-        else:
-            raise Exception("invalid node type: %s" % obj)
-
-    def visitDataset(self, obj):
-        raise NotImplementedError()
-
-    def visitTransform(self, obj):
-        raise NotImplementedError()
-
-    def visitFilter(self, obj):
-        raise NotImplementedError()
-
-    def visitGroupBy(self, obj):
-        raise Exception(f"group by object {obj} must be aggregated")
-
-    def visitAggregate(self, obj):
-        return NotImplementedError()
-
-    def visitJoin(self, obj):
-        raise NotImplementedError()
-
-    def visitUnion(self, obj):
-        raise NotImplementedError()
-
-
-class Printer(Visitor):
-    def __init__(self):
-        super(Printer, self).__init__()
-        self.lines = []
-        self.offset = 0
-
-    def indent(self):
-        return " " * self.offset
-
-    def visit(self, obj):
-        ret = super(Printer, self).visit(obj)
-        return ret
-
-    def print(self, obj):
-        last = self.visit(obj)
-        self.lines.append(last)
-        print("\n".join(self.lines))
-
-    def visitDataset(self, obj):
-        return f"{self.indent()}{obj.into_field}\n"
-
-    def visitTransform(self, obj):
-        self.offset += 1
-        pipe_str = self.visit(obj.pipe)
-        self.offset -= 1
-        return f"{self.indent()}Transform(\n{pipe_str}{self.indent()})\n"
-
-    def visitFilter(self, obj):
-        self.offset += 1
-        pipe_str = self.visit(obj.pipe)
-        self.offset -= 1
-        return f"{self.indent()}Filter(\n{pipe_str}{self.indent()})\n"
-
-    def visitAggregate(self, obj):
-        self.offset += 1
-        pipe_str = self.visit(obj.pipe)
-        self.offset -= 1
-        return f"{self.indent()}Aggregate(\n{pipe_str}{self.indent()})\n"
-
-    def visitJoin(self, obj):
-        self.offset += 1
-        pipe_str = self.visit(obj.pipe)
-        dataset_str = self.visit(obj.dataset)
-        self.offset -= 1
-        return (
-            f"{self.indent()}Join(\n{pipe_str}{self.indent()},"
-            f"{dataset_str}), on={obj.on} left={obj.left_on} right={obj.right_on}{self.indent()})\n"
-        )
-
-
-class Serializer(Visitor):
-    def __init__(self):
-        super(Serializer, self).__init__()
-        self.proto_by_node_id = {}
-        self.nodes = []
-
-    def serialize(self, pipe: Pipeline):
-        root_id = self.visit(pipe.node)
-        return root_id, self.nodes
-
-    def visit(self, obj) -> str:
-        if isinstance(obj, Dataset):
-            if obj._name not in self.proto_by_node_id:
-                self.proto_by_node_id[obj._name] = obj
-                self.nodes.append(proto.Node(id=obj._name, dataset=obj._name))
-            return self.visitDataset(obj)
-
-        node_id = obj.signature()
-        if node_id not in self.proto_by_node_id:
-            ret = super(Serializer, self).visit(obj)
-            self.nodes.append(ret)
-            self.proto_by_node_id[node_id] = ret
-        return node_id
-
-    def visitDataset(self, obj):
-        return obj._name
-
-    def visitTransform(self, obj):
-        if obj.schema is None:
-            return proto.Node(
-                operator=proto.Operator(
-                    transform=proto.Transform(
-                        operand_node_id=self.visit(obj.node),
-                        function=cloudpickle.dumps(obj.func),
-                        function_source_code=inspect.getsource(obj.func),
-                    ),
-                ),
-                id=obj.signature(),
-            )
-
-        return proto.Node(
-            operator=proto.Operator(
-                transform=proto.Transform(
-                    operand_node_id=self.visit(obj.node),
-                    function=cloudpickle.dumps(obj.func),
-                    function_source_code=inspect.getsource(obj.func),
-                    schema={
-                        col: get_datatype(dtype)
-                        for col, dtype in obj.schema.items()
-                    },
-                ),
-            ),
-            id=obj.signature(),
-        )
-
-    def visitFilter(self, obj):
-        return proto.Node(
-            operator=proto.Operator(
-                filter=proto.Filter(
-                    operand_node_id=self.visit(obj.node),
-                    function=cloudpickle.dumps(obj.func),
-                    function_source_code=inspect.getsource(obj.func),
-                ),
-            ),
-            id=obj.signature(),
-        )
-
-    def visitAggregate(self, obj):
-        return proto.Node(
-            operator=proto.Operator(
-                aggregate=proto.Aggregate(
-                    operand_node_id=self.visit(obj.node),
-                    keys=obj.keys,
-                    aggregates=[agg.to_proto() for agg in obj.aggregates],
-                ),
-            ),
-            id=obj.signature(),
-        )
-
-    def visitJoin(self, obj):
-        if obj.on is not None:
-            on = {k: k for k in obj.on}
-        else:
-            on = {l_on: r_on for l_on, r_on in zip(obj.left_on, obj.right_on)}
-
-        if obj.dataset._name not in self.proto_by_node_id:
-            self.proto_by_node_id[obj.dataset._name] = obj.dataset
-            self.nodes.append(
-                proto.Node(id=obj.dataset._name, dataset=obj.dataset._name)
-            )
-
-        return proto.Node(
-            operator=proto.Operator(
-                join=proto.Join(
-                    lhs_node_id=self.visit(obj.node),
-                    rhs_dataset_name=obj.dataset._name,
-                    on=on,
-                ),
-            ),
-            id=obj.signature(),
-        )
-
-    def visitUnion(self, obj):
-        return proto.Node(
-            operator=proto.Operator(
-                union=proto.Union(
-                    operand_node_ids=[self.visit(node) for node in obj.nodes]
-                ),
-            ),
-            id=obj.signature(),
-        )

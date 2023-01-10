@@ -1056,7 +1056,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
     @mock_client
     def test_muinfo_e2e_test(self, client):
         client.sync(
-            datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo]
+            datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo],
         )
         now = datetime.now()
         yesterday = datetime.now() - timedelta(days=1)

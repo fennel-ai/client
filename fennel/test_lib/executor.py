@@ -5,9 +5,10 @@ from typing import Optional, List
 import numpy as np
 import pandas as pd
 
-from fennel.datasets import Visitor, Pipeline
+from fennel.datasets import Pipeline
 from fennel.lib.aggregate import Count, Sum, Max, Min, Average
 from fennel.lib.duration import duration_to_timedelta
+from fennel.lib.visitor import Visitor
 
 
 @dataclass
