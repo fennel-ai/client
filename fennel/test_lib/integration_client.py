@@ -12,6 +12,7 @@ import fennel.datasets.datasets
 import fennel.gen.services_pb2 as services_pb2
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
+from fennel.lib.to_proto import dataset_to_proto
 
 
 class FakeResponse(Response):
@@ -136,7 +137,7 @@ class IntegrationClient:
         featuresets = []
         for obj in self.to_register_objects:
             if isinstance(obj, Dataset):
-                datasets.append(obj.create_dataset_request_proto())
+                datasets.append(dataset_to_proto(obj))
             elif isinstance(obj, Featureset):
                 featuresets.append(obj.create_featureset_request_proto())
         return services_pb2.SyncRequest(

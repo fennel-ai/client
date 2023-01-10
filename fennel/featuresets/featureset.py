@@ -462,6 +462,7 @@ class Extractor:
         depended_datasets = []
         if hasattr(self.func, DEPENDS_ON_DATASETS_ATTR):
             depended_datasets = getattr(self.func, DEPENDS_ON_DATASETS_ATTR)
+        cloudpickle.register_pickle_by_value(inspect.getmodule(self.func))
         return proto.Extractor(
             name=self.name,
             func=cloudpickle.dumps(self.func),
