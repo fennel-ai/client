@@ -88,8 +88,6 @@ class Field:
         def _get_args(type_: Any) -> Any:
             return getattr(type_, "__args__", None)
 
-        print(self.name, self.dtype, type(self.dtype))
-        print(_get_origin(self.dtype) is Union)
         if (
             _get_origin(self.dtype) is Union
             and type(None) == _get_args(self.dtype)[1]
@@ -126,7 +124,6 @@ def get_field(
         description = field2comment_map.get(annotation_name, "")
         set_meta_attr(field, "description", description)
 
-    print(field.key, field.is_optional(), field.name)
     if field.key and field.is_optional():
         raise ValueError(
             f"Key {annotation_name} in dataset {cls.__name__} cannot be "  # type: ignore

@@ -4,11 +4,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Union, Dict, Any, List, TYPE_CHECKING
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 import fennel.gen.schema_pb2 as proto
-from fennel.gen.dataset_pb2 import CreateDatasetRequest
 
 if TYPE_CHECKING:
     Series = pd.Series
