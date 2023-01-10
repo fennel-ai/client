@@ -14,19 +14,16 @@ class A:
     a3: int = feature(id=3)
     a4: int = feature(id=4)
 
-    @classmethod
     @extractor
     def a1_a2(cls, ts: Series[datetime], f: Series[a1]) -> DataFrame[a2, a4]:
         pass
 
-    @classmethod
     @extractor
     def a2_a3(
-            cls, ts: Series[datetime], f: Series[a2], f2: Series[a4]
+        cls, ts: Series[datetime], f: Series[a2], f2: Series[a4]
     ) -> Series[a3]:
         pass
 
-    @classmethod
     @extractor
     def a3_a1(cls, ts: Series[datetime], f: Series[a3]) -> Series[a1]:
         pass

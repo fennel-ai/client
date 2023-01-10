@@ -8,6 +8,7 @@ from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import featureset, extractor, feature, depends_on
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Series, DataFrame
+
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -49,7 +50,6 @@ class DomainUsageAggregatedByMemberDataset:
     DOMAIN_USED_COUNT: int
     time: datetime = field(timestamp=True)
 
-    @classmethod
     @pipeline(MemberActivityDataset)
     def aggregation(cls, ds: Dataset):
         return ds
@@ -61,11 +61,10 @@ class DomainFeatures:
     domain: str = feature(id=1)
     DOMAIN_USED_COUNT: int = feature(id=2)
 
-    @classmethod
     @extractor
     @depends_on(DomainUsageAggregatedByMemberDataset)
     def get_domain_feature(
-            cls, ts: Series[datetime], domain: Series[Query.domain]
+        cls, ts: Series[datetime], domain: Series[Query.domain]
     ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
         df, found = DomainUsageAggregatedByMemberDataset.lookup(  # type: ignore
             ts, domain=domain
@@ -82,14 +81,14 @@ class TestInvalidSync(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                    str(e.value)
-                    == "error: extractor DomainFeatures.get_domain_feature "
-                       "of featureset DomainFeatures depends on unknown feature domain"
+                str(e.value)
+                == "error: extractor DomainFeatures.get_domain_feature "
+                "of featureset DomainFeatures depends on unknown feature domain"
             )
         else:
             assert (
-                    str(e.value) == "Dataset DomainUsageAggregatedByMemberDataset "
-                                    "not found in sync call"
+                str(e.value) == "Dataset DomainUsageAggregatedByMemberDataset "
+                "not found in sync call"
             )
 
 
@@ -99,11 +98,10 @@ class DomainFeatures2:
     domain: str = feature(id=1)
     DOMAIN_USED_COUNT: int = feature(id=2)
 
-    @classmethod
     @extractor
     @depends_on(MemberDataset)
     def get_domain_feature(
-            cls, ts: Series[datetime], domain: Series[Query.domain]
+        cls, ts: Series[datetime], domain: Series[Query.domain]
     ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
         df, found = DomainUsageAggregatedByMemberDataset.lookup(  # type: ignore
             ts, domain=domain
@@ -132,14 +130,14 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                    "error: extractor DomainFeatures2.get_domain_feature of featureset "
-                    "DomainFeatures2 depends on unknown feature domain"
-                    == str(e.value)
+                "error: extractor DomainFeatures2.get_domain_feature of featureset "
+                "DomainFeatures2 depends on unknown feature domain"
+                == str(e.value)
             )
         else:
             assert (
-                    "Input dataframe does not contain all the required features"
-                    in str(e.value)
+                "Input dataframe does not contain all the required features"
+                in str(e.value)
             )
 
     @pytest.mark.integration
@@ -162,13 +160,13 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                    "error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
-                    "depends on unknown feature domain" == str(e.value)
+                "error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
+                "depends on unknown feature domain" == str(e.value)
             )
         else:
             assert (
-                    "Dataset DomainUsageAggregatedByMemberDataset not found, please ensure it is synced."
-                    == str(e.value)
+                "Dataset DomainUsageAggregatedByMemberDataset not found, please ensure it is synced."
+                == str(e.value)
             )
 
     @pytest.mark.integration
@@ -194,11 +192,11 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                    "error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
-                    "depends on unknown feature domain" == str(e.value)
+                "error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
+                "depends on unknown feature domain" == str(e.value)
             )
         else:
             assert (
-                    "Extractor is not allowed to access dataset DomainUsageAggregatedByMemberDataset, enabled datasets are ['MemberDataset']"
-                    == str(e.value)
+                "Extractor is not allowed to access dataset DomainUsageAggregatedByMemberDataset, enabled datasets are ['MemberDataset']"
+                == str(e.value)
             )

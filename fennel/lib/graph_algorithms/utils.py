@@ -23,16 +23,16 @@ def extractor_graph(
             if isinstance(inp, Feature):
                 # If the given input feature doesn't have an extractor, then
                 # it is a user-resolved feature.
-                if str(inp) not in feature_to_extractor_map:
+                if inp.fqn() not in feature_to_extractor_map:
                     continue
-                extractor_producer = feature_to_extractor_map[str(inp)]
+                extractor_producer = feature_to_extractor_map[inp.fqn()]
                 if extractor.name not in graph[extractor_producer.name]:
                     graph[extractor_producer.name].append(extractor.name)
             elif isinstance(inp, Featureset):
                 for feature in inp.features:
-                    if str(feature) not in feature_to_extractor_map:
+                    if feature.fqn() not in feature_to_extractor_map:
                         continue
-                    extractor_producer = feature_to_extractor_map[str(feature)]
+                    extractor_producer = feature_to_extractor_map[feature.fqn()]
                     if extractor.name not in graph[extractor_producer.name]:
                         graph[extractor_producer.name].append(extractor.name)
 

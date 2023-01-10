@@ -242,10 +242,10 @@ class MockClient(Client):
         input_feature_names = []
         for input_feature in input_feature_list:
             if isinstance(input_feature, Feature):
-                input_feature_names.append(input_feature.fqn)
+                input_feature_names.append(input_feature.fqn_)
             elif isinstance(input_feature, Featureset):
                 input_feature_names.extend(
-                    [f.fqn for f in input_feature.features]
+                    [f.fqn_ for f in input_feature.features]
                 )
         # Check if the input dataframe has all the required features
         if not set(input_feature_names).issubset(set(input_df.columns)):
@@ -267,8 +267,8 @@ class MockClient(Client):
         args = []
         for input in extractor.inputs:
             if isinstance(input, Feature):
-                if input.fqn in intermediate_data:
-                    args.append(intermediate_data[input.fqn])
+                if input.fqn_ in intermediate_data:
+                    args.append(intermediate_data[input.fqn_])
                 else:
                     raise Exception(
                         f"Feature {input} could not be "
@@ -277,8 +277,8 @@ class MockClient(Client):
             elif isinstance(input, Featureset):
                 series = []
                 for feature in input.features:
-                    if feature.fqn in intermediate_data:
-                        series.append(intermediate_data[feature.fqn])
+                    if feature.fqn_ in intermediate_data:
+                        series.append(intermediate_data[feature.fqn_])
                     else:
                         raise Exception(
                             f"Feature {feature} couldn't be "
@@ -313,7 +313,7 @@ class MockClient(Client):
             fennel.datasets.datasets.dataset_lookup = partial(
                 dataset_lookup_impl, self.data, self.datasets, allowed_datasets
             )
-            output = extractor.func(timestamps, *prepare_args)
+            output = extractor.bound_func(timestamps, *prepare_args)
             fennel.datasets.datasets.dataset_lookup = partial(
                 dataset_lookup_impl, self.data, self.datasets, None
             )
@@ -332,10 +332,10 @@ class MockClient(Client):
         output_df = pd.DataFrame()
         for feature in output_feature_list:
             if isinstance(feature, Feature):
-                output_df[feature.fqn] = intermediate_data[feature.fqn]
+                output_df[feature.fqn_] = intermediate_data[feature.fqn_]
             elif isinstance(feature, Featureset):
                 for f in feature.features:
-                    output_df[f.fqn] = intermediate_data[f.fqn]
+                    output_df[f.fqn_] = intermediate_data[f.fqn_]
             else:
                 raise Exception(
                     f"Unknown feature type {type(feature)} found "

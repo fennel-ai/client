@@ -41,7 +41,7 @@ DEPENDS_ON_DATASETS_ATTR = "__fennel_depends_on_datasets"
 
 
 def feature(
-        id: int,
+    id: int,
 ) -> T:
     return cast(
         T,
@@ -49,7 +49,7 @@ def feature(
             id=id,
             # These fields will be filled in later.
             name="",
-            fqn="",
+            fqn_="",
             dtype=None,  # type: ignore
             featureset_name="",
         ),
@@ -62,10 +62,10 @@ def feature(
 
 
 def get_feature(
-        cls: Type,
-        annotation_name: str,
-        dtype: Type,
-        field2comment_map: Dict[str, str],
+    cls: Type,
+    annotation_name: str,
+    dtype: Type,
+    field2comment_map: Dict[str, str],
 ) -> Feature:
     feature = getattr(cls, annotation_name, None)
     if not isinstance(feature, Feature):
@@ -77,7 +77,7 @@ def get_feature(
             f"Feature name {annotation_name} cannot contain a " f"period"
         )
     feature.name = annotation_name
-    feature.fqn = f"{feature.featureset_name}.{annotation_name}"
+    feature.fqn_ = f"{feature.featureset_name}.{annotation_name}"
     description = get_meta_attr(feature, "description")
     if description is None or description == "":
         description = field2comment_map.get(annotation_name, "")
@@ -123,7 +123,7 @@ def extractor(extractor_func: Callable):
         if not class_method and param.name != "cls":
             raise TypeError(
                 "extractor functions should have cls as the first parameter"
-                "since they are class methods"
+                " since they are class methods"
             )
         elif not class_method:
             class_method = True
@@ -135,12 +135,12 @@ def extractor(extractor_func: Callable):
                 continue
             raise TypeError(
                 "extractor functions must have timestamp ( of type Series["
-                "datetime] ) as the first parameter, found {} instead".format(
+                "datetime] ) as the second parameter, found {} instead".format(
                     param.annotation
                 )
             )
         if not isinstance(param.annotation, Featureset) and not isinstance(
-                param.annotation, Feature
+            param.annotation, Feature
         ):
             raise TypeError(
                 f"Parameter {name} is not a Featureset or a "
@@ -154,13 +154,15 @@ def extractor(extractor_func: Callable):
             # If feature name is set, it means that the feature is from another
             # featureset.
             if (
-                    "." in str(return_annotation)
-                    and len(str(return_annotation)) > 0
+                "." in str(return_annotation.fqn())
+                and len(return_annotation.fqn()) > 0
             ):
                 raise TypeError(
                     "Extractors can only extract a feature defined "
-                    f"in the same featureset, found {str(return_annotation)}"
+                    f"in the same featureset, found "
+                    f"{return_annotation.fqn()}"
                 )
+            return_annotation = cast(Feature, return_annotation)
             outputs.append(return_annotation.id)
         elif isinstance(return_annotation, str):
             raise TypeError(
@@ -174,7 +176,8 @@ def extractor(extractor_func: Callable):
                         "Extractors can only return a Series[feature] or a "
                         "DataFrame[featureset]."
                     )
-                if "." in str(f) and len(str(f)) > 0:
+                f = cast(Feature, f)
+                if "." in f.fqn() and len(f.fqn()) > 0:
                     raise TypeError(
                         "Extractors can only extract a feature defined "
                         f"in the same featureset, found "
@@ -218,7 +221,7 @@ def depends_on(*datasets: Any):
 @dataclass
 class Feature:
     name: str
-    fqn: str
+    fqn_: str
     id: int
     featureset_name: str
     dtype: Type
@@ -229,26 +232,23 @@ class Feature:
         return cast(T, meta(**kwargs)(self))
 
     def __repr__(self) -> str:
-        return self.fqn
+        return self.fqn_
 
     def __hash__(self) -> int:
-        return hash(self.fqn)
+        return hash(self.fqn_)
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, Feature):
-            return self.fqn == other.fqn
+            return self.fqn_ == other.fqn_
         if isinstance(other, str):
-            return self.fqn == other
+            return self.fqn_ == other
         return False
 
     def __str__(self) -> str:
         return self.name
 
-    def str(self) -> str:
-        return f"{self.name}"
-    #
-    # def fqn(self) -> str:
-    #     return self.fqn
+    def fqn(self) -> str:
+        return self.fqn_
 
 
 def _add_column_names(func, columns, fs_name):
@@ -260,7 +260,7 @@ def _add_column_names(func, columns, fs_name):
         elif isinstance(ret, pd.DataFrame):
             expected_columns = [x.split(".")[1] for x in columns]
             if len(ret.columns) != len(expected_columns) or set(
-                    ret.columns
+                ret.columns
             ) != set(expected_columns):
                 raise ValueError(
                     f"Expected {len(expected_columns)} columns ({expected_columns}) but got"
@@ -289,9 +289,9 @@ class Featureset:
     _id_to_feature_fqn: Dict[int, str] = {}
 
     def __init__(
-            self,
-            featureset_cls: Type[T],
-            features: List[Feature],
+        self,
+        featureset_cls: Type[T],
+        features: List[Feature],
     ):
         self.__fennel_original_cls__ = featureset_cls
         self._name = featureset_cls.__name__
@@ -299,18 +299,13 @@ class Featureset:
         self._features = features
         self._feature_map = {feature.name: feature for feature in features}
         self._id_to_feature_fqn = {
-            feature.id: feature.fqn for feature in features
+            feature.id: feature.fqn_ for feature in features
         }
         self._extractors = self._get_extractors()
         propogate_fennel_attributes(featureset_cls, self)
         self._validate()
+        self._add_feature_names_as_attributes()
         self._set_extractors_as_attributes()
-        # self._add_feature_names_as_attributes()
-
-    def __getattr__(self, key):
-        if key in self.__fennel_original_cls__.__dict__["__annotations__"]:
-            return self._feature_map[key]
-        return super().__getattribute__(key)
 
     # ------------------- Public Methods --------------------------
 
@@ -319,9 +314,9 @@ class Featureset:
 
     # ------------------- Private Methods ----------------------------------
 
-    # def _add_feature_names_as_attributes(self):
-    #     for feature in self._features:
-    #         setattr(self, feature.name, feature)
+    def _add_feature_names_as_attributes(self):
+        for feature in self._features:
+            setattr(self, feature.name, feature)
 
     def _check_owner_exists(self):
         owner = get_meta_attr(self, "owner")
@@ -337,8 +332,8 @@ class Featureset:
                 continue
             extractor = getattr(method, EXTRACTOR_ATTR)
             if (
-                    extractor.output_feature_ids is None
-                    or len(extractor.output_feature_ids) == 0
+                extractor.output_feature_ids is None
+                or len(extractor.output_feature_ids) == 0
             ):
                 extractor.output_feature_ids = [
                     feature.id for feature in self._features
@@ -384,10 +379,8 @@ class Featureset:
                 extractor.func, columns, self._name
             )
             setattr(self, extractor.func.__name__, extractor.func)
-            cloudpickle.register_pickle_by_value(
-                inspect.getmodule(extractor.func)
-            )
-            extractor.pickled_func = cloudpickle.dumps(extractor.func)
+            extractor.bound_func = functools.partial(extractor.func, self)
+            extractor.pickled_func = cloudpickle.dumps(extractor.bound_func)
 
     @property
     def extractors(self):
@@ -409,13 +402,15 @@ class Extractor:
     # List of FQN of features that this extractor produces
     output_features: List[str]
     pickled_func: bytes
+    # Same as func but bound with Featureset as the first argument.
+    bound_func: Callable
 
     def __init__(
-            self,
-            name: str,
-            inputs: List[Union[Feature, Featureset]],
-            func: Callable,
-            outputs: List[int],
+        self,
+        name: str,
+        inputs: List[Union[Feature, Featureset]],
+        func: Callable,
+        outputs: List[int],
     ):
         self.name = name
         self.inputs = inputs

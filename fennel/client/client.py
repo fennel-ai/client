@@ -100,10 +100,10 @@ class Client:
         input_feature_names = []
         for input_feature in input_feature_list:
             if isinstance(input_feature, Feature):
-                input_feature_names.append(input_feature.fqn)
+                input_feature_names.append(input_feature.fqn())
             elif isinstance(input_feature, Featureset):
                 input_feature_names.extend(
-                    [f.fqn for f in input_feature.features]
+                    [f.fqn() for f in input_feature.features]
                 )
 
         # Check if the input dataframe has all the required features
@@ -117,10 +117,10 @@ class Client:
         output_feature_names = []
         for output_feature in output_feature_list:
             if isinstance(output_feature, Feature):
-                output_feature_names.append(output_feature.fqn)
+                output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, Featureset):
                 output_feature_names.extend(
-                    [f.fqn for f in output_feature.features]
+                    [f.fqn() for f in output_feature.features]
                 )
 
         req = {

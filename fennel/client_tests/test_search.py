@@ -87,7 +87,6 @@ class Document:
     origin: str
     creation_timestamp: datetime
 
-    @classmethod
     @pipeline(NotionDocs)
     def notion_pipe(cls, ds: Dataset):
         return ds.transform(
@@ -102,7 +101,6 @@ class Document:
             },
         )
 
-    @classmethod
     @pipeline(CodaDocs)
     def coda_pipe(cls, ds: Dataset):
         return ds.transform(
@@ -117,7 +115,6 @@ class Document:
             },
         )
 
-    @classmethod
     @pipeline(GoogleDocs)
     def google_docs_pipe(cls, ds: Dataset):
         return ds.transform(
@@ -190,11 +187,10 @@ class DocumentContentDataset:
     top_10_unique_words: List[str]
     creation_timestamp: datetime
 
-    @classmethod
     @pipeline(Document)
     def content_features(
-            cls,
-            ds: Dataset,
+        cls,
+        ds: Dataset,
     ):
         return ds.transform(
             get_content_features,
@@ -230,12 +226,11 @@ class UserEngagementDataset:
     num_long_views: int
     timestamp: datetime
 
-    @classmethod
     @pipeline(UserActivity)
     def user_engagement_pipeline(cls, ds: Dataset):
         def create_short_click(df: pd.DataFrame) -> pd.DataFrame:
-            df["is_short_click"] = df[UserActivity.view_time] < 5
-            df["is_long_click"] = df[UserActivity.view_time] >= 5
+            df["is_short_click"] = df[str(UserActivity.view_time)] < 5
+            df["is_long_click"] = df[str(UserActivity.view_time)] >= 5
             return df
 
         click_type = ds.transform(
@@ -252,16 +247,16 @@ class UserEngagementDataset:
         )
         return click_type.groupby("user_id").aggregate(
             [
-                Count(window=Window("forever"), into_field=cls.num_views.str()),
+                Count(window=Window("forever"), into_field=str(cls.num_views)),
                 Sum(
                     window=Window("7d"),
                     of="is_short_click",
-                    into_field=cls.num_short_views_7d.str(),
+                    into_field=str(cls.num_short_views_7d),
                 ),
                 Sum(
                     window=Window("forever"),
                     of="is_long_click",
-                    into_field=cls.num_long_views.str(),
+                    into_field=str(cls.num_long_views),
                 ),
             ]
         )
@@ -277,18 +272,17 @@ class DocumentEngagementDataset:
     total_timespent: float
     timestamp: datetime
 
-    @classmethod
     @pipeline(UserActivity)
     def doc_engagement_pipeline(cls, ds: Dataset):
         return ds.groupby("doc_id").aggregate(
             [
-                Count(window=Window("forever"), into_field=cls.num_views.str()),
-                Count(window=Window("7d"), into_field=cls.num_views_7d.str()),
-                Count(window=Window("28d"), into_field=cls.num_views_28d.str()),
+                Count(window=Window("forever"), into_field=str(cls.num_views)),
+                Count(window=Window("7d"), into_field=str(cls.num_views_7d)),
+                Count(window=Window("28d"), into_field=str(cls.num_views_28d)),
                 Sum(
                     window=Window("forever"),
                     of="view_time",
-                    into_field=cls.total_timespent.str(),
+                    into_field=str(cls.total_timespent),
                 ),
             ]
         )
@@ -314,7 +308,6 @@ class UserBehaviorFeatures:
     num_short_views_7d: int = feature(id=3)
     num_long_views: int = feature(id=4)
 
-    @classmethod
     @extractor
     @depends_on(UserEngagementDataset)
     def get_features(cls, ts: Series[datetime], user_id: Series[Query.user_id]):
@@ -333,14 +326,13 @@ class DocumentFeatures:
     total_timespent_minutes: float = feature(id=4)
     num_views_28d: int = feature(id=5)
 
-    @classmethod
     @extractor
     @depends_on(DocumentEngagementDataset)
     def get_features(cls, ts: Series[datetime], doc_id: Series[Query.doc_id]):
         df, found = DocumentEngagementDataset.lookup(  # type: ignore
             ts, user_id=doc_id  # type: ignore
         )
-        df["total_timespent_minutes"] = df["total_timespent"] / 60
+        df[str(cls.total_timespent_minutes)] = df["total_timespent"] / 60
         df.drop("total_timespent", axis=1, inplace=True)
         df.drop("timestamp", axis=1, inplace=True)
         return df
@@ -355,7 +347,6 @@ class DocumentContentFeatures:
     num_stop_words: int = feature(id=5)
     top_10_unique_words: List[str] = feature(id=6)
 
-    @classmethod
     @extractor
     @depends_on(DocumentContentDataset)
     def get_features(cls, ts: Series[datetime], doc_id: Series[Query.doc_id]):

@@ -251,13 +251,11 @@ def test_DatasetWithPipes(grpc_stub):
         c: int
         d: datetime
 
-        @classmethod
         @meta(owner="a@xyz.com", description="top_meta")
         @pipeline(A, B, C)
         def pipeline2(cls, a: Dataset, b: Dataset, c: Dataset):
             return c
 
-        @classmethod
         @pipeline(A, B, C)
         @meta(owner="b@xyz.com", description="bottom_meta")
         def pipeline3(cls, a: Dataset, b: Dataset, c: Dataset):
@@ -434,7 +432,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info1(
-            ts: Series[datetime], user_id: Series[User.id]
+            cls, ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[userid, home_geoid]:
             pass
 
@@ -442,7 +440,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @meta(owner="b@xyz.com", description="middle_meta")
         @depends_on(UserInfoDataset)
         def get_user_info2(
-            ts: Series[datetime], user_id: Series[User.id]
+            cls, ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[gender, age]:
             pass
 
@@ -450,7 +448,7 @@ def test_featuresetWithExtractors(grpc_stub):
         @depends_on(UserInfoDataset)
         @meta(owner="c@xyz.com", description="bottom_meta")
         def get_user_info3(
-            ts: Series[datetime], user_id: Series[User.id]
+            cls, ts: Series[datetime], user_id: Series[User.id]
         ) -> Series[income]:
             pass
 
