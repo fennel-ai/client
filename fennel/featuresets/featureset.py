@@ -19,16 +19,12 @@ from typing import (
 import cloudpickle
 import pandas as pd
 
-import fennel.gen.featureset_pb2 as proto
 from fennel.datasets import Dataset
-from fennel.gen.schema_pb2 import DataType, ScalarType
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
     set_meta_attr,
-    get_metadata_proto,
 )
-from fennel.lib.schema import get_datatype
 from fennel.utils import (
     parse_annotation_comments,
     propogate_fennel_attributes,
@@ -54,7 +50,7 @@ def feature(
             # These fields will be filled in later.
             name="",
             fqn="",
-            dtype=DataType(scalar_type=ScalarType.INT),
+            dtype=None,  # type: ignore
             featureset_name="",
         ),
     )
@@ -224,22 +220,6 @@ class Feature:
     wip: bool = False
     deprecated: bool = False
 
-    def to_proto(self) -> proto.Feature:
-        return proto.Feature(
-            id=self.id,
-            name=self.name,
-            metadata=get_metadata_proto(self),
-            dtype=get_datatype(self.dtype),
-        )
-
-    def to_proto_as_input(self) -> proto.Input.Feature:
-        return proto.Input.Feature(
-            feature_set=proto.Input.FeatureSet(
-                name=self.featureset_name,
-            ),
-            name=self.name,
-        )
-
     def meta(self, **kwargs: Any) -> T:
         return cast(T, meta(**kwargs)(self))
 
@@ -322,26 +302,6 @@ class Featureset:
     def signature(self) -> str:
         pass
 
-    def create_featureset_request_proto(self):
-        self._check_owner_exists()
-        return proto.CreateFeaturesetRequest(
-            name=self._name,
-            features=[feature.to_proto() for feature in self._features],
-            extractors=[
-                extractor.to_proto(self._id_to_feature_fqn)
-                for extractor in self._extractors
-            ],
-            # Currently we don't support versioning of featuresets.
-            # Kept for future use.
-            version=0,
-            metadata=get_metadata_proto(self),
-        )
-
-    def to_proto(self):
-        return proto.Input.FeatureSet(
-            name=self._name,
-        )
-
     # ------------------- Private Methods ----------------------------------
 
     def _check_owner_exists(self):
@@ -405,6 +365,10 @@ class Featureset:
                 extractor.func, columns, self._name
             )
             setattr(self, extractor.func.__name__, extractor.func)
+            cloudpickle.register_pickle_by_value(
+                inspect.getmodule(extractor.func)
+            )
+            extractor.pickled_func = cloudpickle.dumps(extractor.func)
 
     @property
     def extractors(self):
@@ -425,6 +389,7 @@ class Extractor:
     output_feature_ids: List[int]
     # List of FQN of features that this extractor produces
     output_features: List[str]
+    pickled_func: bytes
 
     def __init__(
         self,
@@ -446,33 +411,3 @@ class Extractor:
         if hasattr(self.func, DEPENDS_ON_DATASETS_ATTR):
             depended_datasets = getattr(self.func, DEPENDS_ON_DATASETS_ATTR)
         return depended_datasets
-
-    def to_proto(self, id_to_feature_name: Dict[int, str]) -> proto.Extractor:
-        inputs = []
-        for input in self.inputs:
-            if isinstance(input, Feature):
-                inputs.append(proto.Input(feature=input.to_proto_as_input()))
-            elif isinstance(input, Featureset):
-                inputs.append(proto.Input(feature_set=input.to_proto()))
-            else:
-                raise TypeError(
-                    f"Extractor input {input} is not a Feature or "
-                    f"Featureset but a {type(input)}"
-                )
-        depended_datasets = []
-        if hasattr(self.func, DEPENDS_ON_DATASETS_ATTR):
-            depended_datasets = getattr(self.func, DEPENDS_ON_DATASETS_ATTR)
-        cloudpickle.register_pickle_by_value(inspect.getmodule(self.func))
-        return proto.Extractor(
-            name=self.name,
-            func=cloudpickle.dumps(self.func),
-            func_source_code=inspect.getsource(self.func),
-            datasets=[dataset._name for dataset in depended_datasets],
-            inputs=inputs,
-            # Output features are stored as names and NOT FQN.
-            features=[
-                id_to_feature_name[id].split(".")[1]
-                for id in self.output_feature_ids
-            ],
-            metadata=get_metadata_proto(self.func),
-        )
