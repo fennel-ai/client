@@ -50,7 +50,13 @@ class Executor(Visitor):
         input_ret = self.visit(obj.node)
         if input_ret is None:
             return None
-        t_df = obj.func(copy.deepcopy(input_ret.df))
+        try:
+            t_df = obj.func(copy.deepcopy(input_ret.df))
+        except Exception as e:
+            raise Exception(
+                f"Error in transform function for pipeline "
+                f"{self.cur_pipeline_name}, {e}"
+            )
         if t_df is None:
             raise Exception(
                 f"Transform function {obj.func.__name__} returned " f"None"

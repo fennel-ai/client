@@ -62,6 +62,7 @@ def test_datasetLookup(grpc_stub):
         @depends_on(UserInfoDataset)
         @typing.no_type_check
         def user_age_sq(
+            cls,
             ts: Series[datetime],
             user_id: Series[userid],
             names: Series[name],
@@ -80,6 +81,7 @@ def test_datasetLookup(grpc_stub):
         @depends_on(UserInfoDataset)
         @typing.no_type_check
         def user_age_cube(
+            cls,
             ts: Series[datetime],
             user_id: Series[userid],
             names: Series[name],

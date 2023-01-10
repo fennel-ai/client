@@ -58,7 +58,6 @@ def test_DatasetWithPipes(grpc_stub):
             c: int
             d: datetime
 
-            @classmethod
             @pipeline
             def create_pipeline(cls, a: Dataset):
                 return a
@@ -122,7 +121,6 @@ def test_DatasetIncorrectJoin(grpc_stub):
             c: int
             d: datetime
 
-            @classmethod
             @pipeline(XYZ)
             def create_pipeline(cls, a: Dataset):
                 b = a.transform(lambda x: x)
