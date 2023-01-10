@@ -89,10 +89,10 @@ class IntegrationClient:
         input_feature_names = []
         for input_feature in input_feature_list:
             if isinstance(input_feature, Feature):
-                input_feature_names.append(input_feature.fqn)
+                input_feature_names.append(input_feature.fqn_)
             elif isinstance(input_feature, Featureset):
                 input_feature_names.extend(
-                    [f.fqn for f in input_feature.features]
+                    [f.fqn_ for f in input_feature.features]
                 )
 
         # Check if the input dataframe has all the required features
@@ -105,10 +105,10 @@ class IntegrationClient:
         output_feature_names = []
         for output_feature in output_feature_list:
             if isinstance(output_feature, Feature):
-                output_feature_names.append(output_feature.fqn)
+                output_feature_names.append(output_feature.fqn_)
             elif isinstance(output_feature, Featureset):
                 output_feature_names.extend(
-                    [f.fqn for f in output_feature.features]
+                    [f.fqn_ for f in output_feature.features]
                 )
 
         input_df_json = input_df.to_json(orient="records")

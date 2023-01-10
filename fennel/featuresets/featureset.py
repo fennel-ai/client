@@ -49,7 +49,7 @@ def feature(
             id=id,
             # These fields will be filled in later.
             name="",
-            fqn="",
+            fqn_="",
             dtype=None,  # type: ignore
             featureset_name="",
         ),
@@ -77,7 +77,7 @@ def get_feature(
             f"Feature name {annotation_name} cannot contain a " f"period"
         )
     feature.name = annotation_name
-    feature.fqn = f"{feature.featureset_name}.{annotation_name}"
+    feature.fqn_ = f"{feature.featureset_name}.{annotation_name}"
     description = get_meta_attr(feature, "description")
     if description is None or description == "":
         description = field2comment_map.get(annotation_name, "")
@@ -118,19 +118,24 @@ def extractor(extractor_func: Callable):
     extractor_name = extractor_func.__name__
     params = []
     check_timestamp = False
+    class_method = False
     for name, param in sig.parameters.items():
-        if param.name == "self":
+        if not class_method and param.name != "cls":
             raise TypeError(
-                "extractor functions cannot have self as a "
-                "parameter and are like static methods"
+                "extractor functions should have cls as the first parameter"
+                " since they are class methods"
             )
+        elif not class_method:
+            class_method = True
+            continue
+
         if not check_timestamp:
             if param.annotation == datetime:
                 check_timestamp = True
                 continue
             raise TypeError(
                 "extractor functions must have timestamp ( of type Series["
-                "datetime] ) as the first parameter, found {} instead".format(
+                "datetime] ) as the second parameter, found {} instead".format(
                     param.annotation
                 )
             )
@@ -149,13 +154,15 @@ def extractor(extractor_func: Callable):
             # If feature name is set, it means that the feature is from another
             # featureset.
             if (
-                "." in str(return_annotation)
-                and len(str(return_annotation)) > 0
+                "." in str(return_annotation.fqn())
+                and len(return_annotation.fqn()) > 0
             ):
                 raise TypeError(
                     "Extractors can only extract a feature defined "
-                    f"in the same featureset, found {str(return_annotation)}"
+                    f"in the same featureset, found "
+                    f"{return_annotation.fqn()}"
                 )
+            return_annotation = cast(Feature, return_annotation)
             outputs.append(return_annotation.id)
         elif isinstance(return_annotation, str):
             raise TypeError(
@@ -169,7 +176,8 @@ def extractor(extractor_func: Callable):
                         "Extractors can only return a Series[feature] or a "
                         "DataFrame[featureset]."
                     )
-                if "." in str(f) and len(str(f)) > 0:
+                f = cast(Feature, f)
+                if "." in f.fqn() and len(f.fqn()) > 0:
                     raise TypeError(
                         "Extractors can only extract a feature defined "
                         f"in the same featureset, found "
@@ -213,7 +221,7 @@ def depends_on(*datasets: Any):
 @dataclass
 class Feature:
     name: str
-    fqn: str
+    fqn_: str
     id: int
     featureset_name: str
     dtype: Type
@@ -224,23 +232,29 @@ class Feature:
         return cast(T, meta(**kwargs)(self))
 
     def __repr__(self) -> str:
-        return f"{self.fqn}"
+        return self.fqn_
 
     def __hash__(self) -> int:
-        return hash(self.fqn)
+        return hash(self.fqn_)
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, Feature):
-            return self.fqn == other.fqn
+            return self.fqn_ == other.fqn_
         if isinstance(other, str):
-            return self.fqn == other
+            return self.fqn_ == other
         return False
 
+    def __str__(self) -> str:
+        return self.name
 
-def _add_column_names(func, columns, fs_name):
+    def fqn(self) -> str:
+        return self.fqn_
+
+
+def _add_column_names(fs, func, columns, fs_name):
     @functools.wraps(func)
     def inner(*args, **kwargs):
-        ret = func(*args, **kwargs)
+        ret = func(fs, *args, **kwargs)
         if isinstance(ret, pd.Series):
             ret.name = columns[0]
         elif isinstance(ret, pd.DataFrame):
@@ -285,17 +299,13 @@ class Featureset:
         self._features = features
         self._feature_map = {feature.name: feature for feature in features}
         self._id_to_feature_fqn = {
-            feature.id: feature.fqn for feature in features
+            feature.id: feature.fqn_ for feature in features
         }
         self._extractors = self._get_extractors()
         propogate_fennel_attributes(featureset_cls, self)
         self._validate()
         self._set_extractors_as_attributes()
-
-    def __getattr__(self, key):
-        if key in self.__fennel_original_cls__.__dict__["__annotations__"]:
-            return self._feature_map[key]
-        return super().__getattribute__(key)
+        self._add_feature_names_as_attributes()
 
     # ------------------- Public Methods --------------------------
 
@@ -303,6 +313,10 @@ class Featureset:
         pass
 
     # ------------------- Private Methods ----------------------------------
+
+    def _add_feature_names_as_attributes(self):
+        for feature in self._features:
+            setattr(self, feature.name, feature)
 
     def _check_owner_exists(self):
         owner = get_meta_attr(self, "owner")
@@ -362,7 +376,7 @@ class Featureset:
             if len(columns) == 0:
                 columns = [str(f) for f in self._features]
             extractor.func = _add_column_names(
-                extractor.func, columns, self._name
+                self, extractor.func, columns, self._name
             )
             setattr(self, extractor.func.__name__, extractor.func)
             cloudpickle.register_pickle_by_value(

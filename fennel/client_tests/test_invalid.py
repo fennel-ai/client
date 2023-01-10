@@ -50,7 +50,6 @@ class DomainUsageAggregatedByMemberDataset:
     DOMAIN_USED_COUNT: int
     time: datetime = field(timestamp=True)
 
-    @classmethod
     @pipeline(MemberActivityDataset)
     def aggregation(cls, ds: Dataset):
         return ds
@@ -65,7 +64,7 @@ class DomainFeatures:
     @extractor
     @depends_on(DomainUsageAggregatedByMemberDataset)
     def get_domain_feature(
-        ts: Series[datetime], domain: Series[Query.domain]
+        cls, ts: Series[datetime], domain: Series[Query.domain]
     ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
         df, found = DomainUsageAggregatedByMemberDataset.lookup(  # type: ignore
             ts, domain=domain
@@ -102,7 +101,7 @@ class DomainFeatures2:
     @extractor
     @depends_on(MemberDataset)
     def get_domain_feature(
-        ts: Series[datetime], domain: Series[Query.domain]
+        cls, ts: Series[datetime], domain: Series[Query.domain]
     ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
         df, found = DomainUsageAggregatedByMemberDataset.lookup(  # type: ignore
             ts, domain=domain

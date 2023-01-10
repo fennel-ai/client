@@ -46,6 +46,7 @@ def test_SimpleFeatureSet(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info(
+            cls,
             ts: Series[datetime],
             user: DataFrame[User],
             user_id: Series[User.id],
@@ -139,20 +140,20 @@ def test_ComplexFeatureSet(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info1(
-            ts: Series[datetime], user_id: Series[User.id]
+            cls, ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[userid, home_geoid]:
             pass
 
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info2(
-            ts: Series[datetime], user_id: Series[User.id]
+            cls, ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[gender, age]:
             pass
 
         @extractor
         def get_user_info3(
-            ts: Series[datetime], user_id: Series[User.id]
+            cls, ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[income]:
             pass
 

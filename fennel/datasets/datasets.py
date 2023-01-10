@@ -96,6 +96,9 @@ class Field:
 
         return False
 
+    def __str__(self):
+        return f"{self.name}"
+
 
 def get_field(
     cls: F,
@@ -617,7 +620,7 @@ class Dataset(_Node):
 
     def _add_fields_to_class(self) -> None:
         for field in self._fields:
-            setattr(self, field.name, field.name)
+            setattr(self, field.name, field)
 
     def _check_owner_exists(self):
         owner = get_meta_attr(self, "owner")

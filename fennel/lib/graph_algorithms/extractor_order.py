@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Union, Dict, Set, Tuple
+from typing import cast, List, Union, Dict, Set, Tuple
 
 from fennel.featuresets import Extractor, Featureset, Feature
 from fennel.lib.ascii_visualizer import draw_graph
@@ -8,9 +8,9 @@ from fennel.lib.graph_algorithms.utils import extractor_graph
 
 def _get_features(feature: Union[Feature, Featureset]) -> set:
     if isinstance(feature, Feature):
-        return {str(feature)}
+        return {feature.fqn()}
     elif isinstance(feature, Featureset):
-        return {str(f) for f in feature.features}
+        return {f.fqn() for f in feature.features}
     else:
         raise ValueError(
             f"Unknown type for feature/featureset {feature} of"
@@ -67,7 +67,6 @@ def get_vertices_and_eges(
         function_name = extractor.name.split(".")[1]
         caps_only = "".join([c for c in featureset_name if c.isupper()])
         return f"{caps_only}.{function_name}"
-        # return f"E({extractor.name})"
 
     def get_feature_vertex(f: Union[Feature, Featureset, str]) -> str:
         if isinstance(f, Feature):
@@ -117,7 +116,7 @@ def get_extractor_order(
     resolved_features = set()
     for f in input_features:
         resolved_features.update(_get_features(f))
-    to_find = set()
+    to_find: Set[str] = set()
     for f in output_features:
         to_find.update(_get_features(f))
     # Find the extractors that need to be run to produce the output features.
@@ -144,14 +143,13 @@ def get_extractor_order(
                 resolved_features.add(output)
             for inp in extractor.inputs:
                 if isinstance(inp, Feature):
-                    fqn = str(inp)
-                    if fqn not in resolved_features:
-                        next_to_find.add(fqn)
+                    if inp.fqn() not in resolved_features:
+                        next_to_find.add(inp.fqn())
                 elif isinstance(inp, Featureset):
                     for f in inp.features:
-                        fqn = str(f)
-                        if fqn not in resolved_features:
-                            next_to_find.add(fqn)
+                        f = cast(Feature, f)
+                        if f.fqn() not in resolved_features:
+                            next_to_find.add(f.fqn())
         to_find = next_to_find
 
     ret: List[Extractor] = []

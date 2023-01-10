@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.2.5] - 2023-01-10
+- Provide string representation of fields and features. 
+
 ## [0.2.3] - 2023-01-02
 - Use dataset field names rather than strings in pipelines. 
 
