@@ -114,7 +114,9 @@ class TestSimpleExtractor(unittest.TestCase):
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
-        df = UserInfoMultipleExtractor.get_age_and_name_features(ts, age, name)
+        df = UserInfoMultipleExtractor.get_age_and_name_features(
+            UserInfoMultipleExtractor, ts, age, name
+        )
         self.assertEqual(df.shape, (2, 3))
         self.assertEqual(
             df[repr(UserInfoMultipleExtractor.age_squared)].tolist(),
@@ -147,7 +149,9 @@ class TestSimpleExtractor(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
         ts = pd.Series([now, now])
         user_ids = pd.Series([18232, 18234])
-        df = UserInfoSingleExtractor.get_user_info(ts, user_ids)
+        df = UserInfoSingleExtractor.get_user_info(
+            UserInfoMultipleExtractor, ts, user_ids
+        )
         self.assertEqual(df.shape, (2, 4))
         self.assertEqual(
             df[UserInfoSingleExtractor.age.fqn()].tolist(), [32, 24]
@@ -163,7 +167,9 @@ class TestSimpleExtractor(unittest.TestCase):
             [True, False],
         )
 
-        series = UserInfoMultipleExtractor.get_country_geoid(ts, user_ids)
+        series = UserInfoMultipleExtractor.get_country_geoid(
+            UserInfoMultipleExtractor, ts, user_ids
+        )
         assert series.tolist() == [5, 3]
 
 
@@ -218,7 +224,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
             input_df=pd.DataFrame(
-                {UserInfoMultipleExtractor.userid: [18232, 18234]}
+                {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
         self.assertEqual(feature_df.shape, (2, 7))

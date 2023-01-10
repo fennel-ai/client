@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.2.6] - 2023-01-10
+- Pickle by reference and make extractors bounded functions. 
+
 ## [0.2.5] - 2023-01-10
 - Provide string representation of fields and features. 
 

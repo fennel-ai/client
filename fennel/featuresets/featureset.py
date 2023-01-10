@@ -251,10 +251,10 @@ class Feature:
         return self.fqn_
 
 
-def _add_column_names(fs, func, columns, fs_name):
+def _add_column_names(func, columns, fs_name):
     @functools.wraps(func)
     def inner(*args, **kwargs):
-        ret = func(fs, *args, **kwargs)
+        ret = func(*args, **kwargs)
         if isinstance(ret, pd.Series):
             ret.name = columns[0]
         elif isinstance(ret, pd.DataFrame):
@@ -304,8 +304,8 @@ class Featureset:
         self._extractors = self._get_extractors()
         propogate_fennel_attributes(featureset_cls, self)
         self._validate()
-        self._set_extractors_as_attributes()
         self._add_feature_names_as_attributes()
+        self._set_extractors_as_attributes()
 
     # ------------------- Public Methods --------------------------
 
@@ -376,13 +376,11 @@ class Featureset:
             if len(columns) == 0:
                 columns = [str(f) for f in self._features]
             extractor.func = _add_column_names(
-                self, extractor.func, columns, self._name
+                extractor.func, columns, self._name
             )
             setattr(self, extractor.func.__name__, extractor.func)
-            cloudpickle.register_pickle_by_value(
-                inspect.getmodule(extractor.func)
-            )
-            extractor.pickled_func = cloudpickle.dumps(extractor.func)
+            extractor.bound_func = functools.partial(extractor.func, self)
+            extractor.pickled_func = cloudpickle.dumps(extractor.bound_func)
 
     @property
     def extractors(self):
@@ -404,6 +402,8 @@ class Extractor:
     # List of FQN of features that this extractor produces
     output_features: List[str]
     pickled_func: bytes
+    # Same as func but bound with Featureset as the first argument.
+    bound_func: Callable
 
     def __init__(
         self,
