@@ -313,7 +313,7 @@ class MockClient(Client):
             fennel.datasets.datasets.dataset_lookup = partial(
                 dataset_lookup_impl, self.data, self.datasets, allowed_datasets
             )
-            output = extractor.func(timestamps, *prepare_args)
+            output = extractor.bound_func(timestamps, *prepare_args)
             fennel.datasets.datasets.dataset_lookup = partial(
                 dataset_lookup_impl, self.data, self.datasets, None
             )

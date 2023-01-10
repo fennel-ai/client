@@ -640,19 +640,17 @@ class TestBasicFilter(unittest.TestCase):
         three_hours_ago = now - timedelta(hours=3)
         four_hours_ago = now - timedelta(hours=4)
         five_hours_ago = now - timedelta(hours=5)
-
+        minute_ago = now - timedelta(minutes=1)
         data = [
             [18231, 4.5, "Jumanji", five_hours_ago],
             [18231, 3, "Jumanji", four_hours_ago],
             [18231, 3.5, "Jumanji", three_hours_ago],
-            [18231, 5, "Jumanji", five_hours_ago],
             [18231, 4, "Titanic", three_hours_ago],
             [18231, 3, "Titanic", two_hours_ago],
             [18231, 5, "Titanic", one_hour_ago],
-            [18231, 4.5, "Titanic", now],
-            [18231, 3, "Titanic", two_hours_ago],
+            [18231, 4.5, "Titanic", minute_ago],
             [18231, 2, "RaOne", one_hour_ago],
-            [18231, 3, "RaOne", now],
+            [18231, 3, "RaOne", minute_ago],
             [18231, 1, "RaOne", two_hours_ago],
         ]
         columns = ["userid", "rating", "movie", "t"]
@@ -1061,13 +1059,14 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         )
         now = datetime.now()
         yesterday = datetime.now() - timedelta(days=1)
+        minute_ago = datetime.now() - timedelta(minutes=1)
         data = [
-            ["Rashford", 25, 71, 154, "Manchester United", now],
-            ["Maguire", 29, 76, 198, "Manchester United", now],
-            ["Messi", 35, 67, 148, "PSG", now],
-            ["Christiano Ronaldo", 37, 74, 187, "Al-Nassr", now],
+            ["Rashford", 25, 71, 154, "Manchester United", minute_ago],
+            ["Maguire", 29, 76, 198, "Manchester United", minute_ago],
+            ["Messi", 35, 67, 148, "PSG", minute_ago],
+            ["Christiano Ronaldo", 37, 74, 187, "Al-Nassr", minute_ago],
             ["Christiano Ronaldo", 30, 74, 177, "Manchester United", yesterday],
-            ["Antony", 22, 69, 139, "Manchester United", now],
+            ["Antony", 22, 69, 139, "Manchester United", minute_ago],
         ]
         columns = ["name", "age", "height", "weight", "club", "timestamp"]
         input_df = pd.DataFrame(data, columns=columns)
@@ -1112,6 +1111,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         if client.is_integration_client():
             time.sleep(3)
         df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
+        print(df)
         assert df.shape == (5, 8)
         assert df["club"].tolist() == [
             "Manchester United",
