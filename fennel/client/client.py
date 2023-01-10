@@ -93,7 +93,8 @@ class Client:
         input_df: pd.DataFrame,
     ) -> Union[pd.DataFrame, pd.Series]:
         """Extract features from a dataframe."""
-        if input_df.empty:
+        # if either the input dataframe is empty or output feature list is empty, return an empty dataframe
+        if input_df.empty or len(output_feature_list) == 0:
             return pd.DataFrame()
 
         input_feature_names = []
@@ -132,7 +133,10 @@ class Client:
             json=req,
         )
         check_response(response)
-        if len(output_feature_list) > 1:
+        # if the output feature list is a Featureset, convert the json to a dataframe
+        if len(output_feature_list) > 1 or isinstance(
+            output_feature_list[0], Featureset
+        ):
             return pd.DataFrame(response.json())
         else:
             return pd.Series(response.json())
