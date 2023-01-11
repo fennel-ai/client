@@ -4,7 +4,7 @@ from typing import List, Set, Tuple, Union
 
 import pandas as pd
 import pyarrow as pa
-from client_lib import RustClient  # type: ignore
+from fennel_client_lib import RustClient  # type: ignore
 from fennel_dataset import lookup  # type: ignore
 from requests import Response
 
