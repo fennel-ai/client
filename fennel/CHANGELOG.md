@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.2.7] - 2023-01-11
+- Provide client_lib and fennel_dataset from pypi. 
+
 ## [0.2.6] - 2023-01-10
 - Pickle by reference and make extractors bounded functions. 
 

@@ -1,4 +1,12 @@
 #!/bin/bash
 
-pip install fennel/test_lib/gen_rust_lib/client_lib-0.1.0-cp39-cp39-macosx_11_0_arm64.whl --force-reinstall
-pip install fennel/test_lib/gen_rust_lib/fennel_dataset-0.1.0-cp39-cp39-macosx_11_0_arm64.whl --force-reinstall
+pip uninstall fennel-client-lib
+pip uninstall fennel-dataset
+
+# List and install whl files in gen_rust_lib
+search_dir=fennel/test_lib/gen_rust_lib
+for entry in "$search_dir"/*
+do
+  echo "Installing $entry"
+  pip install $entry --force-reinstall
+done
