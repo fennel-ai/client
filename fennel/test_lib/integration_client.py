@@ -4,8 +4,13 @@ from typing import List, Set, Tuple, Union
 
 import pandas as pd
 import pyarrow as pa
-from fennel_client_lib import RustClient  # type: ignore
-from fennel_dataset import lookup  # type: ignore
+
+try:
+    from fennel_client_lib import RustClient  # type: ignore
+    from fennel_dataset import lookup  # type: ignore
+except ImportError:
+    pass
+
 from requests import Response
 
 import fennel.datasets.datasets
