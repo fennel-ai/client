@@ -441,7 +441,7 @@ class TestSearchExample(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
     @mock_client
-    def test_datasets(self, client):
+    def test_search_datasets1(self, client):
         client.sync(datasets=[NotionDocs, CodaDocs, GoogleDocs, Document])
         self.log_document_data(client)
         now = datetime.now()
@@ -459,7 +459,8 @@ class TestSearchExample(unittest.TestCase):
         assert df.shape == (4, 6)
         assert found.tolist() == [False, False, True, False]
 
-        client._reset()
+    @mock_client
+    def test_search_datasets2(self, client):
         client.sync(
             datasets=[
                 UserActivity,
@@ -474,6 +475,7 @@ class TestSearchExample(unittest.TestCase):
         user_ids = pd.Series([123, 342])
         df, found = UserEngagementDataset.lookup(ts, user_id=user_ids)
         assert df.shape == (2, 5)
+        print(df)
         assert found.tolist() == [True, True]
 
         ts = pd.Series([now, now, now])
@@ -482,8 +484,8 @@ class TestSearchExample(unittest.TestCase):
         assert df.shape == (3, 6)
         assert found.tolist() == [True, True, True]
 
-        # Reset the client
-        client._reset()
+    @mock_client
+    def test_search_e2e(self, client):
         client.sync(
             datasets=[
                 NotionDocs,

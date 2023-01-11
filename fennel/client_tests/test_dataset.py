@@ -517,6 +517,7 @@ class TestBasicJoin(unittest.TestCase):
 
 
 class TestBasicAggregate(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_basic_aggregate(self, client):
         # # Sync the dataset
@@ -701,7 +702,7 @@ class Activity:
 @meta(owner="me@fenne.ai")
 @dataset(retention="4m")
 class MerchantInfo:
-    merchant_id: int
+    merchant_id: int = field(key=True)
     category: str
     location: str
     timestamp: datetime
@@ -710,7 +711,7 @@ class MerchantInfo:
 @meta(owner="me@fennel.ai")
 @dataset
 class FraudReportAggregatedDataset:
-    merchant_categ: str = field(key=True)
+    category: str = field(key=True)
     timestamp: datetime
     num_categ_fraudulent_transactions: int
     num_categ_fraudulent_transactions_7d: int
@@ -722,6 +723,10 @@ class FraudReportAggregatedDataset:
             df_json = df["metadata"].apply(json.loads).apply(pd.Series)
             df_timestamp = pd.concat([df_json, df["timestamp"]], axis=1)
             return df_timestamp
+
+        def fillna(df: pd.DataFrame) -> pd.DataFrame:
+            df["category"].fillna("unknown", inplace=True)
+            return df
 
         filtered_ds = activity.filter(
             lambda df: df[df["action_type"] == "report"]
@@ -738,7 +743,17 @@ class FraudReportAggregatedDataset:
             merchant_info,
             on=["merchant_id"],
         )
-        aggregated_ds = ds.groupby("category").aggregate(
+        ds = ds.transform(
+            fillna,
+            schema={
+                "merchant_id": int,
+                "category": str,
+                "location": str,
+                "timestamp": datetime,
+                "transaction_amount": float,
+            },
+        )
+        return ds.groupby("category").aggregate(
             [
                 Count(
                     window=Window("forever"),
@@ -755,16 +770,6 @@ class FraudReportAggregatedDataset:
                 ),
             ]
         )
-        return aggregated_ds.transform(
-            lambda df: df.rename(columns={"category": "merchant_categ"}),
-            schema={
-                str(cls.merchant_categ): str,
-                str(cls.num_categ_fraudulent_transactions): int,
-                str(cls.num_categ_fraudulent_transactions_7d): int,
-                str(cls.sum_categ_fraudulent_transactions_7d): int,
-                str(cls.timestamp): datetime,
-            },
-        )
 
 
 class TestFraudReportAggregatedDataset(unittest.TestCase):
@@ -774,7 +779,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         client.sync(
             datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset]
         )
-        now = datetime.now()
+        now = datetime.now() - timedelta(minutes=1)
         data = [
             [
                 18232,
@@ -849,6 +854,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         response = client.log("MerchantInfo", df)
         assert response.status_code == requests.codes.OK, response.json()
 
+        now = datetime.now()
         ts = pd.Series([now, now])
         categories = pd.Series(["grocery", "entertainment"])
         df, _ = FraudReportAggregatedDataset.lookup(
@@ -856,7 +862,8 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         )
 
         assert df.shape == (2, 5)
-        assert df["merchant_categ"].tolist() == ["grocery", "entertainment"]
+        print(df)
+        assert df["category"].tolist() == ["grocery", "entertainment"]
         assert df["num_categ_fraudulent_transactions"].tolist() == [4, 2]
         assert df["num_categ_fraudulent_transactions_7d"].tolist() == [4, 2]
         assert df["sum_categ_fraudulent_transactions_7d"].tolist() == [
@@ -916,6 +923,7 @@ class UserAgeAggregated:
 
 
 class TestAggregateTableDataset(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_table_aggregation(self, client):
         client.sync(datasets=[UserAge, UserAgeNonTable, UserAgeAggregated])
@@ -953,6 +961,9 @@ class TestAggregateTableDataset(unittest.TestCase):
         input_df["timestamp"] = two_days_from_now
         response = client.log("UserAge", input_df)
         assert response.status_code == requests.codes.OK, response.json()
+
+        if client.is_integration_client():
+            return
 
         three_days_from_now = datetime.now() + timedelta(days=3)
         ts = pd.Series([three_days_from_now, three_days_from_now])
