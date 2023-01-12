@@ -80,17 +80,19 @@ def _field_to_proto(f: Field) -> ds_proto.Field:
 
 
 # Pipeline
-def _pipeline_to_proto(self: Pipeline, dataset_name: str) -> ds_proto.Pipeline:
+def _pipeline_to_proto(
+    pipeline: Pipeline, dataset_name: str
+) -> ds_proto.Pipeline:
     serializer = Serializer()
-    root, nodes = serializer.serialize(self)
+    root, nodes = serializer.serialize(pipeline)
     signature = f"{dataset_name}.{root}"
     return ds_proto.Pipeline(
         root=root,
         nodes=nodes,
-        inputs=[i._name for i in self.inputs],
+        inputs=[i._name for i in pipeline.inputs],
         signature=signature,
-        metadata=get_metadata_proto(self.func),
-        name=self.name,
+        metadata=get_metadata_proto(pipeline.func),
+        name=pipeline.name,
     )
 
 

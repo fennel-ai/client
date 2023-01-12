@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.2.9] - 2023-01-12
+- Pipeline schema validation. 
+
 ## [0.2.8] - 2023-01-11
 - Dynamic import to support integration client 
 

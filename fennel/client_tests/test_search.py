@@ -176,7 +176,7 @@ def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
     ]
 
 
-@meta(owner="sagar@oslash.ai")
+@meta(owner="test@fennel.ai")
 @dataset
 class DocumentContentDataset:
     doc_id: int = field(key=True)
@@ -231,6 +231,8 @@ class UserEngagementDataset:
         def create_short_click(df: pd.DataFrame) -> pd.DataFrame:
             df["is_short_click"] = df[str(UserActivity.view_time)] < 5
             df["is_long_click"] = df[str(UserActivity.view_time)] >= 5
+            df["is_short_click"].astype(int)
+            df["is_long_click"].astype(int)
             return df
 
         click_type = ds.transform(
@@ -241,8 +243,8 @@ class UserEngagementDataset:
                 "action_type": str,
                 "view_time": float,
                 "timestamp": datetime,
-                "is_short_click": bool,
-                "is_long_click": bool,
+                "is_short_click": int,
+                "is_long_click": int,
             },
         )
         return click_type.groupby("user_id").aggregate(
@@ -475,7 +477,6 @@ class TestSearchExample(unittest.TestCase):
         user_ids = pd.Series([123, 342])
         df, found = UserEngagementDataset.lookup(ts, user_id=user_ids)
         assert df.shape == (2, 5)
-        print(df)
         assert found.tolist() == [True, True]
 
         ts = pd.Series([now, now, now])

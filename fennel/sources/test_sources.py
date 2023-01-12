@@ -119,7 +119,7 @@ def test_SimpleSource(grpc_stub):
                         "every": "3600000000",
                     }
                 ],
-                "signature": "b7cb8565c45b59f577d655496226cdae",
+                "signature": "749d38c71deb64890f4bae4e42cea282",
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
                 "retention": "63072000000000",
@@ -156,7 +156,7 @@ def test_SimpleSource(grpc_stub):
     ].name = "UserInfoDatasetInvertedOrder"
     expected_sync_request.dataset_requests[
         0
-    ].signature = "895490181110ce7573a73c460205d0d8"
+    ].signature = "2923379bded21f1ea9edb8c8e12ba095"
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
@@ -339,7 +339,7 @@ def test_ConsoleSource(grpc_stub):
                         "every": "3600000000",
                     },
                 ],
-                "signature": "c0ddc846ab843b58026953df3828cbba",
+                "signature": "5c277ce0c8ef08239ba5ced33477f649",
                 "metadata": {
                     "owner": "test@test.com",
                     "tags": ["test", "yolo"],

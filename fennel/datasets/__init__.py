@@ -13,4 +13,5 @@ from fennel.datasets.datasets import (
     Aggregate,
     Join,
     Union_,
+    Visitor,
 )

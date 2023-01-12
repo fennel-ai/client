@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import datetime
 import inspect
 from dataclasses import dataclass
@@ -486,7 +487,6 @@ def pipeline(
             Pipeline(
                 inputs=list(params),
                 func=pipeline_func,
-                cls_param=cls_param,
             ),
         )
         return pipeline_func
@@ -530,7 +530,7 @@ def dataset_lookup(
 
 
 class Pipeline:
-    node: _Node
+    terminal_node: _Node
     inputs: List[Dataset]
     _sign: str
     _root: str
@@ -539,22 +539,25 @@ class Pipeline:
     _dataset_name: str
     func: Callable
     name: str
-    # Is self a parameter to this pipeline
-    cls_param: bool
 
-    def __init__(
-        self, inputs: List[Dataset], func: Callable, cls_param: bool = False
-    ):
+    def __init__(self, inputs: List[Dataset], func: Callable):
         self.inputs = inputs
         self.func = func  # type: ignore
         self.name = func.__name__
-        self.cls_param = cls_param
+
+    # Validate the schema of all intermediate nodes
+    # and return the schema of the terminal node.
+    def get_terminal_schema(self) -> DSSchema:
+        schema_validator = SchemaValidator()
+        return schema_validator.validate(self)
 
     def signature(self):
         return f"{self._dataset_name}.{self._root}"
 
-    def set_node(self, node: _Node):
-        self.node = node
+    def set_terminal_node(self, node: _Node):
+        if node is None:
+            raise Exception(f"Pipeline {self.name} cannot return None.")
+        self.terminal_node = node
 
     def set_dataset_name(self, ds_name: str):
         self._dataset_name = ds_name
@@ -610,9 +613,6 @@ class Dataset(_Node):
 
     def signature(self):
         return self._sign
-
-    def fields(self):
-        return [f.name for f in self._fields]
 
     # ------------------- Private Methods ----------------------------------
 
@@ -732,13 +732,34 @@ class Dataset(_Node):
             if not hasattr(method, PIPELINE_ATTR):
                 continue
             pipeline = getattr(method, PIPELINE_ATTR)
-            if pipeline.cls_param:
-                pipeline.set_node(pipeline.func(self, *pipeline.inputs))
-            else:
-                pipeline.set_node(pipeline.func(*pipeline.inputs))
+            pipeline.set_terminal_node(pipeline.func(self, *pipeline.inputs))
             pipelines.append(pipeline)
             pipelines[-1].set_dataset_name(dataset_name)
+
+        self._validate_pipelines(pipelines)
         return pipelines
+
+    def _validate_pipelines(self, pipelines: List[Pipeline]):
+        exceptions = []
+        ds_schema = DSSchema(
+            keys={f.name: f.dtype for f in self.fields if f.key},
+            values={
+                f.name: f.dtype
+                for f in self.fields
+                if not f.key and f.name != self._timestamp_field
+            },
+            timestamp=self.timestamp_field,
+        )
+
+        for pipeline in pipelines:
+            pipeline_schema = pipeline.get_terminal_schema()
+            err = pipeline_schema.matches(
+                ds_schema, f"pipeline {pipeline.name} output", self._name
+            )
+            if len(err) > 0:
+                exceptions.extend(err)
+        if exceptions:
+            raise TypeError(exceptions)
 
     @property
     def timestamp_field(self):
@@ -751,3 +772,291 @@ class Dataset(_Node):
     @property
     def on_demand(self):
         return self._on_demand
+
+    @property
+    def fields(self):
+        return self._fields
+
+
+# ---------------------------------------------------------------------
+# Visitor
+# ---------------------------------------------------------------------
+
+
+class Visitor:
+    def visit(self, obj):
+        if isinstance(obj, Dataset):
+            return self.visitDataset(obj)
+        elif isinstance(obj, Transform):
+            return self.visitTransform(obj)
+        elif isinstance(obj, Filter):
+            return self.visitFilter(obj)
+        elif isinstance(obj, GroupBy):
+            return self.visitGroupBy(obj)
+        elif isinstance(obj, Aggregate):
+            return self.visitAggregate(obj)
+        elif isinstance(obj, Join):
+            return self.visitJoin(obj)
+        elif isinstance(obj, Union_):
+            return self.visitUnion(obj)
+        else:
+            raise Exception("invalid node type: %s" % obj)
+
+    def visitDataset(self, obj):
+        raise NotImplementedError()
+
+    def visitTransform(self, obj):
+        raise NotImplementedError()
+
+    def visitFilter(self, obj):
+        raise NotImplementedError()
+
+    def visitGroupBy(self, obj):
+        raise Exception(f"group by object {obj} must be aggregated")
+
+    def visitAggregate(self, obj):
+        return NotImplementedError()
+
+    def visitJoin(self, obj):
+        raise NotImplementedError()
+
+    def visitUnion(self, obj):
+        raise NotImplementedError()
+
+
+@dataclass
+class DSSchema:
+    keys: Dict[str, Type]
+    values: Dict[str, Type]
+    timestamp: str
+    name: str = ""
+
+    def fields(self) -> List[str]:
+        return [x for x in self.keys.keys()] + [x for x in self.values.keys()]
+
+    def get_type(self, field) -> Type:
+        if field in self.keys:
+            return self.keys[field]
+        elif field in self.values:
+            return self.values[field]
+        elif field == self.timestamp:
+            return datetime.datetime
+        else:
+            raise Exception(f"field {field} not found in schema of {self.name}")
+
+    def matches(
+        self, other_schema: DSSchema, this_name: str, other_name: str
+    ) -> List[TypeError]:
+        def check_fields_one_way(
+            this_schema: Dict[str, Type],
+            other_schema: Dict[str, Type],
+            check_type: str,
+        ):
+            for name, dtype in this_schema.items():
+                if name not in other_schema:
+                    return TypeError(
+                        f"Field {name} is present in {this_name} "
+                        f"{check_type} schema but not "
+                        f"present in {other_name} {check_type} schema."
+                    )
+                if dtype != other_schema[name]:
+                    return TypeError(
+                        f"Field {name} has type {dtype_to_string(dtype)} in"
+                        f" {this_name} {check_type} "
+                        f"schema but type {dtype_to_string(other_schema[name])} "
+                        f"in {other_name} {check_type} schema."
+                    )
+
+        def check_field_other_way(
+            other_schema: Dict[str, Type],
+            this_schema: Dict[str, Type],
+            check_type: str,
+        ):
+            for name, dtype in other_schema.items():
+                if name not in this_schema:
+                    return TypeError(
+                        f"Field {name} is present in {other_name} "
+                        f"{check_type} schema "
+                        f"but not present in {this_name} {check_type} schema."
+                    )
+
+        exceptions = []
+        if self.timestamp != other_schema.timestamp:
+            exceptions.append(
+                TypeError(
+                    f"Timestamp field mismatch: {self.timestamp} != {other_schema.timestamp}"
+                )
+            )
+        exceptions.append(
+            check_fields_one_way(self.keys, other_schema.keys, "key")
+        )
+        exceptions.append(
+            check_field_other_way(other_schema.keys, self.keys, "key")
+        )
+        exceptions.append(
+            check_fields_one_way(self.values, other_schema.values, "value")
+        )
+        exceptions.append(
+            check_field_other_way(other_schema.values, self.values, "value")
+        )
+        exceptions = [x for x in exceptions if x is not None]
+        return exceptions
+
+
+class SchemaValidator(Visitor):
+    def __init__(self):
+        super(SchemaValidator, self).__init__()
+        self.pipeline_name = ""
+
+    def validate(self, pipe: Pipeline) -> DSSchema:
+        self.pipeline_name = pipe.name
+        return self.visit(pipe.terminal_node)
+
+    def visit(self, obj) -> DSSchema:
+        return super(SchemaValidator, self).visit(obj)
+
+    def visitDataset(self, obj) -> DSSchema:
+        return DSSchema(
+            keys={f.name: f.dtype for f in obj.fields if f.key},
+            values={
+                f.name: f.dtype
+                for f in obj.fields
+                if not f.key and f.name != obj.timestamp_field
+            },
+            timestamp=obj.timestamp_field,
+            name=f"'[Dataset:{obj._name}]'",
+        )
+
+    def visitTransform(self, obj) -> DSSchema:
+        input_schema = self.visit(obj.node)
+        if obj.schema is None:
+            return input_schema
+        else:
+            node_name = f"'[Pipeline:{self.pipeline_name}]->transform node'"
+            if input_schema.timestamp not in obj.schema:
+                raise TypeError(
+                    f"Timestamp field {input_schema.timestamp} must be "
+                    f"present in schema of {node_name}."
+                )
+            for name, dtype in input_schema.keys.items():
+                if name not in obj.schema:
+                    raise TypeError(
+                        f"Key field {name} must be present in schema of "
+                        f"{node_name}."
+                    )
+                if dtype != obj.schema[name]:
+                    raise TypeError(
+                        f"Key field {name} has type {dtype_to_string(dtype)} in "
+                        f"input schema "
+                        f"of transform but type "
+                        f"{dtype_to_string(obj.schema[name])} in output "
+                        f"schema of {node_name}."
+                    )
+            inp_keys = input_schema.keys
+            return DSSchema(
+                keys=inp_keys,
+                values={
+                    f: dtype
+                    for f, dtype in obj.schema.items()
+                    if f not in inp_keys.keys() and f != input_schema.timestamp
+                },
+                timestamp=input_schema.timestamp,
+                name=node_name,
+            )
+
+    def visitFilter(self, obj) -> DSSchema:
+        input_schema = copy.deepcopy(self.visit(obj.node))
+        input_schema.name = f"'[Pipeline:{self.pipeline_name}]->filter node'"
+        return input_schema
+
+    def visitAggregate(self, obj) -> DSSchema:
+        input_schema = self.visit(obj.node)
+        keys = {f: input_schema.get_type(f) for f in obj.keys}
+        values = {}
+        for agg in obj.aggregates:
+            if hasattr(agg, "of"):
+                values[agg.into_field] = input_schema.get_type(agg.of)
+            else:
+                values[agg.into_field] = int
+        return DSSchema(
+            keys=keys,
+            values=values,
+            timestamp=input_schema.timestamp,
+            name=f"'[Pipeline:{self.pipeline_name}]->aggregate node'",
+        )
+
+    def visitJoin(self, obj) -> DSSchema:
+        def is_subset(subset: List[str], superset: List[str]) -> bool:
+            return set(subset).issubset(set(superset))
+
+        def make_types_optional(types: Dict[str, Type]) -> Dict[str, Type]:
+            return {k: Optional[v] for k, v in types.items()}  # type: ignore
+
+        left_schema = self.visit(obj.node)
+        right_schema = self.visit(obj.dataset)
+
+        if obj.on is not None and len(obj.on) > 0:
+            # obj.on should be the key of the right dataset
+            if set(obj.on) != set(right_schema.keys.keys()):
+                raise ValueError(
+                    f"on field {obj.on} are not the key fields of the right "
+                    f"dataset {obj.dataset._name}."
+                )
+            # Check the schemas of the keys
+            for key in obj.on:
+                if left_schema.get_type(key) != right_schema.get_type(key):
+                    raise TypeError(
+                        f"Key field {key} has type {dtype_to_string(left_schema.get_type(key))} "
+                        f"in left schema but type "
+                        f"{dtype_to_string(right_schema.get_type(key))} in right schema."
+                    )
+        else:
+            #  obj.right_on should be the keys of the right dataset
+            if set(obj.right_on) != set(right_schema.keys.keys()):
+                raise ValueError(
+                    f"right_on field {obj.right_on} are not the key fields of "
+                    f"the right dataset {obj.dataset._name}."
+                )
+            #  obj.left_on should be a subset of the schema of the left dataset
+            if not is_subset(obj.left_on, list(left_schema.fields())):
+                raise ValueError(
+                    f"left_on field {obj.left_on} are not the key fields of "
+                    f"the left dataset {obj.node.dataset._name}."
+                )
+            # Check the schemas of the keys
+            for lkey, rkey in zip(obj.left_on, obj.right_on):
+                if left_schema.get_type(lkey) != right_schema.get_type(rkey):
+                    raise TypeError(
+                        f"Key field {lkey} has type"
+                        f" {dtype_to_string(left_schema.get_type(lkey))} "
+                        f"in left schema but, key field {rkey} has type "
+                        f"{dtype_to_string(right_schema.get_type(rkey))} in "
+                        f"right schema."
+                    )
+        values = copy.deepcopy(left_schema.values)
+        values.update(make_types_optional(right_schema.values))
+        return DSSchema(
+            keys=copy.deepcopy(left_schema.keys),
+            timestamp=left_schema.timestamp,
+            values=values,
+            name=f"'[Pipeline:{self.pipeline_name}]->join node'",
+        )
+
+    def visitUnion(self, obj) -> DSSchema:
+        if len(obj.nodes) == 0:
+            raise ValueError("Union must have at least one node.")
+        schema = self.visit(obj.nodes[0])
+        index = 1
+        exceptions = []
+        for node in obj.nodes[1:]:
+            node_schema = self.visit(node)
+            err = node_schema.matches(
+                schema,
+                "Union node index 0",
+                f"Union node index {index} of pipeline {self.pipeline_name}",
+            )
+            exceptions.extend(err)
+        if len(exceptions) > 0:
+            raise ValueError(f"Union node schemas do not match: {exceptions}")
+        schema.name = f"'[Pipeline:{self.pipeline_name}]->union node'"
+        return schema

@@ -59,7 +59,6 @@ class IntegrationClient:
         return True
 
     def log(self, dataset_name: str, df: pd.DataFrame):
-        print("Logging dataset", dataset_name)
         df_json = df.to_json(orient="records")
         try:
             self._client.log(dataset_name, df_json)

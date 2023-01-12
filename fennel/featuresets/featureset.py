@@ -11,6 +11,7 @@ from typing import (
     Dict,
     Type,
     TypeVar,
+    Optional,
     List,
     Union,
     Set,
@@ -50,7 +51,7 @@ def feature(
             # These fields will be filled in later.
             name="",
             fqn_="",
-            dtype=None,  # type: ignore
+            dtype=None,
             featureset_name="",
         ),
     )
@@ -224,7 +225,7 @@ class Feature:
     fqn_: str
     id: int
     featureset_name: str
-    dtype: Type
+    dtype: Optional[Type]
     wip: bool = False
     deprecated: bool = False
 

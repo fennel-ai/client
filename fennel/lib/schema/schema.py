@@ -44,6 +44,8 @@ def _is_optional(field):
 def dtype_to_string(type_: Any) -> str:
     if _is_optional(type_):
         return f"Optional[{dtype_to_string(_get_args(type_)[0])}]"
+    if isinstance(type_, type):
+        return type_.__name__
     return str(type_)
 
 

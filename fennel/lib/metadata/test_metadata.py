@@ -5,7 +5,7 @@ from typing import Optional, Dict, List
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as proto
-from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.metadata import meta
@@ -92,7 +92,7 @@ def test_simpleDataset(grpc_stub):
                         "metadata": {},
                     },
                 ],
-                "signature": "b7cb8565c45b59f577d655496226cdae",
+                "signature": "749d38c71deb64890f4bae4e42cea282",
                 "metadata": {
                     "owner": "aditya@fennel.ai",
                     "description": "test",
@@ -208,7 +208,7 @@ def test_complexDatasetWithFields(grpc_stub):
                         "metadata": {},
                     },
                 ],
-                "signature": "203421af01d980b5bc20e73454eb4d1b",
+                "signature": "8b0a9eaeab179d98c549db64d771058d",
                 "metadata": {
                     "owner": "daniel@yext.com",
                     "description": "test",
@@ -216,126 +216,6 @@ def test_complexDatasetWithFields(grpc_stub):
                 },
                 "mode": "pandas",
                 "retention": "31536000000000",
-            }
-        ]
-    }
-    expected_sync_request = ParseDict(d, SyncRequest())
-    assert sync_request == expected_sync_request, error_message(
-        sync_request, expected_sync_request
-    )
-
-
-def test_DatasetWithPipes(grpc_stub):
-    @dataset
-    class A:
-        a1: int = field(key=True)
-        t: datetime
-
-    @dataset
-    class B:
-        b1: int = field(key=True)
-        t: datetime
-
-    @dataset
-    class C:
-        t: datetime
-
-    @dataset
-    @meta(
-        owner="aditya@fennel.ai",
-        description="test",
-    )
-    class ABCDataset:
-        a: int = field(key=True)
-        b: int = field(key=True).meta(description="test")
-        c: int
-        d: datetime
-
-        @meta(owner="a@xyz.com", description="top_meta")
-        @pipeline(A, B, C)
-        def pipeline2(cls, a: Dataset, b: Dataset, c: Dataset):
-            return c
-
-        @pipeline(A, B, C)
-        @meta(owner="b@xyz.com", description="bottom_meta")
-        def pipeline3(cls, a: Dataset, b: Dataset, c: Dataset):
-            return c
-
-    view = InternalTestClient(grpc_stub)
-    view.add(ABCDataset)
-    sync_request = view._get_sync_request_proto()
-    assert len(sync_request.dataset_requests) == 1
-    d = {
-        "datasetRequests": [
-            {
-                "name": "ABCDataset",
-                "fields": [
-                    {
-                        "name": "a",
-                        "ftype": "Key",
-                        "dtype": {"scalarType": "INT"},
-                        "metadata": {},
-                    },
-                    {
-                        "name": "b",
-                        "ftype": "Key",
-                        "dtype": {"scalarType": "INT"},
-                        "metadata": {"description": "test"},
-                    },
-                    {
-                        "name": "c",
-                        "ftype": "Val",
-                        "dtype": {"scalarType": "INT"},
-                        "metadata": {},
-                    },
-                    {
-                        "name": "d",
-                        "ftype": "Timestamp",
-                        "dtype": {"scalarType": "TIMESTAMP"},
-                        "metadata": {},
-                    },
-                ],
-                "pipelines": [
-                    {
-                        "root": "C",
-                        "nodes": [
-                            {
-                                "id": "C",
-                                "dataset": "C",
-                            }
-                        ],
-                        "signature": "ABCDataset.C",
-                        "name": "pipeline2",
-                        "metadata": {
-                            "owner": "a@xyz.com",
-                            "description": "top_meta",
-                        },
-                        "inputs": ["A", "B", "C"],
-                    },
-                    {
-                        "root": "C",
-                        "nodes": [
-                            {
-                                "id": "C",
-                                "dataset": "C",
-                            }
-                        ],
-                        "signature": "ABCDataset.C",
-                        "name": "pipeline3",
-                        "metadata": {
-                            "owner": "b@xyz.com",
-                            "description": "bottom_meta",
-                        },
-                        "inputs": ["A", "B", "C"],
-                    },
-                ],
-                "signature": "90c6d47cba9c621df5221fe1126ee606",
-                "metadata": {
-                    "owner": "aditya@fennel.ai",
-                    "description": "test",
-                },
-                "mode": "pandas",
-                "retention": "63072000000000",
             }
         ]
     }
