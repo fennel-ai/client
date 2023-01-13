@@ -9,10 +9,12 @@ import pandas as pd
 import pytest
 import requests
 
+from fennel.client import Client
 from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
+from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.lib.aggregate import Count, Sum, Average
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, Series
+from fennel.lib.schema import Embedding, Series, DataFrame
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
@@ -1153,12 +1155,34 @@ class ManchesterUnitedPlayerInfo:
         return manchester_players.left_join(wag, on=["name"])
 
 
+@meta(owner="test@test.com")
+@featureset
+class ManUPlayerInfo:
+    name: str = feature(id=1)
+    age: int = feature(id=2)
+    height: float = feature(id=3)
+    weight: float = feature(id=4)
+    club: str = feature(id=5)
+    salary: Optional[int] = feature(id=6)
+    wag: Optional[str] = feature(id=7)
+
+    @extractor
+    @depends_on(ManchesterUnitedPlayerInfo)
+    def get_info(
+        cls, ts: Series[datetime], name: Series[name]
+    ) -> DataFrame[age, height, weight, club, salary, wag]:
+        df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=name)  # type: ignore
+        return df[[str(cls.age), str(cls.height), str(cls.weight), str(cls.club), str(cls.salary), str(cls.wag)]]
+
+
 class TestE2eIntegrationTestMUInfo(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_muinfo_e2e_test(self, client):
+    def test_muinfo_e2e_test(self):
+        # client = Client(url="k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com", rest_url="http://k8s-dev-aesenvoy-720df35749-5c7df90d0dc96017.elb.us-west-2.amazonaws.com")
+        client = Client(url="localhost:50051", rest_url="http://localhost:3000")
         client.sync(
             datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo],
+            featuresets=[ManUPlayerInfo]
         )
         now = datetime.now()
         yesterday = datetime.now() - timedelta(days=1)
@@ -1175,8 +1199,8 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         input_df = pd.DataFrame(data, columns=columns)
         response = client.log("PlayerInfo", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        #if client.is_integration_client():
+        time.sleep(3)
         data = [
             ["Manchester United", yesterday, 1000000],
             ["PSG", yesterday, 2000000],
@@ -1186,8 +1210,8 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         input_df = pd.DataFrame(data, columns=columns)
         response = client.log("ClubSalary", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        #if client.is_integration_client():
+        time.sleep(3)
         data = [
             ["Rashford", yesterday, "Lucia"],
             ["Maguire", yesterday, "Fern"],
@@ -1202,19 +1226,22 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         # Do a lookup
         # Check with Nikhil on timestamp for CR7 - yesterday
         ts = pd.Series([now, now, now, now, now])
-        names = pd.Series(
-            [
-                "Rashford",
-                "Maguire",
-                "Messi",
-                "Christiano Ronaldo",
-                "Antony",
-            ]
+        names = [
+            "Rashford",
+            "Maguire",
+            "Messi",
+            "Christiano Ronaldo",
+            "Antony",
+        ]
+        #if client.is_integration_client():
+        time.sleep(10)
+        df = client.extract_features(
+            input_feature_list=[ManUPlayerInfo.name],
+            output_feature_list=[ManUPlayerInfo],
+            input_df=pd.DataFrame({"ManUPlayerInfo.name": names}),
         )
-        if client.is_integration_client():
-            time.sleep(5)
-        df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
-        assert df.shape == (5, 8)
+        print(df)
+        assert df.shape == (5, 7)
         assert df["club"].tolist() == [
             "Manchester United",
             "Manchester United",
