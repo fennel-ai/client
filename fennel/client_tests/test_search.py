@@ -557,14 +557,44 @@ class TestSearchExample(unittest.TestCase):
             "DocumentContentFeatures.fast_text_embedding",
             "DocumentContentFeatures.num_words",
             "DocumentContentFeatures.num_stop_words",
-            "DocumentContentFeatures.top_10_unique_words"
+            "DocumentContentFeatures.top_10_unique_words",
         ]
         assert df["DocumentContentFeatures.doc_id"].tolist() == [31234, 33234]
         assert df["UserBehaviorFeatures.num_short_views_7d"].tolist() == [2, 0]
         assert df["DocumentFeatures.num_views_28d"].tolist() == [1, 2]
         if client.is_integration_client():
-            assert (df["DocumentContentFeatures.top_10_unique_words"].tolist()[0] == ['This', 'is', 'a', 'random', 'Coda', 'document']).all()
-            assert (df["DocumentContentFeatures.top_10_unique_words"].tolist()[1] == ['This', 'is', 'a', 'rand', 'document', 'in', 'Coda', 'with', 'words']).all()
+            assert (
+                df["DocumentContentFeatures.top_10_unique_words"].tolist()[0]
+                == ["This", "is", "a", "random", "Coda", "document"]
+            ).all()
+            assert (
+                df["DocumentContentFeatures.top_10_unique_words"].tolist()[1]
+                == [
+                    "This",
+                    "is",
+                    "a",
+                    "rand",
+                    "document",
+                    "in",
+                    "Coda",
+                    "with",
+                    "words",
+                ]
+            ).all()
         else:
-            assert (df["DocumentContentFeatures.top_10_unique_words"].tolist()[0] == ['This', 'is', 'a', 'random', 'Coda', 'document'])
-            assert (df["DocumentContentFeatures.top_10_unique_words"].tolist()[1] == ['This', 'is', 'a', 'rand', 'document', 'in', 'Coda', 'with', 'words'])
+            assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
+                0
+            ] == ["This", "is", "a", "random", "Coda", "document"]
+            assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
+                1
+            ] == [
+                "This",
+                "is",
+                "a",
+                "rand",
+                "document",
+                "in",
+                "Coda",
+                "with",
+                "words",
+            ]
