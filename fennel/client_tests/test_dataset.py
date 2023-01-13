@@ -82,13 +82,13 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                response.json()["error"]
-                == """error: expected Int, but got String("32")"""
+                    response.json()["error"]
+                    == """error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                response.json()["error"]
-                == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
+                    response.json()["error"]
+                    == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
             )
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
@@ -165,7 +165,6 @@ class TestDataset(unittest.TestCase):
     @mock_client
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
-
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -178,8 +177,8 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-            str(e.exception)
-            == "Dataset currently does not support deleted or deprecated fields."
+                str(e.exception)
+                == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
@@ -565,6 +564,7 @@ class TestBasicAggregate(unittest.TestCase):
 
 
 class TestE2EPipeline(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_e2e_pipeline(self, client):
         """We enter ratings activity and we get movie stats."""
@@ -573,6 +573,7 @@ class TestE2EPipeline(unittest.TestCase):
             datasets=[MovieRating, MovieRevenue, RatingActivity, MovieStats],
         )
         now = datetime.now()
+        minute_ago = now - timedelta(minutes=1)
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -586,7 +587,7 @@ class TestE2EPipeline(unittest.TestCase):
             [18231, 4, "Titanic", three_hours_ago],
             [18231, 3, "Titanic", two_hours_ago],
             [18231, 5, "Titanic", one_hour_ago],
-            [18231, 5, "Titanic", now],
+            [18231, 5, "Titanic", minute_ago],
             [18231, 3, "Titanic", two_hours_ago],
         ]
         columns = ["userid", "rating", "movie", "t"]
@@ -602,6 +603,8 @@ class TestE2EPipeline(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRevenue", df)
         assert response.status_code == requests.codes.OK
+        if client.is_integration_client():
+            time.sleep(3)
 
         # Do some lookups to verify data flow is working as expected
         ts = pd.Series([now, now])
@@ -610,7 +613,6 @@ class TestE2EPipeline(unittest.TestCase):
             ts,
             names=names,
         )
-
         assert df.shape == (2, 4)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
@@ -780,6 +782,7 @@ class FraudReportAggregatedDataset:
 
 
 class TestFraudReportAggregatedDataset(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_fraud(self, client):
         # # Sync the dataset
@@ -1045,7 +1048,7 @@ class ManchesterUnitedPlayerInfo:
 
     @pipeline(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54

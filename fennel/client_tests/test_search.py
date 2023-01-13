@@ -1,3 +1,4 @@
+import time
 import unittest
 from collections import defaultdict
 from datetime import datetime
@@ -5,6 +6,7 @@ from typing import List, Dict
 
 import numpy as np
 import pandas as pd
+import pytest
 import requests
 
 from fennel import sources
@@ -189,8 +191,8 @@ class DocumentContentDataset:
 
     @pipeline(Document)
     def content_features(
-        cls,
-        ds: Dataset,
+            cls,
+            ds: Dataset,
     ):
         return ds.transform(
             get_content_features,
@@ -294,13 +296,14 @@ class DocumentEngagementDataset:
 #                           Featuresets
 ################################################################################
 
-
+@meta(owner="aditya@fennel.ai")
 @featureset
 class Query:
     doc_id: int = feature(id=1)
     user_id: int = feature(id=2)
 
 
+@meta(owner="aditya@fennel.ai")
 @featureset
 class UserBehaviorFeatures:
     user_id: int = feature(id=1)
@@ -320,6 +323,7 @@ class UserBehaviorFeatures:
         return df
 
 
+@meta(owner="aditya@fennel.ai")
 @featureset
 class DocumentFeatures:
     doc_id: int = feature(id=1)
@@ -340,6 +344,7 @@ class DocumentFeatures:
         return df
 
 
+@meta(owner="aditya@fennel.ai")
 @featureset
 class DocumentContentFeatures:
     doc_id: int = feature(id=1)
@@ -442,10 +447,13 @@ class TestSearchExample(unittest.TestCase):
         response = client.log("UserActivity", df)
         assert response.status_code == requests.codes.OK, response.json()
 
+    @pytest.mark.integration
     @mock_client
     def test_search_datasets1(self, client):
         client.sync(datasets=[NotionDocs, CodaDocs, GoogleDocs, Document])
         self.log_document_data(client)
+        if client.is_integration_client():
+            time.sleep(3)
         now = datetime.now()
         yesterday = now - pd.Timedelta(days=1)
 
@@ -461,6 +469,7 @@ class TestSearchExample(unittest.TestCase):
         assert df.shape == (4, 6)
         assert found.tolist() == [False, False, True, False]
 
+    @pytest.mark.integration
     @mock_client
     def test_search_datasets2(self, client):
         client.sync(
@@ -472,6 +481,8 @@ class TestSearchExample(unittest.TestCase):
         )
 
         self.log_engagement_data(client)
+        if client.is_integration_client():
+            time.sleep(3)
         now = datetime.now()
         ts = pd.Series([now, now])
         user_ids = pd.Series([123, 342])
