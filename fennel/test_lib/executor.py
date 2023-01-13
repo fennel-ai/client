@@ -5,10 +5,9 @@ from typing import Optional, List
 import numpy as np
 import pandas as pd
 
-from fennel.datasets import Pipeline
+from fennel.datasets import Pipeline, Visitor
 from fennel.lib.aggregate import Count, Sum, Max, Min, Average
 from fennel.lib.duration import duration_to_timedelta
-from fennel.lib.visitor import Visitor
 
 
 @dataclass
@@ -33,11 +32,10 @@ class Executor(Visitor):
 
     def execute(self, pipeline: Pipeline) -> Optional[NodeRet]:
         self.cur_pipeline_name = pipeline.name
-        return self.visit(pipeline.node)
+        return self.visit(pipeline.terminal_node)
 
     def visit(self, obj) -> Optional[NodeRet]:
-        ret = super(Executor, self).visit(obj)
-        return ret
+        return super(Executor, self).visit(obj)
 
     def visitDataset(self, obj) -> Optional[NodeRet]:
         if obj._name not in self.data:

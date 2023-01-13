@@ -539,13 +539,16 @@ class TestBasicAggregate(unittest.TestCase):
             [18231, 4, "Titanic", three_hours_ago],
             [18231, 3, "Titanic", two_hours_ago],
             [18231, 5, "Titanic", one_hour_ago],
-            [18231, 5, "Titanic", now],
+            [18231, 5, "Titanic", now - timedelta(minutes=1)],
             [18231, 3, "Titanic", two_hours_ago],
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("RatingActivity", df)
         assert response.status_code == requests.codes.OK
+
+        if client.is_integration_client():
+            time.sleep(2)
 
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([now, now])
@@ -617,14 +620,16 @@ class TestE2EPipeline(unittest.TestCase):
 @meta(owner="test@test.com")
 @dataset
 class PositiveRatingActivity:
-    userid: int
-    rating: float
+    cnt_rating: int
     movie: str = field(key=True)
     t: datetime
 
     @pipeline(RatingActivity)
     def filter_positive_ratings(cls, rating: Dataset):
-        return rating.filter(lambda df: df[df["rating"] >= 3.5])
+        filtered_ds = rating.filter(lambda df: df[df["rating"] >= 3.5])
+        return filtered_ds.groupby("movie").aggregate(
+            [Count(window=Window("forever"), into_field=str(cls.cnt_rating))],
+        )
 
 
 class TestBasicFilter(unittest.TestCase):
@@ -668,20 +673,18 @@ class TestBasicFilter(unittest.TestCase):
             ts,
             names=names,
         )
-        assert df.shape == (3, 4)
+        assert df.shape == (3, 3)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
-        assert df["rating"].tolist() == [3.5, 4.5, None]
-        assert df["userid"].tolist() == [18231, 18231, None]
+        assert df["cnt_rating"].tolist() == [2, 3, None]
 
         ts = pd.Series([two_hours_ago, two_hours_ago, two_hours_ago])
         df, _ = PositiveRatingActivity.lookup(
             ts,
             names=names,
         )
-        assert df.shape == (3, 4)
+        assert df.shape == (3, 3)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
-        assert df["rating"].tolist() == [3.5, 4.0, None]
-        assert df["userid"].tolist() == [18231, 18231, None]
+        assert df["cnt_rating"].tolist() == [2, 1, None]
 
 
 ################################################################################
@@ -713,9 +716,13 @@ class MerchantInfo:
 class FraudReportAggregatedDataset:
     category: str = field(key=True)
     timestamp: datetime
+    # merchant_id: int
+    # location: str
+    # transaction_amount: float
+
     num_categ_fraudulent_transactions: int
     num_categ_fraudulent_transactions_7d: int
-    sum_categ_fraudulent_transactions_7d: int
+    sum_categ_fraudulent_transactions_7d: float
 
     @pipeline(Activity, MerchantInfo)
     def create_fraud_dataset(cls, activity: Dataset, merchant_info: Dataset):
@@ -779,63 +786,64 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         client.sync(
             datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset]
         )
-        now = datetime.now() - timedelta(minutes=1)
+        now = datetime.now()
+        minute_ago = now - timedelta(minutes=1)
         data = [
             [
                 18232,
                 "report",
                 49,
                 '{"transaction_amount": 49, "merchant_id": 1322}',
-                now,
+                minute_ago,
             ],
             [
                 13423,
                 "atm_withdrawal",
                 99,
                 '{"location": "mumbai"}',
-                now,
+                minute_ago,
             ],
             [
                 14325,
                 "report",
                 99,
                 '{"transaction_amount": 99, "merchant_id": 1422}',
-                now,
+                minute_ago,
             ],
             [
                 18347,
                 "atm_withdrawal",
                 209,
                 '{"location": "delhi"}',
-                now,
+                minute_ago,
             ],
             [
                 18232,
                 "report",
                 49,
                 '{"transaction_amount": 49, "merchant_id": 1322}',
-                now,
+                minute_ago,
             ],
             [
                 18232,
                 "report",
                 149,
                 '{"transaction_amount": 149, "merchant_id": 1422}',
-                now,
+                minute_ago,
             ],
             [
                 18232,
                 "report",
                 999,
                 '{"transaction_amount": 999, "merchant_id": 1322}',
-                now,
+                minute_ago,
             ],
             [
                 18232,
                 "report",
                 199,
                 '{"transaction_amount": 199, "merchant_id": 1322}',
-                now,
+                minute_ago,
             ],
         ]
         columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
@@ -854,6 +862,8 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         response = client.log("MerchantInfo", df)
         assert response.status_code == requests.codes.OK, response.json()
 
+        if client.is_integration_client():
+            time.sleep(3)
         now = datetime.now()
         ts = pd.Series([now, now])
         categories = pd.Series(["grocery", "entertainment"])
@@ -862,7 +872,6 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         )
 
         assert df.shape == (2, 5)
-        print(df)
         assert df["category"].tolist() == ["grocery", "entertainment"]
         assert df["num_categ_fraudulent_transactions"].tolist() == [4, 2]
         assert df["num_categ_fraudulent_transactions_7d"].tolist() == [4, 2]
@@ -1120,9 +1129,8 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
             ]
         )
         if client.is_integration_client():
-            time.sleep(3)
+            time.sleep(5)
         df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
-        print(df)
         assert df.shape == (5, 8)
         assert df["club"].tolist() == [
             "Manchester United",

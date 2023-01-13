@@ -3,9 +3,8 @@ from __future__ import annotations
 import inspect
 
 import fennel.gen.dataset_pb2 as proto
-from fennel.datasets import Dataset, Pipeline
+from fennel.datasets import Dataset, Pipeline, Visitor
 from fennel.lib.schema import get_datatype
-from fennel.lib.visitor import Visitor
 
 
 class Serializer(Visitor):
@@ -15,7 +14,7 @@ class Serializer(Visitor):
         self.nodes = []
 
     def serialize(self, pipe: Pipeline):
-        root_id = self.visit(pipe.node)
+        root_id = self.visit(pipe.terminal_node)
         return root_id, self.nodes
 
     def visit(self, obj) -> str:

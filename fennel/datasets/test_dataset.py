@@ -92,7 +92,7 @@ def test_SimpleDataset(grpc_stub):
                         "metadata": {},
                     },
                 ],
-                "signature": "b7cb8565c45b59f577d655496226cdae",
+                "signature": "749d38c71deb64890f4bae4e42cea282",
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
                 "retention": "63072000000000",
@@ -151,7 +151,7 @@ def test_DatasetWithRetention(grpc_stub):
                         "metadata": {},
                     },
                 ],
-                "signature": "5a57b6ca0a79ba56b0d3e5ce95a6bbd0",
+                "signature": "04dc8d12acec935d783e040e1ad0e5a6",
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
                 "retention": "10368000000000",
@@ -287,18 +287,12 @@ def test_DatasetWithPipes(grpc_stub):
     @meta(owner="aditya@fennel.ai")
     @dataset
     class ABCDataset:
-        a: int = field(key=True)
-        b: int = field(key=True)
-        c: int
-        d: datetime
+        a1: int = field(key=True)
+        t: datetime
 
         @pipeline(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(b, left_on=["a1"], right_on=["b1"])
-
-        @pipeline(A, B, C)
-        def pipeline2(cls, a: Dataset, b: Dataset, c: Dataset):
-            return c
 
     view = InternalTestClient(grpc_stub)
     view.add(ABCDataset)
@@ -308,25 +302,13 @@ def test_DatasetWithPipes(grpc_stub):
         "name": "ABCDataset",
         "fields": [
             {
-                "name": "a",
+                "name": "a1",
                 "ftype": "Key",
                 "dtype": {"scalarType": "INT"},
                 "metadata": {},
             },
             {
-                "name": "b",
-                "ftype": "Key",
-                "dtype": {"scalarType": "INT"},
-                "metadata": {},
-            },
-            {
-                "name": "c",
-                "ftype": "Val",
-                "dtype": {"scalarType": "INT"},
-                "metadata": {},
-            },
-            {
-                "name": "d",
+                "name": "t",
                 "ftype": "Timestamp",
                 "dtype": {"scalarType": "TIMESTAMP"},
                 "metadata": {},
@@ -358,18 +340,6 @@ def test_DatasetWithPipes(grpc_stub):
                 "name": "pipeline1",
                 "signature": "ABCDataset.816d3f87d7dc94cfb4c9d8513e0d9234",
                 "inputs": ["A", "B"],
-            },
-            {
-                "root": "C",
-                "nodes": [
-                    {
-                        "id": "C",
-                        "dataset": "C",
-                    }
-                ],
-                "signature": "ABCDataset.C",
-                "name": "pipeline2",
-                "inputs": ["A", "B", "C"],
             },
         ],
         "mode": "pandas",
@@ -424,7 +394,15 @@ def test_DatasetWithComplexPipe(grpc_stub):
                 user_info,
                 on=["user_id"],
             )
-            ds_transform = ds.transform(extract_info)
+            ds_transform = ds.transform(
+                extract_info,
+                schema={
+                    "merchant_id": int,
+                    "transaction_amount": float,
+                    "timestamp": datetime,
+                    "user_id": int,
+                },
+            )
             return ds_transform.groupby("merchant_id").aggregate(
                 [
                     Count(
@@ -446,7 +424,6 @@ def test_DatasetWithComplexPipe(grpc_stub):
     view.add(FraudReportAggregatedDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.dataset_requests) == 1
-
     d = {
         "name": "FraudReportAggregatedDataset",
         "fields": [
@@ -497,7 +474,15 @@ def test_DatasetWithComplexPipe(grpc_stub):
                         "id": "273b322b23d9316ccd54d3eb61c1039d",
                         "operator": {
                             "transform": {
-                                "operandNodeId": "d41e03e92a5a7e4a01fa04ce487c46ef"
+                                "operandNodeId": "d41e03e92a5a7e4a01fa04ce487c46ef",
+                                "schema": {
+                                    "user_id": {"scalarType": "INT"},
+                                    "merchant_id": {"scalarType": "INT"},
+                                    "timestamp": {"scalarType": "TIMESTAMP"},
+                                    "transaction_amount": {
+                                        "scalarType": "FLOAT"
+                                    },
+                                },
                             }
                         },
                     },
@@ -526,9 +511,9 @@ def test_DatasetWithComplexPipe(grpc_stub):
                     },
                 ],
                 "root": "04b74f251fd2ca9c97c01eb7d48a2dd7",
-                "name": "create_fraud_dataset",
                 "signature": "FraudReportAggregatedDataset.04b74f251fd2ca9c97c01eb7d48a2dd7",
                 "inputs": ["Activity", "UserInfoDataset"],
+                "name": "create_fraud_dataset",
             }
         ],
         "metadata": {"owner": "test@test.com"},
@@ -536,6 +521,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
         "retention": "63072000000000",
         "onDemand": {},
     }
+
     # Ignoring schema validation since they are bytes and not human-readable
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
@@ -560,16 +546,6 @@ def test_UnionDatasets(grpc_stub):
     class ABCDataset:
         a1: int = field(key=True)
         t: datetime
-
-        @pipeline(A, B)
-        def pipeline1(cls, a: Dataset, b: Dataset):
-            def convert(df: pd.DataFrame) -> pd.DataFrame:
-                df["a1"] = df["b1"]
-                df["a1"] = df["a1"].astype(int) * 2
-                df["t"] = df["t2"]
-                return df[["a1", "t"]]
-
-            return a + b.transform(convert)
 
         @pipeline(A)
         def pipeline2_diamond(cls, a: Dataset):
@@ -601,37 +577,6 @@ def test_UnionDatasets(grpc_stub):
             },
         ],
         "pipelines": [
-            {
-                "nodes": [
-                    {
-                        "id": "A",
-                        "dataset": "A",
-                    },
-                    {
-                        "id": "B",
-                        "dataset": "B",
-                    },
-                    {
-                        "id": "4177990d6cc07916bc6eba47462799ff",
-                        "operator": {"transform": {"operandNodeId": "B"}},
-                    },
-                    {
-                        "id": "8fc1b61dbdc39e3704650442e8c61617",
-                        "operator": {
-                            "union": {
-                                "operandNodeIds": [
-                                    "A",
-                                    "4177990d6cc07916bc6eba47462799ff",
-                                ]
-                            }
-                        },
-                    },
-                ],
-                "root": "8fc1b61dbdc39e3704650442e8c61617",
-                "name": "pipeline1",
-                "signature": "ABCDataset.8fc1b61dbdc39e3704650442e8c61617",
-                "inputs": ["A", "B"],
-            },
             {
                 "nodes": [
                     {
@@ -719,7 +664,7 @@ def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def test_SearchDataset(grpc_stub):
-    @meta(owner="aditya@oslash.ai")
+    @meta(owner="aditya@fennel.ai")
     @dataset
     class DocumentContentDataset:
         doc_id: int = field(key=True)
@@ -832,7 +777,7 @@ def test_SearchDataset(grpc_stub):
                 "inputs": ["Document"],
             }
         ],
-        "metadata": {"owner": "aditya@oslash.ai"},
+        "metadata": {"owner": "aditya@fennel.ai"},
         "mode": "pandas",
         "retention": "63072000000000",
         "onDemand": {},

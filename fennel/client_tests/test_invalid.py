@@ -20,19 +20,20 @@ class Query:
     domain: int = feature(id=3)
 
 
-@meta(owner="sagar.chudamani@oslash.com")
+@meta(owner="test@fennel.ai")
 @dataset
 class MemberActivityDataset:
     url: str
     uid: str
     transitionType: str
     time: datetime = field(timestamp=True)
-    domain: str
+    domain: str = field(key=True)
     hasShortcut: bool
     country: str
+    DOMAIN_USED_COUNT: int
 
 
-@meta(owner="sagar.chudamani@oslash.com")
+@meta(owner="test@fennel.ai")
 @dataset
 class MemberDataset:
     pk: str
@@ -43,30 +44,35 @@ class MemberDataset:
     createdAt: datetime = field(timestamp=True)
 
 
-@meta(owner="sagar.chudamani@oslash.com")
+@meta(owner="test@fennel.ai")
 @dataset
-class DomainUsageAggregatedByMemberDataset:
+class MemberActivityDatasetCopy:
     domain: str = field(key=True)
     DOMAIN_USED_COUNT: int
     time: datetime = field(timestamp=True)
+    url: str
+    uid: str
+    transitionType: str
+    hasShortcut: bool
+    country: str
 
     @pipeline(MemberActivityDataset)
-    def aggregation(cls, ds: Dataset):
+    def copy(cls, ds: Dataset):
         return ds
 
 
-@meta(owner="sagar.chudamani@oslash.com")
+@meta(owner="test@fennel.ai")
 @featureset
 class DomainFeatures:
     domain: str = feature(id=1)
     DOMAIN_USED_COUNT: int = feature(id=2)
 
     @extractor
-    @depends_on(DomainUsageAggregatedByMemberDataset)
+    @depends_on(MemberActivityDatasetCopy)
     def get_domain_feature(
         cls, ts: Series[datetime], domain: Series[Query.domain]
     ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
-        df, found = DomainUsageAggregatedByMemberDataset.lookup(  # type: ignore
+        df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
             ts, domain=domain
         )
         return df
@@ -87,12 +93,12 @@ class TestInvalidSync(unittest.TestCase):
             )
         else:
             assert (
-                str(e.value) == "Dataset DomainUsageAggregatedByMemberDataset "
+                str(e.value) == "Dataset MemberActivityDatasetCopy "
                 "not found in sync call"
             )
 
 
-@meta(owner="sagar.chudamani@oslash.com")
+@meta(owner="test@fennel.ai")
 @featureset
 class DomainFeatures2:
     domain: str = feature(id=1)
@@ -103,7 +109,7 @@ class DomainFeatures2:
     def get_domain_feature(
         cls, ts: Series[datetime], domain: Series[Query.domain]
     ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
-        df, found = DomainUsageAggregatedByMemberDataset.lookup(  # type: ignore
+        df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
             ts, domain=domain
         )
         return df
@@ -113,6 +119,60 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
     @pytest.mark.integration
     @mock_client
     def test_missing_features(self, client):
+        @meta(owner="test@fennel.ai")
+        @dataset
+        class MemberActivityDataset:
+            url: str
+            uid: str
+            transitionType: str
+            time: datetime = field(timestamp=True)
+            domain: str = field(key=True)
+            hasShortcut: bool
+            country: str
+            DOMAIN_USED_COUNT: int
+
+        @meta(owner="test@fennel.ai")
+        @dataset
+        class MemberDataset:
+            pk: str
+            sk: str
+            uid: str = field(key=True)
+            email: str
+            displayName: str
+            createdAt: datetime = field(timestamp=True)
+
+        @meta(owner="test@fennel.ai")
+        @dataset
+        class MemberActivityDatasetCopy:
+            domain: str = field(key=True)
+            DOMAIN_USED_COUNT: int
+            time: datetime = field(timestamp=True)
+            url: str
+            uid: str
+            transitionType: str
+            hasShortcut: bool
+            country: str
+
+            @pipeline(MemberActivityDataset)
+            def copy(cls, ds: Dataset):
+                return ds
+
+        @meta(owner="test@fennel.ai")
+        @featureset
+        class DomainFeatures:
+            domain: str = feature(id=1)
+            DOMAIN_USED_COUNT: int = feature(id=2)
+
+            @extractor
+            @depends_on(MemberActivityDatasetCopy)
+            def get_domain_feature(
+                cls, ts: Series[datetime], domain: Series[Query.domain]
+            ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
+                df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
+                    ts, domain=domain
+                )
+                return df
+
         with pytest.raises(Exception) as e:
             client.sync(datasets=[MemberDataset], featuresets=[DomainFeatures2])
             client.extract_features(
@@ -165,7 +225,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         else:
             assert (
-                "Dataset DomainUsageAggregatedByMemberDataset not found, please ensure it is synced."
+                "Dataset MemberActivityDatasetCopy not found, please ensure it is synced."
                 == str(e.value)
             )
 
@@ -174,7 +234,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
     def test_no_access(self, client):
         with pytest.raises(Exception) as e:
             client.sync(
-                datasets=[MemberDataset, DomainUsageAggregatedByMemberDataset],
+                datasets=[MemberDataset, MemberActivityDatasetCopy],
                 featuresets=[DomainFeatures2],
             )
             client.extract_features(
@@ -197,6 +257,6 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         else:
             assert (
-                "Extractor is not allowed to access dataset DomainUsageAggregatedByMemberDataset, enabled datasets are ['MemberDataset']"
+                "Extractor is not allowed to access dataset MemberActivityDatasetCopy, enabled datasets are ['MemberDataset']"
                 == str(e.value)
             )

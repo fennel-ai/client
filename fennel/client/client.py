@@ -23,8 +23,7 @@ _DEFAULT_TIMEOUT = 30
 
 
 class Client:
-    def __init__(self, url: str, rest_url: Optional[str] = None):
-        self.rest_url = rest_url if rest_url is not None else url
+    def __init__(self, url: str):
         self.url = url
         self.channel = grpc.insecure_channel(url)
         self.stub = services_pb2_grpc.FennelFeatureStoreStub(self.channel)
@@ -141,5 +140,15 @@ class Client:
         else:
             return pd.Series(response.json())
 
+    def extract_historical_features(
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_df: pd.DataFrame,
+        ts: pd.Series,
+    ) -> Union[pd.DataFrame, pd.Series]:
+        """Extract features from a dataframe."""
+        pass
+
     def _url(self, path):
-        return self.rest_url + REST_API_VERSION + "/" + path
+        return self.url + REST_API_VERSION + "/" + path

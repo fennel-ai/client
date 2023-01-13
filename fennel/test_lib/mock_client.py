@@ -204,7 +204,7 @@ class MockClient(Client):
         for dataset in datasets:
             self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
             self.datasets[dataset._name] = _DatasetInfo(
-                dataset.fields(),
+                [f.name for f in dataset.fields],
                 dataset.key_fields,
                 dataset.timestamp_field,
                 dataset.on_demand,
@@ -212,7 +212,6 @@ class MockClient(Client):
             for pipeline in dataset._pipelines:
                 for input in pipeline.inputs:
                     self.listeners[input._name].append(pipeline)
-
         for featureset in featuresets:
             # Check if the dataset used by the extractor is registered
             for extractor in featureset.extractors:
