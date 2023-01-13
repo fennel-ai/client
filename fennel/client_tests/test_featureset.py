@@ -1,3 +1,4 @@
+import time
 import unittest
 from datetime import datetime
 from typing import Optional
@@ -344,6 +345,7 @@ class DocumentFeatures:
 
 
 class TestDocumentDataset(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_document_featureset(self, client):
         client.sync(
@@ -371,11 +373,31 @@ class TestDocumentDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("DocumentContentDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
+        if client.is_integration_client():
+            time.sleep(3)
         feature_df = client.extract_features(
             output_feature_list=[
                 DocumentFeatures,
             ],
             input_feature_list=[DocumentFeatures.doc_id],
-            input_df=pd.DataFrame({DocumentFeatures.doc_id: [18232, 18234]}),
+            input_df=pd.DataFrame({"DocumentFeatures.doc_id": [18232, 18234]}),
         )
-        self.assertEqual(feature_df.shape, (2, 4))
+        assert feature_df.shape == (2, 4)
+        assert feature_df.columns.tolist() == [
+            "DocumentFeatures.doc_id",
+            "DocumentFeatures.bert_embedding",
+            "DocumentFeatures.fast_text_embedding",
+            "DocumentFeatures.num_words",
+        ]
+        assert feature_df["DocumentFeatures.doc_id"].tolist() == [
+            18232,
+            18234,
+        ]
+        assert feature_df["DocumentFeatures.num_words"].tolist() == [
+            10,
+            9,
+        ]
+        assert (
+            feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
+            == [1, 2, 3, 4]
+        ).all()

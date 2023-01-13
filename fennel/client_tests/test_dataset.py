@@ -382,7 +382,7 @@ class TestBasicTransform(unittest.TestCase):
         response = client.log("MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
         if client.is_integration_client():
-            time.sleep(2)
+            time.sleep(3)
         # Do some lookups to verify pipeline_transform is working as expected
         an_hour_ago = now - timedelta(hours=1)
         ts = pd.Series([an_hour_ago, an_hour_ago])
@@ -402,7 +402,7 @@ class TestBasicTransform(unittest.TestCase):
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
         if client.is_integration_client():
-            time.sleep(2)
+            time.sleep(3)
         df, _ = MovieRatingTransformed.lookup(
             ts,
             names=names,
@@ -488,7 +488,7 @@ class TestBasicJoin(unittest.TestCase):
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
         if client.is_integration_client():
-            time.sleep(2)
+            time.sleep(3)
         df, _ = MovieStats.lookup(
             ts,
             names=names,
@@ -548,7 +548,7 @@ class TestBasicAggregate(unittest.TestCase):
         assert response.status_code == requests.codes.OK
 
         if client.is_integration_client():
-            time.sleep(2)
+            time.sleep(3)
 
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([now, now])
@@ -565,6 +565,7 @@ class TestBasicAggregate(unittest.TestCase):
 
 
 class TestE2EPipeline(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_e2e_pipeline(self, client):
         """We enter ratings activity and we get movie stats."""
@@ -573,6 +574,7 @@ class TestE2EPipeline(unittest.TestCase):
             datasets=[MovieRating, MovieRevenue, RatingActivity, MovieStats],
         )
         now = datetime.now()
+        minute_ago = now - timedelta(minutes=1)
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -586,7 +588,7 @@ class TestE2EPipeline(unittest.TestCase):
             [18231, 4, "Titanic", three_hours_ago],
             [18231, 3, "Titanic", two_hours_ago],
             [18231, 5, "Titanic", one_hour_ago],
-            [18231, 5, "Titanic", now],
+            [18231, 5, "Titanic", minute_ago],
             [18231, 3, "Titanic", two_hours_ago],
         ]
         columns = ["userid", "rating", "movie", "t"]
@@ -602,6 +604,8 @@ class TestE2EPipeline(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRevenue", df)
         assert response.status_code == requests.codes.OK
+        if client.is_integration_client():
+            time.sleep(3)
 
         # Do some lookups to verify data flow is working as expected
         ts = pd.Series([now, now])
@@ -610,7 +614,6 @@ class TestE2EPipeline(unittest.TestCase):
             ts,
             names=names,
         )
-
         assert df.shape == (2, 4)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
@@ -780,6 +783,7 @@ class FraudReportAggregatedDataset:
 
 
 class TestFraudReportAggregatedDataset(unittest.TestCase):
+    @pytest.mark.integration
     @mock_client
     def test_fraud(self, client):
         # # Sync the dataset
