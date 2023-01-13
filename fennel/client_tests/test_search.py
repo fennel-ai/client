@@ -2,7 +2,7 @@ import time
 import unittest
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -162,9 +162,9 @@ def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
     df["num_stop_words"] = df["body"].apply(
         lambda x: len([x for x in x.split(" ") if x in ["the", "is", "of"]])
     )
-    # df["top_10_unique_words"] = df["body"].apply(
-    #     lambda x: get_top_10_unique_words(x)
-    # )
+    df["top_10_unique_words"] = df["body"].apply(
+        lambda x: get_top_10_unique_words(x)
+    )
     return df[
         [
             "doc_id",
@@ -172,7 +172,7 @@ def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
             "fast_text_embedding",
             "num_words",
             "num_stop_words",
-            # "top_10_unique_words",
+            "top_10_unique_words",
             "creation_timestamp",
         ]
     ]
@@ -186,7 +186,7 @@ class DocumentContentDataset:
     fast_text_embedding: Embedding[256]
     num_words: int
     num_stop_words: int
-    # top_10_unique_words: List[str]
+    top_10_unique_words: List[str]
     creation_timestamp: datetime
 
     @pipeline(Document)
@@ -202,7 +202,7 @@ class DocumentContentDataset:
                 "fast_text_embedding": Embedding[256],
                 "num_words": int,
                 "num_stop_words": int,
-                #  "top_10_unique_words": List[str],
+                "top_10_unique_words": List[str],
                 "creation_timestamp": datetime,
             },
         )
@@ -354,7 +354,7 @@ class DocumentContentFeatures:
     num_words: int = feature(id=4)
     num_stop_words: int = feature(id=5)
 
-    # top_10_unique_words: List[str] = feature(id=6)
+    top_10_unique_words: List[str] = feature(id=6)
 
     @extractor
     @depends_on(DocumentContentDataset)
@@ -541,7 +541,7 @@ class TestSearchExample(unittest.TestCase):
             input_feature_list=[Query],
             input_df=input_df,
         )
-        assert df.shape == (2, 14)
+        assert df.shape == (2, 15)
         assert df.columns.tolist() == [
             "UserBehaviorFeatures.user_id",
             "UserBehaviorFeatures.num_views",
@@ -557,7 +557,14 @@ class TestSearchExample(unittest.TestCase):
             "DocumentContentFeatures.fast_text_embedding",
             "DocumentContentFeatures.num_words",
             "DocumentContentFeatures.num_stop_words",
+            "DocumentContentFeatures.top_10_unique_words"
         ]
         assert df["DocumentContentFeatures.doc_id"].tolist() == [31234, 33234]
         assert df["UserBehaviorFeatures.num_short_views_7d"].tolist() == [2, 0]
         assert df["DocumentFeatures.num_views_28d"].tolist() == [1, 2]
+        if client.is_integration_client():
+            assert (df["DocumentContentFeatures.top_10_unique_words"].tolist()[0] == ['This', 'is', 'a', 'random', 'Coda', 'document']).all()
+            assert (df["DocumentContentFeatures.top_10_unique_words"].tolist()[1] == ['This', 'is', 'a', 'rand', 'document', 'in', 'Coda', 'with', 'words']).all()
+        else:
+            assert (df["DocumentContentFeatures.top_10_unique_words"].tolist()[0] == ['This', 'is', 'a', 'random', 'Coda', 'document'])
+            assert (df["DocumentContentFeatures.top_10_unique_words"].tolist()[1] == ['This', 'is', 'a', 'rand', 'document', 'in', 'Coda', 'with', 'words'])
