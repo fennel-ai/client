@@ -353,7 +353,6 @@ class DocumentContentFeatures:
     fast_text_embedding: Embedding[256] = feature(id=3)
     num_words: int = feature(id=4)
     num_stop_words: int = feature(id=5)
-
     top_10_unique_words: List[str] = feature(id=6)
 
     @extractor

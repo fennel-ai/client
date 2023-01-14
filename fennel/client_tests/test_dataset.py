@@ -564,6 +564,108 @@ class TestBasicAggregate(unittest.TestCase):
         assert df["sum_ratings"].tolist() == [12, 20]
 
 
+@meta(owner="test@test.com")
+@dataset
+class MovieRatingWindowed:
+    movie: str = field(key=True)
+    num_ratings_3d: int
+    sum_ratings_7d: float
+    avg_rating_6h: float
+    total_ratings: int
+    t: datetime
+
+    @pipeline(RatingActivity)
+    def pipeline_aggregate(cls, activity: Dataset):
+        return activity.groupby("movie").aggregate(
+            [
+                Count(window=Window("3d"), into_field=str(cls.num_ratings_3d)),
+                Sum(
+                    window=Window("7d"),
+                    of="rating",
+                    into_field=str(cls.sum_ratings_7d),
+                ),
+                Average(
+                    window=Window("6h"),
+                    of="rating",
+                    into_field=str(cls.avg_rating_6h),
+                ),
+                Count(
+                    window=Window("forever"), into_field=str(cls.total_ratings)
+                ),
+            ]
+        )
+
+
+class TestBasicWindowAggregate(unittest.TestCase):
+    @pytest.mark.integration
+    @mock_client
+    def test_basic_window_aggregate(self, client):
+        # # Sync the dataset
+        client.sync(
+            datasets=[MovieRatingWindowed, RatingActivity],
+        )
+        true_now = datetime.now()
+        now = true_now - timedelta(days=10) - timedelta(minutes=1)
+        three_hours = now + timedelta(hours=3)
+        six_hours = now + timedelta(hours=6)
+        one_day = now + timedelta(days=1)
+        two_days = now + timedelta(days=2)
+        three_days = now + timedelta(days=3)
+        six_days = now + timedelta(days=6)
+        seven_days = now + timedelta(days=7)
+        data = [
+            [18231, 2, "Jumanji", three_hours],
+            [18231, 3, "Jumanji", six_hours],
+            [18231, 2, "Jumanji", one_day],
+            [18231, 5, "Jumanji", three_days],
+            [18231, 4, "Jumanji", six_days],
+            [18231, 4, "Jumanji", seven_days],
+            [18231, 4, "Titanic", one_day],
+            [18231, 3, "Titanic", two_days],
+            [18231, 5, "Titanic", three_days],
+            [18231, 5, "Titanic", two_days],
+            [18231, 3, "Titanic", six_days],
+            [18231, 3, "Titanic", seven_days],
+            [18921, 1, "Jumanji", true_now],
+            [18921, 1, "Titanic", true_now],
+        ]
+        columns = ["userid", "rating", "movie", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("RatingActivity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        if client.is_integration_client():
+            time.sleep(3)
+
+        now = true_now - timedelta(days=10)
+        eight_days = now + timedelta(days=8)
+        five_days = now + timedelta(days=5)
+        one_day = now + timedelta(days=1)
+        # Do some lookups to verify pipeline_aggregate is working as expected
+        ts = pd.Series(
+            [eight_days, eight_days, five_days, five_days, one_day, one_day]
+        )
+        names = pd.Series(
+            ["Jumanji", "Titanic", "Jumanji", "Titanic", "Jumanji", "Titanic"]
+        )
+        df, _ = MovieRatingWindowed.lookup(
+            ts,
+            names=names,
+        )
+        assert df.shape == (6, 6)
+        assert df["movie"].tolist() == [
+            "Jumanji",
+            "Titanic",
+            "Jumanji",
+            "Titanic",
+            "Jumanji",
+            "Titanic",
+        ]
+        assert df["num_ratings_3d"].tolist() == [2, 2, 1, 1, 3, 1]
+        assert df["sum_ratings_7d"].tolist() == [13, 19, 12, 17, 7, 4]
+        assert df["avg_rating_6h"].tolist() == [0.0, 0.0, 0.0, 0.0, 2.0, 4.0]
+        assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
+
+
 class TestE2EPipeline(unittest.TestCase):
     @pytest.mark.integration
     @mock_client
