@@ -20,6 +20,7 @@ REST_API_VERSION = "/api/v1"
 _DEFAULT_CONNECT_TIMEOUT = 10
 # Default request timeout.
 _DEFAULT_TIMEOUT = 30
+_DEFAULT_GRPC_TIMEOUT = 60
 
 
 class Client:
@@ -73,7 +74,7 @@ class Client:
         for featureset in featuresets:
             self.add(featureset)
         sync_request = self._get_sync_request_proto()
-        self.stub.Sync(sync_request)
+        self.stub.Sync(sync_request, timeout=_DEFAULT_GRPC_TIMEOUT)
 
     def log(self, dataset_name: str, data: pd.DataFrame):
         """log api uses a REST endpoint to log data to a dataset rather than
