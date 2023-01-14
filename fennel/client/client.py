@@ -23,8 +23,9 @@ _DEFAULT_TIMEOUT = 30
 
 
 class Client:
-    def __init__(self, url: str):
+    def __init__(self, url: str, rest_url: str = None):
         self.url = url
+        self.rest_url = rest_url if rest_url else f'http://{url}'
         self.channel = grpc.insecure_channel(url)
         self.stub = services_pb2_grpc.FennelFeatureStoreStub(self.channel)
         self.to_register: Set[str] = set()
@@ -84,6 +85,9 @@ class Client:
         }
         response = self.http.post(self._url("log"), json=req)
         return response
+    
+    def is_integration_client(self) -> bool:
+        return True
 
     def extract_features(
         self,
@@ -151,4 +155,4 @@ class Client:
         pass
 
     def _url(self, path):
-        return self.url + REST_API_VERSION + "/" + path
+        return self.rest_url + REST_API_VERSION + "/" + path

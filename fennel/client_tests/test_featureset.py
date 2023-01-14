@@ -397,7 +397,7 @@ class TestDocumentDataset(unittest.TestCase):
             10,
             9,
         ]
-        assert (
-            feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
-            == [1, 2, 3, 4]
-        ).all()
+        if client.is_integration_client():
+            assert feature_df["DocumentFeatures.bert_embedding"].tolist()[0] == [1, 2, 3, 4]
+        else:
+            assert (feature_df["DocumentFeatures.bert_embedding"].tolist()[0] == [1, 2, 3, 4]).all()

@@ -398,10 +398,11 @@ def mock_client(test_func):
                 % 10**9
             )
             is_airbyte_test = "airbyte" in test_func.__name__
-            client = IntegrationClient(
-                tier_id, reset_db=True, is_airbyte_test=is_airbyte_test
-            )
+            # client = IntegrationClient(tier_id, reset_db=True, is_airbyte_test=is_airbyte_test)
+            # client = Client(url="k8s-testing-testinga-d09e7d09f8-fa6106466b6397fa.elb.us-west-2.amazonaws.com")
+            client = Client(url="localhost:50051", rest_url="http://localhost:3000")
             f = test_func(*args, **kwargs, client=client)
+            client.sync(datasets=[], featuresets=[])
         return f
 
     return wrapper
