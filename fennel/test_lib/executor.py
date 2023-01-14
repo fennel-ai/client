@@ -1,5 +1,6 @@
 import copy
 from dataclasses import dataclass
+from functools import reduce
 from typing import Optional, List
 
 import numpy as np
@@ -122,9 +123,27 @@ class Executor(Visitor):
         # timestamps can be assigned
         df = df.sort_values(input_ret.timestamp_field)
         timestamps = df[input_ret.timestamp_field].unique()
-        timestamped_dfs = []
+        timestamps_with_expired_events = copy.deepcopy(timestamps)
         for current_timestamp in timestamps:
+            for aggregate in obj.aggregates:
+                if aggregate.window.start != "forever":
+                    window_secs = duration_to_timedelta(
+                        aggregate.window.start
+                    ).total_seconds()
+                    expired_timestamp = current_timestamp + np.timedelta64(
+                        int(window_secs + 1), "s"
+                    )
+                    timestamps_with_expired_events = np.append(
+                        timestamps_with_expired_events, expired_timestamp
+                    )
+        timestamps_with_expired_events.sort()
+        timestamps_with_expired_events = np.unique(
+            timestamps_with_expired_events
+        )
+        timestamped_dfs = []
+        for current_timestamp in timestamps_with_expired_events:
             aggs = {}
+            agg_dfs = []
             for aggregate in obj.aggregates:
                 # Run the aggregate for all data upto the current row
                 # for the given window and assign it the timestamp of the row.
@@ -165,11 +184,43 @@ class Executor(Visitor):
                     aggs[aggregate.into_field] = pd.NamedAgg(
                         column=aggregate.of, aggfunc="max"
                     )
-            agg_df = filtered_df.groupby(obj.keys).agg(**aggs).reset_index()
-            agg_df[input_ret.timestamp_field] = current_timestamp
-            timestamped_dfs.append(agg_df)
+                agg_df = filtered_df.groupby(obj.keys).agg(**aggs).reset_index()
+                agg_df[input_ret.timestamp_field] = current_timestamp
+                agg_dfs.append(agg_df)
+                aggs = {}
+
+            join_columns = obj.keys + [input_ret.timestamp_field]
+            df_merged = reduce(
+                lambda left, right: pd.merge(
+                    left, right, on=join_columns, how="outer"
+                ),
+                agg_dfs,
+            )
+            timestamped_dfs.append(df_merged)
+        post_aggregated_data = pd.concat(timestamped_dfs)
+        post_aggregated_data = post_aggregated_data.reset_index(drop=True)
+        post_aggregated_data.fillna(0, inplace=True)
+        post_aggregated_data = post_aggregated_data.convert_dtypes(
+            convert_string=False
+        )
+
+        for col in post_aggregated_data.columns:
+            # Cast columns to numpy dtypes from pandas types
+            if isinstance(post_aggregated_data[col].dtype, pd.Int64Dtype):
+                post_aggregated_data[col] = post_aggregated_data[col].astype(
+                    np.int64
+                )
+            elif isinstance(post_aggregated_data[col].dtype, pd.Float64Dtype):
+                post_aggregated_data[col] = post_aggregated_data[col].astype(
+                    np.float64
+                )
+            elif isinstance(post_aggregated_data[col].dtype, pd.BooleanDtype):
+                post_aggregated_data[col] = post_aggregated_data[col].astype(
+                    np.bool_
+                )
+
         return NodeRet(
-            pd.concat(timestamped_dfs), input_ret.timestamp_field, obj.keys
+            post_aggregated_data, input_ret.timestamp_field, obj.keys
         )
 
     def visitJoin(self, obj) -> Optional[NodeRet]:
@@ -186,7 +237,6 @@ class Executor(Visitor):
         right_df = right_df.rename(
             columns={right_timestamp_field: left_timestamp_field}
         )
-        pd.set_option("display.max_columns", None)
         if obj.on is not None and len(obj.on) > 0:
             if not is_subset(obj.on, left_df.columns):
                 raise Exception(

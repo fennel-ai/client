@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.3.0] - 2023-01-14
+- Fix aggregate execution. 
+
 ## [0.2.9] - 2023-01-12
 - Pipeline schema validation. 
 

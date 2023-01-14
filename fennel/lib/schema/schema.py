@@ -146,7 +146,7 @@ def schema_check(
 
         dtype.is_nullable = False
         if dtype == proto.DataType(scalar_type=proto.ScalarType.INT):
-            if df[name].dtype != np.int64:
+            if df[name].dtype != np.int64 and df[name].dtype != pd.Int64Dtype():
                 exceptions.append(
                     ValueError(
                         f"Field {name} is of type int, but the "
@@ -155,7 +155,12 @@ def schema_check(
                     )
                 )
         elif dtype == proto.DataType(scalar_type=proto.ScalarType.FLOAT):
-            if df[name].dtype != np.float64 and df[name].dtype != np.int64:
+            if (
+                df[name].dtype != np.float64
+                and df[name].dtype != np.int64
+                and df[name].dtype != pd.Int64Dtype()
+                and df[name].dtype != pd.Float64Dtype()
+            ):
                 exceptions.append(
                     ValueError(
                         f"Field {name} is of type float, but the "
@@ -164,7 +169,11 @@ def schema_check(
                     )
                 )
         elif dtype == proto.DataType(scalar_type=proto.ScalarType.STRING):
-            if df[name].dtype != object:
+            if (
+                df[name].dtype != object
+                and df[name].dtype != np.str_
+                and df[name].dtype != pd.StringDtype()
+            ):
                 exceptions.append(
                     ValueError(
                         f"Field {name} is of type str, but the "
