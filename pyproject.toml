@@ -48,7 +48,7 @@ testpaths = [
 ]
 markers = [
     "integration: Those tests that can be run using a rust client",
-    "airbyte: Integration tests for Airbyte",
+    "data_integration: Integration tests for Data Integration",
 ]
 
 

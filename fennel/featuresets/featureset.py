@@ -34,6 +34,14 @@ from fennel.utils import (
 T = TypeVar("T")
 EXTRACTOR_ATTR = "__fennel_extractor__"
 DEPENDS_ON_DATASETS_ATTR = "__fennel_depends_on_datasets"
+RESERVED_FEATURE_NAMES = [
+    "fqn_",
+    "dtype",
+    "featureset_name",
+    "extractor",
+    "extractors",
+    "features",
+]
 
 
 # ---------------------------------------------------------------------
@@ -226,7 +234,6 @@ class Feature:
     id: int
     featureset_name: str
     dtype: Optional[Type]
-    wip: bool = False
     deprecated: bool = False
 
     def meta(self, **kwargs: Any) -> T:
@@ -296,7 +303,6 @@ class Featureset:
     ):
         self.__fennel_original_cls__ = featureset_cls
         self._name = featureset_cls.__name__
-        self.__name__ = featureset_cls.__name__
         self._features = features
         self._feature_map = {feature.name: feature for feature in features}
         self._id_to_feature_fqn = {
@@ -308,21 +314,11 @@ class Featureset:
         self._add_feature_names_as_attributes()
         self._set_extractors_as_attributes()
 
-    # ------------------- Public Methods --------------------------
-
-    def signature(self) -> str:
-        pass
-
     # ------------------- Private Methods ----------------------------------
 
     def _add_feature_names_as_attributes(self):
         for feature in self._features:
             setattr(self, feature.name, feature)
-
-    def _check_owner_exists(self):
-        owner = get_meta_attr(self, "owner")
-        if owner is None or owner == "":
-            raise Exception(f"Featureset {self._name} must have an owner.")
 
     def _get_extractors(self) -> List[Extractor]:
         extractors = []
@@ -351,6 +347,12 @@ class Featureset:
         # Check that all features have unique ids.
         feature_id_set = set()
         for feature in self._features:
+            # Check features dont have protected names.
+            if feature.name in RESERVED_FEATURE_NAMES:
+                raise ValueError(
+                    f"Feature {feature.name} in {self._name} has a "
+                    f"reserved name {feature.name}."
+                )
             if feature.id in feature_id_set:
                 raise ValueError(
                     f"Feature {feature.name} has a duplicate id {feature.id}"

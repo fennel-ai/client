@@ -49,6 +49,14 @@ ON_DEMAND_ATTR = "__fennel_on_demand__"
 
 DEFAULT_RETENTION = Duration("2y")
 DEFAULT_EXPIRATION = Duration("30d")
+RESERVED_FIELD_NAMES = [
+    "cls",
+    "self",
+    "fields",
+    "key_fields",
+    "on_demand",
+    "timestamp_field",
+]
 
 
 # ---------------------------------------------------------------------
@@ -361,12 +369,12 @@ def dataset(
             if len(args) > 0:
                 raise ValueError(
                     f"lookup expects key value arguments and can "
-                    f"optionally include properties, found {args}"
+                    f"optionally include fields, found {args}"
                 )
             if len(kwargs) < len(key_fields):
                 raise ValueError(
                     f"lookup expects keys of the table being looked up and can "
-                    f"optionally include properties, found {kwargs}"
+                    f"optionally include fields, found {kwargs}"
                 )
             # Check that ts is a series of datetime64[ns]
             if not isinstance(ts, pd.Series):
@@ -377,31 +385,31 @@ def dataset(
                 raise ValueError(
                     f"lookup expects a series of timestamps, found {ts.dtype}"
                 )
-            # extract keys and properties from kwargs
+            # extract keys and fields from kwargs
             arr = []
             for key, value in kwargs.items():
-                if key != "properties":
+                if key != "fields":
                     if not isinstance(value, pd.Series):
                         raise ValueError(f"Param {key} is not a pandas Series")
                     arr.append(value)
-            if "properties" in kwargs:
-                properties = kwargs["properties"]
+            if "fields" in kwargs:
+                fields = kwargs["fields"]
             else:
-                properties = []
+                fields = []
 
             df = pd.concat(arr, axis=1)
             df.columns = key_fields
             res, found = dataset_lookup(
                 cls_name,
                 ts,
-                properties,
+                fields,
                 df,
             )
 
             return res.replace({np.nan: None}), found
 
         args = {k: pd.Series for k in key_fields}
-        args["properties"] = List[str]
+        args["fields"] = List[str]
         params = [
             inspect.Parameter(
                 param, inspect.Parameter.KEYWORD_ONLY, annotation=type_
@@ -518,7 +526,7 @@ def on_demand(expires_after: Duration):
 def dataset_lookup(
     cls_name: str,
     ts: pd.Series,
-    properties: List[str],
+    fields: List[str],
     keys: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     raise NotImplementedError("dataset_lookup should not be called directly.")
@@ -593,6 +601,7 @@ class Dataset(_Node):
         lookup_fn: Optional[Callable] = None,
     ):
         super().__init__()
+        self._validate_field_names(fields)
         self._name = cls.__name__  # type: ignore
         self.__name__ = self._name
         self._fields = fields
@@ -616,14 +625,26 @@ class Dataset(_Node):
 
     # ------------------- Private Methods ----------------------------------
 
+    def _validate_field_names(self, fields: List[Field]):
+        names = set()
+        exceptions = []
+        for f in fields:
+            if f.name in names:
+                raise Exception(f"Duplicate field name {f.name}.")
+            names.add(f.name)
+            if f.name in RESERVED_FIELD_NAMES:
+                exceptions.append(
+                    Exception(
+                        f"Field name {f.name} is reserved. "
+                        f"Please use a different name."
+                    )
+                )
+        if exceptions:
+            raise Exception(exceptions)
+
     def _add_fields_to_class(self) -> None:
         for field in self._fields:
             setattr(self, field.name, field)
-
-    def _check_owner_exists(self):
-        owner = get_meta_attr(self, "owner")
-        if owner is None or owner == "":
-            raise Exception(f"Dataset {self._name} must have an owner.")
 
     def _create_signature(self):
         return fhash(

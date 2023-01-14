@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 import pytest
 
@@ -173,3 +173,19 @@ def test_DeprecatedId(grpc_stub):
             credit_score: int = feature(id=3)
 
     assert str(e.value) == "Feature credit_score has a duplicate id 3"
+
+
+def test_InvalidFeatureset(grpc_stub):
+    with pytest.raises(ValueError) as e:
+
+        @featureset
+        class UserInfo:
+            extractors: List[int] = feature(id=1)
+            home_geoid: int = feature(id=2)
+            age: int = feature(id=3).meta(deprecated=True)
+            credit_score: int = feature(id=3)
+
+    assert (
+        str(e.value)
+        == "Feature extractors in UserInfo has a reserved name extractors."
+    )

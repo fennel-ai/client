@@ -52,7 +52,7 @@ def dataset_lookup_impl(
     allowed_datasets: Optional[List[str]],
     cls_name: str,
     ts: pd.Series,
-    properties: List[str],
+    fields: List[str],
     keys: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     if cls_name not in datasets:
@@ -78,10 +78,8 @@ def dataset_lookup_impl(
     if cls_name not in data:
         # Create a dataframe with all nulls
         val_cols = datasets[cls_name].fields
-        if len(properties) > 0:
-            val_cols = [
-                x for x in val_cols if x in properties or x in keys.columns
-            ]
+        if len(fields) > 0:
+            val_cols = [x for x in val_cols if x in fields or x in keys.columns]
         empty_df = pd.DataFrame(
             columns=val_cols, data=[[None] * len(val_cols)] * len(keys)
         )
@@ -127,8 +125,8 @@ def dataset_lookup_impl(
         df = pd.concat([df, on_demand_df], ignore_index=True, axis=0)
         found = pd.concat([found, on_demand_found])
     df = df.drop(columns=[FENNEL_LOOKUP])
-    if len(properties) > 0:
-        df = df[properties]
+    if len(fields) > 0:
+        df = df[fields]
     df = df.reset_index(drop=True)
     return df, found
 
@@ -379,7 +377,7 @@ class MockClient(Client):
 def mock_client(test_func):
     def wrapper(*args, **kwargs):
         f = True
-        if "airbyte" not in test_func.__name__:
+        if "data_integration" not in test_func.__name__:
             client = MockClient()
             f = test_func(*args, **kwargs, client=client)
         if (
@@ -397,9 +395,11 @@ def mock_client(test_func):
                 )
                 % 10**9
             )
-            is_airbyte_test = "airbyte" in test_func.__name__
+            is_data_integration_test = "data_integration" in test_func.__name__
             client = IntegrationClient(
-                tier_id, reset_db=True, is_airbyte_test=is_airbyte_test
+                tier_id,
+                reset_db=True,
+                is_data_integration_test=is_data_integration_test,
             )
             f = test_func(*args, **kwargs, client=client)
         return f

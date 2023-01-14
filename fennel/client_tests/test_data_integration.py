@@ -97,14 +97,14 @@ class TestMovieInfo(unittest.TestCase):
         )
         assert found.tolist() == [False, False, True, False]
 
-    @pytest.mark.airbyte
+    @pytest.mark.data_integration
     @mock_client
-    def test_s3_airbyte_source(self, client):
+    def test_s3_data_integration_source(self, client):
         """Same test as test_log_to_movieinfo but with an S3 source."""
         # Sync the dataset
         client.sync(datasets=[MovieInfo])
 
-        # Time for airbyte to do its magic
+        # Time for data_integration to do its magic
         time.sleep(10)
 
         # Do some lookups

@@ -193,4 +193,9 @@ def _extractor_to_proto(
 def _check_owner_exists(obj):
     owner = get_meta_attr(obj, "owner")
     if owner is None or owner == "":
-        raise Exception(f"Dataset {obj._name} must have an owner.")
+        if isinstance(obj, Featureset):
+            raise Exception(f"Featureset {obj._name} must have an owner.")
+        elif isinstance(obj, Dataset):
+            raise Exception(f"Dataset {obj._name} must have an owner.")
+        else:
+            raise Exception(f"Object {obj.__name__} must have an owner.")

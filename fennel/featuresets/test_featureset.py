@@ -37,7 +37,7 @@ def test_SimpleFeatureSet(grpc_stub):
     @featureset
     class UserInfo:
         userid: int = feature(id=1)
-        home_geoid: int = feature(id=2).meta(wip=True)
+        home_geoid: int = feature(id=2)
         # The users gender among male/female/non-binary
         gender: str = feature(id=3)
         age: int = feature(id=4).meta(owner="aditya@fennel.ai")
@@ -76,7 +76,7 @@ def test_SimpleFeatureSet(grpc_stub):
                 "id": 2,
                 "name": "home_geoid",
                 "dtype": {"scalarType": "INT"},
-                "metadata": {"wip": True},
+                "metadata": {},
             },
             {
                 "id": 3,

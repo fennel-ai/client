@@ -112,7 +112,7 @@ def test_simpleDataset(grpc_stub):
 
 def test_complexDatasetWithFields(grpc_stub):
     @dataset(retention="1y")
-    @meta(owner="daniel@yext.com", description="test", wip=True)
+    @meta(owner="daniel@yext.com", description="test")
     class YextUserInfoDataset:
         user_id: int = field(key=True).meta(
             description="test", owner="jack@yext.com"
@@ -121,7 +121,7 @@ def test_complexDatasetWithFields(grpc_stub):
         gender: str = field().meta(description="sex", tags=["senstive"])
         # Users date of birth
         dob: str
-        age: int = field().meta(wip=True)
+        age: int = field()
         account_creation_date: datetime
         country: Optional[Dict[str, List[Dict[str, float]]]] = field()
         timestamp: datetime = field(timestamp=True)
@@ -170,7 +170,7 @@ def test_complexDatasetWithFields(grpc_stub):
                         "name": "age",
                         "ftype": "Val",
                         "dtype": {"scalarType": "INT"},
-                        "metadata": {"wip": True},
+                        "metadata": {},
                     },
                     {
                         "name": "account_creation_date",
@@ -212,7 +212,6 @@ def test_complexDatasetWithFields(grpc_stub):
                 "metadata": {
                     "owner": "daniel@yext.com",
                     "description": "test",
-                    "wip": True,
                 },
                 "mode": "pandas",
                 "retention": "31536000000000",
@@ -230,7 +229,7 @@ def test_simpleFeatureSet(grpc_stub):
     @featureset
     class UserInfoSimple:
         userid: int = feature(id=1)
-        home_geoid: int = feature(id=2).meta(wip=True)
+        home_geoid: int = feature(id=2)
         # The users gender among male/female
         gender: str = feature(id=3)
         age_no_bar: int = feature(id=4).meta(owner="srk@bollywood.com")
@@ -256,7 +255,7 @@ def test_simpleFeatureSet(grpc_stub):
                 "id": 2,
                 "name": "home_geoid",
                 "dtype": {"scalarType": "INT"},
-                "metadata": {"wip": True},
+                "metadata": {},
             },
             {
                 "id": 3,

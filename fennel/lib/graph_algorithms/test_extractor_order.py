@@ -98,7 +98,7 @@ def test_ComplexExtractorPath():
 class UserInfo:
     userid: int = feature(id=1)
     name: str = feature(id=2)
-    country_geoid: int = feature(id=3).meta(wip=True)  # type: ignore
+    country_geoid: int = feature(id=3)
     # The users gender among male/female/non-binary
     age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
     age_squared: int = feature(id=5)
