@@ -24,20 +24,20 @@ class UserInfoDataset:
 
 
 def fake_func(
-    cls_name, ts: pd.Series, properties: typing.List[str], df: pd.DataFrame
+    cls_name, ts: pd.Series, fields: typing.List[str], df: pd.DataFrame
 ):
     now = datetime.fromtimestamp(1668368655)
-    if len(properties) > 0:
+    if len(fields) > 0:
         assert ts.equals(pd.Series([now, now, now]))
-        assert properties == ["age", "gender"]
+        assert fields == ["age", "gender"]
         assert df["user_id"].tolist() == [5, 10, 15]
         assert df["name"].tolist() == ["a", "b", "c"]
         lst = [[24, "female"], [23, "female"], [45, "male"]]
-        df = pd.DataFrame(lst, columns=properties)
+        df = pd.DataFrame(lst, columns=fields)
         return df, pd.Series([True, True, True])
     else:
         assert ts.equals(pd.Series([now, now, now]))
-        assert properties == []
+        assert fields == []
         assert df["user_id"].tolist() == [3, 6, 9]
         assert df["name"].tolist() == ["a2", "b2", "c2"]
         lst = [[24], [23], [45]]
@@ -72,7 +72,7 @@ def test_datasetLookup(grpc_stub):
                 ts,
                 user_id=user_id_plus_one,
                 name=names,
-                properties=["age", "gender"],
+                fields=["age", "gender"],
             )
             df["age_sq"] = df["age"] * df["age"]
             return df[["age_sq", "gender"]]

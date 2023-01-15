@@ -6,13 +6,13 @@ import datetime
 import hashlib
 import inspect
 import json
-import requests  # type: ignore
 import textwrap
 from typing import Any
 from typing import cast, Callable, Dict, List, Tuple, Union
 
 import astunparse  # type: ignore
 import cloudpickle
+import requests  # type: ignore
 
 Tags = Union[List[str], Tuple[str, ...], str]
 
@@ -113,7 +113,6 @@ def fhash(*items: Any):
 def parse_annotation_comments(cls: Any) -> Dict[str, str]:
     try:
         source = textwrap.dedent(inspect.getsource(cls))
-
         source_lines = source.splitlines()
         tree = ast.parse(source)
         if len(tree.body) != 1:

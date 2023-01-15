@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 import pytest
 
@@ -139,3 +139,19 @@ def test_DatasetOptionalKey(grpc_stub):
             timestamp: datetime
 
     assert str(e.value) == "Key name in dataset XYZ cannot be Optional."
+
+
+def test_ProtectedFields(grpc_stub):
+    with pytest.raises(Exception) as e:
+
+        @dataset(retention="324d")
+        class Activity:
+            fields: List[int]
+            key_fields: float
+            on_demand: Optional[float]
+            timestamp_field: datetime
+
+    assert (
+        str(e.value)
+        == "[Exception('Field name fields is reserved. Please use a different name.'), Exception('Field name key_fields is reserved. Please use a different name.'), Exception('Field name on_demand is reserved. Please use a different name.'), Exception('Field name timestamp_field is reserved. Please use a different name.')]"
+    )

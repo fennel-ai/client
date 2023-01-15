@@ -31,7 +31,6 @@ class Metadata(BaseModel):
     description: str
     deprecated: bool = False
     deleted: bool = False
-    wip: bool = False
 
     @validator("owner")
     def owner_is_valid_email_address(cls, owner):
@@ -41,15 +40,6 @@ class Metadata(BaseModel):
             raise ValueError(f"Invalid email '{owner}'")
         return owner
 
-    @validator("wip")
-    def meta_is_in_one_state(cls, wip, values):
-        # Meta can only be in one of the states
-        if wip + values["deleted"] + values["deprecated"] > 1:
-            raise ValueError(
-                "Meta can only be in one of the states wip, deleted, deprecated"
-            )
-        return wip
-
 
 def meta(
     owner: str = "",
@@ -57,7 +47,6 @@ def meta(
     tags: List[str] = [],
     deprecated: bool = False,
     deleted: bool = False,
-    wip: bool = False,
 ):
     """meta decorator
 
@@ -75,8 +64,6 @@ def meta(
         Whether the object is deprecated
     deleted : bool
         Whether the object is deleted
-    wip : bool
-        Whether the object is a work in progress
     """
 
     @functools.wraps(meta)
@@ -87,7 +74,6 @@ def meta(
             tags=tags,
             deprecated=deprecated,
             deleted=deleted,
-            wip=wip,
         )
         setattr(obj, META_FIELD, meta)
         return obj
@@ -126,5 +112,4 @@ def get_metadata_proto(obj: Any) -> Optional[proto.Metadata]:
         tags=meta.tags,
         deprecated=meta.deprecated,
         deleted=meta.deleted,
-        wip=meta.wip,
     )

@@ -73,7 +73,7 @@ def get_country_geoid(country: str) -> int:
 class UserInfoMultipleExtractor:
     userid: int = feature(id=1)
     name: str = feature(id=2)
-    country_geoid: int = feature(id=3).meta(wip=True)  # type: ignore
+    country_geoid: int = feature(id=3)
     age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
     age_squared: int = feature(id=5)
     age_cubed: int = feature(id=6)

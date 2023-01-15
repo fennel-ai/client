@@ -83,7 +83,7 @@ class TestDataset(unittest.TestCase):
         if client.is_integration_client():
             assert (
                 response.json()["error"]
-                == """error: expected Int, but got String("32")"""
+                == """error: input parse error: expected Int, but got String("32")"""
             )
         else:
             assert (
@@ -94,7 +94,7 @@ class TestDataset(unittest.TestCase):
         user_ids = pd.Series([18232, 18234, 1920])
         ts = pd.Series([now, now, now])
         df, found = UserInfoDataset.lookup(
-            ts, user_id=user_ids, properties=["name", "age", "country"]
+            ts, user_id=user_ids, fields=["name", "age", "country"]
         )
         assert found.tolist() == [True, True, False]
         assert df["name"].tolist() == ["Ross", "Monica", None]
@@ -105,7 +105,7 @@ class TestDataset(unittest.TestCase):
         six_hours_ago = now - pd.Timedelta(hours=6)
         ts = pd.Series([six_hours_ago, six_hours_ago])
         df, found = UserInfoDataset.lookup(
-            ts, user_id=user_ids, properties=["name", "age", "country"]
+            ts, user_id=user_ids, fields=["name", "age", "country"]
         )
         assert found.tolist() == [False, True]
         assert df["name"].tolist() == [None, "Monica"]
@@ -126,7 +126,7 @@ class TestDataset(unittest.TestCase):
         three_days_from_now = now + pd.Timedelta(days=3)
         ts = pd.Series([three_days_from_now, one_day_from_now])
         df, found = UserInfoDataset.lookup(
-            ts, user_id=user_ids, properties=["name", "age", "country"]
+            ts, user_id=user_ids, fields=["name", "age", "country"]
         )
         assert found.tolist() == [True, True]
         assert df.shape == (2, 3)
@@ -138,7 +138,7 @@ class TestDataset(unittest.TestCase):
         df, lookup = UserInfoDataset.lookup(
             ts,
             user_id=user_ids,
-            properties=["user_id", "name", "age", "country"],
+            fields=["user_id", "name", "age", "country"],
         )
         assert lookup.tolist() == [True, True]
         assert df.shape == (2, 4)

@@ -35,21 +35,23 @@ class FakeResponse(Response):
 
 
 def lookup_wrapper(
-    ds_name: str, ts: pd.Series, properties: List[str], keys: pd.DataFrame
+    ds_name: str, ts: pd.Series, fields: List[str], keys: pd.DataFrame
 ) -> Tuple[pd.DataFrame, pd.Series]:
     # convert to pyarrow datastructures
     ts_pa = pa.Array.from_pandas(ts)
     keys_pa = pa.RecordBatch.from_pandas(keys)
-    ret_pa, found_pa = lookup(ds_name, ts_pa, properties, keys_pa)
+    ret_pa, found_pa = lookup(ds_name, ts_pa, fields, keys_pa)
 
     # convert back to pandas
     return ret_pa.to_pandas(), found_pa.to_pandas()
 
 
 class IntegrationClient:
-    def __init__(self, tier_id, reset_db, is_airbyte_test):
+    def __init__(self, tier_id, reset_db, is_data_integration_test):
         self._client = RustClient(
-            tier_id=tier_id, reset_db=reset_db, airbyte=is_airbyte_test
+            tier_id=tier_id,
+            reset_db=reset_db,
+            data_integration=is_data_integration_test,
         )
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
