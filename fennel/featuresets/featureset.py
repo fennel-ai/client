@@ -383,6 +383,9 @@ class Featureset:
             )
             setattr(self, extractor.func.__name__, extractor.func)
             extractor.bound_func = functools.partial(extractor.func, self)
+            cloudpickle.register_pickle_by_value(
+                inspect.getmodule(extractor.func)
+            )
             extractor.pickled_func = cloudpickle.dumps(extractor.bound_func)
 
     @property

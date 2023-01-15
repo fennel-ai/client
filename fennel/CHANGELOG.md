@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.3.1] - 2023-01-15
+- Pickle function module by value. 
+
 ## [0.3.0] - 2023-01-14
 - Fix aggregate execution. 
 

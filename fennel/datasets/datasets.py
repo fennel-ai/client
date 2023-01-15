@@ -210,6 +210,7 @@ class Transform(_Node):
         self.node = node
         self.node.out_edges.append(self)
         self.schema = schema
+        cloudpickle.register_pickle_by_value(inspect.getmodule(func))
         self.pickled_func = cloudpickle.dumps(func)
 
     def signature(self):
@@ -224,6 +225,7 @@ class Filter(_Node):
         self.func = func
         self.node = node
         self.node.out_edges.append(self)
+        cloudpickle.register_pickle_by_value(inspect.getmodule(func))
         self.pickled_func = cloudpickle.dumps(func)
 
     def signature(self):
@@ -741,6 +743,9 @@ class Dataset(_Node):
                         f" {key_fields[key_index].dtype} "
                     )
                 key_index += 1
+            cloudpickle.register_pickle_by_value(
+                inspect.getmodule(on_demand.func)
+            )
             on_demand.pickled_func = cloudpickle.dumps(on_demand.func)
         return on_demand
 
