@@ -76,14 +76,22 @@ class Client:
         sync_request = self._get_sync_request_proto()
         self.stub.Sync(sync_request, timeout=_DEFAULT_GRPC_TIMEOUT)
 
-    def log(self, dataset_name: str, data: pd.DataFrame):
+    def log(
+        self, dataset_name: str, data: pd.DataFrame, batch_size: int = 1000
+    ):
         """log api uses a REST endpoint to log data to a dataset rather than
         using a gRPC endpoint."""
-        req = {
-            "dataset_name": dataset_name,
-            "payload": data.to_json(orient="records"),
-        }
-        response = self.http.post(self._url("log"), json=req)
+        payload = data.to_json(orient="records")
+        # split the input dataframe into chunks of `batch_size` rows each
+        while len(payload) > 0:
+            data = payload[:batch_size]
+            payload = payload[batch_size:]
+            req = {
+                "dataset_name": dataset_name,
+                "payload": data,
+            }
+            response = self.http.post(self._url("log"), json=req)
+            check_response(response)
         return response
 
     def extract_features(
