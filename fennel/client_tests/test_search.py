@@ -337,7 +337,7 @@ class DocumentFeatures:
     @depends_on(DocumentEngagementDataset)
     def get_features(cls, ts: Series[datetime], doc_id: Series[Query.doc_id]):
         df, found = DocumentEngagementDataset.lookup(  # type: ignore
-            ts, user_id=doc_id  # type: ignore
+            ts, doc_id=doc_id  # type: ignore
         )
         df[str(cls.total_timespent_minutes)] = df["total_timespent"] / 60
         df.drop("total_timespent", axis=1, inplace=True)
@@ -359,7 +359,7 @@ class DocumentContentFeatures:
     @depends_on(DocumentContentDataset)
     def get_features(cls, ts: Series[datetime], doc_id: Series[Query.doc_id]):
         df, found = DocumentContentDataset.lookup(  # type: ignore
-            ts, user_id=doc_id  # type: ignore
+            ts, doc_id=doc_id  # type: ignore
         )
         df.drop("creation_timestamp", axis=1, inplace=True)
         return df

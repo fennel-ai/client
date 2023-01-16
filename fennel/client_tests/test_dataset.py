@@ -389,7 +389,7 @@ class TestBasicTransform(unittest.TestCase):
         names = pd.Series(["Jumanji", "Titanic"])
         df, found = MovieRatingTransformed.lookup(
             ts,
-            names=names,
+            movie=names,
         )
 
         assert found.tolist() == [True, False]
@@ -405,7 +405,7 @@ class TestBasicTransform(unittest.TestCase):
             time.sleep(3)
         df, _ = MovieRatingTransformed.lookup(
             ts,
-            names=names,
+            movie=names,
         )
 
         assert df.shape == (2, 5)
@@ -491,7 +491,7 @@ class TestBasicJoin(unittest.TestCase):
             time.sleep(3)
         df, _ = MovieStats.lookup(
             ts,
-            names=names,
+            movie=names,
         )
         assert df.shape == (2, 4)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
@@ -503,7 +503,7 @@ class TestBasicJoin(unittest.TestCase):
         names = pd.Series(["Jumanji", "Jumanji", "Titanic", "Titanic"])
         df, _ = MovieStats.lookup(
             ts,
-            names=names,
+            movie=names,
         )
         assert df.shape == (4, 4)
         assert df["movie"].tolist() == [
@@ -555,7 +555,7 @@ class TestBasicAggregate(unittest.TestCase):
         names = pd.Series(["Jumanji", "Titanic"])
         df, _ = MovieRating.lookup(
             ts,
-            names=names,
+            movie=names,
         )
         assert df.shape == (2, 5)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
@@ -649,7 +649,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
         )
         df, _ = MovieRatingWindowed.lookup(
             ts,
-            names=names,
+            movie=names,
         )
         assert df.shape == (6, 6)
         assert df["movie"].tolist() == [
@@ -714,7 +714,7 @@ class TestE2EPipeline(unittest.TestCase):
         names = pd.Series(["Jumanji", "Titanic"])
         df, _ = MovieStats.lookup(
             ts,
-            names=names,
+            movie=names,
         )
         assert df.shape == (2, 4)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
@@ -776,7 +776,7 @@ class TestBasicFilter(unittest.TestCase):
         names = pd.Series(["Jumanji", "Titanic", "RaOne"])
         df, _ = PositiveRatingActivity.lookup(
             ts,
-            names=names,
+            movie=names,
         )
         assert df.shape == (3, 3)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
@@ -785,7 +785,7 @@ class TestBasicFilter(unittest.TestCase):
         ts = pd.Series([two_hours_ago, two_hours_ago, two_hours_ago])
         df, _ = PositiveRatingActivity.lookup(
             ts,
-            names=names,
+            movie=names,
         )
         assert df.shape == (3, 3)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
@@ -973,9 +973,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         now = datetime.now()
         ts = pd.Series([now, now])
         categories = pd.Series(["grocery", "entertainment"])
-        df, _ = FraudReportAggregatedDataset.lookup(
-            ts, merchant_categ=categories
-        )
+        df, _ = FraudReportAggregatedDataset.lookup(ts, category=categories)
 
         assert df.shape == (2, 5)
         assert df["category"].tolist() == ["grocery", "entertainment"]
@@ -1058,14 +1056,14 @@ class TestAggregateTableDataset(unittest.TestCase):
 
         ts = pd.Series([now, now])
         names = pd.Series(["mumbai", "delhi"])
-        df, _ = UserAgeAggregated.lookup(ts, name=names)
+        df, _ = UserAgeAggregated.lookup(ts, city=names)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         assert df["sum_age"].tolist() == [24, 25]
 
         input_df["timestamp"] = tomorrow
         response = client.log("UserAgeNonTable", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        df, _ = UserAgeAggregated.lookup(ts, name=names)
+        df, _ = UserAgeAggregated.lookup(ts, city=names)
         assert df.shape == (2, 3)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         assert df["sum_age"].tolist() == [24, 25]
@@ -1082,7 +1080,7 @@ class TestAggregateTableDataset(unittest.TestCase):
 
         three_days_from_now = datetime.now() + timedelta(days=3)
         ts = pd.Series([three_days_from_now, three_days_from_now])
-        df, _ = UserAgeAggregated.lookup(ts, name=names)
+        df, _ = UserAgeAggregated.lookup(ts, city=names)
         assert df.shape == (2, 3)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         # The value has updated from [24, 25] to [30, 40]
@@ -1097,7 +1095,7 @@ class TestAggregateTableDataset(unittest.TestCase):
 
         five_days_from_now = datetime.now() + timedelta(days=5)
         ts = pd.Series([five_days_from_now, five_days_from_now])
-        df, _ = UserAgeAggregated.lookup(ts, name=names)
+        df, _ = UserAgeAggregated.lookup(ts, city=names)
         assert df.shape == (2, 3)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         # The value has NOT updated but increased from
