@@ -3,6 +3,7 @@ from typing import *
 
 import grpc
 import pandas as pd
+from urllib.parse import urlparse
 import requests  # type: ignore
 
 import fennel.gen.services_pb2 as services_pb2
@@ -26,7 +27,8 @@ _DEFAULT_GRPC_TIMEOUT = 60
 class Client:
     def __init__(self, url: str):
         self.url = url
-        self.channel = grpc.insecure_channel(url)
+        # strip the protocol and any trailing paths to get the grpc endpoint
+        self.channel = grpc.insecure_channel(urlparse(url).netloc)
         self.stub = services_pb2_grpc.FennelFeatureStoreStub(self.channel)
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
