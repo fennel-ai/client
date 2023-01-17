@@ -124,7 +124,8 @@ def dataset_lookup_impl(
         df = df[found]
         df = pd.concat([df, on_demand_df], ignore_index=True, axis=0)
         found = pd.concat([found, on_demand_found])
-    df = df.drop(columns=[FENNEL_LOOKUP])
+    df.drop(columns=[FENNEL_LOOKUP], inplace=True)
+    right_df.drop(columns=[FENNEL_LOOKUP], inplace=True)
     if len(fields) > 0:
         df = df[fields]
     df = df.reset_index(drop=True)
@@ -158,7 +159,16 @@ class MockClient(Client):
     def is_integration_client(self) -> bool:
         return False
 
-    def log(self, dataset_name: str, df: pd.DataFrame):
+    def log(self, dataset_name: str, df: pd.DataFrame, _batch_size: int = 1000):
+        if df.shape[0] == 0:
+            print(f"Skipping log of empty dataframe for dataset {dataset_name}")
+            return
+
+        if df.shape[0] > _batch_size:
+            print(
+                "Warning: Dataframe is too large, consider using a small dataframe"
+            )
+
         if dataset_name not in self.dataset_requests:
             return FakeResponse(404, f"Dataset {dataset_name} not found")
         dataset_req = self.dataset_requests[dataset_name]

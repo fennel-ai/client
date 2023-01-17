@@ -389,11 +389,15 @@ def dataset(
                 )
             # extract keys and fields from kwargs
             arr = []
-            for key, value in kwargs.items():
-                if key != "fields":
-                    if not isinstance(value, pd.Series):
-                        raise ValueError(f"Param {key} is not a pandas Series")
-                    arr.append(value)
+            for key in key_fields:
+                if key == "fields":
+                    continue
+                if key not in kwargs:
+                    raise ValueError(f"Missing key {key}")
+                if not isinstance(kwargs[key], pd.Series):
+                    raise ValueError(f"Param {key} is not a pandas Series")
+                arr.append(kwargs[key])
+
             if "fields" in kwargs:
                 fields = kwargs["fields"]
             else:

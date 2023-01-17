@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.3.4] - 2023-01-15
+- log splits the input dataframe into smaller batches to avoid potential payload size limit or timeouts.
+
 ## [0.3.3] - 2023-01-15
 - revert log call splitting the input json. to_json returns a JSON string, can't batch that.
 

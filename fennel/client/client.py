@@ -1,9 +1,10 @@
 import functools
+import math
 from typing import *
+from urllib.parse import urlparse
 
 import grpc
 import pandas as pd
-from urllib.parse import urlparse
 import requests  # type: ignore
 
 import fennel.gen.services_pb2 as services_pb2
@@ -78,16 +79,25 @@ class Client:
         sync_request = self._get_sync_request_proto()
         self.stub.Sync(sync_request, timeout=_DEFAULT_GRPC_TIMEOUT)
 
-    def log(self, dataset_name: str, data: pd.DataFrame):
+    def log(
+        self, dataset_name: str, data: pd.DataFrame, batch_size: int = 1000
+    ):
         """log api uses a REST endpoint to log data to a dataset rather than
         using a gRPC endpoint."""
-        payload = data.to_json(orient="records")
-        req = {
-            "dataset_name": dataset_name,
-            "payload": payload,
-        }
-        response = self.http.post(self._url("log"), json=req)
-        check_response(response)
+        num_rows = data.shape[0]
+        if num_rows == 0:
+            print("No rows to log to dataset", dataset_name)
+            return
+
+        for i in range(math.ceil(num_rows / batch_size)):
+            mini_df = data[i * batch_size : (i + 1) * batch_size]  # noqa: E203
+            payload = mini_df.to_json(orient="records")
+            req = {
+                "dataset_name": dataset_name,
+                "payload": payload,
+            }
+            response = self.http.post(self._url("log"), json=req)
+            check_response(response)
         return response
 
     def extract_features(
