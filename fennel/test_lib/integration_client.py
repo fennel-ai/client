@@ -3,9 +3,9 @@ import time
 from typing import List, Set, Tuple, Union
 
 import pandas as pd
-import pyarrow as pa
 
 try:
+    import pyarrow as pa
     from fennel_client_lib import RustClient  # type: ignore
     from fennel_dataset import lookup  # type: ignore
 except ImportError:

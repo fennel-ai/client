@@ -117,7 +117,7 @@ def dataset_lookup_impl(
             for col in keys.columns
             if col != timestamp_field
         ]
-        on_demand_df, on_demand_found = datasets[cls_name].on_demand.func(
+        on_demand_df, on_demand_found = datasets[cls_name].on_demand.bound_func(
             on_demand_keys[timestamp_field], *args
         )
         # Filter out the columns that are not in the dataset
@@ -142,7 +142,6 @@ class _DatasetInfo:
 
 class MockClient(Client):
     def __init__(self):
-        super().__init__(url=f"localhost:{TEST_PORT}")
         self.dataset_requests: Dict[str, CreateDatasetRequest] = {}
         self.datasets: Dict[str, _DatasetInfo] = {}
         # Map of dataset name to the dataframe
@@ -206,9 +205,15 @@ class MockClient(Client):
         return FakeResponse(200, "OK")
 
     def sync(
-        self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
+        self,
+        datasets: Optional[List[Dataset]] = None,
+        featuresets: Optional[List[Featureset]] = None,
     ):
         self._reset()
+        if datasets is None:
+            datasets = []
+        if featuresets is None:
+            featuresets = []
         for dataset in datasets:
             self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
             self.datasets[dataset._name] = _DatasetInfo(
@@ -242,9 +247,9 @@ class MockClient(Client):
         self,
         input_feature_list: List[Union[Feature, Featureset]],
         output_feature_list: List[Union[Feature, Featureset]],
-        input_df: pd.DataFrame,
+        input_dataframe: pd.DataFrame,
     ) -> pd.DataFrame:
-        if input_df.empty:
+        if input_dataframe.empty:
             return pd.DataFrame()
         input_feature_names = []
         for input_feature in input_feature_list:
@@ -255,16 +260,18 @@ class MockClient(Client):
                     [f.fqn_ for f in input_feature.features]
                 )
         # Check if the input dataframe has all the required features
-        if not set(input_feature_names).issubset(set(input_df.columns)):
+        if not set(input_feature_names).issubset(set(input_dataframe.columns)):
             raise Exception(
                 f"Input dataframe does not contain all the required features. "
                 f"Required features: {input_feature_names}. "
-                f"Input dataframe columns: {input_df.columns}"
+                f"Input dataframe columns: {input_dataframe.columns}"
             )
         extractors = get_extractor_order(
             input_feature_list, output_feature_list, self.extractors
         )
-        return self._run_extractors(extractors, input_df, output_feature_list)
+        return self._run_extractors(
+            extractors, input_dataframe, output_feature_list
+        )
 
     # ----------------- Private methods -----------------
 

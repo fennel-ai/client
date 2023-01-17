@@ -24,7 +24,7 @@ def test_SimpleSource(grpc_stub):
     @source(
         mysql.table(
             "users",
-            cursor_field="added_on",
+            cursor="added_on",
         ),
         every="1h",
     )
@@ -114,15 +114,15 @@ def test_SimpleSource(grpc_stub):
                                 "port": 3306,
                             },
                         },
-                        "cursorField": "added_on",
+                        "cursor": "added_on",
                         "table": "users",
                         "every": "3600000000",
                     }
                 ],
-                "signature": "749d38c71deb64890f4bae4e42cea282",
+                "signature": "88468f81bc9e7be9c988fb90d3299df9",
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
-                "retention": "63072000000000",
+                "history": "63072000000000",
             }
         ]
     }
@@ -132,7 +132,7 @@ def test_SimpleSource(grpc_stub):
     )
 
     @dataset
-    @source(mysql.table("users", cursor_field="added_on"), every="1h")
+    @source(mysql.table("users", cursor="added_on"), every="1h")
     @meta(owner="test@test.com")
     class UserInfoDatasetInvertedOrder:
         user_id: int = field(key=True)
@@ -156,7 +156,7 @@ def test_SimpleSource(grpc_stub):
     ].name = "UserInfoDatasetInvertedOrder"
     expected_sync_request.dataset_requests[
         0
-    ].signature = "2923379bded21f1ea9edb8c8e12ba095"
+    ].signature = "ed381481215fa43d2af50d9cfaf1e744"
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
@@ -197,14 +197,13 @@ snowflake = Snowflake(
 
 def test_MultipleSources(grpc_stub):
     @meta(owner="test@test.com")
-    @source(mysql.table("users_mysql", cursor_field="added_on"), every="1h")
-    @source(bigquery.table("users_bq", cursor_field="added_on"), every="1h")
-    @source(snowflake.table("users_Sf", cursor_field="added_on"), every="1h")
+    @source(mysql.table("users_mysql", cursor="added_on"), every="1h")
+    @source(bigquery.table("users_bq", cursor="added_on"), every="1h")
+    @source(snowflake.table("users_Sf", cursor="added_on"), every="1h")
     @source(
         s3.bucket(
             bucket_name="all_ratings",
             prefix="prod/apac/",
-            src_schema={"Name": "string", "Weight": "number", "Age": "integer"},
         ),
         every="1h",
     )
@@ -246,19 +245,14 @@ s3_console = S3.get(
 
 
 def test_ConsoleSource(grpc_stub):
-    @source(posgres_console.table("users", cursor_field="added_on"), every="1h")
-    @source(mysql_console.table("users", cursor_field="added_on"), every="1h")
-    @source(
-        snowflake_console.table("users", cursor_field="added_on"), every="1h"
-    )
-    @source(
-        bigquery_console.table("users", cursor_field="added_on"), every="1h"
-    )
+    @source(posgres_console.table("users", cursor="added_on"), every="1h")
+    @source(mysql_console.table("users", cursor="added_on"), every="1h")
+    @source(snowflake_console.table("users", cursor="added_on"), every="1h")
+    @source(bigquery_console.table("users", cursor="added_on"), every="1h")
     @source(
         s3_console.bucket(
             bucket_name="all_ratings",
             prefix="prod/apac/",
-            src_schema={"Name": "string", "Weight": "number", "Age": "integer"},
         ),
         every="1h",
     )
@@ -298,11 +292,6 @@ def test_ConsoleSource(grpc_stub):
                         "s3Connector": {
                             "bucket": "all_ratings",
                             "pathPrefix": "prod/apac/",
-                            "schema": {
-                                "Age": "integer",
-                                "Weight": "number",
-                                "Name": "string",
-                            },
                             "delimiter": ",",
                             "format": "csv",
                         },
@@ -310,13 +299,13 @@ def test_ConsoleSource(grpc_stub):
                     },
                     {
                         "source": {"name": "bigquery_test", "bigquery": {}},
-                        "cursorField": "added_on",
+                        "cursor": "added_on",
                         "table": "users",
                         "every": "3600000000",
                     },
                     {
                         "source": {"name": "snowflake_test", "snowflake": {}},
-                        "cursorField": "added_on",
+                        "cursor": "added_on",
                         "table": "users",
                         "every": "3600000000",
                     },
@@ -325,7 +314,7 @@ def test_ConsoleSource(grpc_stub):
                             "name": "mysql_test",
                             "sql": {"sqlType": "MySQL", "port": 3306},
                         },
-                        "cursorField": "added_on",
+                        "cursor": "added_on",
                         "table": "users",
                         "every": "3600000000",
                     },
@@ -334,18 +323,18 @@ def test_ConsoleSource(grpc_stub):
                             "name": "posgres_test",
                             "sql": {"port": 5432},
                         },
-                        "cursorField": "added_on",
+                        "cursor": "added_on",
                         "table": "users",
                         "every": "3600000000",
                     },
                 ],
-                "signature": "5c277ce0c8ef08239ba5ced33477f649",
+                "signature": "09675fba8aba960bffb3a4946e1379b1",
                 "metadata": {
                     "owner": "test@test.com",
                     "tags": ["test", "yolo"],
                 },
                 "mode": "pandas",
-                "retention": "63072000000000",
+                "history": "63072000000000",
             }
         ]
     }

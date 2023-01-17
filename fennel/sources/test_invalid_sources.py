@@ -35,7 +35,7 @@ def test_SimpleSource(grpc_stub):
             timestamp: datetime = field(timestamp=True)
 
     assert str(e.value).endswith(
-        "table() missing 1 required positional argument: 'cursor_field'"
+        "table() missing 1 required positional argument: 'cursor'"
     )
 
     with pytest.raises(TypeError) as e:
@@ -54,13 +54,12 @@ def test_SimpleSource(grpc_stub):
             timestamp: datetime = field(timestamp=True)
 
     assert (
-        str(e.value)
-        == "mysql does not specify required fields table, cursor_field."
+        str(e.value) == "mysql does not specify required fields table, cursor."
     )
 
     with pytest.raises(TypeError) as e:
 
-        @source(mysql.table(cursor_field="xyz"), every="1h")
+        @source(mysql.table(cursor="xyz"), every="1h")
         @dataset
         class UserInfoDataset3:
             user_id: int = field(key=True)

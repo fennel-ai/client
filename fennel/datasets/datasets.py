@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import datetime
+import functools
 import inspect
 from dataclasses import dataclass
 from typing import (
@@ -180,7 +181,7 @@ class _Node:
     def groupby(self, *args) -> GroupBy:
         return GroupBy(self, *args)
 
-    def join(
+    def left_join(
         self,
         other: Dataset,
         on: Optional[List[str]] = None,
@@ -331,7 +332,7 @@ class Union_(_Node):
 @overload
 def dataset(
     *,
-    retention: Optional[Duration] = DEFAULT_RETENTION,
+    history: Optional[Duration] = DEFAULT_RETENTION,
 ) -> Callable[[Type[F]], Dataset]:
     ...
 
@@ -343,7 +344,7 @@ def dataset(cls: Type[F]) -> Dataset:
 
 def dataset(
     cls: Optional[Type[F]] = None,
-    retention: Optional[Duration] = DEFAULT_RETENTION,
+    history: Optional[Duration] = DEFAULT_RETENTION,
 ) -> Union[Callable[[Type[F]], Dataset], Dataset]:
     """
     dataset is a decorator that creates a Dataset class.
@@ -352,7 +353,7 @@ def dataset(
     dataset from other datasets.
     Parameters
     ----------
-    retention : Duration ( Optional )
+    history : Duration ( Optional )
         The amount of time to keep data in the dataset.
     max_staleness : Duration ( Optional )
         The maximum amount of time that data in the dataset can be stale.
@@ -436,7 +437,7 @@ def dataset(
 
     def _create_dataset(
         dataset_cls: Type[F],
-        retention: Duration,
+        history: Duration,
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
         fields = [
@@ -454,12 +455,12 @@ def dataset(
         return Dataset(
             dataset_cls,
             fields,
-            retention=duration_to_timedelta(retention),
+            history=duration_to_timedelta(history),
             lookup_fn=_create_lookup_function(dataset_cls.__name__, key_fields),
         )
 
     def wrap(c: Type[F]) -> Dataset:
-        return _create_dataset(c, cast(Duration, retention))
+        return _create_dataset(c, cast(Duration, history))
 
     if cls is None:
         # We're being called as @dataset()
@@ -511,8 +512,10 @@ def pipeline(
 @dataclass
 class OnDemand:
     func: Callable
+    # On Demand function bound with the class as the first argument
+    bound_func: Callable
     pickled_func: bytes
-    expires_after: Duration = DEFAULT_EXPIRATION
+    expires_after: Duration
 
 
 def on_demand(expires_after: Duration):
@@ -523,7 +526,7 @@ def on_demand(expires_after: Duration):
         )
 
     def decorator(func):
-        setattr(func, ON_DEMAND_ATTR, OnDemand(func, b"", expires_after))
+        setattr(func, ON_DEMAND_ATTR, OnDemand(func, func, b"", expires_after))
         return func
 
     return decorator
@@ -591,7 +594,7 @@ class Dataset(_Node):
     # the original attributes defined by the user.
     _name: str
     _on_demand: Optional[OnDemand]
-    _retention: datetime.timedelta
+    _history: datetime.timedelta
     _fields: List[Field]
     _key_fields: List[str]
     _pipelines: List[Pipeline]
@@ -603,7 +606,7 @@ class Dataset(_Node):
         self,
         cls: F,
         fields: List[Field],
-        retention: datetime.timedelta,
+        history: datetime.timedelta,
         lookup_fn: Optional[Callable] = None,
     ):
         super().__init__()
@@ -614,11 +617,10 @@ class Dataset(_Node):
         self._add_fields_to_class()
         self._set_timestamp_field()
         self._set_key_fields()
-        self._retention = retention
+        self._history = history
         self.__fennel_original_cls__ = cls
         self._pipelines = self._get_pipelines()
         self._on_demand = self._get_on_demand()
-
         self._sign = self._create_signature()
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
@@ -655,8 +657,9 @@ class Dataset(_Node):
     def _create_signature(self):
         return fhash(
             self._name,
-            self._retention,
-            self._on_demand,
+            self._history,
+            self._on_demand.func if self._on_demand else None,
+            self._on_demand.expires_after if self._on_demand else None,
             [f.signature() for f in self._fields],
             [p.signature for p in self._pipelines],
         )
@@ -726,9 +729,19 @@ class Dataset(_Node):
                     f"ts as first parameter, followed by key fields."
                 )
             check_timestamp = False
+            cls_param = False
             key_fields = [f for f in self._fields if f.key]
             key_index = 0
             for name, param in sig.parameters.items():
+                if not cls_param and param.name != "cls":
+                    raise TypeError(
+                        f"on_demand functions are classmethods and must have "
+                        f"cls as the first parameter, found {name}."
+                    )
+                elif not cls_param:
+                    cls_param = True
+                    continue
+
                 if not check_timestamp:
                     if param.annotation == datetime.datetime:
                         check_timestamp = True
@@ -747,10 +760,11 @@ class Dataset(_Node):
                         f" {key_fields[key_index].dtype} "
                     )
                 key_index += 1
+            on_demand.bound_func = functools.partial(on_demand.func, self)
             cloudpickle.register_pickle_by_value(
                 inspect.getmodule(on_demand.func)
             )
-            on_demand.pickled_func = cloudpickle.dumps(on_demand.func)
+            on_demand.pickled_func = cloudpickle.dumps(on_demand.bound_func)
         return on_demand
 
     def _get_pipelines(self) -> List[Pipeline]:

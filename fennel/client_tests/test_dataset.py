@@ -183,39 +183,6 @@ class TestDataset(unittest.TestCase):
         )
 
 
-@meta(owner="aditya@fennel.ai")
-@dataset
-class DocumentContentDataset:
-    doc_id: int = field(key=True)
-    bert_embedding: Embedding[4]
-    fast_text_embedding: Embedding[3]
-    num_words: int
-    timestamp: datetime = field(timestamp=True)
-
-    @on_demand(expires_after="3d")
-    def get_embedding(ts: Series[datetime], doc_ids: Series[int]):
-        data = []
-        doc_ids = doc_ids.tolist()
-        for i in range(len(ts)):
-            data.append(
-                [
-                    doc_ids[i],
-                    [0.1, 0.2, 0.3, 0.4],
-                    [1.1, 1.2, 1.3],
-                    10 * i,
-                    ts[i],
-                ]
-            )
-        columns = [
-            "doc_id",
-            "bert_embedding",
-            "fast_text_embedding",
-            "num_words",
-            "timestamp",
-        ]
-        return pd.DataFrame(data, columns=columns), pd.Series([True] * len(ts))
-
-
 class TestDocumentDataset(unittest.TestCase):
     @mock_client
     def test_log_to_document_dataset(self, client):
@@ -231,7 +198,7 @@ class TestDocumentDataset(unittest.TestCase):
             timestamp: datetime = field(timestamp=True)
 
             @on_demand(expires_after="3d")
-            def get_embedding(ts: Series[datetime], doc_ids: Series[int]):
+            def get_embedding(cls, ts: Series[datetime], doc_ids: Series[int]):
                 data = []
                 doc_ids = doc_ids.tolist()
                 for i in range(len(ts)):
@@ -245,11 +212,11 @@ class TestDocumentDataset(unittest.TestCase):
                         ]
                     )
                 columns = [
-                    "doc_id",
-                    "bert_embedding",
-                    "fast_text_embedding",
-                    "num_words",
-                    "timestamp",
+                    str(cls.doc_id),
+                    str(cls.bert_embedding),
+                    str(cls.fast_text_embedding),
+                    str(cls.num_words),
+                    str(cls.timestamp),
                 ]
                 return pd.DataFrame(data, columns=columns), pd.Series(
                     [True] * len(ts)
@@ -445,7 +412,7 @@ class MovieStats:
                 ]
             ]
 
-        c = rating.join(revenue, on=[str(cls.movie)])
+        c = rating.left_join(revenue, on=[str(cls.movie)])
         # Transform provides additional columns which will be filtered out.
         return c.transform(
             to_millions,
@@ -798,7 +765,7 @@ class TestBasicFilter(unittest.TestCase):
 
 
 @meta(owner="me@fennel.ai")
-@dataset(retention="4m")
+@dataset(history="4m")
 class Activity:
     user_id: int
     action_type: str
@@ -808,7 +775,7 @@ class Activity:
 
 
 @meta(owner="me@fenne.ai")
-@dataset(retention="4m")
+@dataset(history="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
     category: str
@@ -851,7 +818,7 @@ class FraudReportAggregatedDataset:
                 "timestamp": datetime,
             },
         )
-        ds = ds.join(
+        ds = ds.left_join(
             merchant_info,
             on=["merchant_id"],
         )
@@ -1167,11 +1134,13 @@ class ManchesterUnitedPlayerInfo:
                 "timestamp": datetime,
             },
         )
-        player_info_with_salary = metric_stats.join(club_salary, on=["club"])
+        player_info_with_salary = metric_stats.left_join(
+            club_salary, on=["club"]
+        )
         manchester_players = player_info_with_salary.filter(
             lambda df: df[df["club"] == "Manchester United"]
         )
-        return manchester_players.join(wag, on=["name"])
+        return manchester_players.left_join(wag, on=["name"])
 
 
 class TestE2eIntegrationTestMUInfo(unittest.TestCase):

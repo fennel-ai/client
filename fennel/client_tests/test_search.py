@@ -42,7 +42,7 @@ s3 = sources.S3(
 
 
 @meta(owner="e1@company.com")
-@source(s3.bucket("engagement", prefix="notion", src_schema={}), every="2m")
+@source(s3.bucket("engagement", prefix="notion"), every="2m")
 @dataset
 class NotionDocs:
     doc_id: int = field(key=True)
@@ -53,7 +53,7 @@ class NotionDocs:
 
 
 @meta(owner="e2@company.com")
-@source(s3.bucket("engagement", prefix="coda", src_schema={}))
+@source(s3.bucket("engagement", prefix="coda"))
 @dataset
 class CodaDocs:
     doc_id: int = field(key=True).meta(owner="aditya@fennel.ai")  # type: ignore
@@ -64,7 +64,7 @@ class CodaDocs:
 
 
 @meta(owner="e3@company.com")
-@source(s3.bucket("engagement", prefix="google", src_schema={}))
+@source(s3.bucket("engagement", prefix="google"))
 @dataset
 class GoogleDocs:
     doc_id: int = field(key=True)
@@ -209,7 +209,7 @@ class DocumentContentDataset:
 
 
 @meta(owner="aditya@fennel.ai")
-@source(biq_query.table("user_activity", cursor_field="timestamp"), every="1h")
+@source(biq_query.table("user_activity", cursor="timestamp"), every="1h")
 @dataset
 class UserActivity:
     user_id: int
@@ -538,7 +538,7 @@ class TestSearchExample(unittest.TestCase):
                 DocumentContentFeatures,
             ],
             input_feature_list=[Query],
-            input_df=input_df,
+            input_dataframe=input_df,
         )
         assert df.shape == (2, 15)
         assert df.columns.tolist() == [

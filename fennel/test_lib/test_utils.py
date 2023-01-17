@@ -72,7 +72,7 @@ def clean_ds_func_src_code(
         name=dataset_req.name,
         fields=dataset_req.fields,
         max_staleness=dataset_req.max_staleness,
-        retention=dataset_req.retention,
+        history=dataset_req.history,
         mode=dataset_req.mode,
         pipelines=pipelines,
         on_demand=dataset_req.on_demand,
