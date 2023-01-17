@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.4.0] - 2023-01-17
+- Several updates to the api's and keeping them in sync with the documentation. 
+
 ## [0.3.4] - 2023-01-15
 - log splits the input dataframe into smaller batches to avoid potential payload size limit or timeouts.
 

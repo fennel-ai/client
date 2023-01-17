@@ -40,7 +40,7 @@ def test_join_schema_validation():
 
             @pipeline(MovieRating, MovieRevenue)
             def pipeline_join(cls, rating: Dataset, revenue: Dataset):
-                return rating.join(revenue, on=[str(cls.movie)])
+                return rating.left_join(revenue, on=[str(cls.movie)])
 
     assert (
         str(e.value)
@@ -79,7 +79,7 @@ def test_add_key():
 
 
 @meta(owner="me@fennel.ai")
-@dataset(retention="4m")
+@dataset(history="4m")
 class Activity:
     user_id: int
     action_type: str
@@ -89,7 +89,7 @@ class Activity:
 
 
 @meta(owner="me@fennel.ai")
-@dataset(retention="4m")
+@dataset(history="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
     category: str
@@ -131,7 +131,7 @@ def test_aggregation():
                         "timestamp": datetime,
                     },
                 )
-                ds = ds.join(
+                ds = ds.left_join(
                     merchant_info,
                     on=["merchant_id"],
                 )
@@ -294,7 +294,7 @@ def test_join_schema_validation_value():
 
             @pipeline(A, B)
             def pipeline_join(cls, a: Dataset, b: Dataset):
-                return a.join(b, left_on=["a1"], right_on=["b1", "b2"])
+                return a.left_join(b, left_on=["a1"], right_on=["b1", "b2"])
 
     assert (
         str(e.value)
@@ -334,7 +334,7 @@ def test_join_schema_validation_type():
 
             @pipeline(A, C)
             def pipeline_join(cls, a: Dataset, c: Dataset):
-                return a.join(c, left_on=["a1"], right_on=["b1"])
+                return a.left_join(c, left_on=["a1"], right_on=["b1"])
 
     assert (
         str(e.value)
@@ -354,7 +354,7 @@ def test_join_schema_validation_type():
 
             @pipeline(A, E)
             def pipeline_join(cls, a: Dataset, e: Dataset):
-                return a.join(e, on=["a1"])
+                return a.left_join(e, on=["a1"])
 
     assert (
         str(e.value)

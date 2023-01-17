@@ -23,12 +23,6 @@ s3 = S3(
     s3.bucket(
         bucket_name="fennel-demo-data",
         prefix="movielens_sampled/movies_timestamped.csv",
-        src_schema={
-            "movieId": "integer",
-            "title": "string",
-            "genres": "string",
-            "timestamp": "integer",
-        },
     ),
     every="1h",
 )

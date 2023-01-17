@@ -43,7 +43,7 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CreateDatasetRequest:
 
     return ds_proto.CreateDatasetRequest(
         name=ds.__name__,
-        retention=timedelta_to_micros(ds._retention),
+        history=timedelta_to_micros(ds._history),
         pipelines=[_pipeline_to_proto(p, ds.__name__) for p in ds._pipelines],
         input_connectors=[s.to_proto() for s in sources],
         output_connectors=[s.to_proto() for s in sinks],

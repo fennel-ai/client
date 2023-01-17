@@ -202,7 +202,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 UserInfoMultipleExtractor.is_name_common,
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
-            input_df=pd.DataFrame(
+            input_dataframe=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
@@ -213,7 +213,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 UserInfoMultipleExtractor,
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
-            input_df=pd.DataFrame(
+            input_dataframe=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
@@ -224,7 +224,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 UserInfoMultipleExtractor,
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
-            input_df=pd.DataFrame(
+            input_dataframe=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
@@ -287,7 +287,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
                 UserInfoTransformedFeatures,
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
-            input_df=pd.DataFrame(
+            input_dataframe=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
@@ -380,7 +380,9 @@ class TestDocumentDataset(unittest.TestCase):
                 DocumentFeatures,
             ],
             input_feature_list=[DocumentFeatures.doc_id],
-            input_df=pd.DataFrame({"DocumentFeatures.doc_id": [18232, 18234]}),
+            input_dataframe=pd.DataFrame(
+                {"DocumentFeatures.doc_id": [18232, 18234]}
+            ),
         )
         assert feature_df.shape == (2, 4)
         assert feature_df.columns.tolist() == [

@@ -178,7 +178,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             client.extract_features(
                 output_feature_list=[DomainFeatures2],
                 input_feature_list=[Query],
-                input_df=pd.DataFrame(
+                input_dataframe=pd.DataFrame(
                     {
                         "Query.domain": [
                             "www.google.com",
@@ -208,7 +208,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             client.extract_features(
                 output_feature_list=[DomainFeatures2],
                 input_feature_list=[Query.domain],
-                input_df=pd.DataFrame(
+                input_dataframe=pd.DataFrame(
                     {
                         "Query.domain": [
                             "www.google.com",
@@ -240,7 +240,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             client.extract_features(
                 output_feature_list=[DomainFeatures2],
                 input_feature_list=[Query.domain],
-                input_df=pd.DataFrame(
+                input_dataframe=pd.DataFrame(
                     {
                         "Query.domain": [
                             "www.google.com",

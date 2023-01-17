@@ -25,13 +25,13 @@ class DataConnector(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     SOURCE_FIELD_NUMBER: builtins.int
-    CURSOR_FIELD_FIELD_NUMBER: builtins.int
+    CURSOR_FIELD_NUMBER: builtins.int
     TABLE_FIELD_NUMBER: builtins.int
     S3_CONNECTOR_FIELD_NUMBER: builtins.int
     EVERY_FIELD_NUMBER: builtins.int
     @property
     def source(self) -> global___DataSource: ...
-    cursor_field: builtins.str
+    cursor: builtins.str
     table: builtins.str
     @property
     def s3_connector(self) -> global___S3Connector: ...
@@ -40,13 +40,13 @@ class DataConnector(google.protobuf.message.Message):
         self,
         *,
         source: global___DataSource | None = ...,
-        cursor_field: builtins.str = ...,
+        cursor: builtins.str = ...,
         table: builtins.str = ...,
         s3_connector: global___S3Connector | None = ...,
         every: builtins.int = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["instance", b"instance", "s3_connector", b"s3_connector", "source", b"source", "table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["cursor_field", b"cursor_field", "every", b"every", "instance", b"instance", "s3_connector", b"s3_connector", "source", b"source", "table", b"table"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["cursor", b"cursor", "every", b"every", "instance", b"instance", "s3_connector", b"s3_connector", "source", b"source", "table", b"table"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["instance", b"instance"]) -> typing_extensions.Literal["table", "s3_connector"] | None: ...
 
 global___DataConnector = DataConnector
@@ -188,7 +188,8 @@ class S3Connector(google.protobuf.message.Message):
     bucket: builtins.str
     path_prefix: builtins.str
     @property
-    def schema(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]: ...
+    def schema(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]:
+        """Schema is deprecated"""
     delimiter: builtins.str
     format: builtins.str
     def __init__(

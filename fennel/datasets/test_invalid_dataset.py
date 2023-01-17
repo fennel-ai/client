@@ -29,7 +29,7 @@ def test_MultipleDateTime(grpc_stub):
 def test_InvalidRetentionWindow(grpc_stub):
     with pytest.raises(TypeError) as e:
 
-        @dataset(retention=324)
+        @dataset(history=324)
         class Activity:
             user_id: int
             action_type: float
@@ -73,29 +73,8 @@ def test_DatasetWithPipes(grpc_stub):
             c: int
             d: datetime
 
-            @staticmethod
-            @pipeline(XYZ)
-            def create_pipeline(a: Dataset):
-                return a
-
-    assert (
-        str(e.value)
-        == "pipeline functions are classmethods and must have cls as the "
-        "first parameter, found a."
-    )
-
-    with pytest.raises(TypeError) as e:
-
-        @dataset
-        class ABCDataset3:
-            a: int = field(key=True)
-            b: int = field(key=True)
-            c: int
-            d: datetime
-
-            @staticmethod
-            @pipeline(XYZ)
-            def create_pipeline(a: Dataset):
+            @pipeline(XYZ)  # type: ignore
+            def create_pipeline(a: Dataset):  # type: ignore
                 return a
 
     assert (
@@ -124,7 +103,7 @@ def test_DatasetIncorrectJoin(grpc_stub):
             @pipeline(XYZ)
             def create_pipeline(cls, a: Dataset):
                 b = a.transform(lambda x: x)
-                return a.join(b, on=["user_id"])  # type: ignore
+                return a.left_join(b, on=["user_id"])  # type: ignore
 
     assert str(e.value) == "Cannot join with an intermediate dataset"
 
@@ -144,7 +123,7 @@ def test_DatasetOptionalKey(grpc_stub):
 def test_ProtectedFields(grpc_stub):
     with pytest.raises(Exception) as e:
 
-        @dataset(retention="324d")
+        @dataset(history="324d")
         class Activity:
             fields: List[int]
             key_fields: float

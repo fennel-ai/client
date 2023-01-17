@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, List, Optional, TypeVar, Dict
+from typing import Any, Callable, List, Optional, TypeVar
 
 from pydantic import BaseModel
 
@@ -113,11 +113,11 @@ class SQLSource(DataSource):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
 
-    def table(self, table_name: str, cursor_field: str) -> TableConnector:
-        return TableConnector(self, table_name, cursor_field)
+    def table(self, table_name: str, cursor: str) -> TableConnector:
+        return TableConnector(self, table_name, cursor)
 
     def required_fields(self) -> List[str]:
-        return ["table", "cursor_field"]
+        return ["table", "cursor"]
 
 
 class S3(DataSource):
@@ -143,23 +143,21 @@ class S3(DataSource):
         self,
         bucket_name: str,
         prefix: str,
-        src_schema: Dict[str, str],
         delimiter: str = ",",
         format: str = "csv",
-        cursor_field: Optional[str] = None,
+        cursor: Optional[str] = None,
     ) -> S3Connector:
         return S3Connector(
             self,
             bucket_name,
             prefix,
-            src_schema,
             delimiter,
             format,
-            cursor_field,
+            cursor,
         )
 
     def required_fields(self) -> List[str]:
-        return ["bucket", "prefix", "src_schema"]
+        return ["bucket", "prefix"]
 
     @staticmethod
     def get(name: str) -> S3:
@@ -184,8 +182,8 @@ class BigQuery(DataSource):
             exceptions.append(e)
         return exceptions
 
-    def table(self, table_name: str, cursor_field: str) -> TableConnector:
-        return TableConnector(self, table_name, cursor_field)
+    def table(self, table_name: str, cursor: str) -> TableConnector:
+        return TableConnector(self, table_name, cursor)
 
     def to_proto(self):
         source_proto = proto.DataSource(name=self.name)
@@ -199,7 +197,7 @@ class BigQuery(DataSource):
         return source_proto
 
     def required_fields(self) -> List[str]:
-        return ["table", "cursor_field"]
+        return ["table", "cursor"]
 
     @staticmethod
     def get(name: str) -> BigQuery:
@@ -308,8 +306,8 @@ class Snowflake(DataSource):
         )
         return source_proto
 
-    def table(self, table_name: str, cursor_field: str) -> TableConnector:
-        return TableConnector(self, table_name, cursor_field)
+    def table(self, table_name: str, cursor: str) -> TableConnector:
+        return TableConnector(self, table_name, cursor)
 
     def _validate(self) -> List[Exception]:
         exceptions: List[Exception] = []
@@ -334,7 +332,7 @@ class Snowflake(DataSource):
         return exceptions
 
     def required_fields(self) -> List[str]:
-        return ["table", "cursor_field"]
+        return ["table", "cursor"]
 
     @staticmethod
     def get(name: str) -> Snowflake:
@@ -377,22 +375,22 @@ class DataConnector:
 
 
 class TableConnector(DataConnector):
-    """DataConnectors which only need a table name and a cursor_field to be
+    """DataConnectors which only need a table name and a cursor to be
     specified.Includes BigQuery, MySQL, Postgres, and Snowflake."""
 
     table: str
-    cursor_field: str
+    cursor: str
 
-    def __init__(self, data_source, table, cursor_field):
+    def __init__(self, data_source, table, cursor):
         self.data_source = data_source
         self.table = table
-        self.cursor_field = cursor_field
+        self.cursor = cursor
         self.every = DEFAULT_EVERY
 
     def to_proto(self):
         return proto.DataConnector(
             source=self.data_source.to_proto(),
-            cursor_field=self.cursor_field,
+            cursor=self.cursor,
             every=duration_to_micros(self.every),
             table=self.table,
         )
@@ -401,28 +399,25 @@ class TableConnector(DataConnector):
 class S3Connector(DataConnector):
     bucket_name: Optional[str]
     path_prefix: Optional[str]
-    src_schema: Optional[Dict[str, str]]
     delimiter: str = ","
     format: str = "csv"
-    cursor_field: Optional[str] = None
+    cursor: Optional[str] = None
 
     def __init__(
         self,
         data_source,
         bucket_name,
         path_prefix,
-        src_schema,
         delimiter,
         format,
-        cursor_field,
+        cursor,
     ):
         self.data_source = data_source
         self.bucket_name = bucket_name
         self.path_prefix = path_prefix
-        self.src_schema = src_schema
         self.delimiter = delimiter
         self.format = format
-        self.cursor_field = cursor_field
+        self.cursor = cursor
         self.every = DEFAULT_EVERY
 
     def _validate(self) -> List[Exception]:
@@ -442,11 +437,10 @@ class S3Connector(DataConnector):
             s3_connector=proto.S3Connector(
                 bucket=self.bucket_name,
                 path_prefix=self.path_prefix,
-                schema=self.src_schema,
                 delimiter=self.delimiter,
                 format=self.format,
             ),
         )
-        if self.cursor_field is not None:
-            s3_conn.cursorField = self.cursor_field
+        if self.cursor is not None:
+            s3_conn.cursor = self.cursor
         return s3_conn

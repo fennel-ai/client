@@ -33,7 +33,7 @@ class UserInfoDataset:
 
 
 def test_simpleDataset(grpc_stub):
-    assert UserInfoDataset._retention == timedelta(days=730)
+    assert UserInfoDataset._history == timedelta(days=730)
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     sync_request = view._get_sync_request_proto()
@@ -92,7 +92,7 @@ def test_simpleDataset(grpc_stub):
                         "metadata": {},
                     },
                 ],
-                "signature": "749d38c71deb64890f4bae4e42cea282",
+                "signature": "88468f81bc9e7be9c988fb90d3299df9",
                 "metadata": {
                     "owner": "aditya@fennel.ai",
                     "description": "test",
@@ -100,7 +100,7 @@ def test_simpleDataset(grpc_stub):
                     "deprecated": True,
                 },
                 "mode": "pandas",
-                "retention": "63072000000000",
+                "history": "63072000000000",
             }
         ]
     }
@@ -111,7 +111,7 @@ def test_simpleDataset(grpc_stub):
 
 
 def test_complexDatasetWithFields(grpc_stub):
-    @dataset(retention="1y")
+    @dataset(history="1y")
     @meta(owner="daniel@yext.com", description="test")
     class YextUserInfoDataset:
         user_id: int = field(key=True).meta(
@@ -126,7 +126,7 @@ def test_complexDatasetWithFields(grpc_stub):
         country: Optional[Dict[str, List[Dict[str, float]]]] = field()
         timestamp: datetime = field(timestamp=True)
 
-    assert YextUserInfoDataset._retention == timedelta(days=365)
+    assert YextUserInfoDataset._history == timedelta(days=365)
     view = InternalTestClient(grpc_stub)
     view.add(YextUserInfoDataset)
     sync_request = view._get_sync_request_proto()
@@ -208,13 +208,13 @@ def test_complexDatasetWithFields(grpc_stub):
                         "metadata": {},
                     },
                 ],
-                "signature": "8b0a9eaeab179d98c549db64d771058d",
+                "signature": "020a32d8f46e7c5f6cffb096205c0a1c",
                 "metadata": {
                     "owner": "daniel@yext.com",
                     "description": "test",
                 },
                 "mode": "pandas",
-                "retention": "31536000000000",
+                "history": "31536000000000",
             }
         ]
     }

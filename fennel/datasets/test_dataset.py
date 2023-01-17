@@ -33,7 +33,7 @@ class UserInfoDataset:
 
 
 def test_SimpleDataset(grpc_stub):
-    assert UserInfoDataset._retention == timedelta(days=730)
+    assert UserInfoDataset._history == timedelta(days=730)
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     sync_request = view._get_sync_request_proto()
@@ -92,10 +92,10 @@ def test_SimpleDataset(grpc_stub):
                         "metadata": {},
                     },
                 ],
-                "signature": "749d38c71deb64890f4bae4e42cea282",
+                "signature": "88468f81bc9e7be9c988fb90d3299df9",
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
-                "retention": "63072000000000",
+                "history": "63072000000000",
             }
         ]
     }
@@ -107,7 +107,7 @@ def test_SimpleDataset(grpc_stub):
 
 
 @meta(owner="test@test.com")
-@dataset(retention="120d")
+@dataset(history="120d")
 class Activity:
     user_id: int
     action_type: float
@@ -116,7 +116,7 @@ class Activity:
 
 
 def test_DatasetWithRetention(grpc_stub):
-    assert Activity._retention == timedelta(days=120)
+    assert Activity._history == timedelta(days=120)
     view = InternalTestClient(grpc_stub)
     view.add(Activity)
     sync_request = view._get_sync_request_proto()
@@ -151,10 +151,10 @@ def test_DatasetWithRetention(grpc_stub):
                         "metadata": {},
                     },
                 ],
-                "signature": "04dc8d12acec935d783e040e1ad0e5a6",
+                "signature": "378b4a4e8da9a6f20d989e255ae8d8e5",
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
-                "retention": "10368000000000",
+                "history": "10368000000000",
             }
         ]
     }
@@ -170,7 +170,7 @@ def test_DatasetWithPull(grpc_stub):
 
     @meta(owner="test@test.com")
     @dataset(
-        retention="1y",
+        history="1y",
     )
     class UserCreditScore:
         user_id: int = field(key=True)
@@ -178,10 +178,9 @@ def test_DatasetWithPull(grpc_stub):
         credit_score: float
         timestamp: datetime
 
-        @staticmethod
         @on_demand(expires_after="7d")
         def pull_from_api(
-            ts: Series[datetime], user_id: Series[int], names: Series[str]
+            cls, ts: Series[datetime], user_id: Series[int], names: Series[str]
         ) -> pd.DataFrame:
             user_list = user_id.tolist()
             names = names.tolist()
@@ -192,13 +191,13 @@ def test_DatasetWithPull(grpc_stub):
             if resp.status_code != 200:
                 return df
             results = resp.json()["results"]
-            df["user_id"] = user_id
-            df["names"] = names
-            df["timestamp"] = ts
-            df["credit_score"] = pd.Series(results)
+            df[str(cls.user_id)] = user_id
+            df[str(cls.name)] = names
+            df[str(cls.timestamp)] = ts
+            df[str(cls.credit_score)] = pd.Series(results)
             return df, pd.Series([True] * len(df))
 
-    assert UserCreditScore._retention == timedelta(days=365)
+    assert UserCreditScore._history == timedelta(days=365)
     view = InternalTestClient(grpc_stub)
     view.add(UserCreditScore)
     sync_request = view._get_sync_request_proto()
@@ -233,7 +232,7 @@ def test_DatasetWithPull(grpc_stub):
         ],
         "mode": "pandas",
         "metadata": {"owner": "test@test.com"},
-        "retention": "31536000000000",
+        "history": "31536000000000",
         "onDemand": {"expiresAfter": "604800000000"},
     }
 
@@ -247,16 +246,15 @@ def test_DatasetWithPull(grpc_stub):
     with pytest.raises(TypeError) as e:
 
         @meta(owner="test@test.com")
-        @dataset(retention="1y")
+        @dataset(history="1y")
         class UserCreditScore2:
             user_id: int = field(key=True)
             credit_score: float
             timestamp: datetime
 
-            @staticmethod
             @on_demand
             def pull_from_api(
-                user_id: pd.Series, names: pd.Series, timestamps: pd.Series
+                cls, user_id: pd.Series, names: pd.Series, timestamps: pd.Series
             ) -> pd.DataFrame:
                 pass
 
@@ -292,7 +290,7 @@ def test_DatasetWithPipes(grpc_stub):
 
         @pipeline(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.join(b, left_on=["a1"], right_on=["b1"])
+            return a.left_join(b, left_on=["a1"], right_on=["b1"])
 
     view = InternalTestClient(grpc_stub)
     view.add(ABCDataset)
@@ -344,7 +342,7 @@ def test_DatasetWithPipes(grpc_stub):
         ],
         "mode": "pandas",
         "metadata": {"owner": "aditya@fennel.ai"},
-        "retention": "63072000000000",
+        "history": "63072000000000",
         "onDemand": {},
     }
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
@@ -390,7 +388,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
             filtered_ds = activity.filter(
                 lambda df: df[df["action_type"] == "report_txn"]
             )
-            ds = filtered_ds.join(
+            ds = filtered_ds.left_join(
                 user_info,
                 on=["user_id"],
             )
@@ -518,7 +516,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
         ],
         "metadata": {"owner": "test@test.com"},
         "mode": "pandas",
-        "retention": "63072000000000",
+        "history": "63072000000000",
         "onDemand": {},
     }
 
@@ -638,7 +636,7 @@ def test_UnionDatasets(grpc_stub):
         ],
         "metadata": {"owner": "test@test.com"},
         "mode": "pandas",
-        "retention": "63072000000000",
+        "history": "63072000000000",
         "onDemand": {},
     }
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
@@ -779,7 +777,7 @@ def test_SearchDataset(grpc_stub):
         ],
         "metadata": {"owner": "aditya@fennel.ai"},
         "mode": "pandas",
-        "retention": "63072000000000",
+        "history": "63072000000000",
         "onDemand": {},
     }
     expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
