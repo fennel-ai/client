@@ -13,6 +13,7 @@ from typing import (
     TypeVar,
     Optional,
     List,
+    overload,
     Union,
     Set,
 )
@@ -115,100 +116,133 @@ def featureset(featureset_cls: Type[T]):
     )
 
 
-def extractor(extractor_func: Callable):
+@overload
+def extractor(
+    func: Callable[..., T],
+):
+    ...
+
+
+@overload
+def extractor(
+    *,
+    version: int,
+):
+    ...
+
+
+def extractor(func: Optional[Callable] = None, version: int = 0):
     """
     extractor is a decorator for a function that extracts a feature from a
     featureset.
     """
 
-    if not callable(extractor_func):
-        raise TypeError("extractor can only be applied to functions")
-    sig = inspect.signature(extractor_func)
-    extractor_name = extractor_func.__name__
-    params = []
-    check_timestamp = False
-    class_method = False
-    for name, param in sig.parameters.items():
-        if not class_method and param.name != "cls":
-            raise TypeError(
-                "extractor functions should have cls as the first parameter"
-                " since they are class methods"
-            )
-        elif not class_method:
-            class_method = True
-            continue
-
-        if not check_timestamp:
-            if param.annotation == datetime:
-                check_timestamp = True
-                continue
-            raise TypeError(
-                "extractor functions must have timestamp ( of type Series["
-                "datetime] ) as the second parameter, found {} instead".format(
-                    param.annotation
+    def _create_extractor(extractor_func: Callable, version: int):
+        if not callable(extractor_func):
+            raise TypeError("extractor can only be applied to functions")
+        sig = inspect.signature(extractor_func)
+        extractor_name = extractor_func.__name__
+        params = []
+        check_timestamp = False
+        class_method = False
+        for name, param in sig.parameters.items():
+            if not class_method and param.name != "cls":
+                raise TypeError(
+                    "extractor functions should have cls as the first parameter"
+                    " since they are class methods"
                 )
-            )
-        if not isinstance(param.annotation, Featureset) and not isinstance(
-            param.annotation, Feature
-        ):
-            raise TypeError(
-                f"Parameter {name} is not a Featureset or a "
-                f"feature but a {type(param.annotation)}"
-            )
-        params.append(param.annotation)
-    return_annotation = extractor_func.__annotations__.get("return", None)
-    outputs = []
-    if return_annotation is not None:
-        if isinstance(return_annotation, Feature):
-            # If feature name is set, it means that the feature is from another
-            # featureset.
-            if (
-                "." in str(return_annotation.fqn())
-                and len(return_annotation.fqn()) > 0
+            elif not class_method:
+                class_method = True
+                continue
+
+            if not check_timestamp:
+                if param.annotation == datetime:
+                    check_timestamp = True
+                    continue
+                raise TypeError(
+                    "extractor functions must have timestamp ( of type Series["
+                    "datetime] ) as the second parameter, found {} instead".format(
+                        param.annotation
+                    )
+                )
+            if not isinstance(param.annotation, Featureset) and not isinstance(
+                param.annotation, Feature
             ):
                 raise TypeError(
-                    "Extractors can only extract a feature defined "
-                    f"in the same featureset, found "
-                    f"{return_annotation.fqn()}"
+                    f"Parameter {name} is not a Featureset or a "
+                    f"feature but a {type(param.annotation)}"
                 )
-            return_annotation = cast(Feature, return_annotation)
-            outputs.append(return_annotation.id)
-        elif isinstance(return_annotation, str):
-            raise TypeError(
-                "str datatype not supported, please ensure "
-                "from __future__ import annotations is disabled"
-            )
-        elif isinstance(return_annotation, tuple):
-            for f in return_annotation:
-                if not isinstance(f, Feature) and not isinstance(f, Featureset):
-                    raise TypeError(
-                        "Extractors can only return a Series[feature] or a "
-                        "DataFrame[featureset]."
-                    )
-                f = cast(Feature, f)
-                if "." in f.fqn() and len(f.fqn()) > 0:
+            params.append(param.annotation)
+        return_annotation = extractor_func.__annotations__.get("return", None)
+        outputs = []
+        if return_annotation is not None:
+            if isinstance(return_annotation, Feature):
+                # If feature name is set, it means that the feature is from another
+                # featureset.
+                if (
+                    "." in str(return_annotation.fqn())
+                    and len(return_annotation.fqn()) > 0
+                ):
                     raise TypeError(
                         "Extractors can only extract a feature defined "
                         f"in the same featureset, found "
-                        f"{str(return_annotation)}."
+                        f"{return_annotation.fqn()}"
                     )
-                outputs.append(f.id)
-        elif isinstance(return_annotation, Featureset):
-            raise TypeError(
-                "Extractors can only return a Series[feature] or a "
-                "DataFrame[<list of features defined in this Featureset>]."
-            )
-        else:
-            raise TypeError(
-                f"Return annotation {return_annotation} is not a "
-                f"Series or DataFrame, found {type(return_annotation)}"
-            )
-    setattr(
-        extractor_func,
-        EXTRACTOR_ATTR,
-        Extractor(extractor_name, params, extractor_func, outputs),
-    )
-    return extractor_func
+                return_annotation = cast(Feature, return_annotation)
+                outputs.append(return_annotation.id)
+            elif isinstance(return_annotation, str):
+                raise TypeError(
+                    "str datatype not supported, please ensure "
+                    "from __future__ import annotations is disabled"
+                )
+            elif isinstance(return_annotation, tuple):
+                for f in return_annotation:
+                    if not isinstance(f, Feature) and not isinstance(
+                        f, Featureset
+                    ):
+                        raise TypeError(
+                            "Extractors can only return a Series[feature] or a "
+                            "DataFrame[featureset]."
+                        )
+                    f = cast(Feature, f)
+                    if "." in f.fqn() and len(f.fqn()) > 0:
+                        raise TypeError(
+                            "Extractors can only extract a feature defined "
+                            f"in the same featureset, found "
+                            f"{str(return_annotation)}."
+                        )
+                    outputs.append(f.id)
+            elif isinstance(return_annotation, Featureset):
+                raise TypeError(
+                    "Extractors can only return a Series[feature] or a "
+                    "DataFrame[<list of features defined in this Featureset>]."
+                )
+            else:
+                raise TypeError(
+                    f"Return annotation {return_annotation} is not a "
+                    f"Series or DataFrame, found {type(return_annotation)}"
+                )
+        setattr(
+            extractor_func,
+            EXTRACTOR_ATTR,
+            Extractor(extractor_name, params, extractor_func, outputs, version),
+        )
+        return extractor_func
+
+    def wrap(c: Callable):
+        return _create_extractor(c, version)
+
+    if func is None:
+        # We're being called as @extractor(version=int).
+        if version is None:
+            raise TypeError("version must be specified as an integer.")
+        if not isinstance(version, int):
+            raise TypeError("version for extractor must be an int.")
+        return wrap
+
+    func = cast(Callable, func)
+    # @extractor decorator was used without arguments
+    return wrap(func)
 
 
 def depends_on(*datasets: Any):
@@ -417,11 +451,13 @@ class Extractor:
         inputs: List[Union[Feature, Featureset]],
         func: Callable,
         outputs: List[int],
+        version: int,
     ):
         self.name = name
         self.inputs = inputs
         self.func = func  # type: ignore
         self.output_feature_ids = outputs
+        self.version = version
 
     def signature(self) -> str:
         pass

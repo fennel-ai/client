@@ -136,6 +136,25 @@ def test_ExtractAnoatherFeatureset(grpc_stub):
         "the same featureset, found (User.age, User.id)."
     )
 
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class UserInfo4:
+            userid: int = feature(id=1)
+            home_geoid: int = feature(id=2)
+            # The users gender among male/female/non-binary
+            gender: str = feature(id=3)
+            age: int = feature(id=4).meta(owner="aditya@fennel.ai")
+            income: int = feature(id=5)
+
+            @extractor(version="2")
+            def get_user_info3(
+                cls, ts: Series[datetime], user_id: Series[User.id]
+            ):
+                pass
+
+    assert str(e.value) == "version for extractor must be an int."
+
 
 def test_MissingId(grpc_stub):
     with pytest.raises(TypeError) as e:

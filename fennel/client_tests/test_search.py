@@ -89,8 +89,8 @@ class Document:
     origin: str
     creation_timestamp: datetime
 
-    @pipeline(NotionDocs)
-    def notion_pipe(cls, ds: Dataset):
+    @pipeline(id=1)
+    def notion_pipe(cls, ds: Dataset[NotionDocs]):
         return ds.transform(
             lambda df: doc_pipeline_helper(df, "Notion"),
             schema={
@@ -103,8 +103,8 @@ class Document:
             },
         )
 
-    @pipeline(CodaDocs)
-    def coda_pipe(cls, ds: Dataset):
+    @pipeline(id=2)
+    def coda_pipe(cls, ds: Dataset[CodaDocs]):
         return ds.transform(
             lambda df: doc_pipeline_helper(df, "Coda"),
             schema={
@@ -117,8 +117,8 @@ class Document:
             },
         )
 
-    @pipeline(GoogleDocs)
-    def google_docs_pipe(cls, ds: Dataset):
+    @pipeline(id=3)
+    def google_docs_pipe(cls, ds: Dataset[GoogleDocs]):
         return ds.transform(
             lambda df: doc_pipeline_helper(df, "GoogleDocs"),
             schema={
@@ -189,10 +189,10 @@ class DocumentContentDataset:
     top_10_unique_words: List[str]
     creation_timestamp: datetime
 
-    @pipeline(Document)
+    @pipeline(id=1)
     def content_features(
         cls,
-        ds: Dataset,
+        ds: Dataset[Document],
     ):
         return ds.transform(
             get_content_features,
@@ -228,8 +228,8 @@ class UserEngagementDataset:
     num_long_views: int
     timestamp: datetime
 
-    @pipeline(UserActivity)
-    def user_engagement_pipeline(cls, ds: Dataset):
+    @pipeline(id=1)
+    def user_engagement_pipeline(cls, ds: Dataset[UserActivity]):
         def create_short_click(df: pd.DataFrame) -> pd.DataFrame:
             df["is_short_click"] = df[str(UserActivity.view_time)] < 5
             df["is_long_click"] = df[str(UserActivity.view_time)] >= 5
@@ -276,8 +276,8 @@ class DocumentEngagementDataset:
     total_timespent: float
     timestamp: datetime
 
-    @pipeline(UserActivity)
-    def doc_engagement_pipeline(cls, ds: Dataset):
+    @pipeline(id=1)
+    def doc_engagement_pipeline(cls, ds: Dataset[UserActivity]):
         return ds.groupby("doc_id").aggregate(
             [
                 Count(window=Window("forever"), into_field=str(cls.num_views)),

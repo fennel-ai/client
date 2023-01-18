@@ -288,8 +288,8 @@ def test_DatasetWithPipes(grpc_stub):
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(A, B)
-        def pipeline1(cls, a: Dataset, b: Dataset):
+        @pipeline(id=1)
+        def pipeline1(cls, a: Dataset[A], b: Dataset[B]):
             return a.left_join(b, left_on=["a1"], right_on=["b1"])
 
     view = InternalTestClient(grpc_stub)
@@ -361,8 +361,12 @@ def test_DatasetWithComplexPipe(grpc_stub):
         num_merchant_fraudulent_transactions: int
         num_merchant_fraudulent_transactions_7d: int
 
-        @pipeline(Activity, UserInfoDataset)
-        def create_fraud_dataset(cls, activity: Dataset, user_info: Dataset):
+        @pipeline(id=1)
+        def create_fraud_dataset(
+            cls,
+            activity: Dataset[Activity],
+            user_info: Dataset[UserInfoDataset],
+        ):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
                 df["metadata_dict"] = (
                     df["metadata"].apply(json.loads).apply(pd.Series)
@@ -545,8 +549,8 @@ def test_UnionDatasets(grpc_stub):
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(A)
-        def pipeline2_diamond(cls, a: Dataset):
+        @pipeline(id=1)
+        def pipeline2_diamond(cls, a: Dataset[A]):
             b = a.transform(lambda df: df)
             c = a.transform(lambda df: df * 2)
             d = b + c
@@ -673,10 +677,10 @@ def test_SearchDataset(grpc_stub):
         top_10_unique_words: List[str]
         creation_timestamp: datetime
 
-        @pipeline(Document)
+        @pipeline(id=1)
         def content_features(
             cls,
-            ds: Dataset,
+            ds: Dataset[Document],
         ):
             return ds.transform(
                 get_content_features,

@@ -1,6 +1,9 @@
 # Changelog
 
-## [0.4.0] - 2023-01-17
+## [0.4.0] - 2023-01-18
+- Pipelines have ids and extractors have versions.
+
+## [0.3.7] - 2023-01-17
 - Several updates to the api's and keeping them in sync with the documentation. 
 
 ## [0.3.4] - 2023-01-15

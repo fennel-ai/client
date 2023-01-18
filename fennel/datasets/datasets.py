@@ -12,6 +12,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Generic,
     Tuple,
     Type,
     TypeVar,
@@ -42,8 +43,7 @@ from fennel.utils import (
 
 Tags = Union[List[str], Tuple[str, ...], str]
 
-T = TypeVar("T", bound="Dataset")
-F = TypeVar("F")
+T = TypeVar("T")
 
 PIPELINE_ATTR = "__fennel_pipeline__"
 ON_DEMAND_ATTR = "__fennel_on_demand__"
@@ -82,8 +82,8 @@ class Field:
             f"{self.is_optional()}:{self.key}:{self.timestamp}",
         )
 
-    def meta(self, **kwargs: Any) -> F:
-        f = cast(F, meta(**kwargs)(self))
+    def meta(self, **kwargs: Any) -> T:
+        f = cast(T, meta(**kwargs)(self))
         if get_meta_attr(f, "deleted") or get_meta_attr(f, "deprecated"):
             raise ValueError(
                 "Dataset currently does not support deleted or "
@@ -111,7 +111,7 @@ class Field:
 
 
 def get_field(
-    cls: F,
+    cls: T,
     annotation_name: str,
     dtype: Type,
     field2comment_map: Dict[str, str],
@@ -148,9 +148,9 @@ def get_field(
 def field(
     key: bool = False,
     timestamp: bool = False,
-) -> F:
+) -> T:
     return cast(
-        F,
+        T,
         Field(
             key=key,
             timestamp=timestamp,
@@ -166,7 +166,7 @@ def field(
 # ---------------------------------------------------------------------
 
 
-class _Node:
+class _Node(Generic[T]):
     def __init__(self):
         self.out_edges = []
 
@@ -333,19 +333,19 @@ class Union_(_Node):
 def dataset(
     *,
     history: Optional[Duration] = DEFAULT_RETENTION,
-) -> Callable[[Type[F]], Dataset]:
+) -> Callable[[Type[T]], Dataset]:
     ...
 
 
 @overload
-def dataset(cls: Type[F]) -> Dataset:
+def dataset(cls: Type[T]) -> Dataset:
     ...
 
 
 def dataset(
-    cls: Optional[Type[F]] = None,
+    cls: Optional[Type[T]] = None,
     history: Optional[Duration] = DEFAULT_RETENTION,
-) -> Union[Callable[[Type[F]], Dataset], Dataset]:
+) -> Union[Callable[[Type[T]], Dataset], Dataset]:
     """
     dataset is a decorator that creates a Dataset class.
     A dataset class contains the schema of the dataset, an optional pull
@@ -436,7 +436,7 @@ def dataset(
         return lookup
 
     def _create_dataset(
-        dataset_cls: Type[F],
+        dataset_cls: Type[T],
         history: Duration,
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
@@ -459,31 +459,29 @@ def dataset(
             lookup_fn=_create_lookup_function(dataset_cls.__name__, key_fields),
         )
 
-    def wrap(c: Type[F]) -> Dataset:
+    def wrap(c: Type[T]) -> Dataset:
         return _create_dataset(c, cast(Duration, history))
 
     if cls is None:
         # We're being called as @dataset()
         return wrap
-    cls = cast(Type[F], cls)
+    cls = cast(Type[T], cls)
     # @dataset decorator was used without arguments
     return wrap(cls)
 
 
-def pipeline(
-    *params: Any,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    for param in params:
-        if callable(param):
-            raise Exception("pipeline must take atleast one Dataset.")
-        if not isinstance(param, Dataset):
-            raise TypeError("pipeline parameters must be Dataset instances.")
+def pipeline(id: int) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    if isinstance(id, Callable) or isinstance(id, Dataset):  # type: ignore
+        raise ValueError("pipeline must be called with an id")
+    if type(id) != int:
+        raise ValueError("pipeline id must be an integer, found %s" % type(id))
 
     def wrapper(pipeline_func: Callable) -> Callable:
         if not callable(pipeline_func):
             raise TypeError("pipeline functions must be callable.")
         sig = inspect.signature(pipeline_func)
         cls_param = False
+        params = []
         for name, param in sig.parameters.items():
             if not cls_param and param.name != "cls":
                 raise TypeError(
@@ -494,15 +492,19 @@ def pipeline(
                 cls_param = True
                 continue
 
-            if param.annotation != Dataset:
+            if not isinstance(param.annotation, Dataset):
+                if issubclass(param.annotation, Dataset):
+                    raise TypeError(
+                        "pipeline functions must have Dataset[<Dataset Name>] "
+                        "as parameters."
+                    )
                 raise TypeError(f"Parameter {name} is not a Dataset.")
+            params.append(param.annotation)
+
         setattr(
             pipeline_func,
             PIPELINE_ATTR,
-            Pipeline(
-                inputs=list(params),
-                func=pipeline_func,
-            ),
+            Pipeline(inputs=list(params), func=pipeline_func, id=id),
         )
         return pipeline_func
 
@@ -556,11 +558,13 @@ class Pipeline:
     _dataset_name: str
     func: Callable
     name: str
+    id: int
 
-    def __init__(self, inputs: List[Dataset], func: Callable):
+    def __init__(self, inputs: List[Dataset], func: Callable, id: int):
         self.inputs = inputs
         self.func = func  # type: ignore
         self.name = func.__name__
+        self.id = id
 
     # Validate the schema of all intermediate nodes
     # and return the schema of the terminal node.
@@ -587,7 +591,7 @@ class Pipeline:
         return self._dataset_name
 
 
-class Dataset(_Node):
+class Dataset(_Node[T]):
     """Dataset is a collection of data."""
 
     # All attributes should start with _ to avoid conflicts with
@@ -604,7 +608,7 @@ class Dataset(_Node):
 
     def __init__(
         self,
-        cls: F,
+        cls: T,
         fields: List[Field],
         history: datetime.timedelta,
         lookup_fn: Optional[Callable] = None,
@@ -625,6 +629,9 @@ class Dataset(_Node):
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
         propogate_fennel_attributes(cls, self)
+
+    def __class_getitem__(cls, item):
+        return item
 
     # ------------------- Public Methods --------------------------
 
@@ -770,12 +777,26 @@ class Dataset(_Node):
     def _get_pipelines(self) -> List[Pipeline]:
         pipelines = []
         dataset_name = self._name
+        ids = set()
+        names = set()
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
             if not callable(method):
                 continue
             if not hasattr(method, PIPELINE_ATTR):
                 continue
+
             pipeline = getattr(method, PIPELINE_ATTR)
+
+            if pipeline.id in ids:
+                raise ValueError(
+                    f"Duplicate pipeline id {pipeline.id} for dataset {dataset_name}."
+                )
+            ids.add(pipeline.id)
+            if pipeline.name in names:
+                raise ValueError(
+                    f"Duplicate pipeline name {pipeline.name} for dataset {dataset_name}."
+                )
+            names.add(pipeline.name)
             pipeline.set_terminal_node(pipeline.func(self, *pipeline.inputs))
             pipelines.append(pipeline)
             pipelines[-1].set_dataset_name(dataset_name)

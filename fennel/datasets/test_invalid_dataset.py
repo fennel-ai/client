@@ -43,13 +43,13 @@ def test_InvalidRetentionWindow(grpc_stub):
 
 
 def test_DatasetWithPipes(grpc_stub):
-    with pytest.raises(Exception) as e:
+    @dataset
+    class XYZ:
+        user_id: int
+        name: str
+        timestamp: datetime
 
-        @dataset
-        class XYZ:
-            user_id: int
-            name: str
-            timestamp: datetime
+    with pytest.raises(Exception) as e:
 
         @dataset
         class ABCDataset:
@@ -62,9 +62,24 @@ def test_DatasetWithPipes(grpc_stub):
             def create_pipeline(cls, a: Dataset):
                 return a
 
-    assert str(e.value) == "pipeline must take atleast one Dataset."
+    assert str(e.value) == "pipeline must be called with an id"
 
-    with pytest.raises(TypeError) as e:
+    with pytest.raises(Exception) as e:
+
+        @dataset
+        class ABCDataset1:
+            a: int = field(key=True)
+            b: int = field(key=True)
+            c: int
+            d: datetime
+
+            @pipeline(XYZ)
+            def create_pipeline(cls, a: Dataset):
+                return a
+
+    assert str(e.value) == "pipeline must be called with an id"
+
+    with pytest.raises(Exception) as e:
 
         @dataset
         class ABCDataset2:
@@ -73,8 +88,26 @@ def test_DatasetWithPipes(grpc_stub):
             c: int
             d: datetime
 
-            @pipeline(XYZ)  # type: ignore
-            def create_pipeline(a: Dataset):  # type: ignore
+            @pipeline(id=1)
+            def create_pipeline(cls, a: Dataset):
+                return a
+
+    assert (
+        str(e.value)
+        == "pipeline functions must have Dataset[<Dataset Name>] as parameters."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @dataset
+        class ABCDataset3:
+            a: int = field(key=True)
+            b: int = field(key=True)
+            c: int
+            d: datetime
+
+            @pipeline(id=1)  # type: ignore
+            def create_pipeline(a: Dataset[XYZ]):  # type: ignore
                 return a
 
     assert (
@@ -100,8 +133,8 @@ def test_DatasetIncorrectJoin(grpc_stub):
             c: int
             d: datetime
 
-            @pipeline(XYZ)
-            def create_pipeline(cls, a: Dataset):
+            @pipeline(id=1)
+            def create_pipeline(cls, a: Dataset[XYZ]):
                 b = a.transform(lambda x: x)
                 return a.left_join(b, on=["user_id"])  # type: ignore
 

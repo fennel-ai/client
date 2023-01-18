@@ -38,8 +38,12 @@ def test_join_schema_validation():
             revenue: int
             t: datetime
 
-            @pipeline(MovieRating, MovieRevenue)
-            def pipeline_join(cls, rating: Dataset, revenue: Dataset):
+            @pipeline(id=1)
+            def pipeline_join(
+                cls,
+                rating: Dataset[MovieRating],
+                revenue: Dataset[MovieRevenue],
+            ):
                 return rating.left_join(revenue, on=[str(cls.movie)])
 
     assert (
@@ -68,8 +72,8 @@ def test_add_key():
             movie: str = field(key=True)
             t: datetime
 
-            @pipeline(RatingActivity)
-            def filter_positive_ratings(cls, rating: Dataset):
+            @pipeline(id=1)
+            def filter_positive_ratings(cls, rating: Dataset[RatingActivity]):
                 return rating.filter(lambda df: df[df["rating"] >= 3.5])
 
     assert (
@@ -107,9 +111,11 @@ def test_aggregation():
             timestamp: datetime
             sum_categ_fraudulent_transactions_7d: int
 
-            @pipeline(Activity, MerchantInfo)
+            @pipeline(id=1)
             def create_fraud_dataset(
-                cls, activity: Dataset, merchant_info: Dataset
+                cls,
+                activity: Dataset[Activity],
+                merchant_info: Dataset[MerchantInfo],
             ):
                 def extract_info(df: pd.DataFrame) -> pd.DataFrame:
                     df_json = df["metadata"].apply(json.loads).apply(pd.Series)
@@ -181,8 +187,8 @@ def test_transform():
             b1: float
             t: datetime
 
-            @pipeline(A)
-            def transform(cls, a: Dataset):
+            @pipeline(id=1)
+            def transform(cls, a: Dataset[A]):
                 return a.transform(
                     lambda df: df,
                     schema={
@@ -206,8 +212,8 @@ def test_transform():
             b1: float
             t: datetime
 
-            @pipeline(A)
-            def transform(cls, a: Dataset):
+            @pipeline(id=1)
+            def transform(cls, a: Dataset[A]):
                 return a.transform(
                     lambda df: df,
                     schema={
@@ -231,8 +237,8 @@ def test_transform():
             b1: int
             t: datetime
 
-            @pipeline(A)
-            def transform(cls, a: Dataset):
+            @pipeline(id=1)
+            def transform(cls, a: Dataset[A]):
                 return a.transform(
                     lambda df: df,
                     schema={
@@ -256,8 +262,8 @@ def test_transform():
             b1: int
             t: datetime
 
-            @pipeline(A)
-            def transform(cls, a: Dataset):
+            @pipeline(id=1)
+            def transform(cls, a: Dataset[A]):
                 return a.transform(
                     lambda df: df,
                     schema={
@@ -292,8 +298,8 @@ def test_join_schema_validation_value():
             revenue: int
             t: datetime
 
-            @pipeline(A, B)
-            def pipeline_join(cls, a: Dataset, b: Dataset):
+            @pipeline(id=1)
+            def pipeline_join(cls, a: Dataset[A], b: Dataset[B]):
                 return a.left_join(b, left_on=["a1"], right_on=["b1", "b2"])
 
     assert (
@@ -332,8 +338,8 @@ def test_join_schema_validation_type():
             b3: Optional[str]
             t: datetime
 
-            @pipeline(A, C)
-            def pipeline_join(cls, a: Dataset, c: Dataset):
+            @pipeline(id=1)
+            def pipeline_join(cls, a: Dataset[A], c: Dataset[C]):
                 return a.left_join(c, left_on=["a1"], right_on=["b1"])
 
     assert (
@@ -352,8 +358,8 @@ def test_join_schema_validation_type():
             b3: Optional[str]
             t: datetime
 
-            @pipeline(A, E)
-            def pipeline_join(cls, a: Dataset, e: Dataset):
+            @pipeline(id=1)
+            def pipeline_join(cls, a: Dataset[A], e: Dataset[E]):
                 return a.left_join(e, on=["a1"])
 
     assert (

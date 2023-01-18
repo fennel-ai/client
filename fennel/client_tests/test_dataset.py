@@ -278,8 +278,8 @@ class MovieRating:
     sum_ratings: float
     t: datetime
 
-    @pipeline(RatingActivity)
-    def pipeline_aggregate(cls, activity: Dataset):
+    @pipeline(id=1)
+    def pipeline_aggregate(cls, activity: Dataset[RatingActivity]):
         return activity.groupby("movie").aggregate(
             [
                 Count(
@@ -308,8 +308,8 @@ class MovieRatingTransformed:
     rating_into_5: float
     t: datetime
 
-    @pipeline(MovieRating)
-    def pipeline_transform(cls, m: Dataset):
+    @pipeline(id=1)
+    def pipeline_transform(cls, m: Dataset[MovieRating]):
         def t(df: pd.DataFrame) -> pd.DataFrame:
             df["rating_sq"] = df["rating"] * df["rating"]
             df["rating_cube"] = df["rating_sq"] * df["rating"]
@@ -398,8 +398,10 @@ class MovieStats:
     revenue_in_millions: float
     t: datetime
 
-    @pipeline(MovieRating, MovieRevenue)
-    def pipeline_join(cls, rating: Dataset, revenue: Dataset):
+    @pipeline(id=1)
+    def pipeline_join(
+        cls, rating: Dataset[MovieRating], revenue: Dataset[MovieRevenue]
+    ):
         def to_millions(df: pd.DataFrame) -> pd.DataFrame:
             df[str(cls.revenue_in_millions)] = df["revenue"] / 1000000
             df[str(cls.revenue_in_millions)].fillna(-1, inplace=True)
@@ -541,8 +543,8 @@ class MovieRatingWindowed:
     total_ratings: int
     t: datetime
 
-    @pipeline(RatingActivity)
-    def pipeline_aggregate(cls, activity: Dataset):
+    @pipeline(id=1)
+    def pipeline_aggregate(cls, activity: Dataset[RatingActivity]):
         return activity.groupby("movie").aggregate(
             [
                 Count(window=Window("3d"), into_field=str(cls.num_ratings_3d)),
@@ -696,8 +698,8 @@ class PositiveRatingActivity:
     movie: str = field(key=True)
     t: datetime
 
-    @pipeline(RatingActivity)
-    def filter_positive_ratings(cls, rating: Dataset):
+    @pipeline(id=1)
+    def filter_positive_ratings(cls, rating: Dataset[RatingActivity]):
         filtered_ds = rating.filter(lambda df: df[df["rating"] >= 3.5])
         return filtered_ds.groupby("movie").aggregate(
             [Count(window=Window("forever"), into_field=str(cls.cnt_rating))],
@@ -796,8 +798,10 @@ class FraudReportAggregatedDataset:
     num_categ_fraudulent_transactions_7d: int
     sum_categ_fraudulent_transactions_7d: float
 
-    @pipeline(Activity, MerchantInfo)
-    def create_fraud_dataset(cls, activity: Dataset, merchant_info: Dataset):
+    @pipeline(id=1)
+    def create_fraud_dataset(
+        cls, activity: Dataset[Activity], merchant_info: Dataset[MerchantInfo]
+    ):
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
             df_json = df["metadata"].apply(json.loads).apply(pd.Series)
             df_timestamp = pd.concat([df_json, df["timestamp"]], axis=1)
@@ -977,8 +981,8 @@ class UserAgeAggregated:
     timestamp: datetime
     sum_age: int
 
-    @pipeline(UserAge)
-    def create_user_age_aggregated(cls, user_age: Dataset):
+    @pipeline(id=1)
+    def create_user_age_aggregated(cls, user_age: Dataset[UserAge]):
         return user_age.groupby("city").aggregate(
             [
                 Sum(
@@ -989,8 +993,8 @@ class UserAgeAggregated:
             ]
         )
 
-    @pipeline(UserAgeNonTable)
-    def create_user_age_aggregated2(cls, user_age: Dataset):
+    @pipeline(id=2)
+    def create_user_age_aggregated2(cls, user_age: Dataset[UserAgeNonTable]):
         return user_age.groupby("city").aggregate(
             [
                 Sum(
@@ -1114,9 +1118,12 @@ class ManchesterUnitedPlayerInfo:
     salary: Optional[int]
     wag: Optional[str]
 
-    @pipeline(PlayerInfo, ClubSalary, WAG)
+    @pipeline(id=1)
     def create_player_detailed_info(
-        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+        cls,
+        player_info: Dataset[PlayerInfo],
+        club_salary: Dataset[ClubSalary],
+        wag: Dataset[WAG],
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
