@@ -43,7 +43,7 @@ def test_SimpleFeatureSet(grpc_stub):
         age: int = feature(id=4).meta(owner="aditya@fennel.ai")
         income: int = feature(id=5).meta(deprecated=True)
 
-        @extractor
+        @extractor(version=2)
         @depends_on(UserInfoDataset)
         def get_user_info(
             cls,
@@ -115,6 +115,7 @@ def test_SimpleFeatureSet(grpc_stub):
                 ],
                 "features": ["userid", "home_geoid", "gender", "age", "income"],
                 "metadata": {},
+                "version": 2,
             }
         ],
         "metadata": {"owner": "test@test.com"},

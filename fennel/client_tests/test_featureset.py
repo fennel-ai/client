@@ -100,7 +100,7 @@ class UserInfoMultipleExtractor:
         ]
         return df
 
-    @extractor
+    @extractor(version=2)
     @depends_on(UserInfoDataset)
     def get_country_geoid(
         cls, ts: Series[datetime], user_id: Series[userid]

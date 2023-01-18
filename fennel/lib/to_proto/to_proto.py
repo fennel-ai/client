@@ -87,6 +87,7 @@ def _pipeline_to_proto(
     root, nodes = serializer.serialize(pipeline)
     signature = f"{dataset_name}.{root}"
     return ds_proto.Pipeline(
+        id=pipeline.id,
         root=root,
         nodes=nodes,
         inputs=[i._name for i in pipeline.inputs],
@@ -174,7 +175,6 @@ def _extractor_to_proto(
     depended_datasets = []
     if hasattr(extractor.func, DEPENDS_ON_DATASETS_ATTR):
         depended_datasets = getattr(extractor.func, DEPENDS_ON_DATASETS_ATTR)
-
     return fs_proto.Extractor(
         name=extractor.name,
         func=extractor.pickled_func,
@@ -187,6 +187,7 @@ def _extractor_to_proto(
             for id in extractor.output_feature_ids
         ],
         metadata=get_metadata_proto(extractor.func),
+        version=extractor.version,
     )
 
 

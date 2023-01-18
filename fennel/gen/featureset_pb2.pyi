@@ -57,6 +57,7 @@ class Extractor(google.protobuf.message.Message):
     INPUTS_FIELD_NUMBER: builtins.int
     FEATURES_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
+    VERSION_FIELD_NUMBER: builtins.int
     name: builtins.str
     func: builtins.bytes
     func_source_code: builtins.str
@@ -69,6 +70,7 @@ class Extractor(google.protobuf.message.Message):
         """The features that this extractor produces"""
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
+    version: builtins.int
     def __init__(
         self,
         *,
@@ -79,9 +81,10 @@ class Extractor(google.protobuf.message.Message):
         inputs: collections.abc.Iterable[global___Input] | None = ...,
         features: collections.abc.Iterable[builtins.str] | None = ...,
         metadata: metadata_pb2.Metadata | None = ...,
+        version: builtins.int = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "features", b"features", "func", b"func", "func_source_code", b"func_source_code", "inputs", b"inputs", "metadata", b"metadata", "name", b"name"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "features", b"features", "func", b"func", "func_source_code", b"func_source_code", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "version", b"version"]) -> None: ...
 
 global___Extractor = Extractor
 

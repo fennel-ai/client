@@ -56,8 +56,8 @@ class MemberActivityDatasetCopy:
     hasShortcut: bool
     country: str
 
-    @pipeline(MemberActivityDataset)
-    def copy(cls, ds: Dataset):
+    @pipeline(id=1)
+    def copy(cls, ds: Dataset[MemberActivityDataset]):
         return ds
 
 
@@ -153,8 +153,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             hasShortcut: bool
             country: str
 
-            @pipeline(MemberActivityDataset)
-            def copy(cls, ds: Dataset):
+            @pipeline(id=1)
+            def copy(cls, ds: Dataset[MemberActivityDataset]):
                 return ds
 
         @meta(owner="test@fennel.ai")

@@ -204,6 +204,7 @@ class Pipeline(google.protobuf.message.Message):
     METADATA_FIELD_NUMBER: builtins.int
     INPUTS_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
+    ID_FIELD_NUMBER: builtins.int
     @property
     def nodes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Node]:
         """Nodes in the pipeline."""
@@ -216,6 +217,7 @@ class Pipeline(google.protobuf.message.Message):
     def inputs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
         """List of input datasets."""
     name: builtins.str
+    id: builtins.int
     def __init__(
         self,
         *,
@@ -225,9 +227,10 @@ class Pipeline(google.protobuf.message.Message):
         metadata: metadata_pb2.Metadata | None = ...,
         inputs: collections.abc.Iterable[builtins.str] | None = ...,
         name: builtins.str = ...,
+        id: builtins.int = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["inputs", b"inputs", "metadata", b"metadata", "name", b"name", "nodes", b"nodes", "root", b"root", "signature", b"signature"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["id", b"id", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "nodes", b"nodes", "root", b"root", "signature", b"signature"]) -> None: ...
 
 global___Pipeline = Pipeline
 
