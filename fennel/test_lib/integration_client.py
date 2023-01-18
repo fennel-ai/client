@@ -87,9 +87,9 @@ class IntegrationClient:
         self,
         input_feature_list: List[Union[Feature, Featureset]],
         output_feature_list: List[Union[Feature, Featureset]],
-        input_df: pd.DataFrame,
+        input_dataframe: pd.DataFrame,
     ) -> pd.DataFrame:
-        if input_df.empty:
+        if input_dataframe.empty:
             return pd.DataFrame()
 
         input_feature_names = []
@@ -102,11 +102,11 @@ class IntegrationClient:
                 )
 
         # Check if the input dataframe has all the required features
-        if not set(input_feature_names).issubset(set(input_df.columns)):
+        if not set(input_feature_names).issubset(set(input_dataframe.columns)):
             raise Exception(
                 f"Input dataframe does not contain all the required features. "
                 f"Required features: {input_feature_names}. "
-                f"Input dataframe columns: {input_df.columns}"
+                f"Input dataframe columns: {input_dataframe.columns}"
             )
         output_feature_names = []
         for output_feature in output_feature_list:
@@ -117,7 +117,7 @@ class IntegrationClient:
                     [f.fqn_ for f in output_feature.features]
                 )
 
-        input_df_json = input_df.to_json(orient="records")
+        input_df_json = input_dataframe.to_json(orient="records")
         output_record_batch = self._client.extract_features(
             input_feature_names, output_feature_names, input_df_json
         )

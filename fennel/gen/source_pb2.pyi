@@ -188,8 +188,7 @@ class S3Connector(google.protobuf.message.Message):
     bucket: builtins.str
     path_prefix: builtins.str
     @property
-    def schema(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]:
-        """Schema is deprecated"""
+    def schema(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]: ...
     delimiter: builtins.str
     format: builtins.str
     def __init__(
