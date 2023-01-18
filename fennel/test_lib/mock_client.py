@@ -269,8 +269,40 @@ class MockClient(Client):
         extractors = get_extractor_order(
             input_feature_list, output_feature_list, self.extractors
         )
+        timestamps = pd.Series([pd.Timestamp.now()] * len(input_dataframe))
         return self._run_extractors(
-            extractors, input_dataframe, output_feature_list
+            extractors, input_dataframe, output_feature_list, timestamps
+        )
+
+    def extract_historical_features(
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_dataframe: pd.DataFrame,
+        timestamps: pd.Series,
+    ) -> Union[pd.DataFrame, pd.Series]:
+        if input_dataframe.empty:
+            return pd.DataFrame()
+        input_feature_names = []
+        for input_feature in input_feature_list:
+            if isinstance(input_feature, Feature):
+                input_feature_names.append(input_feature.fqn_)
+            elif isinstance(input_feature, Featureset):
+                input_feature_names.extend(
+                    [f.fqn_ for f in input_feature.features]
+                )
+        # Check if the input dataframe has all the required features
+        if not set(input_feature_names).issubset(set(input_dataframe.columns)):
+            raise Exception(
+                f"Input dataframe does not contain all the required features. "
+                f"Required features: {input_feature_names}. "
+                f"Input dataframe columns: {input_dataframe.columns}"
+            )
+        extractors = get_extractor_order(
+            input_feature_list, output_feature_list, self.extractors
+        )
+        return self._run_extractors(
+            extractors, input_dataframe, output_feature_list, timestamps
         )
 
     # ----------------- Private methods -----------------
@@ -311,8 +343,9 @@ class MockClient(Client):
         extractors: List[Extractor],
         input_df: pd.DataFrame,
         output_feature_list: List[Union[Feature, Featureset]],
+        timestamps: pd.Series,
     ):
-        timestamps = pd.Series([pd.Timestamp.now()] * len(input_df))
+
         # Map of feature name to the pandas series
         intermediate_data: Dict[str, pd.Series] = {}
         for col in input_df.columns:
