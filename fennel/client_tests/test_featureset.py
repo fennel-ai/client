@@ -1,6 +1,6 @@
 import time
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import numpy as np
@@ -307,6 +307,36 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
             [25, 9],
         )
 
+        if client.is_integration_client():
+            return
+
+        feature_df = client.extract_historical_features(
+            output_feature_list=[
+                UserInfoTransformedFeatures,
+            ],
+            input_feature_list=[UserInfoMultipleExtractor.userid],
+            input_dataframe=pd.DataFrame(
+                {"UserInfoMultipleExtractor.userid": [18232, 18234]}
+            ),
+            timestamps=pd.Series([now, now]),
+        )
+
+        self.assertEqual(feature_df.shape, (2, 3))
+        self.assertEqual(
+            feature_df["UserInfoTransformedFeatures.age_power_four"].tolist(),
+            [1048576, 331776],
+        )
+        self.assertEqual(
+            feature_df["UserInfoTransformedFeatures.is_name_common"].tolist(),
+            [True, False],
+        )
+        self.assertEqual(
+            feature_df[
+                "UserInfoTransformedFeatures.country_geoid_square"
+            ].tolist(),
+            [25, 9],
+        )
+
 
 # Embedding tests
 
@@ -403,3 +433,34 @@ class TestDocumentDataset(unittest.TestCase):
             feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
             == [1, 2, 3, 4]
         ).all()
+
+        yesterday = datetime.now() - timedelta(days=1)
+
+        if client.is_integration_client():
+            return
+
+        feature_df = client.extract_historical_features(
+            output_feature_list=[
+                DocumentFeatures,
+            ],
+            input_feature_list=[DocumentFeatures.doc_id],
+            input_dataframe=pd.DataFrame(
+                {"DocumentFeatures.doc_id": [18232, 18234]}
+            ),
+            timestamps=pd.Series([yesterday, yesterday]),
+        )
+        assert feature_df.shape == (2, 4)
+        assert feature_df.columns.tolist() == [
+            "DocumentFeatures.doc_id",
+            "DocumentFeatures.bert_embedding",
+            "DocumentFeatures.fast_text_embedding",
+            "DocumentFeatures.num_words",
+        ]
+        assert feature_df["DocumentFeatures.doc_id"].tolist() == [
+            18232,
+            18234,
+        ]
+        assert feature_df["DocumentFeatures.num_words"].tolist() == [
+            None,
+            None,
+        ]
