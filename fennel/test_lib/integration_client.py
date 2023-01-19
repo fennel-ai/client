@@ -88,6 +88,9 @@ class IntegrationClient:
         input_feature_list: List[Union[Feature, Featureset]],
         output_feature_list: List[Union[Feature, Featureset]],
         input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: str = "default",
+        sampling_rate: float = 1.0,
     ) -> pd.DataFrame:
         if input_dataframe.empty:
             return pd.DataFrame()
@@ -119,7 +122,12 @@ class IntegrationClient:
 
         input_df_json = input_dataframe.to_json(orient="records")
         output_record_batch = self._client.extract_features(
-            input_feature_names, output_feature_names, input_df_json
+            input_feature_names,
+            output_feature_names,
+            input_df_json,
+            log,
+            workflow,
+            sampling_rate,
         )
         output_df = output_record_batch[0].to_pandas()
         return output_df

@@ -248,7 +248,12 @@ class MockClient(Client):
         input_feature_list: List[Union[Feature, Featureset]],
         output_feature_list: List[Union[Feature, Featureset]],
         input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: str = "default",
+        sampling_rate: float = 1.0,
     ) -> pd.DataFrame:
+        if log:
+            raise NotImplementedError("log is not supported in MockClient")
         if input_dataframe.empty:
             return pd.DataFrame()
         input_feature_names = []

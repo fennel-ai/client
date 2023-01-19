@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.4.1] - 2023-01-18
+- Log feautures to Kafka. 
+
 ## [0.4.0] - 2023-01-18
 - Pipelines have ids and extractors have versions.
 
