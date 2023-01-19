@@ -112,6 +112,9 @@ class Client:
         input_feature_list: List[Union[Feature, Featureset]],
         output_feature_list: List[Union[Feature, Featureset]],
         input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: str = "default",
+        sampling_rate: float = 1.0,
     ) -> Union[pd.DataFrame, pd.Series]:
         """
         Extract features for a given output feature list from an input
@@ -155,6 +158,9 @@ class Client:
             "input_features": input_feature_names,
             "output_features": output_feature_names,
             "data": input_dataframe.to_json(orient="records"),
+            "log": log,
+            "workflow": workflow,
+            "sampling_rate": sampling_rate,
         }
         response = self.http.post(
             self._url("extract_features"),
