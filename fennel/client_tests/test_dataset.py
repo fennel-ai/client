@@ -94,12 +94,15 @@ class TestDataset(unittest.TestCase):
         user_ids = pd.Series([18232, 18234, 1920])
         ts = pd.Series([now, now, now])
         df, found = UserInfoDataset.lookup(
-            ts, user_id=user_ids, fields=["name", "age", "country"]
+            ts,
+            user_id=user_ids,
         )
         assert found.tolist() == [True, True, False]
         assert df["name"].tolist() == ["Ross", "Monica", None]
         assert df["age"].tolist() == [32, 24, None]
         assert df["country"].tolist() == ["USA", "Chile", None]
+        assert df["timestamp"].tolist() == [now, yesterday, None]
+
         # Do some lookups with a timestamp
         user_ids = pd.Series([18232, 18234])
         six_hours_ago = now - pd.Timedelta(hours=6)

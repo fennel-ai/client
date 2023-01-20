@@ -1,4 +1,6 @@
 # Changelog
+## [0.4.2] - 2023-01-18
+- Fix timestamps returned during a lookup. 
 
 ## [0.4.1] - 2023-01-18
 - Log feautures to Kafka. 
