@@ -30,6 +30,7 @@ TEST_PORT = 50051
 TEST_DATA_PORT = 50052
 FENNEL_LOOKUP = "__fennel_lookup_exists__"
 FENNEL_ORDER = "__fennel_order__"
+FENNEL_TIMESTAMP = "__fennel_timestamp__"
 
 
 class FakeResponse(Response):
@@ -99,13 +100,17 @@ def dataset_lookup_impl(
     # Sort the keys by timestamp
     keys = keys.sort_values(timestamp_field)
     right_df[FENNEL_LOOKUP] = True
+    right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
     df = pd.merge_asof(
         left=keys,
         right=right_df,
         on=timestamp_field,
         by=join_columns,
         direction="backward",
+        suffixes=("", "_right"),
     )
+    df.drop(timestamp_field, axis=1, inplace=True)
+    df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
     df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
     keys = keys.drop(columns=[FENNEL_ORDER])
     found = df[FENNEL_LOOKUP].apply(lambda x: x is not np.nan)
