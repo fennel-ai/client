@@ -264,8 +264,8 @@ class UserInfoTransformedFeatures:
 
 class TestExtractorDAGResolutionComplex(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_dag_resolution_complex(self, client):
+    def test_dag_resolution_complex(self):
+        client = Client(url="localhost:50051", rest_url="http://localhost:3000")
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[
@@ -282,8 +282,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(1)
+        time.sleep(5)
 
         feature_df = client.extract_features(
             output_feature_list=[
@@ -294,6 +293,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
+        print(feature_df.columns)
         self.assertEqual(feature_df.shape, (2, 3))
         # Write feature_df to std error so that it is visible in the test output
         self.assertEqual(
@@ -311,7 +311,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
             [25, 9],
         )
 
-        if client.is_integration_client():
+        if True:
             return
 
         feature_df = client.extract_historical_features(

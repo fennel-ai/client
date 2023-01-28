@@ -1244,29 +1244,30 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
             "Antony",
         ]
         #if client.is_integration_client():
-        time.sleep(10)
+        time.sleep(1)
         df = client.extract_features(
             input_feature_list=[ManUPlayerInfo.name],
             output_feature_list=[ManUPlayerInfo],
-            input_df=pd.DataFrame({"ManUPlayerInfo.name": names}),
+            input_dataframe=pd.DataFrame({"ManUPlayerInfo.name": names}),
         )
         print(df)
+        print(df["ManUPlayerInfo.salary"])
         assert df.shape == (5, 7)
-        assert df["club"].tolist() == [
+        assert df["ManUPlayerInfo.club"].tolist() == [
             "Manchester United",
             "Manchester United",
             None,
             "Manchester United",
             "Manchester United",
         ]
-        assert df["salary"].tolist() == [
+        assert df["ManUPlayerInfo.salary"].tolist() == [
             1000000,
             1000000,
             None,
             1000000,
             1000000,
         ]
-        assert df["wag"].tolist() == [
+        assert df["ManUPlayerInfo.wag"].tolist() == [
             "Lucia",
             "Fern",
             None,

@@ -168,6 +168,7 @@ class Client:
             json=req,
         )
         check_response(response)
+        print(response.json())
         if len(output_feature_list) > 1 or isinstance(
             output_feature_list[0], Featureset
         ):
