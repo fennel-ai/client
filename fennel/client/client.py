@@ -30,7 +30,7 @@ class Client:
         self.url = url
         self.rest_url = rest_url
         # strip the protocol and any trailing paths to get the grpc endpoint
-        self.channel = grpc.insecure_channel(urlparse(url).netloc)
+        self.channel = grpc.insecure_channel(url)
         self.stub = services_pb2_grpc.FennelFeatureStoreStub(self.channel)
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
