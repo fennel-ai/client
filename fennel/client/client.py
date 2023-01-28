@@ -242,7 +242,7 @@ class Client:
     # ----------------------- Private methods -----------------------
 
     def _url(self, path):
-        return self.url + REST_API_VERSION + "/" + path
+        return self.rest_url + REST_API_VERSION + "/" + path
 
     @staticmethod
     def _get_session():
