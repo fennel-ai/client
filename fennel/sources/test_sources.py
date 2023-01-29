@@ -20,7 +20,7 @@ mysql = MySQL(
 )
 
 
-def test_SimpleSource(grpc_stub):
+def test_simple_source(grpc_stub):
     @source(
         mysql.table(
             "users",
@@ -195,7 +195,7 @@ snowflake = Snowflake(
 )
 
 
-def test_MultipleSources(grpc_stub):
+def test_multiple_sources(grpc_stub):
     @meta(owner="test@test.com")
     @source(mysql.table("users_mysql", cursor="added_on"), every="1h")
     @source(bigquery.table("users_bq", cursor="added_on"), every="1h")
@@ -244,7 +244,7 @@ s3_console = S3.get(
 )
 
 
-def test_ConsoleSource(grpc_stub):
+def test_console_source(grpc_stub):
     @source(posgres_console.table("users", cursor="added_on"), every="1h")
     @source(mysql_console.table("users", cursor="added_on"), every="1h")
     @source(snowflake_console.table("users", cursor="added_on"), every="1h")

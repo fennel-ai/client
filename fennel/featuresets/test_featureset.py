@@ -32,7 +32,7 @@ class User:
     age: float = feature(id=2)
 
 
-def test_SimpleFeatureSet(grpc_stub):
+def test_simple_featureset(grpc_stub):
     @meta(owner="test@test.com")
     @featureset
     class UserInfo:
@@ -127,7 +127,7 @@ def test_SimpleFeatureSet(grpc_stub):
     )
 
 
-def test_ComplexFeatureSet(grpc_stub):
+def test_complex_featureset(grpc_stub):
     @meta(owner="test@test.com")
     @featureset
     class UserInfo:

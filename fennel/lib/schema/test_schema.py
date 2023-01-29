@@ -1,14 +1,21 @@
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
 
-from fennel.lib.schema.schema import get_datatype, schema_check
 import fennel.gen.schema_pb2 as proto
+from fennel.lib.schema.schema import (
+    get_datatype,
+    data_schema_check,
+    between,
+    oneof,
+    regex,
+)
 
 
-def test_GetDataType():
+def test_get_data_type():
     assert get_datatype(int) == proto.DataType(scalar_type=proto.ScalarType.INT)
     assert get_datatype(Optional[int]) == proto.DataType(
         scalar_type=proto.ScalarType.INT, is_nullable=True
@@ -86,6 +93,83 @@ def test_GetDataType():
     )
 
 
+def test_additional_dtypes():
+    assert get_datatype(int) == proto.DataType(scalar_type=proto.ScalarType.INT)
+    assert get_datatype(between(int, 1, 5)) == proto.DataType(
+        between_type=proto.Between(
+            scalar_type=proto.ScalarType.INT,
+            min=proto.Param(int_val=1),
+            max=proto.Param(int_val=5),
+        )
+    )
+    assert get_datatype(between(int, 1, 5, False, True)) == proto.DataType(
+        between_type=proto.Between(
+            scalar_type=proto.ScalarType.INT,
+            min=proto.Param(int_val=1),
+            max=proto.Param(int_val=5),
+            strict_min=False,
+            strict_max=True,
+        )
+    )
+    assert get_datatype(between(float, 1, 5, True, False)) == proto.DataType(
+        between_type=proto.Between(
+            scalar_type=proto.ScalarType.FLOAT,
+            min=proto.Param(float_val=1),
+            max=proto.Param(float_val=5),
+            strict_min=True,
+            strict_max=False,
+        )
+    )
+    assert get_datatype(oneof(str, ["male", "female"])) == proto.DataType(
+        one_of_type=proto.OneOf(
+            scalar_type=proto.ScalarType.STRING,
+            options=[
+                proto.Param(str_val="male"),
+                proto.Param(str_val="female"),
+            ],
+        )
+    )
+    assert get_datatype(oneof(int, [1, 2, 3])) == proto.DataType(
+        one_of_type=proto.OneOf(
+            scalar_type=proto.ScalarType.INT,
+            options=[
+                proto.Param(int_val=1),
+                proto.Param(int_val=2),
+                proto.Param(int_val=3),
+            ],
+        )
+    )
+    assert get_datatype(regex("[a-z]+")) == proto.DataType(regex_type="[a-z]+")
+
+
+def test_additional_dtypes_invalid():
+    with pytest.raises(TypeError) as e:
+        get_datatype(between(int, 1, 5.0))
+    assert str(e.value) == "Dtype of between is int and max param is float"
+    with pytest.raises(TypeError) as e:
+        get_datatype(between(str, 1, 5))
+    assert str(e.value) == "'between' type only accepts int or float types"
+    with pytest.raises(TypeError) as e:
+        get_datatype(oneof(float, [1, 2, 3]))
+    assert str(e.value) == "'oneof' type only accepts int or str types"
+    with pytest.raises(TypeError) as e:
+        get_datatype(oneof(int, [1.2, 2.3, 3]))
+    assert (
+        str(e.value) == "'oneof' options should match the type of dtype, "
+        "found 'float' expected 'int'."
+    )
+    with pytest.raises(TypeError) as e:
+        get_datatype(oneof(str, [1, 2, 3]))
+    assert (
+        str(e.value) == "'oneof' options should match the type of dtype, "
+        "found 'int' expected 'str'."
+    )
+
+    with pytest.raises(TypeError) as e:
+        get_datatype(regex(1))
+    assert str(e.value) == "'regex' type only accepts str types"
+
+
 def test_valid_schema():
     now = datetime.now()
     yesterday = now - timedelta(days=1)
@@ -106,12 +190,12 @@ def test_valid_schema():
         "Truth": proto.DataType(scalar_type=proto.ScalarType.BOOLEAN),
         "timestamp": proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP),
     }
-    exceptions = schema_check(schema, df)
+    exceptions = data_schema_check(schema, df)
     assert len(exceptions) == 0
 
     data.append([18234, "Monica", None, "Chile", True, yesterday])
     df = pd.DataFrame(data, columns=columns)
-    exceptions = schema_check(schema, df)
+    exceptions = data_schema_check(schema, df)
     assert len(exceptions) == 0
 
     data = [
@@ -137,7 +221,7 @@ def test_valid_schema():
         "timestamp": proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP),
     }
     df = pd.DataFrame(data, columns=schema.keys())
-    exceptions = schema_check(schema, df)
+    exceptions = data_schema_check(schema, df)
     assert len(exceptions) == 0
 
     schema["bert_embedding"] = proto.DataType(
@@ -150,7 +234,7 @@ def test_valid_schema():
             of=proto.DataType(scalar_type=proto.ScalarType.FLOAT)
         )
     )
-    exceptions = schema_check(schema, df)
+    exceptions = data_schema_check(schema, df)
     assert len(exceptions) == 0
 
     data = [
@@ -167,7 +251,7 @@ def test_valid_schema():
         )
     }
     df = pd.DataFrame(data, columns=schema.keys())
-    exceptions = schema_check(schema, df)
+    exceptions = data_schema_check(schema, df)
     assert len(exceptions) == 0
 
 
@@ -190,7 +274,7 @@ def test_invalid_schema():
         "country": proto.DataType(scalar_type=proto.ScalarType.STRING),
         "timestamp": proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP),
     }
-    exceptions = schema_check(schema, df)
+    exceptions = data_schema_check(schema, df)
     assert len(exceptions) == 1
 
     data = [
@@ -216,7 +300,7 @@ def test_invalid_schema():
         "timestamp": proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP),
     }
     df = pd.DataFrame(data, columns=schema.keys())
-    exceptions = schema_check(schema, df)
+    exceptions = data_schema_check(schema, df)
     assert len(exceptions) == 1
 
     schema["bert_embedding"] = proto.DataType(
@@ -229,7 +313,7 @@ def test_invalid_schema():
             of=proto.DataType(scalar_type=proto.ScalarType.FLOAT)
         )
     )
-    exceptions = schema_check(schema, df)
+    exceptions = data_schema_check(schema, df)
     assert len(exceptions) == 0
 
     data = [[[123]]]
@@ -242,5 +326,47 @@ def test_invalid_schema():
         )
     }
     df = pd.DataFrame(data, columns=schema.keys())
-    exceptions = schema_check(schema, df)
+    exceptions = data_schema_check(schema, df)
     assert len(exceptions) == 1
+
+
+def test_invalid_schema_additional_types():
+    now = datetime.now()
+    data = [
+        [18232, "Ross9", 212, "transgender", 5, now],
+    ]
+    columns = ["user_id", "name", "age", "gender", "grade", "timestamp"]
+    df = pd.DataFrame(data, columns=columns)
+    schema = {
+        "user_id": proto.DataType(scalar_type=proto.ScalarType.INT),
+        "name": proto.DataType(regex_type="[A-Za-z]+[0-9]"),
+        "age": proto.DataType(
+            between_type=proto.Between(
+                scalar_type=proto.ScalarType.INT,
+                min=proto.Param(int_val=1),
+                max=proto.Param(int_val=100),
+            )
+        ),
+        "gender": proto.DataType(
+            one_of_type=proto.OneOf(
+                scalar_type=proto.ScalarType.STRING,
+                options=[
+                    proto.Param(str_val="male"),
+                    proto.Param(str_val="female"),
+                ],
+            )
+        ),
+        "grade": proto.DataType(
+            one_of_type=proto.OneOf(
+                scalar_type=proto.ScalarType.INT,
+                options=[
+                    proto.Param(int_val=1),
+                    proto.Param(int_val=2),
+                    proto.Param(int_val=3),
+                ],
+            )
+        ),
+        "timestamp": proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP),
+    }
+    exceptions = data_schema_check(schema, df)
+    assert len(exceptions) == 3

@@ -3,7 +3,9 @@
 isort:skip_file
 """
 import builtins
+import collections.abc
 import google.protobuf.descriptor
+import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import sys
@@ -46,6 +48,10 @@ class DataType(google.protobuf.message.Message):
     ARRAY_TYPE_FIELD_NUMBER: builtins.int
     MAP_TYPE_FIELD_NUMBER: builtins.int
     EMBEDDING_TYPE_FIELD_NUMBER: builtins.int
+    BETWEEN_TYPE_FIELD_NUMBER: builtins.int
+    ONE_OF_TYPE_FIELD_NUMBER: builtins.int
+    REGEX_TYPE_FIELD_NUMBER: builtins.int
+    JSON_TYPE_FIELD_NUMBER: builtins.int
     is_nullable: builtins.bool
     scalar_type: global___ScalarType.ValueType
     @property
@@ -54,6 +60,12 @@ class DataType(google.protobuf.message.Message):
     def map_type(self) -> global___MapType: ...
     @property
     def embedding_type(self) -> global___EmbeddingType: ...
+    @property
+    def between_type(self) -> global___Between: ...
+    @property
+    def one_of_type(self) -> global___OneOf: ...
+    regex_type: builtins.str
+    json_type: builtins.bool
     def __init__(
         self,
         *,
@@ -62,10 +74,14 @@ class DataType(google.protobuf.message.Message):
         array_type: global___ArrayType | None = ...,
         map_type: global___MapType | None = ...,
         embedding_type: global___EmbeddingType | None = ...,
+        between_type: global___Between | None = ...,
+        one_of_type: global___OneOf | None = ...,
+        regex_type: builtins.str = ...,
+        json_type: builtins.bool = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "map_type", b"map_type", "scalar_type", b"scalar_type"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "is_nullable", b"is_nullable", "map_type", b"map_type", "scalar_type", b"scalar_type"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["dtype", b"dtype"]) -> typing_extensions.Literal["scalar_type", "array_type", "map_type", "embedding_type"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "between_type", b"between_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "json_type", b"json_type", "map_type", b"map_type", "one_of_type", b"one_of_type", "regex_type", b"regex_type", "scalar_type", b"scalar_type"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "between_type", b"between_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "is_nullable", b"is_nullable", "json_type", b"json_type", "map_type", b"map_type", "one_of_type", b"one_of_type", "regex_type", b"regex_type", "scalar_type", b"scalar_type"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["dtype", b"dtype"]) -> typing_extensions.Literal["scalar_type", "array_type", "map_type", "embedding_type", "between_type", "one_of_type", "regex_type", "json_type"] | None: ...
 
 global___DataType = DataType
 
@@ -121,3 +137,75 @@ class MapType(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
 
 global___MapType = MapType
+
+@typing_extensions.final
+class Param(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    INT_VAL_FIELD_NUMBER: builtins.int
+    FLOAT_VAL_FIELD_NUMBER: builtins.int
+    STR_VAL_FIELD_NUMBER: builtins.int
+    int_val: builtins.int
+    float_val: builtins.float
+    str_val: builtins.str
+    def __init__(
+        self,
+        *,
+        int_val: builtins.int = ...,
+        float_val: builtins.float = ...,
+        str_val: builtins.str = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["float_val", b"float_val", "int_val", b"int_val", "str_val", b"str_val", "val", b"val"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["float_val", b"float_val", "int_val", b"int_val", "str_val", b"str_val", "val", b"val"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "str_val"] | None: ...
+
+global___Param = Param
+
+@typing_extensions.final
+class Between(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SCALAR_TYPE_FIELD_NUMBER: builtins.int
+    MIN_FIELD_NUMBER: builtins.int
+    MAX_FIELD_NUMBER: builtins.int
+    STRICT_MIN_FIELD_NUMBER: builtins.int
+    STRICT_MAX_FIELD_NUMBER: builtins.int
+    scalar_type: global___ScalarType.ValueType
+    @property
+    def min(self) -> global___Param: ...
+    @property
+    def max(self) -> global___Param: ...
+    strict_min: builtins.bool
+    strict_max: builtins.bool
+    def __init__(
+        self,
+        *,
+        scalar_type: global___ScalarType.ValueType = ...,
+        min: global___Param | None = ...,
+        max: global___Param | None = ...,
+        strict_min: builtins.bool = ...,
+        strict_max: builtins.bool = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["max", b"max", "min", b"min"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["max", b"max", "min", b"min", "scalar_type", b"scalar_type", "strict_max", b"strict_max", "strict_min", b"strict_min"]) -> None: ...
+
+global___Between = Between
+
+@typing_extensions.final
+class OneOf(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SCALAR_TYPE_FIELD_NUMBER: builtins.int
+    OPTIONS_FIELD_NUMBER: builtins.int
+    scalar_type: global___ScalarType.ValueType
+    @property
+    def options(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Param]: ...
+    def __init__(
+        self,
+        *,
+        scalar_type: global___ScalarType.ValueType = ...,
+        options: collections.abc.Iterable[global___Param] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["options", b"options", "scalar_type", b"scalar_type"]) -> None: ...
+
+global___OneOf = OneOf

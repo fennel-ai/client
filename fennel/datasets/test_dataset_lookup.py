@@ -45,7 +45,7 @@ def fake_func(
         return df, pd.Series([True, True, True])
 
 
-def test_datasetLookup(grpc_stub):
+def test_dataset_lookup(grpc_stub):
     fennel.datasets.datasets.dataset_lookup = fake_func
 
     @meta(owner="test@test.com")

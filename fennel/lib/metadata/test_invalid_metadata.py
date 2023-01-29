@@ -7,7 +7,7 @@ from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 
 
-def test_invalidEmail():
+def test_invalid_email():
     with pytest.raises(ValueError) as e:
 
         @meta(owner="test", description="test", tags=["test"], deprecated=True)

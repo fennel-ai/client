@@ -18,7 +18,7 @@ mysql = MySQL(
 )
 
 
-def test_SimpleSource(grpc_stub):
+def test_simple_source(grpc_stub):
     with pytest.raises(TypeError) as e:
 
         @source(mysql.table("user"), every="1h")
@@ -88,7 +88,7 @@ s3 = S3(
 )
 
 
-def test_InvalidS3Source(grpc_stub):
+def test_invalid_s3_source(grpc_stub):
     with pytest.raises(AttributeError) as e:
 
         @source(s3.table("user"), every="1h")

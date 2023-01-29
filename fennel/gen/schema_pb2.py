@@ -13,21 +13,27 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cschema.proto\x12\x0c\x66\x65nnel.proto\"\xea\x01\n\x08\x44\x61taType\x12\x13\n\x0bis_nullable\x18\x01 \x01(\x08\x12/\n\x0bscalar_type\x18\x02 \x01(\x0e\x32\x18.fennel.proto.ScalarTypeH\x00\x12-\n\narray_type\x18\x03 \x01(\x0b\x32\x17.fennel.proto.ArrayTypeH\x00\x12)\n\x08map_type\x18\x04 \x01(\x0b\x32\x15.fennel.proto.MapTypeH\x00\x12\x35\n\x0e\x65mbedding_type\x18\x05 \x01(\x0b\x32\x1b.fennel.proto.EmbeddingTypeH\x00\x42\x07\n\x05\x64type\"/\n\tArrayType\x12\"\n\x02of\x18\x01 \x01(\x0b\x32\x16.fennel.proto.DataType\"\'\n\rEmbeddingType\x12\x16\n\x0e\x65mbedding_size\x18\x02 \x01(\x05\"U\n\x07MapType\x12#\n\x03key\x18\x01 \x01(\x0b\x32\x16.fennel.proto.DataType\x12%\n\x05value\x18\x02 \x01(\x0b\x32\x16.fennel.proto.DataType*H\n\nScalarType\x12\x07\n\x03INT\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x0b\n\x07\x42OOLEAN\x10\x03\x12\r\n\tTIMESTAMP\x10\x04\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cschema.proto\x12\x0c\x66\x65nnel.proto\"\xf0\x02\n\x08\x44\x61taType\x12\x13\n\x0bis_nullable\x18\x01 \x01(\x08\x12/\n\x0bscalar_type\x18\x02 \x01(\x0e\x32\x18.fennel.proto.ScalarTypeH\x00\x12-\n\narray_type\x18\x03 \x01(\x0b\x32\x17.fennel.proto.ArrayTypeH\x00\x12)\n\x08map_type\x18\x04 \x01(\x0b\x32\x15.fennel.proto.MapTypeH\x00\x12\x35\n\x0e\x65mbedding_type\x18\x05 \x01(\x0b\x32\x1b.fennel.proto.EmbeddingTypeH\x00\x12-\n\x0c\x62\x65tween_type\x18\x06 \x01(\x0b\x32\x15.fennel.proto.BetweenH\x00\x12*\n\x0bone_of_type\x18\x07 \x01(\x0b\x32\x13.fennel.proto.OneOfH\x00\x12\x14\n\nregex_type\x18\x08 \x01(\tH\x00\x12\x13\n\tjson_type\x18\t \x01(\x08H\x00\x42\x07\n\x05\x64type\"/\n\tArrayType\x12\"\n\x02of\x18\x01 \x01(\x0b\x32\x16.fennel.proto.DataType\"\'\n\rEmbeddingType\x12\x16\n\x0e\x65mbedding_size\x18\x02 \x01(\x05\"U\n\x07MapType\x12#\n\x03key\x18\x01 \x01(\x0b\x32\x16.fennel.proto.DataType\x12%\n\x05value\x18\x02 \x01(\x0b\x32\x16.fennel.proto.DataType\"I\n\x05Param\x12\x11\n\x07int_val\x18\x01 \x01(\x05H\x00\x12\x13\n\tfloat_val\x18\x02 \x01(\x02H\x00\x12\x11\n\x07str_val\x18\x03 \x01(\tH\x00\x42\x05\n\x03val\"\xa4\x01\n\x07\x42\x65tween\x12-\n\x0bscalar_type\x18\x01 \x01(\x0e\x32\x18.fennel.proto.ScalarType\x12 \n\x03min\x18\x02 \x01(\x0b\x32\x13.fennel.proto.Param\x12 \n\x03max\x18\x03 \x01(\x0b\x32\x13.fennel.proto.Param\x12\x12\n\nstrict_min\x18\x04 \x01(\x08\x12\x12\n\nstrict_max\x18\x05 \x01(\x08\"\\\n\x05OneOf\x12-\n\x0bscalar_type\x18\x01 \x01(\x0e\x32\x18.fennel.proto.ScalarType\x12$\n\x07options\x18\x02 \x03(\x0b\x32\x13.fennel.proto.Param*H\n\nScalarType\x12\x07\n\x03INT\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\n\n\x06STRING\x10\x02\x12\x0b\n\x07\x42OOLEAN\x10\x03\x12\r\n\tTIMESTAMP\x10\x04\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'schema_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _SCALARTYPE._serialized_start=444
-  _SCALARTYPE._serialized_end=516
+  _SCALARTYPE._serialized_start=914
+  _SCALARTYPE._serialized_end=986
   _DATATYPE._serialized_start=31
-  _DATATYPE._serialized_end=265
-  _ARRAYTYPE._serialized_start=267
-  _ARRAYTYPE._serialized_end=314
-  _EMBEDDINGTYPE._serialized_start=316
-  _EMBEDDINGTYPE._serialized_end=355
-  _MAPTYPE._serialized_start=357
-  _MAPTYPE._serialized_end=442
+  _DATATYPE._serialized_end=399
+  _ARRAYTYPE._serialized_start=401
+  _ARRAYTYPE._serialized_end=448
+  _EMBEDDINGTYPE._serialized_start=450
+  _EMBEDDINGTYPE._serialized_end=489
+  _MAPTYPE._serialized_start=491
+  _MAPTYPE._serialized_end=576
+  _PARAM._serialized_start=578
+  _PARAM._serialized_end=651
+  _BETWEEN._serialized_start=654
+  _BETWEEN._serialized_end=818
+  _ONEOF._serialized_start=820
+  _ONEOF._serialized_end=912
 # @@protoc_insertion_point(module_scope)

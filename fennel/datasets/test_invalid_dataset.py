@@ -7,7 +7,7 @@ from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.test_lib import *
 
 
-def test_MultipleDateTime(grpc_stub):
+def test_multiple_date_time(grpc_stub):
     with pytest.raises(ValueError) as e:
 
         @dataset
@@ -26,7 +26,7 @@ def test_MultipleDateTime(grpc_stub):
     assert str(e.value) == "Multiple timestamp fields are not supported."
 
 
-def test_InvalidRetentionWindow(grpc_stub):
+def test_invalid_retention_window(grpc_stub):
     with pytest.raises(TypeError) as e:
 
         @dataset(history=324)
@@ -42,7 +42,7 @@ def test_InvalidRetentionWindow(grpc_stub):
     )
 
 
-def test_DatasetWithPipes(grpc_stub):
+def test_dataset_with_pipes(grpc_stub):
     @dataset
     class XYZ:
         user_id: int
@@ -117,7 +117,7 @@ def test_DatasetWithPipes(grpc_stub):
     )
 
 
-def test_DatasetIncorrectJoin(grpc_stub):
+def test_dataset_incorrect_join(grpc_stub):
     with pytest.raises(ValueError) as e:
 
         @dataset
@@ -141,7 +141,7 @@ def test_DatasetIncorrectJoin(grpc_stub):
     assert str(e.value) == "Cannot join with an intermediate dataset"
 
 
-def test_DatasetOptionalKey(grpc_stub):
+def test_dataset_optional_key(grpc_stub):
     with pytest.raises(ValueError) as e:
 
         @dataset
@@ -153,7 +153,7 @@ def test_DatasetOptionalKey(grpc_stub):
     assert str(e.value) == "Key name in dataset XYZ cannot be Optional."
 
 
-def test_ProtectedFields(grpc_stub):
+def test_protected_fields(grpc_stub):
     with pytest.raises(Exception) as e:
 
         @dataset(history="324d")

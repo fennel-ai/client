@@ -1,8 +1,11 @@
 from fennel.lib.schema.schema import (
     get_datatype,
+    between,
+    oneof,
     dtype_to_string,
-    schema_check,
+    data_schema_check,
     Series,
     DataFrame,
     Embedding,
+    regex,
 )
