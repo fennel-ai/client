@@ -182,7 +182,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -272,7 +272,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
                 UserInfoTransformedFeatures,
             ],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -281,6 +281,8 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
+        if client.is_integration_client():
+            time.sleep(1)
 
         feature_df = client.extract_features(
             output_feature_list=[
@@ -292,6 +294,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
             ),
         )
         self.assertEqual(feature_df.shape, (2, 3))
+        # Write feature_df to std error so that it is visible in the test output
         self.assertEqual(
             feature_df["UserInfoTransformedFeatures.age_power_four"].tolist(),
             [1048576, 331776],
@@ -381,7 +384,7 @@ class TestDocumentDataset(unittest.TestCase):
         client.sync(
             datasets=[DocumentContentDataset], featuresets=[DocumentFeatures]
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             [18232, np.array([1, 2, 3, 4]), np.array([1, 2, 3]), 10, now],
             [

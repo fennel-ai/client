@@ -440,18 +440,19 @@ def data_schema_check(
                     )
                     continue
                 options = set(
-                    str(x.str_val) for x in of_type.options
-                )  # type: ignore
+                    str(x.str_val) for x in of_type.options  # type: ignore
+                )
             else:
                 raise TypeError("oneof type only accepts int or str types")
 
             for i, row in df[name].items():
                 if row not in options:
+                    sorted_options = sorted(options)
                     exceptions.append(
                         ValueError(
                             f"Field '{name}' is of type oneof, but the "
                             f"value '{row}' is not found in the set of options "
-                            f"{options}."
+                            f"{sorted_options}."
                         )
                     )
                     break
@@ -472,7 +473,8 @@ def data_schema_check(
                 continue
             regex = dtype.regex_type
             for i, row in df[name].items():
-                if not re.match(regex, row):
+                full_match = "^" + regex + "$"
+                if not re.match(full_match, row):
                     exceptions.append(
                         ValueError(
                             f"Field '{name}' is of type regex, but the "

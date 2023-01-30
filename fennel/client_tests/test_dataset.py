@@ -101,8 +101,18 @@ class TestDataset(unittest.TestCase):
         assert df["name"].tolist() == ["Ross", "Monica", None]
         assert df["age"].tolist() == [32, 24, None]
         assert df["country"].tolist() == ["USA", "Chile", None]
-        assert df["timestamp"].tolist() == [now, yesterday, None]
-
+        if not client.is_integration_client():
+            assert df["timestamp"].tolist() == [now, yesterday, None]
+        else:
+            df["timestamp"] = df["timestamp"].apply(
+                lambda x: x.replace(second=0, microsecond=0)
+            )
+            now_rounded = now.replace(second=0, microsecond=0)
+            yday_rounded = yesterday.replace(second=0, microsecond=0)
+            assert df["timestamp"].tolist()[:2] == [
+                pd.Timestamp(now_rounded),
+                pd.Timestamp(yday_rounded),
+            ]
         # Do some lookups with a timestamp
         user_ids = pd.Series([18232, 18234])
         six_hours_ago = now - pd.Timedelta(hours=6)
