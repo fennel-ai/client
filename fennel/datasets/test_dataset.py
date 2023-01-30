@@ -32,7 +32,7 @@ class UserInfoDataset:
     timestamp: datetime = field(timestamp=True)
 
 
-def test_SimpleDataset(grpc_stub):
+def test_simple_dataset(grpc_stub):
     assert UserInfoDataset._history == timedelta(days=730)
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
@@ -115,7 +115,7 @@ class Activity:
     timestamp: datetime
 
 
-def test_DatasetWithRetention(grpc_stub):
+def test_dataset_with_retention(grpc_stub):
     assert Activity._history == timedelta(days=120)
     view = InternalTestClient(grpc_stub)
     view.add(Activity)
@@ -165,7 +165,7 @@ def test_DatasetWithRetention(grpc_stub):
     )
 
 
-def test_DatasetWithPull(grpc_stub):
+def test_dataset_with_pull(grpc_stub):
     API_ENDPOINT_URL = "http://transunion.com/v1/credit_score"
 
     @meta(owner="test@test.com")
@@ -264,7 +264,7 @@ def test_DatasetWithPull(grpc_stub):
     )
 
 
-def test_DatasetWithPipes(grpc_stub):
+def test_dataset_with_pipes(grpc_stub):
     @meta(owner="test@test.com")
     @dataset
     class A:
@@ -352,7 +352,7 @@ def test_DatasetWithPipes(grpc_stub):
     )
 
 
-def test_DatasetWithComplexPipe(grpc_stub):
+def test_dataset_with_complex_pipe(grpc_stub):
     @meta(owner="test@test.com")
     @dataset
     class FraudReportAggregatedDataset:
@@ -532,7 +532,7 @@ def test_DatasetWithComplexPipe(grpc_stub):
     )
 
 
-def test_UnionDatasets(grpc_stub):
+def test_union_datasets(grpc_stub):
     @dataset
     class A:
         a1: int = field(key=True)
@@ -665,7 +665,7 @@ def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
     pass
 
 
-def test_SearchDataset(grpc_stub):
+def test_search_dataset(grpc_stub):
     @meta(owner="aditya@fennel.ai")
     @dataset
     class DocumentContentDataset:

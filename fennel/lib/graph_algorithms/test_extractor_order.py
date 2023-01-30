@@ -32,7 +32,7 @@ class B:
         pass
 
 
-def test_SimpleExtractorPath():
+def test_simple_extractor_path():
     extractors = A.extractors + B.extractors
     extractors = get_extractor_order([A.root], [B.b1, B.b2], extractors)
     extractors_to_run = [e.name for e in extractors]
@@ -73,7 +73,7 @@ class C:
         pass
 
 
-def test_ComplexExtractorPath():
+def test_complex_extractor_path():
     extractors = A.extractors + B.extractors + C.extractors
     extractors = get_extractor_order([A.root], [B.b1, B.b2, C.c2], extractors)
     extractors_to_run = [e.name for e in extractors]
@@ -124,7 +124,7 @@ class UserInfo:
         pass
 
 
-def test_AgeFeatureExtraction():
+def test_age_feature_extraction():
     extractors = get_extractor_order(
         [UserInfo.userid], [UserInfo], UserInfo.extractors
     )
@@ -157,7 +157,7 @@ class UserInfoTransformedFeatures:
         )
 
 
-def test_AgeFeatureExtractionComplex():
+def test_age_feature_extraction_complex():
     extractors = get_extractor_order(
         [UserInfo.userid],
         [UserInfoTransformedFeatures],

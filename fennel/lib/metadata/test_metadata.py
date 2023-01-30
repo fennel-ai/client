@@ -32,7 +32,7 @@ class UserInfoDataset:
     timestamp: datetime = field(timestamp=True)
 
 
-def test_simpleDataset(grpc_stub):
+def test_simple_dataset(grpc_stub):
     assert UserInfoDataset._history == timedelta(days=730)
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
@@ -110,7 +110,7 @@ def test_simpleDataset(grpc_stub):
     )
 
 
-def test_complexDatasetWithFields(grpc_stub):
+def test_complex_dataset_with_fields(grpc_stub):
     @dataset(history="1y")
     @meta(owner="daniel@yext.com", description="test")
     class YextUserInfoDataset:
@@ -224,7 +224,7 @@ def test_complexDatasetWithFields(grpc_stub):
     )
 
 
-def test_simpleFeatureSet(grpc_stub):
+def test_simple_featureset(grpc_stub):
     @meta(owner="aditya@fennel.ai", description="test", tags=["test"])
     @featureset
     class UserInfoSimple:
@@ -290,7 +290,7 @@ def test_simpleFeatureSet(grpc_stub):
     )
 
 
-def test_featuresetWithExtractors(grpc_stub):
+def test_featureset_with_extractors(grpc_stub):
     @meta(owner="test@test.com")
     @featureset
     class User:

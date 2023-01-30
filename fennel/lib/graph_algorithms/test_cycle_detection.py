@@ -29,7 +29,7 @@ class A:
         pass
 
 
-def test_simpleCycleDetection():
+def test_simple_cycle_detection():
     with pytest.raises(ValueError) as e:
         is_extractor_graph_cyclic(A.extractors)
     assert str(e.value) == "Cyclic dependency found for A.a2_a3"

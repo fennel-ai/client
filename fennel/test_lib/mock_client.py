@@ -21,7 +21,7 @@ from fennel.lib.graph_algorithms import (
     get_extractor_order,
     is_extractor_graph_cyclic,
 )
-from fennel.lib.schema import schema_check
+from fennel.lib.schema import data_schema_check
 from fennel.lib.to_proto import dataset_to_proto
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.integration_client import IntegrationClient
@@ -193,7 +193,7 @@ class MockClient(Client):
         schema = {}
         for field in dataset_req.fields:
             schema[field.name] = field.dtype
-        exceptions = schema_check(schema, df)
+        exceptions = data_schema_check(schema, df)
         if len(exceptions) > 0:
             return FakeResponse(400, str(exceptions))
         self._merge_df(df, dataset_name)

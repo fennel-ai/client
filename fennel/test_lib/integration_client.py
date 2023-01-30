@@ -129,7 +129,7 @@ class IntegrationClient:
             workflow,
             sampling_rate,
         )
-        output_df = output_record_batch[0].to_pandas()
+        output_df = output_record_batch.to_pandas()
         return output_df
 
     def add(self, obj: Union[Dataset, Featureset]):
