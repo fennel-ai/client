@@ -368,7 +368,6 @@ def dataset(
         def lookup(
             ts: pd.Series, *args, **kwargs
         ) -> Tuple[pd.DataFrame, pd.Series]:
-
             if len(args) > 0:
                 raise ValueError(
                     f"lookup expects key value arguments and can "

@@ -355,7 +355,6 @@ class MockClient(Client):
         output_feature_list: List[Union[Feature, Featureset]],
         timestamps: pd.Series,
     ):
-
         # Map of feature name to the pandas series
         intermediate_data: Dict[str, pd.Series] = {}
         for col in input_df.columns:
