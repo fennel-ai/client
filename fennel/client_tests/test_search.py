@@ -367,7 +367,7 @@ class DocumentContentFeatures:
 
 class TestSearchExample(unittest.TestCase):
     def log_document_data(self, client):
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             [141234, "This is a random document", "Random Title", "Sagar", now],
             [
@@ -434,7 +434,7 @@ class TestSearchExample(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
     def log_engagement_data(self, client):
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             [123, 31234, "view", 5, now],
             [123, 143354, "view", 1, now],
@@ -455,7 +455,7 @@ class TestSearchExample(unittest.TestCase):
         self.log_document_data(client)
         if client.is_integration_client():
             time.sleep(3)
-        now = datetime.now()
+        now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
 
         doc_ids = pd.Series([141234, 143354, 33234, 11111])
@@ -484,7 +484,7 @@ class TestSearchExample(unittest.TestCase):
         self.log_engagement_data(client)
         if client.is_integration_client():
             time.sleep(3)
-        now = datetime.now()
+        now = datetime.utcnow()
         ts = pd.Series([now, now])
         user_ids = pd.Series([123, 342])
         df, found = UserEngagementDataset.lookup(ts, user_id=user_ids)

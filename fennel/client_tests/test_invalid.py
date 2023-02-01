@@ -88,7 +88,7 @@ class TestInvalidSync(unittest.TestCase):
         if client.is_integration_client():
             assert (
                 str(e.value)
-                == "error: extractor DomainFeatures.get_domain_feature "
+                == "Failed to sync: error: extractor DomainFeatures.get_domain_feature "
                 "of featureset DomainFeatures depends on unknown feature domain"
             )
         else:
@@ -190,7 +190,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                "error: extractor DomainFeatures2.get_domain_feature of featureset "
+                "Failed to sync: error: extractor DomainFeatures2.get_domain_feature of featureset "
                 "DomainFeatures2 depends on unknown feature domain"
                 == str(e.value)
             )
@@ -220,7 +220,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                "error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
+                "Failed to sync: error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
                 "depends on unknown feature domain" == str(e.value)
             )
         else:
@@ -252,7 +252,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                "error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
+                "Failed to sync: error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
                 "depends on unknown feature domain" == str(e.value)
             )
         else:
