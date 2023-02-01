@@ -1,4 +1,8 @@
 # Changelog
+
+## [0.5.0] - 2023-02-01
+- Make Sync call a REST call instead of gRPC 
+
 ## [0.4.2] - 2023-01-18
 - Fix timestamps returned during a lookup. 
 
