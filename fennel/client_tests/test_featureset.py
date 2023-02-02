@@ -78,6 +78,7 @@ class UserInfoMultipleExtractor:
     age_squared: int = feature(id=5)
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
+    age_reciprocal: float = feature(id=8)
 
     @extractor
     @depends_on(UserInfoDataset)
@@ -99,6 +100,12 @@ class UserInfoMultipleExtractor:
             str(cls.is_name_common),
         ]
         return df
+
+    @extractor
+    def get_age_reciprocal(
+        cls, ts: Series[datetime], age: Series[age]
+    ) -> Series[age_reciprocal]:
+        return age.apply(lambda x: 1 / (x / (3600.0 * 24)) + 0.01)
 
     @extractor(version=2)
     @depends_on(UserInfoDataset)
@@ -217,18 +224,11 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 7))
-
-        feature_df = client.extract_features(
-            output_feature_list=[
-                UserInfoMultipleExtractor,
-            ],
-            input_feature_list=[UserInfoMultipleExtractor.userid],
-            input_dataframe=pd.DataFrame(
-                {"UserInfoMultipleExtractor.userid": [18232, 18234]}
-            ),
+        self.assertEqual(feature_df.shape, (2, 8))
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_reciprocal"]),
+            [2700.01, 3600.01],
         )
-        self.assertEqual(feature_df.shape, (2, 7))
 
 
 @meta(owner="test@test.com")
@@ -368,6 +368,14 @@ class DocumentFeatures:
         cls, ts: Series[datetime], doc_id: Series[doc_id]
     ) -> DataFrame[num_words, bert_embedding, fast_text_embedding]:
         df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore
+
+        df[str(cls.bert_embedding)] = df[str(cls.bert_embedding)].apply(
+            lambda x: x if x is not None else [0, 0, 0, 0]
+        )
+        df[str(cls.fast_text_embedding)] = df[
+            str(cls.fast_text_embedding)
+        ].apply(lambda x: x if x is not None else [0, 0, 0])
+        df[str(cls.num_words)].fillna(0, inplace=True)
         return df[
             [
                 str(cls.bert_embedding),
@@ -463,7 +471,4 @@ class TestDocumentDataset(unittest.TestCase):
             18232,
             18234,
         ]
-        assert feature_df["DocumentFeatures.num_words"].tolist() == [
-            None,
-            None,
-        ]
+        assert feature_df["DocumentFeatures.num_words"].tolist() == [0, 0]

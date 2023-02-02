@@ -5,5 +5,5 @@ search_dir=fennel/test_lib/gen_rust_lib
 for entry in "$search_dir"/*
 do
   echo "Installing $entry"
-  pip install $entry --force-reinstall
+  pip3 install $entry --force-reinstall
 done
