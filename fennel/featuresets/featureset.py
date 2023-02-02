@@ -20,8 +20,10 @@ from typing import (
 
 import cloudpickle
 import pandas as pd
+from great_expectations.core.batch import RuntimeBatchRequest  # type: ignore
 
 from fennel.datasets import Dataset
+from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
@@ -329,6 +331,7 @@ class Featureset:
     _feature_map: Dict[str, Feature] = {}
     _extractors: List[Extractor]
     _id_to_feature_fqn: Dict[int, str] = {}
+    _expectation: Expectations
 
     def __init__(
         self,
@@ -347,6 +350,7 @@ class Featureset:
         self._validate()
         self._add_feature_names_as_attributes()
         self._set_extractors_as_attributes()
+        self._expectation = self._get_expectations()
 
     # ------------------- Private Methods ----------------------------------
 
@@ -423,6 +427,48 @@ class Featureset:
                 inspect.getmodule(extractor.func)
             )
             extractor.pickled_func = cloudpickle.dumps(extractor.bound_func)
+
+    def _get_expectations(self):
+        expectation = None
+
+        for name, method in inspect.getmembers(self.__fennel_original_cls__):
+            if not callable(method):
+                continue
+            if not hasattr(method, GE_ATTR_FUNC):
+                continue
+            if expectation is not None:
+                raise ValueError(
+                    f"Multiple expectations are not supported for dataset {self._name}."
+                )
+            expectation = getattr(method, GE_ATTR_FUNC)
+
+        if expectation is None:
+            return None
+        context = expectation.context
+        context.create_expectation_suite(
+            expectation_suite_name=f"featureset_{self._name}_expectations",
+            overwrite_existing=True,
+        )
+        feature_names = [feature.name for feature in self._features]
+        df = pd.DataFrame({}, columns=feature_names)
+        batch_request = RuntimeBatchRequest(
+            datasource_name="fennel_placeholder_datasource",
+            data_connector_name="default_runtime_data_connector_name",
+            data_asset_name=self._name,
+            runtime_parameters={"batch_data": df},
+            batch_identifiers={"default_identifier_name": "default_identifier"},
+        )
+
+        validator = context.get_validator(
+            batch_request=batch_request,
+            expectation_suite_name=f"featureset_{self._name}_expectations",
+        )
+        validator = expectation.func(self, validator)
+        validator.save_expectation_suite()
+        expectation.json_config = (
+            validator.get_expectation_suite().to_json_dict()
+        )
+        return expectation
 
     @property
     def extractors(self):

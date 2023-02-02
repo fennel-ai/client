@@ -13,13 +13,15 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0emetadata.proto\x12\x15\x66\x65nnel.proto.metadata\"n\n\x08Metadata\x12\r\n\x05owner\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x0c\n\x04tags\x18\x03 \x03(\t\x12\x12\n\ndeprecated\x18\x04 \x01(\x08\x12\x0f\n\x07\x64\x65leted\x18\x05 \x01(\x08\x12\x0b\n\x03wip\x18\x06 \x01(\x08\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0emetadata.proto\x12\x15\x66\x65nnel.proto.metadata\"@\n\x0c\x45xpectations\x12\x1f\n\x17json_expectation_config\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\x05\"n\n\x08Metadata\x12\r\n\x05owner\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x0c\n\x04tags\x18\x03 \x03(\t\x12\x12\n\ndeprecated\x18\x04 \x01(\x08\x12\x0f\n\x07\x64\x65leted\x18\x05 \x01(\x08\x12\x0b\n\x03wip\x18\x06 \x01(\x08\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'metadata_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _METADATA._serialized_start=41
-  _METADATA._serialized_end=151
+  _EXPECTATIONS._serialized_start=41
+  _EXPECTATIONS._serialized_end=105
+  _METADATA._serialized_start=107
+  _METADATA._serialized_end=217
 # @@protoc_insertion_point(module_scope)

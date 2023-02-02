@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 from typing import (
     cast,
     Callable,
@@ -10,7 +11,11 @@ from typing import (
 
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.featureset_pb2 as fs_proto
+<<<<<<< HEAD
 import fennel.gen.services_pb2 as services_proto
+=======
+import fennel.gen.metadata_pb2 as meta_proto
+>>>>>>> b5d530f (expectations: Client sdk for Great Expectations)
 from fennel.datasets import Dataset, Pipeline, Field, OnDemand
 from fennel.featuresets import (
     Featureset,
@@ -22,10 +27,20 @@ from fennel.lib.duration.duration import (
     timedelta_to_micros,
     duration_to_micros,
 )
+from fennel.lib.expectations import Expectations
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr
 from fennel.lib.schema import get_datatype
 from fennel.lib.to_proto import Serializer
 from fennel.sources import SOURCE_FIELD, SINK_FIELD
+
+
+def _expectations_to_proto(expectation: Optional[Expectations]):
+    if expectation is None or expectation.json_config is None:
+        return None
+    return meta_proto.Expectations(
+        json_expectation_config=json.dumps(expectation.json_config),
+        version=expectation.version,
+    )
 
 
 # ------------------------------------------------------------------------------
@@ -56,6 +71,7 @@ def dataset_to_proto(ds: Dataset) -> services_proto.CreateDatasetRequest:
         version=0,
         fields=[_field_to_proto(field) for field in ds._fields],
         on_demand=_on_demand_to_proto(ds._on_demand),
+        expectations=_expectations_to_proto(ds._expectation),
     )
 
 
@@ -126,6 +142,7 @@ def featureset_to_proto(fs: Featureset):
         # Kept for future use.
         version=0,
         metadata=get_metadata_proto(fs),
+        expectations=_expectations_to_proto(fs._expectation),
     )
 
 

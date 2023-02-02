@@ -23,12 +23,14 @@ from typing import (
 import cloudpickle
 import numpy as np
 import pandas as pd
+from great_expectations.core.batch import RuntimeBatchRequest  # type: ignore
 
 from fennel.lib.aggregate import AggregateType
 from fennel.lib.duration.duration import (
     Duration,
     duration_to_timedelta,
 )
+from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
@@ -603,6 +605,7 @@ class Dataset(_Node[T]):
     _pipelines: List[Pipeline]
     _timestamp_field: str
     __fennel_original_cls__: Any
+    _expectations: List[Expectations]
     lookup: Callable
 
     def __init__(
@@ -628,6 +631,7 @@ class Dataset(_Node[T]):
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
         propogate_fennel_attributes(cls, self)
+        self._expectation = self._get_expectations()
 
     def __class_getitem__(cls, item):
         return item
@@ -824,6 +828,47 @@ class Dataset(_Node[T]):
                 exceptions.extend(err)
         if exceptions:
             raise TypeError(exceptions)
+
+    def _get_expectations(self):
+        expectation = None
+        for name, method in inspect.getmembers(self.__fennel_original_cls__):
+            if not callable(method):
+                continue
+            if not hasattr(method, GE_ATTR_FUNC):
+                continue
+            if expectation is not None:
+                raise ValueError(
+                    f"Multiple expectations are not supported for dataset {self._name}."
+                )
+            expectation = getattr(method, GE_ATTR_FUNC)
+
+        if expectation is None:
+            return None
+        context = expectation.context
+        context.create_expectation_suite(
+            expectation_suite_name=f"dataset_{self._name}_expectations",
+            overwrite_existing=True,
+        )
+        field_names = [field.name for field in self._fields]
+        df = pd.DataFrame({}, columns=field_names)
+        batch_request = RuntimeBatchRequest(
+            datasource_name="fennel_placeholder_datasource",
+            data_connector_name="default_runtime_data_connector_name",
+            data_asset_name=self._name,
+            runtime_parameters={"batch_data": df},
+            batch_identifiers={"default_identifier_name": "default_identifier"},
+        )
+
+        validator = context.get_validator(
+            batch_request=batch_request,
+            expectation_suite_name=f"dataset_{self._name}_expectations",
+        )
+        validator = expectation.func(self, validator)
+        validator.save_expectation_suite()
+        expectation.json_config = (
+            validator.get_expectation_suite().to_json_dict()
+        )
+        return expectation
 
     @property
     def timestamp_field(self):

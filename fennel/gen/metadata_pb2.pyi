@@ -16,6 +16,25 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+@typing_extensions.final
+class Expectations(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    JSON_EXPECTATION_CONFIG_FIELD_NUMBER: builtins.int
+    VERSION_FIELD_NUMBER: builtins.int
+    json_expectation_config: builtins.str
+    version: builtins.int
+    def __init__(
+        self,
+        *,
+        json_expectation_config: builtins.str = ...,
+        version: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["json_expectation_config", b"json_expectation_config", "version", b"version"]) -> None: ...
+
+global___Expectations = Expectations
+
+@typing_extensions.final
 class Metadata(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
