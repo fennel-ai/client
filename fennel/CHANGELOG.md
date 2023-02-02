@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.5.1] - 2023-02-02
+- Client side schema check on feature extraction.
+
 ## [0.5.0] - 2023-02-01
 - Make Sync call a REST call instead of gRPC 
 

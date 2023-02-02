@@ -17,12 +17,13 @@ from fennel.client import Client
 from fennel.datasets import Dataset, Pipeline, OnDemand
 from fennel.featuresets import Featureset, Feature, Extractor
 from fennel.gen.dataset_pb2 import CreateDatasetRequest
+from fennel.gen.featureset_pb2 import CreateFeaturesetRequest
 from fennel.lib.graph_algorithms import (
     get_extractor_order,
     is_extractor_graph_cyclic,
 )
 from fennel.lib.schema import data_schema_check
-from fennel.lib.to_proto import dataset_to_proto
+from fennel.lib.to_proto import dataset_to_proto, featureset_to_proto
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.integration_client import IntegrationClient
 
@@ -148,6 +149,7 @@ class _DatasetInfo:
 class MockClient(Client):
     def __init__(self):
         self.dataset_requests: Dict[str, CreateDatasetRequest] = {}
+        self.featureset_requests: Dict[str, CreateFeaturesetRequest]
         self.datasets: Dict[str, _DatasetInfo] = {}
         # Map of dataset name to the dataframe
         self.data: Dict[str, pd.DataFrame] = {}
@@ -231,6 +233,9 @@ class MockClient(Client):
                 for input in pipeline.inputs:
                     self.listeners[input._name].append(pipeline)
         for featureset in featuresets:
+            self.featureset_requests[featureset._name] = featureset_to_proto(
+                featureset
+            )
             # Check if the dataset used by the extractor is registered
             for extractor in featureset.extractors:
                 datasets = [
@@ -363,6 +368,16 @@ class MockClient(Client):
             prepare_args = self._prepare_extractor_args(
                 extractor, intermediate_data
             )
+            featureset_req = self.featureset_requests[extractor.featureset]
+            feature_schema = {}
+            for feature in featureset_req.features:
+                feature_schema[
+                    f"{extractor.featureset}.{feature.name}"
+                ] = feature.dtype
+            schema = {}
+            for feature in extractor.output_features:
+                schema[feature] = feature_schema[feature]
+
             allowed_datasets = [
                 x._name for x in extractor.get_dataset_dependencies()
             ]
@@ -373,6 +388,13 @@ class MockClient(Client):
             fennel.datasets.datasets.dataset_lookup = partial(
                 dataset_lookup_impl, self.data, self.datasets, None
             )
+            output_df = pd.DataFrame(output)
+            exceptions = data_schema_check(schema, output_df)
+            if len(exceptions) > 0:
+                raise Exception(
+                    f"Extractor {extractor.name} returned "
+                    f"invalid schema: {exceptions}"
+                )
             if isinstance(output, pd.Series):
                 intermediate_data[output.name] = output
             elif isinstance(output, pd.DataFrame):
@@ -422,6 +444,7 @@ class MockClient(Client):
 
     def _reset(self):
         self.dataset_requests: Dict[str, CreateDatasetRequest] = {}
+        self.featureset_requests: Dict[str, CreateFeaturesetRequest] = {}
         self.datasets: Dict[str, _DatasetInfo] = {}
         # Map of dataset name to the dataframe
         self.data: Dict[str, pd.DataFrame] = {}

@@ -374,6 +374,7 @@ class Featureset:
                 for fid in extractor.output_feature_ids
             ]
             extractor.name = f"{self._name}.{extractor.name}"
+            extractor.featureset = self._name
             extractors.append(extractor)
         return extractors
 
@@ -437,6 +438,7 @@ class Extractor:
     name: str
     inputs: List[Union[Feature, Featureset]]
     func: Callable
+    featureset: str
     # If outputs is empty, entire featureset is being extracted
     # by this extractor, else stores the ids of the features being extracted.
     output_feature_ids: List[int]
