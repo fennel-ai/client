@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 import requests
 
+from fennel.client import Client
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.lib.metadata import meta
@@ -387,8 +388,8 @@ class DocumentFeatures:
 
 class TestDocumentDataset(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_document_featureset(self, client):
+    def test_document_featureset(self):
+        client = Client(url="http://localhost:50051", rest_url="http://localhost:3000")
         client.sync(
             datasets=[DocumentContentDataset], featuresets=[DocumentFeatures]
         )
@@ -414,8 +415,8 @@ class TestDocumentDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("DocumentContentDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        # if client.is_integration_client():
+        time.sleep(3)
         feature_df = client.extract_features(
             output_feature_list=[
                 DocumentFeatures,
@@ -447,8 +448,8 @@ class TestDocumentDataset(unittest.TestCase):
 
         yesterday = datetime.now() - timedelta(days=1)
 
-        if client.is_integration_client():
-            return
+        # if client.is_integration_client():
+        return
 
         feature_df = client.extract_historical_features(
             output_feature_list=[
