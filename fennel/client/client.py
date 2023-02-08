@@ -3,6 +3,7 @@ import math
 from typing import *
 from urllib.parse import urlparse
 
+import grpc
 import pandas as pd
 import requests  # type: ignore
 
@@ -21,11 +22,16 @@ REST_API_VERSION = "/api/v1"
 _DEFAULT_CONNECT_TIMEOUT = 10
 # Default request timeout.
 _DEFAULT_TIMEOUT = 30
+_DEFAULT_GRPC_TIMEOUT = 60
 
 
 class Client:
-    def __init__(self, url: str):
+    def __init__(self, url: str, rest_url: str):
         self.url = url
+        self.rest_url = rest_url
+        # strip the protocol and any trailing paths to get the grpc endpoint
+        self.channel = grpc.insecure_channel(urlparse(url).netloc)
+        self.stub = services_pb2_grpc.FennelFeatureStoreStub(self.channel)
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
         self.http = self._get_session()
@@ -71,38 +77,7 @@ class Client:
             for featureset in featuresets:
                 self.add(featureset)
         sync_request = self._get_sync_request_proto()
-
-        # Set the content-type to application/grpc in the header
-        headers = {"content-type": "application/grpc"}
-
-        # Serialize the request to a string
-        payload = sync_request.SerializeToString()
-
-        # Set the data as per the requirements by envoy required by the Bridge
-        #
-        # The first byte is the compression flag. 0 means no compression.
-        # The next 4 bytes are the length of the payload (and it has to be the network order aka big endian).
-        # The rest is the payload.
-        payload = b"\0" + len(payload).to_bytes(4, byteorder="big") + payload
-
-        # The path must match the grpc method name
-        response = self.http.post(
-            self.url + "/fennel.proto.FennelFeatureStore/Sync",
-            data=payload,
-            headers=headers,
-        )
-        # Check the response and the headers which actually contain the error message in case of a gRPC failure
-        if response.status_code != 200 or "grpc-status" in response.headers:
-            if "grpc-message" in response.headers:
-                raise Exception(
-                    "Sync response failed with: {}".format(
-                        response.headers["grpc-message"]
-                    )
-                )
-
-            raise Exception(
-                "Sync response failed with: {}".format(response.reason)
-            )
+        self.stub.Sync(sync_request, timeout=_DEFAULT_GRPC_TIMEOUT)
 
     def log(
         self, dataset_name: str, dataframe: pd.DataFrame, batch_size: int = 1000
@@ -267,7 +242,7 @@ class Client:
     # ----------------------- Private methods -----------------------
 
     def _url(self, path):
-        return self.url + REST_API_VERSION + "/" + path
+        return self.rest_url + REST_API_VERSION + "/" + path
 
     @staticmethod
     def _get_session():
