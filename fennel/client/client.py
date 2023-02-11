@@ -88,7 +88,7 @@ class Client:
 
         # The path must match the grpc method name
         response = self.http.post(
-            self._url("/fennel.proto.FennelFeatureStore/Sync"),
+            self._url("/fennel.proto.services.FennelFeatureStore/Sync"),
             data=payload,
             headers=headers,
         )

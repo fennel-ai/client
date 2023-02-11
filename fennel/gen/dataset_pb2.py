@@ -11,13 +11,11 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-import fennel.gen.status_pb2 as status__pb2
-import fennel.gen.source_pb2 as source__pb2
 import fennel.gen.metadata_pb2 as metadata__pb2
 import fennel.gen.schema_pb2 as schema__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rdataset.proto\x12\x0c\x66\x65nnel.proto\x1a\x0cstatus.proto\x1a\x0csource.proto\x1a\x0emetadata.proto\x1a\x0cschema.proto\"\x8e\x01\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12&\n\x05\x66type\x18\x02 \x01(\x0e\x32\x17.fennel.proto.FieldType\x12%\n\x05\x64type\x18\x04 \x01(\x0b\x32\x16.fennel.proto.DataType\x12(\n\x08metadata\x18\x05 \x01(\x0b\x32\x16.fennel.proto.Metadata\"Q\n\x08OnDemand\x12\x1c\n\x14\x66unction_source_code\x18\x01 \x01(\t\x12\x10\n\x08\x66unction\x18\x02 \x01(\x0c\x12\x15\n\rexpires_after\x18\x03 \x01(\x03\"\x92\x03\n\x14\x43reateDatasetRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12#\n\x06\x66ields\x18\x02 \x03(\x0b\x32\x13.fennel.proto.Field\x12)\n\tpipelines\x18\x03 \x03(\x0b\x32\x16.fennel.proto.Pipeline\x12\x35\n\x10input_connectors\x18\x04 \x03(\x0b\x32\x1b.fennel.proto.DataConnector\x12\x36\n\x11output_connectors\x18\x05 \x03(\x0b\x32\x1b.fennel.proto.DataConnector\x12\x11\n\tsignature\x18\x06 \x01(\t\x12(\n\x08metadata\x18\x07 \x01(\x0b\x32\x16.fennel.proto.Metadata\x12\x0c\n\x04mode\x18\x08 \x01(\t\x12\x0f\n\x07version\x18\t \x01(\r\x12\x0f\n\x07history\x18\n \x01(\x03\x12\x15\n\rmax_staleness\x18\x0b \x01(\x03\x12)\n\ton_demand\x18\x0c \x01(\x0b\x32\x16.fennel.proto.OnDemand\"K\n\x15\x43reateDatasetResponse\x12\x0c\n\x04name\x18\x01 \x01(\t\x12$\n\x06status\x18\x02 \x01(\x0b\x32\x14.fennel.proto.Status\"\xa2\x01\n\x08Pipeline\x12!\n\x05nodes\x18\x01 \x03(\x0b\x32\x12.fennel.proto.Node\x12\x0c\n\x04root\x18\x02 \x01(\t\x12\x11\n\tsignature\x18\x03 \x01(\t\x12(\n\x08metadata\x18\x04 \x01(\x0b\x32\x16.fennel.proto.Metadata\x12\x0e\n\x06inputs\x18\x05 \x03(\t\x12\x0c\n\x04name\x18\x06 \x01(\t\x12\n\n\x02id\x18\x07 \x01(\x05\"^\n\x04Node\x12\n\n\x02id\x18\x01 \x01(\t\x12*\n\x08operator\x18\x02 \x01(\x0b\x32\x16.fennel.proto.OperatorH\x00\x12\x11\n\x07\x64\x61taset\x18\x03 \x01(\tH\x00\x42\x0b\n\tnode_type\"\xde\x01\n\x08Operator\x12,\n\taggregate\x18\x01 \x01(\x0b\x32\x17.fennel.proto.AggregateH\x00\x12\"\n\x04join\x18\x02 \x01(\x0b\x32\x12.fennel.proto.JoinH\x00\x12,\n\ttransform\x18\x03 \x01(\x0b\x32\x17.fennel.proto.TransformH\x00\x12$\n\x05union\x18\x04 \x01(\x0b\x32\x13.fennel.proto.UnionH\x00\x12&\n\x06\x66ilter\x18\x05 \x01(\x0b\x32\x14.fennel.proto.FilterH\x00\x42\x04\n\x02op\"a\n\tAggregate\x12\x17\n\x0foperand_node_id\x18\x01 \x01(\t\x12\x0c\n\x04keys\x18\x02 \x03(\t\x12-\n\naggregates\x18\x03 \x03(\x0b\x32\x19.fennel.proto.Aggregation\"\x88\x01\n\x04Join\x12\x13\n\x0blhs_node_id\x18\x01 \x01(\t\x12\x18\n\x10rhs_dataset_name\x18\x02 \x01(\t\x12&\n\x02on\x18\x03 \x03(\x0b\x32\x1a.fennel.proto.Join.OnEntry\x1a)\n\x07OnEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xd0\x01\n\tTransform\x12\x17\n\x0foperand_node_id\x18\x01 \x01(\t\x12\x10\n\x08\x66unction\x18\x02 \x01(\x0c\x12\x1c\n\x14\x66unction_source_code\x18\x03 \x01(\t\x12\x33\n\x06schema\x18\x04 \x03(\x0b\x32#.fennel.proto.Transform.SchemaEntry\x1a\x45\n\x0bSchemaEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12%\n\x05value\x18\x02 \x01(\x0b\x32\x16.fennel.proto.DataType:\x02\x38\x01\"Q\n\x06\x46ilter\x12\x17\n\x0foperand_node_id\x18\x01 \x01(\t\x12\x10\n\x08\x66unction\x18\x02 \x01(\x0c\x12\x1c\n\x14\x66unction_source_code\x18\x03 \x01(\t\"!\n\x05Union\x12\x18\n\x10operand_node_ids\x18\x01 \x03(\t\"\xeb\x01\n\x0b\x41ggregation\x12-\n\x08\x61gg_type\x18\x01 \x01(\x0e\x32\x1b.fennel.proto.AggregateType\x12-\n\x0bwindow_spec\x18\x02 \x01(\x0b\x32\x18.fennel.proto.WindowSpec\x12\r\n\x05\x66ield\x18\x03 \x01(\t\x12\x15\n\x0bvalue_field\x18\x04 \x01(\tH\x00\x12(\n\x04topk\x18\x05 \x01(\x0b\x32\x18.fennel.proto.TopKConfigH\x00\x12$\n\x02\x63\x66\x18\x06 \x01(\x0b\x32\x16.fennel.proto.CFConfigH\x00\x42\x08\n\x06\x63onfig\"$\n\x06Window\x12\r\n\x05start\x18\x01 \x01(\x03\x12\x0b\n\x03\x65nd\x18\x02 \x01(\x03\"[\n\x0b\x44\x65ltaWindow\x12&\n\x08\x62\x61seline\x18\x01 \x01(\x0b\x32\x14.fennel.proto.Window\x12$\n\x06target\x18\x02 \x01(\x0b\x32\x14.fennel.proto.Window\"\x89\x01\n\nWindowSpec\x12\x18\n\x0e\x66orever_window\x18\x01 \x01(\x08H\x00\x12&\n\x06window\x18\x02 \x01(\x0b\x32\x14.fennel.proto.WindowH\x00\x12\x31\n\x0c\x64\x65lta_window\x18\x03 \x01(\x0b\x32\x19.fennel.proto.DeltaWindowH\x00\x42\x06\n\x04spec\"A\n\nTopKConfig\x12\t\n\x01k\x18\x01 \x01(\x05\x12\x13\n\x0bitem_fields\x18\x02 \x03(\t\x12\x13\n\x0bscore_field\x18\x03 \x01(\t\"G\n\x08\x43\x46\x43onfig\x12\r\n\x05limit\x18\x01 \x01(\x05\x12\x16\n\x0e\x63ontext_fields\x18\x02 \x03(\t\x12\x14\n\x0cweight_field\x18\x03 \x01(\t*,\n\tFieldType\x12\x07\n\x03Key\x10\x00\x12\x07\n\x03Val\x10\x01\x12\r\n\tTimestamp\x10\x02*P\n\rAggregateType\x12\x07\n\x03SUM\x10\x00\x12\x07\n\x03\x41VG\x10\x01\x12\t\n\x05\x43OUNT\x10\x02\x12\x07\n\x03MIN\x10\x03\x12\x07\n\x03MAX\x10\x04\x12\x08\n\x04TOPK\x10\x05\x12\x06\n\x02\x43\x46\x10\x06\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rdataset.proto\x12\x14\x66\x65nnel.proto.dataset\x1a\x0emetadata.proto\x1a\x0cschema.proto\"\xa6\x01\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12.\n\x05\x66type\x18\x02 \x01(\x0e\x32\x1f.fennel.proto.dataset.FieldType\x12,\n\x05\x64type\x18\x04 \x01(\x0b\x32\x1d.fennel.proto.schema.DataType\x12\x31\n\x08metadata\x18\x05 \x01(\x0b\x32\x1f.fennel.proto.metadata.Metadata\"Q\n\x08OnDemand\x12\x1c\n\x14\x66unction_source_code\x18\x01 \x01(\t\x12\x10\n\x08\x66unction\x18\x02 \x01(\x0c\x12\x15\n\rexpires_after\x18\x03 \x01(\x03\"\xb3\x01\n\x08Pipeline\x12)\n\x05nodes\x18\x01 \x03(\x0b\x32\x1a.fennel.proto.dataset.Node\x12\x0c\n\x04root\x18\x02 \x01(\t\x12\x11\n\tsignature\x18\x03 \x01(\t\x12\x31\n\x08metadata\x18\x04 \x01(\x0b\x32\x1f.fennel.proto.metadata.Metadata\x12\x0e\n\x06inputs\x18\x05 \x03(\t\x12\x0c\n\x04name\x18\x06 \x01(\t\x12\n\n\x02id\x18\x07 \x01(\x05\"f\n\x04Node\x12\n\n\x02id\x18\x01 \x01(\t\x12\x32\n\x08operator\x18\x02 \x01(\x0b\x32\x1e.fennel.proto.dataset.OperatorH\x00\x12\x11\n\x07\x64\x61taset\x18\x03 \x01(\tH\x00\x42\x0b\n\tnode_type\"\x86\x02\n\x08Operator\x12\x34\n\taggregate\x18\x01 \x01(\x0b\x32\x1f.fennel.proto.dataset.AggregateH\x00\x12*\n\x04join\x18\x02 \x01(\x0b\x32\x1a.fennel.proto.dataset.JoinH\x00\x12\x34\n\ttransform\x18\x03 \x01(\x0b\x32\x1f.fennel.proto.dataset.TransformH\x00\x12,\n\x05union\x18\x04 \x01(\x0b\x32\x1b.fennel.proto.dataset.UnionH\x00\x12.\n\x06\x66ilter\x18\x05 \x01(\x0b\x32\x1c.fennel.proto.dataset.FilterH\x00\x42\x04\n\x02op\"i\n\tAggregate\x12\x17\n\x0foperand_node_id\x18\x01 \x01(\t\x12\x0c\n\x04keys\x18\x02 \x03(\t\x12\x35\n\naggregates\x18\x03 \x03(\x0b\x32!.fennel.proto.dataset.Aggregation\"\x90\x01\n\x04Join\x12\x13\n\x0blhs_node_id\x18\x01 \x01(\t\x12\x18\n\x10rhs_dataset_name\x18\x02 \x01(\t\x12.\n\x02on\x18\x03 \x03(\x0b\x32\".fennel.proto.dataset.Join.OnEntry\x1a)\n\x07OnEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xdf\x01\n\tTransform\x12\x17\n\x0foperand_node_id\x18\x01 \x01(\t\x12\x10\n\x08\x66unction\x18\x02 \x01(\x0c\x12\x1c\n\x14\x66unction_source_code\x18\x03 \x01(\t\x12;\n\x06schema\x18\x04 \x03(\x0b\x32+.fennel.proto.dataset.Transform.SchemaEntry\x1aL\n\x0bSchemaEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.fennel.proto.schema.DataType:\x02\x38\x01\"Q\n\x06\x46ilter\x12\x17\n\x0foperand_node_id\x18\x01 \x01(\t\x12\x10\n\x08\x66unction\x18\x02 \x01(\x0c\x12\x1c\n\x14\x66unction_source_code\x18\x03 \x01(\t\"!\n\x05Union\x12\x18\n\x10operand_node_ids\x18\x01 \x03(\t\"\x8b\x02\n\x0b\x41ggregation\x12\x35\n\x08\x61gg_type\x18\x01 \x01(\x0e\x32#.fennel.proto.dataset.AggregateType\x12\x35\n\x0bwindow_spec\x18\x02 \x01(\x0b\x32 .fennel.proto.dataset.WindowSpec\x12\r\n\x05\x66ield\x18\x03 \x01(\t\x12\x15\n\x0bvalue_field\x18\x04 \x01(\tH\x00\x12\x30\n\x04topk\x18\x05 \x01(\x0b\x32 .fennel.proto.dataset.TopKConfigH\x00\x12,\n\x02\x63\x66\x18\x06 \x01(\x0b\x32\x1e.fennel.proto.dataset.CFConfigH\x00\x42\x08\n\x06\x63onfig\"$\n\x06Window\x12\r\n\x05start\x18\x01 \x01(\x03\x12\x0b\n\x03\x65nd\x18\x02 \x01(\x03\"k\n\x0b\x44\x65ltaWindow\x12.\n\x08\x62\x61seline\x18\x01 \x01(\x0b\x32\x1c.fennel.proto.dataset.Window\x12,\n\x06target\x18\x02 \x01(\x0b\x32\x1c.fennel.proto.dataset.Window\"\x99\x01\n\nWindowSpec\x12\x18\n\x0e\x66orever_window\x18\x01 \x01(\x08H\x00\x12.\n\x06window\x18\x02 \x01(\x0b\x32\x1c.fennel.proto.dataset.WindowH\x00\x12\x39\n\x0c\x64\x65lta_window\x18\x03 \x01(\x0b\x32!.fennel.proto.dataset.DeltaWindowH\x00\x42\x06\n\x04spec\"A\n\nTopKConfig\x12\t\n\x01k\x18\x01 \x01(\x05\x12\x13\n\x0bitem_fields\x18\x02 \x03(\t\x12\x13\n\x0bscore_field\x18\x03 \x01(\t\"G\n\x08\x43\x46\x43onfig\x12\r\n\x05limit\x18\x01 \x01(\x05\x12\x16\n\x0e\x63ontext_fields\x18\x02 \x03(\t\x12\x14\n\x0cweight_field\x18\x03 \x01(\t*,\n\tFieldType\x12\x07\n\x03Key\x10\x00\x12\x07\n\x03Val\x10\x01\x12\r\n\tTimestamp\x10\x02*P\n\rAggregateType\x12\x07\n\x03SUM\x10\x00\x12\x07\n\x03\x41VG\x10\x01\x12\t\n\x05\x43OUNT\x10\x02\x12\x07\n\x03MIN\x10\x03\x12\x07\n\x03MAX\x10\x04\x12\x08\n\x04TOPK\x10\x05\x12\x06\n\x02\x43\x46\x10\x06\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'dataset_pb2', globals())
@@ -28,48 +26,44 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _JOIN_ONENTRY._serialized_options = b'8\001'
   _TRANSFORM_SCHEMAENTRY._options = None
   _TRANSFORM_SCHEMAENTRY._serialized_options = b'8\001'
-  _FIELDTYPE._serialized_start=2501
-  _FIELDTYPE._serialized_end=2545
-  _AGGREGATETYPE._serialized_start=2547
-  _AGGREGATETYPE._serialized_end=2627
-  _FIELD._serialized_start=90
-  _FIELD._serialized_end=232
-  _ONDEMAND._serialized_start=234
-  _ONDEMAND._serialized_end=315
-  _CREATEDATASETREQUEST._serialized_start=318
-  _CREATEDATASETREQUEST._serialized_end=720
-  _CREATEDATASETRESPONSE._serialized_start=722
-  _CREATEDATASETRESPONSE._serialized_end=797
-  _PIPELINE._serialized_start=800
-  _PIPELINE._serialized_end=962
-  _NODE._serialized_start=964
-  _NODE._serialized_end=1058
-  _OPERATOR._serialized_start=1061
-  _OPERATOR._serialized_end=1283
-  _AGGREGATE._serialized_start=1285
-  _AGGREGATE._serialized_end=1382
-  _JOIN._serialized_start=1385
-  _JOIN._serialized_end=1521
-  _JOIN_ONENTRY._serialized_start=1480
-  _JOIN_ONENTRY._serialized_end=1521
-  _TRANSFORM._serialized_start=1524
-  _TRANSFORM._serialized_end=1732
-  _TRANSFORM_SCHEMAENTRY._serialized_start=1663
-  _TRANSFORM_SCHEMAENTRY._serialized_end=1732
-  _FILTER._serialized_start=1734
-  _FILTER._serialized_end=1815
-  _UNION._serialized_start=1817
-  _UNION._serialized_end=1850
-  _AGGREGATION._serialized_start=1853
-  _AGGREGATION._serialized_end=2088
-  _WINDOW._serialized_start=2090
-  _WINDOW._serialized_end=2126
-  _DELTAWINDOW._serialized_start=2128
-  _DELTAWINDOW._serialized_end=2219
-  _WINDOWSPEC._serialized_start=2222
-  _WINDOWSPEC._serialized_end=2359
-  _TOPKCONFIG._serialized_start=2361
-  _TOPKCONFIG._serialized_end=2426
-  _CFCONFIG._serialized_start=2428
-  _CFCONFIG._serialized_end=2499
+  _FIELDTYPE._serialized_start=2183
+  _FIELDTYPE._serialized_end=2227
+  _AGGREGATETYPE._serialized_start=2229
+  _AGGREGATETYPE._serialized_end=2309
+  _FIELD._serialized_start=70
+  _FIELD._serialized_end=236
+  _ONDEMAND._serialized_start=238
+  _ONDEMAND._serialized_end=319
+  _PIPELINE._serialized_start=322
+  _PIPELINE._serialized_end=501
+  _NODE._serialized_start=503
+  _NODE._serialized_end=605
+  _OPERATOR._serialized_start=608
+  _OPERATOR._serialized_end=870
+  _AGGREGATE._serialized_start=872
+  _AGGREGATE._serialized_end=977
+  _JOIN._serialized_start=980
+  _JOIN._serialized_end=1124
+  _JOIN_ONENTRY._serialized_start=1083
+  _JOIN_ONENTRY._serialized_end=1124
+  _TRANSFORM._serialized_start=1127
+  _TRANSFORM._serialized_end=1350
+  _TRANSFORM_SCHEMAENTRY._serialized_start=1274
+  _TRANSFORM_SCHEMAENTRY._serialized_end=1350
+  _FILTER._serialized_start=1352
+  _FILTER._serialized_end=1433
+  _UNION._serialized_start=1435
+  _UNION._serialized_end=1468
+  _AGGREGATION._serialized_start=1471
+  _AGGREGATION._serialized_end=1738
+  _WINDOW._serialized_start=1740
+  _WINDOW._serialized_end=1776
+  _DELTAWINDOW._serialized_start=1778
+  _DELTAWINDOW._serialized_end=1885
+  _WINDOWSPEC._serialized_start=1888
+  _WINDOWSPEC._serialized_end=2041
+  _TOPKCONFIG._serialized_start=2043
+  _TOPKCONFIG._serialized_end=2108
+  _CFCONFIG._serialized_start=2110
+  _CFCONFIG._serialized_end=2181
 # @@protoc_insertion_point(module_scope)

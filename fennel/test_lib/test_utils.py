@@ -3,6 +3,7 @@ from typing import Any
 import jsondiff  # type: ignore
 from google.protobuf.json_format import MessageToDict  # type: ignore
 
+import fennel.gen.services_pb2 as service_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.featureset_pb2 as fs_proto
 
@@ -16,13 +17,15 @@ def error_message(actual: Any, expected: Any) -> str:
     return jsondiff.diff(expected_dict, actual_dict, syntax="symmetric")
 
 
-def clean_fs_func_src_code(featureset_req: fs_proto.CreateFeaturesetRequest):
+def clean_fs_func_src_code(
+    featureset_req: service_proto.CreateFeaturesetRequest,
+):
     extractors = []
     for extractor in featureset_req.extractors:
         extractor.func_source_code = ""
         extractor.func = b""
         extractors.append(extractor)
-    return fs_proto.CreateFeaturesetRequest(
+    return service_proto.CreateFeaturesetRequest(
         name=featureset_req.name,
         features=featureset_req.features,
         extractors=extractors,
@@ -31,8 +34,8 @@ def clean_fs_func_src_code(featureset_req: fs_proto.CreateFeaturesetRequest):
 
 
 def clean_ds_func_src_code(
-    dataset_req: ds_proto.CreateDatasetRequest,
-) -> ds_proto.CreateDatasetRequest:
+    dataset_req: service_proto.CreateDatasetRequest,
+) -> service_proto.CreateDatasetRequest:
     def cleanup_node(node):
         if node.HasField("operator") and node.operator.HasField("transform"):
             return ds_proto.Node(
@@ -68,7 +71,7 @@ def clean_ds_func_src_code(
                 name=dataset_req.pipelines[j].name,
             )
         )
-    return ds_proto.CreateDatasetRequest(
+    return service_proto.CreateDatasetRequest(
         name=dataset_req.name,
         fields=dataset_req.fields,
         max_staleness=dataset_req.max_staleness,

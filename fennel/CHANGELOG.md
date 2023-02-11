@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.6.0] - 2023-02-10
+- Update in generated protobuf files and translators
+
 ## [0.5.1] - 2023-02-02
 - Client side schema check on feature extraction.
 

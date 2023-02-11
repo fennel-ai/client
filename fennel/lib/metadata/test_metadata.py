@@ -5,6 +5,7 @@ from typing import Optional, Dict, List
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as proto
+import fennel.gen.services_pb2 as service_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.gen.services_pb2 import SyncRequest
@@ -284,7 +285,7 @@ def test_simple_featureset(grpc_stub):
             "tags": ["test"],
         },
     }
-    expected_fs_request = ParseDict(f, proto.CreateFeaturesetRequest())
+    expected_fs_request = ParseDict(f, service_proto.CreateFeaturesetRequest())
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request
     )
@@ -412,7 +413,7 @@ def test_featureset_with_extractors(grpc_stub):
         ],
         "metadata": {"owner": "yolo@liveonce.com"},
     }
-    expected_fs_request = ParseDict(f, proto.CreateFeaturesetRequest())
+    expected_fs_request = ParseDict(f, service_proto.CreateFeaturesetRequest())
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request
     )

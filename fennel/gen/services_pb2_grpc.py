@@ -15,7 +15,7 @@ class FennelFeatureStoreStub(object):
             channel: A grpc.Channel.
         """
         self.Sync = channel.unary_unary(
-                '/fennel.proto.FennelFeatureStore/Sync',
+                '/fennel.proto.services.FennelFeatureStore/Sync',
                 request_serializer=services__pb2.SyncRequest.SerializeToString,
                 response_deserializer=services__pb2.SyncResponse.FromString,
                 )
@@ -40,7 +40,7 @@ def add_FennelFeatureStoreServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'fennel.proto.FennelFeatureStore', rpc_method_handlers)
+            'fennel.proto.services.FennelFeatureStore', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -59,7 +59,7 @@ class FennelFeatureStore(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/fennel.proto.FennelFeatureStore/Sync',
+        return grpc.experimental.unary_unary(request, target, '/fennel.proto.services.FennelFeatureStore/Sync',
             services__pb2.SyncRequest.SerializeToString,
             services__pb2.SyncResponse.FromString,
             options, channel_credentials,

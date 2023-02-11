@@ -8,6 +8,7 @@ import requests  # type: ignore
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.dataset_pb2 as proto
+import fennel.gen.services_pb2 as service_proto
 from fennel.datasets import dataset, pipeline, field, Dataset, on_demand
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
@@ -238,7 +239,7 @@ def test_dataset_with_pull(grpc_stub):
 
     # Ignoring schema validation since they are bytes and not human-readable
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
-    expected_ds_request = ParseDict(d, proto.CreateDatasetRequest())
+    expected_ds_request = ParseDict(d, service_proto.CreateDatasetRequest())
     assert dataset_req == expected_ds_request, error_message(
         dataset_req, expected_ds_request
     )
@@ -346,7 +347,9 @@ def test_dataset_with_pipes(grpc_stub):
         "onDemand": {},
     }
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
-    expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
+    expected_dataset_request = ParseDict(
+        d, service_proto.CreateDatasetRequest()
+    )
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
     )
@@ -526,7 +529,9 @@ def test_dataset_with_complex_pipe(grpc_stub):
 
     # Ignoring schema validation since they are bytes and not human-readable
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
-    expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
+    expected_dataset_request = ParseDict(
+        d, service_proto.CreateDatasetRequest()
+    )
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
     )
@@ -644,7 +649,9 @@ def test_union_datasets(grpc_stub):
         "onDemand": {},
     }
     dataset_req = clean_ds_func_src_code(sync_request.dataset_requests[0])
-    expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
+    expected_dataset_request = ParseDict(
+        d, service_proto.CreateDatasetRequest()
+    )
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
     )
@@ -784,7 +791,9 @@ def test_search_dataset(grpc_stub):
         "history": "63072000000000",
         "onDemand": {},
     }
-    expected_dataset_request = ParseDict(d, proto.CreateDatasetRequest())
+    expected_dataset_request = ParseDict(
+        d, service_proto.CreateDatasetRequest()
+    )
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
     )
