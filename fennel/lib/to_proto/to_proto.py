@@ -10,6 +10,7 @@ from typing import (
 
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.featureset_pb2 as fs_proto
+import fennel.gen.services_pb2 as services_proto
 from fennel.datasets import Dataset, Pipeline, Field, OnDemand
 from fennel.featuresets import (
     Featureset,
@@ -32,7 +33,7 @@ from fennel.sources import SOURCE_FIELD, SINK_FIELD
 # ------------------------------------------------------------------------------
 
 
-def dataset_to_proto(ds: Dataset) -> ds_proto.CreateDatasetRequest:
+def dataset_to_proto(ds: Dataset) -> services_proto.CreateDatasetRequest:
     _check_owner_exists(ds)
     sources = []
     if hasattr(ds, SOURCE_FIELD):
@@ -41,7 +42,7 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CreateDatasetRequest:
     if hasattr(ds, SINK_FIELD):
         sinks = getattr(ds, SINK_FIELD)
 
-    return ds_proto.CreateDatasetRequest(
+    return services_proto.CreateDatasetRequest(
         name=ds.__name__,
         history=timedelta_to_micros(ds._history),
         pipelines=[_pipeline_to_proto(p, ds.__name__) for p in ds._pipelines],
@@ -114,7 +115,7 @@ def _on_demand_to_proto(od: Optional[OnDemand]) -> Optional[ds_proto.OnDemand]:
 
 def featureset_to_proto(fs: Featureset):
     _check_owner_exists(fs)
-    return fs_proto.CreateFeaturesetRequest(
+    return services_proto.CreateFeaturesetRequest(
         name=fs._name,
         features=[feature_to_proto(feature) for feature in fs._features],
         extractors=[

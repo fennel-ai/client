@@ -30,7 +30,6 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
 class Status(google.protobuf.message.Message):
     """The `Status` type defines a logical error model that is suitable for
     different programming environments, including REST APIs and RPC APIs. It is
@@ -47,11 +46,14 @@ class Status(google.protobuf.message.Message):
     MESSAGE_FIELD_NUMBER: builtins.int
     DETAILS_FIELD_NUMBER: builtins.int
     code: builtins.int
-    """The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code]."""
+    """The status code, which should be an enum value of
+    [google.rpc.Code][google.rpc.Code].
+    """
     message: builtins.str
     """A developer-facing error message, which should be in English. Any
     user-facing error message should be localized and sent in the
-    [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+    [google.rpc.Status.details][google.rpc.Status.details] field, or localized
+    by the client.
     """
     @property
     def details(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[google.protobuf.any_pb2.Any]:

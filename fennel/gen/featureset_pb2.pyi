@@ -9,7 +9,6 @@ import google.protobuf.internal.containers
 import google.protobuf.message
 import metadata_pb2
 import schema_pb2
-import status_pb2
 import sys
 
 if sys.version_info >= (3, 8):
@@ -19,7 +18,6 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
 class Feature(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -46,7 +44,6 @@ class Feature(google.protobuf.message.Message):
 
 global___Feature = Feature
 
-@typing_extensions.final
 class Extractor(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -88,69 +85,9 @@ class Extractor(google.protobuf.message.Message):
 
 global___Extractor = Extractor
 
-@typing_extensions.final
-class CreateFeaturesetRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    NAME_FIELD_NUMBER: builtins.int
-    FEATURES_FIELD_NUMBER: builtins.int
-    EXTRACTORS_FIELD_NUMBER: builtins.int
-    VERSION_FIELD_NUMBER: builtins.int
-    SIGNATURE_FIELD_NUMBER: builtins.int
-    METADATA_FIELD_NUMBER: builtins.int
-    SCHEMA_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    @property
-    def features(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Feature]: ...
-    @property
-    def extractors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Extractor]: ...
-    version: builtins.int
-    signature: builtins.str
-    @property
-    def metadata(self) -> metadata_pb2.Metadata: ...
-    schema: builtins.bytes
-    """Serialized arrow schema."""
-    def __init__(
-        self,
-        *,
-        name: builtins.str = ...,
-        features: collections.abc.Iterable[global___Feature] | None = ...,
-        extractors: collections.abc.Iterable[global___Extractor] | None = ...,
-        version: builtins.int = ...,
-        signature: builtins.str = ...,
-        metadata: metadata_pb2.Metadata | None = ...,
-        schema: builtins.bytes = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["extractors", b"extractors", "features", b"features", "metadata", b"metadata", "name", b"name", "schema", b"schema", "signature", b"signature", "version", b"version"]) -> None: ...
-
-global___CreateFeaturesetRequest = CreateFeaturesetRequest
-
-@typing_extensions.final
-class CreateFeatureSetResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    NAME_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    @property
-    def status(self) -> status_pb2.Status: ...
-    def __init__(
-        self,
-        *,
-        name: builtins.str = ...,
-        status: status_pb2.Status | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["status", b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "status", b"status"]) -> None: ...
-
-global___CreateFeatureSetResponse = CreateFeatureSetResponse
-
-@typing_extensions.final
 class Input(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
     class FeatureSet(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -163,7 +100,6 @@ class Input(google.protobuf.message.Message):
         ) -> None: ...
         def ClearField(self, field_name: typing_extensions.Literal["name", b"name"]) -> None: ...
 
-    @typing_extensions.final
     class Feature(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -198,3 +134,44 @@ class Input(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["input", b"input"]) -> typing_extensions.Literal["feature_set", "feature"] | None: ...
 
 global___Input = Input
+
+class Model(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    class ModelFeature(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        FEATURESET_FIELD_NUMBER: builtins.int
+        FEATURE_FIELD_NUMBER: builtins.int
+        ALIAS_FIELD_NUMBER: builtins.int
+        featureset: builtins.str
+        feature: builtins.str
+        alias: builtins.str
+        def __init__(
+            self,
+            *,
+            featureset: builtins.str = ...,
+            feature: builtins.str = ...,
+            alias: builtins.str = ...,
+        ) -> None: ...
+        def ClearField(self, field_name: typing_extensions.Literal["alias", b"alias", "feature", b"feature", "featureset", b"featureset"]) -> None: ...
+
+    NAME_FIELD_NUMBER: builtins.int
+    FEATURES_FIELD_NUMBER: builtins.int
+    METADATA_FIELD_NUMBER: builtins.int
+    name: builtins.str
+    @property
+    def features(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Model.ModelFeature]: ...
+    @property
+    def metadata(self) -> metadata_pb2.Metadata: ...
+    def __init__(
+        self,
+        *,
+        name: builtins.str = ...,
+        features: collections.abc.Iterable[global___Model.ModelFeature] | None = ...,
+        metadata: metadata_pb2.Metadata | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["features", b"features", "metadata", b"metadata", "name", b"name"]) -> None: ...
+
+global___Model = Model

@@ -16,8 +16,10 @@ import fennel.datasets.datasets
 from fennel.client import Client
 from fennel.datasets import Dataset, Pipeline, OnDemand
 from fennel.featuresets import Featureset, Feature, Extractor
-from fennel.gen.dataset_pb2 import CreateDatasetRequest
-from fennel.gen.featureset_pb2 import CreateFeaturesetRequest
+from fennel.gen.services_pb2 import (
+    CreateDatasetRequest,
+    CreateFeaturesetRequest,
+)
 from fennel.lib.graph_algorithms import (
     get_extractor_order,
     is_extractor_graph_cyclic,

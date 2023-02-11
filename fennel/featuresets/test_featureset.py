@@ -4,6 +4,7 @@ from typing import Optional
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as proto
+import fennel.gen.services_pb2 as service_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.lib.metadata import meta
@@ -121,7 +122,7 @@ def test_simple_featureset(grpc_stub):
         "metadata": {"owner": "test@test.com"},
     }
 
-    expected_fs_request = ParseDict(f, proto.CreateFeaturesetRequest())
+    expected_fs_request = ParseDict(f, service_proto.CreateFeaturesetRequest())
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request
     )
@@ -232,7 +233,7 @@ def test_complex_featureset(grpc_stub):
         ],
         "metadata": {"owner": "test@test.com"},
     }
-    expected_fs_request = ParseDict(f, proto.CreateFeaturesetRequest())
+    expected_fs_request = ParseDict(f, service_proto.CreateFeaturesetRequest())
 
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request

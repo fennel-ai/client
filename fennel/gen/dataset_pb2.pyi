@@ -10,8 +10,6 @@ import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import metadata_pb2
 import schema_pb2
-import source_pb2
-import status_pb2
 import sys
 import typing
 
@@ -26,7 +24,7 @@ class _FieldType:
     ValueType = typing.NewType("ValueType", builtins.int)
     V: typing_extensions.TypeAlias = ValueType
 
-class _FieldTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_FieldType.ValueType], builtins.type):
+class _FieldTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_FieldType.ValueType], builtins.type):  # noqa: F821
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     Key: _FieldType.ValueType  # 0
     Val: _FieldType.ValueType  # 1
@@ -44,7 +42,7 @@ class _AggregateType:
     ValueType = typing.NewType("ValueType", builtins.int)
     V: typing_extensions.TypeAlias = ValueType
 
-class _AggregateTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_AggregateType.ValueType], builtins.type):
+class _AggregateTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_AggregateType.ValueType], builtins.type):  # noqa: F821
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     SUM: _AggregateType.ValueType  # 0
     AVG: _AggregateType.ValueType  # 1
@@ -65,7 +63,6 @@ TOPK: AggregateType.ValueType  # 5
 CF: AggregateType.ValueType  # 6
 global___AggregateType = AggregateType
 
-@typing_extensions.final
 class Field(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -92,7 +89,6 @@ class Field(google.protobuf.message.Message):
 
 global___Field = Field
 
-@typing_extensions.final
 class OnDemand(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -113,83 +109,6 @@ class OnDemand(google.protobuf.message.Message):
 
 global___OnDemand = OnDemand
 
-@typing_extensions.final
-class CreateDatasetRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    NAME_FIELD_NUMBER: builtins.int
-    FIELDS_FIELD_NUMBER: builtins.int
-    PIPELINES_FIELD_NUMBER: builtins.int
-    INPUT_CONNECTORS_FIELD_NUMBER: builtins.int
-    OUTPUT_CONNECTORS_FIELD_NUMBER: builtins.int
-    SIGNATURE_FIELD_NUMBER: builtins.int
-    METADATA_FIELD_NUMBER: builtins.int
-    MODE_FIELD_NUMBER: builtins.int
-    VERSION_FIELD_NUMBER: builtins.int
-    HISTORY_FIELD_NUMBER: builtins.int
-    MAX_STALENESS_FIELD_NUMBER: builtins.int
-    ON_DEMAND_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    @property
-    def fields(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Field]: ...
-    @property
-    def pipelines(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Pipeline]: ...
-    @property
-    def input_connectors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[source_pb2.DataConnector]: ...
-    @property
-    def output_connectors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[source_pb2.DataConnector]: ...
-    signature: builtins.str
-    @property
-    def metadata(self) -> metadata_pb2.Metadata: ...
-    mode: builtins.str
-    """Default mode is pandas."""
-    version: builtins.int
-    history: builtins.int
-    max_staleness: builtins.int
-    @property
-    def on_demand(self) -> global___OnDemand: ...
-    def __init__(
-        self,
-        *,
-        name: builtins.str = ...,
-        fields: collections.abc.Iterable[global___Field] | None = ...,
-        pipelines: collections.abc.Iterable[global___Pipeline] | None = ...,
-        input_connectors: collections.abc.Iterable[source_pb2.DataConnector] | None = ...,
-        output_connectors: collections.abc.Iterable[source_pb2.DataConnector] | None = ...,
-        signature: builtins.str = ...,
-        metadata: metadata_pb2.Metadata | None = ...,
-        mode: builtins.str = ...,
-        version: builtins.int = ...,
-        history: builtins.int = ...,
-        max_staleness: builtins.int = ...,
-        on_demand: global___OnDemand | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "on_demand", b"on_demand"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields", "history", b"history", "input_connectors", b"input_connectors", "max_staleness", b"max_staleness", "metadata", b"metadata", "mode", b"mode", "name", b"name", "on_demand", b"on_demand", "output_connectors", b"output_connectors", "pipelines", b"pipelines", "signature", b"signature", "version", b"version"]) -> None: ...
-
-global___CreateDatasetRequest = CreateDatasetRequest
-
-@typing_extensions.final
-class CreateDatasetResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    NAME_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    @property
-    def status(self) -> status_pb2.Status: ...
-    def __init__(
-        self,
-        *,
-        name: builtins.str = ...,
-        status: status_pb2.Status | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["status", b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "status", b"status"]) -> None: ...
-
-global___CreateDatasetResponse = CreateDatasetResponse
-
-@typing_extensions.final
 class Pipeline(google.protobuf.message.Message):
     """----------------------------------------------------------------------------------------------
     Pipeline
@@ -234,7 +153,6 @@ class Pipeline(google.protobuf.message.Message):
 
 global___Pipeline = Pipeline
 
-@typing_extensions.final
 class Node(google.protobuf.message.Message):
     """Each Node in the pipeline either refers to an operator.
     Each node also has a globally unique id. Operators refer to their inputs via
@@ -264,7 +182,6 @@ class Node(google.protobuf.message.Message):
 
 global___Node = Node
 
-@typing_extensions.final
 class Operator(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -298,7 +215,6 @@ class Operator(google.protobuf.message.Message):
 
 global___Operator = Operator
 
-@typing_extensions.final
 class Aggregate(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -321,11 +237,9 @@ class Aggregate(google.protobuf.message.Message):
 
 global___Aggregate = Aggregate
 
-@typing_extensions.final
 class Join(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
     class OnEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -361,11 +275,9 @@ class Join(google.protobuf.message.Message):
 
 global___Join = Join
 
-@typing_extensions.final
 class Transform(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
     class SchemaEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -404,7 +316,6 @@ class Transform(google.protobuf.message.Message):
 
 global___Transform = Transform
 
-@typing_extensions.final
 class Filter(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -425,7 +336,6 @@ class Filter(google.protobuf.message.Message):
 
 global___Filter = Filter
 
-@typing_extensions.final
 class Union(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -441,7 +351,6 @@ class Union(google.protobuf.message.Message):
 
 global___Union = Union
 
-@typing_extensions.final
 class Aggregation(google.protobuf.message.Message):
     """----------------------------------------------------------------------------
     Aggregate Definitions
@@ -481,7 +390,6 @@ class Aggregation(google.protobuf.message.Message):
 
 global___Aggregation = Aggregation
 
-@typing_extensions.final
 class Window(google.protobuf.message.Message):
     """to = 0 represents last X window."""
 
@@ -501,7 +409,6 @@ class Window(google.protobuf.message.Message):
 
 global___Window = Window
 
-@typing_extensions.final
 class DeltaWindow(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -522,7 +429,6 @@ class DeltaWindow(google.protobuf.message.Message):
 
 global___DeltaWindow = DeltaWindow
 
-@typing_extensions.final
 class WindowSpec(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -547,7 +453,6 @@ class WindowSpec(google.protobuf.message.Message):
 
 global___WindowSpec = WindowSpec
 
-@typing_extensions.final
 class TopKConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -569,7 +474,6 @@ class TopKConfig(google.protobuf.message.Message):
 
 global___TopKConfig = TopKConfig
 
-@typing_extensions.final
 class CFConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
