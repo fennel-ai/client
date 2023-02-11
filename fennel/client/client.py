@@ -1,7 +1,8 @@
 import functools
 import math
 from typing import *
-from urllib.parse import urlparse
+from urllib.parse import urljoin
+from urllib.parse import unquote
 
 import pandas as pd
 import requests  # type: ignore
@@ -13,7 +14,7 @@ from fennel.featuresets import Featureset, Feature
 from fennel.lib.to_proto import dataset_to_proto, featureset_to_proto
 from fennel.utils import check_response
 
-REST_API_VERSION = "/api/v1"
+_V1_API = "/api/v1"
 
 # Connection timeout i.e. the time spent by the client to establish a
 # connection to the remote machine. NOTE: This should be slightly larger than
@@ -87,7 +88,7 @@ class Client:
 
         # The path must match the grpc method name
         response = self.http.post(
-            self.url + "/fennel.proto.FennelFeatureStore/Sync",
+            self._url("/fennel.proto.FennelFeatureStore/Sync"),
             data=payload,
             headers=headers,
         )
@@ -96,7 +97,7 @@ class Client:
             if "grpc-message" in response.headers:
                 raise Exception(
                     "Sync response failed with: {}".format(
-                        response.headers["grpc-message"]
+                        unquote(response.headers["grpc-message"])
                     )
                 )
 
@@ -129,7 +130,9 @@ class Client:
                 "dataset_name": dataset_name,
                 "payload": payload,
             }
-            response = self.http.post(self._url("log"), json=req)
+            response = self.http.post(
+                self._url("{}/log".format(_V1_API)), json=req
+            )
             check_response(response)
         return response
 
@@ -189,7 +192,7 @@ class Client:
             "sampling_rate": sampling_rate,
         }
         response = self.http.post(
-            self._url("extract_features"),
+            self._url("{}/extract_features".format(_V1_API)),
             json=req,
         )
         check_response(response)
@@ -253,7 +256,7 @@ class Client:
         }
 
         response = self.http.post(
-            self._url("extract_historical_features"),
+            self._url("{}/extract_historical_features".format(_V1_API)),
             json=req,
         )
         check_response(response)
@@ -267,7 +270,7 @@ class Client:
     # ----------------------- Private methods -----------------------
 
     def _url(self, path):
-        return self.url + REST_API_VERSION + "/" + path
+        return urljoin(self.url, path)
 
     @staticmethod
     def _get_session():
