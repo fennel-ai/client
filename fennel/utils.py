@@ -22,7 +22,13 @@ FHASH_ATTR = "__fennel_fhash__"
 def check_response(response: requests.Response):
     """Check the response from the server and raise an exception if the response is not OK"""
     if response.status_code != 200:
-        raise Exception(response.reason)
+        raise Exception(
+            "Server returned: {}, {}, {}".format(
+                response.status_code,
+                response.reason,
+                response.text,
+            )
+        )
 
 
 def del_namespace(obj, depth):

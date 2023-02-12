@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.6.1] - 2023-02-10
+- Improve error propagation for the user
+
 ## [0.6.0] - 2023-02-10
 - Update in generated protobuf files and translators
 
