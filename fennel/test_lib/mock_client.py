@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 import hashlib
 import json
 import os
@@ -286,7 +287,7 @@ class MockClient(Client):
         extractors = get_extractor_order(
             input_feature_list, output_feature_list, self.extractors
         )
-        timestamps = pd.Series([pd.Timestamp.now()] * len(input_dataframe))
+        timestamps = pd.Series([datetime.utcnow()] * len(input_dataframe))
         return self._run_extractors(
             extractors, input_dataframe, output_feature_list, timestamps
         )
