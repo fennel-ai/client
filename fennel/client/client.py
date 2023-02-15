@@ -1,14 +1,13 @@
 import functools
 import math
 from typing import *
-from urllib.parse import urljoin
 from urllib.parse import unquote
+from urllib.parse import urljoin
 
 import pandas as pd
 import requests  # type: ignore
 
 import fennel.gen.services_pb2 as services_pb2
-import fennel.gen.services_pb2_grpc as services_pb2_grpc
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
 from fennel.lib.to_proto import dataset_to_proto, featureset_to_proto
@@ -65,6 +64,9 @@ class Client:
         :param featuresets:  List of featuresets to register with the server.
         :return: Response from the server.
         """
+        # Reset state.
+        self.to_register_objects = []
+
         if datasets is not None:
             for dataset in datasets:
                 self.add(dataset)
