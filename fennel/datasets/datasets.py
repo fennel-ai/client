@@ -629,8 +629,8 @@ class Dataset(_Node[T]):
         self._sign = self._create_signature()
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
-        self._expectation = self._get_expectations()
         propogate_fennel_attributes(cls, self)
+        self._expectation = self._get_expectations()
 
     def __class_getitem__(cls, item):
         return item
@@ -851,7 +851,8 @@ class Dataset(_Node[T]):
             )
         expectation.suite = f"dataset_{self._name}_expectations"
         expectation.expectations = expectation.func(self)
-        propogate_fennel_attributes(expectation.func, expectation)
+        if hasattr(expectation.func, "__fennel_metadata__"):
+            raise ValueError("Expectations cannot have metadata.")
         return expectation
 
     @property

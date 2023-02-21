@@ -34,6 +34,7 @@ from fennel.sources import SOURCE_FIELD, SINK_FIELD
 def _expectations_to_proto(
     exp: Optional[Expectations],
 ) -> exp_proto.Expectations:
+    print(get_metadata_proto(exp))
     if exp is None:
         return exp_proto.Expectations()
     exp_protos = []
@@ -47,7 +48,7 @@ def _expectations_to_proto(
         suite=exp.suite,
         expectations=exp_protos,
         version=exp.version,
-        metadata=get_metadata_proto(exp),
+        metadata=None,
     )
 
 
