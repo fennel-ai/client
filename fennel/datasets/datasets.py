@@ -23,7 +23,6 @@ from typing import (
 import cloudpickle
 import numpy as np
 import pandas as pd
-from great_expectations.core.batch import RuntimeBatchRequest  # type: ignore
 
 from fennel.lib.aggregate import AggregateType
 from fennel.lib.duration.duration import (
@@ -630,8 +629,8 @@ class Dataset(_Node[T]):
         self._sign = self._create_signature()
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
-        propogate_fennel_attributes(cls, self)
         self._expectation = self._get_expectations()
+        propogate_fennel_attributes(cls, self)
 
     def __class_getitem__(cls, item):
         return item
@@ -841,33 +840,18 @@ class Dataset(_Node[T]):
                     f"Multiple expectations are not supported for dataset {self._name}."
                 )
             expectation = getattr(method, GE_ATTR_FUNC)
-
         if expectation is None:
             return None
-        context = expectation.context
-        context.create_expectation_suite(
-            expectation_suite_name=f"dataset_{self._name}_expectations",
-            overwrite_existing=True,
-        )
-        field_names = [field.name for field in self._fields]
-        df = pd.DataFrame({}, columns=field_names)
-        batch_request = RuntimeBatchRequest(
-            datasource_name="fennel_placeholder_datasource",
-            data_connector_name="default_runtime_data_connector_name",
-            data_asset_name=self._name,
-            runtime_parameters={"batch_data": df},
-            batch_identifiers={"default_identifier_name": "default_identifier"},
-        )
-
-        validator = context.get_validator(
-            batch_request=batch_request,
-            expectation_suite_name=f"dataset_{self._name}_expectations",
-        )
-        validator = expectation.func(self, validator)
-        validator.save_expectation_suite()
-        expectation.json_config = (
-            validator.get_expectation_suite().to_json_dict()
-        )
+        # Check that the expectation function only takes 1 parameter: cls.
+        sig = inspect.signature(expectation.func)
+        if len(sig.parameters) != 1:
+            raise ValueError(
+                f"Expectation function {expectation.func} must take only "
+                f"cls as a parameter."
+            )
+        expectation.suite = f"dataset_{self._name}_expectations"
+        expectation.expectations = expectation.func(self)
+        propogate_fennel_attributes(expectation.func, expectation)
         return expectation
 
     @property

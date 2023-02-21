@@ -31,12 +31,23 @@ from fennel.lib.to_proto import Serializer
 from fennel.sources import SOURCE_FIELD, SINK_FIELD
 
 
-def _expectations_to_proto(expectation: Optional[Expectations]):
-    if expectation is None or expectation.json_config is None:
-        return None
+def _expectations_to_proto(
+    exp: Optional[Expectations],
+) -> exp_proto.Expectations:
+    if exp is None:
+        return exp_proto.Expectations()
+    exp_protos = []
+    for e in exp.expectations:
+        exp_protos.append(
+            exp_proto.Expectation(
+                expectation_type=e[0], expectation_kwargs=json.dumps(e[1])
+            )
+        )
     return exp_proto.Expectations(
-        json_expectation_config=json.dumps(expectation.json_config),
-        version=expectation.version,
+        suite=exp.suite,
+        expectations=exp_protos,
+        version=exp.version,
+        metadata=get_metadata_proto(exp),
     )
 
 

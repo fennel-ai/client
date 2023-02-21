@@ -123,6 +123,7 @@ def test_simple_source(grpc_stub):
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
                 "history": "63072000000000",
+                "expectations": {},
             }
         ]
     }
@@ -335,6 +336,7 @@ def test_console_source(grpc_stub):
                 },
                 "mode": "pandas",
                 "history": "63072000000000",
+                "expectations": {},
             }
         ]
     }

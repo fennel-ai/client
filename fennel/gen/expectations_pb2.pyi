@@ -3,8 +3,11 @@
 isort:skip_file
 """
 import builtins
+import collections.abc
 import google.protobuf.descriptor
+import google.protobuf.internal.containers
 import google.protobuf.message
+import metadata_pb2
 import sys
 
 if sys.version_info >= (3, 8):
@@ -18,16 +21,44 @@ DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 class Expectations(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    JSON_EXPECTATION_CONFIG_FIELD_NUMBER: builtins.int
+    SUITE_FIELD_NUMBER: builtins.int
+    EXPECTATIONS_FIELD_NUMBER: builtins.int
     VERSION_FIELD_NUMBER: builtins.int
-    json_expectation_config: builtins.str
+    METADATA_FIELD_NUMBER: builtins.int
+    suite: builtins.str
+    @property
+    def expectations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Expectation]: ...
     version: builtins.int
+    @property
+    def metadata(self) -> metadata_pb2.Metadata: ...
     def __init__(
         self,
         *,
-        json_expectation_config: builtins.str = ...,
+        suite: builtins.str = ...,
+        expectations: collections.abc.Iterable[global___Expectation] | None = ...,
         version: builtins.int = ...,
+        metadata: metadata_pb2.Metadata | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["json_expectation_config", b"json_expectation_config", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["expectations", b"expectations", "metadata", b"metadata", "suite", b"suite", "version", b"version"]) -> None: ...
 
 global___Expectations = Expectations
+
+@typing_extensions.final
+class Expectation(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    EXPECTATION_TYPE_FIELD_NUMBER: builtins.int
+    EXPECTATION_KWARGS_FIELD_NUMBER: builtins.int
+    expectation_type: builtins.str
+    expectation_kwargs: builtins.str
+    """This is a JSON string that contains the arguments for the expectation."""
+    def __init__(
+        self,
+        *,
+        expectation_type: builtins.str = ...,
+        expectation_kwargs: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["expectation_kwargs", b"expectation_kwargs", "expectation_type", b"expectation_type"]) -> None: ...
+
+global___Expectation = Expectation

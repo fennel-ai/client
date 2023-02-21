@@ -20,7 +20,6 @@ from typing import (
 
 import cloudpickle
 import pandas as pd
-from great_expectations.core.batch import RuntimeBatchRequest  # type: ignore
 
 from fennel.datasets import Dataset
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
@@ -346,11 +345,11 @@ class Featureset:
             feature.id: feature.fqn_ for feature in features
         }
         self._extractors = self._get_extractors()
-        propogate_fennel_attributes(featureset_cls, self)
         self._validate()
         self._add_feature_names_as_attributes()
         self._set_extractors_as_attributes()
         self._expectation = self._get_expectations()
+        propogate_fennel_attributes(featureset_cls, self)
 
     # ------------------- Private Methods ----------------------------------
 
@@ -438,37 +437,17 @@ class Featureset:
                 continue
             if expectation is not None:
                 raise ValueError(
-                    f"Multiple expectations are not supported for dataset {self._name}."
+                    f"Multiple expectations are not supported for featureset"
+                    f" {self._name}."
                 )
             expectation = getattr(method, GE_ATTR_FUNC)
 
         if expectation is None:
             return None
-        context = expectation.context
-        context.create_expectation_suite(
-            expectation_suite_name=f"featureset_{self._name}_expectations",
-            overwrite_existing=True,
-        )
-        feature_names = [feature.name for feature in self._features]
-        df = pd.DataFrame({}, columns=feature_names)
-        batch_request = RuntimeBatchRequest(
-            datasource_name="fennel_placeholder_datasource",
-            data_connector_name="default_runtime_data_connector_name",
-            data_asset_name=self._name,
-            runtime_parameters={"batch_data": df},
-            batch_identifiers={"default_identifier_name": "default_identifier"},
-        )
 
-        validator = context.get_validator(
-            batch_request=batch_request,
-            expectation_suite_name=f"featureset_{self._name}_expectations",
+        raise NotImplementedError(
+            "Expectations are not yet supported for featuresets."
         )
-        validator = expectation.func(self, validator)
-        validator.save_expectation_suite()
-        expectation.json_config = (
-            validator.get_expectation_suite().to_json_dict()
-        )
-        return expectation
 
     @property
     def extractors(self):

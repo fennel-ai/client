@@ -4,3 +4,5 @@ from fennel.lib.expectations.great_expectations import (
     FENNEL_GE_SUITE,
     Expectations,
 )
+
+from fennel.lib.expectations.supported_expectations import *

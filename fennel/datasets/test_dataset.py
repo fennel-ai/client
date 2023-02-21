@@ -7,7 +7,6 @@ import pytest
 import requests  # type: ignore
 from google.protobuf.json_format import ParseDict  # type: ignore
 
-import fennel.gen.dataset_pb2 as proto
 import fennel.gen.services_pb2 as service_proto
 from fennel.datasets import dataset, pipeline, field, Dataset, on_demand
 from fennel.gen.services_pb2 import SyncRequest
@@ -97,6 +96,7 @@ def test_simple_dataset(grpc_stub):
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
                 "history": "63072000000000",
+                "expectations": {},
             }
         ]
     }
@@ -156,6 +156,7 @@ def test_dataset_with_retention(grpc_stub):
                 "metadata": {"owner": "test@test.com"},
                 "mode": "pandas",
                 "history": "10368000000000",
+                "expectations": {},
             }
         ]
     }
