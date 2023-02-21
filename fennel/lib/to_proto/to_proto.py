@@ -10,12 +10,9 @@ from typing import (
 )
 
 import fennel.gen.dataset_pb2 as ds_proto
+import fennel.gen.expectations_pb2 as exp_proto
 import fennel.gen.featureset_pb2 as fs_proto
-<<<<<<< HEAD
 import fennel.gen.services_pb2 as services_proto
-=======
-import fennel.gen.metadata_pb2 as meta_proto
->>>>>>> b5d530f (expectations: Client sdk for Great Expectations)
 from fennel.datasets import Dataset, Pipeline, Field, OnDemand
 from fennel.featuresets import (
     Featureset,
@@ -37,7 +34,7 @@ from fennel.sources import SOURCE_FIELD, SINK_FIELD
 def _expectations_to_proto(expectation: Optional[Expectations]):
     if expectation is None or expectation.json_config is None:
         return None
-    return meta_proto.Expectations(
+    return exp_proto.Expectations(
         json_expectation_config=json.dumps(expectation.json_config),
         version=expectation.version,
     )

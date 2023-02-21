@@ -22,21 +22,21 @@ class UserInfoDS:
     name: str = field()
     age: Optional[int]
     country: Optional[str]
-    gender: oneof(str, ["male", "female"])
+    gender: oneof(str, ["male", "female"])  # type: ignore
     timestamp: datetime = field(timestamp=True)
 
     @expectations
-    def dataset_expectations(cls, validator):
-        validator.expect_column_values_to_be_between(
+    def dataset_expectations(cls, suite):
+        suite.expect_column_values_to_be_between(
             column=str(cls.age), min_value=0, max_value=100
         )
-        validator.expect_column_values_to_be_in_set(
+        suite.expect_column_values_to_be_in_set(
             column=str(cls.gender), value_set=["male", "female"], mostly=0.9
         )
-        validator.expect_column_values_to_not_be_null(
+        suite.expect_column_values_to_not_be_null(
             column=str(cls.country), mostly=0.9
         )
-        return validator
+        return suite
 
 
 def test_dataset_expectation_creation(grpc_stub):
@@ -82,17 +82,17 @@ def test_featureset_expectation_creation(grpc_stub):
         gender: oneof(str, ["male", "female"]) = feature(id=5)
 
         @expectations
-        def featureset_expectations(cls, validator):
-            validator.expect_column_values_to_be_between(
+        def featureset_expectations(cls, suite):
+            suite.expect_column_values_to_be_between(
                 column=str(cls.age), min_value=0, max_value=100
             )
-            validator.expect_column_values_to_be_in_set(
+            suite.expect_column_values_to_be_in_set(
                 column=str(cls.gender), value_set=["male", "female"], mostly=0.9
             )
-            validator.expect_column_values_to_not_be_null(
+            suite.expect_column_values_to_not_be_null(
                 column=str(cls.country), mostly=0.9
             )
-            return validator
+            return suite
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoFeatureset)
@@ -115,3 +115,67 @@ def test_featureset_expectation_creation(grpc_stub):
         sync_request.featureset_requests[0].expectations.json_expectation_config
     )
     assert expected_config == act_config
+
+
+def test_dataset_invalid_expectation_creation():
+    with pytest.raises(Exception) as e:
+        @meta(owner="test@test.com")
+        @dataset
+        class UserInfoDSInvalid:
+            user_id: int = field(key=True)
+            name: str = field()
+            age: Optional[int]
+            country: Optional[str]
+            gender: oneof(str, ["male", "female"])
+            timestamp: datetime = field(timestamp=True)
+
+            @expectations
+            def dataset_expectations(cls, suite):
+                suite.expect_column_values_to_be_between_random(
+                    column=str(cls.age), min_value=0, max_value=100
+                )
+                suite.expect_column_values_to_be_in_set(
+                    column=str(cls.gender),
+                    value_set=["male", "female"],
+                    mostly=0.9,
+                )
+                suite.expect_column_values_to_not_be_null(
+                    column=str(cls.country), mostly=0.9
+                )
+                return suite
+
+    assert (
+            str(e.value)
+            == "expect_column_values_to_be_between_random not found"
+    )
+
+    with pytest.raises(Exception) as e:
+        @meta(owner="test@test.com")
+        @dataset
+        class UserInfoDSInvalid2:
+            user_id: int = field(key=True)
+            name: str = field()
+            age: Optional[int]
+            country: Optional[str]
+            gender: oneof(str, ["male", "female"])
+            timestamp: datetime = field(timestamp=True)
+
+            @expectations
+            def dataset_expectations(cls, suite):
+                suite.expect_column_values_to_be_between(
+                    column=str(cls.age), minimum_value=0, max_value=100
+                )
+                suite.expect_column_values_to_be_in_set(
+                    column=str(cls.gender),
+                    value_set=["male", "female"],
+                    mostly=0.9,
+                )
+                suite.expect_column_values_to_not_be_null(
+                    column=str(cls.country), mostly=0.9
+                )
+                return suite
+
+    assert (
+            str(e.value)
+            == "expect_column_values_to_be_between_random not found"
+    )

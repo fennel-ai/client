@@ -5,6 +5,7 @@ isort:skip_file
 import builtins
 import collections.abc
 import dataset_pb2
+import expectations_pb2
 import featureset_pb2
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
@@ -69,7 +70,7 @@ class CreateDatasetRequest(google.protobuf.message.Message):
     @property
     def on_demand(self) -> dataset_pb2.OnDemand: ...
     @property
-    def expectations(self) -> metadata_pb2.Expectations: ...
+    def expectations(self) -> expectations_pb2.Expectations: ...
     def __init__(
         self,
         *,
@@ -85,7 +86,7 @@ class CreateDatasetRequest(google.protobuf.message.Message):
         history: builtins.int = ...,
         max_staleness: builtins.int = ...,
         on_demand: dataset_pb2.OnDemand | None = ...,
-        expectations: metadata_pb2.Expectations | None = ...,
+        expectations: expectations_pb2.Expectations | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["expectations", b"expectations", "metadata", b"metadata", "on_demand", b"on_demand"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["expectations", b"expectations", "fields", b"fields", "history", b"history", "input_connectors", b"input_connectors", "max_staleness", b"max_staleness", "metadata", b"metadata", "mode", b"mode", "name", b"name", "on_demand", b"on_demand", "output_connectors", b"output_connectors", "pipelines", b"pipelines", "signature", b"signature", "version", b"version"]) -> None: ...
@@ -147,6 +148,7 @@ class CreateFeaturesetRequest(google.protobuf.message.Message):
     SIGNATURE_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     SCHEMA_FIELD_NUMBER: builtins.int
+    EXPECTATIONS_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def features(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[featureset_pb2.Feature]: ...
@@ -158,6 +160,8 @@ class CreateFeaturesetRequest(google.protobuf.message.Message):
     def metadata(self) -> metadata_pb2.Metadata: ...
     schema: builtins.bytes
     """Serialized arrow schema."""
+    @property
+    def expectations(self) -> expectations_pb2.Expectations: ...
     def __init__(
         self,
         *,
@@ -168,9 +172,10 @@ class CreateFeaturesetRequest(google.protobuf.message.Message):
         signature: builtins.str = ...,
         metadata: metadata_pb2.Metadata | None = ...,
         schema: builtins.bytes = ...,
+        expectations: expectations_pb2.Expectations | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["extractors", b"extractors", "features", b"features", "metadata", b"metadata", "name", b"name", "schema", b"schema", "signature", b"signature", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["expectations", b"expectations", "metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["expectations", b"expectations", "extractors", b"extractors", "features", b"features", "metadata", b"metadata", "name", b"name", "schema", b"schema", "signature", b"signature", "version", b"version"]) -> None: ...
 
 global___CreateFeaturesetRequest = CreateFeaturesetRequest
 
