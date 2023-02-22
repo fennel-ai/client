@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fennel-ai"
-version = "0.6.2"
+version = "0.6.3"
 description = "The modern realtime feature engineering platform"
 authors = ["Fennel AI <developers@fennel.ai>"]
 packages = [
@@ -52,7 +52,7 @@ markers = [
 
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.8"
 exclude = '''(pb2\.py$|grpc\.py$|_pb2.pyi)'''
 
 [[tool.mypy.overrides]]
