@@ -29,6 +29,7 @@ from fennel.lib.duration.duration import (
     Duration,
     duration_to_timedelta,
 )
+from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
@@ -603,6 +604,7 @@ class Dataset(_Node[T]):
     _pipelines: List[Pipeline]
     _timestamp_field: str
     __fennel_original_cls__: Any
+    _expectations: List[Expectations]
     lookup: Callable
 
     def __init__(
@@ -628,6 +630,7 @@ class Dataset(_Node[T]):
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
         propogate_fennel_attributes(cls, self)
+        self._expectation = self._get_expectations()
 
     def __class_getitem__(cls, item):
         return item
@@ -824,6 +827,33 @@ class Dataset(_Node[T]):
                 exceptions.extend(err)
         if exceptions:
             raise TypeError(exceptions)
+
+    def _get_expectations(self):
+        expectation = None
+        for name, method in inspect.getmembers(self.__fennel_original_cls__):
+            if not callable(method):
+                continue
+            if not hasattr(method, GE_ATTR_FUNC):
+                continue
+            if expectation is not None:
+                raise ValueError(
+                    f"Multiple expectations are not supported for dataset {self._name}."
+                )
+            expectation = getattr(method, GE_ATTR_FUNC)
+        if expectation is None:
+            return None
+        # Check that the expectation function only takes 1 parameter: cls.
+        sig = inspect.signature(expectation.func)
+        if len(sig.parameters) != 1:
+            raise ValueError(
+                f"Expectation function {expectation.func} must take only "
+                f"cls as a parameter."
+            )
+        expectation.suite = f"dataset_{self._name}_expectations"
+        expectation.expectations = expectation.func(self)
+        if hasattr(expectation.func, "__fennel_metadata__"):
+            raise ValueError("Expectations cannot have metadata.")
+        return expectation
 
     @property
     def timestamp_field(self):

@@ -22,6 +22,7 @@ import cloudpickle
 import pandas as pd
 
 from fennel.datasets import Dataset
+from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
@@ -329,6 +330,7 @@ class Featureset:
     _feature_map: Dict[str, Feature] = {}
     _extractors: List[Extractor]
     _id_to_feature_fqn: Dict[int, str] = {}
+    _expectation: Expectations
 
     def __init__(
         self,
@@ -343,10 +345,11 @@ class Featureset:
             feature.id: feature.fqn_ for feature in features
         }
         self._extractors = self._get_extractors()
-        propogate_fennel_attributes(featureset_cls, self)
         self._validate()
         self._add_feature_names_as_attributes()
         self._set_extractors_as_attributes()
+        self._expectation = self._get_expectations()
+        propogate_fennel_attributes(featureset_cls, self)
 
     # ------------------- Private Methods ----------------------------------
 
@@ -423,6 +426,28 @@ class Featureset:
                 inspect.getmodule(extractor.func)
             )
             extractor.pickled_func = cloudpickle.dumps(extractor.bound_func)
+
+    def _get_expectations(self):
+        expectation = None
+
+        for name, method in inspect.getmembers(self.__fennel_original_cls__):
+            if not callable(method):
+                continue
+            if not hasattr(method, GE_ATTR_FUNC):
+                continue
+            if expectation is not None:
+                raise ValueError(
+                    f"Multiple expectations are not supported for featureset"
+                    f" {self._name}."
+                )
+            expectation = getattr(method, GE_ATTR_FUNC)
+
+        if expectation is None:
+            return None
+
+        raise NotImplementedError(
+            "Expectations are not yet supported for featuresets."
+        )
 
     @property
     def extractors(self):

@@ -22,7 +22,7 @@ class _ScalarType:
     ValueType = typing.NewType("ValueType", builtins.int)
     V: typing_extensions.TypeAlias = ValueType
 
-class _ScalarTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ScalarType.ValueType], builtins.type):  # noqa: F821
+class _ScalarTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ScalarType.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     INT: _ScalarType.ValueType  # 0
     FLOAT: _ScalarType.ValueType  # 1
@@ -39,6 +39,7 @@ BOOLEAN: ScalarType.ValueType  # 3
 TIMESTAMP: ScalarType.ValueType  # 4
 global___ScalarType = ScalarType
 
+@typing_extensions.final
 class DataType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -84,6 +85,7 @@ class DataType(google.protobuf.message.Message):
 
 global___DataType = DataType
 
+@typing_extensions.final
 class ArrayType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -100,6 +102,7 @@ class ArrayType(google.protobuf.message.Message):
 
 global___ArrayType = ArrayType
 
+@typing_extensions.final
 class EmbeddingType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -114,6 +117,7 @@ class EmbeddingType(google.protobuf.message.Message):
 
 global___EmbeddingType = EmbeddingType
 
+@typing_extensions.final
 class MapType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -134,6 +138,7 @@ class MapType(google.protobuf.message.Message):
 
 global___MapType = MapType
 
+@typing_extensions.final
 class Param(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -156,6 +161,7 @@ class Param(google.protobuf.message.Message):
 
 global___Param = Param
 
+@typing_extensions.final
 class Between(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -185,6 +191,7 @@ class Between(google.protobuf.message.Message):
 
 global___Between = Between
 
+@typing_extensions.final
 class OneOf(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -203,6 +210,7 @@ class OneOf(google.protobuf.message.Message):
 
 global___OneOf = OneOf
 
+@typing_extensions.final
 class Field(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 

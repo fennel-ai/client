@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.7.0] - 2023-02-02
+- Introduce great expectations
+
 ## [0.6.1] - 2023-02-10
 - Improve error propagation for the user
 
@@ -16,7 +19,7 @@
 - Fix timestamps returned during a lookup. 
 
 ## [0.4.1] - 2023-01-18
-- Log feautures to Kafka. 
+- Log features to Kafka. 
 
 ## [0.4.0] - 2023-01-18
 - Pipelines have ids and extractors have versions.

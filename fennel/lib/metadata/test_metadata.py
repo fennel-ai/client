@@ -4,7 +4,6 @@ from typing import Optional, Dict, List
 
 from google.protobuf.json_format import ParseDict  # type: ignore
 
-import fennel.gen.featureset_pb2 as proto
 import fennel.gen.services_pb2 as service_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
@@ -102,6 +101,7 @@ def test_simple_dataset(grpc_stub):
                 },
                 "mode": "pandas",
                 "history": "63072000000000",
+                "expectations": {},
             }
         ]
     }
@@ -216,6 +216,7 @@ def test_complex_dataset_with_fields(grpc_stub):
                 },
                 "mode": "pandas",
                 "history": "31536000000000",
+                "expectations": {},
             }
         ]
     }
