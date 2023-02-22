@@ -82,7 +82,7 @@ class Field:
             f"{self.is_optional()}:{self.key}:{self.timestamp}",
         )
 
-    def meta(self, **kwargs: Any) -> T:
+    def meta(self, **kwargs: Any) -> T:  # type: ignore
         f = cast(T, meta(**kwargs)(self))
         if get_meta_attr(f, "deleted") or get_meta_attr(f, "deprecated"):
             raise ValueError(
@@ -148,7 +148,7 @@ def get_field(
 def field(
     key: bool = False,
     timestamp: bool = False,
-) -> T:
+) -> T:  # type: ignore
     return cast(
         T,
         Field(

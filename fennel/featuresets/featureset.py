@@ -52,7 +52,7 @@ RESERVED_FEATURE_NAMES = [
 
 def feature(
     id: int,
-) -> T:
+) -> T:  # type: ignore
     return cast(
         T,
         Feature(
@@ -270,7 +270,7 @@ class Feature:
     dtype: Optional[Type]
     deprecated: bool = False
 
-    def meta(self, **kwargs: Any) -> T:
+    def meta(self, **kwargs: Any) -> T:  # type: ignore
         return cast(T, meta(**kwargs)(self))
 
     def __repr__(self) -> str:

@@ -66,6 +66,7 @@ class Client:
         """
         # Reset state.
         self.to_register_objects = []
+        self.to_register = set()
 
         if datasets is not None:
             for dataset in datasets:
