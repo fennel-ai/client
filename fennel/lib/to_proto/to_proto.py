@@ -34,7 +34,6 @@ from fennel.sources import SOURCE_FIELD, SINK_FIELD
 def _expectations_to_proto(
     exp: Optional[Expectations],
 ) -> exp_proto.Expectations:
-    print(get_metadata_proto(exp))
     if exp is None:
         return exp_proto.Expectations()
     exp_protos = []
@@ -166,19 +165,19 @@ def feature_to_proto(f: Feature) -> fs_proto.Feature:
 
 
 # Feature as input
-def feature_to_proto_as_input(f: Feature) -> fs_proto.Input.Feature:
-    return fs_proto.Input.Feature(
-        feature_set=fs_proto.Input.FeatureSet(
+def feature_to_proto_as_input(f: Feature) -> fs_proto.Input.InpFeature:
+    return fs_proto.Input.InpFeature(
+        feature_set=fs_proto.Input.InpFeatureSet(
             name=f.featureset_name,
         ),
         name=f.name,
     )
 
 
-# Featureset
-def fs_to_proto(fs: Featureset):
-    return fs_proto.Input.FeatureSet(
-        name=fs._name,
+# DataFrame of features
+def dataframe_to_proto(df: tuple) -> fs_proto.Input.DataFrame:
+    return fs_proto.Input.DataFrame(
+        features=[feature_to_proto_as_input(f) for f in df],
     )
 
 
@@ -192,12 +191,17 @@ def _extractor_to_proto(
             inputs.append(
                 fs_proto.Input(feature=feature_to_proto_as_input(input))
             )
+        elif type(input) is tuple:
+            inputs.append(fs_proto.Input(dataframe=dataframe_to_proto(input)))
         elif isinstance(input, Featureset):
-            inputs.append(fs_proto.Input(feature_set=fs_to_proto(input)))
+            raise TypeError(
+                f"Extractor input {input} is a Featureset, please use a"
+                f"a DataFrame of features"
+            )
         else:
             raise TypeError(
                 f"Extractor input {input} is not a Feature or "
-                f"Featureset but a {type(input)}"
+                f"a DataFrame of features, but a {type(input)}"
             )
     depended_datasets = []
     if hasattr(extractor.func, DEPENDS_ON_DATASETS_ATTR):

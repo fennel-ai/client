@@ -28,12 +28,16 @@ def extractor_graph(
                 extractor_producer = feature_to_extractor_map[inp.fqn()]
                 if extractor.name not in graph[extractor_producer.name]:
                     graph[extractor_producer.name].append(extractor.name)
-            elif isinstance(inp, Featureset):
-                for feature in inp.features:
+            elif type(inp) is tuple:
+                for feature in inp:
                     if feature.fqn() not in feature_to_extractor_map:
                         continue
                     extractor_producer = feature_to_extractor_map[feature.fqn()]
                     if extractor.name not in graph[extractor_producer.name]:
                         graph[extractor_producer.name].append(extractor.name)
+            elif isinstance(inp, Featureset):
+                raise ValueError(
+                    "Featureset is not supported as an input to an extractor"
+                )
 
     return graph, feature_to_extractor_map

@@ -242,7 +242,16 @@ class UserInfoTransformedFeatures:
     def get_user_transformed_features(
         cls,
         ts: Series[datetime],
-        user_features: DataFrame[UserInfoMultipleExtractor],
+        user_features: DataFrame[
+            UserInfoMultipleExtractor.userid,
+            UserInfoMultipleExtractor.name,
+            UserInfoMultipleExtractor.country_geoid,
+            UserInfoMultipleExtractor.age,
+            UserInfoMultipleExtractor.age_squared,
+            UserInfoMultipleExtractor.age_cubed,
+            UserInfoMultipleExtractor.is_name_common,
+            UserInfoMultipleExtractor.age_reciprocal,
+        ],
     ):
         age = user_features[repr(UserInfoMultipleExtractor.age)]
         is_name_common = user_features[
@@ -286,7 +295,11 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 
         feature_df = client.extract_features(
             output_feature_list=[
-                UserInfoTransformedFeatures,
+                DataFrame[
+                    UserInfoTransformedFeatures.age_power_four,
+                    UserInfoTransformedFeatures.is_name_common,
+                    UserInfoTransformedFeatures.country_geoid_square,
+                ]
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
             input_dataframe=pd.DataFrame(
@@ -315,7 +328,11 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 
         feature_df = client.extract_historical_features(
             output_feature_list=[
-                UserInfoTransformedFeatures,
+                DataFrame[
+                    UserInfoTransformedFeatures.age_power_four,
+                    UserInfoTransformedFeatures.is_name_common,
+                    UserInfoTransformedFeatures.country_geoid_square,
+                ],
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
             input_dataframe=pd.DataFrame(

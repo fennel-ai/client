@@ -4,13 +4,16 @@ from typing import cast, List, Union, Dict, Set, Tuple
 from fennel.featuresets import Extractor, Featureset, Feature
 from fennel.lib.ascii_visualizer import draw_graph
 from fennel.lib.graph_algorithms.utils import extractor_graph
+from fennel.lib.schema import DataFrame
 
 
-def _get_features(feature: Union[Feature, Featureset]) -> set:
+def _get_features(feature: Union[Feature, Featureset, DataFrame]) -> set:
     if isinstance(feature, Feature):
         return {feature.fqn()}
     elif isinstance(feature, Featureset):
         return {f.fqn() for f in feature.features}
+    elif type(feature) is tuple:
+        return {f.fqn() for f in feature}
     else:
         raise ValueError(
             f"Unknown type for feature/featureset {feature} of"
@@ -74,7 +77,11 @@ def get_vertices_and_eges(
             caps_only = "".join([c for c in featureset if c.isupper()])
             return f"F({caps_only}.{f.name})"
         elif isinstance(f, Featureset):
-            return f"FS({f._name})"
+            raise ValueError(
+                "Featureset is not supported as an input to an extractor"
+            )
+        elif type(f) is tuple:
+            return "DF(" + ",".join([get_feature_vertex(f) for f in f]) + ")"
         elif isinstance(f, str):
             featureset = f.split(".")[0]
             caps_only = "".join([c for c in featureset if c.isupper()])
@@ -100,8 +107,8 @@ def get_vertices_and_eges(
 
 
 def get_extractor_order(
-    input_features: List[Union[Feature, Featureset]],
-    output_features: List[Union[Feature, Featureset]],
+    input_features: List[Union[Feature, DataFrame, Featureset]],
+    output_features: List[Union[Feature, DataFrame, Featureset]],
     extractors: List[Extractor],
 ) -> List[Extractor]:
     """
@@ -147,6 +154,11 @@ def get_extractor_order(
                         next_to_find.add(inp.fqn())
                 elif isinstance(inp, Featureset):
                     for f in inp.features:
+                        f = cast(Feature, f)
+                        if f.fqn() not in resolved_features:
+                            next_to_find.add(f.fqn())
+                elif isinstance(inp, tuple):
+                    for f in inp:
                         f = cast(Feature, f)
                         if f.fqn() not in resolved_features:
                             next_to_find.add(f.fqn())

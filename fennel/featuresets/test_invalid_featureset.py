@@ -30,6 +30,28 @@ class User:
     age: float = feature(id=2)
 
 
+def test_featureset_as_input(grpc_stub):
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class UserInfoInvalid:
+            userid: int = feature(id=1)
+            home_geoid: int = feature(id=2)
+
+            @extractor
+            @depends_on(UserInfoDataset)
+            def get_user_info1(
+                cls, ts: Series[datetime], user_features: DataFrame[User]
+            ) -> DataFrame[userid, home_geoid]:
+                pass
+
+    assert (
+        str(e.value)
+        == "Parameter user_features is not a feature or a DataFrame "
+        "of features but a <class 'fennel.featuresets.featureset.Featureset'>. Please note that Featuresets are mutable and hence not supported."
+    )
+
+
 def test_complex_featureset(grpc_stub):
     with pytest.raises(TypeError) as e:
 

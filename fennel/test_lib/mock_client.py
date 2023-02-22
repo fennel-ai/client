@@ -339,13 +339,18 @@ class MockClient(Client):
                         f"calculated by any extractor."
                     )
             elif isinstance(input, Featureset):
+                raise Exception(
+                    "Featureset is not supported as input to an "
+                    "extractor since they are mutable."
+                )
+            elif type(input) == tuple:
                 series = []
-                for feature in input.features:
+                for feature in input:
                     if feature.fqn_ in intermediate_data:
                         series.append(intermediate_data[feature.fqn_])
                     else:
                         raise Exception(
-                            f"Feature {feature} couldn't be "
+                            f"Feature {feature.fqn_} couldn't be "
                             f"calculated by any extractor."
                         )
                 args.append(pd.concat(series, axis=1))
@@ -416,6 +421,9 @@ class MockClient(Client):
                 output_df[feature.fqn_] = intermediate_data[feature.fqn_]
             elif isinstance(feature, Featureset):
                 for f in feature.features:
+                    output_df[f.fqn_] = intermediate_data[f.fqn_]
+            elif type(feature) == tuple:
+                for f in feature:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
             else:
                 raise Exception(

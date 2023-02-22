@@ -119,6 +119,8 @@ class IntegrationClient:
                 output_feature_names.extend(
                     [f.fqn_ for f in output_feature.features]
                 )
+            elif type(output_feature) is tuple:
+                output_feature_names.extend([f.fqn_ for f in output_feature])
 
         input_df_json = input_dataframe.to_json(orient="records")
         output_record_batch = self._client.extract_features(

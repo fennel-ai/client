@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.7.1] - 2023-02-22
+- Disallow featuresets as inputs to extractors
+
 ## [0.7.0] - 2023-02-02
 - Introduce great expectations
 

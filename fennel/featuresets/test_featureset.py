@@ -3,7 +3,6 @@ from typing import Optional
 
 from google.protobuf.json_format import ParseDict  # type: ignore
 
-import fennel.gen.featureset_pb2 as proto
 import fennel.gen.services_pb2 as service_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
@@ -49,7 +48,6 @@ def test_simple_featureset(grpc_stub):
         def get_user_info(
             cls,
             ts: Series[datetime],
-            user: DataFrame[User],
             user_id: Series[User.id],
             user_age: Series[User.age],
         ):
@@ -63,7 +61,6 @@ def test_simple_featureset(grpc_stub):
     featureset_request = clean_fs_func_src_code(
         sync_request.featureset_requests[0]
     )
-
     f = {
         "name": "UserInfo",
         "features": [
@@ -105,7 +102,6 @@ def test_simple_featureset(grpc_stub):
                 "name": "UserInfo.get_user_info",
                 "datasets": ["UserInfoDataset"],
                 "inputs": [
-                    {"featureSet": {"name": "User"}},
                     {"feature": {"featureSet": {"name": "User"}, "name": "id"}},
                     {
                         "feature": {

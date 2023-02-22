@@ -166,12 +166,14 @@ def extractor(func: Optional[Callable] = None, version: int = 0):
                         param.annotation
                     )
                 )
-            if not isinstance(param.annotation, Featureset) and not isinstance(
-                param.annotation, Feature
+            if (
+                not isinstance(param.annotation, Feature)
+                and not type(param.annotation) is tuple
             ):
                 raise TypeError(
-                    f"Parameter {name} is not a Featureset or a "
-                    f"feature but a {type(param.annotation)}"
+                    f"Parameter {name} is not a feature or a DataFrame of "
+                    f"features but a {type(param.annotation)}. Please note "
+                    f"that Featuresets are mutable and hence not supported."
                 )
             params.append(param.annotation)
         return_annotation = extractor_func.__annotations__.get("return", None)
@@ -476,7 +478,7 @@ class Extractor:
     def __init__(
         self,
         name: str,
-        inputs: List[Union[Feature, Featureset]],
+        inputs: List,
         func: Callable,
         outputs: List[int],
         version: int,
