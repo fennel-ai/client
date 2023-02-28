@@ -144,7 +144,9 @@ class UserInfoTransformedFeatures:
     @extractor
     @extractor
     def get_user_transformed_features(
-        cls, ts: Series[datetime], user_features: DataFrame[UserInfo]
+        cls,
+        ts: Series[datetime],
+        user_features: DataFrame[UserInfo.age, UserInfo.is_name_common],
     ):
         age = user_features[repr(UserInfo.age)]
         is_name_common = user_features[repr(UserInfo.is_name_common)]
@@ -160,16 +162,19 @@ class UserInfoTransformedFeatures:
 def test_age_feature_extraction_complex():
     extractors = get_extractor_order(
         [UserInfo.userid],
-        [UserInfoTransformedFeatures],
+        [
+            DataFrame[
+                UserInfoTransformedFeatures.age_power_four,
+                UserInfoTransformedFeatures.is_name_common,
+            ]
+        ],
         UserInfo.extractors + UserInfoTransformedFeatures.extractors,
     )
     extractors_to_run = [e.name for e in extractors]
-    assert len(extractors_to_run) == 4
-    assert set(extractors_to_run[0:2]) == set(
-        {"UserInfo.get_user_age_and_name", "UserInfo.get_country_geoid"}
-    )
-    assert extractors_to_run[2] == "UserInfo.get_age_and_name_features"
+    assert len(extractors_to_run) == 3
+    assert extractors_to_run[0] == "UserInfo.get_user_age_and_name"
+    assert extractors_to_run[1] == "UserInfo.get_age_and_name_features"
     assert (
-        extractors_to_run[3]
+        extractors_to_run[2]
         == "UserInfoTransformedFeatures.get_user_transformed_features"
     )

@@ -92,7 +92,7 @@ class Input(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     @typing_extensions.final
-    class FeatureSet(google.protobuf.message.Message):
+    class InpFeatureSet(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
         NAME_FIELD_NUMBER: builtins.int
@@ -105,38 +105,56 @@ class Input(google.protobuf.message.Message):
         def ClearField(self, field_name: typing_extensions.Literal["name", b"name"]) -> None: ...
 
     @typing_extensions.final
-    class Feature(google.protobuf.message.Message):
+    class InpFeature(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
         FEATURE_SET_FIELD_NUMBER: builtins.int
         NAME_FIELD_NUMBER: builtins.int
         @property
-        def feature_set(self) -> global___Input.FeatureSet: ...
+        def feature_set(self) -> global___Input.InpFeatureSet: ...
         name: builtins.str
         def __init__(
             self,
             *,
-            feature_set: global___Input.FeatureSet | None = ...,
+            feature_set: global___Input.InpFeatureSet | None = ...,
             name: builtins.str = ...,
         ) -> None: ...
         def HasField(self, field_name: typing_extensions.Literal["feature_set", b"feature_set"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing_extensions.Literal["feature_set", b"feature_set", "name", b"name"]) -> None: ...
 
+    @typing_extensions.final
+    class DataFrame(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        FEATURES_FIELD_NUMBER: builtins.int
+        @property
+        def features(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Input.InpFeature]: ...
+        def __init__(
+            self,
+            *,
+            features: collections.abc.Iterable[global___Input.InpFeature] | None = ...,
+        ) -> None: ...
+        def ClearField(self, field_name: typing_extensions.Literal["features", b"features"]) -> None: ...
+
     FEATURE_SET_FIELD_NUMBER: builtins.int
     FEATURE_FIELD_NUMBER: builtins.int
+    DATAFRAME_FIELD_NUMBER: builtins.int
     @property
-    def feature_set(self) -> global___Input.FeatureSet: ...
+    def feature_set(self) -> global___Input.InpFeatureSet: ...
     @property
-    def feature(self) -> global___Input.Feature: ...
+    def feature(self) -> global___Input.InpFeature: ...
+    @property
+    def dataframe(self) -> global___Input.DataFrame: ...
     def __init__(
         self,
         *,
-        feature_set: global___Input.FeatureSet | None = ...,
-        feature: global___Input.Feature | None = ...,
+        feature_set: global___Input.InpFeatureSet | None = ...,
+        feature: global___Input.InpFeature | None = ...,
+        dataframe: global___Input.DataFrame | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["feature", b"feature", "feature_set", b"feature_set", "input", b"input"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["feature", b"feature", "feature_set", b"feature_set", "input", b"input"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["input", b"input"]) -> typing_extensions.Literal["feature_set", "feature"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dataframe", b"dataframe", "feature", b"feature", "feature_set", b"feature_set", "input", b"input"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataframe", b"dataframe", "feature", b"feature", "feature_set", b"feature_set", "input", b"input"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["input", b"input"]) -> typing_extensions.Literal["feature_set", "feature", "dataframe"] | None: ...
 
 global___Input = Input
 

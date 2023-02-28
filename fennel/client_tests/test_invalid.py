@@ -87,9 +87,10 @@ class TestInvalidSync(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                str(e.value)
-                == "Failed to sync: error: extractor DomainFeatures.get_domain_feature "
-                "of featureset DomainFeatures depends on unknown feature domain"
+                str(e.value) == "Failed to sync: error: extractor "
+                "'DomainFeatures.get_domain_feature' has an input "
+                "featureset 'Query' that does not belong to any "
+                "featureset"
             )
         else:
             assert (
@@ -190,9 +191,9 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                "Failed to sync: error: extractor DomainFeatures2.get_domain_feature of featureset "
-                "DomainFeatures2 depends on unknown feature domain"
-                == str(e.value)
+                "Failed to sync: error: extractor "
+                "'DomainFeatures2.get_domain_feature' has an input featureset "
+                "'Query' that does not belong to any featureset" == str(e.value)
             )
         else:
             assert (
@@ -220,8 +221,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                "Failed to sync: error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
-                "depends on unknown feature domain" == str(e.value)
+                "Failed to sync: error: extractor 'DomainFeatures2.get_domain_feature' has an input featureset 'Query' that does not belong to any featureset"
+                == str(e.value)
             )
         else:
             assert (
@@ -252,8 +253,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                "Failed to sync: error: extractor DomainFeatures2.get_domain_feature of featureset DomainFeatures2 "
-                "depends on unknown feature domain" == str(e.value)
+                "Failed to sync: error: extractor 'DomainFeatures2.get_domain_feature' has an input featureset 'Query' that does not belong to any featureset"
+                == str(e.value)
             )
         else:
             assert (
