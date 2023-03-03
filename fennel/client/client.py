@@ -24,11 +24,14 @@ _DEFAULT_TIMEOUT = 30
 
 
 class Client:
-    def __init__(self, url: str):
+    def __init__(self, url: str, http_session: Optional[Any] = None):
         self.url = url
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
-        self.http = self._get_session()
+        if http_session:
+            self.http = http_session
+        else:
+            self.http = self._get_session()
 
     def add(self, obj: Union[Dataset, Featureset]):
         """
