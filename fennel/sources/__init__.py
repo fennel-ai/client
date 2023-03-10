@@ -4,9 +4,12 @@ from fennel.sources.sources import (
     Postgres,
     S3,
     Snowflake,
-    SQLSource,
     source,
     sink,
     SOURCE_FIELD,
     SINK_FIELD,
+    DataConnector,
+    DataSource,
+    S3Connector,
+    TableConnector,
 )

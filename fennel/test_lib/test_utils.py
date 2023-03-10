@@ -1,11 +1,10 @@
 from typing import Any
 
 import jsondiff  # type: ignore
+from fennel.gen.pycode_pb2 import PyCode
+from fennel.gen.featureset_pb2 import Extractor
+from fennel.gen.dataset_pb2 import Operator, Filter, Transform
 from google.protobuf.json_format import MessageToDict  # type: ignore
-
-import fennel.gen.services_pb2 as service_proto
-import fennel.gen.dataset_pb2 as ds_proto
-import fennel.gen.featureset_pb2 as fs_proto
 
 
 def error_message(actual: Any, expected: Any) -> str:
@@ -17,67 +16,46 @@ def error_message(actual: Any, expected: Any) -> str:
     return jsondiff.diff(expected_dict, actual_dict, syntax="symmetric")
 
 
-def clean_fs_func_src_code(
-    featureset_req: service_proto.CreateFeaturesetRequest,
-):
-    extractors = []
-    for extractor in featureset_req.extractors:
-        extractor.func_source_code = ""
-        extractor.func = b""
-        extractors.append(extractor)
-    return service_proto.CreateFeaturesetRequest(
-        name=featureset_req.name,
-        features=featureset_req.features,
-        extractors=extractors,
-        metadata=featureset_req.metadata,
+def erase_extractor_pycode(extractor: Extractor) -> Extractor:
+    new_extractor = Extractor(
+        name=extractor.name,
+        version=extractor.version,
+        func=b"",
+        func_source_code="",
+        datasets=extractor.datasets,
+        inputs=extractor.inputs,
+        features=extractor.features,
+        metadata=extractor.metadata,
+        feature_set_name=extractor.feature_set_name,
+        pycode=PyCode(pickled=b"", source_code=""),
     )
+    return new_extractor
 
 
-def clean_ds_func_src_code(
-    dataset_req: service_proto.CreateDatasetRequest,
-) -> service_proto.CreateDatasetRequest:
-    def cleanup_node(node):
-        if node.HasField("operator") and node.operator.HasField("transform"):
-            return ds_proto.Node(
-                operator=ds_proto.Operator(
-                    transform=ds_proto.Transform(
-                        operand_node_id=node.operator.transform.operand_node_id,
-                        schema=node.operator.transform.schema,
-                    ),
-                ),
-                id=node.id,
-            )
-        if node.HasField("operator") and node.operator.HasField("filter"):
-            return ds_proto.Node(
-                operator=ds_proto.Operator(
-                    filter=ds_proto.Filter(
-                        operand_node_id=node.operator.transform.operand_node_id,
-                    ),
-                ),
-                id=node.id,
-            )
-        return node
-
-    dataset_req.on_demand.function_source_code = ""
-    dataset_req.on_demand.function = b""
-    pipelines = []
-    for j in range(len(dataset_req.pipelines)):
-        pipelines.append(
-            ds_proto.Pipeline(
-                root=dataset_req.pipelines[j].root,
-                nodes=[cleanup_node(n) for n in dataset_req.pipelines[j].nodes],
-                signature=dataset_req.pipelines[j].signature,
-                inputs=dataset_req.pipelines[j].inputs,
-                name=dataset_req.pipelines[j].name,
-            )
+def erase_operator_pycode(operator: Operator) -> Operator:
+    if operator.HasField("filter"):
+        return Operator(
+            id=operator.id,
+            name=operator.name,
+            pipeline_name=operator.pipeline_name,
+            dataset_name=operator.dataset_name,
+            is_root=operator.is_root,
+            filter=Filter(
+                operand_id=operator.filter.operand_id,
+                pycode=PyCode(pickled=b"", source_code=""),
+            ),
         )
-    return service_proto.CreateDatasetRequest(
-        name=dataset_req.name,
-        fields=dataset_req.fields,
-        max_staleness=dataset_req.max_staleness,
-        history=dataset_req.history,
-        mode=dataset_req.mode,
-        pipelines=pipelines,
-        on_demand=dataset_req.on_demand,
-        metadata=dataset_req.metadata,
-    )
+    if operator.HasField("transform"):
+        return Operator(
+            id=operator.id,
+            name=operator.name,
+            pipeline_name=operator.pipeline_name,
+            dataset_name=operator.dataset_name,
+            is_root=operator.is_root,
+            transform=Transform(
+                operand_id=operator.transform.operand_id,
+                schema=operator.transform.schema,
+                pycode=PyCode(pickled=b"", source_code=""),
+            ),
+        )
+    raise ValueError(f"Operator {operator} has no pycode field")

@@ -99,9 +99,9 @@ def test_dataset_lookup(grpc_stub):
     view.add(UserInfoDataset)
     view.add(UserAgeFeatures)
     sync_request = view._get_sync_request_proto()
-    assert len(sync_request.featureset_requests) == 1
-    user_sq_extractor = sync_request.featureset_requests[0].extractors[1]
-    assert user_sq_extractor.name == "UserAgeFeatures.user_age_sq"
+    assert len(sync_request.feature_sets) == 1
+    user_sq_extractor = sync_request.extractors[1]
+    assert user_sq_extractor.name == "user_age_sq"
 
     # Call to the extractor function
     user_sq_extractor_func = pickle.loads(user_sq_extractor.func)
@@ -113,8 +113,8 @@ def test_dataset_lookup(grpc_stub):
     assert df["UserAgeFeatures.age_sq"].tolist() == [576, 529, 2025]
     assert df["UserAgeFeatures.gender"].tolist() == ["female", "female", "male"]
 
-    user_age_cube = sync_request.featureset_requests[0].extractors[0]
-    assert user_age_cube.name == "UserAgeFeatures.user_age_cube"
+    user_age_cube = sync_request.extractors[0]
+    assert user_age_cube.name == "user_age_cube"
 
     # Call to the extractor function
     user_age_cube_func = pickle.loads(user_age_cube.func)

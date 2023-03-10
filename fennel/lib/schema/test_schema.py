@@ -16,49 +16,45 @@ from fennel.lib.schema.schema import (
 
 
 def test_get_data_type():
-    assert get_datatype(int) == proto.DataType(scalar_type=proto.ScalarType.INT)
+    assert get_datatype(int) == proto.DataType(int_type=proto.IntType())
     assert get_datatype(Optional[int]) == proto.DataType(
-        scalar_type=proto.ScalarType.INT, is_nullable=True
+        optional_type=proto.OptionalType(
+            of=proto.DataType(int_type=proto.IntType())
+        )
     )
     x: float = 1.0
     assert get_datatype(type(x)) == proto.DataType(
-        scalar_type=proto.ScalarType.FLOAT
+        double_type=proto.DoubleType()
     )
     x: bool = True
-    assert get_datatype(type(x)) == proto.DataType(
-        scalar_type=proto.ScalarType.BOOLEAN
-    )
+    assert get_datatype(type(x)) == proto.DataType(bool_type=proto.BoolType())
     x: str = "hello"
     assert get_datatype(type(x)) == proto.DataType(
-        scalar_type=proto.ScalarType.STRING
+        string_type=proto.StringType()
     )
     x: datetime = datetime.now()
 
     assert get_datatype(type(x)) == proto.DataType(
-        scalar_type=proto.ScalarType.TIMESTAMP
+        timestamp_type=proto.TimestampType()
     )
     assert get_datatype(List[int]) == proto.DataType(
-        array_type=proto.ArrayType(
-            of=proto.DataType(scalar_type=proto.ScalarType.INT)
-        )
+        array_type=proto.ArrayType(of=proto.DataType(int_type=proto.IntType()))
     )
     assert get_datatype(Dict[str, float]) == proto.DataType(
         map_type=proto.MapType(
-            key=proto.DataType(scalar_type=proto.ScalarType.STRING),
-            value=proto.DataType(scalar_type=proto.ScalarType.FLOAT),
+            key=proto.DataType(string_type=proto.StringType()),
+            value=proto.DataType(double_type=proto.DoubleType()),
         )
     )
     assert get_datatype(Dict[str, Dict[str, List[float]]]) == proto.DataType(
         map_type=proto.MapType(
-            key=proto.DataType(scalar_type=proto.ScalarType.STRING),
+            key=proto.DataType(string_type=proto.StringType()),
             value=proto.DataType(
                 map_type=proto.MapType(
-                    key=proto.DataType(scalar_type=proto.ScalarType.STRING),
+                    key=proto.DataType(string_type=proto.StringType()),
                     value=proto.DataType(
                         array_type=proto.ArrayType(
-                            of=proto.DataType(
-                                scalar_type=proto.ScalarType.FLOAT
-                            )
+                            of=proto.DataType(double_type=proto.DoubleType())
                         )
                     ),
                 )
@@ -69,8 +65,8 @@ def test_get_data_type():
         array_type=proto.ArrayType(
             of=proto.DataType(
                 map_type=proto.MapType(
-                    key=proto.DataType(scalar_type=proto.ScalarType.STRING),
-                    value=proto.DataType(scalar_type=proto.ScalarType.FLOAT),
+                    key=proto.DataType(string_type=proto.StringType()),
+                    value=proto.DataType(double_type=proto.DoubleType()),
                 )
             )
         )
@@ -79,12 +75,10 @@ def test_get_data_type():
         array_type=proto.ArrayType(
             of=proto.DataType(
                 map_type=proto.MapType(
-                    key=proto.DataType(scalar_type=proto.ScalarType.STRING),
+                    key=proto.DataType(string_type=proto.StringType()),
                     value=proto.DataType(
                         array_type=proto.ArrayType(
-                            of=proto.DataType(
-                                scalar_type=proto.ScalarType.FLOAT
-                            )
+                            of=proto.DataType(double_type=proto.DoubleType())
                         )
                     ),
                 )
@@ -94,52 +88,54 @@ def test_get_data_type():
 
 
 def test_additional_dtypes():
-    assert get_datatype(int) == proto.DataType(scalar_type=proto.ScalarType.INT)
+    assert get_datatype(int) == proto.DataType(int_type=proto.IntType())
     assert get_datatype(between(int, 1, 5)) == proto.DataType(
         between_type=proto.Between(
-            scalar_type=proto.ScalarType.INT,
-            min=proto.Param(int_val=1),
-            max=proto.Param(int_val=5),
+            dtype=proto.DataType(int_type=proto.IntType()),
+            min=proto.Value(int=1),
+            max=proto.Value(int=5),
         )
     )
     assert get_datatype(between(int, 1, 5, False, True)) == proto.DataType(
         between_type=proto.Between(
-            scalar_type=proto.ScalarType.INT,
-            min=proto.Param(int_val=1),
-            max=proto.Param(int_val=5),
+            dtype=proto.DataType(int_type=proto.IntType()),
+            min=proto.Value(int=1),
+            max=proto.Value(int=5),
             strict_min=False,
             strict_max=True,
         )
     )
     assert get_datatype(between(float, 1, 5, True, False)) == proto.DataType(
         between_type=proto.Between(
-            scalar_type=proto.ScalarType.FLOAT,
-            min=proto.Param(float_val=1),
-            max=proto.Param(float_val=5),
+            dtype=proto.DataType(double_type=proto.DoubleType()),
+            min=proto.Value(float=1),
+            max=proto.Value(float=5),
             strict_min=True,
             strict_max=False,
         )
     )
     assert get_datatype(oneof(str, ["male", "female"])) == proto.DataType(
         one_of_type=proto.OneOf(
-            scalar_type=proto.ScalarType.STRING,
+            of=proto.DataType(string_type=proto.StringType()),
             options=[
-                proto.Param(str_val="male"),
-                proto.Param(str_val="female"),
+                proto.Value(string="male"),
+                proto.Value(string="female"),
             ],
         )
     )
     assert get_datatype(oneof(int, [1, 2, 3])) == proto.DataType(
         one_of_type=proto.OneOf(
-            scalar_type=proto.ScalarType.INT,
+            of=proto.DataType(int_type=proto.IntType()),
             options=[
-                proto.Param(int_val=1),
-                proto.Param(int_val=2),
-                proto.Param(int_val=3),
+                proto.Value(int=1),
+                proto.Value(int=2),
+                proto.Value(int=3),
             ],
         )
     )
-    assert get_datatype(regex("[a-z]+")) == proto.DataType(regex_type="[a-z]+")
+    assert get_datatype(regex("[a-z]+")) == proto.DataType(
+        regex_type=proto.RegexType(pattern="[a-z]+")
+    )
 
 
 def test_additional_dtypes_invalid():
@@ -180,22 +176,47 @@ def test_valid_schema():
     ]
     columns = ["user_id", "name", "age", "country", "Truth", "timestamp"]
     df = pd.DataFrame(data, columns=columns)
-    schema = {
-        "user_id": proto.DataType(scalar_type=proto.ScalarType.INT),
-        "name": proto.DataType(scalar_type=proto.ScalarType.STRING),
-        "age": proto.DataType(
-            scalar_type=proto.ScalarType.INT, is_nullable=True
+    dsschema = proto.DSSchema(
+        keys=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="user_id",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                )
+            ]
         ),
-        "country": proto.DataType(scalar_type=proto.ScalarType.STRING),
-        "Truth": proto.DataType(scalar_type=proto.ScalarType.BOOLEAN),
-        "timestamp": proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP),
-    }
-    exceptions = data_schema_check(schema, df)
+        values=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="name",
+                    dtype=proto.DataType(string_type=proto.StringType()),
+                ),
+                proto.Field(
+                    name="age",
+                    dtype=proto.DataType(
+                        optional_type=proto.OptionalType(
+                            of=proto.DataType(int_type=proto.IntType())
+                        )
+                    ),
+                ),
+                proto.Field(
+                    name="country",
+                    dtype=proto.DataType(string_type=proto.StringType()),
+                ),
+                proto.Field(
+                    name="Truth",
+                    dtype=proto.DataType(bool_type=proto.BoolType()),
+                ),
+            ]
+        ),
+        timestamp="timestamp",
+    )
+    exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 0
 
     data.append([18234, "Monica", None, "Chile", True, yesterday])
     df = pd.DataFrame(data, columns=columns)
-    exceptions = data_schema_check(schema, df)
+    exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 0
 
     data = [
@@ -209,32 +230,46 @@ def test_valid_schema():
         ],
         [18934, [1, 2.2, 0.213, 0.343], [0.87, 2, 3], 12, now],
     ]
-    schema = {
-        "doc_id": proto.DataType(scalar_type=proto.ScalarType.INT),
-        "bert_embedding": proto.DataType(
-            embedding_type=proto.EmbeddingType(embedding_size=4)
+    columns = [
+        "doc_id",
+        "bert_embedding",
+        "fast_text_embedding",
+        "num_words",
+        "timestamp",
+    ]
+    dsschema = proto.DSSchema(
+        keys=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="doc_id",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                )
+            ]
         ),
-        "fast_text_embedding": proto.DataType(
-            embedding_type=proto.EmbeddingType(embedding_size=3)
+        values=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="bert_embedding",
+                    dtype=proto.DataType(
+                        embedding_type=proto.EmbeddingType(embedding_size=4)
+                    ),
+                ),
+                proto.Field(
+                    name="fast_text_embedding",
+                    dtype=proto.DataType(
+                        embedding_type=proto.EmbeddingType(embedding_size=3)
+                    ),
+                ),
+                proto.Field(
+                    name="num_words",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                ),
+            ]
         ),
-        "num_words": proto.DataType(scalar_type=proto.ScalarType.INT),
-        "timestamp": proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP),
-    }
-    df = pd.DataFrame(data, columns=schema.keys())
-    exceptions = data_schema_check(schema, df)
-    assert len(exceptions) == 0
-
-    schema["bert_embedding"] = proto.DataType(
-        array_type=proto.ArrayType(
-            of=proto.DataType(scalar_type=proto.ScalarType.FLOAT)
-        )
+        timestamp="timestamp",
     )
-    schema["fast_text_embedding"] = proto.DataType(
-        array_type=proto.ArrayType(
-            of=proto.DataType(scalar_type=proto.ScalarType.FLOAT)
-        )
-    )
-    exceptions = data_schema_check(schema, df)
+    df = pd.DataFrame(data, columns=columns)
+    exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 0
 
     data = [
@@ -242,16 +277,23 @@ def test_valid_schema():
             {"a": 1, "b": 2, "c": 3},
         ]
     ]
-    schema = {
-        "X": proto.DataType(
-            map_type=proto.MapType(
-                key=proto.DataType(scalar_type=proto.ScalarType.STRING),
-                value=proto.DataType(scalar_type=proto.ScalarType.INT),
-            )
+    dsschema = proto.DSSchema(
+        values=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="X",
+                    dtype=proto.DataType(
+                        map_type=proto.MapType(
+                            key=proto.DataType(string_type=proto.StringType()),
+                            value=proto.DataType(int_type=proto.IntType()),
+                        )
+                    ),
+                )
+            ]
         )
-    }
-    df = pd.DataFrame(data, columns=schema.keys())
-    exceptions = data_schema_check(schema, df)
+    )
+    df = pd.DataFrame(data, columns=["X"])
+    exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 0
 
 
@@ -265,16 +307,34 @@ def test_invalid_schema():
     ]
     columns = ["user_id", "name", "age", "country", "timestamp"]
     df = pd.DataFrame(data, columns=columns)
-    schema = {
-        "user_id": proto.DataType(scalar_type=proto.ScalarType.INT),
-        "name": proto.DataType(scalar_type=proto.ScalarType.STRING),
-        "age": proto.DataType(
-            scalar_type=proto.ScalarType.INT, is_nullable=True
+    dsschema = proto.DSSchema(
+        keys=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="user_id",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                )
+            ]
         ),
-        "country": proto.DataType(scalar_type=proto.ScalarType.STRING),
-        "timestamp": proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP),
-    }
-    exceptions = data_schema_check(schema, df)
+        values=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="name",
+                    dtype=proto.DataType(string_type=proto.StringType()),
+                ),
+                proto.Field(
+                    name="age",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                ),
+                proto.Field(
+                    name="country",
+                    dtype=proto.DataType(string_type=proto.StringType()),
+                ),
+            ]
+        ),
+        timestamp="timestamp",
+    )
+    exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 1
 
     data = [
@@ -288,45 +348,104 @@ def test_invalid_schema():
         ],
         [18934, [1, 2.2, 0.213, 0.343], [0.87, 2, 3], 12, now],
     ]
-    schema = {
-        "doc_id": proto.DataType(scalar_type=proto.ScalarType.INT),
-        "bert_embedding": proto.DataType(
-            embedding_type=proto.EmbeddingType(embedding_size=4)
+    columns = [
+        "doc_id",
+        "bert_embedding",
+        "fast_text_embedding",
+        "num_words",
+        "timestamp",
+    ]
+    dsschema = proto.DSSchema(
+        keys=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="doc_id",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                )
+            ]
         ),
-        "fast_text_embedding": proto.DataType(
-            embedding_type=proto.EmbeddingType(embedding_size=3)
+        values=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="bert_embedding",
+                    dtype=proto.DataType(
+                        embedding_type=proto.EmbeddingType(embedding_size=4)
+                    ),
+                ),
+                proto.Field(
+                    name="fast_text_embedding",
+                    dtype=proto.DataType(
+                        embedding_type=proto.EmbeddingType(embedding_size=3)
+                    ),
+                ),
+                proto.Field(
+                    name="num_words",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                ),
+            ]
         ),
-        "num_words": proto.DataType(scalar_type=proto.ScalarType.INT),
-        "timestamp": proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP),
-    }
-    df = pd.DataFrame(data, columns=schema.keys())
-    exceptions = data_schema_check(schema, df)
+        timestamp="timestamp",
+    )
+    df = pd.DataFrame(data, columns=columns)
+    exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 1
 
-    schema["bert_embedding"] = proto.DataType(
-        array_type=proto.ArrayType(
-            of=proto.DataType(scalar_type=proto.ScalarType.FLOAT)
-        )
+    dsschema = proto.DSSchema(
+        keys=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="doc_id",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                )
+            ]
+        ),
+        values=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="bert_embedding",
+                    dtype=proto.DataType(
+                        array_type=proto.ArrayType(
+                            of=proto.DataType(double_type=proto.DoubleType())
+                        )
+                    ),
+                ),
+                proto.Field(
+                    name="fast_text_embedding",
+                    dtype=proto.DataType(
+                        array_type=proto.ArrayType(
+                            of=proto.DataType(double_type=proto.DoubleType())
+                        )
+                    ),
+                ),
+                proto.Field(
+                    name="num_words",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                ),
+            ]
+        ),
+        timestamp="timestamp",
     )
-    schema["fast_text_embedding"] = proto.DataType(
-        array_type=proto.ArrayType(
-            of=proto.DataType(scalar_type=proto.ScalarType.FLOAT)
-        )
-    )
-    exceptions = data_schema_check(schema, df)
+    exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 0
 
     data = [[[123]]]
-    schema = {
-        "X": proto.DataType(
-            map_type=proto.MapType(
-                key=proto.DataType(scalar_type=proto.ScalarType.STRING),
-                value=proto.DataType(scalar_type=proto.ScalarType.INT),
-            )
+    dsschema = proto.DSSchema(
+        values=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="X",
+                    dtype=proto.DataType(
+                        map_type=proto.MapType(
+                            key=proto.DataType(string_type=proto.StringType()),
+                            value=proto.DataType(int_type=proto.IntType()),
+                        )
+                    ),
+                )
+            ]
         )
-    }
-    df = pd.DataFrame(data, columns=schema.keys())
-    exceptions = data_schema_check(schema, df)
+    )
+    df = pd.DataFrame(data, columns=["X"])
+    exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 1
 
 
@@ -337,36 +456,63 @@ def test_invalid_schema_additional_types():
     ]
     columns = ["user_id", "name", "age", "gender", "grade", "timestamp"]
     df = pd.DataFrame(data, columns=columns)
-    schema = {
-        "user_id": proto.DataType(scalar_type=proto.ScalarType.INT),
-        "name": proto.DataType(regex_type="[A-Za-z]+[0-9]"),
-        "age": proto.DataType(
-            between_type=proto.Between(
-                scalar_type=proto.ScalarType.INT,
-                min=proto.Param(int_val=1),
-                max=proto.Param(int_val=100),
-            )
+    dsschema = proto.DSSchema(
+        keys=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="user_id",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                )
+            ]
         ),
-        "gender": proto.DataType(
-            one_of_type=proto.OneOf(
-                scalar_type=proto.ScalarType.STRING,
-                options=[
-                    proto.Param(str_val="male"),
-                    proto.Param(str_val="female"),
-                ],
-            )
+        values=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="name",
+                    dtype=proto.DataType(
+                        regex_type=proto.RegexType(
+                            pattern="[A-Za-z]+[0-9]",
+                        )
+                    ),
+                ),
+                proto.Field(
+                    name="age",
+                    dtype=proto.DataType(
+                        between_type=proto.Between(
+                            dtype=proto.DataType(int_type=proto.IntType()),
+                            min=proto.Value(int=1),
+                            max=proto.Value(int=100),
+                        )
+                    ),
+                ),
+                proto.Field(
+                    name="gender",
+                    dtype=proto.DataType(
+                        one_of_type=proto.OneOf(
+                            of=proto.DataType(string_type=proto.StringType()),
+                            options=[
+                                proto.Value(string="male"),
+                                proto.Value(string="female"),
+                            ],
+                        )
+                    ),
+                ),
+                proto.Field(
+                    name="gender",
+                    dtype=proto.DataType(
+                        one_of_type=proto.OneOf(
+                            of=proto.DataType(int_type=proto.IntType()),
+                            options=[
+                                proto.Value(int=1),
+                                proto.Value(int=2),
+                                proto.Value(int=3),
+                            ],
+                        )
+                    ),
+                ),
+            ]
         ),
-        "grade": proto.DataType(
-            one_of_type=proto.OneOf(
-                scalar_type=proto.ScalarType.INT,
-                options=[
-                    proto.Param(int_val=1),
-                    proto.Param(int_val=2),
-                    proto.Param(int_val=3),
-                ],
-            )
-        ),
-        "timestamp": proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP),
-    }
-    exceptions = data_schema_check(schema, df)
+        timestamp="timestamp",
+    )
+    exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 3

@@ -87,10 +87,8 @@ class TestInvalidSync(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                str(e.value) == "Failed to sync: error: extractor "
-                "'DomainFeatures.get_domain_feature' has an input "
-                "featureset 'Query' that does not belong to any "
-                "featureset"
+                str(e.value) == "Failed to sync: error: can not add edge: "
+                'from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
             )
         else:
             assert (
@@ -191,9 +189,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                "Failed to sync: error: extractor "
-                "'DomainFeatures2.get_domain_feature' has an input featureset "
-                "'Query' that does not belong to any featureset" == str(e.value)
+                'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
+                in str(e.value)
             )
         else:
             assert (
@@ -221,7 +218,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                "Failed to sync: error: extractor 'DomainFeatures2.get_domain_feature' has an input featureset 'Query' that does not belong to any featureset"
+                'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
                 == str(e.value)
             )
         else:
@@ -253,7 +250,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                "Failed to sync: error: extractor 'DomainFeatures2.get_domain_feature' has an input featureset 'Query' that does not belong to any featureset"
+                'Failed to sync: error: can not add edge: from vertex (Dataset, "MemberActivityDataset") not in graph'
                 == str(e.value)
             )
         else:

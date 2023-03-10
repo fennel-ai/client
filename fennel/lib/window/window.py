@@ -1,12 +1,11 @@
 from typing import List, Union
 
 from pydantic import BaseModel
+from datetime import timedelta
 
-import fennel.gen.dataset_pb2 as proto  # type: ignore
-from fennel.lib.duration import (
-    Duration,
-    duration_to_micros,
-)
+import fennel.gen.window_pb2 as window_proto
+import google.protobuf.duration_pb2 as duration_proto
+from fennel.lib.duration import Duration, duration_to_timedelta
 
 ItemType = Union[str, List[str]]
 
@@ -23,14 +22,22 @@ class Window(BaseModel):
     def __init__(self, start: Duration, end: Duration = "0s"):
         super().__init__(start=start, end=end)
 
-    def to_proto(self) -> proto.WindowSpec:
-        if self.start == "forever":
-            return proto.WindowSpec(forever_window=True)
-        return proto.WindowSpec(
-            window=proto.Window(
-                start=duration_to_micros(self.start),
-                end=duration_to_micros(self.end),
-            )
+    def is_forever(self):
+        return self.start == "forever"
+
+    # TODO(mohit, aditya): Consider using `end` as well once there is support for
+    # different types of windows
+    def sliding_window_duration(self) -> timedelta:
+        return duration_to_timedelta(self.start)
+
+    def to_proto(self) -> window_proto:
+        if self.is_forever():
+            return window_proto.Window(forever=window_proto.Forever())
+
+        duration = duration_proto.Duration()
+        duration.FromTimedelta(self.sliding_window_duration())
+        return window_proto.Window(
+            sliding=window_proto.Sliding(duration=duration)
         )
 
     def signature(self) -> str:

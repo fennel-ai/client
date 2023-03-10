@@ -49,8 +49,8 @@ def _topological_sort(
     stack: List[str] = []
     graph, feature_to_extractor_map = extractor_graph(extractors)
     for extractor in extractors:
-        if not visited[extractor.name]:
-            _topological_sort_util(extractor.name, visited, stack, graph)
+        if not visited[extractor.fqn()]:
+            _topological_sort_util(extractor.fqn(), visited, stack, graph)
 
     return stack, feature_to_extractor_map
 
@@ -66,12 +66,13 @@ def get_vertices_and_eges(
     """
 
     def get_extractor_vertex(extractor: Extractor) -> str:
-        featureset_name = extractor.name.split(".")[0]
-        function_name = extractor.name.split(".")[1]
+        featureset_name = extractor.fqn().split(".")[0]
+        function_name = extractor.fqn().split(".")[1]
         caps_only = "".join([c for c in featureset_name if c.isupper()])
         return f"{caps_only}.{function_name}"
 
     def get_feature_vertex(f: Union[Feature, Featureset, str]) -> str:
+        """Returns name of the vertex corresponding to the feature in the extractor DAG."""
         if isinstance(f, Feature):
             featureset = f.featureset_name
             caps_only = "".join([c for c in featureset if c.isupper()])
@@ -98,7 +99,7 @@ def get_vertices_and_eges(
             edges.add(
                 (get_extractor_vertex(extractor), get_feature_vertex(inp))
             )
-        for output in extractor.output_features:
+        for output in extractor.fqn_output_features():
             vertices.add(get_feature_vertex(output))
             edges.add(
                 (get_feature_vertex(output), get_extractor_vertex(extractor))
@@ -142,11 +143,11 @@ def get_extractor_order(
                 raise ValueError(f"No extractor found for feature {feature}")
             extractor = feature_to_extractor_map[feature]
 
-            if extractor.name in extractor_names:
+            if extractor.fqn() in extractor_names:
                 continue
 
-            extractor_names.add(extractor.name)
-            for output in extractor.output_features:
+            extractor_names.add(extractor.fqn())
+            for output in extractor.fqn_output_features():
                 resolved_features.add(output)
             for inp in extractor.inputs:
                 if isinstance(inp, Feature):
@@ -165,7 +166,7 @@ def get_extractor_order(
         to_find = next_to_find
 
     ret: List[Extractor] = []
-    extractor_map = {e.name: e for e in extractors}
+    extractor_map = {e.fqn(): e for e in extractors}
     for extractor_name in sorted_extractors:
         if extractor_name in extractor_names:
             ret.append(extractor_map[extractor_name])

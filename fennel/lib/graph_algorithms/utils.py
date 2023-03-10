@@ -13,7 +13,7 @@ def extractor_graph(
     """
     feature_to_extractor_map = {}
     for extractor in extractors:
-        for output in extractor.output_features:
+        for output in extractor.fqn_output_features():
             feature_to_extractor_map[output] = extractor
     graph: Dict[str, List[str]] = defaultdict(list)
 
@@ -26,15 +26,15 @@ def extractor_graph(
                 if inp.fqn() not in feature_to_extractor_map:
                     continue
                 extractor_producer = feature_to_extractor_map[inp.fqn()]
-                if extractor.name not in graph[extractor_producer.name]:
-                    graph[extractor_producer.name].append(extractor.name)
+                if extractor.fqn() not in graph[extractor_producer.fqn()]:
+                    graph[extractor_producer.fqn()].append(extractor.fqn())
             elif type(inp) is tuple:
                 for feature in inp:
                     if feature.fqn() not in feature_to_extractor_map:
                         continue
                     extractor_producer = feature_to_extractor_map[feature.fqn()]
-                    if extractor.name not in graph[extractor_producer.name]:
-                        graph[extractor_producer.name].append(extractor.name)
+                    if extractor.fqn() not in graph[extractor_producer.fqn()]:
+                        graph[extractor_producer.fqn()].append(extractor.fqn())
             elif isinstance(inp, Featureset):
                 raise ValueError(
                     "Featureset is not supported as an input to an extractor"

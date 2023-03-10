@@ -43,6 +43,8 @@ class TestMovieInfo103(unittest.TestCase):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
         client.sync(datasets=[MovieInfo103])
+        if client.is_integration_client():
+            time.sleep(5)
         t = datetime.fromtimestamp(1672858163)
         data = [
             [
@@ -97,6 +99,8 @@ class TestMovieInfo103(unittest.TestCase):
         """Same test as test_log_to_MovieInfo103 but with an S3 source."""
         # Sync the dataset
         client.sync(datasets=[MovieInfo103])
+        if client.is_integration_client():
+            time.sleep(5)
 
         # Time for data_integration to do its magic
         time.sleep(10)

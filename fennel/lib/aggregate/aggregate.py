@@ -2,7 +2,7 @@ from typing import List, Union
 
 from pydantic import BaseModel, Extra
 
-import fennel.gen.dataset_pb2 as proto
+import fennel.gen.spec_pb2 as spec_proto
 from fennel.lib.window import Window
 
 ItemType = Union[str, List[str]]
@@ -13,7 +13,7 @@ class AggregateType(BaseModel):
     # Name of the field the aggregate will  be assigned to
     into_field: str
 
-    def to_proto(self):
+    def to_proto(self) -> spec_proto.PreSpec:
         raise NotImplementedError
 
     def validate(self):
@@ -27,16 +27,15 @@ class AggregateType(BaseModel):
 
 
 class Count(AggregateType):
-    agg_func = proto.AggregateType.COUNT
-
     def to_proto(self):
         if self.window is None:
             raise ValueError("Window must be specified for Count")
 
-        return proto.Aggregation(
-            agg_type=self.agg_func,
-            field=self.into_field,
-            window_spec=self.window.to_proto(),
+        return spec_proto.PreSpec(
+            count=spec_proto.Count(
+                window=self.window.to_proto(),
+                name=self.into_field,
+            )
         )
 
     def validate(self):
@@ -48,53 +47,41 @@ class Count(AggregateType):
 
 class Sum(AggregateType):
     of: str
-    agg_func = proto.AggregateType.SUM
 
     def to_proto(self):
-        return proto.Aggregation(
-            agg_type=self.agg_func,
-            field=self.into_field,
-            window_spec=self.window.to_proto(),
-            value_field=self.of,
+        return spec_proto.PreSpec(
+            sum=spec_proto.Sum(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+            )
         )
 
     def signature(self):
         return f"sum_{self.of}_{self.window.signature()}"
 
-    def agg_type(self):
-        return "sum"
-
 
 class Average(AggregateType):
     of: str
-    agg_func = proto.AggregateType.AVG
 
     def to_proto(self):
-        return proto.Aggregation(
-            agg_type=self.agg_func,
-            field=self.into_field,
-            window_spec=self.window.to_proto(),
-            value_field=self.of,
+        return spec_proto.PreSpec(
+            average=spec_proto.Average(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+            )
         )
 
     def signature(self):
         return f"avg_{self.of}_{self.window.signature()}"
 
-    def agg_type(self):
-        return "mean"
-
 
 class Max(AggregateType):
     of: str
-    agg_func = proto.AggregateType.MAX
 
     def to_proto(self):
-        return proto.Aggregation(
-            agg_type=self.agg_func,
-            field=self.into_field,
-            window_spec=self.window.to_proto(),
-            value_field=self.of,
-        )
+        raise NotImplementedError("Max not implemented yet")
 
     def signature(self):
         return f"max_{self.of}_{self.window.signature()}"
@@ -105,15 +92,9 @@ class Max(AggregateType):
 
 class Min(AggregateType):
     of: str
-    agg_func = proto.AggregateType.MIN
 
     def to_proto(self):
-        return proto.Aggregation(
-            agg_type=self.agg_func,
-            field=self.into_field,
-            window_spec=self.window.to_proto(),
-            value_field=self.of,
-        )
+        raise NotImplementedError("Min not implemented yet")
 
     def signature(self):
         return f"min_{self.of}_{self.window.signature()}"
@@ -126,7 +107,6 @@ class TopK(AggregateType):
     item: ItemType
     score: str
     k: int
-    agg_func = proto.AggregateType.TOPK
     update_frequency: int = 60
 
 
@@ -134,5 +114,4 @@ class CF(AggregateType):
     context: ItemType
     weight: str
     limit: int
-    agg_func = proto.AggregateType.CF
     update_frequency: int = 60

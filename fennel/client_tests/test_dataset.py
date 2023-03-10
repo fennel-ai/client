@@ -63,6 +63,8 @@ class TestDataset(unittest.TestCase):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset])
+        if client.is_integration_client():
+            time.sleep(5)
         now = datetime.now()
         yesterday = now - pd.Timedelta(days=1)
         data = [
@@ -1024,6 +1026,8 @@ class TestAggregateTableDataset(unittest.TestCase):
     @mock_client
     def test_table_aggregation(self, client):
         client.sync(datasets=[UserAge, UserAgeNonTable, UserAgeAggregated])
+        if client.is_integration_client():
+            time.sleep(5)
         yesterday = datetime.now() - timedelta(days=1)
         now = datetime.now()
         tomorrow = datetime.now() + timedelta(days=1)
