@@ -1,10 +1,11 @@
 from typing import Any
 
 import jsondiff  # type: ignore
-from fennel.gen.pycode_pb2 import PyCode
-from fennel.gen.featureset_pb2 import Extractor
-from fennel.gen.dataset_pb2 import Operator, Filter, Transform
 from google.protobuf.json_format import MessageToDict  # type: ignore
+
+from fennel.gen.dataset_pb2 import Operator, Filter, Transform
+from fennel.gen.featureset_pb2 import Extractor
+from fennel.gen.pycode_pb2 import PyCode
 
 
 def error_message(actual: Any, expected: Any) -> str:
@@ -20,8 +21,6 @@ def erase_extractor_pycode(extractor: Extractor) -> Extractor:
     new_extractor = Extractor(
         name=extractor.name,
         version=extractor.version,
-        func=b"",
-        func_source_code="",
         datasets=extractor.datasets,
         inputs=extractor.inputs,
         features=extractor.features,

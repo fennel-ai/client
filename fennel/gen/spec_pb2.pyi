@@ -15,6 +15,7 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+@typing_extensions.final
 class PreSpec(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -40,6 +41,7 @@ class PreSpec(google.protobuf.message.Message):
 
 global___PreSpec = PreSpec
 
+@typing_extensions.final
 class Sum(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -62,6 +64,7 @@ class Sum(google.protobuf.message.Message):
 
 global___Sum = Sum
 
+@typing_extensions.final
 class Average(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -87,6 +90,7 @@ class Average(google.protobuf.message.Message):
 
 global___Average = Average
 
+@typing_extensions.final
 class Count(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 

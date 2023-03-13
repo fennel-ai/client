@@ -17,6 +17,7 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+@typing_extensions.final
 class Expectations(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -43,6 +44,7 @@ class Expectations(google.protobuf.message.Message):
 
 global___Expectations = Expectations
 
+@typing_extensions.final
 class Expectation(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 

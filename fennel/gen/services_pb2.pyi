@@ -19,6 +19,7 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+@typing_extensions.final
 class SyncRequest(google.protobuf.message.Message):
     """
     The generated code needs to be hand modified to add the following

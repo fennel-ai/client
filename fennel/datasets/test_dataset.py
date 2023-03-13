@@ -3,18 +3,15 @@ from datetime import datetime, timedelta
 from typing import Optional, List
 
 import pandas as pd
-import pytest
 import requests  # type: ignore
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.dataset_pb2 as ds_proto
-import fennel.gen.services_pb2 as service_proto
-from fennel.datasets import dataset, pipeline, field, Dataset, on_demand
+from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding
-from fennel.lib.schema import Series
 from fennel.lib.window import Window
 from fennel.test_lib import *
 
@@ -321,9 +318,6 @@ def test_dataset_with_pipes(grpc_stub):
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "idx": 1,
-        # deprecated
-        "nodes": [],
-        "root": "",
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -389,9 +383,9 @@ def test_dataset_with_complex_pipe(grpc_stub):
 
         @pipeline(id=1)
         def create_fraud_dataset(
-            cls,
-            activity: Dataset[Activity],
-            user_info: Dataset[UserInfoDataset],
+                cls,
+                activity: Dataset[Activity],
+                user_info: Dataset[UserInfoDataset],
         ):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
                 df["metadata_dict"] = (
@@ -503,9 +497,6 @@ def test_dataset_with_complex_pipe(grpc_stub):
         "metadata": {},
         "input_dataset_names": ["Activity", "UserInfoDataset"],
         "idx": 1,
-        # deprecated
-        "nodes": [],
-        "root": "",
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -697,9 +688,6 @@ def test_union_datasets(grpc_stub):
         "metadata": {},
         "idx": 1,
         "input_dataset_names": ["A"],
-        # deprecated
-        "nodes": [],
-        "root": "",
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -848,8 +836,8 @@ def test_search_dataset(grpc_stub):
 
         @pipeline(id=1)
         def content_features(
-            cls,
-            ds: Dataset[Document],
+                cls,
+                ds: Dataset[Document],
         ):
             return ds.transform(
                 get_content_features,
@@ -934,9 +922,6 @@ def test_search_dataset(grpc_stub):
         "metadata": {},
         "idx": 1,
         "input_dataset_names": ["Document"],
-        # deprecated
-        "nodes": [],
-        "root": "",
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(

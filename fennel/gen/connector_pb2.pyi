@@ -26,6 +26,7 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+@typing_extensions.final
 class ExtDatabase(google.protobuf.message.Message):
     """-----------------------------------------
     First we have all the databases
@@ -74,6 +75,7 @@ class ExtDatabase(google.protobuf.message.Message):
 
 global___ExtDatabase = ExtDatabase
 
+@typing_extensions.final
 class Reference(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -109,6 +111,7 @@ class Reference(google.protobuf.message.Message):
 
 global___Reference = Reference
 
+@typing_extensions.final
 class MySQL(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -138,6 +141,7 @@ class MySQL(google.protobuf.message.Message):
 
 global___MySQL = MySQL
 
+@typing_extensions.final
 class Postgres(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -167,6 +171,7 @@ class Postgres(google.protobuf.message.Message):
 
 global___Postgres = Postgres
 
+@typing_extensions.final
 class S3(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -184,6 +189,7 @@ class S3(google.protobuf.message.Message):
 
 global___S3 = S3
 
+@typing_extensions.final
 class Bigquery(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -204,6 +210,7 @@ class Bigquery(google.protobuf.message.Message):
 
 global___Bigquery = Bigquery
 
+@typing_extensions.final
 class Snowflake(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -239,6 +246,7 @@ class Snowflake(google.protobuf.message.Message):
 
 global___Snowflake = Snowflake
 
+@typing_extensions.final
 class ExtTable(google.protobuf.message.Message):
     """-----------------------------------------
     Next, all the tables
@@ -281,6 +289,7 @@ class ExtTable(google.protobuf.message.Message):
 
 global___ExtTable = ExtTable
 
+@typing_extensions.final
 class MySQLTable(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -300,6 +309,7 @@ class MySQLTable(google.protobuf.message.Message):
 
 global___MySQLTable = MySQLTable
 
+@typing_extensions.final
 class PostgresTable(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -319,6 +329,7 @@ class PostgresTable(google.protobuf.message.Message):
 
 global___PostgresTable = PostgresTable
 
+@typing_extensions.final
 class S3Table(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -347,6 +358,7 @@ class S3Table(google.protobuf.message.Message):
 
 global___S3Table = S3Table
 
+@typing_extensions.final
 class KafkaTopic(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -366,6 +378,7 @@ class KafkaTopic(google.protobuf.message.Message):
 
 global___KafkaTopic = KafkaTopic
 
+@typing_extensions.final
 class BigqueryTable(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -385,6 +398,7 @@ class BigqueryTable(google.protobuf.message.Message):
 
 global___BigqueryTable = BigqueryTable
 
+@typing_extensions.final
 class SnowflakeTable(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -404,6 +418,7 @@ class SnowflakeTable(google.protobuf.message.Message):
 
 global___SnowflakeTable = SnowflakeTable
 
+@typing_extensions.final
 class Source(google.protobuf.message.Message):
     """-----------------------------------------
     Finally, all the sources and sinks
@@ -440,6 +455,7 @@ class Source(google.protobuf.message.Message):
 
 global___Source = Source
 
+@typing_extensions.final
 class Sink(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 

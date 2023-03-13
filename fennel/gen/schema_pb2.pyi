@@ -17,6 +17,7 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+@typing_extensions.final
 class DataType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -78,6 +79,7 @@ class DataType(google.protobuf.message.Message):
 
 global___DataType = DataType
 
+@typing_extensions.final
 class IntType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -87,6 +89,7 @@ class IntType(google.protobuf.message.Message):
 
 global___IntType = IntType
 
+@typing_extensions.final
 class DoubleType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -96,6 +99,7 @@ class DoubleType(google.protobuf.message.Message):
 
 global___DoubleType = DoubleType
 
+@typing_extensions.final
 class StringType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -105,6 +109,7 @@ class StringType(google.protobuf.message.Message):
 
 global___StringType = StringType
 
+@typing_extensions.final
 class BoolType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -114,6 +119,7 @@ class BoolType(google.protobuf.message.Message):
 
 global___BoolType = BoolType
 
+@typing_extensions.final
 class TimestampType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -123,6 +129,7 @@ class TimestampType(google.protobuf.message.Message):
 
 global___TimestampType = TimestampType
 
+@typing_extensions.final
 class RegexType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -137,6 +144,7 @@ class RegexType(google.protobuf.message.Message):
 
 global___RegexType = RegexType
 
+@typing_extensions.final
 class ArrayType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -153,6 +161,7 @@ class ArrayType(google.protobuf.message.Message):
 
 global___ArrayType = ArrayType
 
+@typing_extensions.final
 class EmbeddingType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -167,6 +176,7 @@ class EmbeddingType(google.protobuf.message.Message):
 
 global___EmbeddingType = EmbeddingType
 
+@typing_extensions.final
 class MapType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -187,6 +197,7 @@ class MapType(google.protobuf.message.Message):
 
 global___MapType = MapType
 
+@typing_extensions.final
 class Between(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -217,6 +228,7 @@ class Between(google.protobuf.message.Message):
 
 global___Between = Between
 
+@typing_extensions.final
 class OneOf(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -237,6 +249,7 @@ class OneOf(google.protobuf.message.Message):
 
 global___OneOf = OneOf
 
+@typing_extensions.final
 class OptionalType(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -253,6 +266,7 @@ class OptionalType(google.protobuf.message.Message):
 
 global___OptionalType = OptionalType
 
+@typing_extensions.final
 class Field(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -272,6 +286,7 @@ class Field(google.protobuf.message.Message):
 
 global___Field = Field
 
+@typing_extensions.final
 class Schema(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -287,6 +302,7 @@ class Schema(google.protobuf.message.Message):
 
 global___Schema = Schema
 
+@typing_extensions.final
 class DSSchema(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -310,6 +326,7 @@ class DSSchema(google.protobuf.message.Message):
 
 global___DSSchema = DSSchema
 
+@typing_extensions.final
 class Value(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -355,6 +372,7 @@ class Value(google.protobuf.message.Message):
 
 global___Value = Value
 
+@typing_extensions.final
 class Embedding(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -370,6 +388,7 @@ class Embedding(google.protobuf.message.Message):
 
 global___Embedding = Embedding
 
+@typing_extensions.final
 class List(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -390,9 +409,11 @@ class List(google.protobuf.message.Message):
 
 global___List = List
 
+@typing_extensions.final
 class Map(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
     class Entry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -432,6 +453,7 @@ class Map(google.protobuf.message.Message):
 
 global___Map = Map
 
+@typing_extensions.final
 class _r_None(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 

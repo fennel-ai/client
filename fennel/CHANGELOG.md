@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.8.0] - 2023-03-12
+- Large rewrite of protobufs and the interfaces and a bunch of backward incompatible changes. 
+
 ## [0.7.1] - 2023-02-22
 - Disallow featuresets as inputs to extractors
 

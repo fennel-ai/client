@@ -7,70 +7,25 @@ import collections.abc
 import google.protobuf.descriptor
 import google.protobuf.duration_pb2
 import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import metadata_pb2
 import pycode_pb2
 import schema_pb2
 import spec_pb2
 import sys
-import typing
 
-if sys.version_info >= (3, 10):
+if sys.version_info >= (3, 8):
     import typing as typing_extensions
 else:
     import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-class _FieldType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
-
-class _FieldTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_FieldType.ValueType], builtins.type):  # noqa: F821
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
-    Key: _FieldType.ValueType  # 0
-    Val: _FieldType.ValueType  # 1
-    Timestamp: _FieldType.ValueType  # 2
-
-class FieldType(_FieldType, metaclass=_FieldTypeEnumTypeWrapper):
-    """All integers representing time are in microseconds and hence should be int64.
-    Deprecated
-    """
-
-Key: FieldType.ValueType  # 0
-Val: FieldType.ValueType  # 1
-Timestamp: FieldType.ValueType  # 2
-global___FieldType = FieldType
-
-class _AggregateType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
-
-class _AggregateTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_AggregateType.ValueType], builtins.type):  # noqa: F821
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
-    SUM: _AggregateType.ValueType  # 0
-    AVG: _AggregateType.ValueType  # 1
-    COUNT: _AggregateType.ValueType  # 2
-    MIN: _AggregateType.ValueType  # 3
-    MAX: _AggregateType.ValueType  # 4
-    TOPK: _AggregateType.ValueType  # 5
-    CF: _AggregateType.ValueType  # 6
-
-class AggregateType(_AggregateType, metaclass=_AggregateTypeEnumTypeWrapper): ...
-
-SUM: AggregateType.ValueType  # 0
-AVG: AggregateType.ValueType  # 1
-COUNT: AggregateType.ValueType  # 2
-MIN: AggregateType.ValueType  # 3
-MAX: AggregateType.ValueType  # 4
-TOPK: AggregateType.ValueType  # 5
-CF: AggregateType.ValueType  # 6
-global___AggregateType = AggregateType
-
+@typing_extensions.final
 class CoreDataset(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
     class FieldMetadataEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -120,35 +75,10 @@ class CoreDataset(google.protobuf.message.Message):
 
 global___CoreDataset = CoreDataset
 
-class Field(google.protobuf.message.Message):
-    """Deprecated"""
-
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    NAME_FIELD_NUMBER: builtins.int
-    FTYPE_FIELD_NUMBER: builtins.int
-    DTYPE_FIELD_NUMBER: builtins.int
-    METADATA_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    ftype: global___FieldType.ValueType
-    @property
-    def dtype(self) -> schema_pb2.DataType: ...
-    @property
-    def metadata(self) -> metadata_pb2.Metadata: ...
-    def __init__(
-        self,
-        *,
-        name: builtins.str = ...,
-        ftype: global___FieldType.ValueType = ...,
-        dtype: schema_pb2.DataType | None = ...,
-        metadata: metadata_pb2.Metadata | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "ftype", b"ftype", "metadata", b"metadata", "name", b"name"]) -> None: ...
-
-global___Field = Field
-
+@typing_extensions.final
 class OnDemand(google.protobuf.message.Message):
+    """All integers representing time are in microseconds and hence should be int64."""
+
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     FUNCTION_SOURCE_CODE_FIELD_NUMBER: builtins.int
@@ -169,6 +99,7 @@ class OnDemand(google.protobuf.message.Message):
 
 global___OnDemand = OnDemand
 
+@typing_extensions.final
 class Pipeline(google.protobuf.message.Message):
     """----------------------------------------------------------------------------------------------
     Pipeline
@@ -183,8 +114,6 @@ class Pipeline(google.protobuf.message.Message):
     METADATA_FIELD_NUMBER: builtins.int
     INPUT_DATASET_NAMES_FIELD_NUMBER: builtins.int
     IDX_FIELD_NUMBER: builtins.int
-    NODES_FIELD_NUMBER: builtins.int
-    ROOT_FIELD_NUMBER: builtins.int
     name: builtins.str
     dataset_name: builtins.str
     signature: builtins.str
@@ -193,10 +122,6 @@ class Pipeline(google.protobuf.message.Message):
     @property
     def input_dataset_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     idx: builtins.int
-    @property
-    def nodes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Node]:
-        """DEPRECATED"""
-    root: builtins.str
     def __init__(
         self,
         *,
@@ -206,40 +131,13 @@ class Pipeline(google.protobuf.message.Message):
         metadata: metadata_pb2.Metadata | None = ...,
         input_dataset_names: collections.abc.Iterable[builtins.str] | None = ...,
         idx: builtins.int = ...,
-        nodes: collections.abc.Iterable[global___Node] | None = ...,
-        root: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "idx", b"idx", "input_dataset_names", b"input_dataset_names", "metadata", b"metadata", "name", b"name", "nodes", b"nodes", "root", b"root", "signature", b"signature"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "idx", b"idx", "input_dataset_names", b"input_dataset_names", "metadata", b"metadata", "name", b"name", "signature", b"signature"]) -> None: ...
 
 global___Pipeline = Pipeline
 
-class Node(google.protobuf.message.Message):
-    """DEPRECATED"""
-
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    ID_FIELD_NUMBER: builtins.int
-    OPERATOR_FIELD_NUMBER: builtins.int
-    DATASET_FIELD_NUMBER: builtins.int
-    id: builtins.str
-    """For a dataset node, this is the name of the dataset"""
-    @property
-    def operator(self) -> global___Operator: ...
-    dataset: builtins.str
-    def __init__(
-        self,
-        *,
-        id: builtins.str = ...,
-        operator: global___Operator | None = ...,
-        dataset: builtins.str = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "node_type", b"node_type", "operator", b"operator"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "id", b"id", "node_type", b"node_type", "operator", b"operator"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["node_type", b"node_type"]) -> typing_extensions.Literal["operator", "dataset"] | None: ...
-
-global___Node = Node
-
+@typing_extensions.final
 class Operator(google.protobuf.message.Message):
     """Each operator corresponds to a valid operation as part of a pipeline"""
 
@@ -305,6 +203,7 @@ class Operator(google.protobuf.message.Message):
 
 global___Operator = Operator
 
+@typing_extensions.final
 class Aggregate(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -312,7 +211,6 @@ class Aggregate(google.protobuf.message.Message):
     KEYS_FIELD_NUMBER: builtins.int
     SPECS_FIELD_NUMBER: builtins.int
     OPERAND_NAME_FIELD_NUMBER: builtins.int
-    AGGREGATES_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
     @property
     def keys(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
@@ -322,8 +220,6 @@ class Aggregate(google.protobuf.message.Message):
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
     THE CLIENT
     """
-    @property
-    def aggregates(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Aggregation]: ...
     def __init__(
         self,
         *,
@@ -331,15 +227,16 @@ class Aggregate(google.protobuf.message.Message):
         keys: collections.abc.Iterable[builtins.str] | None = ...,
         specs: collections.abc.Iterable[spec_pb2.PreSpec] | None = ...,
         operand_name: builtins.str = ...,
-        aggregates: collections.abc.Iterable[global___Aggregation] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aggregates", b"aggregates", "keys", b"keys", "operand_id", b"operand_id", "operand_name", b"operand_name", "specs", b"specs"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["keys", b"keys", "operand_id", b"operand_id", "operand_name", b"operand_name", "specs", b"specs"]) -> None: ...
 
 global___Aggregate = Aggregate
 
+@typing_extensions.final
 class Join(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
     class OnEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -384,9 +281,11 @@ class Join(google.protobuf.message.Message):
 
 global___Join = Join
 
+@typing_extensions.final
 class Transform(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
     class SchemaEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -430,6 +329,7 @@ class Transform(google.protobuf.message.Message):
 
 global___Transform = Transform
 
+@typing_extensions.final
 class Filter(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -455,6 +355,7 @@ class Filter(google.protobuf.message.Message):
 
 global___Filter = Filter
 
+@typing_extensions.final
 class Union(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -477,6 +378,7 @@ class Union(google.protobuf.message.Message):
 
 global___Union = Union
 
+@typing_extensions.final
 class DatasetRef(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -490,91 +392,3 @@ class DatasetRef(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["referring_dataset_name", b"referring_dataset_name"]) -> None: ...
 
 global___DatasetRef = DatasetRef
-
-class Aggregation(google.protobuf.message.Message):
-    """Deprecated all aggregate specific stuff and use protos from aggregate.proto
-    ----------------------------------------------------------------------------
-    Aggregate Definitions
-    ----------------------------------------------------------------------------
-    """
-
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    AGG_TYPE_FIELD_NUMBER: builtins.int
-    FOREVER_FIELD_NUMBER: builtins.int
-    SLIDING_WINDOW_DURATION_FIELD_NUMBER: builtins.int
-    FIELD_FIELD_NUMBER: builtins.int
-    VALUE_FIELD_FIELD_NUMBER: builtins.int
-    TOPK_FIELD_NUMBER: builtins.int
-    CF_FIELD_NUMBER: builtins.int
-    agg_type: global___AggregateType.ValueType
-    forever: builtins.bool
-    @property
-    def sliding_window_duration(self) -> google.protobuf.duration_pb2.Duration: ...
-    field: builtins.str
-    value_field: builtins.str
-    @property
-    def topk(self) -> global___TopKConfig: ...
-    @property
-    def cf(self) -> global___CFConfig: ...
-    def __init__(
-        self,
-        *,
-        agg_type: global___AggregateType.ValueType = ...,
-        forever: builtins.bool = ...,
-        sliding_window_duration: google.protobuf.duration_pb2.Duration | None = ...,
-        field: builtins.str = ...,
-        value_field: builtins.str = ...,
-        topk: global___TopKConfig | None = ...,
-        cf: global___CFConfig | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["cf", b"cf", "config", b"config", "forever", b"forever", "sliding_window_duration", b"sliding_window_duration", "topk", b"topk", "value_field", b"value_field", "window", b"window"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["agg_type", b"agg_type", "cf", b"cf", "config", b"config", "field", b"field", "forever", b"forever", "sliding_window_duration", b"sliding_window_duration", "topk", b"topk", "value_field", b"value_field", "window", b"window"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["config", b"config"]) -> typing_extensions.Literal["value_field", "topk", "cf"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["window", b"window"]) -> typing_extensions.Literal["forever", "sliding_window_duration"] | None: ...
-
-global___Aggregation = Aggregation
-
-class TopKConfig(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    K_FIELD_NUMBER: builtins.int
-    ITEM_FIELDS_FIELD_NUMBER: builtins.int
-    SCORE_FIELD_FIELD_NUMBER: builtins.int
-    k: builtins.int
-    @property
-    def item_fields(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    score_field: builtins.str
-    def __init__(
-        self,
-        *,
-        k: builtins.int = ...,
-        item_fields: collections.abc.Iterable[builtins.str] | None = ...,
-        score_field: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["item_fields", b"item_fields", "k", b"k", "score_field", b"score_field"]) -> None: ...
-
-global___TopKConfig = TopKConfig
-
-class CFConfig(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    LIMIT_FIELD_NUMBER: builtins.int
-    CONTEXT_FIELDS_FIELD_NUMBER: builtins.int
-    WEIGHT_FIELD_FIELD_NUMBER: builtins.int
-    limit: builtins.int
-    @property
-    def context_fields(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    weight_field: builtins.str
-    def __init__(
-        self,
-        *,
-        limit: builtins.int = ...,
-        context_fields: collections.abc.Iterable[builtins.str] | None = ...,
-        weight_field: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["context_fields", b"context_fields", "limit", b"limit", "weight_field", b"weight_field"]) -> None: ...
-
-global___CFConfig = CFConfig

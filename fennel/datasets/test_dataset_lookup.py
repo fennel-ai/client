@@ -24,7 +24,7 @@ class UserInfoDataset:
 
 
 def fake_func(
-    cls_name, ts: pd.Series, fields: typing.List[str], df: pd.DataFrame
+        cls_name, ts: pd.Series, fields: typing.List[str], df: pd.DataFrame
 ):
     now = datetime.fromtimestamp(1668368655)
     if len(fields) > 0:
@@ -62,10 +62,10 @@ def test_dataset_lookup(grpc_stub):
         @depends_on(UserInfoDataset)
         @typing.no_type_check
         def user_age_sq(
-            cls,
-            ts: Series[datetime],
-            user_id: Series[userid],
-            names: Series[name],
+                cls,
+                ts: Series[datetime],
+                user_id: Series[userid],
+                names: Series[name],
         ) -> DataFrame[age_sq, gender]:
             user_id_plus_one = user_id * 5
             df, _ = UserInfoDataset.lookup(
@@ -81,10 +81,10 @@ def test_dataset_lookup(grpc_stub):
         @depends_on(UserInfoDataset)
         @typing.no_type_check
         def user_age_cube(
-            cls,
-            ts: Series[datetime],
-            user_id: Series[userid],
-            names: Series[name],
+                cls,
+                ts: Series[datetime],
+                user_id: Series[userid],
+                names: Series[name],
         ) -> Series[age_cube]:
             user_id_into_three = user_id * 3
             df, _ = UserInfoDataset.lookup(
@@ -104,7 +104,7 @@ def test_dataset_lookup(grpc_stub):
     assert user_sq_extractor.name == "user_age_sq"
 
     # Call to the extractor function
-    user_sq_extractor_func = pickle.loads(user_sq_extractor.func)
+    user_sq_extractor_func = pickle.loads(user_sq_extractor.pycode.pickled)
     now = datetime.fromtimestamp(1668368655)
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
@@ -117,7 +117,7 @@ def test_dataset_lookup(grpc_stub):
     assert user_age_cube.name == "user_age_cube"
 
     # Call to the extractor function
-    user_age_cube_func = pickle.loads(user_age_cube.func)
+    user_age_cube_func = pickle.loads(user_age_cube.pycode.pickled)
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a2", "b2", "c2"])

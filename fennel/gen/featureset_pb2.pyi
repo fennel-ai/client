@@ -19,6 +19,7 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+@typing_extensions.final
 class CoreFeatureset(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -38,6 +39,7 @@ class CoreFeatureset(google.protobuf.message.Message):
 
 global___CoreFeatureset = CoreFeatureset
 
+@typing_extensions.final
 class Feature(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -67,12 +69,11 @@ class Feature(google.protobuf.message.Message):
 
 global___Feature = Feature
 
+@typing_extensions.final
 class Extractor(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     NAME_FIELD_NUMBER: builtins.int
-    FUNC_FIELD_NUMBER: builtins.int
-    FUNC_SOURCE_CODE_FIELD_NUMBER: builtins.int
     DATASETS_FIELD_NUMBER: builtins.int
     INPUTS_FIELD_NUMBER: builtins.int
     FEATURES_FIELD_NUMBER: builtins.int
@@ -81,10 +82,6 @@ class Extractor(google.protobuf.message.Message):
     PYCODE_FIELD_NUMBER: builtins.int
     FEATURE_SET_NAME_FIELD_NUMBER: builtins.int
     name: builtins.str
-    func: builtins.bytes
-    """deprecated"""
-    func_source_code: builtins.str
-    """deprecated"""
     @property
     def datasets(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
@@ -102,8 +99,6 @@ class Extractor(google.protobuf.message.Message):
         self,
         *,
         name: builtins.str = ...,
-        func: builtins.bytes = ...,
-        func_source_code: builtins.str = ...,
         datasets: collections.abc.Iterable[builtins.str] | None = ...,
         inputs: collections.abc.Iterable[global___Input] | None = ...,
         features: collections.abc.Iterable[builtins.str] | None = ...,
@@ -113,13 +108,15 @@ class Extractor(google.protobuf.message.Message):
         feature_set_name: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "feature_set_name", b"feature_set_name", "features", b"features", "func", b"func", "func_source_code", b"func_source_code", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "version", b"version"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "feature_set_name", b"feature_set_name", "features", b"features", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "version", b"version"]) -> None: ...
 
 global___Extractor = Extractor
 
+@typing_extensions.final
 class Input(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
     class Feature(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -148,6 +145,7 @@ class Input(google.protobuf.message.Message):
 
 global___Input = Input
 
+@typing_extensions.final
 class Model(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 

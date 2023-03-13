@@ -15,6 +15,7 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+@typing_extensions.final
 class Window(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -36,6 +37,7 @@ class Window(google.protobuf.message.Message):
 
 global___Window = Window
 
+@typing_extensions.final
 class Sliding(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -52,6 +54,7 @@ class Sliding(google.protobuf.message.Message):
 
 global___Sliding = Sliding
 
+@typing_extensions.final
 class Forever(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
