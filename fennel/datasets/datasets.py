@@ -228,7 +228,8 @@ class Filter(_Node):
         self.node = node
         self.node.out_edges.append(self)
         cloudpickle.register_pickle_by_value(inspect.getmodule(func))
-        self.pickled_func = cloudpickle.dumps(func)
+        wrapped_func = lambda df: df[func(df)]  # noqa: E731
+        self.pickled_func = cloudpickle.dumps(wrapped_func)
 
     def signature(self):
         if isinstance(self.node, Dataset):

@@ -297,18 +297,19 @@ class Feature:
 
 
 def _add_column_names(func, columns, fs_name):
+    """Rewrites the output column names of the extractor to be fully qualified names."""
+
     @functools.wraps(func)
     def inner(*args, **kwargs):
         ret = func(*args, **kwargs)
         if isinstance(ret, pd.Series):
-            ret.name = columns[0]
+            ret.name = f"{fs_name}.{columns[0]}"
         elif isinstance(ret, pd.DataFrame):
-            expected_columns = [x.split(".")[1] for x in columns]
-            if len(ret.columns) != len(expected_columns) or set(
-                ret.columns
-            ) != set(expected_columns):
+            if len(ret.columns) != len(columns) or set(ret.columns) != set(
+                columns
+            ):
                 raise ValueError(
-                    f"Expected {len(expected_columns)} columns ({expected_columns}) but got"
+                    f"Expected {len(columns)} columns ({columns}) but got"
                     f" {len(ret.columns)} columns {ret.columns} in"
                     f" {func.__name__}"
                 )
@@ -331,7 +332,7 @@ class Featureset:
     _features: List[Feature]
     _feature_map: Dict[str, Feature] = {}
     _extractors: List[Extractor]
-    _id_to_feature_fqn: Dict[int, str] = {}
+    _id_to_feature: Dict[int, Feature] = {}
     _expectation: Expectations
 
     def __init__(
@@ -343,9 +344,7 @@ class Featureset:
         self._name = featureset_cls.__name__
         self._features = features
         self._feature_map = {feature.name: feature for feature in features}
-        self._id_to_feature_fqn = {
-            feature.id: feature.fqn_ for feature in features
-        }
+        self._id_to_feature = {feature.id: feature for feature in features}
         self._extractors = self._get_extractors()
         self._validate()
         self._add_feature_names_as_attributes()
@@ -374,11 +373,11 @@ class Featureset:
                 extractor.output_feature_ids = [
                     feature.id for feature in self._features
                 ]
+            # Set name of the features which the extractor sets values for.
             extractor.output_features = [
-                f"{self._id_to_feature_fqn[fid]}"
+                f"{self._id_to_feature[fid].name}"
                 for fid in extractor.output_feature_ids
             ]
-            extractor.name = f"{self._name}.{extractor.name}"
             extractor.featureset = self._name
             extractors.append(extractor)
         return extractors
@@ -405,21 +404,21 @@ class Featureset:
             for feature_id in extractor.output_feature_ids:
                 if feature_id in extracted_features:
                     raise TypeError(
-                        f"Feature {self._id_to_feature_fqn[feature_id]} is "
+                        f"Feature {self._id_to_feature[feature_id].name} is "
                         f"extracted by multiple extractors"
                     )
                 extracted_features.add(feature_id)
 
     def _set_extractors_as_attributes(self):
         for extractor in self._extractors:
-            columns = [
-                self._id_to_feature_fqn[output]
+            feature_names = [
+                self._id_to_feature[output].name
                 for output in extractor.output_feature_ids
             ]
-            if len(columns) == 0:
-                columns = [str(f) for f in self._features]
+            if len(feature_names) == 0:
+                feature_names = [f.name for f in self._features]
             extractor.func = _add_column_names(
-                extractor.func, columns, self._name
+                extractor.func, feature_names, self._name
             )
             setattr(self, extractor.func.__name__, extractor.func)
             extractor.bound_func = functools.partial(extractor.func, self)
@@ -461,7 +460,7 @@ class Featureset:
 
 
 class Extractor:
-    # FQN of the function that implements the extractor.
+    # Name of the function that implements the extractor.
     name: str
     inputs: List[Union[Feature, Featureset]]
     func: Callable
@@ -469,7 +468,7 @@ class Extractor:
     # If outputs is empty, entire featureset is being extracted
     # by this extractor, else stores the ids of the features being extracted.
     output_feature_ids: List[int]
-    # List of FQN of features that this extractor produces
+    # List of names of features that this extractor produces
     output_features: List[str]
     pickled_func: bytes
     # Same as func but bound with Featureset as the first argument.
@@ -491,6 +490,16 @@ class Extractor:
 
     def signature(self) -> str:
         pass
+
+    def fqn(self) -> str:
+        """Fully qualified name of the extractor."""
+        return f"{self.featureset}.{self.name}"
+
+    def fqn_output_features(self) -> List[str]:
+        """Fully qualified name of the output features of this extractor."""
+        return [
+            f"{self.featureset}.{feature}" for feature in self.output_features
+        ]
 
     def get_dataset_dependencies(self) -> List[Dataset]:
         depended_datasets = []

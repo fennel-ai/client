@@ -11,7 +11,7 @@ from fennel.test_lib.test_client import (
     InternalTestClient,
 )
 from fennel.test_lib.test_utils import (
-    clean_ds_func_src_code,
-    clean_fs_func_src_code,
     error_message,
+    erase_extractor_pycode,
+    erase_operator_pycode,
 )

@@ -14,10 +14,9 @@ except ImportError:
 from requests import Response
 
 import fennel.datasets.datasets
-import fennel.gen.services_pb2 as services_pb2
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
-from fennel.lib.to_proto import dataset_to_proto, featureset_to_proto
+from fennel.lib.to_proto import to_sync_request_proto
 
 
 class FakeResponse(Response):
@@ -149,13 +148,4 @@ class IntegrationClient:
             raise NotImplementedError
 
     def _get_sync_request_proto(self):
-        datasets = []
-        featuresets = []
-        for obj in self.to_register_objects:
-            if isinstance(obj, Dataset):
-                datasets.append(dataset_to_proto(obj))
-            elif isinstance(obj, Featureset):
-                featuresets.append(featureset_to_proto(obj))
-        return services_pb2.SyncRequest(
-            dataset_requests=datasets, featureset_requests=featuresets
-        )
+        return to_sync_request_proto(self.to_register_objects)

@@ -63,6 +63,8 @@ class TestDataset(unittest.TestCase):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset])
+        if client.is_integration_client():
+            time.sleep(5)
         now = datetime.now()
         yesterday = now - pd.Timedelta(days=1)
         data = [
@@ -713,7 +715,7 @@ class PositiveRatingActivity:
 
     @pipeline(id=1)
     def filter_positive_ratings(cls, rating: Dataset[RatingActivity]):
-        filtered_ds = rating.filter(lambda df: df[df["rating"] >= 3.5])
+        filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
         return filtered_ds.groupby("movie").aggregate(
             [Count(window=Window("forever"), into_field=str(cls.cnt_rating))],
         )
@@ -824,9 +826,7 @@ class FraudReportAggregatedDataset:
             df["category"].fillna("unknown", inplace=True)
             return df
 
-        filtered_ds = activity.filter(
-            lambda df: df[df["action_type"] == "report"]
-        )
+        filtered_ds = activity.filter(lambda df: df["action_type"] == "report")
         ds = filtered_ds.transform(
             extract_info,
             schema={
@@ -1024,6 +1024,8 @@ class TestAggregateTableDataset(unittest.TestCase):
     @mock_client
     def test_table_aggregation(self, client):
         client.sync(datasets=[UserAge, UserAgeNonTable, UserAgeAggregated])
+        if client.is_integration_client():
+            time.sleep(5)
         yesterday = datetime.now() - timedelta(days=1)
         now = datetime.now()
         tomorrow = datetime.now() + timedelta(days=1)
@@ -1158,7 +1160,7 @@ class ManchesterUnitedPlayerInfo:
             club_salary, on=["club"]
         )
         manchester_players = player_info_with_salary.filter(
-            lambda df: df[df["club"] == "Manchester United"]
+            lambda df: df["club"] == "Manchester United"
         )
         return manchester_players.left_join(wag, on=["name"])
 

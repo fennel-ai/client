@@ -8,7 +8,7 @@ from typing import Union, Dict, Any, List, TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-import fennel.gen.schema_pb2 as proto
+import fennel.gen.schema_pb2 as schema_proto
 
 if TYPE_CHECKING:
     Series = pd.Series
@@ -83,7 +83,7 @@ class between:
         if self.dtype is not int and self.dtype is not float:
             raise TypeError("'between' type only accepts int or float types")
         if self.dtype is int:
-            scalar_type = proto.ScalarType.INT
+            dtype = schema_proto.DataType(int_type=schema_proto.IntType())
             if type(self.min) is float:
                 raise TypeError(
                     "Dtype of between is int and min param is " "float"
@@ -93,16 +93,16 @@ class between:
                     "Dtype of between is int and max param is " "float"
                 )
 
-            min = proto.Param(int_val=self.min)
-            max = proto.Param(int_val=self.max)
+            min = schema_proto.Value(int=int(self.min))
+            max = schema_proto.Value(int=int(self.max))
         else:
-            scalar_type = proto.ScalarType.FLOAT
-            min = proto.Param(float_val=float(self.min))
-            max = proto.Param(float_val=float(self.max))
+            dtype = schema_proto.DataType(double_type=schema_proto.DoubleType())
+            min = schema_proto.Value(float=float(self.min))
+            max = schema_proto.Value(float=float(self.max))
 
-        return proto.DataType(
-            between_type=proto.Between(
-                scalar_type=scalar_type,
+        return schema_proto.DataType(
+            between_type=schema_proto.Between(
+                dtype=dtype,
                 min=min,
                 max=max,
                 strict_min=self.strict_min,
@@ -128,19 +128,38 @@ class oneof:
                 )
 
         if self.dtype is int:
-            return proto.DataType(
-                one_of_type=proto.OneOf(
-                    scalar_type=proto.ScalarType.INT,
-                    options=[proto.Param(int_val=x) for x in self.options],
+            dtype = schema_proto.DataType(int_type=schema_proto.IntType())
+            options = []
+            for option in self.options:
+                if type(option) is not int:
+                    raise TypeError(
+                        "Dtype of oneof is int and option is " "not int"
+                    )
+                options.append(schema_proto.Value(int=option))
+            return schema_proto.DataType(
+                one_of_type=schema_proto.OneOf(
+                    of=dtype,
+                    options=options,
                 )
             )
-        elif self.dtype is str:
-            return proto.DataType(
-                one_of_type=proto.OneOf(
-                    scalar_type=proto.ScalarType.STRING,
-                    options=[proto.Param(str_val=x) for x in self.options],
+
+        if self.dtype is str:
+            dtype = schema_proto.DataType(string_type=schema_proto.StringType())
+            options = []
+            for option in self.options:
+                if type(option) is not str:
+                    raise TypeError(
+                        "Dtype of oneof is str and option is " "not str"
+                    )
+                options.append(schema_proto.Value(string=option))
+            return schema_proto.DataType(
+                one_of_type=schema_proto.OneOf(
+                    of=dtype,
+                    options=options,
                 )
             )
+
+        raise ValueError(f"Invalid dtype {self.dtype} for oneof")
 
 
 @dataclass
@@ -150,41 +169,48 @@ class regex:
     def to_proto(self):
         if type(self.regex) is not str:
             raise TypeError("'regex' type only accepts str types")
-        return proto.DataType(regex_type=self.regex)
+        return schema_proto.DataType(
+            regex_type=schema_proto.RegexType(pattern=self.regex)
+        )
 
 
-def get_datatype(type_: Any) -> proto.DataType:
+def get_datatype(type_: Any) -> schema_proto.DataType:
     # typing.Optional[x] is an alias for typing.Union[x, None]
     if _get_origin(type_) is Union and type(None) == _get_args(type_)[1]:
         dtype = get_datatype(_get_args(type_)[0])
-        dtype.is_nullable = True
-        return dtype
+        return schema_proto.DataType(
+            optional_type=schema_proto.OptionalType(of=dtype)
+        )
     elif type_ is int:
-        return proto.DataType(scalar_type=proto.ScalarType.INT)
+        return schema_proto.DataType(int_type=schema_proto.IntType())
     elif type_ is float:
-        return proto.DataType(scalar_type=proto.ScalarType.FLOAT)
+        return schema_proto.DataType(double_type=schema_proto.DoubleType())
     elif type_ is str:
-        return proto.DataType(scalar_type=proto.ScalarType.STRING)
+        return schema_proto.DataType(string_type=schema_proto.StringType())
     elif type_ is datetime:
-        return proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP)
+        return schema_proto.DataType(
+            timestamp_type=schema_proto.TimestampType()
+        )
     elif type_ is bool:
-        return proto.DataType(scalar_type=proto.ScalarType.BOOLEAN)
+        return schema_proto.DataType(bool_type=schema_proto.BoolType())
     elif _get_origin(type_) is list:
-        return proto.DataType(
-            array_type=proto.ArrayType(of=get_datatype(_get_args(type_)[0]))
+        return schema_proto.DataType(
+            array_type=schema_proto.ArrayType(
+                of=get_datatype(_get_args(type_)[0])
+            )
         )
     elif _get_origin(type_) is dict:
         if _get_args(type_)[0] is not str:
             raise ValueError("Dict keys must be strings.")
-        return proto.DataType(
-            map_type=proto.MapType(
+        return schema_proto.DataType(
+            map_type=schema_proto.MapType(
                 key=get_datatype(_get_args(type_)[0]),
                 value=get_datatype(_get_args(type_)[1]),
             )
         )
     elif isinstance(type_, _Embedding):
-        return proto.DataType(
-            embedding_type=proto.EmbeddingType(embedding_size=type_.dim)
+        return schema_proto.DataType(
+            embedding_type=schema_proto.EmbeddingType(embedding_size=type_.dim)
         )
     elif (
         isinstance(type_, between)
@@ -196,295 +222,270 @@ def get_datatype(type_: Any) -> proto.DataType:
 
 
 # TODO(Aditya): Add support for nested schema checks for arrays and maps
-def data_schema_check(
-    schema: Dict[str, proto.DataType], df: pd.DataFrame
-) -> List[ValueError]:
-    exceptions = []
-    # Check schema of fields with the dataframe
-    for name, dtype in schema.items():
-        if name not in df.columns:
-            exceptions.append(
-                ValueError(
-                    f"Field {name} not found in dataframe. "
-                    f"Please ensure the dataframe has the same schema as the "
-                    f"dataset."
-                )
-            )
+def _validate_field_in_df(
+    field: schema_proto.Field, df: pd.DataFrame, is_nullable: bool = False
+):
+    name = field.name
+    dtype = field.dtype
+    if name not in df.columns:
+        raise ValueError(
+            f"Field {name} not found in dataframe. "
+            f"Please ensure the dataframe has the same schema as the "
+            f"dataset."
+        )
 
-        if not dtype.is_nullable:
-            if df[name].isnull().any():
-                exceptions.append(
-                    ValueError(
-                        f"Field {name} is not nullable, but the "
-                        f"column in the dataframe has null values."
-                    )
+    # Check for the optional type
+    if dtype.optional_type != schema_proto.OptionalType():
+        return _validate_field_in_df(
+            field=schema_proto.Field(name=name, dtype=dtype.optional_type.of),
+            df=df,
+            is_nullable=True,
+        )
+
+    if not is_nullable and df[name].isnull().any():
+        raise ValueError(
+            f"Field {name} is not nullable, but the "
+            f"column in the dataframe has null values."
+        )
+
+    if dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
+        if is_nullable:
+            # If the dtype is nullable int64 gets converted to Float64
+            if (
+                df[name].dtype != np.int64
+                and df[name].dtype != pd.Int64Dtype()
+                and df[name].dtype != np.float64
+                and df[name].dtype != pd.Float64Dtype()
+            ):
+                raise ValueError(
+                    f"Field {name} is of type int, but the "
+                    f"column in the dataframe is of type "
+                    f"{df[name].dtype}."
                 )
         else:
-            if dtype == proto.DataType(
-                scalar_type=proto.ScalarType.INT, is_nullable=True
-            ):
-                if df[name].dtype != np.int64 and df[name].dtype != np.float64:
-                    exceptions.append(
-                        ValueError(
-                            f"Field {name} is of type int, but the "
-                            f"column in the dataframe is of type "
-                            f"{df[name].dtype}."
-                        )
-                    )
-                continue
-
-        dtype.is_nullable = False
-        if dtype == proto.DataType(scalar_type=proto.ScalarType.INT):
             if df[name].dtype != np.int64 and df[name].dtype != pd.Int64Dtype():
-                exceptions.append(
-                    ValueError(
-                        f"Field {name} is of type int, but the "
-                        f"column in the dataframe is of type "
-                        f"{df[name].dtype}."
-                    )
+                raise ValueError(
+                    f"Field {name} is of type int, but the "
+                    f"column in the dataframe is of type "
+                    f"{df[name].dtype}."
                 )
-        elif dtype == proto.DataType(scalar_type=proto.ScalarType.FLOAT):
+    elif dtype == schema_proto.DataType(double_type=schema_proto.DoubleType()):
+        if (
+            df[name].dtype != np.float64
+            and df[name].dtype != np.int64
+            and df[name].dtype != pd.Int64Dtype()
+            and df[name].dtype != pd.Float64Dtype()
+        ):
+            raise ValueError(
+                f"Field {name} is of type float, but the "
+                f"column in the dataframe is of type "
+                f"{df[name].dtype}."
+            )
+    elif dtype == schema_proto.DataType(string_type=schema_proto.StringType()):
+        if (
+            df[name].dtype != object
+            and df[name].dtype != np.str_
+            and df[name].dtype != pd.StringDtype()
+        ):
+            raise ValueError(
+                f"Field {name} is of type str, but the "
+                f"column in the dataframe is of type "
+                f"{df[name].dtype}."
+            )
+    elif dtype == schema_proto.DataType(
+        timestamp_type=schema_proto.TimestampType()
+    ):
+        if df[name].dtype != "datetime64[ns]":
+            raise ValueError(
+                f"Field {name} is of type timestamp, but the "
+                f"column in the dataframe is of type "
+                f"{df[name].dtype}."
+            )
+    elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
+        if df[name].dtype != np.bool_:
+            raise ValueError(
+                f"Field {name} is of type bool, but the "
+                f"column in the dataframe is of type "
+                f"{df[name].dtype}."
+            )
+    elif dtype.embedding_type.embedding_size > 0:
+        if df[name].dtype != object:
+            raise ValueError(
+                f"Field {name} is of type embedding, but the "
+                f"column in the dataframe is of type "
+                f"{df[name].dtype}."
+            )
+        # Check that the embedding is a list of floats of size embedding_size
+        for i, row in df[name].items():
+            if not isinstance(row, np.ndarray) and not isinstance(row, list):
+                raise ValueError(
+                    f"Field {name} is of type embedding, but the "
+                    f"column in the dataframe is not a list."
+                )
+            if len(row) != dtype.embedding_type.embedding_size:
+                raise ValueError(
+                    f"Field {name} is of type embedding, of size "
+                    f"{dtype.embedding_type.embedding_size}, but the "
+                    "column in the dataframe has a list of size "
+                    f"{len(row)}."
+                )
+    elif dtype.array_type.of != schema_proto.DataType():
+        if df[name].dtype != object:
+            raise ValueError(
+                f"Field {name} is of type array, but the "
+                f"column in the dataframe is of type "
+                f"{df[name].dtype}."
+            )
+        for i, row in df[name].items():
+            if not isinstance(row, np.ndarray) and not isinstance(row, list):
+                raise ValueError(
+                    f"Field {name} is of type array, but the "
+                    f"column in the dataframe is not a list."
+                )
+    elif dtype.map_type.key != schema_proto.DataType():
+        if df[name].dtype != object:
+            raise ValueError(
+                f"Field {name} is of type map, but the "
+                f"column in the dataframe is of type "
+                f"{df[name].dtype}."
+            )
+        for i, row in df[name].items():
+            if not isinstance(row, dict):
+                raise ValueError(
+                    f"Field {name} is of type map, but the "
+                    f"column in the dataframe is not a dict."
+                )
+    elif dtype.between_type != schema_proto.Between():
+        bw_type = dtype.between_type
+        if bw_type.dtype == schema_proto.DataType(
+            int_type=schema_proto.IntType()
+        ):
+            if df[name].dtype != np.int64 and df[name].dtype != pd.Int64Dtype():
+                raise ValueError(
+                    f"Field {name} is of type int, but the "
+                    f"column in the dataframe is of type "
+                    f"{df[name].dtype}."
+                )
+            min_bound = bw_type.min.int
+            max_bound = bw_type.max.int
+        elif bw_type.dtype == schema_proto.DataType(
+            double_type=schema_proto.DoubleType()
+        ):
             if (
                 df[name].dtype != np.float64
                 and df[name].dtype != np.int64
                 and df[name].dtype != pd.Int64Dtype()
                 and df[name].dtype != pd.Float64Dtype()
             ):
-                exceptions.append(
-                    ValueError(
-                        f"Field {name} is of type float, but the "
-                        f"column in the dataframe is of type "
-                        f"{df[name].dtype}."
-                    )
+                raise ValueError(
+                    f"Field {name} is of type float, but the "
+                    f"column in the dataframe is of type "
+                    f"{df[name].dtype}."
                 )
-        elif dtype == proto.DataType(scalar_type=proto.ScalarType.STRING):
-            if (
-                df[name].dtype != object
-                and df[name].dtype != np.str_
-                and df[name].dtype != pd.StringDtype()
-            ):
-                exceptions.append(
-                    ValueError(
-                        f"Field {name} is of type str, but the "
-                        f"column in the dataframe is of type "
-                        f"{df[name].dtype}."
-                    )
-                )
-        elif dtype == proto.DataType(scalar_type=proto.ScalarType.TIMESTAMP):
-            if df[name].dtype != "datetime64[ns]":
-                exceptions.append(
-                    ValueError(
-                        f"Field {name} is of type timestamp, but the "
-                        f"column in the dataframe is of type "
-                        f"{df[name].dtype}."
-                    )
-                )
-        elif dtype == proto.DataType(scalar_type=proto.ScalarType.BOOLEAN):
-            if df[name].dtype != np.bool_:
-                exceptions.append(
-                    ValueError(
-                        f"Field {name} is of type bool, but the "
-                        f"column in the dataframe is of type "
-                        f"{df[name].dtype}."
-                    )
-                )
-        elif dtype.embedding_type.embedding_size > 0:
-            if df[name].dtype != object:
-                exceptions.append(
-                    ValueError(
-                        f"Field {name} is of type embedding, but the "
-                        f"column in the dataframe is of type "
-                        f"{df[name].dtype}."
-                    )
-                )
-            # Check that the embedding is a list of floats of size embedding_size
-            for i, row in df[name].items():
-                if not isinstance(row, np.ndarray) and not isinstance(
-                    row, list
-                ):
-                    exceptions.append(
-                        ValueError(
-                            f"Field {name} is of type embedding, but the "
-                            f"column in the dataframe is not a list."
-                        )
-                    )
-                    break
-                if len(row) != dtype.embedding_type.embedding_size:
-                    exceptions.append(
-                        ValueError(
-                            f"Field {name} is of type embedding, of size "
-                            f"{dtype.embedding_type.embedding_size}, but the "
-                            "column in the dataframe has a list of size "
-                            f"{len(row)}."
-                        )
-                    )
-        elif dtype.array_type.of != proto.DataType():
-            if df[name].dtype != object:
-                exceptions.append(
-                    ValueError(
-                        f"Field {name} is of type array, but the "
-                        f"column in the dataframe is of type "
-                        f"{df[name].dtype}."
-                    )
-                )
-                continue
-            for i, row in df[name].items():
-                if not isinstance(row, np.ndarray) and not isinstance(
-                    row, list
-                ):
-                    exceptions.append(
-                        ValueError(
-                            f"Field {name} is of type array, but the "
-                            f"column in the dataframe is not a list."
-                        )
-                    )
-                    break
-        elif dtype.map_type.key != proto.DataType():
-            if df[name].dtype != object:
-                exceptions.append(
-                    ValueError(
-                        f"Field {name} is of type map, but the "
-                        f"column in the dataframe is of type "
-                        f"{df[name].dtype}."
-                    )
-                )
-            for i, row in df[name].items():
-                if not isinstance(row, dict):
-                    exceptions.append(
-                        ValueError(
-                            f"Field {name} is of type map, but the "
-                            f"column in the dataframe is not a dict."
-                        )
-                    )
-                    break
-        elif dtype.between_type != proto.Between():
-            bw_type = dtype.between_type
-            if bw_type.scalar_type == proto.ScalarType.INT:
-                if (
-                    df[name].dtype != np.int64
-                    and df[name].dtype != pd.Int64Dtype()
-                ):
-                    exceptions.append(
-                        ValueError(
-                            f"Field {name} is of type int, but the "
-                            f"column in the dataframe is of type "
-                            f"{df[name].dtype}."
-                        )
-                    )
-                    continue
-                min_bound = bw_type.min.int_val
-                max_bound = bw_type.max.int_val
-            elif bw_type.scalar_type == proto.ScalarType.FLOAT:
-                if (
-                    df[name].dtype != np.float64
-                    and df[name].dtype != np.int64
-                    and df[name].dtype != pd.Int64Dtype()
-                    and df[name].dtype != pd.Float64Dtype()
-                ):
-                    exceptions.append(
-                        ValueError(
-                            f"Field {name} is of type float, but the "
-                            f"column in the dataframe is of type "
-                            f"{df[name].dtype}."
-                        )
-                    )
-                    continue
-                min_bound = bw_type.min.float_val  # type: ignore
-                max_bound = bw_type.max.float_val  # type: ignore
-            else:
-                raise TypeError(
-                    "'between' type only accepts int or float types"
-                )
-            for i, row in df[name].items():
-                if (
-                    row < min_bound
-                    or row > max_bound
-                    or (bw_type.strict_min and row == min_bound)
-                    or (bw_type.strict_max and row == max_bound)
-                ):
-                    exceptions.append(
-                        ValueError(
-                            f"Field {name} is of type between, but the "
-                            f"value {row} is out of bounds."
-                        )
-                    )
-                    break
-        elif dtype.one_of_type != proto.OneOf():
-            of_type = dtype.one_of_type
-            if of_type.scalar_type == proto.ScalarType.INT:
-                if (
-                    df[name].dtype != np.int64
-                    and df[name].dtype != pd.Int64Dtype()
-                ):
-                    exceptions.append(
-                        ValueError(
-                            f"Field {name} is of type int, but the "
-                            f"column in the dataframe is of type "
-                            f"{df[name].dtype}."
-                        )
-                    )
-                    continue
-                options = set(int(x.int_val) for x in of_type.options)
-            elif of_type.scalar_type == proto.ScalarType.STRING:
-                if (
-                    df[name].dtype != object
-                    and df[name].dtype != np.str_
-                    and df[name].dtype != pd.StringDtype()
-                ):
-                    exceptions.append(
-                        ValueError(
-                            f"Field '{name}' is of type str, but the "
-                            f"column in the dataframe is of type "
-                            f"{df[name].dtype}."
-                        )
-                    )
-                    continue
-                options = set(
-                    str(x.str_val) for x in of_type.options  # type: ignore
-                )
-            else:
-                raise TypeError("oneof type only accepts int or str types")
-
-            for i, row in df[name].items():
-                if row not in options:
-                    sorted_options = sorted(options)
-                    exceptions.append(
-                        ValueError(
-                            f"Field '{name}' is of type oneof, but the "
-                            f"value '{row}' is not found in the set of options "
-                            f"{sorted_options}."
-                        )
-                    )
-                    break
-
-        elif dtype.regex_type != "":
-            if (
-                df[name].dtype != object
-                and df[name].dtype != np.str_
-                and df[name].dtype != pd.StringDtype()
-            ):
-                exceptions.append(
-                    ValueError(
-                        f"Field '{name}' is of type str, but the "
-                        f"column in the dataframe is of type "
-                        f"{df[name].dtype}."
-                    )
-                )
-                continue
-            regex = dtype.regex_type
-            for i, row in df[name].items():
-                full_match = "^" + regex + "$"
-                if not re.match(full_match, row):
-                    exceptions.append(
-                        ValueError(
-                            f"Field '{name}' is of type regex, but the "
-                            f"value '{row}' does not match the regex "
-                            f"{regex}."
-                        )
-                    )
-                    break
+            min_bound = bw_type.min.float  # type: ignore
+            max_bound = bw_type.max.float  # type: ignore
         else:
-            exceptions.append(
-                ValueError(f"Field {name} has unknown data type " f"{dtype}.")
+            raise TypeError("'between' type only accepts int or float types")
+        for i, row in df[name].items():
+            if (
+                row < min_bound
+                or row > max_bound
+                or (bw_type.strict_min and row == min_bound)
+                or (bw_type.strict_max and row == max_bound)
+            ):
+                raise ValueError(
+                    f"Field {name} is of type between, but the "
+                    f"value {row} is out of bounds."
+                )
+    elif dtype.one_of_type != schema_proto.OneOf():
+        of_type = dtype.one_of_type
+        if of_type.of == schema_proto.DataType(int_type=schema_proto.IntType()):
+            if df[name].dtype != np.int64 and df[name].dtype != pd.Int64Dtype():
+                raise ValueError(
+                    f"Field {name} is of type int, but the "
+                    f"column in the dataframe is of type "
+                    f"{df[name].dtype}."
+                )
+            options = set(int(x.int) for x in of_type.options)
+        elif of_type.of == schema_proto.DataType(
+            string_type=schema_proto.StringType()
+        ):
+            if (
+                df[name].dtype != object
+                and df[name].dtype != np.str_
+                and df[name].dtype != pd.StringDtype()
+            ):
+                raise ValueError(
+                    f"Field '{name}' is of type str, but the "
+                    f"column in the dataframe is of type "
+                    f"{df[name].dtype}."
+                )
+            options = set(
+                str(x.string) for x in of_type.options  # type: ignore
             )
+        else:
+            raise TypeError("oneof type only accepts int or str types")
+
+        for i, row in df[name].items():
+            if row not in options:
+                sorted_options = sorted(options)
+                raise ValueError(
+                    f"Field '{name}' is of type oneof, but the "
+                    f"value '{row}' is not found in the set of options "
+                    f"{sorted_options}."
+                )
+
+    elif dtype.regex_type != "":
+        if (
+            df[name].dtype != object
+            and df[name].dtype != np.str_
+            and df[name].dtype != pd.StringDtype()
+        ):
+            raise ValueError(
+                f"Field '{name}' is of type str, but the "
+                f"column in the dataframe is of type "
+                f"{df[name].dtype}."
+            )
+        regex = dtype.regex_type.pattern
+        for i, row in df[name].items():
+            full_match = "^" + regex + "$"
+            if not re.match(full_match, row):
+                raise ValueError(
+                    f"Field '{name}' is of type regex, but the "
+                    f"value '{row}' does not match the regex "
+                    f"{regex}."
+                )
+    else:
+        raise ValueError(f"Field {name} has unknown data type " f"{dtype}.")
+
+
+def data_schema_check(
+    schema: schema_proto.DSSchema, df: pd.DataFrame
+) -> List[ValueError]:
+    exceptions = []
+    fields = []
+    for key in schema.keys.fields:
+        fields.append(key)
+
+    for val in schema.values.fields:
+        fields.append(val)
+
+    if schema.timestamp != "":
+        fields.append(
+            schema_proto.Field(
+                name=schema.timestamp,
+                dtype=schema_proto.DataType(
+                    timestamp_type=schema_proto.TimestampType()
+                ),
+            )
+        )
+
+    # Check schema of fields with the dataframe
+    for field in fields:
+        try:
+            _validate_field_in_df(field, df)
+        except ValueError as e:
+            exceptions.append(e)
+        except Exception as e:
+            raise e
     return exceptions

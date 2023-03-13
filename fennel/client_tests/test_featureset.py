@@ -155,6 +155,8 @@ class TestSimpleExtractor(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
+        if client.is_integration_client():
+            time.sleep(5)
         ts = pd.Series([now, now])
         user_ids = pd.Series([18232, 18234])
         df = UserInfoSingleExtractor.get_user_info(
@@ -198,6 +200,8 @@ class TestExtractorDAGResolution(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
+        if client.is_integration_client():
+            time.sleep(5)
         feature_df = client.extract_features(
             output_feature_list=[
                 UserInfoMultipleExtractor.userid,
@@ -242,25 +246,12 @@ class UserInfoTransformedFeatures:
     def get_user_transformed_features(
         cls,
         ts: Series[datetime],
-        user_features: DataFrame[
-            UserInfoMultipleExtractor.userid,
-            UserInfoMultipleExtractor.name,
-            UserInfoMultipleExtractor.country_geoid,
-            UserInfoMultipleExtractor.age,
-            UserInfoMultipleExtractor.age_squared,
-            UserInfoMultipleExtractor.age_cubed,
-            UserInfoMultipleExtractor.is_name_common,
-            UserInfoMultipleExtractor.age_reciprocal,
-        ],
+        user_age: Series[UserInfoMultipleExtractor.age],
+        is_name_common: Series[UserInfoMultipleExtractor.is_name_common],
+        country_geoid: Series[UserInfoMultipleExtractor.country_geoid],
     ):
-        age = user_features[repr(UserInfoMultipleExtractor.age)]
-        is_name_common = user_features[
-            repr(UserInfoMultipleExtractor.is_name_common)
-        ]
-        age_power_four = age**4
-        country_geoid = (
-            user_features[repr(UserInfoMultipleExtractor.country_geoid)] ** 2
-        )
+        age_power_four = user_age**4
+        country_geoid = country_geoid**2
         return pd.DataFrame(
             {
                 str(cls.age_power_four): age_power_four,
@@ -281,6 +272,8 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
                 UserInfoTransformedFeatures,
             ],
         )
+        if client.is_integration_client():
+            time.sleep(5)
         now = datetime.utcnow()
         data = [
             [18232, "John", 32, "USA", now],

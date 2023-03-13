@@ -5,93 +5,80 @@ isort:skip_file
 import builtins
 import collections.abc
 import google.protobuf.descriptor
+import google.protobuf.duration_pb2
 import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import metadata_pb2
+import pycode_pb2
 import schema_pb2
+import spec_pb2
 import sys
-import typing
 
-if sys.version_info >= (3, 10):
+if sys.version_info >= (3, 8):
     import typing as typing_extensions
 else:
     import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-class _FieldType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
-
-class _FieldTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_FieldType.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
-    Key: _FieldType.ValueType  # 0
-    Val: _FieldType.ValueType  # 1
-    Timestamp: _FieldType.ValueType  # 2
-
-class FieldType(_FieldType, metaclass=_FieldTypeEnumTypeWrapper):
-    """All integers representing time are in microseconds and hence should be int64."""
-
-Key: FieldType.ValueType  # 0
-Val: FieldType.ValueType  # 1
-Timestamp: FieldType.ValueType  # 2
-global___FieldType = FieldType
-
-class _AggregateType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
-
-class _AggregateTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_AggregateType.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
-    SUM: _AggregateType.ValueType  # 0
-    AVG: _AggregateType.ValueType  # 1
-    COUNT: _AggregateType.ValueType  # 2
-    MIN: _AggregateType.ValueType  # 3
-    MAX: _AggregateType.ValueType  # 4
-    TOPK: _AggregateType.ValueType  # 5
-    CF: _AggregateType.ValueType  # 6
-
-class AggregateType(_AggregateType, metaclass=_AggregateTypeEnumTypeWrapper): ...
-
-SUM: AggregateType.ValueType  # 0
-AVG: AggregateType.ValueType  # 1
-COUNT: AggregateType.ValueType  # 2
-MIN: AggregateType.ValueType  # 3
-MAX: AggregateType.ValueType  # 4
-TOPK: AggregateType.ValueType  # 5
-CF: AggregateType.ValueType  # 6
-global___AggregateType = AggregateType
-
 @typing_extensions.final
-class Field(google.protobuf.message.Message):
+class CoreDataset(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
+    class FieldMetadataEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> metadata_pb2.Metadata: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: metadata_pb2.Metadata | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
     NAME_FIELD_NUMBER: builtins.int
-    FTYPE_FIELD_NUMBER: builtins.int
-    DTYPE_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
+    DSSCHEMA_FIELD_NUMBER: builtins.int
+    HISTORY_FIELD_NUMBER: builtins.int
+    RETENTION_FIELD_NUMBER: builtins.int
+    FIELD_METADATA_FIELD_NUMBER: builtins.int
     name: builtins.str
-    ftype: global___FieldType.ValueType
-    @property
-    def dtype(self) -> schema_pb2.DataType: ...
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
+    @property
+    def dsschema(self) -> schema_pb2.DSSchema: ...
+    @property
+    def history(self) -> google.protobuf.duration_pb2.Duration: ...
+    @property
+    def retention(self) -> google.protobuf.duration_pb2.Duration: ...
+    @property
+    def field_metadata(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, metadata_pb2.Metadata]: ...
     def __init__(
         self,
         *,
         name: builtins.str = ...,
-        ftype: global___FieldType.ValueType = ...,
-        dtype: schema_pb2.DataType | None = ...,
         metadata: metadata_pb2.Metadata | None = ...,
+        dsschema: schema_pb2.DSSchema | None = ...,
+        history: google.protobuf.duration_pb2.Duration | None = ...,
+        retention: google.protobuf.duration_pb2.Duration | None = ...,
+        field_metadata: collections.abc.Mapping[builtins.str, metadata_pb2.Metadata] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "ftype", b"ftype", "metadata", b"metadata", "name", b"name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "history", b"history", "metadata", b"metadata", "retention", b"retention"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "field_metadata", b"field_metadata", "history", b"history", "metadata", b"metadata", "name", b"name", "retention", b"retention"]) -> None: ...
 
-global___Field = Field
+global___CoreDataset = CoreDataset
 
 @typing_extensions.final
 class OnDemand(google.protobuf.message.Message):
+    """All integers representing time are in microseconds and hence should be int64."""
+
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     FUNCTION_SOURCE_CODE_FIELD_NUMBER: builtins.int
@@ -100,6 +87,7 @@ class OnDemand(google.protobuf.message.Message):
     function_source_code: builtins.str
     function: builtins.bytes
     expires_after: builtins.int
+    """TODO(mohit): Make this duration"""
     def __init__(
         self,
         *,
@@ -120,81 +108,62 @@ class Pipeline(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    NODES_FIELD_NUMBER: builtins.int
-    ROOT_FIELD_NUMBER: builtins.int
+    NAME_FIELD_NUMBER: builtins.int
+    DATASET_NAME_FIELD_NUMBER: builtins.int
     SIGNATURE_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
-    INPUTS_FIELD_NUMBER: builtins.int
-    NAME_FIELD_NUMBER: builtins.int
-    ID_FIELD_NUMBER: builtins.int
-    @property
-    def nodes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Node]:
-        """Nodes in the pipeline."""
-    root: builtins.str
-    """Id of the root node."""
+    INPUT_DATASET_NAMES_FIELD_NUMBER: builtins.int
+    IDX_FIELD_NUMBER: builtins.int
+    name: builtins.str
+    dataset_name: builtins.str
     signature: builtins.str
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
     @property
-    def inputs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
-        """List of input datasets."""
-    name: builtins.str
-    id: builtins.int
+    def input_dataset_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    idx: builtins.int
     def __init__(
         self,
         *,
-        nodes: collections.abc.Iterable[global___Node] | None = ...,
-        root: builtins.str = ...,
+        name: builtins.str = ...,
+        dataset_name: builtins.str = ...,
         signature: builtins.str = ...,
         metadata: metadata_pb2.Metadata | None = ...,
-        inputs: collections.abc.Iterable[builtins.str] | None = ...,
-        name: builtins.str = ...,
-        id: builtins.int = ...,
+        input_dataset_names: collections.abc.Iterable[builtins.str] | None = ...,
+        idx: builtins.int = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["id", b"id", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "nodes", b"nodes", "root", b"root", "signature", b"signature"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "idx", b"idx", "input_dataset_names", b"input_dataset_names", "metadata", b"metadata", "name", b"name", "signature", b"signature"]) -> None: ...
 
 global___Pipeline = Pipeline
 
 @typing_extensions.final
-class Node(google.protobuf.message.Message):
-    """Each Node in the pipeline either refers to an operator.
-    Each node also has a globally unique id. Operators refer to their inputs via
-    their corresponding node ids.
-    """
+class Operator(google.protobuf.message.Message):
+    """Each operator corresponds to a valid operation as part of a pipeline"""
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     ID_FIELD_NUMBER: builtins.int
-    OPERATOR_FIELD_NUMBER: builtins.int
-    DATASET_FIELD_NUMBER: builtins.int
-    id: builtins.str
-    """For a dataset node, this is the name of the dataset"""
-    @property
-    def operator(self) -> global___Operator: ...
-    dataset: builtins.str
-    def __init__(
-        self,
-        *,
-        id: builtins.str = ...,
-        operator: global___Operator | None = ...,
-        dataset: builtins.str = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "node_type", b"node_type", "operator", b"operator"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "id", b"id", "node_type", b"node_type", "operator", b"operator"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["node_type", b"node_type"]) -> typing_extensions.Literal["operator", "dataset"] | None: ...
-
-global___Node = Node
-
-@typing_extensions.final
-class Operator(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
+    IS_ROOT_FIELD_NUMBER: builtins.int
+    PIPELINE_NAME_FIELD_NUMBER: builtins.int
+    DATASET_NAME_FIELD_NUMBER: builtins.int
     AGGREGATE_FIELD_NUMBER: builtins.int
     JOIN_FIELD_NUMBER: builtins.int
     TRANSFORM_FIELD_NUMBER: builtins.int
     UNION_FIELD_NUMBER: builtins.int
     FILTER_FIELD_NUMBER: builtins.int
+    DATASET_REF_FIELD_NUMBER: builtins.int
+    NAME_FIELD_NUMBER: builtins.int
+    id: builtins.str
+    """Every operator has an ID assigned by the client"""
+    is_root: builtins.bool
+    """If the operator is the "root" operator in the given `pipeline` of the given
+    `dataset`.
+    """
+    pipeline_name: builtins.str
+    """Name of the pipeline in which this operator is defined in"""
+    dataset_name: builtins.str
+    """Name of the dataset in which the pipeline is defined in"""
     @property
     def aggregate(self) -> global___Aggregate: ...
     @property
@@ -205,18 +174,32 @@ class Operator(google.protobuf.message.Message):
     def union(self) -> global___Union: ...
     @property
     def filter(self) -> global___Filter: ...
+    @property
+    def dataset_ref(self) -> global___DatasetRef: ...
+    name: builtins.str
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+    THE CLIENT
+
+    Name of the operator assigned by the server
+    """
     def __init__(
         self,
         *,
+        id: builtins.str = ...,
+        is_root: builtins.bool = ...,
+        pipeline_name: builtins.str = ...,
+        dataset_name: builtins.str = ...,
         aggregate: global___Aggregate | None = ...,
         join: global___Join | None = ...,
         transform: global___Transform | None = ...,
         union: global___Union | None = ...,
         filter: global___Filter | None = ...,
+        dataset_ref: global___DatasetRef | None = ...,
+        name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "filter", b"filter", "join", b"join", "op", b"op", "transform", b"transform", "union", b"union"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "filter", b"filter", "join", b"join", "op", b"op", "transform", b"transform", "union", b"union"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["op", b"op"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union", "filter"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "dataset_ref", b"dataset_ref", "filter", b"filter", "join", b"join", "kind", b"kind", "transform", b"transform", "union", b"union"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "dataset_name", b"dataset_name", "dataset_ref", b"dataset_ref", "filter", b"filter", "id", b"id", "is_root", b"is_root", "join", b"join", "kind", b"kind", "name", b"name", "pipeline_name", b"pipeline_name", "transform", b"transform", "union", b"union"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union", "filter", "dataset_ref"] | None: ...
 
 global___Operator = Operator
 
@@ -224,22 +207,28 @@ global___Operator = Operator
 class Aggregate(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    OPERAND_NODE_ID_FIELD_NUMBER: builtins.int
+    OPERAND_ID_FIELD_NUMBER: builtins.int
     KEYS_FIELD_NUMBER: builtins.int
-    AGGREGATES_FIELD_NUMBER: builtins.int
-    operand_node_id: builtins.str
+    SPECS_FIELD_NUMBER: builtins.int
+    OPERAND_NAME_FIELD_NUMBER: builtins.int
+    operand_id: builtins.str
     @property
     def keys(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
-    def aggregates(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Aggregation]: ...
+    def specs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[spec_pb2.PreSpec]: ...
+    operand_name: builtins.str
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+    THE CLIENT
+    """
     def __init__(
         self,
         *,
-        operand_node_id: builtins.str = ...,
+        operand_id: builtins.str = ...,
         keys: collections.abc.Iterable[builtins.str] | None = ...,
-        aggregates: collections.abc.Iterable[global___Aggregation] | None = ...,
+        specs: collections.abc.Iterable[spec_pb2.PreSpec] | None = ...,
+        operand_name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aggregates", b"aggregates", "keys", b"keys", "operand_node_id", b"operand_node_id"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["keys", b"keys", "operand_id", b"operand_id", "operand_name", b"operand_name", "specs", b"specs"]) -> None: ...
 
 global___Aggregate = Aggregate
 
@@ -263,23 +252,32 @@ class Join(google.protobuf.message.Message):
         ) -> None: ...
         def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
 
-    LHS_NODE_ID_FIELD_NUMBER: builtins.int
-    RHS_DATASET_NAME_FIELD_NUMBER: builtins.int
+    LHS_OPERAND_ID_FIELD_NUMBER: builtins.int
+    RHS_DSREF_OPERAND_ID_FIELD_NUMBER: builtins.int
     ON_FIELD_NUMBER: builtins.int
-    lhs_node_id: builtins.str
-    rhs_dataset_name: builtins.str
-    """RHS of a JOIN can only be a dataset."""
+    LHS_OPERAND_NAME_FIELD_NUMBER: builtins.int
+    RHS_DSREF_OPERAND_NAME_FIELD_NUMBER: builtins.int
+    lhs_operand_id: builtins.str
+    rhs_dsref_operand_id: builtins.str
+    """RHS of a JOIN can only be a dataset, here it refers to the DSRef operator"""
     @property
     def on(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]:
         """Map of left field name to right field name to join on."""
+    lhs_operand_name: builtins.str
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+    THE CLIENT
+    """
+    rhs_dsref_operand_name: builtins.str
     def __init__(
         self,
         *,
-        lhs_node_id: builtins.str = ...,
-        rhs_dataset_name: builtins.str = ...,
+        lhs_operand_id: builtins.str = ...,
+        rhs_dsref_operand_id: builtins.str = ...,
         on: collections.abc.Mapping[builtins.str, builtins.str] | None = ...,
+        lhs_operand_name: builtins.str = ...,
+        rhs_dsref_operand_name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["lhs_node_id", b"lhs_node_id", "on", b"on", "rhs_dataset_name", b"rhs_dataset_name"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["lhs_operand_id", b"lhs_operand_id", "lhs_operand_name", b"lhs_operand_name", "on", b"on", "rhs_dsref_operand_id", b"rhs_dsref_operand_id", "rhs_dsref_operand_name", b"rhs_dsref_operand_name"]) -> None: ...
 
 global___Join = Join
 
@@ -305,24 +303,29 @@ class Transform(google.protobuf.message.Message):
         def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
 
-    OPERAND_NODE_ID_FIELD_NUMBER: builtins.int
-    FUNCTION_FIELD_NUMBER: builtins.int
-    FUNCTION_SOURCE_CODE_FIELD_NUMBER: builtins.int
+    OPERAND_ID_FIELD_NUMBER: builtins.int
     SCHEMA_FIELD_NUMBER: builtins.int
-    operand_node_id: builtins.str
-    function: builtins.bytes
-    function_source_code: builtins.str
+    PYCODE_FIELD_NUMBER: builtins.int
+    OPERAND_NAME_FIELD_NUMBER: builtins.int
+    operand_id: builtins.str
     @property
     def schema(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, schema_pb2.DataType]: ...
+    @property
+    def pycode(self) -> pycode_pb2.PyCode: ...
+    operand_name: builtins.str
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+    THE CLIENT
+    """
     def __init__(
         self,
         *,
-        operand_node_id: builtins.str = ...,
-        function: builtins.bytes = ...,
-        function_source_code: builtins.str = ...,
+        operand_id: builtins.str = ...,
         schema: collections.abc.Mapping[builtins.str, schema_pb2.DataType] | None = ...,
+        pycode: pycode_pb2.PyCode | None = ...,
+        operand_name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "function_source_code", b"function_source_code", "operand_node_id", b"operand_node_id", "schema", b"schema"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["pycode", b"pycode"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["operand_id", b"operand_id", "operand_name", b"operand_name", "pycode", b"pycode", "schema", b"schema"]) -> None: ...
 
 global___Transform = Transform
 
@@ -330,20 +333,25 @@ global___Transform = Transform
 class Filter(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    OPERAND_NODE_ID_FIELD_NUMBER: builtins.int
-    FUNCTION_FIELD_NUMBER: builtins.int
-    FUNCTION_SOURCE_CODE_FIELD_NUMBER: builtins.int
-    operand_node_id: builtins.str
-    function: builtins.bytes
-    function_source_code: builtins.str
+    OPERAND_ID_FIELD_NUMBER: builtins.int
+    PYCODE_FIELD_NUMBER: builtins.int
+    OPERAND_NAME_FIELD_NUMBER: builtins.int
+    operand_id: builtins.str
+    @property
+    def pycode(self) -> pycode_pb2.PyCode: ...
+    operand_name: builtins.str
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+    THE CLIENT
+    """
     def __init__(
         self,
         *,
-        operand_node_id: builtins.str = ...,
-        function: builtins.bytes = ...,
-        function_source_code: builtins.str = ...,
+        operand_id: builtins.str = ...,
+        pycode: pycode_pb2.PyCode | None = ...,
+        operand_name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "function_source_code", b"function_source_code", "operand_node_id", b"operand_node_id"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["pycode", b"pycode"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["operand_id", b"operand_id", "operand_name", b"operand_name", "pycode", b"pycode"]) -> None: ...
 
 global___Filter = Filter
 
@@ -351,164 +359,36 @@ global___Filter = Filter
 class Union(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    OPERAND_NODE_IDS_FIELD_NUMBER: builtins.int
+    OPERAND_IDS_FIELD_NUMBER: builtins.int
+    OPERAND_NAMES_FIELD_NUMBER: builtins.int
     @property
-    def operand_node_ids(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    def operand_ids(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @property
+    def operand_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+        """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+        THE CLIENT
+        """
     def __init__(
         self,
         *,
-        operand_node_ids: collections.abc.Iterable[builtins.str] | None = ...,
+        operand_ids: collections.abc.Iterable[builtins.str] | None = ...,
+        operand_names: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["operand_node_ids", b"operand_node_ids"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["operand_ids", b"operand_ids", "operand_names", b"operand_names"]) -> None: ...
 
 global___Union = Union
 
 @typing_extensions.final
-class Aggregation(google.protobuf.message.Message):
-    """----------------------------------------------------------------------------
-    Aggregate Definitions
-    ----------------------------------------------------------------------------
-    """
-
+class DatasetRef(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    AGG_TYPE_FIELD_NUMBER: builtins.int
-    WINDOW_SPEC_FIELD_NUMBER: builtins.int
-    FIELD_FIELD_NUMBER: builtins.int
-    VALUE_FIELD_FIELD_NUMBER: builtins.int
-    TOPK_FIELD_NUMBER: builtins.int
-    CF_FIELD_NUMBER: builtins.int
-    agg_type: global___AggregateType.ValueType
-    @property
-    def window_spec(self) -> global___WindowSpec: ...
-    field: builtins.str
-    value_field: builtins.str
-    @property
-    def topk(self) -> global___TopKConfig: ...
-    @property
-    def cf(self) -> global___CFConfig: ...
+    REFERRING_DATASET_NAME_FIELD_NUMBER: builtins.int
+    referring_dataset_name: builtins.str
     def __init__(
         self,
         *,
-        agg_type: global___AggregateType.ValueType = ...,
-        window_spec: global___WindowSpec | None = ...,
-        field: builtins.str = ...,
-        value_field: builtins.str = ...,
-        topk: global___TopKConfig | None = ...,
-        cf: global___CFConfig | None = ...,
+        referring_dataset_name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["cf", b"cf", "config", b"config", "topk", b"topk", "value_field", b"value_field", "window_spec", b"window_spec"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["agg_type", b"agg_type", "cf", b"cf", "config", b"config", "field", b"field", "topk", b"topk", "value_field", b"value_field", "window_spec", b"window_spec"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["config", b"config"]) -> typing_extensions.Literal["value_field", "topk", "cf"] | None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["referring_dataset_name", b"referring_dataset_name"]) -> None: ...
 
-global___Aggregation = Aggregation
-
-@typing_extensions.final
-class Window(google.protobuf.message.Message):
-    """to = 0 represents last X window."""
-
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    START_FIELD_NUMBER: builtins.int
-    END_FIELD_NUMBER: builtins.int
-    start: builtins.int
-    end: builtins.int
-    def __init__(
-        self,
-        *,
-        start: builtins.int = ...,
-        end: builtins.int = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["end", b"end", "start", b"start"]) -> None: ...
-
-global___Window = Window
-
-@typing_extensions.final
-class DeltaWindow(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    BASELINE_FIELD_NUMBER: builtins.int
-    TARGET_FIELD_NUMBER: builtins.int
-    @property
-    def baseline(self) -> global___Window: ...
-    @property
-    def target(self) -> global___Window: ...
-    def __init__(
-        self,
-        *,
-        baseline: global___Window | None = ...,
-        target: global___Window | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["baseline", b"baseline", "target", b"target"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["baseline", b"baseline", "target", b"target"]) -> None: ...
-
-global___DeltaWindow = DeltaWindow
-
-@typing_extensions.final
-class WindowSpec(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    FOREVER_WINDOW_FIELD_NUMBER: builtins.int
-    WINDOW_FIELD_NUMBER: builtins.int
-    DELTA_WINDOW_FIELD_NUMBER: builtins.int
-    forever_window: builtins.bool
-    @property
-    def window(self) -> global___Window: ...
-    @property
-    def delta_window(self) -> global___DeltaWindow: ...
-    def __init__(
-        self,
-        *,
-        forever_window: builtins.bool = ...,
-        window: global___Window | None = ...,
-        delta_window: global___DeltaWindow | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["delta_window", b"delta_window", "forever_window", b"forever_window", "spec", b"spec", "window", b"window"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["delta_window", b"delta_window", "forever_window", b"forever_window", "spec", b"spec", "window", b"window"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["spec", b"spec"]) -> typing_extensions.Literal["forever_window", "window", "delta_window"] | None: ...
-
-global___WindowSpec = WindowSpec
-
-@typing_extensions.final
-class TopKConfig(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    K_FIELD_NUMBER: builtins.int
-    ITEM_FIELDS_FIELD_NUMBER: builtins.int
-    SCORE_FIELD_FIELD_NUMBER: builtins.int
-    k: builtins.int
-    @property
-    def item_fields(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    score_field: builtins.str
-    def __init__(
-        self,
-        *,
-        k: builtins.int = ...,
-        item_fields: collections.abc.Iterable[builtins.str] | None = ...,
-        score_field: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["item_fields", b"item_fields", "k", b"k", "score_field", b"score_field"]) -> None: ...
-
-global___TopKConfig = TopKConfig
-
-@typing_extensions.final
-class CFConfig(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    LIMIT_FIELD_NUMBER: builtins.int
-    CONTEXT_FIELDS_FIELD_NUMBER: builtins.int
-    WEIGHT_FIELD_FIELD_NUMBER: builtins.int
-    limit: builtins.int
-    @property
-    def context_fields(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    weight_field: builtins.str
-    def __init__(
-        self,
-        *,
-        limit: builtins.int = ...,
-        context_fields: collections.abc.Iterable[builtins.str] | None = ...,
-        weight_field: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["context_fields", b"context_fields", "limit", b"limit", "weight_field", b"weight_field"]) -> None: ...
-
-global___CFConfig = CFConfig
+global___DatasetRef = DatasetRef

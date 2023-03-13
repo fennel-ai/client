@@ -2,6 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 import fennel.gen.services_pb2 as services__pb2
 
 
@@ -17,7 +18,7 @@ class FennelFeatureStoreStub(object):
         self.Sync = channel.unary_unary(
                 '/fennel.proto.services.FennelFeatureStore/Sync',
                 request_serializer=services__pb2.SyncRequest.SerializeToString,
-                response_deserializer=services__pb2.SyncResponse.FromString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
 
 
@@ -36,7 +37,7 @@ def add_FennelFeatureStoreServicer_to_server(servicer, server):
             'Sync': grpc.unary_unary_rpc_method_handler(
                     servicer.Sync,
                     request_deserializer=services__pb2.SyncRequest.FromString,
-                    response_serializer=services__pb2.SyncResponse.SerializeToString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -61,6 +62,6 @@ class FennelFeatureStore(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/fennel.proto.services.FennelFeatureStore/Sync',
             services__pb2.SyncRequest.SerializeToString,
-            services__pb2.SyncResponse.FromString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

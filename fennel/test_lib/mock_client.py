@@ -17,16 +17,19 @@ import fennel.datasets.datasets
 from fennel.client import Client
 from fennel.datasets import Dataset, Pipeline, OnDemand
 from fennel.featuresets import Featureset, Feature, Extractor
-from fennel.gen.services_pb2 import (
-    CreateDatasetRequest,
-    CreateFeaturesetRequest,
-)
+from fennel.gen.dataset_pb2 import CoreDataset
+from fennel.gen.featureset_pb2 import CoreFeatureset, Feature as ProtoFeature
+from fennel.gen.schema_pb2 import Field, DSSchema, Schema
 from fennel.lib.graph_algorithms import (
     get_extractor_order,
     is_extractor_graph_cyclic,
 )
 from fennel.lib.schema import data_schema_check
-from fennel.lib.to_proto import dataset_to_proto, featureset_to_proto
+from fennel.lib.to_proto import (
+    dataset_to_proto,
+    featureset_to_proto,
+    features_from_fs,
+)
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.integration_client import IntegrationClient
 
@@ -151,8 +154,9 @@ class _DatasetInfo:
 
 class MockClient(Client):
     def __init__(self):
-        self.dataset_requests: Dict[str, CreateDatasetRequest] = {}
-        self.featureset_requests: Dict[str, CreateFeaturesetRequest]
+        self.dataset_requests: Dict[str, CoreDataset] = {}
+        self.featureset_requests: Dict[str, CoreFeatureset]
+        self.features_for_fs: Dict[str, List[ProtoFeature]]
         self.datasets: Dict[str, _DatasetInfo] = {}
         # Map of dataset name to the dataframe
         self.data: Dict[str, pd.DataFrame] = {}
@@ -195,9 +199,7 @@ class MockClient(Client):
                 f"dataset {dataset_name}",
             )
         # Check if the dataframe has the same schema as the dataset
-        schema = {}
-        for field in dataset_req.fields:
-            schema[field.name] = field.dtype
+        schema = dataset_req.dsschema
         exceptions = data_schema_check(schema, df)
         if len(exceptions) > 0:
             return FakeResponse(400, str(exceptions))
@@ -239,6 +241,9 @@ class MockClient(Client):
             self.featureset_requests[featureset._name] = featureset_to_proto(
                 featureset
             )
+            self.features_for_fs[featureset._name] = features_from_fs(
+                featureset
+            )
             # Check if the dataset used by the extractor is registered
             for extractor in featureset.extractors:
                 datasets = [
@@ -262,8 +267,8 @@ class MockClient(Client):
         output_feature_list: List[Union[Feature, Featureset]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
-        workflow: str = "default",
-        sampling_rate: float = 1.0,
+        workflow: Optional[str] = "default",
+        sampling_rate: Optional[float] = 1.0,
     ) -> pd.DataFrame:
         if log:
             raise NotImplementedError("log is not supported in MockClient")
@@ -376,15 +381,22 @@ class MockClient(Client):
             prepare_args = self._prepare_extractor_args(
                 extractor, intermediate_data
             )
-            featureset_req = self.featureset_requests[extractor.featureset]
+            features = self.features_for_fs[extractor.featureset]
             feature_schema = {}
-            for feature in featureset_req.features:
+            for feature in features:
                 feature_schema[
                     f"{extractor.featureset}.{feature.name}"
                 ] = feature.dtype
-            schema = {}
-            for feature in extractor.output_features:
-                schema[feature] = feature_schema[feature]
+            fields = []
+            for feature_str in extractor.output_features:
+                feature_str = f"{extractor.featureset}.{feature_str}"
+                if feature_str not in feature_schema:
+                    raise ValueError(f"Feature {feature_str} not found")
+                dtype = feature_schema[feature_str]
+                fields.append(Field(name=feature_str, dtype=dtype))
+            dsschema = DSSchema(
+                values=Schema(fields=fields)
+            )  # stuff every field as value
 
             allowed_datasets = [
                 x._name for x in extractor.get_dataset_dependencies()
@@ -397,7 +409,7 @@ class MockClient(Client):
                 dataset_lookup_impl, self.data, self.datasets, None
             )
             output_df = pd.DataFrame(output)
-            exceptions = data_schema_check(schema, output_df)
+            exceptions = data_schema_check(dsschema, output_df)
             if len(exceptions) > 0:
                 raise Exception(
                     f"Extractor {extractor.name} returned "
@@ -416,18 +428,20 @@ class MockClient(Client):
 
         # Prepare the output dataframe
         output_df = pd.DataFrame()
-        for feature in output_feature_list:
-            if isinstance(feature, Feature):
-                output_df[feature.fqn_] = intermediate_data[feature.fqn_]
-            elif isinstance(feature, Featureset):
-                for f in feature.features:
+        for output_feature in output_feature_list:
+            if isinstance(output_feature, Feature):
+                output_df[output_feature.fqn_] = intermediate_data[
+                    output_feature.fqn_
+                ]
+            elif isinstance(output_feature, Featureset):
+                for f in output_feature.features:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
-            elif type(feature) == tuple:
-                for f in feature:
+            elif type(output_feature) == tuple:
+                for f in output_feature:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
             else:
                 raise Exception(
-                    f"Unknown feature type {type(feature)} found "
+                    f"Unknown feature type {type(output_feature)} found "
                     f"during feature extraction."
                 )
         return output_df
@@ -454,8 +468,9 @@ class MockClient(Client):
         )
 
     def _reset(self):
-        self.dataset_requests: Dict[str, CreateDatasetRequest] = {}
-        self.featureset_requests: Dict[str, CreateFeaturesetRequest] = {}
+        self.dataset_requests: Dict[str, CoreDataset] = {}
+        self.featureset_requests: Dict[str, CoreFeatureset] = {}
+        self.features_for_fs: Dict[str, List[ProtoFeature]] = {}
         self.datasets: Dict[str, _DatasetInfo] = {}
         # Map of dataset name to the dataframe
         self.data: Dict[str, pd.DataFrame] = {}

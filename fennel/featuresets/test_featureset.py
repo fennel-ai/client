@@ -3,7 +3,7 @@ from typing import Optional
 
 from google.protobuf.json_format import ParseDict  # type: ignore
 
-import fennel.gen.services_pb2 as service_proto
+import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.lib.metadata import meta
@@ -57,70 +57,110 @@ def test_simple_featureset(grpc_stub):
     view.add(UserInfoDataset)
     view.add(UserInfo)
     sync_request = view._get_sync_request_proto()
-    assert len(sync_request.featureset_requests) == 1
-    featureset_request = clean_fs_func_src_code(
-        sync_request.featureset_requests[0]
-    )
+    assert len(sync_request.feature_sets) == 1
+    assert len(sync_request.extractors) == 1
+    assert len(sync_request.features) == 5
+    featureset_request = sync_request.feature_sets[0]
     f = {
         "name": "UserInfo",
-        "features": [
-            {
-                "id": 1,
-                "name": "userid",
-                "dtype": {"scalarType": "INT"},
-                "metadata": {},
-            },
-            {
-                "id": 2,
-                "name": "home_geoid",
-                "dtype": {"scalarType": "INT"},
-                "metadata": {},
-            },
-            {
-                "id": 3,
-                "name": "gender",
-                "dtype": {"scalarType": "STRING"},
-                "metadata": {
-                    "description": "The users gender among male/female/non-binary"
-                },
-            },
-            {
-                "id": 4,
-                "name": "age",
-                "dtype": {"scalarType": "INT"},
-                "metadata": {"owner": "aditya@fennel.ai"},
-            },
-            {
-                "id": 5,
-                "name": "income",
-                "dtype": {"scalarType": "INT"},
-                "metadata": {"deprecated": True},
-            },
-        ],
-        "extractors": [
-            {
-                "name": "UserInfo.get_user_info",
-                "datasets": ["UserInfoDataset"],
-                "inputs": [
-                    {"feature": {"featureSet": {"name": "User"}, "name": "id"}},
-                    {
-                        "feature": {
-                            "featureSet": {"name": "User"},
-                            "name": "age",
-                        }
-                    },
-                ],
-                "features": ["userid", "home_geoid", "gender", "age", "income"],
-                "metadata": {},
-                "version": 2,
-            }
-        ],
         "metadata": {"owner": "test@test.com"},
     }
-
-    expected_fs_request = ParseDict(f, service_proto.CreateFeaturesetRequest())
+    expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request
+    )
+
+    # features
+    actual_feature = sync_request.features[0]
+    f = {
+        "id": 1,
+        "name": "userid",
+        "dtype": {"int_type": {}},
+        "metadata": {},
+        "feature_set_name": "UserInfo",
+    }
+    expected_feature = ParseDict(f, fs_proto.Feature())
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
+    actual_feature = sync_request.features[1]
+    f = {
+        "id": 2,
+        "name": "home_geoid",
+        "dtype": {"int_type": {}},
+        "metadata": {},
+        "feature_set_name": "UserInfo",
+    }
+    expected_feature = ParseDict(f, fs_proto.Feature())
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
+    actual_feature = sync_request.features[2]
+    f = {
+        "id": 3,
+        "name": "gender",
+        "dtype": {"string_type": {}},
+        "metadata": {
+            "description": "The users gender among male/female/non-binary"
+        },
+        "feature_set_name": "UserInfo",
+    }
+    expected_feature = ParseDict(f, fs_proto.Feature())
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
+    actual_feature = sync_request.features[3]
+    f = {
+        "id": 4,
+        "name": "age",
+        "dtype": {"int_type": {}},
+        "metadata": {"owner": "aditya@fennel.ai"},
+        "feature_set_name": "UserInfo",
+    }
+    expected_feature = ParseDict(f, fs_proto.Feature())
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
+    actual_feature = sync_request.features[4]
+    f = {
+        "id": 5,
+        "name": "income",
+        "dtype": {"int_type": {}},
+        "metadata": {"deprecated": True},
+        "feature_set_name": "UserInfo",
+    }
+    expected_feature = ParseDict(f, fs_proto.Feature())
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
+
+    # extractors
+    actual_extractor = erase_extractor_pycode(sync_request.extractors[0])
+    e = {
+        "name": "get_user_info",
+        "datasets": ["UserInfoDataset"],
+        "inputs": [
+            {"feature": {"feature_set_name": "User", "name": "id"}},
+            {"feature": {"feature_set_name": "User", "name": "age"}},
+        ],
+        "features": [
+            "userid",
+            "home_geoid",
+            "gender",
+            "age",
+            "income",
+        ],
+        "metadata": {},
+        "version": 2,
+        "pycode": {
+            "source_code": "",
+            "pickled": b"",
+        },
+        "feature_set_name": "UserInfo",
+    }
+    expected_extractor = ParseDict(e, fs_proto.Extractor())
+    assert actual_extractor == expected_extractor, error_message(
+        actual_extractor, expected_extractor
     )
 
 
@@ -159,78 +199,137 @@ def test_complex_featureset(grpc_stub):
     view.add(UserInfoDataset)
     view.add(UserInfo)
     sync_request = view._get_sync_request_proto()
-    assert len(sync_request.featureset_requests) == 1
-    featureset_request = clean_fs_func_src_code(
-        sync_request.featureset_requests[0]
-    )
+    assert len(sync_request.feature_sets) == 1
+    assert len(sync_request.extractors) == 3
+    assert len(sync_request.features) == 5
     f = {
         "name": "UserInfo",
-        "features": [
-            {
-                "id": 1,
-                "name": "userid",
-                "dtype": {"scalarType": "INT"},
-                "metadata": {},
-            },
-            {
-                "id": 2,
-                "name": "home_geoid",
-                "dtype": {"scalarType": "INT"},
-                "metadata": {},
-            },
-            {
-                "id": 3,
-                "name": "gender",
-                "dtype": {"scalarType": "STRING"},
-                "metadata": {
-                    "description": "The users gender among male/female/non-binary"
-                },
-            },
-            {
-                "id": 4,
-                "name": "age",
-                "dtype": {"scalarType": "INT"},
-                "metadata": {"owner": "aditya@fennel.ai"},
-            },
-            {
-                "id": 5,
-                "name": "income",
-                "dtype": {"scalarType": "INT"},
-                "metadata": {},
-            },
-        ],
-        "extractors": [
-            {
-                "name": "UserInfo.get_user_info1",
-                "datasets": ["UserInfoDataset"],
-                "inputs": [
-                    {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
-                ],
-                "features": ["userid", "home_geoid"],
-                "metadata": {},
-            },
-            {
-                "name": "UserInfo.get_user_info2",
-                "datasets": ["UserInfoDataset"],
-                "inputs": [
-                    {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
-                ],
-                "features": ["gender", "age"],
-                "metadata": {},
-            },
-            {
-                "name": "UserInfo.get_user_info3",
-                "inputs": [
-                    {"feature": {"featureSet": {"name": "User"}, "name": "id"}}
-                ],
-                "features": ["income"],
-                "metadata": {},
-            },
-        ],
         "metadata": {"owner": "test@test.com"},
     }
-    expected_fs_request = ParseDict(f, service_proto.CreateFeaturesetRequest())
-
+    featureset_request = sync_request.feature_sets[0]
+    expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request
+    )
+
+    # features
+    actual_feature = sync_request.features[0]
+    f = {
+        "id": 1,
+        "name": "userid",
+        "dtype": {"int_type": {}},
+        "metadata": {},
+        "feature_set_name": "UserInfo",
+    }
+    expected_feature = ParseDict(f, fs_proto.Feature())
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
+    actual_feature = sync_request.features[1]
+    f = {
+        "id": 2,
+        "name": "home_geoid",
+        "dtype": {"int_type": {}},
+        "metadata": {},
+        "feature_set_name": "UserInfo",
+    }
+    expected_feature = ParseDict(f, fs_proto.Feature())
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
+    actual_feature = sync_request.features[2]
+    f = {
+        "id": 3,
+        "name": "gender",
+        "dtype": {"string_type": {}},
+        "metadata": {
+            "description": "The users gender among male/female/non-binary"
+        },
+        "feature_set_name": "UserInfo",
+    }
+    expected_feature = ParseDict(f, fs_proto.Feature())
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
+    actual_feature = sync_request.features[3]
+    f = {
+        "id": 4,
+        "name": "age",
+        "dtype": {"int_type": {}},
+        "metadata": {"owner": "aditya@fennel.ai"},
+        "feature_set_name": "UserInfo",
+    }
+    expected_feature = ParseDict(f, fs_proto.Feature())
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
+    actual_feature = sync_request.features[4]
+    f = {
+        "id": 5,
+        "name": "income",
+        "dtype": {"int_type": {}},
+        "metadata": {},
+        "feature_set_name": "UserInfo",
+    }
+    expected_feature = ParseDict(f, fs_proto.Feature())
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
+
+    # extractors
+    actual_extractor = erase_extractor_pycode(sync_request.extractors[0])
+    e = {
+        "name": "get_user_info1",
+        "datasets": ["UserInfoDataset"],
+        "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
+        "features": ["userid", "home_geoid"],
+        "metadata": {},
+        "version": 0,
+        "pycode": {
+            "source_code": "",
+            "pickled": b"",
+        },
+        "feature_set_name": "UserInfo",
+    }
+    expected_extractor = ParseDict(e, fs_proto.Extractor())
+    assert actual_extractor == expected_extractor, error_message(
+        actual_extractor, expected_extractor
+    )
+
+    actual_extractor = erase_extractor_pycode(sync_request.extractors[1])
+    e = {
+        "name": "get_user_info2",
+        "datasets": ["UserInfoDataset"],
+        "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
+        "features": ["gender", "age"],
+        "metadata": {},
+        "version": 0,
+        "pycode": {
+            "source_code": "",
+            "pickled": b"",
+        },
+        "feature_set_name": "UserInfo",
+    }
+    expected_extractor = ParseDict(e, fs_proto.Extractor())
+    assert actual_extractor == expected_extractor, error_message(
+        actual_extractor, expected_extractor
+    )
+
+    actual_extractor = erase_extractor_pycode(sync_request.extractors[2])
+    e = {
+        "name": "get_user_info3",
+        "datasets": [],
+        "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
+        "features": ["income"],
+        "metadata": {},
+        "version": 0,
+        "pycode": {
+            "source_code": "",
+            "pickled": b"",
+        },
+        "feature_set_name": "UserInfo",
+    }
+    expected_extractor = ParseDict(e, fs_proto.Extractor())
+    assert actual_extractor == expected_extractor, error_message(
+        actual_extractor, expected_extractor
     )

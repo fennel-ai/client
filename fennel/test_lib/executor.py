@@ -92,16 +92,13 @@ class Executor(Visitor):
         input_ret = self.visit(obj.node)
         if input_ret is None:
             return None
-        f_df = obj.func(copy.deepcopy(input_ret.df))
-        if (
-            type(f_df) == pd.Series
-            or input_ret.timestamp_field not in f_df.columns
-        ):
+        filter_bool = obj.func(copy.deepcopy(input_ret.df))
+        if type(filter_bool) != pd.Series:
             raise Exception(
-                f"Timestamp field {input_ret.timestamp_field} not present in "
-                f"filtered dataframe, please check your filter function and "
-                f"ensure that the output is a dataframe and not a boolean array"
+                f"Filter function {obj.func.__name__} returned "
+                f"non-boolean array"
             )
+        f_df = input_ret.df[filter_bool]
         sorted_df = f_df.sort_values(input_ret.timestamp_field)
         return NodeRet(
             sorted_df, input_ret.timestamp_field, input_ret.key_fields
