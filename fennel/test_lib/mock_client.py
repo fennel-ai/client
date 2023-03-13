@@ -267,8 +267,8 @@ class MockClient(Client):
         output_feature_list: List[Union[Feature, Featureset]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
-        workflow: str = "default",
-        sampling_rate: float = 1.0,
+        workflow: Optional[str] = "default",
+        sampling_rate: Optional[float] = 1.0,
     ) -> pd.DataFrame:
         if log:
             raise NotImplementedError("log is not supported in MockClient")
@@ -388,12 +388,12 @@ class MockClient(Client):
                     f"{extractor.featureset}.{feature.name}"
                 ] = feature.dtype
             fields = []
-            for feature in extractor.output_features:
-                feature = f"{extractor.featureset}.{feature}"
-                if feature not in feature_schema:
-                    raise ValueError(f"Feature {feature} not found")
-                dtype = feature_schema[feature]
-                fields.append(Field(name=feature, dtype=dtype))
+            for feature_str in extractor.output_features:
+                feature_str = f"{extractor.featureset}.{feature_str}"
+                if feature_str not in feature_schema:
+                    raise ValueError(f"Feature {feature_str} not found")
+                dtype = feature_schema[feature_str]
+                fields.append(Field(name=feature_str, dtype=dtype))
             dsschema = DSSchema(
                 values=Schema(fields=fields)
             )  # stuff every field as value
@@ -428,18 +428,20 @@ class MockClient(Client):
 
         # Prepare the output dataframe
         output_df = pd.DataFrame()
-        for feature in output_feature_list:
-            if isinstance(feature, Feature):
-                output_df[feature.fqn_] = intermediate_data[feature.fqn_]
-            elif isinstance(feature, Featureset):
-                for f in feature.features:
+        for output_feature in output_feature_list:
+            if isinstance(output_feature, Feature):
+                output_df[output_feature.fqn_] = intermediate_data[
+                    output_feature.fqn_
+                ]
+            elif isinstance(output_feature, Featureset):
+                for f in output_feature.features:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
-            elif type(feature) == tuple:
-                for f in feature:
+            elif type(output_feature) == tuple:
+                for f in output_feature:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
             else:
                 raise Exception(
-                    f"Unknown feature type {type(feature)} found "
+                    f"Unknown feature type {type(output_feature)} found "
                     f"during feature extraction."
                 )
         return output_df

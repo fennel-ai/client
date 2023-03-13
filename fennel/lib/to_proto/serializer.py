@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from typing import Dict, Any, List
 
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
@@ -14,8 +15,8 @@ class Serializer(Visitor):
         self.pipeline_name = pipeline.name
         self.dataset_name = pipeline.dataset_name
         self.terminal_node = pipeline.terminal_node
-        self.proto_by_operator_id = {}
-        self.operators = []
+        self.proto_by_operator_id: Dict[str, Any] = {}
+        self.operators: List[Any] = []
 
     def serialize(self):
         _ = self.visit(self.terminal_node)

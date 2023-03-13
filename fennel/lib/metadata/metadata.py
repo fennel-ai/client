@@ -102,7 +102,7 @@ def set_meta_attr(obj: Any, attr: str, value: Any):
     setattr(obj, META_FIELD, meta)
 
 
-def get_metadata_proto(obj: Any) -> Optional[proto.Metadata]:
+def get_metadata_proto(obj: Any) -> proto.Metadata:
     meta = get_meta(obj)
     if meta is None:
         return proto.Metadata()

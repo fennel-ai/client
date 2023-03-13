@@ -24,7 +24,7 @@ class UserInfoDataset:
 
 
 def fake_func(
-        cls_name, ts: pd.Series, fields: typing.List[str], df: pd.DataFrame
+    cls_name, ts: pd.Series, fields: typing.List[str], df: pd.DataFrame
 ):
     now = datetime.fromtimestamp(1668368655)
     if len(fields) > 0:
@@ -62,10 +62,10 @@ def test_dataset_lookup(grpc_stub):
         @depends_on(UserInfoDataset)
         @typing.no_type_check
         def user_age_sq(
-                cls,
-                ts: Series[datetime],
-                user_id: Series[userid],
-                names: Series[name],
+            cls,
+            ts: Series[datetime],
+            user_id: Series[userid],
+            names: Series[name],
         ) -> DataFrame[age_sq, gender]:
             user_id_plus_one = user_id * 5
             df, _ = UserInfoDataset.lookup(
@@ -81,10 +81,10 @@ def test_dataset_lookup(grpc_stub):
         @depends_on(UserInfoDataset)
         @typing.no_type_check
         def user_age_cube(
-                cls,
-                ts: Series[datetime],
-                user_id: Series[userid],
-                names: Series[name],
+            cls,
+            ts: Series[datetime],
+            user_id: Series[userid],
+            names: Series[name],
         ) -> Series[age_cube]:
             user_id_into_three = user_id * 3
             df, _ = UserInfoDataset.lookup(

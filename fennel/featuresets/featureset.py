@@ -332,7 +332,7 @@ class Featureset:
     _features: List[Feature]
     _feature_map: Dict[str, Feature] = {}
     _extractors: List[Extractor]
-    _id_to_feature: Dict[int, str] = {}
+    _id_to_feature: Dict[int, Feature] = {}
     _expectation: Expectations
 
     def __init__(

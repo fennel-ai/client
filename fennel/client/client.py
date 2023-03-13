@@ -54,9 +54,9 @@ class Client:
             raise NotImplementedError
 
     def sync(
-            self,
-            datasets: Optional[List[Dataset]] = None,
-            featuresets: Optional[List[Featureset]] = None,
+        self,
+        datasets: Optional[List[Dataset]] = None,
+        featuresets: Optional[List[Featureset]] = None,
     ):
         """
         Sync the client with the server. This will register any datasets or
@@ -111,8 +111,7 @@ class Client:
             )
 
     def log(
-            self, dataset_name: str, dataframe: pd.DataFrame,
-            batch_size: int = 1000
+        self, dataset_name: str, dataframe: pd.DataFrame, batch_size: int = 1000
     ):
         """
         Log data to a dataset.
@@ -143,13 +142,13 @@ class Client:
         return response
 
     def extract_features(
-            self,
-            input_feature_list: List[Union[Feature, Featureset]],
-            output_feature_list: List[Union[Feature, Featureset]],
-            input_dataframe: pd.DataFrame,
-            log: bool = False,
-            workflow: Optional[str] = None,
-            sampling_rate: Optional[float] = None,
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: Optional[str] = None,
+        sampling_rate: Optional[float] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         """
         Extract features for a given output feature list from an input
@@ -199,25 +198,25 @@ class Client:
             req["workflow"] = workflow
         if sampling_rate is not None:
             req["sampling_rate"] = sampling_rate
-            
+
         response = self.http.post(
             self._url("{}/extract_features".format(_V1_API)),
             json=req,
         )
         check_response(response)
         if len(output_feature_list) > 1 or isinstance(
-                output_feature_list[0], Featureset
+            output_feature_list[0], Featureset
         ):
             return pd.DataFrame(response.json())
         else:
             return pd.Series(response.json())
 
     def extract_historical_features(
-            self,
-            input_feature_list: List[Union[Feature, Featureset]],
-            output_feature_list: List[Union[Feature, Featureset]],
-            input_dataframe: pd.DataFrame,
-            timestamps: pd.Series,
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_dataframe: pd.DataFrame,
+        timestamps: pd.Series,
     ) -> Union[pd.DataFrame, pd.Series]:
         """
         Extract point in time correct features from a dataframe, where the
@@ -270,7 +269,7 @@ class Client:
         )
         check_response(response)
         if len(output_feature_list) > 1 or isinstance(
-                output_feature_list[0], Featureset
+            output_feature_list[0], Featureset
         ):
             return pd.DataFrame(response.json())
         else:

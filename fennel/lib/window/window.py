@@ -1,10 +1,10 @@
+from datetime import timedelta
 from typing import List, Union
 
+import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from pydantic import BaseModel
-from datetime import timedelta
 
 import fennel.gen.window_pb2 as window_proto
-import google.protobuf.duration_pb2 as duration_proto
 from fennel.lib.duration import Duration, duration_to_timedelta
 
 ItemType = Union[str, List[str]]
@@ -30,7 +30,7 @@ class Window(BaseModel):
     def sliding_window_duration(self) -> timedelta:
         return duration_to_timedelta(self.start)
 
-    def to_proto(self) -> window_proto:
+    def to_proto(self) -> window_proto.Window:
         if self.is_forever():
             return window_proto.Window(forever=window_proto.Forever())
 
