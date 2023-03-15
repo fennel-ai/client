@@ -6,6 +6,7 @@ import builtins
 import collections.abc
 import connector_pb2
 import dataset_pb2
+import expectations_pb2
 import featureset_pb2
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
@@ -43,6 +44,7 @@ class SyncRequest(google.protobuf.message.Message):
     MODELS_FIELD_NUMBER: builtins.int
     SOURCES_FIELD_NUMBER: builtins.int
     EXTDBS_FIELD_NUMBER: builtins.int
+    EXPECTATIONS_FIELD_NUMBER: builtins.int
     @property
     def datasets(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[dataset_pb2.CoreDataset]: ...
     @property
@@ -61,6 +63,8 @@ class SyncRequest(google.protobuf.message.Message):
     def sources(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[connector_pb2.Source]: ...
     @property
     def extdbs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[connector_pb2.ExtDatabase]: ...
+    @property
+    def expectations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[expectations_pb2.Expectations]: ...
     def __init__(
         self,
         *,
@@ -73,7 +77,8 @@ class SyncRequest(google.protobuf.message.Message):
         models: collections.abc.Iterable[featureset_pb2.Model] | None = ...,
         sources: collections.abc.Iterable[connector_pb2.Source] | None = ...,
         extdbs: collections.abc.Iterable[connector_pb2.ExtDatabase] | None = ...,
+        expectations: collections.abc.Iterable[expectations_pb2.Expectations] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "extdbs", b"extdbs", "extractors", b"extractors", "feature_sets", b"feature_sets", "features", b"features", "models", b"models", "operators", b"operators", "pipelines", b"pipelines", "sources", b"sources"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "expectations", b"expectations", "extdbs", b"extdbs", "extractors", b"extractors", "feature_sets", b"feature_sets", "features", b"features", "models", b"models", "operators", b"operators", "pipelines", b"pipelines", "sources", b"sources"]) -> None: ...
 
 global___SyncRequest = SyncRequest

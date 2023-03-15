@@ -87,7 +87,8 @@ def test_simple_dataset(grpc_stub):
                     "timestamp": {},
                 },
             }
-        ]
+        ],
+        "expectations": [{}],
     }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
@@ -146,7 +147,8 @@ def test_dataset_with_retention(grpc_stub):
                     "timestamp": {},
                 },
             }
-        ]
+        ],
+        "expectations": [{}],
     }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
@@ -383,9 +385,9 @@ def test_dataset_with_complex_pipe(grpc_stub):
 
         @pipeline(id=1)
         def create_fraud_dataset(
-            cls,
-            activity: Dataset[Activity],
-            user_info: Dataset[UserInfoDataset],
+                cls,
+                activity: Dataset[Activity],
+                user_info: Dataset[UserInfoDataset],
         ):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
                 df["metadata_dict"] = (
@@ -836,8 +838,8 @@ def test_search_dataset(grpc_stub):
 
         @pipeline(id=1)
         def content_features(
-            cls,
-            ds: Dataset[Document],
+                cls,
+                ds: Dataset[Document],
         ):
             return ds.transform(
                 get_content_features,
