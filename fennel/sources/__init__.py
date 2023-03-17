@@ -3,6 +3,7 @@ from fennel.sources.sources import (
     MySQL,
     Postgres,
     S3,
+    Kafka,
     Snowflake,
     source,
     sink,
@@ -11,5 +12,6 @@ from fennel.sources.sources import (
     DataConnector,
     DataSource,
     S3Connector,
+    KafkaConnector,
     TableConnector,
 )

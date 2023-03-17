@@ -323,8 +323,67 @@ def _conn_to_source_proto(
         return _s3_conn_to_source_proto(connector, dataset_name)
     elif isinstance(connector, sources.TableConnector):
         return _table_conn_to_source_proto(connector, dataset_name)
+    elif isinstance(connector, sources.KafkaConnector):
+        return _kafka_conn_to_source_proto(connector, dataset_name)
     else:
         raise ValueError(f"Unknown connector type: {type(connector)}")
+
+
+def _kafka_conn_to_source_proto(
+    connector: sources.KafkaConnector, dataset_name: str
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    data_source = connector.data_source
+    if not isinstance(data_source, sources.Kafka):
+        raise ValueError("KafkaConnector must have Kafka as data_source")
+    ext_db = _kafka_to_ext_db_proto(
+        data_source.name,
+        data_source.bootstrap_servers,
+        data_source.security_protocol,
+        data_source.sasl_mechanism,
+        data_source.sasl_plain_username,
+        data_source.sasl_plain_password,
+        data_source.sasl_jaas_config,
+    )
+    source = connector_proto.Source(
+        table=connector_proto.ExtTable(
+            kafka_topic=connector_proto.KafkaTopic(
+                topic=connector.topic,
+                db=ext_db,
+            ),
+        )
+    )
+    return (ext_db, source)
+
+
+def _kafka_to_ext_db_proto(
+    name: str,
+    bootstrap_servers: str,
+    security_protocol: str,
+    sasl_mechanism: Optional[str],
+    sasl_plain_username: Optional[str],
+    sasl_plain_password: Optional[str],
+    sasl_jaas_config: Optional[str],
+) -> connector_proto.ExtDatabase:
+    if sasl_mechanism is None:
+        sasl_mechanism = ""
+    if sasl_plain_username is None:
+        sasl_plain_username = ""
+    if sasl_plain_password is None:
+        sasl_plain_password = ""
+    if sasl_jaas_config is None:
+        sasl_jaas_config = ""
+
+    return connector_proto.ExtDatabase(
+        name=name,
+        kafka=connector_proto.Kafka(
+            bootstrap_servers=bootstrap_servers,
+            security_protocol=security_protocol,
+            sasl_mechanism=sasl_mechanism,
+            sasl_plain_username=sasl_plain_username,
+            sasl_plain_password=sasl_plain_password,
+            sasl_jaas_config=sasl_jaas_config,
+        ),
+    )
 
 
 def _s3_conn_to_source_proto(

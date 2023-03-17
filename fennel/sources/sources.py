@@ -188,6 +188,49 @@ class BigQuery(DataSource):
         )
 
 
+class Kafka(DataSource):
+    bootstrap_servers: str
+    security_protocol: str
+    sasl_mechanism: Optional[str]
+    sasl_plain_username: Optional[str]
+    sasl_plain_password: Optional[str]
+    sasl_jaas_config: Optional[str]
+
+    def _validate(self) -> List[Exception]:
+        exceptions: List[Exception] = []
+        if self.security_protocol not in [
+            "PLAIN TEXT",
+            "SASL PLAINTEXT",
+            "SASL SSL",
+        ]:
+            exceptions.append(
+                ValueError(
+                    "sasl_mechanism must be one of "
+                    "PLAIN TEXT, SASL PLAINTEXT, SASL SSL"
+                )
+            )
+        return exceptions
+
+    def required_fields(self) -> List[str]:
+        return ["topic"]
+
+    def topic(self, topic_name: str) -> KafkaConnector:
+        return KafkaConnector(self, topic_name)
+
+    @staticmethod
+    def get(name: str) -> Kafka:
+        return Kafka(
+            name=name,
+            _get=True,
+            bootstrap_servers="",
+            security_protocol="",
+            sasl_mechanism="",
+            sasl_plain_username="",
+            sasl_plain_password="",
+            sasl_jaas_config="",
+        )
+
+
 class Postgres(SQLSource):
     port: int = 5432
 
@@ -311,6 +354,17 @@ class TableConnector(DataConnector):
         self.data_source = source
         self.table_name = table_name
         self.cursor = cursor
+
+
+class KafkaConnector(DataConnector):
+    """DataConnectors which only need a topic to be specified. Includes
+    Kafka."""
+
+    topic: str
+
+    def __init__(self, source, topic):
+        self.data_source = source
+        self.topic = topic
 
 
 class S3Connector(DataConnector):

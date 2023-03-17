@@ -42,6 +42,7 @@ class ExtDatabase(google.protobuf.message.Message):
     S3_FIELD_NUMBER: builtins.int
     BIGQUERY_FIELD_NUMBER: builtins.int
     SNOWFLAKE_FIELD_NUMBER: builtins.int
+    KAFKA_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def mysql(self) -> global___MySQL: ...
@@ -58,6 +59,8 @@ class ExtDatabase(google.protobuf.message.Message):
     def bigquery(self) -> global___Bigquery: ...
     @property
     def snowflake(self) -> global___Snowflake: ...
+    @property
+    def kafka(self) -> global___Kafka: ...
     def __init__(
         self,
         *,
@@ -68,10 +71,11 @@ class ExtDatabase(google.protobuf.message.Message):
         s3: global___S3 | None = ...,
         bigquery: global___Bigquery | None = ...,
         snowflake: global___Snowflake | None = ...,
+        kafka: global___Kafka | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "mysql", b"mysql", "postgres", b"postgres", "reference", b"reference", "s3", b"s3", "snowflake", b"snowflake", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "mysql", b"mysql", "name", b"name", "postgres", b"postgres", "reference", b"reference", "s3", b"s3", "snowflake", b"snowflake", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql", "postgres", "reference", "s3", "bigquery", "snowflake"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "kafka", b"kafka", "mysql", b"mysql", "postgres", b"postgres", "reference", b"reference", "s3", b"s3", "snowflake", b"snowflake", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "kafka", b"kafka", "mysql", b"mysql", "name", b"name", "postgres", b"postgres", "reference", b"reference", "s3", b"s3", "snowflake", b"snowflake", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql", "postgres", "reference", "s3", "bigquery", "snowflake", "kafka"] | None: ...
 
 global___ExtDatabase = ExtDatabase
 
@@ -245,6 +249,39 @@ class Snowflake(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["account", b"account", "database", b"database", "jdbc_params", b"jdbc_params", "password", b"password", "role", b"role", "schema", b"schema", "user", b"user", "warehouse", b"warehouse"]) -> None: ...
 
 global___Snowflake = Snowflake
+
+@typing_extensions.final
+class Kafka(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    BOOTSTRAP_SERVERS_FIELD_NUMBER: builtins.int
+    SECURITY_PROTOCOL_FIELD_NUMBER: builtins.int
+    SASL_MECHANISM_FIELD_NUMBER: builtins.int
+    SASL_JAAS_CONFIG_FIELD_NUMBER: builtins.int
+    SASL_PLAIN_USERNAME_FIELD_NUMBER: builtins.int
+    SASL_PLAIN_PASSWORD_FIELD_NUMBER: builtins.int
+    GROUP_ID_FIELD_NUMBER: builtins.int
+    bootstrap_servers: builtins.str
+    security_protocol: builtins.str
+    sasl_mechanism: builtins.str
+    sasl_jaas_config: builtins.str
+    sasl_plain_username: builtins.str
+    sasl_plain_password: builtins.str
+    group_id: builtins.str
+    def __init__(
+        self,
+        *,
+        bootstrap_servers: builtins.str = ...,
+        security_protocol: builtins.str = ...,
+        sasl_mechanism: builtins.str = ...,
+        sasl_jaas_config: builtins.str = ...,
+        sasl_plain_username: builtins.str = ...,
+        sasl_plain_password: builtins.str = ...,
+        group_id: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bootstrap_servers", b"bootstrap_servers", "group_id", b"group_id", "sasl_jaas_config", b"sasl_jaas_config", "sasl_mechanism", b"sasl_mechanism", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username", "security_protocol", b"security_protocol"]) -> None: ...
+
+global___Kafka = Kafka
 
 @typing_extensions.final
 class ExtTable(google.protobuf.message.Message):
