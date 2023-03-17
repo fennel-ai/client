@@ -13,7 +13,7 @@ from fennel.lib.expectations import (
     expect_column_values_to_be_between,
     expect_column_values_to_be_in_set,
     expect_column_values_to_not_be_null,
-    expect_column_pair_values_A_to_be_greater_than_B
+    expect_column_pair_values_A_to_be_greater_than_B,
 )
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof
@@ -55,26 +55,26 @@ def test_dataset_expectation_creation(grpc_stub):
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
     d = {
-        'entityName': 'UserInfoDS',
-        'suite': 'dataset_UserInfoDS_expectations',
-        'expectations': [
+        "entityName": "UserInfoDS",
+        "suite": "dataset_UserInfoDS_expectations",
+        "expectations": [
             {
-                'expectationType': 'expect_column_values_to_be_between',
-                'expectationKwargs': '{"column": "age", "min_value": 0, "max_value": 100, "strict_min": false, "strict_max": false, "parse_strings_as_datetimes": false, "include_config": true}'
+                "expectationType": "expect_column_values_to_be_between",
+                "expectationKwargs": '{"column": "age", "min_value": 0, "max_value": 100, "strict_min": false, "strict_max": false, "parse_strings_as_datetimes": false, "include_config": true}',
             },
             {
-                'expectationType': 'expect_column_values_to_be_in_set',
-                'expectationKwargs': '{"column": "gender", "value_set": ["male", "female"], "mostly": 0.9, "include_config": true}'
+                "expectationType": "expect_column_values_to_be_in_set",
+                "expectationKwargs": '{"column": "gender", "value_set": ["male", "female"], "mostly": 0.9, "include_config": true}',
             },
             {
-                'expectationType': 'expect_column_values_to_not_be_null',
-                'expectationKwargs': '{"column": "country", "mostly": 0.9, "include_config": true}'
+                "expectationType": "expect_column_values_to_not_be_null",
+                "expectationKwargs": '{"column": "country", "mostly": 0.9, "include_config": true}',
             },
             {
-                'expectationType': 'expect_column_pair_values_a_to_be_greater_than_b',
-                'expectationKwargs': '{"column_A": "age", "column_B": "user_id", "parse_strings_as_datetimes": false, "ignore_row_if": "both_values_are_missing", "include_config": true}'
-            }
-        ]
+                "expectationType": "expect_column_pair_values_a_to_be_greater_than_b",
+                "expectationKwargs": '{"column_A": "age", "column_B": "user_id", "parse_strings_as_datetimes": false, "ignore_row_if": "both_values_are_missing", "include_config": true}',
+            },
+        ],
     }
     expected_exp_request = ParseDict(d, exp_proto.Expectations())
     act_config = sync_request.expectations[0]
@@ -118,6 +118,7 @@ class TestExpectationCreation(unittest.TestCase):
 
 def test_dataset_invalid_expectation_creation():
     with pytest.raises(Exception) as e:
+
         @meta(owner="test@test.com")
         @dataset
         class UserInfoDSInvalid:
@@ -145,11 +146,12 @@ def test_dataset_invalid_expectation_creation():
                 ]
 
     assert (
-            str(e.value)
-            == "name 'expect_column_values_to_be_between_random' is not defined"
+        str(e.value)
+        == "name 'expect_column_values_to_be_between_random' is not defined"
     )
 
     with pytest.raises(Exception) as e:
+
         @meta(owner="test@test.com")
         @dataset
         class UserInfoDSInvalid2:
@@ -177,11 +179,12 @@ def test_dataset_invalid_expectation_creation():
                 ]
 
     assert (
-            str(e.value)
-            == "expect_column_values_to_be_between() got an unexpected keyword argument 'minimum_value'"
+        str(e.value)
+        == "expect_column_values_to_be_between() got an unexpected keyword argument 'minimum_value'"
     )
 
     with pytest.raises(Exception) as e:
+
         @meta(owner="test@test.com")
         @dataset
         class UserInfoDSInvalid3:
@@ -211,6 +214,7 @@ def test_dataset_invalid_expectation_creation():
     assert str(e.value) == "Versioning is not yet supported for expectations."
 
     with pytest.raises(Exception) as e:
+
         @meta(owner="test@test.com")
         @dataset
         class UserInfoDSInvalid4:
