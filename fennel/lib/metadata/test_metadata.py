@@ -93,7 +93,6 @@ def test_simple_dataset(grpc_stub):
                 },
             }
         ],
-        "expectations": [{}],
     }
     expected_sync_request = ParseDict(d, SyncRequest())
     assert sync_request == expected_sync_request, error_message(
@@ -198,7 +197,6 @@ def test_complex_dataset_with_fields(grpc_stub):
                 },
             }
         ],
-        "expectations": [{}],
     }
     expected_sync_request = ParseDict(d, SyncRequest())
     assert sync_request == expected_sync_request, error_message(

@@ -4,14 +4,14 @@ from typing import Tuple
 
 
 def expect_column_values_to_not_be_null(
-    column,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column values to not be null.
 
@@ -55,18 +55,18 @@ def expect_column_values_to_not_be_null(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_be_null>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_null(
-    column,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column values to be null.
 
@@ -107,19 +107,19 @@ def expect_column_values_to_be_null(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_not_be_null>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_of_type(
-    column,
-    type_,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        type_,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect a column to contain values of a specified data type.
 
@@ -174,19 +174,19 @@ def expect_column_values_to_be_of_type(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_be_in_type_list>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_in_type_list(
-    column,
-    type_list,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        type_list,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect a column to contain values from a specified type list.
 
@@ -238,7 +238,7 @@ def expect_column_values_to_be_in_type_list(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_be_of_type>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 ###
@@ -249,16 +249,16 @@ def expect_column_values_to_be_in_type_list(
 
 
 def expect_column_values_to_be_in_set(
-    column,
-    value_set,
-    mostly=None,
-    parse_strings_as_datetimes=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        value_set,
+        mostly=None,
+        parse_strings_as_datetimes=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     # noinspection PyUnresolvedReferences
     """Expect each column value to be in a given set.
@@ -324,20 +324,20 @@ def expect_column_values_to_be_in_set(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_not_be_in_set>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_not_be_in_set(
-    column,
-    value_set,
-    mostly=None,
-    parse_strings_as_datetimes=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        value_set,
+        mostly=None,
+        parse_strings_as_datetimes=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     # noinspection PyUnresolvedReferences
     """Expect column entries to not be in the set.
@@ -401,26 +401,26 @@ def expect_column_values_to_not_be_in_set(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_be_in_set>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_between(
-    column,
-    min_value=None,
-    max_value=None,
-    strict_min=False,
-    strict_max=False,
-    # tolerance=1e-9,
-    allow_cross_type_comparisons=None,
-    parse_strings_as_datetimes=False,
-    output_strftime_format=None,
-    mostly=None,
-    row_condition=None,
-    condition_parser=None,
-    result_format=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        min_value=None,
+        max_value=None,
+        strict_min=False,
+        strict_max=False,
+        # tolerance=1e-9,
+        allow_cross_type_comparisons=None,
+        parse_strings_as_datetimes=False,
+        output_strftime_format=None,
+        mostly=None,
+        row_condition=None,
+        condition_parser=None,
+        result_format=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column entries to be between a minimum value and a maximum value (inclusive).
 
@@ -479,20 +479,20 @@ def expect_column_values_to_be_between(
         <great_expectations.dataset.dataset.Dataset.expect_column_value_lengths_to_be_between>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_value_lengths_to_be_between(
-    column,
-    min_value=None,
-    max_value=None,
-    mostly=None,
-    row_condition=None,
-    condition_parser=None,
-    result_format=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        min_value=None,
+        max_value=None,
+        mostly=None,
+        row_condition=None,
+        condition_parser=None,
+        result_format=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column entries to be strings with length between a minimum value and a maximum value (inclusive).
 
@@ -546,19 +546,19 @@ def expect_column_value_lengths_to_be_between(
         <great_expectations.dataset.dataset.Dataset.expect_column_value_lengths_to_equal>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_value_lengths_to_equal(
-    column,
-    value,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        value,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column entries to be strings with length equal to the provided value.
 
@@ -603,19 +603,19 @@ def expect_column_value_lengths_to_equal(
         <great_expectations.dataset.dataset.Dataset.expect_column_value_lengths_to_be_between>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_match_regex(
-    column,
-    regex,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        regex,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column entries to be strings that match a given regular expression. Valid matches can be found \
     anywhere in the string, for example "[at]+" will identify the following strings as expected: "cat", "hat", \
@@ -663,19 +663,19 @@ def expect_column_values_to_match_regex(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_match_regex_list>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_not_match_regex(
-    column,
-    regex,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        regex,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column entries to be strings that do NOT match a given regular expression. The regex must not match \
     any portion of the provided string. For example, "[at]+" would identify the following strings as expected: \
@@ -723,20 +723,20 @@ def expect_column_values_to_not_match_regex(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_match_regex_list>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_match_regex_list(
-    column,
-    regex_list,
-    match_on="any",
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        regex_list,
+        match_on="any",
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect the column entries to be strings that can be matched to either any of or all of a list of regular
     expressions. Matches can be anywhere in the string.
@@ -787,19 +787,19 @@ def expect_column_values_to_match_regex_list(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_not_match_regex>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_not_match_regex_list(
-    column,
-    regex_list,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        regex_list,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect the column entries to be strings that do not match any of a list of regular expressions. Matches can
     be anywhere in the string.
@@ -843,7 +843,7 @@ def expect_column_values_to_not_match_regex_list(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_match_regex_list>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 ###
@@ -854,15 +854,15 @@ def expect_column_values_to_not_match_regex_list(
 
 
 def expect_column_values_to_match_strftime_format(
-    column,
-    strftime_format,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        strftime_format,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column entries to be strings representing a date or time with a given format.
 
@@ -901,18 +901,18 @@ def expect_column_values_to_match_strftime_format(
         :ref:`include_config`, :ref:`catch_exceptions`, and :ref:`meta`.
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_dateutil_parseable(
-    column,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column entries to be parsable using dateutil.
 
@@ -949,18 +949,18 @@ def expect_column_values_to_be_dateutil_parseable(
         :ref:`include_config`, :ref:`catch_exceptions`, and :ref:`meta`.
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_json_parseable(
-    column,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column entries to be data written in JavaScript Object Notation.
 
@@ -1001,19 +1001,19 @@ def expect_column_values_to_be_json_parseable(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_match_json_schema>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_match_json_schema(
-    column,
-    json_schema,
-    mostly=None,
-    result_format=None,
-    row_condition=None,
-    condition_parser=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column,
+        json_schema,
+        mostly=None,
+        result_format=None,
+        row_condition=None,
+        condition_parser=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """Expect column entries to be JSON objects matching a given JSON schema.
 
@@ -1056,7 +1056,7 @@ def expect_column_values_to_match_json_schema(
 
         The `JSON-schema docs <http://json-schema.org/>`_.
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 ###
@@ -1067,13 +1067,13 @@ def expect_column_values_to_match_json_schema(
 
 
 def expect_column_pair_values_to_be_equal(
-    column_A,
-    column_B,
-    ignore_row_if="both_values_are_missing",
-    result_format=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column_A,
+        column_B,
+        ignore_row_if="both_values_are_missing",
+        result_format=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """
     Expect the values in column A to be the same as column B.
@@ -1106,20 +1106,20 @@ def expect_column_pair_values_to_be_equal(
         :ref:`include_config`, :ref:`catch_exceptions`, and :ref:`meta`.
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_pair_values_A_to_be_greater_than_B(
-    column_A,
-    column_B,
-    or_equal=None,
-    parse_strings_as_datetimes=False,
-    allow_cross_type_comparisons=None,
-    ignore_row_if="both_values_are_missing",
-    result_format=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column_A,
+        column_B,
+        or_equal=None,
+        parse_strings_as_datetimes=False,
+        allow_cross_type_comparisons=None,
+        ignore_row_if="both_values_are_missing",
+        result_format=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """
     Expect values in column A to be greater than column B.
@@ -1157,18 +1157,18 @@ def expect_column_pair_values_A_to_be_greater_than_B(
         :ref:`include_config`, :ref:`catch_exceptions`, and :ref:`meta`.
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_pair_values_to_be_in_set(
-    column_A,
-    column_B,
-    value_pairs_set,
-    ignore_row_if="both_values_are_missing",
-    result_format=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column_A,
+        column_B,
+        value_pairs_set,
+        ignore_row_if="both_values_are_missing",
+        result_format=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """
     Expect paired values from columns A and B to belong to a set of valid pairs.
@@ -1202,7 +1202,7 @@ def expect_column_pair_values_to_be_in_set(
         :ref:`include_config`, :ref:`catch_exceptions`, and :ref:`meta`.
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 #
@@ -1212,12 +1212,12 @@ def expect_column_pair_values_to_be_in_set(
 
 
 def expect_multicolumn_sum_to_equal(
-    column_list,
-    sum_total,
-    result_format=None,
-    include_config=True,
-    catch_exceptions=None,
-    meta=None,
+        column_list,
+        sum_total,
+        result_format=None,
+        include_config=True,
+        catch_exceptions=None,
+        meta=None,
 ) -> Tuple[str, dict]:
     """ Multi-Column Map Expectation
 
@@ -1246,4 +1246,4 @@ def expect_multicolumn_sum_to_equal(
         sum_total (int): \
             expected sum of columns
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()

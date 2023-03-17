@@ -31,6 +31,10 @@ from fennel.lib.schema import get_datatype
 from fennel.lib.to_proto import Serializer
 
 
+def _cleanup_dict(d) -> Dict[str, Any]:
+    return {k: v for k, v in d.items() if v is not None}
+
+
 def _expectations_to_proto(
         exp: Optional[Expectations], entity_name: str, entity_type: str
 ) -> List[exp_proto.Expectations]:
@@ -40,7 +44,8 @@ def _expectations_to_proto(
     for e in exp.expectations:
         exp_protos.append(
             exp_proto.Expectation(
-                expectation_type=e[0], expectation_kwargs=json.dumps(e[1])
+                expectation_type=e[0], expectation_kwargs=json.dumps(
+                    _cleanup_dict(e[1]))
             )
         )
     return [exp_proto.Expectations(
