@@ -7,8 +7,16 @@ import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
-from fennel.sources import source, MySQL, S3, Snowflake, BigQuery, Postgres, \
-    Kafka
+from fennel.sources import (
+    source,
+    MySQL,
+    S3,
+    Snowflake,
+    BigQuery,
+    Postgres,
+    Kafka,
+)
+
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -204,6 +212,7 @@ kafka = Kafka(
 
 def test_multiple_sources(grpc_stub):
     @meta(owner="test@test.com")
+    @source(kafka.topic("test_topic"))
     @source(mysql.table("users_mysql", cursor="added_on"), every="1h")
     @source(
         bigquery.table("users_bq", cursor="added_on"), every="1h", lateness="2h"
@@ -217,7 +226,6 @@ def test_multiple_sources(grpc_stub):
         every="1h",
         lateness="2d",
     )
-    @source(kafka.topic("test_topic"))
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
@@ -234,8 +242,8 @@ def test_multiple_sources(grpc_stub):
     view.add(UserInfoDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
-    assert len(sync_request.sources) == 4
-    assert len(sync_request.extdbs) == 4
+    assert len(sync_request.sources) == 5
+    assert len(sync_request.extdbs) == 5
 
     # last source
     source_request = sync_request.sources[0]
@@ -398,6 +406,21 @@ def test_multiple_sources(grpc_stub):
             "user": "root",
             "password": "root",
             "port": 3306,
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+    extdb_request = sync_request.extdbs[4]
+    e = {
+        "name": "kafka_src",
+        "kafka": {
+            "bootstrap_servers": "localhost:9092",
+            "security_protocol": "PLAINTEXT",
+            "sasl_mechanism": "PLAIN",
+            "sasl_plain_username": "test",
+            "sasl_plain_password": "test",
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
