@@ -605,7 +605,7 @@ class Dataset(_Node[T]):
     _pipelines: List[Pipeline]
     _timestamp_field: str
     __fennel_original_cls__: Any
-    _expectations: List[Expectations]
+    expectations: List[Expectations]
     lookup: Callable
 
     def __init__(
@@ -631,7 +631,7 @@ class Dataset(_Node[T]):
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
         propogate_fennel_attributes(cls, self)
-        self._expectation = self._get_expectations()
+        self.expectations = self._get_expectations()
 
     def __class_getitem__(cls, item):
         return item

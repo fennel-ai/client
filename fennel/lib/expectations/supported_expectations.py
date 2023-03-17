@@ -55,7 +55,7 @@ def expect_column_values_to_not_be_null(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_be_null>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_null(
@@ -107,7 +107,7 @@ def expect_column_values_to_be_null(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_not_be_null>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_of_type(
@@ -174,7 +174,7 @@ def expect_column_values_to_be_of_type(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_be_in_type_list>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_in_type_list(
@@ -238,7 +238,7 @@ def expect_column_values_to_be_in_type_list(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_be_of_type>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 ###
@@ -324,7 +324,7 @@ def expect_column_values_to_be_in_set(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_not_be_in_set>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_not_be_in_set(
@@ -401,7 +401,7 @@ def expect_column_values_to_not_be_in_set(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_be_in_set>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_between(
@@ -479,7 +479,7 @@ def expect_column_values_to_be_between(
         <great_expectations.dataset.dataset.Dataset.expect_column_value_lengths_to_be_between>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_value_lengths_to_be_between(
@@ -546,7 +546,7 @@ def expect_column_value_lengths_to_be_between(
         <great_expectations.dataset.dataset.Dataset.expect_column_value_lengths_to_equal>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_value_lengths_to_equal(
@@ -603,7 +603,7 @@ def expect_column_value_lengths_to_equal(
         <great_expectations.dataset.dataset.Dataset.expect_column_value_lengths_to_be_between>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_match_regex(
@@ -663,7 +663,7 @@ def expect_column_values_to_match_regex(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_match_regex_list>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_not_match_regex(
@@ -723,7 +723,7 @@ def expect_column_values_to_not_match_regex(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_match_regex_list>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_match_regex_list(
@@ -787,7 +787,7 @@ def expect_column_values_to_match_regex_list(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_not_match_regex>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_not_match_regex_list(
@@ -843,7 +843,7 @@ def expect_column_values_to_not_match_regex_list(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_match_regex_list>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 ###
@@ -901,7 +901,7 @@ def expect_column_values_to_match_strftime_format(
         :ref:`include_config`, :ref:`catch_exceptions`, and :ref:`meta`.
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_dateutil_parseable(
@@ -949,7 +949,7 @@ def expect_column_values_to_be_dateutil_parseable(
         :ref:`include_config`, :ref:`catch_exceptions`, and :ref:`meta`.
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_be_json_parseable(
@@ -1001,7 +1001,7 @@ def expect_column_values_to_be_json_parseable(
         <great_expectations.dataset.dataset.Dataset.expect_column_values_to_match_json_schema>`
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_values_to_match_json_schema(
@@ -1056,7 +1056,7 @@ def expect_column_values_to_match_json_schema(
 
         The `JSON-schema docs <http://json-schema.org/>`_.
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 ###
@@ -1106,7 +1106,7 @@ def expect_column_pair_values_to_be_equal(
         :ref:`include_config`, :ref:`catch_exceptions`, and :ref:`meta`.
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_pair_values_A_to_be_greater_than_B(
@@ -1157,7 +1157,7 @@ def expect_column_pair_values_A_to_be_greater_than_B(
         :ref:`include_config`, :ref:`catch_exceptions`, and :ref:`meta`.
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 def expect_column_pair_values_to_be_in_set(
@@ -1202,7 +1202,7 @@ def expect_column_pair_values_to_be_in_set(
         :ref:`include_config`, :ref:`catch_exceptions`, and :ref:`meta`.
 
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()
 
 
 #
@@ -1246,4 +1246,4 @@ def expect_multicolumn_sum_to_equal(
         sum_total (int): \
             expected sum of columns
     """
-    return inspect.stack()[0].function, locals()
+    return inspect.stack()[0].function.lower(), locals()

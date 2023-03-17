@@ -6,11 +6,13 @@ import builtins
 import collections.abc
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
+import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import metadata_pb2
 import sys
+import typing
 
-if sys.version_info >= (3, 8):
+if sys.version_info >= (3, 10):
     import typing as typing_extensions
 else:
     import typing_extensions
@@ -21,26 +23,45 @@ DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 class Expectations(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    class _EntityType:
+        ValueType = typing.NewType("ValueType", builtins.int)
+        V: typing_extensions.TypeAlias = ValueType
+
+    class _EntityTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Expectations._EntityType.ValueType], builtins.type):  # noqa: F821
+        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+        Dataset: Expectations._EntityType.ValueType  # 0
+        Featureset: Expectations._EntityType.ValueType  # 1
+
+    class EntityType(_EntityType, metaclass=_EntityTypeEnumTypeWrapper): ...
+    Dataset: Expectations.EntityType.ValueType  # 0
+    Featureset: Expectations.EntityType.ValueType  # 1
+
+    ENTITY_NAME_FIELD_NUMBER: builtins.int
     SUITE_FIELD_NUMBER: builtins.int
     EXPECTATIONS_FIELD_NUMBER: builtins.int
     VERSION_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
+    E_TYPE_FIELD_NUMBER: builtins.int
+    entity_name: builtins.str
     suite: builtins.str
     @property
     def expectations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Expectation]: ...
     version: builtins.int
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
+    e_type: global___Expectations.EntityType.ValueType
     def __init__(
         self,
         *,
+        entity_name: builtins.str = ...,
         suite: builtins.str = ...,
         expectations: collections.abc.Iterable[global___Expectation] | None = ...,
         version: builtins.int = ...,
         metadata: metadata_pb2.Metadata | None = ...,
+        e_type: global___Expectations.EntityType.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["expectations", b"expectations", "metadata", b"metadata", "suite", b"suite", "version", b"version"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["e_type", b"e_type", "entity_name", b"entity_name", "expectations", b"expectations", "metadata", b"metadata", "suite", b"suite", "version", b"version"]) -> None: ...
 
 global___Expectations = Expectations
 

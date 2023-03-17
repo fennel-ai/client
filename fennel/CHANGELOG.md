@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.8.1] - 2023-03-15
+- Add back support for great expectations
+
 ## [0.8.0] - 2023-03-12
 - Large rewrite of protobufs and the interfaces and a bunch of backward incompatible changes. 
 

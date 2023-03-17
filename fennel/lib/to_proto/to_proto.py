@@ -25,30 +25,40 @@ from fennel.lib.duration import (
     Duration,
     duration_to_timedelta,
 )
-from fennel.lib.expectations import Expectations
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr
 from fennel.lib.schema import get_datatype
 from fennel.lib.to_proto import Serializer
 
 
+def _cleanup_dict(d) -> Dict[str, Any]:
+    return {k: v for k, v in d.items() if v is not None}
+
+
 def _expectations_to_proto(
-    exp: Optional[Expectations],
-) -> exp_proto.Expectations:
+    exp: Any, entity_name: str, entity_type: str
+) -> List[exp_proto.Expectations]:
     if exp is None:
-        return exp_proto.Expectations()
+        return []
     exp_protos = []
     for e in exp.expectations:
         exp_protos.append(
             exp_proto.Expectation(
-                expectation_type=e[0], expectation_kwargs=json.dumps(e[1])
+                expectation_type=e[0],
+                expectation_kwargs=json.dumps(_cleanup_dict(e[1])),
             )
         )
-    return exp_proto.Expectations(
-        suite=exp.suite,
-        expectations=exp_protos,
-        version=exp.version,
-        metadata=None,
-    )
+    return [
+        exp_proto.Expectations(
+            suite=exp.suite,
+            expectations=exp_protos,
+            version=exp.version,
+            metadata=None,
+            entity_name=entity_name,
+            e_type=exp_proto.Expectations.EntityType.Dataset
+            if entity_type == "dataset"
+            else exp_proto.Expectations.EntityType.Featureset,
+        )
+    ]
 
 
 # ------------------------------------------------------------------------------
@@ -66,11 +76,13 @@ def to_sync_request_proto(
     featuresets = []
     features = []
     extractors = []
+    expectations: List[exp_proto.Expectations] = []
     for obj in registered_objs:
         if isinstance(obj, Dataset):
             datasets.append(dataset_to_proto(obj))
             pipelines.extend(pipelines_from_ds(obj))
             operators.extend(operators_from_ds(obj))
+            expectations.extend(expectations_from_ds(obj))
             (ext_dbs, s) = sources_from_ds(obj, sources.SOURCE_FIELD)
             conn_sources.extend(s)
             # dedup external dbs by the name
@@ -96,6 +108,7 @@ def to_sync_request_proto(
         extractors=extractors,
         sources=conn_sources,
         extdbs=external_dbs,
+        expectations=expectations,
     )
 
 
@@ -184,6 +197,10 @@ def operators_from_ds(ds: Dataset) -> List[ds_proto.Operator]:
 def _operators_from_pipeline(pipeline: Pipeline):
     serializer = Serializer(pipeline=pipeline)
     return serializer.serialize()
+
+
+def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
+    return _expectations_to_proto(ds.expectations, ds._name, "dataset")
 
 
 def sources_from_ds(

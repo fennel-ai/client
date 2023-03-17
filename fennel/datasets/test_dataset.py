@@ -87,7 +87,7 @@ def test_simple_dataset(grpc_stub):
                     "timestamp": {},
                 },
             }
-        ]
+        ],
     }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
@@ -146,7 +146,7 @@ def test_dataset_with_retention(grpc_stub):
                     "timestamp": {},
                 },
             }
-        ]
+        ],
     }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
