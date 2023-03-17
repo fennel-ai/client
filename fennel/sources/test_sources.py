@@ -3,13 +3,12 @@ from typing import Optional
 
 from google.protobuf.json_format import ParseDict  # type: ignore
 
-from fennel.datasets import dataset, field
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
-from fennel.gen.services_pb2 import SyncRequest
+from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
-from fennel.sources import source, MySQL, S3, Snowflake, BigQuery, Postgres
-
+from fennel.sources import source, MySQL, S3, Snowflake, BigQuery, Postgres, \
+    Kafka
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -191,6 +190,17 @@ snowflake = Snowflake(
     password="<password>",
 )
 
+kafka = Kafka(
+    name="kafka_src",
+    bootstrap_servers="localhost:9092",
+    topic="test_topic",
+    group_id="test_group",
+    security_protocol="PLAINTEXT",
+    sasl_mechanism="PLAIN",
+    sasl_plain_username="test",
+    sasl_plain_password="test",
+)
+
 
 def test_multiple_sources(grpc_stub):
     @meta(owner="test@test.com")
@@ -207,6 +217,7 @@ def test_multiple_sources(grpc_stub):
         every="1h",
         lateness="2d",
     )
+    @source(kafka.topic("test_topic"))
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)

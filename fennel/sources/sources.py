@@ -22,9 +22,9 @@ DEFAULT_LATENESS = Duration("1h")
 
 
 def source(
-    conn: DataConnector,
-    every: Optional[Duration] = None,
-    lateness: Optional[Duration] = None,
+        conn: DataConnector,
+        every: Optional[Duration] = None,
+        lateness: Optional[Duration] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
@@ -49,7 +49,7 @@ def source(
 
 
 def sink(
-    conn: DataConnector, every: Optional[Duration] = None
+        conn: DataConnector, every: Optional[Duration] = None
 ) -> Callable[[T], Any]:
     def decorator(dataset_cls: T):
         if every is not None:
@@ -112,7 +112,7 @@ class SQLSource(DataSource):
         if not isinstance(self.password, str):
             exceptions.append(TypeError("password must be a string"))
         if self.jdbc_params is not None and not isinstance(
-            self.jdbc_params, str
+                self.jdbc_params, str
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
@@ -129,12 +129,12 @@ class S3(DataSource):
         pass
 
     def bucket(
-        self,
-        bucket_name: str,
-        prefix: str,
-        delimiter: str = ",",
-        format: str = "csv",
-        cursor: Optional[str] = None,
+            self,
+            bucket_name: str,
+            prefix: str,
+            delimiter: str = ",",
+            format: str = "csv",
+            cursor: Optional[str] = None,
     ) -> S3Connector:
         return S3Connector(
             self,
@@ -185,6 +185,46 @@ class BigQuery(DataSource):
             project_id="",
             dataset_id="",
             credentials_json="",
+        )
+
+
+class Kafka(DataSource):
+    bootstrap_servers: str
+    security_protocol: str
+    sasl_mechanism: Optional[str]
+    sasl_plain_username: Optional[str]
+    sasl_plain_password: Optional[str]
+    sasl_jaas_config: Optional[str]
+
+    def _validate(self) -> List[Exception]:
+        exceptions: List[Exception] = []
+        if self.security_protocol not in ["PLAIN TEXT", "SASL PLAINTEXT",
+                                          "SASL SSL"]:
+            exceptions.append(
+                ValueError(
+                    "sasl_mechanism must be one of "
+                    "PLAIN TEXT, SASL PLAINTEXT, SASL SSL"
+                )
+            )
+        return exceptions
+
+    def required_fields(self) -> List[str]:
+        return ["topic"]
+
+    def topic(self, topic_name: str) -> KafkaConnector:
+        return KafkaConnector(self, topic_name)
+
+    @staticmethod
+    def get(name: str) -> Kafka:
+        return Kafka(
+            name=name,
+            _get=True,
+            bootstrap_servers="",
+            security_protocol="",
+            sasl_mechanism="",
+            sasl_plain_username="",
+            sasl_plain_password="",
+            sasl_jaas_config="",
         )
 
 
@@ -254,7 +294,7 @@ class Snowflake(DataSource):
         if not isinstance(self.role, str):
             exceptions.append(TypeError("role must be a string"))
         if self.jdbc_params is not None and not isinstance(
-            self.jdbc_params, str
+                self.jdbc_params, str
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
@@ -313,6 +353,17 @@ class TableConnector(DataConnector):
         self.cursor = cursor
 
 
+class KafkaConnector(DataConnector):
+    """DataConnectors which only need a topic to be specified. Includes
+    Kafka."""
+
+    topic: str
+
+    def __init__(self, source, topic):
+        self.data_source = source
+        self.topic = topic
+
+
 class S3Connector(DataConnector):
     bucket_name: Optional[str]
     path_prefix: Optional[str]
@@ -321,13 +372,13 @@ class S3Connector(DataConnector):
     cursor: Optional[str] = None
 
     def __init__(
-        self,
-        data_source,
-        bucket_name,
-        path_prefix,
-        delimiter,
-        format,
-        cursor,
+            self,
+            data_source,
+            bucket_name,
+            path_prefix,
+            delimiter,
+            format,
+            cursor,
     ):
         self.data_source = data_source
         self.bucket_name = bucket_name
