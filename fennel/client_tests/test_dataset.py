@@ -12,7 +12,7 @@ import requests
 from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
 from fennel.lib.aggregate import Count, Sum, Average
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, Series
+from fennel.lib.schema import Embedding, oneof, Series
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
@@ -408,7 +408,9 @@ class MovieRevenue:
 @meta(owner="aditya@fennel.ai")
 @dataset
 class MovieStats:
-    movie: str = field(key=True)
+    movie: oneof(str, ["Jumanji", "Titanic"]) = field(  # type: ignore # noqa
+        key=True
+    )
     rating: float
     revenue_in_millions: float
     t: datetime

@@ -229,8 +229,8 @@ class Executor(Visitor):
         left_df = input_ret.df
         right_df = copy.deepcopy(right_ret.df)
 
-        right_timestamp_field = input_ret.timestamp_field
-        left_timestamp_field = right_ret.timestamp_field
+        right_timestamp_field = right_ret.timestamp_field
+        left_timestamp_field = input_ret.timestamp_field
         right_df = right_df.rename(
             columns={right_timestamp_field: left_timestamp_field}
         )

@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.8.3] - 2023-03-20
+- Some minor bug fixes
+
 ## [0.8.2] - 2023-03-17
 - Kafka source support. 
 

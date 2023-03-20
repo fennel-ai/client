@@ -35,7 +35,7 @@ from fennel.lib.metadata import (
     get_meta_attr,
     set_meta_attr,
 )
-from fennel.lib.schema import dtype_to_string
+from fennel.lib.schema import dtype_to_string, get_dtype
 from fennel.utils import (
     fhash,
     parse_annotation_comments,
@@ -263,7 +263,11 @@ class GroupBy:
         self.node = node
         self.node.out_edges.append(self)
 
-    def aggregate(self, aggregates: List[AggregateType]) -> _Node:
+    def aggregate(self, aggregates: List[AggregateType], *args) -> _Node:
+        if len(args) > 0 or not isinstance(aggregates, list):
+            raise TypeError("aggregate operator, takes a list of aggregates")
+        if len(self.keys) == 1 and isinstance(self.keys[0], list):
+            self.keys = self.keys[0]  # type: ignore
         return Aggregate(self.node, list(self.keys), aggregates)
 
 
@@ -954,6 +958,10 @@ class DSSchema:
                         f"{check_type} schema but not "
                         f"present in {other_name} {check_type} schema."
                     )
+
+                dtype = get_dtype(dtype)
+                other_schema[name] = get_dtype(other_schema[name])
+
                 if dtype != other_schema[name]:
                     return TypeError(
                         f"Field {name} has type {dtype_to_string(dtype)} in"
@@ -1085,7 +1093,10 @@ class SchemaValidator(Visitor):
             return set(subset).issubset(set(superset))
 
         def make_types_optional(types: Dict[str, Type]) -> Dict[str, Type]:
-            return {k: Optional[v] for k, v in types.items()}  # type: ignore
+            return {
+                k: Optional[get_dtype(v)]  # type: ignore
+                for k, v in types.items()
+            }
 
         left_schema = self.visit(obj.node)
         right_schema = self.visit(obj.dataset)
