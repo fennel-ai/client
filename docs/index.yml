@@ -1,0 +1,76 @@
+version: '0.0.0'
+sidebar:
+  - slug: "getting-started"
+    title: "Getting Started"
+    pages:
+      - "/"
+      - "getting-started/why-fennel"
+      - "getting-started/installation"
+      - "getting-started/quickstart"
+
+  - slug: "overview"
+    title: "Overview"
+    pages:
+      - "overview/concepts"
+      - "overview/deployment-model"
+      - "overview/architecture"
+      - "overview/read-write-separation"
+      - "overview/cost-optimizations"
+
+  - slug: "datasets"
+    title: "Datasets"
+    pages:
+      - "datasets/overview"
+      - "datasets/sources"
+      - "datasets/lookups"
+      - "datasets/pipelines"
+      - "datasets/operators"
+      - "datasets/on-demand"
+
+  - slug: "featuresets"
+    title: "Featuresets"
+    pages: 
+      - "featuresets/overview"
+      - "featuresets/end-to-end-extraction"
+      - "featuresets/reading-datasets"
+      - "featuresets/request-based-features"
+      - "featuresets/composite-features"
+      - "featuresets/lifecycle-management"
+
+  - slug: "testing-and-ci-cd"
+    title: "Testing & CI/CD"
+    pages:
+      - "testing-and-ci-cd/unit-tests"
+      - "testing-and-ci-cd/integration-tests"
+      - "testing-and-ci-cd/ci-cd-workflows"
+    
+  - slug: "governance"
+    title: "Governance"
+    pages:
+      - "governance/privacy-and-security"
+      - "governance/metaflags"
+
+  - slug: "data-quality"
+    title: "Data Quality"
+    pages:
+      - "data-quality/data-expectations"
+      - "data-quality/lifecycle-management"
+      - "data-quality/drift-monitoring"
+
+  - slug: "api-reference"
+    title: "API Reference"
+    pages:
+      - "api-reference/client"
+      - "api-reference/rest-api"
+      - "api-reference/duration"
+      - "api-reference/data-types"
+      - "api-reference/operators"
+      - "api-reference/aggregations"
+      - "api-reference/sources"
+
+  - 
+    slug: "misc"
+    title: "Misc."
+    pages:
+      - "misc/python-environment"
+      - "misc/troubleshooting-guide"

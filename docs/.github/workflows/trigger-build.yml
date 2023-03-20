@@ -1,0 +1,22 @@
+name: Trigger Docs Build
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/trigger-build.yml'
+      # Paths to watch for content changes:
+      - 'pages/**'
+      - 'examples/**'
+      - 'index.yml'
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Notify Vercel of new content
+      uses: wei/curl@v1
+      with:
+        args: -X POST ${{ secrets.BUILD_TRIGGER_URL }}
