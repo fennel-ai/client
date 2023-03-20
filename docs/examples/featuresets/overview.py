@@ -2,19 +2,17 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.datasets import dataset, pipeline, field, Dataset
-from fennel.featuresets import feature, featureset, extractor, depends_on
+from fennel.datasets import dataset, field
+from fennel.featuresets import extractor, depends_on
+from fennel.featuresets import feature, featureset
+from fennel.lib.metadata import meta
 from fennel.lib.schema import Series, DataFrame
 from fennel.test_lib import mock_client
-from fennel.lib.metadata import meta
-
-from fennel.featuresets import extractor, depends_on
-from fennel.lib.schema import Series, DataFrame
 
 
 # docsnip featureset
 @featureset
-class Movie:
+class Movies:
     duration: int = feature(id=1)
     over_2hrs: bool = feature(id=2)
 

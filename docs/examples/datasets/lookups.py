@@ -1,11 +1,12 @@
-from fennel.featuresets import featureset, feature, extractor, depends_on
-from fennel.lib.schema import Series
-from fennel.lib.metadata import meta
-from fennel.datasets import dataset, field
-from datetime import datetime
-from fennel.test_lib import mock_client
-import pandas as pd
 from datetime import datetime, timedelta
+
+import pandas as pd
+
+from fennel.datasets import dataset, field
+from fennel.featuresets import featureset, feature, extractor, depends_on
+from fennel.lib.metadata import meta
+from fennel.lib.schema import Series
+from fennel.test_lib import mock_client
 
 
 # docsnip datasets_lookup

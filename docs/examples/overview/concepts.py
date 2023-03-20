@@ -10,7 +10,7 @@ from fennel.test_lib import mock_client
 # docsnip user_dataset
 @meta(owner="data-eng-oncall@fennel.ai")
 @dataset
-class User:
+class UserDataset:
     uid: int = field(key=True)
     dob: datetime
     country: str
@@ -88,10 +88,9 @@ class UserTransactionsAbroad:
 
 from datetime import timedelta
 
-
 # docsnip featureset
-from fennel.featuresets import feature, featureset, extractor, depends_on
-from fennel.lib.schema import Series, DataFrame
+from fennel.featuresets import feature, featureset, extractor
+from fennel.lib.schema import Series
 
 
 @featureset

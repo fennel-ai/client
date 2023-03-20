@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fennel-ai"
-version = "0.8.3"
+version = "0.8.4"
 description = "The modern realtime feature engineering platform"
 authors = ["Fennel AI <developers@fennel.ai>"]
 packages = [
@@ -40,12 +40,19 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 testpaths = [
+    "docs/examples/datasets/datasets.py",
     "fennel/dataset",
     "fennel/lib",
     "fennel/featureset",
     "fennel/sources",
     "docs/examples",
 ]
+python_files = [
+    "docs/examples/*/*.py",
+    "*_test.py",
+    "test_*.py",
+]
+
 markers = [
     "integration: Those tests that can be run using a rust client",
     "data_integration: Integration tests for Data Integration",
@@ -54,7 +61,8 @@ markers = [
 
 [tool.mypy]
 python_version = "3.8"
-exclude = '''(pb2\.py$|grpc\.py$|_pb2.pyi)'''
+exclude = '''(pb2\.py$|grpc\.py$|_pb2.pyi|pb2.pyi|docs/examples|fennel/gen)'''
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "pyarrow"
@@ -77,6 +85,15 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "grpc"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "grpc_tools"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "google.protobuf"
+ignore_missing_imports = true
+
 
 [tool.black]
 line-length = 80

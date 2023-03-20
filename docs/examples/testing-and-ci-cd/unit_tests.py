@@ -1,16 +1,15 @@
 from datetime import datetime, timedelta
-from typing import List, Dict, Tuple, Optional
+from typing import Optional
 
 import pandas as pd
 import requests
 
-from fennel.lib.schema import Series, DataFrame
-
 # docsnip datasets
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum, Average
-from fennel.lib.window import Window
 from fennel.lib.metadata import meta
+from fennel.lib.schema import Series, DataFrame
+from fennel.lib.window import Window
 
 
 @meta(owner="test@test.com")
@@ -43,7 +42,10 @@ class MovieRating:
                 Average(window=Window("12h"), of="rating", into_field="rating"),
             ]
         )
+
+
 # /docsnip
+
 
 # docsnip datasets_testing
 import unittest
@@ -94,6 +96,8 @@ class TestDataset(unittest.TestCase):
         assert df["rating"].tolist() == [3, 4]
         assert df["num_ratings"].tolist() == [4, 5]
         assert df["sum_ratings"].tolist() == [12, 20]
+
+
 # /docsnip
 
 # docsnip featuresets_testing
@@ -102,7 +106,7 @@ from fennel.featuresets import feature, featureset, extractor, depends_on
 
 @meta(owner="test@test.com")
 @featureset
-class UserInfoMultipleExtractor:
+class UserInfoFeatures:
     userid: int = feature(id=1)
     name: str = feature(id=2)
     # The users gender among male/female/non-binary
@@ -131,20 +135,22 @@ class TestSimpleExtractor(unittest.TestCase):
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
-        df = UserInfoMultipleExtractor.get_age_and_name_features(
-            UserInfoMultipleExtractor, ts, age, name
+        df = UserInfoFeatures.get_age_and_name_features(
+            UserInfoFeatures, ts, age, name
         )
         self.assertEqual(df.shape, (2, 3))
         self.assertEqual(
-            df["UserInfoMultipleExtractor.age_squared"].tolist(), [1024, 576]
+            df["UserInfoFeatures.age_squared"].tolist(), [1024, 576]
         )
         self.assertEqual(
-            df["UserInfoMultipleExtractor.age_cubed"].tolist(), [32768, 13824]
+            df["UserInfoFeatures.age_cubed"].tolist(), [32768, 13824]
         )
         self.assertEqual(
-            df["UserInfoMultipleExtractor.is_name_common"].tolist(),
+            df["UserInfoFeatures.is_name_common"].tolist(),
             [True, False],
         )
+
+
 # /docsnip
 
 
@@ -238,4 +244,6 @@ class TestExtractorDAGResolution(unittest.TestCase):
             ),
         )
         self.assertEqual(feature_df.shape, (2, 7))
+
+
 # /docsnip

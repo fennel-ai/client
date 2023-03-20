@@ -1,8 +1,8 @@
 from datetime import datetime
+from typing import Optional
 
 import pytest
 
-from typing import List, Dict, Tuple, Optional
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 
@@ -15,6 +15,8 @@ class User:
     dob: datetime
     country: str
     update_time: datetime = field(timestamp=True)
+
+
 # /docsnip
 
 
@@ -26,20 +28,22 @@ def test_valid_user_dataset():
         # docsnip valid_user_dataset
         @meta(owner="data-eng-oncall@fennel.ai")
         @dataset
-        class User:
+        class UserValidDataset:
             uid: int
             country: str
             update_time: datetime
+
         # /docsnip
 
         # docsnip metaflags_dataset
         @meta(owner="abc-team@fennel.ai", tags=["PII", "experimental"])
         @dataset
-        class User:
+        class UserWithMetaFlags:
             uid: int = field(key=True)
             height: float = field().meta(description="height in inches")
             weight: float = field().meta(description="weight in lbs")
             updated: datetime
+
         # /docsnip
 
 
@@ -53,6 +57,7 @@ def test_optional_key_field():
             uid: Optional[int] = field(key=True)
             country: str
             update_time: datetime
+
         # /docsnip
     assert "Key uid in dataset User cannot be Optional" in str(e.value)
 
@@ -67,6 +72,7 @@ def test_no_datetime_field():
             uid: int
             country: str
             update_time: int
+
         # /docsnip
     assert "No timestamp field found" in str(e.value)
 
@@ -84,5 +90,6 @@ def test_ambiguous_timestamp_field():
             country: str
             created_time: datetime
             updated_time: datetime
+
         # /docsnip
     assert "Multiple timestamp fields are not supported" in str(e.value)

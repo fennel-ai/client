@@ -1,8 +1,8 @@
-from fennel.sources import source, Postgres, Kafka
 import os
-from fennel.lib.metadata import meta
-from fennel.datasets import dataset, field
 from datetime import datetime
+
+from fennel.datasets import dataset
+from fennel.lib.metadata import meta
 
 os.environ["POSTGRES_NAME"] = "postgres"
 os.environ["POSTGRES_HOST"] = "localhost"

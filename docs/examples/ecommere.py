@@ -1,19 +1,22 @@
 # docsnip imports
 import unittest
+from datetime import datetime, timedelta
+
 import pandas as pd
 import requests
+
 from fennel.datasets import dataset, pipeline, field, Dataset
-from datetime import datetime, timedelta
-from fennel.lib.metadata import meta
-from fennel.lib.aggregate import Count
-from fennel.lib.window import Window
 from fennel.featuresets import feature, featureset, extractor, depends_on
+from fennel.lib.aggregate import Count
+from fennel.lib.metadata import meta
 from fennel.lib.schema import Series, DataFrame
-from fennel.test_lib import mock_client
-# /docsnip
+from fennel.lib.window import Window
 
 # docsnip connector
 from fennel.sources import Postgres, source
+from fennel.test_lib import mock_client
+
+# /docsnip
 
 postgres = Postgres(
     name="my-postgres",
@@ -22,7 +25,10 @@ postgres = Postgres(
     username="myuser",
     password="mypassword",
 )
+
+
 # /docsnip
+
 
 # docsnip definitions
 @source(postgres.table("orders", cursor="timestamp"), every="1m", lateness="1d")
@@ -72,6 +78,8 @@ class UserSeller:
         df["num_orders_1d"] = df["num_orders_1d"].astype(int)
         df["num_orders_1w"] = df["num_orders_1w"].astype(int)
         return df[["num_orders_1d", "num_orders_1w"]]
+
+
 # /docsnip
 
 
@@ -123,4 +131,6 @@ class TestUserLivestreamFeatures(unittest.TestCase):
         self.assertEqual(
             feature_df["UserSeller.num_orders_1w"].tolist(), [2, 1, 0]
         )
+
+
 # /docsnip

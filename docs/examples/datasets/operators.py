@@ -1,15 +1,14 @@
 from datetime import datetime
+from datetime import timedelta
+from typing import Optional
 
 import pandas as pd
 
-from datetime import timedelta
 from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
-from fennel.test_lib import mock_client
-from typing import List, Dict, Tuple, Optional
-from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Count, Sum
 from fennel.lib.window import Window
+from fennel.test_lib import mock_client
 
 
 # docsnip filter

@@ -221,6 +221,8 @@ class MerchantBehaviorFeatures:
                 "fradulent_transaction_ratio",
             ]
         ]
+
+
 # /docsnip
 
 
