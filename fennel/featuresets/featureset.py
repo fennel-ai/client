@@ -488,9 +488,6 @@ class Extractor:
         self.output_feature_ids = outputs
         self.version = version
 
-    def signature(self) -> str:
-        pass
-
     def fqn(self) -> str:
         """Fully qualified name of the extractor."""
         return f"{self.featureset}.{self.name}"

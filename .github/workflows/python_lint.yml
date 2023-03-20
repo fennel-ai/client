@@ -19,5 +19,5 @@ jobs:
         run: flake8 .
       - name: black lint
         run: black --diff --check .
-#      - name: mypy typechecking
-#        run: mypy .
+      - name: mypy typechecking
+        run: mypy .

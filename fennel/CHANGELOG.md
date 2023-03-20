@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.8.4] - 2023-03-20
+- Port docs to client.
+
 ## [0.8.3] - 2023-03-20
 - Some minor bug fixes
 

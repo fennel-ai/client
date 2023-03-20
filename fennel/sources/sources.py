@@ -126,7 +126,7 @@ class S3(DataSource):
     aws_secret_access_key: str
 
     def _validate(self) -> List[Exception]:
-        pass
+        return []
 
     def bucket(
         self,

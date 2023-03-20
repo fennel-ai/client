@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fennel-ai"
-version = "0.8.3"
+version = "0.8.4"
 description = "The modern realtime feature engineering platform"
 authors = ["Fennel AI <developers@fennel.ai>"]
 packages = [
@@ -32,6 +32,7 @@ pyarrow = "^10.0.1"
 mypy-protobuf = "^3.4.0"
 pytest-grpc = "^0.8.0"
 build = "^0.9.0"
+geopy = "^2.3.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -39,11 +40,19 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 testpaths = [
+    "docs/examples/datasets/datasets.py",
     "fennel/dataset",
     "fennel/lib",
     "fennel/featureset",
     "fennel/sources",
+    "docs/examples",
 ]
+python_files = [
+    "docs/examples/*/*.py",
+    "*_test.py",
+    "test_*.py",
+]
+
 markers = [
     "integration: Those tests that can be run using a rust client",
     "data_integration: Integration tests for Data Integration",
@@ -51,11 +60,16 @@ markers = [
 
 
 [tool.mypy]
-python_version = "3.8"
-exclude = '''(pb2\.py$|grpc\.py$|_pb2.pyi)'''
+python_version = "3.9"
+ignore_missing_imports = true
+exclude = '''(pb2\.py$|grpc\.py$|.*_pb2.pyi|docs/examples)'''
 
 [[tool.mypy.overrides]]
 module = "pyarrow"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "requests"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -71,9 +85,16 @@ module = "numpy"
 ignore_errors = true
 ignore_missing_imports = true
 
-
 [[tool.mypy.overrides]]
 module = "grpc"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "grpc_tools"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "google.protobuf.*"
 ignore_missing_imports = true
 
 [tool.black]
