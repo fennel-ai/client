@@ -60,12 +60,16 @@ markers = [
 
 
 [tool.mypy]
-python_version = "3.8"
-exclude = '''(pb2\.py$|grpc\.py$|_pb2.pyi|pb2.pyi|docs/examples|fennel/gen)'''
+python_version = "3.9"
 ignore_missing_imports = true
+exclude = '''(pb2\.py$|grpc\.py$|.*_pb2.pyi|docs/examples)'''
 
 [[tool.mypy.overrides]]
 module = "pyarrow"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "requests"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -81,7 +85,6 @@ module = "numpy"
 ignore_errors = true
 ignore_missing_imports = true
 
-
 [[tool.mypy.overrides]]
 module = "grpc"
 ignore_missing_imports = true
@@ -91,9 +94,8 @@ module = "grpc_tools"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = "google.protobuf"
+module = "google.protobuf.*"
 ignore_missing_imports = true
-
 
 [tool.black]
 line-length = 80
