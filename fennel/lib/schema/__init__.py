@@ -8,4 +8,5 @@ from fennel.lib.schema.schema import (
     DataFrame,
     Embedding,
     regex,
+    get_dtype,
 )

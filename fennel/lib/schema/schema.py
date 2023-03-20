@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Union, Dict, Any, List, TYPE_CHECKING
+from typing import Union, Any, List, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -48,6 +48,14 @@ def dtype_to_string(type_: Any) -> str:
     if isinstance(type_, type):
         return type_.__name__
     return str(type_)
+
+
+def get_dtype(dtype):
+    if isinstance(dtype, oneof) or isinstance(dtype, between):
+        return dtype.dtype
+    if isinstance(dtype, regex):
+        return str
+    return dtype
 
 
 @dataclass
