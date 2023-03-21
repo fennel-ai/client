@@ -14,8 +14,8 @@ Given some input and output features, extracts the current value of all the outp
 
 **Arguments:**
 
-* `output_feature_list`: list of features (written as fully qualified name of a feature along with the featureset) that should be extracted
-* `input_feature_list` : list of features for which values are known
+* `output_feature_list`: list of features (written as fully qualified name of a feature along with the featureset) that should be extracted. Can also take featurset objects as input, in which case all features in the featureset are extracted.
+* `input_feature_list` : list of features/featuresets for which values are known
 * `input_df`: a pandas dataframe object that contains the values of all features in the input feature list. Each row of the dataframe can be thought of as one entity for which features are desired.
 * `log: bool` - boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False
 * `workflow: str` - the name of the workflow associated with the feature extraction. Only relevant when `log` is set to True
@@ -27,35 +27,29 @@ Given some input and output features, extracts the current value of all the outp
 client = Client(<URL>)
 
 @featureset
-class UserInfo:
-    userid: int = feature(id=1)
-    ...
-
-feature_df = client.extract_features(
-    output_feature_list=[
-        UserInfo.userid,
-        UserInfo.name,
-        UserInfo.geoid,
-        UserInfo.age,
-        UserInfo.age_squared,
-        UserInfo.age_cubed,
-        UserInfo.is_name_common,
-    ],
-    input_feature_list=[UserInfo.userid],
-    input_df=pd.DataFrame(
-        {"UserInfo.userid": [18232, 18234]}
-    ),
-    log=True,
-    workflow='home_page_ads',
-)
-assert feature_df.shape == (2, 7)
+class UserFeatures:
+userid: int = feature(id=1)
+... 6 more features
 ```
 
-### **extract\_historical\_features**
+<pre snippet="api-reference/client#extract_features_api" />
+
 
 ****
 
 ### **sync**
+
+Synchronizes the local dataset and featureset definitions with the server. This method should be called after all the datasets and featuresets definitions have been defined using the client SDK.
+This method will create the resources required for the datasets and featuresets on the server. It will also update the resources / throw errors if the schema of the datasets and featuresets have changed.
+
+**Arguments:**
+
+* `datasets: List[Dataset]` - a list of dataset definitions that need to be synced with the server
+* `featuresets: List[Featureset]` - a list of featureset definitions that need to be synced with the server
+
+**Example**
+
+<pre snippet="api-reference/client#sync_api" />
 
 ****
 
@@ -73,21 +67,5 @@ This method throws an error if the schema of the dataframe (i.e. column names an
 
 **Example**
 
-```python
-@meta(owner='abc@xyz.ai')
-@dataset
-class User:
-    id: int
-    gender: str
-    signup: datetime
+<pre snippet="api-reference/client#log_api" />
 
-# create a client somehow
-# ...
-client.sync(datasets=[User])
-df = pd.Dataframe.from_dict({
-    'id': [1, 2, 3],
-    'gender': ['M', 'F', 'M'],
-    'signup': [1674793720, 1674793720, 1674793720],
-})
-client.log('User', df)
-```

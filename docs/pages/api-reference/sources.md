@@ -20,27 +20,7 @@ The following fields need to be specified:
 6. **`password`** - The password associated with the username.
 7. **`jdbc_params`** - Additional properties to pass to the JDBC URL string when connecting to the database formatted as `key=value` pairs separated by the symbol `&`. (example: `key1=value1&key2=value2&key3=value3`).
 
-```python
-from fennel import sources
-from source import source
-
-mysql = sources.MySQL(
-    name='py_mysql_src',
-    host="my-favourite-mysql.us-west-2.rds.amazonaws.com",
-    port=3306,
-    db_name="some_database_name",
-    username="admin",
-    password="password",
-    jdbc_params="enabledTLSProtocols=TLSv1.2",
-)
-
-@source(mysql.table('user'), cursor='update_time', every='1m')
-@dataset
-class User:
-    uid: int = field(key=True)
-    email: str
-    ...
-```
+<pre snippet="api-reference/source#mysql_source" />
 
 :::warning
 If you see a `Cannot create a PoolableConnectionFactory`error, try setting `jdbc_params` to `enabledTLSProtocols=TLSv1.2`&#x20;
@@ -50,30 +30,12 @@ TODO
 
 ### Postgres
 
-```python
-postgres = sources.Postgres(
-    name='py_psql_src',
-    host="my-favourite-postgres.us-west-2.rds.amazonaws.com",
-    db_name="some_database_name",
-    username="admin",
-    password="password",
-)
-
-@source(postgres.table('user'), cursor='update_time', every='1m')
-@dataset
-class User:
-    uid: int
-    ...
-
-```
+<pre snippet="api-reference/source#postgres_source" />
 
 :::warning
 If you see a `Cannot create a PoolableConnectionFactory`error, try setting **`jdbc_params` ** to **** `enabledTLSProtocols=TLSv1.2`&#x20;
 :::
 
-
-
-TODO
 
 ### S3
 
@@ -91,21 +53,8 @@ And the following fields need to be defined on the bucket:
 3. **`format` ** (optional) **-** The format of the files you'd like to replicate. You can choose between CSV (default), Avro, and Parquet.&#x20;
 4. **`delimiter`** (optional) - the character delimiting individual cells in the CSV data. The default value is `","` and if overridden, this can only be a 1-character string. For example, to use tab-delimited data enter `"\t"`.
 
-```python
-s3 = sources.S3(
-    name='ratings_source',
-    aws_access_key_id="<SOME_ACCESS_KEY>",
-    aws_secret_access_key="<SOME_SECRET_ACCESS_KEY>",
-)
+<pre snippet="api-reference/source#s3_source" />
 
-@source(s3.bucket("engagement", prefix="notion"), every="30m")
-@meta(owner='abc@email.com')
-@dataset
-class User:
-    uid: int = field(key=True)
-    email: str
-    ...
-```
 
 Fennel uses  `file_last_modified` property exported by S3 to track what data has been seen so far and hence a cursor field doesn't need to be specified.
 
@@ -125,15 +74,6 @@ At this point, you should have a service account with the "BigQuery User" projec
 
 For Service Account Key JSON, enter the Google Cloud [Service Account Key in JSON format](https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
 
-TODO
-
-### Kafka
-
-TODO
-
-### Redshift
-
-TODO
 
 ### Snowflake
 
@@ -148,23 +88,10 @@ The following fields need to be defined:
 7. **`username`**  - The username that should be used to access Snowflake. Please note that the username should have the required permissions to assume the role provided.
 8. **`password` ** **-** The password associated with the username.
 
-```python
-from fennel import sources
+<pre snippet="api-reference/source#snowflake_source" />
 
-sf_src = sources.Snowflake(
-    name = "snowflake_src",
-    host="nhb38793.us-west-2.snowflakecomputing.com", 
-    warehouse="TEST",
-    schema="PUBLIC",
-    role="ACCOUNTADMIN",
-    username="<username>",
-    password="<password>",
-)
-```
 
 :::info
 Currently, Fennel only supports OAuth 1 (username and password) authentication. We are happy to prioritize support for OAuth 2.0 if needed - if so, please talk to us!
 :::
-
-TODO
 

@@ -55,3 +55,7 @@ These restricted types act as regular types -- they can be mixed/matched to form
 * `oneof(Optional[int], [None, 0, 1])` - a nullable type that only takes 0 or 1 as valid values
 
 Note: data belonging to these restricted types is still stored / transmitted (e.g. in json encoding) as a regular base type. It's just that Fennel will reject data of base type that doesn't meet the restriction.
+
+**Example:**
+
+<pre snippet="api-reference/data-types#dataset_type_restrictions" />

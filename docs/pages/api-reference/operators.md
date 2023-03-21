@@ -6,7 +6,12 @@ status: wip
 
 # Operators
 
-### Join
+### Join ( Left Join )
+
+Fennel allows you to join two datasets using the `left_join` operator. You can only join a dataset
+against another dataset which has keys defined. The join operation is performed on the keys of the RHS dataset.
+
+The `left_join` operator has the following parameters:
 
 1. `dataset: Dataset` - positional argument, that specifies the RHS Dataset.&#x20;
 2. `on: List[str]` - kwarg that specifies the list of fields to join on.
@@ -22,20 +27,39 @@ One must either provide the `on` parameter or both the `left_on` & `right_on` pa
 The `on` or `right_on` fields specified should be keys in the RHS Dataset.
 :::
 
-
+More details and examples on the join operator can be found in the [join section](/datasets/operators#Join).
 
 ### Filter
 
-TODO
+Fennel allows you to filter a dataset using the `filter` operator. The filter function is expected to return an series of booleans which are used to filter the dataset.
+
+The `filter` operator has the following parameters:
+
+1. `func: Callable[pd.DataFrame, pd.Series[bool]]` - positional argument, that specifies the filter function which is expected to return a series of booleans.;
+
+More details and examples on the filter operator can be found in the [filter section](/datasets/operators#Filter).
 
 ### Transform
 
-TODO
+Fennel allows you to transform a dataset using the `transform` operator. 
+The `transform` operator has the following parameters:
+
+1. `func: Callable[pd.DataFrame, pd.DataFrame]` - positional argument, that specifies the transform function. It could be defined inline or could be a reference to a function defined elsewhere. The transform function should take a pandas dataframe as input and return a pandas dataframe as output. 
+2. `schema: Dict[str, Type]` - optional kwarg that specifies the schema of the output dataset. If not specified, the schema of the input dataset is used. 
+
+More details and examples on the transform operator can be found in the [transform section](/datasets/operators#Tranform).
 
 ### Groupby / Aggregate
 
-TODO
+Fennel allows you to groupby and aggregate a dataset using the `aggregate` operator.
+The api requires you to chain the `groupby` operator with the `aggregate` operator.
+The aggregate operator first does a groupby operation on the dataset and then applies the aggregation function on the grouped dataset. 
+The list of aggregate functions can be found in the [aggregations section](/api-reference/aggregations).
 
-### Explode
+The `groupby` operator takes the following parameters:
+1. `*args: str` - positional arguments that specify the list of fields to groupby on.
 
-TODO
+The `aggregate` operator has the following parameters:
+1. `aggregates: List[Aggregation]` - positional argument, that specifies the list of aggregations to apply on the grouped dataset.
+
+More details and examples on the groupby / aggregate operator can be found in the [aggregate section](/datasets/operators#Aggregate).
