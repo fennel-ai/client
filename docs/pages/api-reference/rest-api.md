@@ -13,13 +13,11 @@ All DDL operations (i.e. definitions of datasets/featuresets) can only be done v
 Used to log data to a dataset. It's post call with the following properties:
 
 * `dataset_name`: the name of the dataset to which data needs to be logged (as json string)
-* `payload`: a list of rows (as json) that must be logged to the dataset
+* `rows`: a list of rows (as json) that must be logged to the datasets
 
 **Example**
 
-```
-// TODO
-```
+<pre snippet="api-reference/rest-api#rest_log_api" />
 
 ### /api/v1/extract\_features
 
@@ -34,10 +32,5 @@ Used to extract a set of output features given known values of some input featur
 
 **Example**
 
-```
-// TODO
-```
+<pre snippet="api-reference/rest-api#rest_extract_features_api" />
 
-### /api/v1/extract\_historical\_features
-
-TODO
