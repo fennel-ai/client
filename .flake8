@@ -1,7 +1,7 @@
 [flake8]
-ignore = W503, E501, F405, E128,  F403, F401, E126
+ignore = W503, E501, F405, E128,  F403, F401, E126, F821, F722
 exclude = fennel/gen/
 per-file-ignores =
     fennel/**/__init__.py:F401, F403
-    docs/examples/*/*.py:E402, F821, F722
+    docs/examples/*/*.py:E402
 extend-select = W504, E821

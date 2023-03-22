@@ -48,7 +48,7 @@ def test_join_schema_validation():
 
     assert (
         str(e.value)
-        == """[TypeError('Field revenue has type Optional[int] in pipeline pipeline_join output value schema but type int in MovieStats value schema.')]"""
+        == """[TypeError('Field `revenue` has type `Optional[int]` in `pipeline pipeline_join output value` schema but type `int` in `MovieStats value` schema.')]"""
     )
 
 
@@ -78,7 +78,7 @@ def test_add_key():
 
     assert (
         str(e.value)
-        == """[TypeError('Field movie is present in PositiveRatingActivity key schema but not present in pipeline filter_positive_ratings output key schema.'), TypeError('Field movie is present in pipeline filter_positive_ratings output value schema but not present in PositiveRatingActivity value schema.')]"""
+        == """[TypeError('Field `movie` is present in `PositiveRatingActivity` `key` schema but not present in `pipeline filter_positive_ratings output key` schema.'), TypeError('Field `movie` is present in `pipeline filter_positive_ratings output` `value` schema but not present in `PositiveRatingActivity value` schema.')]"""
     )
 
 
@@ -165,7 +165,7 @@ def test_aggregation():
 
     assert (
         str(e.value)
-        == """[TypeError('Field sum_categ_fraudulent_transactions_7d has type float in pipeline create_fraud_dataset output value schema but type int in FraudReportAggregatedDataset value schema.')]"""
+        == """[TypeError('Field `sum_categ_fraudulent_transactions_7d` has type `float` in `pipeline create_fraud_dataset output value` schema but type `int` in `FraudReportAggregatedDataset value` schema.')]"""
     )
 
 
@@ -225,7 +225,7 @@ def test_transform():
 
     assert (
         str(e.value)
-        == """[TypeError('Field b1 has type int in pipeline transform output value schema but type float in A2 value schema.')]"""
+        == """[TypeError('Field `b1` has type `int` in `pipeline transform output value` schema but type `float` in `A2 value` schema.')]"""
     )
 
     with pytest.raises(Exception) as e:

@@ -73,7 +73,7 @@ class TestDataset(unittest.TestCase):
         else:
             assert (
                 response.json()["error"]
-                == "[ValueError('Field age is of type between, but the value 123 is out of bounds.')]"
+                == "[ValueError('Field `age` is of type between, but the value `123` is out of bounds.')]"
             )
 
         now = datetime.now()
@@ -125,5 +125,5 @@ class TestDataset(unittest.TestCase):
         else:
             assert (
                 response.json()["error"]
-                == """[ValueError("Field 'email' is of type regex, but the value 'johnfennel' does not match the regex [a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+.")]"""
+                == """[ValueError('Field `email` is of type regex, but the value `johnfennel` does not match the regex `[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+`.')]"""
             )

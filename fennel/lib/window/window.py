@@ -5,7 +5,11 @@ import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from pydantic import BaseModel
 
 import fennel.gen.window_pb2 as window_proto
-from fennel.lib.duration import Duration, duration_to_timedelta
+from fennel.lib.duration import (
+    Duration,
+    duration_to_timedelta,
+    is_valid_duration,
+)
 
 ItemType = Union[str, List[str]]
 
@@ -20,6 +24,12 @@ class Window(BaseModel):
     end: Duration
 
     def __init__(self, start: Duration, end: Duration = "0s"):
+        if start == "forever" and end != "0s":
+            raise ValueError("Cannot specify an end for a forever window")
+        if start != "forever":
+            # Check that start is a valid duration
+            if is_valid_duration(start) is not None:
+                raise is_valid_duration(start)  # type: ignore
         super().__init__(start=start, end=end)
 
     def is_forever(self):
