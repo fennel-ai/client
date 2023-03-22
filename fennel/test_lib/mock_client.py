@@ -425,7 +425,6 @@ class MockClient(Client):
             fennel.datasets.datasets.dataset_lookup = partial(
                 dataset_lookup_impl, self.data, self.datasets, None, None
             )
-            print(output)
             if not isinstance(output, (pd.Series, pd.DataFrame)):
                 raise Exception(
                     f"Extractor `{extractor.name}` returned "

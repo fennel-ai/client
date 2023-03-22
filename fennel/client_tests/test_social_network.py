@@ -86,7 +86,7 @@ class UserCategoryDataset:
     @classmethod
     @pipeline(1)
     def count_user_views(
-            cls, view_data: Dataset[ViewData], post_info: Dataset[PostInfo]
+        cls, view_data: Dataset[ViewData], post_info: Dataset[PostInfo]
     ):
         post_info_enriched = view_data.left_join(post_info, on=["post_id"])
         post_info_enriched_t = post_info_enriched.transform(
@@ -105,13 +105,12 @@ class UserCategoryDataset:
 @featureset
 class Request:
     user_id: str = feature(id=1)
-    post_id: int = feature(id=2)
+    category: str = feature(id=2)
 
 
 @meta(owner="feature-team@myspace.com")
 @featureset
 class UserFeatures:
-    category: str = feature(id=1)  # Input feature
     num_views: int = feature(id=2)
     num_category_views: int = feature(id=3)
     category_view_ratio: float = feature(id=4)
@@ -119,19 +118,20 @@ class UserFeatures:
     @depends_on(UserViewsDataset)
     @extractor
     def extract_user_views(
-            cls, ts: Series[datetime], user_ids: Series[Request.user_id]
+        cls, ts: Series[datetime], user_ids: Series[Request.user_id]
     ) -> Series[num_views]:
         views, _ = UserViewsDataset.lookup(ts, user_id=user_ids)  # type: ignore
         views = views.fillna(0)
+
         return views["num_views"]
 
     @depends_on(UserCategoryDataset, UserViewsDataset)
     @extractor
     def extractor_category_view(
-            cls,
-            ts: Series[datetime],
-            user_ids: Series[Request.user_id],
-            categories: Series[category],
+        cls,
+        ts: Series[datetime],
+        user_ids: Series[Request.user_id],
+        categories: Series[Request.category],
     ) -> Series[category_view_ratio, num_category_views]:
         category_views, _ = UserCategoryDataset.lookup(  # type: ignore
             ts, user_id=user_ids, category=categories
@@ -139,6 +139,7 @@ class UserFeatures:
         views, _ = UserViewsDataset.lookup(ts, user_id=user_ids)  # type: ignore
         category_views = category_views.fillna(0)
         views = views.fillna(0.001)
+        category_views["num_views"] = category_views["num_views"].astype(int)
         category_view_ratio = category_views["num_views"] / views["num_views"]
         return pd.DataFrame(
             {
@@ -177,7 +178,6 @@ def test_social_network(client):
 
     res = client.log("PostInfo", post_data_df)
     assert res.status_code == requests.codes.OK, res.json()
-
     res = client.log("ViewData", view_data_df)
     assert res.status_code == requests.codes.OK, res.json()
     now = datetime.now()
@@ -189,14 +189,22 @@ def test_social_network(client):
     )
     assert found.to_list() == [True, True, True]
 
-    client.extract_features(
+    feature_df = client.extract_features(
         output_feature_list=[UserFeatures],
-        input_feature_list=[Request, UserFeatures.category],
+        input_feature_list=[Request],
         input_dataframe=pd.DataFrame(
             {
-                "Request.user_id": ["1", "2", "3"],
-                "Request.post_id": [1, 2, 3],
-                "UserFeatures.category": ["a", "b", "c"],
+                "Request.user_id": [
+                    "5eece14efc13ae6609000000",
+                    "5eece14efc13ae660900003c",
+                ],
+                "Request.category": ["banking", "programming"],
             }
         ),
     )
+    assert feature_df["UserFeatures.num_views"].to_list() == [1, 1]
+    assert feature_df["UserFeatures.num_category_views"].to_list() == [0, 1]
+    assert feature_df["UserFeatures.category_view_ratio"].to_list() == [
+        0.0,
+        1.0,
+    ]
