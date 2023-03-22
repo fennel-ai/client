@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.8.5] - 2023-03-21
+- Improve client error reporting.
+
 ## [0.8.4] - 2023-03-20
 - Port docs to client.
 
