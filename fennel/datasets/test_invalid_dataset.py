@@ -23,7 +23,10 @@ def test_multiple_date_time(grpc_stub):
             timestamp: datetime
 
     _ = InternalTestClient(grpc_stub)
-    assert str(e.value) == "Multiple timestamp fields are not supported."
+    assert (
+        str(e.value) == "Multiple timestamp fields are not supported in "
+        "dataset `UserInfoDataset`."
+    )
 
 
 def test_invalid_retention_window(grpc_stub):
@@ -62,7 +65,9 @@ def test_dataset_with_pipes(grpc_stub):
             def create_pipeline(cls, a: Dataset):
                 return a
 
-    assert str(e.value) == "pipeline must be called with an id"
+    assert (
+        str(e.value) == "pipeline `create_pipeline` must be called with an id."
+    )
 
     with pytest.raises(Exception) as e:
 
@@ -77,7 +82,7 @@ def test_dataset_with_pipes(grpc_stub):
             def create_pipeline(cls, a: Dataset):
                 return a
 
-    assert str(e.value) == "pipeline must be called with an id"
+    assert str(e.value) == "pipeline `XYZ` must be called with an id."
 
     with pytest.raises(Exception) as e:
 
@@ -94,7 +99,7 @@ def test_dataset_with_pipes(grpc_stub):
 
     assert (
         str(e.value)
-        == "pipeline functions must have Dataset[<Dataset Name>] as parameters."
+        == "pipeline `create_pipeline` must have Dataset[<Dataset Name>] as parameters."
     )
 
     with pytest.raises(TypeError) as e:
@@ -113,7 +118,7 @@ def test_dataset_with_pipes(grpc_stub):
     assert (
         str(e.value)
         == "pipeline functions are classmethods and must have cls as the "
-        "first parameter, found a."
+        "first parameter, found `a` for pipeline `create_pipeline`."
     )
 
 
@@ -165,5 +170,11 @@ def test_protected_fields(grpc_stub):
 
     assert (
         str(e.value)
-        == "[Exception('Field name fields is reserved. Please use a different name.'), Exception('Field name key_fields is reserved. Please use a different name.'), Exception('Field name on_demand is reserved. Please use a different name.'), Exception('Field name timestamp_field is reserved. Please use a different name.')]"
+        == "[Exception('Field name `fields` is reserved. Please use a "
+        "different name in dataset `Activity`.'), Exception('Field "
+        "name `key_fields` is reserved. Please use a different name in dataset `Activity`"
+        ".'), Exception('Field name `on_demand` is reserved. Please "
+        "use a different name in dataset `Activity`.'), Exception('Field "
+        "name `timestamp_field` is reserved. Please use a different "
+        "name in dataset `Activity`.')]"
     )

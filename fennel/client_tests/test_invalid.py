@@ -255,6 +255,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         else:
             assert (
-                "Extractor is not allowed to access dataset MemberActivityDatasetCopy, enabled datasets are ['MemberDataset']"
-                == str(e.value)
+                "Extractor `get_domain_feature` is not allowed to access "
+                "dataset `MemberActivityDatasetCopy`, enabled datasets are ["
+                "'MemberDataset']. Use `@depends_on` to specify dataset "
+                "dependencies." == str(e.value)
             )

@@ -265,7 +265,10 @@ class GroupBy:
 
     def aggregate(self, aggregates: List[AggregateType], *args) -> _Node:
         if len(args) > 0 or not isinstance(aggregates, list):
-            raise TypeError("aggregate operator, takes a list of aggregates")
+            raise TypeError(
+                "aggregate operator, takes a list of aggregates "
+                "found: {}".format(type(aggregates))
+            )
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
         return Aggregate(self.node, list(self.keys), aggregates)
@@ -399,9 +402,15 @@ def dataset(
                 if key == "fields":
                     continue
                 if key not in kwargs:
-                    raise ValueError(f"Missing key {key}")
+                    raise ValueError(
+                        f"Missing key {key} in the lookup call "
+                        f"for dataset `{cls_name}`"
+                    )
                 if not isinstance(kwargs[key], pd.Series):
-                    raise ValueError(f"Param {key} is not a pandas Series")
+                    raise ValueError(
+                        f"Param `{key}` is not a pandas Series "
+                        f"in the lookup call for dataset `{cls_name}`"
+                    )
                 arr.append(kwargs[key])
 
             if "fields" in kwargs:
@@ -477,13 +486,20 @@ def dataset(
 
 def pipeline(id: int) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     if isinstance(id, Callable) or isinstance(id, Dataset):  # type: ignore
-        raise ValueError("pipeline must be called with an id")
+        if hasattr(id, "__name__"):
+            callable_name = id.__name__  # type: ignore
+        else:
+            callable_name = str(id)
+        raise ValueError(
+            f"pipeline `{callable_name}` must be called with an id."
+        )
     if type(id) != int:
         raise ValueError("pipeline id must be an integer, found %s" % type(id))
 
     def wrapper(pipeline_func: Callable) -> Callable:
         if not callable(pipeline_func):
             raise TypeError("pipeline functions must be callable.")
+        pipeline_name = pipeline_func.__name__
         sig = inspect.signature(pipeline_func)
         cls_param = False
         params = []
@@ -491,7 +507,7 @@ def pipeline(id: int) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
             if not cls_param and param.name != "cls":
                 raise TypeError(
                     f"pipeline functions are classmethods and must have cls "
-                    f"as the first parameter, found {name}."
+                    f"as the first parameter, found `{name}` for pipeline `{pipeline_name}`."
                 )
             elif not cls_param:
                 cls_param = True
@@ -500,10 +516,12 @@ def pipeline(id: int) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
             if not isinstance(param.annotation, Dataset):
                 if issubclass(param.annotation, Dataset):
                     raise TypeError(
-                        "pipeline functions must have Dataset[<Dataset Name>] "
-                        "as parameters."
+                        f"pipeline `{pipeline_name}` must have "
+                        f"Dataset[<Dataset Name>] as parameters."
                     )
-                raise TypeError(f"Parameter {name} is not a Dataset.")
+                raise TypeError(
+                    f"Parameter {name} is not a Dataset in {pipeline_name}"
+                )
             params.append(param.annotation)
 
         setattr(
@@ -620,9 +638,9 @@ class Dataset(_Node[T]):
         lookup_fn: Optional[Callable] = None,
     ):
         super().__init__()
-        self._validate_field_names(fields)
         self._name = cls.__name__  # type: ignore
         self.__name__ = self._name
+        self._validate_field_names(fields)
         self._fields = fields
         self._add_fields_to_class()
         self._set_timestamp_field()
@@ -652,13 +670,16 @@ class Dataset(_Node[T]):
         exceptions = []
         for f in fields:
             if f.name in names:
-                raise Exception(f"Duplicate field name {f.name}.")
+                raise Exception(
+                    f"Duplicate field name `{f.name}` found in "
+                    f"dataset `{self._name}`."
+                )
             names.add(f.name)
             if f.name in RESERVED_FIELD_NAMES:
                 exceptions.append(
                     Exception(
-                        f"Field name {f.name} is reserved. "
-                        f"Please use a different name."
+                        f"Field name `{f.name}` is reserved. "
+                        f"Please use a different name in dataset `{self._name}`."
                     )
                 )
         if exceptions:
@@ -685,7 +706,8 @@ class Dataset(_Node[T]):
                 self._timestamp_field = field.name
                 if timestamp_field_set:
                     raise ValueError(
-                        "Multiple timestamp fields are not supported."
+                        f"Multiple timestamp fields are not supported in "
+                        f"dataset `{self._name}`."
                     )
                 timestamp_field_set = True
 
@@ -703,9 +725,14 @@ class Dataset(_Node[T]):
                 timestamp_field_set = True
                 self._timestamp_field = field.name
             else:
-                raise ValueError("Multiple timestamp fields are not supported.")
+                raise ValueError(
+                    f"Multiple timestamp fields are not "
+                    f"supported in dataset `{self._name}`."
+                )
         if not timestamp_field_set:
-            raise ValueError("No timestamp field found.")
+            raise ValueError(
+                f"No timestamp field found in dataset `{self._name}`."
+            )
 
     def _set_key_fields(self):
         key_fields = []
@@ -954,9 +981,9 @@ class DSSchema:
             for name, dtype in this_schema.items():
                 if name not in other_schema:
                     return TypeError(
-                        f"Field {name} is present in {this_name} "
-                        f"{check_type} schema but not "
-                        f"present in {other_name} {check_type} schema."
+                        f"Field `{name}` is present in `{this_name}` "
+                        f"`{check_type}` schema but not "
+                        f"present in `{other_name} {check_type}` schema."
                     )
 
                 dtype = get_dtype(dtype)
@@ -964,10 +991,10 @@ class DSSchema:
 
                 if dtype != other_schema[name]:
                     return TypeError(
-                        f"Field {name} has type {dtype_to_string(dtype)} in"
-                        f" {this_name} {check_type} "
-                        f"schema but type {dtype_to_string(other_schema[name])} "
-                        f"in {other_name} {check_type} schema."
+                        f"Field `{name}` has type `{dtype_to_string(dtype)}` in"
+                        f" `{this_name} {check_type}` "
+                        f"schema but type `{dtype_to_string(other_schema[name])}` "
+                        f"in `{other_name} {check_type}` schema."
                     )
 
         def check_field_other_way(
@@ -978,16 +1005,17 @@ class DSSchema:
             for name, dtype in other_schema.items():
                 if name not in this_schema:
                     return TypeError(
-                        f"Field {name} is present in {other_name} "
-                        f"{check_type} schema "
-                        f"but not present in {this_name} {check_type} schema."
+                        f"Field `{name}` is present in `{other_name}` "
+                        f"`{check_type}` schema "
+                        f"but not present in `{this_name} {check_type}` schema."
                     )
 
         exceptions = []
         if self.timestamp != other_schema.timestamp:
             exceptions.append(
                 TypeError(
-                    f"Timestamp field mismatch: {self.timestamp} != {other_schema.timestamp}"
+                    f"Timestamp field mismatch: {self.timestamp} != "
+                    f"`{other_schema.timestamp}` in `{this_name}` and `{other_name}`"
                 )
             )
         exceptions.append(

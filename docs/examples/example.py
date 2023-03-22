@@ -2,7 +2,6 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
-import pytest
 import requests
 
 # docsnip user_info_dataset
@@ -129,7 +128,7 @@ class TestDataset(unittest.TestCase):
         else:
             assert (
                 response.json()["error"]
-                == """[ValueError("Field 'email' is of type regex, but the value 'johnfennel' does not match the regex [a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+.")]"""
+                == """[ValueError('Field `email` is of type regex, but the value `johnfennel` does not match the regex `[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+`.')]"""
             )
 
 

@@ -58,6 +58,7 @@ def dataset_lookup_impl(
     data: Dict[str, pd.DataFrame],
     datasets: Dict[str, _DatasetInfo],
     allowed_datasets: Optional[List[str]],
+    extractor_name: Optional[str],
     cls_name: str,
     ts: pd.Series,
     fields: List[str],
@@ -69,8 +70,9 @@ def dataset_lookup_impl(
         )
     if allowed_datasets is not None and cls_name not in allowed_datasets:
         raise ValueError(
-            f"Extractor is not allowed to access dataset {cls_name}, enabled "
-            f"datasets are {allowed_datasets}"
+            f"Extractor `{extractor_name}` is not allowed to access dataset "
+            f"`{cls_name}`, enabled datasets are {allowed_datasets}. "
+            f"Use `@depends_on` to specify dataset dependencies."
         )
     right_key_fields = datasets[cls_name].key_fields
     if len(right_key_fields) == 0:
@@ -163,7 +165,7 @@ class MockClient(Client):
         # Map of datasets to pipelines it is an input to
         self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
         fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl, self.data, self.datasets, None
+            dataset_lookup_impl, self.data, self.datasets, None, None
         )
         self.extractors: List[Extractor] = []
 
@@ -189,7 +191,8 @@ class MockClient(Client):
         if timestamp_field not in df.columns:
             return FakeResponse(
                 400,
-                f"Timestamp field {timestamp_field} not found in dataframe",
+                f"Timestamp field {timestamp_field} not found in dataframe "
+                f"while logging to dataset `{dataset_name}`",
             )
         if str(df[timestamp_field].dtype) != "datetime64[ns]":
             return FakeResponse(
@@ -227,6 +230,11 @@ class MockClient(Client):
         if featuresets is None:
             featuresets = []
         for dataset in datasets:
+            if not isinstance(dataset, Dataset):
+                raise TypeError(
+                    f"Expected a list of datasets, got `{dataset.__name__}`"
+                    f" of type `{type(dataset)}` instead."
+                )
             self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
             self.datasets[dataset._name] = _DatasetInfo(
                 [f.name for f in dataset.fields],
@@ -238,6 +246,11 @@ class MockClient(Client):
                 for input in pipeline.inputs:
                     self.listeners[input._name].append(pipeline)
         for featureset in featuresets:
+            if not isinstance(featureset, Featureset):
+                raise TypeError(
+                    f"Expected a list of featuresets, got `{featureset.__name__}`"
+                    f" of type `{type(featureset)}` instead."
+                )
             self.featureset_requests[featureset._name] = featureset_to_proto(
                 featureset
             )
@@ -402,17 +415,26 @@ class MockClient(Client):
                 x._name for x in extractor.get_dataset_dependencies()
             ]
             fennel.datasets.datasets.dataset_lookup = partial(
-                dataset_lookup_impl, self.data, self.datasets, allowed_datasets
+                dataset_lookup_impl,
+                self.data,
+                self.datasets,
+                allowed_datasets,
+                extractor.name,
             )
             output = extractor.bound_func(timestamps, *prepare_args)
             fennel.datasets.datasets.dataset_lookup = partial(
-                dataset_lookup_impl, self.data, self.datasets, None
+                dataset_lookup_impl, self.data, self.datasets, None, None
             )
+            if not isinstance(output, (pd.Series, pd.DataFrame)):
+                raise Exception(
+                    f"Extractor `{extractor.name}` returned "
+                    f"invalid type `{type(output)}`, expected a pandas series or dataframe"
+                )
             output_df = pd.DataFrame(output)
             exceptions = data_schema_check(dsschema, output_df)
             if len(exceptions) > 0:
                 raise Exception(
-                    f"Extractor {extractor.name} returned "
+                    f"Extractor `{extractor.name}` returned "
                     f"invalid schema: {exceptions}"
                 )
             if isinstance(output, pd.Series):
@@ -477,7 +499,7 @@ class MockClient(Client):
         # Map of datasets to pipelines it is an input to
         self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
         fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl, self.data, self.datasets, None
+            dataset_lookup_impl, self.data, self.datasets, None, None
         )
         self.extractors: List[Extractor] = []
 

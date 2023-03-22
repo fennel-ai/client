@@ -140,7 +140,7 @@ def get_extractor_order(
                 # Draw DAG
                 vertices, edges = get_vertices_and_eges(extractors)
                 draw_graph(vertices, edges)
-                raise ValueError(f"No extractor found for feature {feature}")
+                raise ValueError(f"No extractor found for feature `{feature}`.")
             extractor = feature_to_extractor_map[feature]
 
             if extractor.fqn() in extractor_names:

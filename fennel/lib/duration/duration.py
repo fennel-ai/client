@@ -1,6 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 
 Duration = str
 
@@ -39,10 +39,33 @@ def duration_to_timedelta(duration_string: Duration) -> timedelta:
                     total_seconds += num * 60
                 elif character == "s":
                     total_seconds += num
+                else:
+                    raise ValueError(
+                        f"Invalid character `{character}` in duration "
+                        f"`{duration_string}`"
+                    )
                 prev_num = []
+            elif character != " ":
+                raise ValueError(
+                    f"Invalid character `{character}` in duration "
+                    f"`{duration_string}`"
+                )
         elif character.isnumeric() or character == ".":
             prev_num.append(character)
+        elif character != " ":
+            raise ValueError(
+                f"Invalid character `{character}` in duration "
+                f"`{duration_string}`"
+            )
     return timedelta(seconds=float(total_seconds))
+
+
+def is_valid_duration(duration_string: Duration) -> Optional[Exception]:
+    try:
+        duration_to_timedelta(duration_string)
+        return None
+    except Exception as e:
+        return e
 
 
 def timedelta_to_micros(td: timedelta) -> int:

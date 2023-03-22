@@ -149,8 +149,8 @@ def extractor(func: Optional[Callable] = None, version: int = 0):
         for name, param in sig.parameters.items():
             if not class_method and param.name != "cls":
                 raise TypeError(
-                    "extractor functions should have cls as the first parameter"
-                    " since they are class methods"
+                    f"extractor `{extractor_name}` should have cls as the "
+                    f"first parameter since they are class methods"
                 )
             elif not class_method:
                 class_method = True
@@ -161,18 +161,17 @@ def extractor(func: Optional[Callable] = None, version: int = 0):
                     check_timestamp = True
                     continue
                 raise TypeError(
-                    "extractor functions must have timestamp ( of type Series["
-                    "datetime] ) as the second parameter, found {} instead".format(
-                        param.annotation
-                    )
+                    f"extractor `{extractor_name}` functions must have timestamp ( of type "
+                    f"Series[datetime] ) as the second parameter, found "
+                    f"`{param.annotation}` instead."
                 )
             if (
                 not isinstance(param.annotation, Feature)
                 and not type(param.annotation) is tuple
             ):
                 raise TypeError(
-                    f"Parameter {name} is not a feature or a DataFrame of "
-                    f"features but a {type(param.annotation)}. Please note "
+                    f"Parameter `{name}` is not a feature or a DataFrame of "
+                    f"features but a `{type(param.annotation)}`. Please note "
                     f"that Featuresets are mutable and hence not supported."
                 )
             params.append(param.annotation)
@@ -389,12 +388,13 @@ class Featureset:
             # Check features dont have protected names.
             if feature.name in RESERVED_FEATURE_NAMES:
                 raise ValueError(
-                    f"Feature {feature.name} in {self._name} has a "
-                    f"reserved name {feature.name}."
+                    f"Feature `{feature.name}` in `{self._name}` has a "
+                    f"reserved name `{feature.name}`."
                 )
             if feature.id in feature_id_set:
                 raise ValueError(
-                    f"Feature {feature.name} has a duplicate id {feature.id}"
+                    f"Feature `{feature.name}` has a duplicate id `"
+                    f"{feature.id}` in featureset `{self._name}`."
                 )
             feature_id_set.add(feature.id)
 
@@ -404,8 +404,8 @@ class Featureset:
             for feature_id in extractor.output_feature_ids:
                 if feature_id in extracted_features:
                     raise TypeError(
-                        f"Feature {self._id_to_feature[feature_id].name} is "
-                        f"extracted by multiple extractors"
+                        f"Feature `{self._id_to_feature[feature_id].name}` is "
+                        f"extracted by multiple extractors."
                     )
                 extracted_features.add(feature_id)
 

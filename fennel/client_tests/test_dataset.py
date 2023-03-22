@@ -90,7 +90,7 @@ class TestDataset(unittest.TestCase):
         else:
             assert (
                 response.json()["error"]
-                == "[ValueError('Field age is of type int, but the column in the dataframe is of type object.')]"
+                == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
             )
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])

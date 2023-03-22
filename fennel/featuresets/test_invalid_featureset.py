@@ -47,8 +47,8 @@ def test_featureset_as_input(grpc_stub):
 
     assert (
         str(e.value)
-        == "Parameter user_features is not a feature or a DataFrame "
-        "of features but a <class 'fennel.featuresets.featureset.Featureset'>. Please note that Featuresets are mutable and hence not supported."
+        == "Parameter `user_features` is not a feature or a DataFrame "
+        "of features but a `<class 'fennel.featuresets.featureset.Featureset'>`. Please note that Featuresets are mutable and hence not supported."
     )
 
 
@@ -84,7 +84,9 @@ def test_complex_featureset(grpc_stub):
             ) -> Series[gender]:
                 pass
 
-    assert str(e.value) == "Feature gender is extracted by multiple extractors"
+    assert (
+        str(e.value) == "Feature `gender` is extracted by multiple extractors."
+    )
 
 
 def test_extract_anoather_featureset(grpc_stub):
@@ -197,7 +199,10 @@ def test_duplicate_id(grpc_stub):
             home_geoid: int = feature(id=2)
             age: int = feature(id=1)
 
-    assert str(e.value) == "Feature age has a duplicate id 1"
+    assert (
+        str(e.value)
+        == "Feature `age` has a duplicate id `1` in featureset `UserInfo`."
+    )
 
 
 def test_deprecated_id(grpc_stub):
@@ -210,7 +215,10 @@ def test_deprecated_id(grpc_stub):
             age: int = feature(id=3).meta(deprecated=True)
             credit_score: int = feature(id=3)
 
-    assert str(e.value) == "Feature credit_score has a duplicate id 3"
+    assert (
+        str(e.value) == "Feature `credit_score` has a duplicate id `3` in "
+        "featureset `UserInfo`."
+    )
 
 
 def test_invalid_featureset(grpc_stub):
@@ -225,5 +233,5 @@ def test_invalid_featureset(grpc_stub):
 
     assert (
         str(e.value)
-        == "Feature extractors in UserInfo has a reserved name extractors."
+        == "Feature `extractors` in `UserInfo` has a reserved name `extractors`."
     )

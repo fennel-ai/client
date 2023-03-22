@@ -72,9 +72,19 @@ class Client:
 
         if datasets is not None:
             for dataset in datasets:
+                if not isinstance(dataset, Dataset):
+                    raise TypeError(
+                        f"Expected a list of datasets, got `{dataset.__name__}`"
+                        f" of type `{type(dataset)}` instead."
+                    )
                 self.add(dataset)
         if featuresets is not None:
             for featureset in featuresets:
+                if not isinstance(featureset, Featureset):
+                    raise TypeError(
+                        f"Expected a list of featuresets, got `{featureset.__name__}`"
+                        f" of type `{type(featureset)}` instead."
+                    )
                 self.add(featureset)
         sync_request = self._get_sync_request_proto()
 
