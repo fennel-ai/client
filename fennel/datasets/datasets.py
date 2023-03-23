@@ -198,6 +198,12 @@ class _Node(Generic[T]):
     def __add__(self, other):
         return Union_(self, other)
 
+    def rename(self, columns: Dict[str, str]) -> _Node:
+        return Rename(self, columns)
+
+    def drop(self, columns: List[str]) -> _Node:
+        return Drop(self, columns)
+
     def isignature(self):
         raise NotImplementedError
 
@@ -331,6 +337,22 @@ class Union_(_Node):
 
     def signature(self):
         return fhash([n.signature() for n in self.nodes])
+
+
+class Rename(_Node):
+    def __init__(self, node: _Node, columns: Dict[str, str]):
+        super().__init__()
+        self.node = node
+        self.column_mapping = columns
+        self.node.out_edges.append(self)
+
+
+class Drop(_Node):
+    def __init__(self, node: _Node, columns: List[str]):
+        super().__init__()
+        self.node = node
+        self.columns = columns
+        self.node.out_edges.append(self)
 
 
 # ---------------------------------------------------------------------
@@ -925,6 +947,10 @@ class Visitor:
             return self.visitJoin(obj)
         elif isinstance(obj, Union_):
             return self.visitUnion(obj)
+        elif isinstance(obj, Rename):
+            return self.visitRename(obj)
+        elif isinstance(obj, Drop):
+            return self.visitDrop(obj)
         else:
             raise Exception("invalid node type: %s" % obj)
 
@@ -949,6 +975,12 @@ class Visitor:
     def visitUnion(self, obj):
         raise NotImplementedError()
 
+    def visitRename(self, obj):
+        raise NotImplementedError()
+
+    def visitDrop(self, obj):
+        raise NotImplementedError()
+
 
 @dataclass
 class DSSchema:
@@ -958,7 +990,11 @@ class DSSchema:
     name: str = ""
 
     def fields(self) -> List[str]:
-        return [x for x in self.keys.keys()] + [x for x in self.values.keys()]
+        return (
+            [x for x in self.keys.keys()]
+            + [x for x in self.values.keys()]
+            + [self.timestamp]
+        )
 
     def get_type(self, field) -> Type:
         if field in self.keys:
@@ -969,6 +1005,30 @@ class DSSchema:
             return datetime.datetime
         else:
             raise Exception(f"field {field} not found in schema of {self.name}")
+
+    def rename_column(self, old_name: str, new_name: str):
+        if old_name in self.keys:
+            self.keys[new_name] = self.keys.pop(old_name)
+        elif old_name in self.values:
+            self.values[new_name] = self.values.pop(old_name)
+        elif old_name == self.timestamp:
+            self.timestamp = new_name
+        else:
+            raise Exception(
+                f"field {old_name} not found in schema of {self.name}"
+            )
+
+    def drop_column(self, name: str):
+        if name in self.keys:
+            self.keys.pop(name)
+        elif name in self.values:
+            self.values.pop(name)
+        elif name == self.timestamp:
+            raise Exception(
+                f"cannot drop timestamp field {name} from {self.name}"
+            )
+        else:
+            raise Exception(f"field {name} not found in schema of {self.name}")
 
     def matches(
         self, other_schema: DSSchema, this_name: str, other_name: str
@@ -1194,3 +1254,33 @@ class SchemaValidator(Visitor):
             raise ValueError(f"Union node schemas do not match: {exceptions}")
         schema.name = f"'[Pipeline:{self.pipeline_name}]->union node'"
         return schema
+
+    def visitRename(self, obj) -> DSSchema:
+        input_schema = copy.deepcopy(self.visit(obj.node))
+        input_schema.name = f"'[Pipeline:{self.pipeline_name}]->rename node'"
+        for old, new in obj.column_mapping.items():
+            print(input_schema.fields())
+            if old not in input_schema.fields():
+                raise ValueError(
+                    f"Field {old} does not exist in schema of "
+                    f"rename node {input_schema.name}."
+                )
+            if new in input_schema.fields():
+                raise ValueError(
+                    f"Field {new} already exists in schema of "
+                    f"rename node {input_schema.name}."
+                )
+            input_schema.rename_column(old, new)
+        return input_schema
+
+    def visitDrop(self, obj):
+        input_schema = copy.deepcopy(self.visit(obj.node))
+        input_schema.name = f"'[Pipeline:{self.pipeline_name}]->drop node'"
+        for field in obj.columns:
+            if field not in input_schema.fields():
+                raise ValueError(
+                    f"Field {field} does not exist in schema of "
+                    f"drop node {obj.name}."
+                )
+            input_schema.drop_column(field)
+        return input_schema

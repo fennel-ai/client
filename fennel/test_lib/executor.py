@@ -281,3 +281,29 @@ class Executor(Visitor):
         df = pd.concat([df.df for df in dfs])
         sorted_df = df.sort_values(dfs[0].timestamp_field)
         return NodeRet(sorted_df, dfs[0].timestamp_field, dfs[0].key_fields)
+
+    def visitRename(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        df = input_ret.df
+        df = df.rename(columns=obj.column_mapping)
+        for old_col, new_col in obj.column_mapping.items():
+            if old_col in input_ret.key_fields:
+                input_ret.key_fields.remove(old_col)
+                input_ret.key_fields.append(new_col)
+            if old_col == input_ret.timestamp_field:
+                input_ret.timestamp_field = new_col
+        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+
+    def visitDrop(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        df = input_ret.df
+        df = df.drop(columns=obj.columns)
+        for col in obj.columns:
+            if col in input_ret.key_fields:
+                input_ret.key_fields.remove(col)
+
+        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)

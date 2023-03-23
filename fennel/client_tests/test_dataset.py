@@ -32,6 +32,20 @@ class UserInfoDataset:
     timestamp: datetime = field(timestamp=True)
 
 
+@meta(owner="test@test.com")
+@dataset
+class UserInfoDatasetDerived:
+    user_id: int = field(key=True).meta(description="User ID")  # type: ignore
+    name: str = field().meta(description="User name")  # type: ignore
+    country_name: Optional[str]
+    ts: datetime = field(timestamp=True)
+
+    @pipeline(id=1)
+    def get_info(cls, info: Dataset[UserInfoDataset]):
+        x = info.rename({"country": "country_name", "timestamp": "ts"})
+        return x.drop(columns=["age"])
+
+
 class TestDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock_client
@@ -56,6 +70,43 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
+
+    @pytest.mark.integration
+    @mock_client
+    def test_simple_delete_rename(self, client):
+        # Sync the dataset
+        client.sync(datasets=[UserInfoDataset, UserInfoDatasetDerived])
+        now = datetime.now()
+        yesterday = now - pd.Timedelta(days=1)
+        data = [
+            [18232, "Ross", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", yesterday],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("UserInfoDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        # Do lookup on UserInfoDataset
+        ts = pd.Series([now, now])
+        user_id_keys = pd.Series([18232, 18234])
+        df, found = UserInfoDataset.lookup(ts, user_id=user_id_keys)
+        assert df.shape == (2, 5)
+        assert df["user_id"].tolist() == [18232, 18234]
+        assert df["name"].tolist() == ["Ross", "Monica"]
+        assert df["age"].tolist() == [32, 24]
+        assert df["country"].tolist() == ["USA", "Chile"]
+
+        # Do lookup on UserInfoDatasetDerived
+        df, found = UserInfoDatasetDerived.lookup(ts, user_id=user_id_keys)
+        assert df.shape == (2, 4)
+        assert df["user_id"].tolist() == [18232, 18234]
+        assert df["name"].tolist() == ["Ross", "Monica"]
+        assert df["country_name"].tolist() == ["USA", "Chile"]
+        # Check if column ts exists
+        assert "ts" in df.columns
+        # Check if column age does not exist
+        assert "age" not in df.columns
 
     @pytest.mark.integration
     @mock_client

@@ -621,6 +621,25 @@ def test_dataset_with_complex_pipe(grpc_stub):
     )
 
 
+def test_delete_and_rename_column(grpc_stub):
+    @dataset
+    class A:
+        a1: int = field(key=True)
+        a2: int
+        a3: str
+        t: datetime
+
+    @dataset
+    class B:
+        b1: int = field(key=True)
+        t: datetime
+
+        @pipeline(id=1)
+        def from_a(cls, a: Dataset[A]):
+            x = a.rename({"a1": "b1"})
+            return x.drop(["a2", "a3"])
+
+
 def test_union_datasets(grpc_stub):
     @dataset
     class A:
