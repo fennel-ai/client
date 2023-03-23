@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.8.6] - 2023-03-21
+- Add rename and drop operators to the client. 
+
 ## [0.8.5] - 2023-03-21
 - Improve client error reporting.
 
