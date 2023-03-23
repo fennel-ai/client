@@ -11,12 +11,11 @@ from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Series
 from fennel.lib.window import Window
-from fennel.test_lib.local_client import LocalClient
+from fennel.test_lib import LocalClient
 from locust import User, events
 
 MS_IN_SECOND = 1000
-AGGREGATE = "aggregate"
-QUERY = "query"
+EXTRACT_FEATURE = "extract_feature"
 CATEGORIES = ['graphic', 'Craft', 'politics', 'political', 'Mathematics',
               'zoology', 'business', 'dance', 'banking', 'HR management', 'art',
               'science', 'Music', 'operating system', 'Fashion Design',
@@ -171,7 +170,7 @@ class FennelLocusClient(object):
             # Pick a random category
             catogory_1 = random.choice(CATEGORIES)
             catogory_2 = random.choice(CATEGORIES)
-            result = self.client.client.extract_features(
+            result = self.client.extract_features(
                 output_feature_list=[UserFeatures],
                 input_feature_list=[Request],
                 input_dataframe=pd.DataFrame(
@@ -188,13 +187,13 @@ class FennelLocusClient(object):
 
         if failure:
             total_time = self._get_elapsed_time(start_time)
-            events.request_failure.fire(request_type=QUERY, name=specifier,
+            events.request.fire(request_type=EXTRACT_FEATURE, name=specifier,
                 response_time=total_time, exception=err, response_length=0)
             return -1
 
         total_time = int((time.time() - start_time) * MS_IN_SECOND)
-        events.request_success.fire(request_type=QUERY, name=specifier,
-            response_time=total_time,
+        events.request.fire(request_type=EXTRACT_FEATURE, name=specifier,
+            response_time=total_time, exception=None,
             response_length=self._get_result_len(result))
         return result
 
