@@ -12,7 +12,7 @@ from fennel.featuresets import Featureset, Feature
 from fennel.lib.to_proto import to_sync_request_proto
 from fennel.utils import check_response
 
-_V1_API = "/api/v1"
+V1_API = "/api/v1"
 
 # Connection timeout i.e. the time spent by the client to establish a
 # connection to the remote machine. NOTE: This should be slightly larger than
@@ -146,7 +146,7 @@ class Client:
                 "rows": payload,
             }
             response = self.http.post(
-                self._url("{}/log".format(_V1_API)), json=req
+                self._url("{}/log".format(V1_API)), json=req
             )
             check_response(response)
         return response
@@ -210,7 +210,7 @@ class Client:
             req["sampling_rate"] = sampling_rate
 
         response = self.http.post(
-            self._url("{}/extract_features".format(_V1_API)),
+            self._url("{}/extract_features".format(V1_API)),
             json=req,
         )
         check_response(response)
@@ -274,7 +274,7 @@ class Client:
         }
 
         response = self.http.post(
-            self._url("{}/extract_historical_features".format(_V1_API)),
+            self._url("{}/extract_historical_features".format(V1_API)),
             json=req,
         )
         check_response(response)
