@@ -1024,7 +1024,9 @@ class DSSchema:
         elif name in self.values:
             self.values.pop(name)
         elif name == self.timestamp:
-            raise Exception(f"cannot drop timestamp field {name}")
+            raise Exception(
+                f"cannot drop timestamp field {name} from {self.name}"
+            )
         else:
             raise Exception(f"field {name} not found in schema of {self.name}")
 

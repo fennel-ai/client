@@ -103,6 +103,10 @@ class TestDataset(unittest.TestCase):
         assert df["user_id"].tolist() == [18232, 18234]
         assert df["name"].tolist() == ["Ross", "Monica"]
         assert df["country_name"].tolist() == ["USA", "Chile"]
+        # Check if column ts exists
+        assert "ts" in df.columns
+        # Check if column age does not exist
+        assert "age" not in df.columns
 
     @pytest.mark.integration
     @mock_client

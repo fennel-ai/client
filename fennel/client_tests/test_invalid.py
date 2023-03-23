@@ -260,3 +260,25 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 "'MemberDataset']. Use `@depends_on` to specify dataset "
                 "dependencies." == str(e.value)
             )
+
+    @mock_client
+    def test_drop_timestamp_col(self, client):
+        with pytest.raises(Exception) as e:
+
+            @meta(owner="test@fennel.ai")
+            @dataset
+            class MemberDatasetDerived:
+                pk: str
+                sk: str
+                uid: str = field(key=True)
+                email: str
+                displayName: str
+                createdAt: datetime = field(timestamp=True)
+
+                @pipeline(id=1)
+                def del_timestamp(cls, d: Dataset[MemberDataset]):
+                    return d.drop(columns=["createdAt"])
+
+        assert (
+            "cannot drop timestamp field createdAt from '[Pipeline:del_timestamp]->drop node'"
+        ) == str(e.value)
