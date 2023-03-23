@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 import grpc
 
 import fennel.gen.services_pb2_grpc as services_pb2_grpc
-from fennel.client import Client, V1_API
+from fennel.client import Client
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset
 
@@ -57,4 +57,4 @@ class LocalClient(Client):
         self.stub.Sync(sync_request, timeout=_DEFAULT_GRPC_TIMEOUT)
 
     def _url(self, path):
-        return self.rest_url + V1_API + "/" + path
+        return self.rest_url + path
