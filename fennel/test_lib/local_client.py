@@ -2,6 +2,7 @@ from typing import Any, List, Optional
 from urllib.parse import urlparse
 
 import grpc
+import sys
 
 import fennel.gen.services_pb2_grpc as services_pb2_grpc
 from fennel.client import Client
@@ -38,6 +39,7 @@ class LocalClient(Client):
         self.to_register_objects = []
         self.to_register = set()
 
+        print("Going to sync phase 1", file=sys.stderr)
         if datasets is not None:
             for dataset in datasets:
                 if not isinstance(dataset, Dataset):
@@ -45,7 +47,10 @@ class LocalClient(Client):
                         f"Expected a list of datasets, got `{dataset.__name__}`"
                         f" of type `{type(dataset)}` instead."
                     )
+                print(f"Synced {dataset._name}", file=sys.stderr)
                 self.add(dataset)
+        print("Synced datasets", file=sys.stderr)
+
         if featuresets is not None:
             for featureset in featuresets:
                 if not isinstance(featureset, Featureset):
@@ -55,6 +60,8 @@ class LocalClient(Client):
                     )
                 self.add(featureset)
         sync_request = self._get_sync_request_proto()
+        print("Going to sync phase 4", file=sys.stderr)
+        print(sys.getsizeof(sync_request))
         self.stub.Sync(sync_request, timeout=_DEFAULT_GRPC_TIMEOUT)
 
     def _url(self, path):

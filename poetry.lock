@@ -1244,6 +1244,18 @@ protobuf = ">=4.21.6,<5.0dev"
 setuptools = "*"
 
 [[package]]
+name = "hurry"
+version = "1.1"
+description = "Hurry! helps you run your routine commands and scripts faster."
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "hurry-1.1-py3-none-any.whl", hash = "sha256:73fee7972e843e9558c8629ea9d6b8c90ac5aa7a4d3207e98f19b70fb243a879"},
+    {file = "hurry-1.1.tar.gz", hash = "sha256:9a7d0c4c8086532263a47307d9fbf3e8c0417a08217cd71af3f7faa8503ae8e1"},
+]
+
+[[package]]
 name = "idna"
 version = "3.4"
 description = "Internationalized Domain Names in Applications (IDNA)"
