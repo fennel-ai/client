@@ -131,3 +131,24 @@ class UserRandomFeatures:
         df["user_id_x2"] = df["user_id"] * 2
         df["user_id_x3"] = df["user_id"] * 3
         return df[["user_id_x2", "user_id_x3"]]
+
+
+@meta(owner="feature-team@myspace.com")
+@featureset
+class UserRandomFeatures2:
+    user_id_x2: int = feature(id=2)
+    user_id_x3: int = feature(id=3)
+
+    @depends_on(UserViewsDataset)
+    @extractor
+    def extract_random_user_views(
+            cls, ts: Series[datetime], user_ids: Series[Request.user_id]
+    ) -> DataFrame[user_id_x2, user_id_x3]:
+        df = pd.DataFrame()
+        nums = []
+        df["user_id"] = user_ids.apply(
+            lambda x: int(hashlib.sha256(x.encode('utf-8')).hexdigest(),
+                16) % 10 ** 8)
+        df["user_id_x2"] = df["user_id"] * 2
+        df["user_id_x3"] = df["user_id"] * 3
+        return df[["user_id_x2", "user_id_x3"]]
