@@ -119,10 +119,10 @@ class UserInfoFeatures:
     @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
+            cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
-        df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
+        df = pd.concat([user_age ** 2, user_age ** 3, is_name_common], axis=1)
         df.columns = [
             str(cls.age_squared),
             str(cls.age_cubed),
@@ -141,14 +141,10 @@ class TestSimpleExtractor(unittest.TestCase):
             UserInfoFeatures, ts, age, name
         )
         self.assertEqual(df.shape, (2, 3))
+        self.assertEqual(df["age_squared"].tolist(), [1024, 576])
+        self.assertEqual(df["age_cubed"].tolist(), [32768, 13824])
         self.assertEqual(
-            df["UserInfoFeatures.age_squared"].tolist(), [1024, 576]
-        )
-        self.assertEqual(
-            df["UserInfoFeatures.age_cubed"].tolist(), [32768, 13824]
-        )
-        self.assertEqual(
-            df["UserInfoFeatures.is_name_common"].tolist(),
+            df["is_name_common"].tolist(),
             [True, False],
         )
 
@@ -199,10 +195,10 @@ class UserInfoMultipleExtractor:
     @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
+            cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
-        df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
+        df = pd.concat([user_age ** 2, user_age ** 3, is_name_common], axis=1)
         df.columns = [
             str(cls.age_squared),
             str(cls.age_cubed),
@@ -215,7 +211,8 @@ class UserInfoMultipleExtractor:
     @outputs(country_geoid)
     def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        return df["country"].apply(get_country_geoid)
+        df["country_geoid"] = df["country"].apply(get_country_geoid)
+        return df["country_geoid"]
 
 
 # this is your test code in some test module
@@ -246,6 +243,5 @@ class TestExtractorDAGResolution(unittest.TestCase):
             ),
         )
         self.assertEqual(feature_df.shape, (2, 7))
-
 
 # /docsnip

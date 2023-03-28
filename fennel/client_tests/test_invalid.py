@@ -88,13 +88,13 @@ class TestInvalidSync(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                str(e.value) == "Failed to sync: error: can not add edge: "
-                'from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
+                    str(e.value) == "Failed to sync: error: can not add edge: "
+                                    'from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
             )
         else:
             assert (
-                str(e.value) == "Dataset MemberActivityDatasetCopy "
-                "not found in sync call"
+                    str(e.value) == "Dataset MemberActivityDatasetCopy "
+                                    "not found in sync call"
             )
 
 
@@ -193,13 +193,13 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         if client.is_integration_client():
             assert (
-                'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
-                in str(e.value)
+                    'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
+                    in str(e.value)
             )
         else:
             assert (
-                "Input dataframe does not contain all the required features"
-                in str(e.value)
+                    "Input dataframe does not contain all the required features"
+                    in str(e.value)
             )
 
     @pytest.mark.integration
@@ -222,13 +222,14 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
-                == str(e.value)
+                    'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
+                    == str(e.value)
             )
         else:
             assert (
-                "Dataset MemberActivityDatasetCopy not found, please ensure it is synced."
-                == str(e.value)
+                    "Extractor `get_domain_feature` in `DomainFeatures2` "
+                    "failed to run with error: name 'MemberActivityDatasetCopy' is not defined. "
+                    == str(e.value)
             )
 
     @pytest.mark.integration
@@ -253,19 +254,18 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         if client.is_integration_client():
             assert (
-                'Failed to sync: error: can not add edge: from vertex (Dataset, "MemberActivityDataset") not in graph'
-                == str(e.value)
+                    'Failed to sync: error: can not add edge: from vertex (Dataset, "MemberActivityDataset") not in graph'
+                    == str(e.value)
             )
         else:
             assert (
-                "Extractor `get_domain_feature` is not allowed to access dataset `MemberActivityDatasetCopy`, enabled datasets are []. Use `depends_on` param in @extractor to specify dataset dependencies."
-                == str(e.value)
+                    "Extractor `get_domain_feature` is not allowed to access dataset `MemberActivityDatasetCopy`, enabled datasets are []. Use `depends_on` param in @extractor to specify dataset dependencies."
+                    == str(e.value)
             )
 
     @mock_client
     def test_drop_timestamp_col(self, client):
         with pytest.raises(Exception) as e:
-
             @meta(owner="test@fennel.ai")
             @dataset
             class MemberDatasetDerived:
@@ -282,5 +282,5 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                     return d.drop(columns=["createdAt"])
 
         assert (
-            "cannot drop timestamp field createdAt from '[Pipeline:del_timestamp]->drop node'"
-        ) == str(e.value)
+                   "cannot drop timestamp field createdAt from '[Pipeline:del_timestamp]->drop node'"
+               ) == str(e.value)

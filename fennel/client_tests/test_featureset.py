@@ -90,10 +90,10 @@ class UserInfoMultipleExtractor:
     @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
+            cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
-        df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
+        df = pd.concat([user_age ** 2, user_age ** 3, is_name_common], axis=1)
         df.columns = [
             str(cls.age_squared),
             str(cls.age_cubed),
@@ -112,7 +112,8 @@ class UserInfoMultipleExtractor:
     @outputs(country_geoid)
     def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        return df["country"].apply(get_country_geoid)
+        df["country_geoid"] = df["country"].apply(get_country_geoid)
+        return df["country_geoid"]
 
 
 class TestSimpleExtractor(unittest.TestCase):
@@ -126,15 +127,15 @@ class TestSimpleExtractor(unittest.TestCase):
         )
         self.assertEqual(df.shape, (2, 3))
         self.assertEqual(
-            df[repr(UserInfoMultipleExtractor.age_squared)].tolist(),
+            df["age_squared"].tolist(),
             [1024, 576],
         )
         self.assertEqual(
-            df[repr(UserInfoMultipleExtractor.age_cubed)].tolist(),
+            df["age_cubed"].tolist(),
             [32768, 13824],
         )
         self.assertEqual(
-            df[repr(UserInfoMultipleExtractor.is_name_common)].tolist(),
+            df["is_name_common"].tolist(),
             [True, False],
         )
 
@@ -162,21 +163,12 @@ class TestSimpleExtractor(unittest.TestCase):
             UserInfoMultipleExtractor, ts, user_ids
         )
         self.assertEqual(df.shape, (2, 4))
-        self.assertEqual(
-            df[UserInfoSingleExtractor.age.fqn()].tolist(), [32, 24]
-        )
-        self.assertEqual(
-            df[UserInfoSingleExtractor.age_squared.fqn()].tolist(), [1024, 576]
-        )
-        self.assertEqual(
-            df[UserInfoSingleExtractor.age_cubed.fqn()].tolist(), [32768, 13824]
-        )
-        self.assertEqual(
-            df[UserInfoSingleExtractor.is_name_common.fqn()].tolist(),
-            [True, False],
-        )
+        self.assertEqual(df["age"].tolist(), [32, 24])
+        self.assertEqual(df["age_squared"].tolist(), [1024, 576])
+        self.assertEqual(df["age_cubed"].tolist(), [32768, 13824])
+        self.assertEqual(df["is_name_common"].tolist(), [True, False])
 
-        series = UserInfoMultipleExtractor.get_country_geoid(
+        series = UserInfoMultipleExtractor.get_country_geoid_extractor(
             UserInfoMultipleExtractor, ts, user_ids
         )
         assert series.tolist() == [5, 3]
@@ -185,7 +177,7 @@ class TestSimpleExtractor(unittest.TestCase):
 class TestExtractorDAGResolution(unittest.TestCase):
     @pytest.mark.integration
     @mock_client
-    def test_dag_resolution(self, client):
+    def test_dag_resolution2(self, client):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
@@ -248,14 +240,14 @@ class UserInfoTransformedFeatures:
         UserInfoMultipleExtractor.country_geoid,
     )
     def get_user_transformed_features(
-        cls,
-        ts: pd.Series,
-        user_age: pd.Series,
-        is_name_common: pd.Series,
-        country_geoid: pd.Series,
+            cls,
+            ts: pd.Series,
+            user_age: pd.Series,
+            is_name_common: pd.Series,
+            country_geoid: pd.Series,
     ):
-        age_power_four = user_age**4
-        country_geoid = country_geoid**2
+        age_power_four = user_age ** 4
+        country_geoid = country_geoid ** 2
         return pd.DataFrame(
             {
                 str(cls.age_power_four): age_power_four,
@@ -450,8 +442,8 @@ class TestDocumentDataset(unittest.TestCase):
             9,
         ]
         assert (
-            feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
-            == [1, 2, 3, 4]
+                feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
+                == [1, 2, 3, 4]
         ).all()
 
         yesterday = datetime.now() - timedelta(days=1)

@@ -25,11 +25,11 @@ class UserInfoDataset:
 
 
 def square(x: int) -> int:
-    return x ** 2
+    return x**2
 
 
 def cube(x: int) -> int:
-    return x ** 3
+    return x**3
 
 
 @includes(square)
@@ -49,7 +49,7 @@ class UserInfoSingleExtractor:
     @extractor
     @depends_on(UserInfoDataset)
     def get_user_info(
-            cls, ts: Series[datetime], user_id: Series[userid]
+        cls, ts: Series[datetime], user_id: Series[userid]
     ) -> DataFrame[age, age_power_four, age_cubed, is_name_common]:
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df[str(cls.userid)] = user_id
@@ -84,20 +84,16 @@ def test_simple_extractor(client):
     assert response.status_code == requests.codes.OK, response.json()
     if client.is_integration_client():
         time.sleep(5)
-    feature_df = client.extract_features(
-        output_feature_list=[UserInfoSingleExtractor],
-        input_feature_list=[UserInfoSingleExtractor.userid],
-        input_dataframe=pd.DataFrame(
-            {"UserInfoSingleExtractor.userid": [18232, 18234]}
-        ),
+    with pytest.raises(Exception) as e:
+        client.extract_features(
+            output_feature_list=[UserInfoSingleExtractor],
+            input_feature_list=[UserInfoSingleExtractor.userid],
+            input_dataframe=pd.DataFrame(
+                {"UserInfoSingleExtractor.userid": [18232, 18234]}
+            ),
+        )
+    assert (
+        str(e.value)
+        == "Extractor `get_user_info` in `UserInfoSingleExtractor` "
+        "failed to run with error: name 'power_4' is not defined. "
     )
-    assert feature_df.shape == (2, 5)
-    assert feature_df["UserInfoSingleExtractor.age"].tolist() == [32, 24]
-    assert feature_df["UserInfoSingleExtractor.age_power_four"].tolist() == [
-        1048576,
-        331776,
-    ]
-    assert feature_df["UserInfoSingleExtractor.age_cubed"].tolist() == [
-        32768,
-        13824,
-    ]

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import inspect
 from dataclasses import dataclass
 from typing import (
@@ -16,8 +15,6 @@ from typing import (
     Union,
     Set,
 )
-
-import pandas as pd
 
 from fennel.datasets import Dataset
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
@@ -157,7 +154,6 @@ def extractor(
     def _create_extractor(extractor_func: Callable, version: int):
         if not callable(extractor_func):
             raise TypeError("extractor can only be applied to functions")
-        print(extractor_func.__name__)
         sig = inspect.signature(extractor_func)
         extractor_name = extractor_func.__name__
         params = []
@@ -311,29 +307,6 @@ class Feature:
         return self.fqn_
 
 
-def _add_column_names(func, columns, fs_name):
-    """Rewrites the output column names of the extractor to be fully qualified names."""
-
-    @functools.wraps(func)
-    def inner(*args, **kwargs):
-        ret = func(*args, **kwargs)
-        if isinstance(ret, pd.Series):
-            ret.name = f"{fs_name}.{columns[0]}"
-        elif isinstance(ret, pd.DataFrame):
-            if len(ret.columns) != len(columns) or set(ret.columns) != set(
-                    columns
-            ):
-                raise ValueError(
-                    f"Expected {len(columns)} columns ({columns}) but got"
-                    f" {len(ret.columns)} columns {ret.columns} in"
-                    f" {func.__name__}"
-                )
-            ret.columns = [f"{fs_name}.{x}" for x in ret.columns]
-        return ret
-
-    return inner
-
-
 class Featureset:
     """Featureset is a class that defines a group of features that belong to
     an entity. It contains several extractors that provide the
@@ -433,12 +406,7 @@ class Featureset:
             ]
             if len(feature_names) == 0:
                 feature_names = [f.name for f in self._features]
-            extractor.func = _add_column_names(
-                extractor.func, feature_names, self._name
-            )
             setattr(self, extractor.func.__name__, extractor.func)
-            extractor.bound_func = functools.partial(extractor.func, self)
-            setattr(extractor.bound_func, "__name__", extractor.func.__name__)
 
     def _get_expectations(self):
         expectation = None
@@ -482,8 +450,6 @@ class Extractor:
     output_feature_ids: List[int]
     # List of names of features that this extractor produces
     output_features: List[str]
-    # Same as func but bound with Featureset as the first argument.
-    bound_func: Callable
 
     def __init__(
             self,
