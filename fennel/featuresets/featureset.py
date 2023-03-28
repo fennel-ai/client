@@ -28,7 +28,6 @@ from fennel.lib.metadata import (
     get_meta_attr,
     set_meta_attr,
 )
-from fennel.lib.schema import Series
 from fennel.utils import (
     parse_annotation_comments,
     propogate_fennel_attributes,
@@ -159,8 +158,7 @@ def extractor(func: Optional[Callable] = None, version: int = 0):
                 continue
 
             if not check_timestamp:
-                if isinstance(param.annotation, Series[datetime]) or \
-                        param.annotation == Series[datetime]:
+                if param.annotation == datetime:
                     check_timestamp = True
                     continue
                 raise TypeError(
