@@ -104,6 +104,9 @@ def get_vertices_and_eges(
             edges.add(
                 (get_feature_vertex(output), get_extractor_vertex(extractor))
             )
+    if len(vertices) == 0:
+        raise ValueError("No extractors found.")
+
     return vertices, edges
 
 

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+import pytest
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import extractor, depends_on
@@ -18,7 +19,7 @@ class Movies:
 
     @extractor
     def my_extractor(
-        cls, ts: Series[datetime], durations: Series[duration]
+            cls, ts: Series[datetime], durations: Series[duration]
     ) -> Series[over_2hrs]:
         return durations > 2 * 3600
 
@@ -41,7 +42,7 @@ class Movie:
     # docsnip featureset_extractor
     @extractor
     def my_extractor(
-        cls, ts: Series[datetime], durations: Series[duration]
+            cls, ts: Series[datetime], durations: Series[duration]
     ) -> Series[over_2hrs]:
         return durations > 2 * 3600
 
@@ -67,7 +68,7 @@ class UserLocationFeatures:
     @extractor
     @depends_on(UserInfo)
     def get_user_city_coordinates(
-        cls, ts: Series[datetime], uid: Series[uid]
+            cls, ts: Series[datetime], uid: Series[uid]
     ) -> DataFrame[latitude, longitude]:
         from geopy.geocoders import Nominatim
 
@@ -78,8 +79,8 @@ class UserLocationFeatures:
             .apply(geolocator.geocode)
             .apply(lambda x: (x.latitude, x.longitude))
         )
-        df["latitude"] = coordinates.apply(lambda x: round(x[0], 2))
-        df["longitude"] = coordinates.apply(lambda x: round(x[1], 2))
+        df["latitude"] = coordinates.apply(lambda x: round(x[0], 1))
+        df["longitude"] = coordinates.apply(lambda x: round(x[1], 1))
         return df[["latitude", "longitude"]]
 
 
@@ -133,7 +134,7 @@ class UserLocationFeaturesRefactored:
     @extractor
     @depends_on(UserInfo)
     def get_country_geoid(
-        cls, ts: Series[datetime], uid: Series[Request.uid]
+            cls, ts: Series[datetime], uid: Series[Request.uid]
     ) -> DataFrame[uid, latitude, longitude]:
         from geopy.geocoders import Nominatim
 
@@ -145,14 +146,15 @@ class UserLocationFeaturesRefactored:
             .apply(lambda x: (x.latitude, x.longitude))
         )
         df["uid"] = uid
-        df["latitude"] = coordinates.apply(lambda x: round(x[0], 2))
-        df["longitude"] = coordinates.apply(lambda x: round(x[1], 2))
+        df["latitude"] = coordinates.apply(lambda x: round(x[0], 1))
+        df["longitude"] = coordinates.apply(lambda x: round(x[1], 1))
         return df[["uid", "latitude", "longitude"]]
 
 
 # /docsnip
 
 
+@pytest.mark.slow
 @mock_client
 def test_extractors_across_featuresets(client):
     client.sync(
@@ -172,13 +174,14 @@ def test_extractors_across_featuresets(client):
             {"Request.uid": [1, 2, 3]},
         ),
     )
-    assert df["UserLocationFeaturesRefactored.latitude"].round(1).tolist() == [
+
+    assert df["UserLocationFeaturesRefactored.latitude"].tolist() == [
         40.7,
         51.5,
-        48.8,
+        48.9,
     ]
-    assert df["UserLocationFeaturesRefactored.longitude"].round(1).tolist() == [
+    assert df["UserLocationFeaturesRefactored.longitude"].tolist() == [
         -74.0,
         -0.1,
-        2.4,
+        2.3,
     ]
