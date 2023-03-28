@@ -32,7 +32,9 @@ class UserFeature:
         cls, ts: Series[datetime], uid: Series[uid]
     ) -> Series[in_home_city]:
         df, _found = User.lookup(ts, uid=uid)
-        return df["home_city"] == df["cur_city"]
+        return pd.Series(
+            name="in_home_city", data=df["home_city"] == df["cur_city"]
+        )
 
 
 # /docsnip

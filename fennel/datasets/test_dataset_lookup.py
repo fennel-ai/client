@@ -25,7 +25,7 @@ class UserInfoDataset:
 
 
 def dataset_lookup(
-        cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame
+    cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame
 ):
     now = datetime.fromtimestamp(1668368655)
     if len(fields) > 0:
@@ -61,14 +61,12 @@ def test_dataset_lookup(grpc_stub):
         @depends_on(UserInfoDataset)
         @no_type_check
         def user_age_sq(
-                cls,
-                ts: Series[datetime],
-                user_id: Series[userid],
-                names: Series[name],
+            cls,
+            ts: Series[datetime],
+            user_id: Series[userid],
+            names: Series[name],
         ) -> DataFrame[age_sq, gender]:
             user_id_plus_one = user_id * 5
-            print("Got here")
-            print(type(UserInfoDataset))
             df, _ = UserInfoDataset.lookup(
                 ts,
                 user_id=user_id_plus_one,
@@ -82,14 +80,12 @@ def test_dataset_lookup(grpc_stub):
         @depends_on(UserInfoDataset)
         @no_type_check
         def user_age_cube(
-                cls,
-                ts: Series[datetime],
-                user_id: Series[userid],
-                names: Series[name],
+            cls,
+            ts: Series[datetime],
+            user_id: Series[userid],
+            names: Series[name],
         ) -> Series[age_cube]:
             user_id_into_three = user_id * 3
-            print("Got here")
-            print(type(UserInfoDataset))
             df, _ = UserInfoDataset.lookup(
                 ts,
                 user_id=user_id_into_three,
@@ -106,26 +102,27 @@ def test_dataset_lookup(grpc_stub):
     user_sq_extractor = sync_request.extractors[1]
     assert user_sq_extractor.name == "user_age_sq"
 
-    dscode_dict = {"UserInfoDataset": dedent(
-        inspect.getsource(UserInfoDataset.__fennel_original_cls__))}
+    dscode_dict = {
+        "UserInfoDataset": dedent(
+            inspect.getsource(UserInfoDataset.__fennel_original_cls__)
+        )
+    }
     # Call to the extractor function
 
     user_sq_extractor_func, globals, locals = get_extractor_func(
-        sync_request.extractors[1], {"UserInfoDataset": UserInfoDataset},
-        dscode_dict)
+        sync_request.extractors[1],
+        {"UserInfoDataset": UserInfoDataset},
+        dscode_dict,
+        "",
+    )
 
     now = datetime.fromtimestamp(1668368655)
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a", "b", "c"])
-    print(inspect.getsource(dataset_lookup))
 
-    # exec(inspect.getsource(dataset_lookup), globals, locals)
     globals["dataset_lookup"] = dataset_lookup
     df = user_sq_extractor_func(None, ts, user_id, names)
-    # df = exec(user_sq_extractor_func(None, ts, user_id, names), globals,
-    # locals)
-    print(df)
     assert df["age_sq"].tolist() == [576, 529, 2025]
     assert df["gender"].tolist() == ["female", "female", "male"]
 
@@ -135,7 +132,10 @@ def test_dataset_lookup(grpc_stub):
     # Call to the extractor function
     user_age_cube_func, globals, locals = get_extractor_func(
         sync_request.extractors[0],
-        {"UserInfoDataset": UserInfoDataset}, dscode_dict)
+        {"UserInfoDataset": UserInfoDataset},
+        dscode_dict,
+        "",
+    )
 
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])

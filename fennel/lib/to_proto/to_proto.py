@@ -764,5 +764,6 @@ def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
 
     return pycode_proto.PyCode(
         source_code=inspect.getsource(func),
+        name=func.__name__,
         includes=[to_includes_proto(f) for f in dependencies],
     )

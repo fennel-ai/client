@@ -10,6 +10,7 @@ import requests
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
+from fennel.lib.include_mod import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Series, DataFrame, Embedding
 from fennel.test_lib import mock_client
@@ -105,15 +106,19 @@ class UserInfoMultipleExtractor:
     def get_age_reciprocal(
         cls, ts: Series[datetime], age: Series[age]
     ) -> Series[age_reciprocal]:
-        return age.apply(lambda x: 1 / (x / (3600.0 * 24)) + 0.01)
+        return pd.Series(
+            name=str(cls.age_reciprocal), data=1 / (age / (3600.0 * 24)) + 0.01
+        )
 
     @extractor(version=2)
+    @includes(get_country_geoid)
     @depends_on(UserInfoDataset)
-    def get_country_geoid(
+    def get_country_geoid_extractor(
         cls, ts: Series[datetime], user_id: Series[userid]
     ) -> Series[country_geoid]:
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        return df["country"].apply(get_country_geoid)
+        df["country_geoid"] = df["country"].apply(get_country_geoid)
+        return df["country_geoid"]
 
 
 class TestSimpleExtractor(unittest.TestCase):
@@ -127,15 +132,15 @@ class TestSimpleExtractor(unittest.TestCase):
         )
         self.assertEqual(df.shape, (2, 3))
         self.assertEqual(
-            df[repr(UserInfoMultipleExtractor.age_squared)].tolist(),
+            df["age_squared"].tolist(),
             [1024, 576],
         )
         self.assertEqual(
-            df[repr(UserInfoMultipleExtractor.age_cubed)].tolist(),
+            df["age_cubed"].tolist(),
             [32768, 13824],
         )
         self.assertEqual(
-            df[repr(UserInfoMultipleExtractor.is_name_common)].tolist(),
+            df["is_name_common"].tolist(),
             [True, False],
         )
 
@@ -163,21 +168,12 @@ class TestSimpleExtractor(unittest.TestCase):
             UserInfoMultipleExtractor, ts, user_ids
         )
         self.assertEqual(df.shape, (2, 4))
-        self.assertEqual(
-            df[UserInfoSingleExtractor.age.fqn()].tolist(), [32, 24]
-        )
-        self.assertEqual(
-            df[UserInfoSingleExtractor.age_squared.fqn()].tolist(), [1024, 576]
-        )
-        self.assertEqual(
-            df[UserInfoSingleExtractor.age_cubed.fqn()].tolist(), [32768, 13824]
-        )
-        self.assertEqual(
-            df[UserInfoSingleExtractor.is_name_common.fqn()].tolist(),
-            [True, False],
-        )
+        self.assertEqual(df["age"].tolist(), [32, 24])
+        self.assertEqual(df["age_squared"].tolist(), [1024, 576])
+        self.assertEqual(df["age_cubed"].tolist(), [32768, 13824])
+        self.assertEqual(df["is_name_common"].tolist(), [True, False])
 
-        series = UserInfoMultipleExtractor.get_country_geoid(
+        series = UserInfoMultipleExtractor.get_country_geoid_extractor(
             UserInfoMultipleExtractor, ts, user_ids
         )
         assert series.tolist() == [5, 3]
@@ -186,7 +182,7 @@ class TestSimpleExtractor(unittest.TestCase):
 class TestExtractorDAGResolution(unittest.TestCase):
     @pytest.mark.integration
     @mock_client
-    def test_dag_resolution(self, client):
+    def test_dag_resolution2(self, client):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],

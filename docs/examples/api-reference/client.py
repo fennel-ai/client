@@ -7,6 +7,7 @@ import requests
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import feature, featureset, extractor, depends_on
+from fennel.lib.include_mod import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Series, DataFrame
 from fennel.test_lib import mock_client
@@ -65,12 +66,14 @@ class UserFeatures:
         return df
 
     @extractor
+    @includes(get_country_geoid)
     @depends_on(UserInfoDataset)
-    def get_country_geoid(
+    def get_country_geoid_extractor(
         cls, ts: Series[datetime], user_id: Series[userid]
     ) -> Series[country_geoid]:
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        return df["country"].apply(get_country_geoid)
+        df["country_geoid"] = df["country"].apply(get_country_geoid)
+        return df["country_geoid"]
 
 
 # this is your test code in some test module

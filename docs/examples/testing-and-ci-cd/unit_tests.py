@@ -7,6 +7,7 @@ import requests
 # docsnip datasets
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum, Average
+from fennel.lib.include_mod import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Series, DataFrame
 from fennel.lib.window import Window
@@ -139,14 +140,10 @@ class TestSimpleExtractor(unittest.TestCase):
             UserInfoFeatures, ts, age, name
         )
         self.assertEqual(df.shape, (2, 3))
+        self.assertEqual(df["age_squared"].tolist(), [1024, 576])
+        self.assertEqual(df["age_cubed"].tolist(), [32768, 13824])
         self.assertEqual(
-            df["UserInfoFeatures.age_squared"].tolist(), [1024, 576]
-        )
-        self.assertEqual(
-            df["UserInfoFeatures.age_cubed"].tolist(), [32768, 13824]
-        )
-        self.assertEqual(
-            df["UserInfoFeatures.is_name_common"].tolist(),
+            df["is_name_common"].tolist(),
             [True, False],
         )
 
@@ -208,12 +205,14 @@ class UserInfoMultipleExtractor:
         return df
 
     @extractor
+    @includes(get_country_geoid)
     @depends_on(UserInfoDataset)
-    def get_country_geoid(
+    def get_country_geoid_extractor(
         cls, ts: Series[datetime], user_id: Series[userid]
     ) -> Series[country_geoid]:
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        return df["country"].apply(get_country_geoid)
+        df["country_geoid"] = df["country"].apply(get_country_geoid)
+        return df["country_geoid"]
 
 
 # this is your test code in some test module

@@ -223,7 +223,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         else:
             assert (
-                "Dataset MemberActivityDatasetCopy not found, please ensure it is synced."
+                "Extractor `get_domain_feature` in `DomainFeatures2` "
+                "failed to run with error: name 'MemberActivityDatasetCopy' is not defined. "
                 == str(e.value)
             )
 
@@ -254,12 +255,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 == str(e.value)
             )
         else:
-            assert (
-                "Extractor `get_domain_feature` is not allowed to access "
-                "dataset `MemberActivityDatasetCopy`, enabled datasets are ["
-                "'MemberDataset']. Use `@depends_on` to specify dataset "
-                "dependencies." == str(e.value)
-            )
+            assert "Extractor `get_domain_feature` in `DomainFeatures2` failed to run with error: name 'MemberActivityDatasetCopy' is not defined."
 
     @mock_client
     def test_drop_timestamp_col(self, client):
