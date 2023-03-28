@@ -3,11 +3,12 @@ from __future__ import annotations
 import inspect
 import json
 import os
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from textwrap import dedent
+from textwrap import dedent, indent
 from typing import Callable, Dict, List, Tuple, Union, Optional
 
 import numpy as np
@@ -27,6 +28,7 @@ from fennel.lib.graph_algorithms import (
     get_extractor_order,
     is_extractor_graph_cyclic,
 )
+from fennel.lib.include_mod import includes  # noqa
 from fennel.lib.schema import data_schema_check
 from fennel.lib.to_proto import (
     dataset_to_proto,
@@ -150,26 +152,15 @@ def dataset_lookup_impl(
     return df, found
 
 
-def _get_dataset_code(dataset: Dataset) -> str:
-    code = dedent(f"""
-        from fennel.datasets import dataset, field
-        from fennel.lib.metadata import meta
-    """)
-
-    code += dedent(inspect.getsource(dataset.__fennel_original_cls__))
-    print(code)
-    return code
-
-
-def _get_extractor_func(extractor: ProtoExtractor, extractor_fqn: str,
-                        dataset_code: Dict[str, str]) -> \
+def get_extractor_func(extractor: ProtoExtractor, datasets: Dict[str,
+                                                                 _DatasetInfo],
+                       dataset_code: Dict[str, str]) -> \
         Callable:
     def _get_code_chunks(pycode: PyCode, globals, locals) -> List[str]:
         code = dedent(pycode.source_code)
         code_chunks = [code]
-        exec(code, globals, locals)
         for include in pycode.includes:
-            code_chunks.extend(_get_code_chunks(include))
+            code_chunks.extend(_get_code_chunks(include, globals, locals))
         return code_chunks
 
     globals = {}
@@ -178,22 +169,48 @@ def _get_extractor_func(extractor: ProtoExtractor, extractor_fqn: str,
         from datetime import datetime
         
         import pandas as pd
+        import numpy as np
         
         from typing import List, Dict, Tuple, Optional, Union, Any
         from fennel.featuresets import featureset, extractor, depends_on
         from fennel.lib.metadata import meta
+        from fennel.lib.include_mod import includes
         from fennel.datasets import *
         from fennel.lib.schema import *
 
     """)
     exec(imports, globals, locals)
     globals['field'] = locals['field']
+    lookup_code = indent(inspect.getsource(fennel.datasets.lookup), '    ')
     for dataset in extractor.datasets:
         code = dataset_code[dataset]
-        print(imports + code)
+        code = re.sub(r'^\s*@.*', '', code, flags=re.MULTILINE)
+        code += lookup_code
+        code += indent(dedent("""
+        @classmethod
+        def key_fields(cls) -> List[str]:
+        """), '    ')
+        code += f"        return {datasets[dataset].key_fields}\n"
+
+        print(code)
         exec(imports + code, globals, locals)
-    _get_code_chunks(extractor.pycode, globals, locals)
-    return locals[extractor.func_name]
+
+    code_chunks = _get_code_chunks(extractor.pycode, globals, locals)
+    # reverse the code chunks so that the last one is the extractor function
+    code_chunks.reverse()
+    for code in code_chunks:
+        # Remove all decorators
+
+        code = re.sub(r'^\s*@.*', '', code, flags=re.MULTILINE)
+        print("=====================================")
+        print(code)
+        exec(code, globals, locals)
+    for k in extractor.datasets:
+        globals[k] = locals[k]
+    # For lookup to function.
+    globals['pd'] = locals['pd']
+    globals['np'] = locals['np']
+    return locals[extractor.name], globals, locals
 
 
 @dataclass
@@ -286,7 +303,8 @@ class MockClient(Client):
                     f"Expected a list of datasets, got `{dataset.__name__}`"
                     f" of type `{type(dataset)}` instead."
                 )
-            self.dataset_code[dataset._name] = _get_dataset_code(dataset)
+            self.dataset_code[dataset._name] = dedent(
+                inspect.getsource(dataset.__fennel_original_cls__))
             self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
             self.datasets[dataset._name] = _DatasetInfo(
                 [f.name for f in dataset.fields],
@@ -297,6 +315,7 @@ class MockClient(Client):
             for pipeline in dataset._pipelines:
                 for input in pipeline.inputs:
                     self.listeners[input._name].append(pipeline)
+        print("$", self.datasets)
         for featureset in featuresets:
             if not isinstance(featureset, Featureset):
                 raise TypeError(
@@ -321,10 +340,8 @@ class MockClient(Client):
             proto_extractors = extractors_from_fs(featureset)
             for extractor in proto_extractors:
                 extractor_fqn = f"{featureset._name}.{extractor.name}"
-                self.extractor_funcs[extractor_fqn] = _get_extractor_func(
-                    extractor, extractor_fqn, self.dataset_code)
-
-        print(self.extractor_funcs)
+                self.extractor_funcs[extractor_fqn] = get_extractor_func(
+                    extractor, self.datasets, self.dataset_code)
 
         if is_extractor_graph_cyclic(self.extractors):
             raise Exception("Cyclic graph detected in extractors")
@@ -478,18 +495,7 @@ class MockClient(Client):
                 allowed_datasets,
                 extractor.name,
             )
-            print(f"Running extractor {extractor.name}")
-            print(extractor.bound_func)
-            # print(fennel.lib.includes.test_includes_invalid.power_4(3))
-            # print(dir(extractor.bound_func.func))
-            # print(extractor.bound_func.func.__globals__)
-            save_globals = extractor.bound_func.func.__globals__
-            print(inspect.getsource(extractor.bound_func.func))
-            for k, v in extractor.bound_func.func.__globals__.items():
-                print(k)
-            # extractor.bound_func.func.__globals__ = {}
             output = extractor.bound_func(timestamps, *prepare_args)
-            # extractor.bound_func.func.__globals__ = save_globals
             fennel.datasets.datasets.dataset_lookup = partial(
                 dataset_lookup_impl, self.data, self.datasets, None, None
             )

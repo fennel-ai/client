@@ -10,14 +10,13 @@ from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, depends_on, feature
 from fennel.lib.include_mod import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame, oneof
+from fennel.lib.schema import Series, DataFrame
 from fennel.test_lib import mock_client
 
 
 @meta(owner="test@test.com")
 @dataset
 class UserInfoDataset:
-    gender: oneof(str, ["male", "female"])
     user_id: int = field(key=True)
     name: str
     age: Optional[int]

@@ -15,8 +15,6 @@ def includes(*args: Any) -> Callable[[T], T]:
 
     """
 
-    print(args)
-
     @functools.wraps(includes)
     def decorator(func: Callable) -> Callable:
         setattr(func, FENNEL_INCLUDED_MOD, list(args))
