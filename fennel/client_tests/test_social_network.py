@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+import pytest
 import requests
 
 from fennel.datasets import dataset, field, Dataset, pipeline
@@ -146,6 +147,7 @@ class UserFeatures:
         )
 
 
+@pytest.mark.slow
 @mock_client
 def test_social_network(client):
     client.sync(

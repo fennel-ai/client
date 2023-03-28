@@ -499,7 +499,7 @@ def dataset(
         return _create_dataset(c, cast(Duration, history))
 
     if cls is None:
-        # We're being called as @dataset()
+        # We're being called as @dataset(arguments)
         return wrap
     cls = cast(Type[T], cls)
     # @dataset decorator was used without arguments

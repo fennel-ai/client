@@ -13,13 +13,15 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cpycode.proto\x12\x13\x66\x65nnel.proto.pycode\".\n\x06PyCode\x12\x13\n\x0bsource_code\x18\x01 \x01(\t\x12\x0f\n\x07pickled\x18\x02 \x01(\x0c\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cpycode.proto\x12\x13\x66\x65nnel.proto.pycode\"\x82\x01\n\x06PyCode\x12\x13\n\x0bsource_code\x18\x01 \x01(\t\x12\x13\n\x07pickled\x18\x02 \x01(\x0c\x42\x02\x18\x01\x12\x1f\n\x17source_code_wo_comments\x18\x03 \x01(\t\x12-\n\x08includes\x18\x04 \x03(\x0b\x32\x1b.fennel.proto.pycode.PyCodeb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'pycode_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _PYCODE._serialized_start=37
-  _PYCODE._serialized_end=83
+  _PYCODE.fields_by_name['pickled']._options = None
+  _PYCODE.fields_by_name['pickled']._serialized_options = b'\030\001'
+  _PYCODE._serialized_start=38
+  _PYCODE._serialized_end=168
 # @@protoc_insertion_point(module_scope)

@@ -17,11 +17,11 @@ from typing import (
     Set,
 )
 
-import cloudpickle
 import pandas as pd
 
 from fennel.datasets import Dataset
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
+from fennel.lib.include_mod import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
@@ -52,7 +52,7 @@ RESERVED_FEATURE_NAMES = [
 
 
 def feature(
-    id: int,
+        id: int,
 ) -> T:  # type: ignore
     return cast(
         T,
@@ -73,10 +73,10 @@ def feature(
 
 
 def get_feature(
-    cls: Type,
-    annotation_name: str,
-    dtype: Type,
-    field2comment_map: Dict[str, str],
+        cls: Type,
+        annotation_name: str,
+        dtype: Type,
+        field2comment_map: Dict[str, str],
 ) -> Feature:
     feature = getattr(cls, annotation_name, None)
     if not isinstance(feature, Feature):
@@ -119,24 +119,24 @@ def featureset(featureset_cls: Type[T]):
 
 @overload
 def extractor(
-    func: Callable[..., T],
+        func: Callable[..., T],
 ):
     ...
 
 
 @overload
 def extractor(
-    *,
-    depends_on: List[T],
-    version: int,
+        *,
+        depends_on: List[T],
+        version: int,
 ):
     ...
 
 
 @overload
 def extractor(
-    *,
-    depends_on: List[T],
+        *,
+        depends_on: List[T],
 ):
     ...
 
@@ -147,7 +147,7 @@ def extractor():
 
 
 def extractor(
-    func: Optional[Callable] = None, depends_on: List = [], version: int = 0
+        func: Optional[Callable] = None, depends_on: List = [], version: int = 0
 ):
     """
     extractor is a decorator for a function that extracts a feature from a
@@ -157,6 +157,7 @@ def extractor(
     def _create_extractor(extractor_func: Callable, version: int):
         if not callable(extractor_func):
             raise TypeError("extractor can only be applied to functions")
+        print(extractor_func.__name__)
         sig = inspect.signature(extractor_func)
         extractor_name = extractor_func.__name__
         params = []
@@ -208,8 +209,8 @@ def extractor(
                 # If feature name is set, it means that the feature is from another
                 # featureset.
                 if (
-                    "." in str(return_annotation.fqn())
-                    and len(return_annotation.fqn()) > 0
+                        "." in str(return_annotation.fqn())
+                        and len(return_annotation.fqn()) > 0
                 ):
                     raise TypeError(
                         "Extractors can only extract a feature defined "
@@ -249,6 +250,7 @@ def extractor(
                     f"Return annotation {return_annotation} is not a "
                     f"Series or DataFrame, found {type(return_annotation)}"
                 )
+
         setattr(
             extractor_func,
             EXTRACTOR_ATTR,
@@ -319,7 +321,7 @@ def _add_column_names(func, columns, fs_name):
             ret.name = f"{fs_name}.{columns[0]}"
         elif isinstance(ret, pd.DataFrame):
             if len(ret.columns) != len(columns) or set(ret.columns) != set(
-                columns
+                    columns
             ):
                 raise ValueError(
                     f"Expected {len(columns)} columns ({columns}) but got"
@@ -349,9 +351,9 @@ class Featureset:
     _expectation: Expectations
 
     def __init__(
-        self,
-        featureset_cls: Type[T],
-        features: List[Feature],
+            self,
+            featureset_cls: Type[T],
+            features: List[Feature],
     ):
         self.__fennel_original_cls__ = featureset_cls
         self._name = featureset_cls.__name__
@@ -380,8 +382,8 @@ class Featureset:
                 continue
             extractor = getattr(method, EXTRACTOR_ATTR)
             if (
-                extractor.output_feature_ids is None
-                or len(extractor.output_feature_ids) == 0
+                    extractor.output_feature_ids is None
+                    or len(extractor.output_feature_ids) == 0
             ):
                 extractor.output_feature_ids = [
                     feature.id for feature in self._features
@@ -437,10 +439,6 @@ class Featureset:
             setattr(self, extractor.func.__name__, extractor.func)
             extractor.bound_func = functools.partial(extractor.func, self)
             setattr(extractor.bound_func, "__name__", extractor.func.__name__)
-            cloudpickle.register_pickle_by_value(
-                inspect.getmodule(extractor.func)
-            )
-            extractor.pickled_func = cloudpickle.dumps(extractor.bound_func)
 
     def _get_expectations(self):
         expectation = None
@@ -484,17 +482,16 @@ class Extractor:
     output_feature_ids: List[int]
     # List of names of features that this extractor produces
     output_features: List[str]
-    pickled_func: bytes
     # Same as func but bound with Featureset as the first argument.
     bound_func: Callable
 
     def __init__(
-        self,
-        name: str,
-        inputs: List,
-        func: Callable,
-        outputs: List[int],
-        version: int,
+            self,
+            name: str,
+            inputs: List,
+            func: Callable,
+            outputs: List[int],
+            version: int,
     ):
         self.name = name
         self.inputs = inputs
@@ -517,3 +514,8 @@ class Extractor:
         if hasattr(self.func, DEPENDS_ON_DATASETS_ATTR):
             depended_datasets = getattr(self.func, DEPENDS_ON_DATASETS_ATTR)
         return depended_datasets
+
+    def get_included_modules(self) -> List[Callable]:
+        if hasattr(self.func, FENNEL_INCLUDED_MOD):
+            return getattr(self.func, FENNEL_INCLUDED_MOD)
+        return None

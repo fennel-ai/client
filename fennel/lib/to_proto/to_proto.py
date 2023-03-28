@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Callable
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 
@@ -25,6 +25,7 @@ from fennel.lib.duration import (
     Duration,
     duration_to_timedelta,
 )
+from fennel.lib.include_mod import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr
 from fennel.lib.schema import get_datatype
 from fennel.lib.to_proto import Serializer
@@ -293,10 +294,7 @@ def _extractor_to_proto(extractor: Extractor) -> fs_proto.Extractor:
         features=extractor.output_features,
         metadata=get_metadata_proto(extractor.func),
         version=extractor.version,
-        pycode=pycode_proto.PyCode(
-            pickled=extractor.pickled_func,
-            source_code=inspect.getsource(extractor.func),
-        ),
+        pycode=to_includes_proto(extractor.func),
         feature_set_name=extractor.featureset,
     )
 
@@ -752,3 +750,19 @@ def to_duration_proto(duration: Duration) -> duration_proto.Duration:
     proto = duration_proto.Duration()
     proto.FromTimedelta(duration_to_timedelta(duration))
     return proto
+
+
+# ------------------------------------------------------------------------------
+# Includes
+# ------------------------------------------------------------------------------
+
+
+def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
+    dependencies = []
+    if hasattr(func, FENNEL_INCLUDED_MOD):
+        dependencies = getattr(func, FENNEL_INCLUDED_MOD)
+
+    return pycode_proto.PyCode(
+        source_code=inspect.getsource(func),
+        includes=[to_includes_proto(f) for f in dependencies],
+    )
