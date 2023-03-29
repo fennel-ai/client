@@ -17,18 +17,55 @@ else:
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
 @typing_extensions.final
+class ExtractorPyCode(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SOURCE_CODE_FIELD_NUMBER: builtins.int
+    EXTRACTOR_NAME_FIELD_NUMBER: builtins.int
+    FEATURESET_FIELD_NUMBER: builtins.int
+    INCLUDES_FIELD_NUMBER: builtins.int
+    DATASET_CODES_FIELD_NUMBER: builtins.int
+    DATASET_NAMES_FIELD_NUMBER: builtins.int
+    FEATURESET_CODE_FIELD_NUMBER: builtins.int
+    IMPORTS_FIELD_NUMBER: builtins.int
+    source_code: builtins.str
+    extractor_name: builtins.str
+    featureset: builtins.str
+    @property
+    def includes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PyCode]: ...
+    @property
+    def dataset_codes(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @property
+    def dataset_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    featureset_code: builtins.str
+    imports: builtins.str
+    def __init__(
+        self,
+        *,
+        source_code: builtins.str = ...,
+        extractor_name: builtins.str = ...,
+        featureset: builtins.str = ...,
+        includes: collections.abc.Iterable[global___PyCode] | None = ...,
+        dataset_codes: collections.abc.Iterable[builtins.str] | None = ...,
+        dataset_names: collections.abc.Iterable[builtins.str] | None = ...,
+        featureset_code: builtins.str = ...,
+        imports: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset_codes", b"dataset_codes", "dataset_names", b"dataset_names", "extractor_name", b"extractor_name", "featureset", b"featureset", "featureset_code", b"featureset_code", "imports", b"imports", "includes", b"includes", "source_code", b"source_code"]) -> None: ...
+
+global___ExtractorPyCode = ExtractorPyCode
+
+@typing_extensions.final
 class PyCode(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     SOURCE_CODE_FIELD_NUMBER: builtins.int
     PICKLED_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
-    SOURCE_CODE_WO_COMMENTS_FIELD_NUMBER: builtins.int
     INCLUDES_FIELD_NUMBER: builtins.int
     source_code: builtins.str
     pickled: builtins.bytes
     name: builtins.str
-    source_code_wo_comments: builtins.str
     @property
     def includes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PyCode]: ...
     def __init__(
@@ -37,9 +74,8 @@ class PyCode(google.protobuf.message.Message):
         source_code: builtins.str = ...,
         pickled: builtins.bytes = ...,
         name: builtins.str = ...,
-        source_code_wo_comments: builtins.str = ...,
         includes: collections.abc.Iterable[global___PyCode] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["includes", b"includes", "name", b"name", "pickled", b"pickled", "source_code", b"source_code", "source_code_wo_comments", b"source_code_wo_comments"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["includes", b"includes", "name", b"name", "pickled", b"pickled", "source_code", b"source_code"]) -> None: ...
 
 global___PyCode = PyCode

@@ -1,6 +1,4 @@
-import inspect
 from datetime import datetime
-from textwrap import dedent
 from typing import List, no_type_check
 
 import pandas as pd
@@ -101,18 +99,10 @@ def test_dataset_lookup(grpc_stub):
     user_sq_extractor = sync_request.extractors[1]
     assert user_sq_extractor.name == "user_age_sq"
 
-    dscode_dict = {
-        "UserInfoDataset": dedent(
-            inspect.getsource(UserInfoDataset.__fennel_original_cls__)
-        )
-    }
     # Call to the extractor function
 
     user_sq_extractor_func, globals, locals = get_extractor_func(
         sync_request.extractors[1],
-        {"UserInfoDataset": UserInfoDataset},
-        dscode_dict,
-        "",
     )
 
     now = datetime.fromtimestamp(1668368655)
@@ -131,9 +121,6 @@ def test_dataset_lookup(grpc_stub):
     # Call to the extractor function
     user_age_cube_func, globals, locals = get_extractor_func(
         sync_request.extractors[0],
-        {"UserInfoDataset": UserInfoDataset},
-        dscode_dict,
-        "",
     )
 
     ts = pd.Series([now, now, now])

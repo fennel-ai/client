@@ -368,7 +368,6 @@ def test_featureset_with_extractors(grpc_stub):
         "version": 0,
         "pycode": {
             "source_code": "",
-            "pickled": b"",
         },
         "feature_set_name": "UserInfo",
     }
@@ -390,7 +389,6 @@ def test_featureset_with_extractors(grpc_stub):
         "version": 0,
         "pycode": {
             "source_code": "",
-            "pickled": b"",
         },
         "feature_set_name": "UserInfo",
     }
@@ -412,7 +410,6 @@ def test_featureset_with_extractors(grpc_stub):
         "version": 0,
         "pycode": {
             "source_code": "",
-            "pickled": b"",
         },
         "feature_set_name": "UserInfo",
     }
