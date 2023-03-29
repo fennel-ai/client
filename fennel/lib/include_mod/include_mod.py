@@ -21,13 +21,3 @@ def includes(*args: Any) -> Callable[[T], T]:
         return func
 
     return decorator
-
-
-"""
-4 modes
-@lib
-@lib(include=[..], version=int)
-@lib(include=[])
-@lib(version=int)
-
-"""

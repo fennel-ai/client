@@ -63,11 +63,14 @@ class PyCode(google.protobuf.message.Message):
     PICKLED_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
     INCLUDES_FIELD_NUMBER: builtins.int
+    REF_INCLUDES_FIELD_NUMBER: builtins.int
     source_code: builtins.str
     pickled: builtins.bytes
     name: builtins.str
     @property
     def includes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PyCode]: ...
+    @property
+    def ref_includes(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
@@ -75,7 +78,8 @@ class PyCode(google.protobuf.message.Message):
         pickled: builtins.bytes = ...,
         name: builtins.str = ...,
         includes: collections.abc.Iterable[global___PyCode] | None = ...,
+        ref_includes: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["includes", b"includes", "name", b"name", "pickled", b"pickled", "source_code", b"source_code"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["includes", b"includes", "name", b"name", "pickled", b"pickled", "ref_includes", b"ref_includes", "source_code", b"source_code"]) -> None: ...
 
 global___PyCode = PyCode

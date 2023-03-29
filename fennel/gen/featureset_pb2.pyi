@@ -25,17 +25,21 @@ class CoreFeatureset(google.protobuf.message.Message):
 
     NAME_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
+    PYCODE_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
+    @property
+    def pycode(self) -> pycode_pb2.PyCode: ...
     def __init__(
         self,
         *,
         name: builtins.str = ...,
         metadata: metadata_pb2.Metadata | None = ...,
+        pycode: pycode_pb2.PyCode | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "name", b"name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "name", b"name", "pycode", b"pycode"]) -> None: ...
 
 global___CoreFeatureset = CoreFeatureset
 

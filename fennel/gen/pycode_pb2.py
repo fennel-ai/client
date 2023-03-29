@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cpycode.proto\x12\x13\x66\x65nnel.proto.pycode\"\xd9\x01\n\x0f\x45xtractorPyCode\x12\x13\n\x0bsource_code\x18\x01 \x01(\t\x12\x16\n\x0e\x65xtractor_name\x18\x03 \x01(\t\x12\x12\n\nfeatureset\x18\x04 \x01(\t\x12-\n\x08includes\x18\x05 \x03(\x0b\x32\x1b.fennel.proto.pycode.PyCode\x12\x15\n\rdataset_codes\x18\x06 \x03(\t\x12\x15\n\rdataset_names\x18\x07 \x03(\t\x12\x17\n\x0f\x66\x65\x61tureset_code\x18\x08 \x01(\t\x12\x0f\n\x07imports\x18\t \x01(\t\"o\n\x06PyCode\x12\x13\n\x0bsource_code\x18\x01 \x01(\t\x12\x13\n\x07pickled\x18\x02 \x01(\x0c\x42\x02\x18\x01\x12\x0c\n\x04name\x18\x03 \x01(\t\x12-\n\x08includes\x18\x04 \x03(\x0b\x32\x1b.fennel.proto.pycode.PyCodeb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cpycode.proto\x12\x13\x66\x65nnel.proto.pycode\"\xd9\x01\n\x0f\x45xtractorPyCode\x12\x13\n\x0bsource_code\x18\x01 \x01(\t\x12\x16\n\x0e\x65xtractor_name\x18\x03 \x01(\t\x12\x12\n\nfeatureset\x18\x04 \x01(\t\x12-\n\x08includes\x18\x05 \x03(\x0b\x32\x1b.fennel.proto.pycode.PyCode\x12\x15\n\rdataset_codes\x18\x06 \x03(\t\x12\x15\n\rdataset_names\x18\x07 \x03(\t\x12\x17\n\x0f\x66\x65\x61tureset_code\x18\x08 \x01(\t\x12\x0f\n\x07imports\x18\t \x01(\t\"\x85\x01\n\x06PyCode\x12\x13\n\x0bsource_code\x18\x01 \x01(\t\x12\x13\n\x07pickled\x18\x02 \x01(\x0c\x42\x02\x18\x01\x12\x0c\n\x04name\x18\x03 \x01(\t\x12-\n\x08includes\x18\x04 \x03(\x0b\x32\x1b.fennel.proto.pycode.PyCode\x12\x14\n\x0cref_includes\x18\x05 \x03(\tb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'pycode_pb2', globals())
@@ -24,6 +24,6 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _PYCODE.fields_by_name['pickled']._serialized_options = b'\030\001'
   _EXTRACTORPYCODE._serialized_start=38
   _EXTRACTORPYCODE._serialized_end=255
-  _PYCODE._serialized_start=257
-  _PYCODE._serialized_end=368
+  _PYCODE._serialized_start=258
+  _PYCODE._serialized_end=391
 # @@protoc_insertion_point(module_scope)
