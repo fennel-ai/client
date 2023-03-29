@@ -3,7 +3,6 @@ from fennel.datasets.datasets import (
     Dataset,
     pipeline,
     Pipeline,
-    key_fields,
     field,
     on_demand,
     lookup,

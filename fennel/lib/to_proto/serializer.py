@@ -1,12 +1,25 @@
 from __future__ import annotations
 
 import inspect
-from typing import Dict, Any, List
+from typing import Callable, Dict, Any, List
 
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
+from fennel.lib.include_mod import FENNEL_INCLUDED_MOD
 from fennel.lib.schema import get_datatype
+
+
+def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
+    dependencies = []
+    if hasattr(func, FENNEL_INCLUDED_MOD):
+        dependencies = getattr(func, FENNEL_INCLUDED_MOD)
+
+    return pycode_proto.PyCode(
+        source_code=inspect.getsource(func),
+        name=func.__name__,
+        includes=[to_includes_proto(f) for f in dependencies],
+    )
 
 
 class Serializer(Visitor):
@@ -65,10 +78,7 @@ class Serializer(Visitor):
             transform=proto.Transform(
                 operand_id=self.visit(obj.node),
                 schema=schema,
-                pycode=pycode_proto.PyCode(
-                    pickled=obj.pickled_func,
-                    source_code=inspect.getsource(obj.func),
-                ),
+                pycode=to_includes_proto(obj.func),
             ),
         )
 
@@ -80,10 +90,7 @@ class Serializer(Visitor):
             dataset_name=self.dataset_name,
             filter=proto.Filter(
                 operand_id=self.visit(obj.node),
-                pycode=pycode_proto.PyCode(
-                    pickled=obj.pickled_func,
-                    source_code=inspect.getsource(obj.func),
-                ),
+                pycode=to_includes_proto(obj.func),
             ),
         )
 
