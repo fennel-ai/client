@@ -20,7 +20,6 @@ from typing import (
     overload,
 )
 
-import cloudpickle
 import numpy as np
 import pandas as pd
 
@@ -100,8 +99,8 @@ class Field:
             return getattr(type_, "__args__", None)
 
         if (
-            _get_origin(self.dtype) is Union
-            and type(None) == _get_args(self.dtype)[1]
+                _get_origin(self.dtype) is Union
+                and type(None) == _get_args(self.dtype)[1]
         ):
             return True
 
@@ -112,10 +111,10 @@ class Field:
 
 
 def get_field(
-    cls: T,
-    annotation_name: str,
-    dtype: Type,
-    field2comment_map: Dict[str, str],
+        cls: T,
+        annotation_name: str,
+        dtype: Type,
+        field2comment_map: Dict[str, str],
 ) -> Field:
     if "." in annotation_name:
         raise ValueError(
@@ -147,8 +146,8 @@ def get_field(
 
 
 def field(
-    key: bool = False,
-    timestamp: bool = False,
+        key: bool = False,
+        timestamp: bool = False,
 ) -> T:  # type: ignore
     return cast(
         T,
@@ -183,11 +182,11 @@ class _Node(Generic[T]):
         return GroupBy(self, *args)
 
     def left_join(
-        self,
-        other: Dataset,
-        on: Optional[List[str]] = None,
-        left_on: Optional[List[str]] = None,
-        right_on: Optional[List[str]] = None,
+            self,
+            other: Dataset,
+            on: Optional[List[str]] = None,
+            left_on: Optional[List[str]] = None,
+            right_on: Optional[List[str]] = None,
     ) -> Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError("Cannot join with an intermediate dataset")
@@ -218,8 +217,8 @@ class Transform(_Node):
         self.node = node
         self.node.out_edges.append(self)
         self.schema = schema
-        cloudpickle.register_pickle_by_value(inspect.getmodule(func))
-        self.pickled_func = cloudpickle.dumps(func)
+        # cloudpickle.register_pickle_by_value(inspect.getmodule(func))
+        # self.pickled_func = cloudpickle.dumps(func)
 
     def signature(self):
         if isinstance(self.node, Dataset):
@@ -233,9 +232,9 @@ class Filter(_Node):
         self.func = func
         self.node = node
         self.node.out_edges.append(self)
-        cloudpickle.register_pickle_by_value(inspect.getmodule(func))
+        # cloudpickle.register_pickle_by_value(inspect.getmodule(func))
         wrapped_func = lambda df: df[func(df)]  # noqa: E731
-        self.pickled_func = cloudpickle.dumps(wrapped_func)
+        # self.pickled_func = cloudpickle.dumps(wrapped_func)
 
     def signature(self):
         if isinstance(self.node, Dataset):
@@ -245,7 +244,7 @@ class Filter(_Node):
 
 class Aggregate(_Node):
     def __init__(
-        self, node: _Node, keys: List[str], aggregates: List[AggregateType]
+            self, node: _Node, keys: List[str], aggregates: List[AggregateType]
     ):
         super().__init__()
         if len(keys) == 0:
@@ -282,12 +281,12 @@ class GroupBy:
 
 class Join(_Node):
     def __init__(
-        self,
-        node: _Node,
-        dataset: Dataset,
-        on: Optional[List[str]] = None,
-        left_on: Optional[List[str]] = None,
-        right_on: Optional[List[str]] = None,
+            self,
+            node: _Node,
+            dataset: Dataset,
+            on: Optional[List[str]] = None,
+            left_on: Optional[List[str]] = None,
+            right_on: Optional[List[str]] = None,
     ):
         super().__init__()
         self.node = node
@@ -362,8 +361,8 @@ class Drop(_Node):
 
 @overload
 def dataset(
-    *,
-    history: Optional[Duration] = DEFAULT_RETENTION,
+        *,
+        history: Optional[Duration] = DEFAULT_RETENTION,
 ) -> Callable[[Type[T]], Dataset]:
     ...
 
@@ -374,8 +373,8 @@ def dataset(cls: Type[T]) -> Dataset:
 
 
 def dataset(
-    cls: Optional[Type[T]] = None,
-    history: Optional[Duration] = DEFAULT_RETENTION,
+        cls: Optional[Type[T]] = None,
+        history: Optional[Duration] = DEFAULT_RETENTION,
 ) -> Union[Callable[[Type[T]], Dataset], Dataset]:
     """
     dataset is a decorator that creates a Dataset class.
@@ -391,13 +390,13 @@ def dataset(
     """
 
     def _create_lookup_function(
-        cls_name: str, key_fields: List[str]
+            cls_name: str, key_fields: List[str]
     ) -> Optional[Callable]:
         if len(key_fields) == 0:
             return None
 
         def lookup(
-            ts: pd.Series, *args, **kwargs
+                ts: pd.Series, *args, **kwargs
         ) -> Tuple[pd.DataFrame, pd.Series]:
             if len(args) > 0:
                 raise ValueError(
@@ -461,19 +460,19 @@ def dataset(
         ]
         args["ts"] = pd.Series
         params = [
-            inspect.Parameter(
-                "ts",
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                annotation=pd.Series,
-            )
-        ] + params
+                     inspect.Parameter(
+                         "ts",
+                         inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                         annotation=pd.Series,
+                     )
+                 ] + params
         setattr(lookup, "__signature__", inspect.Signature(params))
         setattr(lookup, "__annotations__", args)
         return lookup
 
     def _create_dataset(
-        dataset_cls: Type[T],
-        history: Duration,
+            dataset_cls: Type[T],
+            history: Duration,
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
         fields = [
@@ -581,7 +580,7 @@ def on_demand(expires_after: Duration):
 
 @classmethod
 def lookup(
-    cls, ts: pd.Series, *args, **kwargs
+        cls, ts: pd.Series, *args, **kwargs
 ) -> Tuple[pd.DataFrame, pd.Series]:
     if len(args) > 0:
         raise ValueError(
@@ -636,28 +635,11 @@ def lookup(
     return res.replace({np.nan: None}), found
 
 
-@classmethod
-def key_fields(cls) -> List[str]:
-    cls_annotations = cls.__dict__.get("__annotations__", {})
-    fields = [
-        get_field(
-            cls=cls,
-            annotation_name=name,
-            dtype=cls_annotations[name],
-            field2comment_map={},
-        )
-        for name in cls_annotations
-    ]
-
-    key_fields = [f.name for f in fields if f.key]
-    return key_fields
-
-
 def dataset_lookup(
-    cls_name: str,
-    ts: pd.Series,
-    fields: List[str],
-    keys: pd.DataFrame,
+        cls_name: str,
+        ts: pd.Series,
+        fields: List[str],
+        keys: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     raise NotImplementedError("dataset_lookup should not be called directly.")
 
@@ -727,11 +709,11 @@ class Dataset(_Node[T]):
     lookup: Callable
 
     def __init__(
-        self,
-        cls: T,
-        fields: List[Field],
-        history: datetime.timedelta,
-        lookup_fn: Optional[Callable] = None,
+            self,
+            cls: T,
+            fields: List[Field],
+            history: datetime.timedelta,
+            lookup_fn: Optional[Callable] = None,
     ):
         super().__init__()
         self._name = cls.__name__  # type: ignore
@@ -898,10 +880,10 @@ class Dataset(_Node[T]):
                     )
                 key_index += 1
             on_demand.bound_func = functools.partial(on_demand.func, self)
-            cloudpickle.register_pickle_by_value(
-                inspect.getmodule(on_demand.func)
-            )
-            on_demand.pickled_func = cloudpickle.dumps(on_demand.bound_func)
+            # cloudpickle.register_pickle_by_value(
+            #     inspect.getmodule(on_demand.func)
+            # )
+            # on_demand.pickled_func = cloudpickle.dumps(on_demand.bound_func)
         return on_demand
 
     def _get_pipelines(self) -> List[Pipeline]:
@@ -1065,9 +1047,9 @@ class DSSchema:
 
     def fields(self) -> List[str]:
         return (
-            [x for x in self.keys.keys()]
-            + [x for x in self.values.keys()]
-            + [self.timestamp]
+                [x for x in self.keys.keys()]
+                + [x for x in self.values.keys()]
+                + [self.timestamp]
         )
 
     def get_type(self, field) -> Type:
@@ -1105,12 +1087,12 @@ class DSSchema:
             raise Exception(f"field {name} not found in schema of {self.name}")
 
     def matches(
-        self, other_schema: DSSchema, this_name: str, other_name: str
+            self, other_schema: DSSchema, this_name: str, other_name: str
     ) -> List[TypeError]:
         def check_fields_one_way(
-            this_schema: Dict[str, Type],
-            other_schema: Dict[str, Type],
-            check_type: str,
+                this_schema: Dict[str, Type],
+                other_schema: Dict[str, Type],
+                check_type: str,
         ):
             for name, dtype in this_schema.items():
                 if name not in other_schema:
@@ -1132,9 +1114,9 @@ class DSSchema:
                     )
 
         def check_field_other_way(
-            other_schema: Dict[str, Type],
-            this_schema: Dict[str, Type],
-            check_type: str,
+                other_schema: Dict[str, Type],
+                this_schema: Dict[str, Type],
+                check_type: str,
         ):
             for name, dtype in other_schema.items():
                 if name not in this_schema:

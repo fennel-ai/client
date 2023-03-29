@@ -27,11 +27,11 @@ class UserInfoDataset:
 
 
 def square(x: int) -> int:
-    return x**2
+    return x ** 2
 
 
 def cube(x: int) -> int:
-    return x**3
+    return x ** 3
 
 
 @includes(square)
@@ -52,7 +52,7 @@ class UserInfoSingleExtractor:
     @includes(power_4, cube)
     @depends_on(UserInfoDataset)
     def get_user_info(
-        cls, ts: Series[datetime], user_id: Series[userid]
+            cls, ts: Series[datetime], user_id: Series[userid]
     ) -> DataFrame[age, age_power_four, age_cubed, is_name_common]:
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df[str(cls.userid)] = user_id
@@ -79,39 +79,48 @@ def test_includes_proto_conversion(grpc_stub):
     assert len(sync_request.features) == 5
     extractor_proto = sync_request.extractors[0]
     f = {
-        "name": "get_user_info",
-        "datasets": ["UserInfoDataset"],
-        "inputs": [
+        'name': 'get_user_info',
+        'datasets': [
+            'UserInfoDataset'
+        ],
+        'inputs': [
             {
-                "feature": {
-                    "featureSetName": "UserInfoSingleExtractor",
-                    "name": "userid",
+                'feature': {
+                    'featureSetName': 'UserInfoSingleExtractor',
+                    'name': 'userid'
                 }
             }
         ],
-        "features": ["age", "age_power_four", "age_cubed", "is_name_common"],
-        "metadata": {},
-        "pycode": {
-            "sourceCode": '    @extractor\n    @includes(power_4, cube)\n    @depends_on(UserInfoDataset)\n    def get_user_info(\n            cls, ts: Series[datetime], user_id: Series[userid]\n    ) -> DataFrame[age, age_power_four, age_cubed, is_name_common]:\n        df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore\n        df[str(cls.userid)] = user_id\n        df[str(cls.age_power_four)] = power_4(df["age"])\n        df[str(cls.age_cubed)] = cube(df["age"])\n        df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])\n        return df[\n            [\n                str(cls.age),\n                str(cls.age_power_four),\n                str(cls.age_cubed),\n                str(cls.is_name_common),\n            ]\n        ]\n',
-            "name": "get_user_info",
-            "includes": [
-                {
-                    "sourceCode": "@includes(square)\ndef power_4(x: int) -> int:\n    return square(square(x))\n",
-                    "name": "power_4",
-                    "includes": [
-                        {
-                            "sourceCode": "def square(x: int) -> int:\n    return x ** 2\n",
-                            "name": "square",
-                        }
-                    ],
-                },
-                {
-                    "sourceCode": "def cube(x: int) -> int:\n    return x ** 3\n",
-                    "name": "cube",
-                },
-            ],
+        'features': [
+            'age',
+            'age_power_four',
+            'age_cubed',
+            'is_name_common'
+        ],
+        'metadata': {
+
         },
-        "featureSetName": "UserInfoSingleExtractor",
+        'pycode': {
+            'sourceCode': '    @extractor\n    @includes(power_4, cube)\n    @depends_on(UserInfoDataset)\n    def get_user_info(\n            cls, ts: Series[datetime], user_id: Series[userid]\n    ) -> DataFrame[age, age_power_four, age_cubed, is_name_common]:\n        df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore\n        df[str(cls.userid)] = user_id\n        df[str(cls.age_power_four)] = power_4(df["age"])\n        df[str(cls.age_cubed)] = cube(df["age"])\n        df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])\n        return df[\n            [\n                str(cls.age),\n                str(cls.age_power_four),\n                str(cls.age_cubed),\n                str(cls.is_name_common),\n            ]\n        ]\n',
+            'name': 'get_user_info',
+            'includes': [
+                {
+                    'sourceCode': '@includes(square)\ndef power_4(x: int) -> int:\n    return square(square(x))\n',
+                    'name': 'power_4',
+                    'includes': [
+                        {
+                            'sourceCode': 'def square(x: int) -> int:\n    return x ** 2\n',
+                            'name': 'square'
+                        }
+                    ]
+                },
+                {
+                    'sourceCode': 'def cube(x: int) -> int:\n    return x ** 3\n',
+                    'name': 'cube'
+                }
+            ]
+        },
+        'featureSetName': 'UserInfoSingleExtractor'
     }
 
     expected_extractor = ParseDict(f, fs_proto.Extractor())
