@@ -93,7 +93,7 @@ class Extractor(google.protobuf.message.Message):
     def metadata(self) -> metadata_pb2.Metadata: ...
     version: builtins.int
     @property
-    def pycode(self) -> pycode_pb2.PyCode: ...
+    def pycode(self) -> pycode_pb2.ExtractorPyCode: ...
     feature_set_name: builtins.str
     def __init__(
         self,
@@ -104,7 +104,7 @@ class Extractor(google.protobuf.message.Message):
         features: collections.abc.Iterable[builtins.str] | None = ...,
         metadata: metadata_pb2.Metadata | None = ...,
         version: builtins.int = ...,
-        pycode: pycode_pb2.PyCode | None = ...,
+        pycode: pycode_pb2.ExtractorPyCode | None = ...,
         feature_set_name: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...

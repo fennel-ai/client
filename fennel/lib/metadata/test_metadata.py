@@ -317,7 +317,7 @@ def test_featureset_with_extractors(grpc_stub):
         @extractor
         @depends_on(UserInfoDataset)
         def get_user_info1(
-            cls, ts: Series[datetime], user_id: Series[User.id]
+                cls, ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[userid, home_geoid]:
             pass
 
@@ -325,7 +325,7 @@ def test_featureset_with_extractors(grpc_stub):
         @meta(owner="b@xyz.com", description="middle_meta")
         @depends_on(UserInfoDataset)
         def get_user_info2(
-            cls, ts: Series[datetime], user_id: Series[User.id]
+                cls, ts: Series[datetime], user_id: Series[User.id]
         ) -> DataFrame[gender, age]:
             pass
 
@@ -333,7 +333,7 @@ def test_featureset_with_extractors(grpc_stub):
         @depends_on(UserInfoDataset)
         @meta(owner="c@xyz.com", description="bottom_meta")
         def get_user_info3(
-            cls, ts: Series[datetime], user_id: Series[User.id]
+                cls, ts: Series[datetime], user_id: Series[User.id]
         ) -> Series[income]:
             pass
 
@@ -370,7 +370,6 @@ def test_featureset_with_extractors(grpc_stub):
         "version": 0,
         "pycode": {
             "source_code": "",
-            "pickled": b"",
         },
         "feature_set_name": "UserInfo",
     }
@@ -392,7 +391,6 @@ def test_featureset_with_extractors(grpc_stub):
         "version": 0,
         "pycode": {
             "source_code": "",
-            "pickled": b"",
         },
         "feature_set_name": "UserInfo",
     }
@@ -414,7 +412,6 @@ def test_featureset_with_extractors(grpc_stub):
         "version": 0,
         "pycode": {
             "source_code": "",
-            "pickled": b"",
         },
         "feature_set_name": "UserInfo",
     }

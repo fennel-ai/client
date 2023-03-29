@@ -62,14 +62,14 @@ class FakeResponse(Response):
 
 
 def dataset_lookup_impl(
-        data: Dict[str, pd.DataFrame],
-        datasets: Dict[str, _DatasetInfo],
-        allowed_datasets: Optional[List[str]],
-        extractor_name: Optional[str],
-        cls_name: str,
-        ts: pd.Series,
-        fields: List[str],
-        keys: pd.DataFrame,
+    data: Dict[str, pd.DataFrame],
+    datasets: Dict[str, _DatasetInfo],
+    allowed_datasets: Optional[List[str]],
+    extractor_name: Optional[str],
+    cls_name: str,
+    ts: pd.Series,
+    fields: List[str],
+    keys: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     if cls_name not in datasets:
         raise ValueError(
@@ -154,63 +154,30 @@ def dataset_lookup_impl(
 
 
 def get_extractor_func(
-        extractor: ProtoExtractor,
-        datasets: Dict[str, _DatasetInfo],
-        dataset_code: Dict[str, str],
-        featureset_code: str,
+    extractor_proto: ProtoExtractor,
 ) -> Callable:
-    def _get_code_chunks(pycode: PyCode, globals, locals) -> List[str]:
-        code = dedent(pycode.source_code)
-        code_chunks = [(pycode.name, code)]
-        for include in pycode.includes:
-            code_chunks.extend(_get_code_chunks(include, globals, locals))
+    def _get_code_chunks(includes: List[PyCode], globals, locals) -> List[str]:
+        code_chunks = []
+        for include in includes:
+            code_chunks.append((include.name, include.source_code))
+            code_chunks.extend(
+                _get_code_chunks(include.includes, globals, locals)
+            )
         return code_chunks
 
+    extractor = extractor_proto.pycode
     globals = {}
     locals = {}
-    imports = dedent(
-        """
-        from datetime import datetime
-        import pandas as pd
-        import numpy as np
-        from typing import List, Dict, Tuple, Optional, Union, Any
-        from fennel.featuresets import *
-        from fennel.lib.metadata import meta
-        from fennel.lib.include_mod import includes
-        from fennel.datasets import *
-        from fennel.lib.schema import *
-        from fennel.datasets.datasets import dataset_lookup
-        class classproperty(object):
-            def __init__(self, f):
-                self.f = classmethod(f)
-            def __get__(self, *a):
-                return self.f.__get__(*a)()
-    """
-    )
-    exec(imports, globals, locals)
+    exec(extractor.imports, globals, locals)
     globals["field"] = locals["field"]
     globals["feature"] = locals["feature"]
     globals["classproperty"] = locals["classproperty"]
-    lookup_code = indent(inspect.getsource(fennel.datasets.lookup), "    ")
-    for dataset in extractor.datasets:
-        code = dataset_code[dataset]
-        code = re.sub(r"^\s*@.*", "", code, flags=re.MULTILINE)
-        code += lookup_code
-        code += indent(
-            dedent(
-                """
-        @classmethod
-        def key_fields(cls) -> List[str]:
-        """
-            ),
-            "    ",
-        )
-        code += f"        return {datasets[dataset].key_fields}\n"
-        exec(imports + code, globals, locals)
-    code = dedent(featureset_code)
+    for dataset in extractor.dataset_codes:
+        exec(dataset, globals, locals)
+    code = dedent(extractor.featureset_code)
     exec(code, globals, locals)
 
-    code_chunks = _get_code_chunks(extractor.pycode, globals, locals)
+    code_chunks = _get_code_chunks(extractor.includes, globals, locals)
     # reverse the code chunks so that the last one is the extractor function
     code_chunks.reverse()
     for code in code_chunks:
@@ -218,14 +185,17 @@ def get_extractor_func(
         code_refactored = re.sub(r"^\s*@.*", "", code[1], flags=re.MULTILINE)
         exec(code_refactored, globals, locals)
         globals[code[0]] = locals[code[0]]
+        print(code[0])
 
-    for k in extractor.datasets:
+    for k in extractor.dataset_names:
         globals[k] = locals[k]
+
+    exec(extractor.source_code, globals, locals)
     # For lookup to function.
     globals["pd"] = locals["pd"]
     globals["np"] = locals["np"]
     globals["dataset_lookup"] = locals["dataset_lookup"]
-    return locals[extractor.name], globals, locals
+    return locals[extractor.extractor_name], globals, locals
 
 
 @dataclass
@@ -304,9 +274,9 @@ class MockClient(Client):
         return FakeResponse(200, "OK")
 
     def sync(
-            self,
-            datasets: Optional[List[Dataset]] = None,
-            featuresets: Optional[List[Featureset]] = None,
+        self,
+        datasets: Optional[List[Dataset]] = None,
+        featuresets: Optional[List[Featureset]] = None,
     ):
         self._reset()
         if datasets is None:
@@ -373,10 +343,7 @@ class MockClient(Client):
             for extractor in proto_extractors:
                 extractor_fqn = f"{featureset._name}.{extractor.name}"
                 self.extractor_funcs[extractor_fqn] = get_extractor_func(
-                    extractor,
-                    self.datasets,
-                    self.dataset_code,
-                    self.featureset_code[featureset._name],
+                    extractor
                 )
 
         if is_extractor_graph_cyclic(self.extractors):
@@ -385,13 +352,13 @@ class MockClient(Client):
         return FakeResponse(200, "OK")
 
     def extract_features(
-            self,
-            input_feature_list: List[Union[Feature, Featureset]],
-            output_feature_list: List[Union[Feature, Featureset]],
-            input_dataframe: pd.DataFrame,
-            log: bool = False,
-            workflow: Optional[str] = "default",
-            sampling_rate: Optional[float] = 1.0,
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: Optional[str] = "default",
+        sampling_rate: Optional[float] = 1.0,
     ) -> pd.DataFrame:
         if log:
             raise NotImplementedError("log is not supported in MockClient")
@@ -421,11 +388,11 @@ class MockClient(Client):
         )
 
     def extract_historical_features(
-            self,
-            input_feature_list: List[Union[Feature, Featureset]],
-            output_feature_list: List[Union[Feature, Featureset]],
-            input_dataframe: pd.DataFrame,
-            timestamps: pd.Series,
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_dataframe: pd.DataFrame,
+        timestamps: pd.Series,
     ) -> Union[pd.DataFrame, pd.Series]:
         if input_dataframe.empty:
             return pd.DataFrame()
@@ -454,7 +421,7 @@ class MockClient(Client):
     # ----------------- Private methods -----------------
 
     def _prepare_extractor_args(
-            self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]
+        self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]
     ):
         args = []
         for input in extractor.inputs:
@@ -490,11 +457,11 @@ class MockClient(Client):
         return args
 
     def _run_extractors(
-            self,
-            extractors: List[Extractor],
-            input_df: pd.DataFrame,
-            output_feature_list: List[Union[Feature, Featureset]],
-            timestamps: pd.Series,
+        self,
+        extractors: List[Extractor],
+        input_df: pd.DataFrame,
+        output_feature_list: List[Union[Feature, Featureset]],
+        timestamps: pd.Series,
     ):
         # Map of feature name to the pandas series
         intermediate_data: Dict[str, pd.Series] = {}
@@ -538,12 +505,13 @@ class MockClient(Client):
                 output = func(
                     locals[extractor.featureset], timestamps, *prepare_args
                 )
+                print(output)
             except Exception as e:
-                if isinstance(e, NameError):
-                    raise Exception(
-                        f"Extractor `{extractor.name}` in `{extractor.featureset}` "
-                        f"failed to run with error: {e}. "
-                    )
+                raise Exception(
+                    f"Extractor `{extractor.name}` in `{extractor.featureset}` "
+                    f"failed to run with error: {e}. "
+                )
+            print(output)
             if isinstance(output, pd.DataFrame):
                 output.rename(
                     columns={
@@ -564,6 +532,7 @@ class MockClient(Client):
                     f"invalid type `{type(output)}`, expected a pandas series or dataframe"
                 )
             output_df = pd.DataFrame(output)
+            print("I AM HERE")
             exceptions = data_schema_check(dsschema, output_df)
             if len(exceptions) > 0:
                 raise Exception(
@@ -644,8 +613,8 @@ def mock_client(test_func):
             client = MockClient()
             f = test_func(*args, **kwargs, client=client)
         if (
-                "USE_INT_CLIENT" in os.environ
-                and int(os.environ.get("USE_INT_CLIENT")) == 1
+            "USE_INT_CLIENT" in os.environ
+            and int(os.environ.get("USE_INT_CLIENT")) == 1
         ):
             print("Running rust client tests")
             client = IntegrationClient()

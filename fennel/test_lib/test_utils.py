@@ -5,7 +5,7 @@ from google.protobuf.json_format import MessageToDict  # type: ignore
 
 from fennel.gen.dataset_pb2 import Operator, Filter, Transform
 from fennel.gen.featureset_pb2 import Extractor
-from fennel.gen.pycode_pb2 import PyCode
+from fennel.gen.pycode_pb2 import PyCode, ExtractorPyCode
 
 
 def error_message(actual: Any, expected: Any) -> str:
@@ -26,7 +26,7 @@ def erase_extractor_pycode(extractor: Extractor) -> Extractor:
         features=extractor.features,
         metadata=extractor.metadata,
         feature_set_name=extractor.feature_set_name,
-        pycode=PyCode(pickled=b"", source_code=""),
+        pycode=ExtractorPyCode(),
     )
     return new_extractor
 

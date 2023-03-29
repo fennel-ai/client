@@ -1,6 +1,4 @@
-import inspect
 from datetime import datetime
-from textwrap import dedent
 from typing import List, no_type_check
 
 import pandas as pd
@@ -25,7 +23,7 @@ class UserInfoDataset:
 
 
 def dataset_lookup(
-    cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame
+        cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame
 ):
     now = datetime.fromtimestamp(1668368655)
     if len(fields) > 0:
@@ -61,10 +59,10 @@ def test_dataset_lookup(grpc_stub):
         @depends_on(UserInfoDataset)
         @no_type_check
         def user_age_sq(
-            cls,
-            ts: Series[datetime],
-            user_id: Series[userid],
-            names: Series[name],
+                cls,
+                ts: Series[datetime],
+                user_id: Series[userid],
+                names: Series[name],
         ) -> DataFrame[age_sq, gender]:
             user_id_plus_one = user_id * 5
             df, _ = UserInfoDataset.lookup(
@@ -80,10 +78,10 @@ def test_dataset_lookup(grpc_stub):
         @depends_on(UserInfoDataset)
         @no_type_check
         def user_age_cube(
-            cls,
-            ts: Series[datetime],
-            user_id: Series[userid],
-            names: Series[name],
+                cls,
+                ts: Series[datetime],
+                user_id: Series[userid],
+                names: Series[name],
         ) -> Series[age_cube]:
             user_id_into_three = user_id * 3
             df, _ = UserInfoDataset.lookup(
@@ -102,18 +100,10 @@ def test_dataset_lookup(grpc_stub):
     user_sq_extractor = sync_request.extractors[1]
     assert user_sq_extractor.name == "user_age_sq"
 
-    dscode_dict = {
-        "UserInfoDataset": dedent(
-            inspect.getsource(UserInfoDataset.__fennel_original_cls__)
-        )
-    }
     # Call to the extractor function
 
     user_sq_extractor_func, globals, locals = get_extractor_func(
         sync_request.extractors[1],
-        {"UserInfoDataset": UserInfoDataset},
-        dscode_dict,
-        "",
     )
 
     now = datetime.fromtimestamp(1668368655)
@@ -132,9 +122,6 @@ def test_dataset_lookup(grpc_stub):
     # Call to the extractor function
     user_age_cube_func, globals, locals = get_extractor_func(
         sync_request.extractors[0],
-        {"UserInfoDataset": UserInfoDataset},
-        dscode_dict,
-        "",
     )
 
     ts = pd.Series([now, now, now])

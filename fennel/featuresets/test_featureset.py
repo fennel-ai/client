@@ -154,7 +154,6 @@ def test_simple_featureset(grpc_stub):
         "version": 2,
         "pycode": {
             "source_code": "",
-            "pickled": b"",
         },
         "feature_set_name": "UserInfo",
     }
@@ -287,7 +286,6 @@ def test_complex_featureset(grpc_stub):
         "version": 0,
         "pycode": {
             "source_code": "",
-            "pickled": b"",
         },
         "feature_set_name": "UserInfo",
     }
@@ -306,7 +304,6 @@ def test_complex_featureset(grpc_stub):
         "version": 0,
         "pycode": {
             "source_code": "",
-            "pickled": b"",
         },
         "feature_set_name": "UserInfo",
     }
@@ -325,7 +322,6 @@ def test_complex_featureset(grpc_stub):
         "version": 0,
         "pycode": {
             "source_code": "",
-            "pickled": b"",
         },
         "feature_set_name": "UserInfo",
     }
