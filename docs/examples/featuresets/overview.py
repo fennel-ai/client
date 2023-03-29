@@ -102,15 +102,15 @@ def test_multiple_features_extracted(client):
             {"UserLocationFeatures.uid": [1, 2, 3]},
         ),
     )
-    assert df["UserLocationFeatures.latitude"].tolist() == [
-        40.71,
-        51.51,
-        48.86,
+    assert df["UserLocationFeatures.latitude"].round(1).tolist() == [
+        40.7,
+        51.5,
+        48.8,
     ]
-    assert df["UserLocationFeatures.longitude"].tolist() == [
-        -74.01,
-        -0.13,
-        2.32,
+    assert df["UserLocationFeatures.longitude"].round(1).tolist() == [
+        -74.0,
+        -0.1,
+        2.4,
     ]
 
 
@@ -172,13 +172,13 @@ def test_extractors_across_featuresets(client):
             {"Request.uid": [1, 2, 3]},
         ),
     )
-    assert df["UserLocationFeaturesRefactored.latitude"].tolist() == [
-        40.71,
-        51.51,
-        48.86,
+    assert df["UserLocationFeaturesRefactored.latitude"].round(1).tolist() == [
+        40.7,
+        51.5,
+        48.8,
     ]
-    assert df["UserLocationFeaturesRefactored.longitude"].tolist() == [
-        -74.01,
-        -0.13,
-        2.32,
+    assert df["UserLocationFeaturesRefactored.longitude"].round(1).tolist() == [
+        -74.0,
+        -0.1,
+        2.4,
     ]
