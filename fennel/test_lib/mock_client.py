@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import inspect
 import json
 import os
-import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from textwrap import dedent, indent
 from typing import Callable, Dict, List, Tuple, Union, Optional
 
 import numpy as np
@@ -20,11 +17,12 @@ from fennel.client import Client
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.featuresets import Featureset, Feature, Extractor
 from fennel.gen.dataset_pb2 import CoreDataset
+from fennel.gen.featureset_pb2 import CoreFeatureset
 from fennel.gen.featureset_pb2 import (
     Feature as ProtoFeature,
     Extractor as ProtoExtractor,
 )
-from fennel.gen.pycode_pb2 import PyCode
+from fennel.gen.pycode_pb2 import PyCode, RefType
 from fennel.gen.schema_pb2 import Field, DSSchema, Schema
 from fennel.lib.graph_algorithms import (
     get_extractor_order,
@@ -36,6 +34,7 @@ from fennel.lib.to_proto import (
     dataset_to_proto,
     features_from_fs,
     extractors_from_fs,
+    featureset_to_proto
 )
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.integration_client import IntegrationClient
@@ -155,7 +154,8 @@ def dataset_lookup_impl(
 
 
 def get_extractor_func(
-        extractor_proto: ProtoExtractor,
+        extractor_proto: ProtoExtractor, featureset_proto: CoreFeatureset,
+        dataset_requests: Dict[str, CoreDataset]
 ) -> Callable:
     def _get_code_chunks(includes: List[PyCode], globals, locals) -> List[str]:
         code_chunks = []
@@ -169,15 +169,6 @@ def get_extractor_func(
     extractor = extractor_proto.pycode
     globals = {}
     locals = {}
-    exec(extractor.imports, globals, locals)
-    globals["field"] = locals["field"]
-    globals["feature"] = locals["feature"]
-    globals["classproperty"] = locals["classproperty"]
-    for dataset in extractor.dataset_codes:
-        exec(dataset, globals, locals)
-    code = dedent(extractor.featureset_code)
-    exec(code, globals, locals)
-
     code_chunks = _get_code_chunks(extractor.includes, globals, locals)
     # reverse the code chunks so that the last one is the extractor function
     code_chunks.reverse()
@@ -185,17 +176,38 @@ def get_extractor_func(
         # Remove all decorators
         exec(code[1], globals, locals)
         globals[code[0]] = locals[code[0]]
-        print(code[0])
+    # Exec all datasets
+    for ref_name, ref_type in extractor.ref_includes.items():
+        if ref_type == RefType.Dataset:
+            if ref_name not in dataset_requests:
+                raise ValueError(
+                    f"Dataset {ref_name} not found, please ensure it is synced."
+                )
+            exec(dataset_requests[ref_name].pycode.imports, globals, locals)
+            globals["field"] = locals["field"]
+            print(dataset_requests[ref_name].pycode.source_code)
+            exec(dataset_requests[ref_name].pycode.source_code, globals, locals)
+            globals[ref_name] = locals[ref_name]
+    # Exec feature set
+    if featureset_proto.name not in extractor.ref_includes:
+        raise ValueError(
+            f"Featureset {featureset_proto.name} not found, please ensure it "
+            f"is synced."
+        )
+    exec(featureset_proto.pycode.imports, globals, locals)
+    globals["feature"] = locals["feature"]
+    globals["extractor"] = locals["extractor"]
+    globals["includes"] = locals["includes"]
+    globals["depends_on"] = locals["depends_on"]
+    globals["no_type_check"] = locals["no_type_check"]
 
-    for k in extractor.dataset_names:
-        globals[k] = locals[k]
-
+    exec(featureset_proto.pycode.source_code, globals, locals)
     exec(extractor.source_code, globals, locals)
     # For lookup to function.
     globals["pd"] = locals["pd"]
     globals["np"] = locals["np"]
     globals["dataset_lookup"] = locals["dataset_lookup"]
-    return locals[extractor.extractor_name], globals, locals
+    return locals[extractor.name], globals, locals
 
 
 @dataclass
@@ -209,8 +221,7 @@ class _DatasetInfo:
 class MockClient(Client):
     def __init__(self):
         self.dataset_requests: Dict[str, CoreDataset] = {}
-        self.dataset_code: Dict[str, str] = {}
-        self.featureset_code: Dict[str, str] = {}
+        self.featureset_requests: Dict[str, CoreFeatureset] = {}
         self.features_for_fs: Dict[str, List[ProtoFeature]]
         self.extractor_funcs: Dict[str, Callable] = {}
         self.datasets: Dict[str, _DatasetInfo] = {}
@@ -289,9 +300,6 @@ class MockClient(Client):
                     f"Expected a list of datasets, got `{dataset.__name__}`"
                     f" of type `{type(dataset)}` instead."
                 )
-            self.dataset_code[dataset._name] = dedent(
-                inspect.getsource(dataset.__fennel_original_cls__)
-            )
             self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
             self.datasets[dataset._name] = _DatasetInfo(
                 [f.name for f in dataset.fields],
@@ -308,23 +316,10 @@ class MockClient(Client):
                     f"Expected a list of featuresets, got `{featureset.__name__}`"
                     f" of type `{type(featureset)}` instead."
                 )
-            featureset_code = dedent(
-                inspect.getsource(featureset.__fennel_original_cls__)
-            )
-            featureset_code = re.sub(
-                r"^\s*@.*", "", featureset_code, flags=re.MULTILINE
-            )
-            feature_names = [f.name for f in featureset.features]
-            for f in feature_names:
-                cls_property_code = f"""
-                @classproperty
-                def {f}(cls):
-                    return "{f}"
-                """
-                featureset_code += indent(dedent(cls_property_code), " " * 4)
-
-            self.featureset_code[featureset._name] = featureset_code
             self.features_for_fs[featureset._name] = features_from_fs(
+                featureset
+            )
+            self.featureset_requests[featureset._name] = featureset_to_proto(
                 featureset
             )
             # Check if the dataset used by the extractor is registered
@@ -343,7 +338,8 @@ class MockClient(Client):
             for extractor in proto_extractors:
                 extractor_fqn = f"{featureset._name}.{extractor.name}"
                 self.extractor_funcs[extractor_fqn] = get_extractor_func(
-                    extractor
+                    extractor, self.featureset_requests[featureset._name],
+                    self.dataset_requests
                 )
 
         if is_extractor_graph_cyclic(self.extractors):

@@ -99,10 +99,14 @@ def test_dataset_lookup(grpc_stub):
     user_sq_extractor = sync_request.extractors[1]
     assert user_sq_extractor.name == "user_age_sq"
 
+    dscode_dict = {
+        "UserInfoDataset": dataset_to_proto(UserInfoDataset),
+    }
+    fs_proto = featureset_to_proto(UserAgeFeatures)
     # Call to the extractor function
 
     user_sq_extractor_func, globals, locals = get_extractor_func(
-        sync_request.extractors[1],
+        sync_request.extractors[1], fs_proto, dscode_dict
     )
 
     now = datetime.fromtimestamp(1668368655)
@@ -120,7 +124,7 @@ def test_dataset_lookup(grpc_stub):
 
     # Call to the extractor function
     user_age_cube_func, globals, locals = get_extractor_func(
-        sync_request.extractors[0],
+        sync_request.extractors[0], fs_proto, dscode_dict
     )
 
     ts = pd.Series([now, now, now])

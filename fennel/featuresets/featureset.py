@@ -13,7 +13,7 @@ from typing import (
     List,
     overload,
     Union,
-    Set,
+    Set
 )
 
 from fennel.datasets import Dataset
@@ -200,6 +200,10 @@ def extractor(
         else:
             return_annotation = None
         outputs = []
+        if return_annotation == str:
+            print("here")
+        print(return_annotation, type(return_annotation))
+
         if return_annotation is not None:
             if isinstance(return_annotation, Feature):
                 # If feature name is set, it means that the feature is from another
@@ -215,11 +219,6 @@ def extractor(
                     )
                 return_annotation = cast(Feature, return_annotation)
                 outputs.append(return_annotation.id)
-            elif isinstance(return_annotation, str):
-                raise TypeError(
-                    "str datatype not supported, please ensure "
-                    "from __future__ import annotations is disabled"
-                )
             elif isinstance(return_annotation, tuple):
                 for f in return_annotation:
                     if not isinstance(f, Feature):
@@ -264,7 +263,6 @@ def extractor(
         if not isinstance(version, int):
             raise TypeError("version for extractor must be an int.")
         return wrap
-
     func = cast(Callable, func)
     # @extractor decorator was used without arguments
     return wrap(func)
@@ -391,6 +389,8 @@ class Featureset:
         extracted_features: Set[int] = set()
         for extractor in self._extractors:
             for feature_id in extractor.output_feature_ids:
+                print(extractor.name, feature_id, self._id_to_feature[
+                    feature_id].name)
                 if feature_id in extracted_features:
                     raise TypeError(
                         f"Feature `{self._id_to_feature[feature_id].name}` is "

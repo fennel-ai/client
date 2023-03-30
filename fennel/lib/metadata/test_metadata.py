@@ -6,6 +6,7 @@ import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as fs_proto
+import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.gen.services_pb2 import SyncRequest
@@ -92,10 +93,16 @@ def test_simple_dataset(grpc_stub):
                     "country": {},
                     "timestamp": {},
                 },
+                "pycode": {
+                    "source_code": "",
+                }
             }
         ],
     }
     expected_sync_request = ParseDict(d, SyncRequest())
+    expected_sync_request.datasets[0].pycode = pycode_proto.PyCode(
+        source_code=""
+    )
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
@@ -228,8 +235,12 @@ def test_simple_featureset(grpc_stub):
             "description": "test",
             "tags": ["test"],
         },
+        "pycode": {"source_code": ""},
     }
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
+    expected_fs_request.pycode = pycode_proto.PyCode(
+        source_code="", )
+
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request
     )

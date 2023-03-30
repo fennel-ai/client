@@ -47,7 +47,7 @@ def test_simple_featureset(grpc_stub):
         @extractor(depends_on=[UserInfoDataset], version=2)
         @inputs(User.id, User.age)
         def get_user_info(
-            cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
+                cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
         ):
             return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
 
@@ -62,8 +62,12 @@ def test_simple_featureset(grpc_stub):
     f = {
         "name": "UserInfo",
         "metadata": {"owner": "test@test.com"},
+        "pycode": {"source_code": ""}
     }
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
+    # Clear the pycode field in featureset_request as it is not deterministic
+    featureset_request.pycode.Clear()
+
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request
     )

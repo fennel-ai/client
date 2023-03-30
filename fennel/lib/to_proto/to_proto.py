@@ -3,12 +3,11 @@ from __future__ import annotations
 import inspect
 import json
 import re
-from textwrap import dedent, indent
+from textwrap import dedent
 from typing import Any, Dict, List, Optional, Tuple, Callable
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 
-import fennel.datasets.datasets
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.expectations_pb2 as exp_proto
@@ -129,6 +128,19 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
     # TODO(mohit, aditya): add support for `retention` in Dataset
     retention = duration_proto.Duration()
     retention.FromTimedelta(ds._history)
+    imports = dedent(
+        """
+        from datetime import datetime
+        import pandas as pd
+        import numpy as np
+        from typing import List, Dict, Tuple, Optional, Union, Any
+        from fennel.lib.metadata import meta
+        from fennel.lib.include_mod import includes
+        from fennel.datasets import *
+        from fennel.lib.schema import *
+        from fennel.datasets.datasets import dataset_lookup
+        """)
+
     return ds_proto.CoreDataset(
         name=ds.__name__,
         metadata=get_metadata_proto(ds),
@@ -136,6 +148,13 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
         history=history,
         retention=retention,
         field_metadata=_field_metadata(ds._fields),
+        pycode=pycode_proto.PyCode(
+            source_code=dedent(inspect.getsource(ds.__fennel_original_cls__)),
+            name=ds.__name__,
+            includes=[],
+            ref_includes=[],
+            imports=imports
+        )
     )
 
 
@@ -229,9 +248,30 @@ def sources_from_ds(
 
 def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
     _check_owner_exists(fs)
+    print("fs._name", fs._name)
+    imports = dedent(
+        """
+        from datetime import datetime
+        import pandas as pd
+        import numpy as np
+        from typing import List, Dict, Tuple, Optional, Union, Any, no_type_check
+        from fennel.featuresets import *
+        from fennel.featuresets import featureset, feature
+        from fennel.lib.metadata import meta
+        from fennel.lib.include_mod import includes
+        from fennel.lib.schema import *
+        """)
+
     return fs_proto.CoreFeatureset(
         name=fs._name,
         metadata=get_metadata_proto(fs),
+        pycode=pycode_proto.PyCode(
+            source_code=dedent(inspect.getsource(fs.__fennel_original_cls__)),
+            name=fs._name,
+            includes=[],
+            ref_includes=[],
+            imports=imports,
+        )
     )
 
 
@@ -786,75 +826,20 @@ def to_extractor_pycode(
             to_includes_proto(f)
             for f in getattr(extractor.func, FENNEL_INCLUDED_MOD)
         ]
-    imports = dedent(
-        """
-        from datetime import datetime
-        import pandas as pd
-        import numpy as np
-        from typing import List, Dict, Tuple, Optional, Union, Any
-        from fennel.featuresets import *
-        from fennel.lib.metadata import meta
-        from fennel.lib.include_mod import includes
-        from fennel.datasets import *
-        from fennel.lib.schema import *
-        from fennel.datasets.datasets import dataset_lookup
-        class classproperty(object):
-            def __init__(self, f):
-                self.f = classmethod(f)
-            def __get__(self, *a):
-                return self.f.__get__(*a)()
-    """
-    )
 
     # Featureset code construction
 
-    featureset_code = dedent(
-        inspect.getsource(featureset.__fennel_original_cls__)
-    )
-    featureset_code = re.sub(
-        r"^\s*@.*", "", featureset_code, flags=re.MULTILINE
-    )
-    feature_names = [f.name for f in featureset.features]
-    for f in feature_names:
-        cls_property_code = f"""
-                @classproperty
-                def {f}(cls):
-                    return "{f}"
-                 \n   
-                """
-        featureset_code += indent(dedent(cls_property_code), " " * 4)
-
-    # Dataset code construction
-    datasets = extractor.get_dataset_dependencies()
-    lookup_code = indent(inspect.getsource(fennel.datasets.lookup), "    ")
-    dataset_codes = []
-    dataset_names = []
-    for dataset in datasets:
-        dataset_names.append(dataset._name)
-        code = dedent(inspect.getsource(dataset.__fennel_original_cls__))
-        code = re.sub(r"^\s*@.*", "", code, flags=re.MULTILINE)
-        code += lookup_code
-        code += indent(
-            dedent(
-                """
-        @classmethod
-        def key_fields(cls) -> List[str]:
-        """
-            ),
-            "    ",
-        )
-        code += f"        return {dataset.key_fields}\n"
-        dataset_codes.append(code)
     extractor_src_code = dedent(inspect.getsource(extractor.func))
-    extractor_src_code = re.sub(
-        r"^\s*@.*", "", extractor_src_code, flags=re.MULTILINE
-    )
-    return pycode_proto.ExtractorPyCode(
+    # extractor_src_code = re.sub(
+    #     r"^\s*@.*", "", extractor_src_code, flags=re.MULTILINE
+    # )
+    ref_includes = {featureset._name: pycode_proto.RefType.Featureset}
+    datasets = extractor.get_dataset_dependencies()
+    for d in datasets:
+        ref_includes[d._name] = pycode_proto.RefType.Dataset
+    return pycode_proto.PyCode(
         source_code=extractor_src_code,
-        extractor_name=extractor.func.__name__,
+        name=extractor.func.__name__,
         includes=dependencies,
-        imports=imports,
-        featureset_code=featureset_code,
-        dataset_codes=dataset_codes,
-        dataset_names=dataset_names,
+        ref_includes=ref_includes,
     )
