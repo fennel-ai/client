@@ -11,8 +11,6 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import *
 
-Series = pd.Series
-
 
 @meta(owner="test@test.com")
 @dataset

@@ -6,8 +6,6 @@ from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.graph_algorithms import get_extractor_order
 from fennel.lib.schema import inputs, outputs
 
-Series = pd.Series
-
 
 @featureset
 class A:

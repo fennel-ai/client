@@ -8,8 +8,6 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import mock_client
 
-Series = pd.Series
-
 
 # docsnip datasets_lookup
 @meta(owner="data-eng-oncall@fennel.ai")

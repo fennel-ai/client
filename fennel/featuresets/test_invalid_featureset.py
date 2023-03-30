@@ -11,8 +11,6 @@ from fennel.lib.schema import inputs, outputs
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
-Series = pd.Series
-
 
 @dataset
 class UserInfoDataset:

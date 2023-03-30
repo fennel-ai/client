@@ -91,8 +91,6 @@ from datetime import timedelta
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.schema import inputs, outputs
 
-Series = pd.Series
-
 
 @featureset
 class UserFeature:

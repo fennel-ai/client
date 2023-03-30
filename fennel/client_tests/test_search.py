@@ -35,8 +35,6 @@ s3 = sources.S3(
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
 )
 
-Series = pd.Series
-
 
 ################################################################################
 #                           Datasets

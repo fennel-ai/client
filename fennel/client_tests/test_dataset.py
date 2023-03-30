@@ -16,8 +16,6 @@ from fennel.lib.schema import Embedding, oneof, inputs
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
-Series = pd.Series
-
 
 ################################################################################
 #                           Dataset Unit Tests

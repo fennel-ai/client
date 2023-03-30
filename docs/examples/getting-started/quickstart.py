@@ -22,8 +22,6 @@ from fennel.lib.window import Window
 from fennel.sources import source, Postgres, Snowflake
 from fennel.test_lib import mock_client
 
-Series = pd.Series
-
 # Step 1: define connectors to your data sources. Here
 # it is done in the UI (so that credentials don't have to be
 # put in code) and referred by the names given to them

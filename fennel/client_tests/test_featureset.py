@@ -14,11 +14,10 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, outputs
 from fennel.test_lib import mock_client
 
+
 ################################################################################
 #                           Feature Single Extractor Unit Tests
 ################################################################################
-
-Series = pd.Series
 
 
 @meta(owner="test@test.com")

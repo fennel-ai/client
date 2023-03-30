@@ -12,8 +12,6 @@ from fennel.lib.schema import regex, oneof
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
-Series = pd.Series
-
 
 @meta(owner="data-eng@myspace.com")
 @dataset
