@@ -3,7 +3,6 @@ from __future__ import annotations
 import functools
 import inspect
 from dataclasses import dataclass
-from datetime import datetime
 from typing import (
     Any,
     cast,
@@ -28,6 +27,7 @@ from fennel.lib.metadata import (
     get_meta_attr,
     set_meta_attr,
 )
+from fennel.lib.schema import FENNEL_INPUTS, FENNEL_OUTPUTS
 from fennel.utils import (
     parse_annotation_comments,
     propogate_fennel_attributes,
@@ -127,12 +127,28 @@ def extractor(
 @overload
 def extractor(
     *,
+    depends_on: List[T],
     version: int,
 ):
     ...
 
 
-def extractor(func: Optional[Callable] = None, version: int = 0):
+@overload
+def extractor(
+    *,
+    depends_on: List[T],
+):
+    ...
+
+
+@overload
+def extractor():
+    ...
+
+
+def extractor(
+    func: Optional[Callable] = None, depends_on: List = [], version: int = 0
+):
     """
     extractor is a decorator for a function that extracts a feature from a
     featureset.
@@ -144,38 +160,48 @@ def extractor(func: Optional[Callable] = None, version: int = 0):
         sig = inspect.signature(extractor_func)
         extractor_name = extractor_func.__name__
         params = []
-        check_timestamp = False
         class_method = False
+        setattr(extractor_func, DEPENDS_ON_DATASETS_ATTR, list(depends_on))
+        if not hasattr(extractor_func, FENNEL_INPUTS):
+            raise TypeError(
+                f"extractor `{extractor_name}` must have a `fennel_inputs` "
+                f"attribute"
+            )
+        inputs = getattr(extractor_func, FENNEL_INPUTS)
         for name, param in sig.parameters.items():
             if not class_method and param.name != "cls":
                 raise TypeError(
                     f"extractor `{extractor_name}` should have cls as the "
                     f"first parameter since they are class methods"
                 )
-            elif not class_method:
+            else:
                 class_method = True
                 continue
-
-            if not check_timestamp:
-                if param.annotation == datetime:
-                    check_timestamp = True
-                    continue
+            if param.name != "ts":
                 raise TypeError(
-                    f"extractor `{extractor_name}` functions must have timestamp ( of type "
-                    f"Series[datetime] ) as the second parameter, found "
-                    f"`{param.annotation}` instead."
+                    f"extractor `{extractor_name}` should have ts as the "
+                    f"second parameter"
                 )
-            if (
-                not isinstance(param.annotation, Feature)
-                and not type(param.annotation) is tuple
-            ):
+            break
+
+        for inp in inputs:
+            if not isinstance(inp, Feature):
+                if hasattr(inp, "_name"):
+                    name = inp._name
+                elif hasattr(inp, "__name__"):
+                    name = inp.__name__
+                else:
+                    name = str(inp)
                 raise TypeError(
-                    f"Parameter `{name}` is not a feature or a DataFrame of "
-                    f"features but a `{type(param.annotation)}`. Please note "
+                    f"Parameter `{name}` is not a feature of but a "
+                    f"`{type(inp)}`. Please note "
                     f"that Featuresets are mutable and hence not supported."
                 )
-            params.append(param.annotation)
-        return_annotation = extractor_func.__annotations__.get("return", None)
+            params.append(inp)
+        if hasattr(extractor_func, FENNEL_OUTPUTS):
+            return_annotation = getattr(extractor_func, FENNEL_OUTPUTS)
+        else:
+            return_annotation = None
         outputs = []
         if return_annotation is not None:
             if isinstance(return_annotation, Feature):
@@ -199,12 +225,11 @@ def extractor(func: Optional[Callable] = None, version: int = 0):
                 )
             elif isinstance(return_annotation, tuple):
                 for f in return_annotation:
-                    if not isinstance(f, Feature) and not isinstance(
-                        f, Featureset
-                    ):
+                    if not isinstance(f, Feature):
                         raise TypeError(
-                            "Extractors can only return a Series[feature] or a "
-                            "DataFrame[featureset]."
+                            f"Extractor `{extractor_name}` can only return a "
+                            f"set of features, but found type {type(f)} in "
+                            f"output annotation."
                         )
                     f = cast(Feature, f)
                     if "." in f.fqn() and len(f.fqn()) > 0:
@@ -245,17 +270,6 @@ def extractor(func: Optional[Callable] = None, version: int = 0):
     func = cast(Callable, func)
     # @extractor decorator was used without arguments
     return wrap(func)
-
-
-def depends_on(*datasets: Any):
-    if len(datasets) == 0:
-        raise TypeError("depends_on must have at least one dataset")
-
-    def decorator(func):
-        setattr(func, DEPENDS_ON_DATASETS_ATTR, list(datasets))
-        return func
-
-    return decorator
 
 
 # ---------------------------------------------------------------------

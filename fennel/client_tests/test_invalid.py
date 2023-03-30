@@ -5,12 +5,13 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, pipeline, field, Dataset
-from fennel.featuresets import featureset, extractor, feature, depends_on
+from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import inputs, outputs
+from fennel.test_lib import *
+
 
 # noinspection PyUnresolvedReferences
-from fennel.test_lib import *
 
 
 @featureset
@@ -57,7 +58,8 @@ class MemberActivityDatasetCopy:
     country: str
 
     @pipeline(id=1)
-    def copy(cls, ds: Dataset[MemberActivityDataset]):
+    @inputs(MemberActivityDataset)
+    def copy(cls, ds: Dataset):
         return ds
 
 
@@ -67,11 +69,10 @@ class DomainFeatures:
     domain: str = feature(id=1)
     DOMAIN_USED_COUNT: int = feature(id=2)
 
-    @extractor
-    @depends_on(MemberActivityDatasetCopy)
-    def get_domain_feature(
-        cls, ts: Series[datetime], domain: Series[Query.domain]
-    ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
+    @extractor(depends_on=[MemberActivityDatasetCopy])
+    @inputs(Query.domain)
+    @outputs(domain, DOMAIN_USED_COUNT)
+    def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
         df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
             ts, domain=domain
         )
@@ -103,15 +104,14 @@ class DomainFeatures2:
     domain: str = feature(id=1)
     DOMAIN_USED_COUNT: int = feature(id=2)
 
-    @extractor
-    @depends_on(MemberDataset)
-    def get_domain_feature(
-        cls, ts: Series[datetime], domain: Series[Query.domain]
-    ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
+    @extractor()
+    @inputs(Query.domain)
+    @outputs(domain, DOMAIN_USED_COUNT)
+    def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
         df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
             ts, domain=domain
         )
-        return df
+        return df[[str(cls.domain), str(cls.DOMAIN_USED_COUNT)]]
 
 
 class TestInvalidExtractorDependsOn(unittest.TestCase):
@@ -153,7 +153,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             country: str
 
             @pipeline(id=1)
-            def copy(cls, ds: Dataset[MemberActivityDataset]):
+            @inputs(MemberActivityDataset)
+            def copy(cls, ds: Dataset):
                 return ds
 
         @meta(owner="test@fennel.ai")
@@ -162,18 +163,22 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             domain: str = feature(id=1)
             DOMAIN_USED_COUNT: int = feature(id=2)
 
-            @extractor
-            @depends_on(MemberActivityDatasetCopy)
-            def get_domain_feature(
-                cls, ts: Series[datetime], domain: Series[Query.domain]
-            ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
+            @extractor(depends_on=[MemberActivityDatasetCopy])
+            @inputs(Query.domain)
+            @outputs(domain, DOMAIN_USED_COUNT)
+            def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
                 df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
                     ts, domain=domain
                 )
                 return df
 
         with pytest.raises(Exception) as e:
-            client.sync(datasets=[MemberDataset], featuresets=[DomainFeatures2])
+            client.sync(
+                datasets=[
+                    MemberActivityDatasetCopy,
+                ],
+                featuresets=[DomainFeatures],
+            )
             client.extract_features(
                 output_feature_list=[DomainFeatures2],
                 input_feature_list=[Query],
@@ -186,7 +191,6 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                     }
                 ),
             )
-
         if client.is_integration_client():
             assert (
                 'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
@@ -247,7 +251,6 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                     }
                 ),
             )
-
         if client.is_integration_client():
             assert (
                 'Failed to sync: error: can not add edge: from vertex (Dataset, "MemberActivityDataset") not in graph'
@@ -255,10 +258,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         else:
             assert (
-                "Extractor `get_domain_feature` is not allowed to access "
-                "dataset `MemberActivityDatasetCopy`, enabled datasets are ["
-                "'MemberDataset']. Use `@depends_on` to specify dataset "
-                "dependencies." == str(e.value)
+                "Extractor `get_domain_feature` is not allowed to access dataset `MemberActivityDatasetCopy`, enabled datasets are []. Use `depends_on` param in @extractor to specify dataset dependencies."
+                == str(e.value)
             )
 
     @mock_client
@@ -276,7 +277,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 createdAt: datetime = field(timestamp=True)
 
                 @pipeline(id=1)
-                def del_timestamp(cls, d: Dataset[MemberDataset]):
+                @inputs(MemberDataset)
+                def del_timestamp(cls, d: Dataset):
                     return d.drop(columns=["createdAt"])
 
         assert (

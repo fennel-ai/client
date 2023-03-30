@@ -23,11 +23,11 @@ More specifically, the signature of the lookup method for a dataset`ds` with n k
 ```python
 def lookup(
     self, 
-    ts: Series[datetime],  
-    <ds_key1>: Series[<key1_dtype], 
-    <ds_key2>: Series[<key2_dtype],
+    ts: pd.Series[datetime],  
+    <ds_key1>: pd.Series[<key1_dtype], 
+    <ds_key2>: pd.Series[<key2_dtype],
     ... ,
-    <ds_keyn>: Series[<key1_dtype], 
+    <ds_keyn>: pd.Series[<key1_dtype], 
     fields: List[str],
 ) -> Tuple[Dataframe, Series[bool]]
 ```

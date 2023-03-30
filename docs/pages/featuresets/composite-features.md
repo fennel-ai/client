@@ -22,7 +22,7 @@ class Post:
     ...
     
     @extractor
-    def creator(cls, ts: Series[datetime], pids: Series[id]) -> Series[creator_uid]:
+    def creator(cls, ts: pd.Series[datetime], pids: pd.Series[id]) -> Series[creator_uid]:
         <some code here>
         ...
 
@@ -35,8 +35,8 @@ class UserCreator:
     ...
 
     @extractor
-    def affinity_fn(cls, ts: Series[datetime], viewers: Series[viewer], 
-                    creators: Series[creator]) -> Series[affinity]:
+    def affinity_fn(cls, ts: pd.Series[datetime], viewers: pd.Series[viewer], 
+                    creators: pd.Series[creator]) -> Series[affinity]:
         <some code here>
         ...
 
@@ -49,7 +49,7 @@ class UserPost:
     ...
     
     @extractor
-    def fn(cls, ts: Series[datetime], uids: Series[uid], pids: Series[pid]):
+    def fn(cls, ts: pd.Series[datetime], uids: pd.Series[uid], pids: pd.Series[pid]):
         creators = Post.creator(ts, pids)
         return UserCreator.affinity_fn(ts, uids, creators)
             

@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.8.7] - 2023-03-29
+- Change from type to decorator based input and output specification for pipelines and extractors 
+
 ## [0.8.6] - 2023-03-21
 - Add rename and drop operators to the client. 
 

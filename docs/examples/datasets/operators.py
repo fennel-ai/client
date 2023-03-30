@@ -7,6 +7,7 @@ import pandas as pd
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
+from fennel.lib.schema import inputs
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
@@ -28,7 +29,8 @@ class Likes:
     timestamp: datetime
 
     @pipeline(id=1)
-    def filter_likes(cls, actions: Dataset[Action]):
+    @inputs(Action)
+    def filter_likes(cls, actions: Dataset):
         return actions.filter(lambda df: df["action_type"] == "like")
 
 
@@ -68,7 +70,8 @@ class RatingRescaled:
     timestamp: datetime
 
     @pipeline(id=1)
-    def pipeline_transform(cls, ratings: Dataset[Rating]):
+    @inputs(Rating)
+    def pipeline_transform(cls, ratings: Dataset):
         def rescale(df: pd.DataFrame) -> pd.DataFrame:
             df["rescaled"] = df["rating"] / 5
             return df[["movie", "timestamp", "rescaled"]]
@@ -127,9 +130,8 @@ class UserSellerActivity:
     at: datetime
 
     @pipeline(id=1)
-    def join_orders(
-        cls, products: Dataset[Product], orders: Dataset[OrderActivity]
-    ) -> Dataset:
+    @inputs(Product, OrderActivity)
+    def join_orders(cls, products: Dataset, orders: Dataset) -> Dataset:
         return orders.left_join(products, on=["pid"])
 
 
@@ -176,7 +178,8 @@ class UserAdStats:
     at: datetime
 
     @pipeline(id=1)
-    def aggregate_ad_clicks(cls, ad_clicks: Dataset[AdClickStream]) -> Dataset:
+    @inputs(AdClickStream)
+    def aggregate_ad_clicks(cls, ad_clicks: Dataset):
         return ad_clicks.groupby("uid").aggregate(
             [
                 Count(window=Window("forever"), into_field="num_clicks"),

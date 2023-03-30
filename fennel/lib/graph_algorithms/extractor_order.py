@@ -4,10 +4,9 @@ from typing import cast, List, Union, Dict, Set, Tuple
 from fennel.featuresets import Extractor, Featureset, Feature
 from fennel.lib.ascii_visualizer import draw_graph
 from fennel.lib.graph_algorithms.utils import extractor_graph
-from fennel.lib.schema import DataFrame
 
 
-def _get_features(feature: Union[Feature, Featureset, DataFrame]) -> set:
+def _get_features(feature: Union[Feature, Featureset]) -> set:
     if isinstance(feature, Feature):
         return {feature.fqn()}
     elif isinstance(feature, Featureset):
@@ -108,8 +107,8 @@ def get_vertices_and_eges(
 
 
 def get_extractor_order(
-    input_features: List[Union[Feature, DataFrame, Featureset]],
-    output_features: List[Union[Feature, DataFrame, Featureset]],
+    input_features: List[Union[Feature, Featureset]],
+    output_features: List[Union[Feature, Featureset]],
     extractors: List[Extractor],
 ) -> List[Extractor]:
     """

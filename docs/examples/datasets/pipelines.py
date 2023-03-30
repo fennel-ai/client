@@ -1,13 +1,14 @@
-import pandas as pd
 import json
-import requests
-
 from datetime import datetime, timedelta
+from typing import Optional
+
+import pandas as pd
+import requests
 
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
+from fennel.lib.schema import inputs
 from fennel.test_lib import mock_client
-from typing import List, Dict, Tuple, Optional
 
 
 # docsnip data_sets
@@ -50,9 +51,8 @@ class UserTransactionsAbroad:
 
     @classmethod
     @pipeline(id=1)
-    def first_pipeline(
-        cls, user: Dataset[User], transaction: Dataset[Transaction]
-    ):
+    @inputs(User, Transaction)
+    def first_pipeline(cls, user: Dataset, transaction: Dataset):
         joined = transaction.left_join(user, on=["uid"])
         abroad = joined.filter(
             lambda df: df["country"] != df["payment_country"]
@@ -141,7 +141,8 @@ class FraudActivityDataset:
     transaction_amount: float
 
     @pipeline(id=1)
-    def create_fraud_dataset(cls, activity: Dataset[Activity]):
+    @inputs(Activity)
+    def create_fraud_dataset(cls, activity: Dataset):
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
             df_json = df["metadata"].apply(json.loads).apply(pd.Series)
             df = pd.concat([df_json, df[["user_id", "timestamp"]]], axis=1)
@@ -267,7 +268,8 @@ class LoginStats:
     login_time: datetime
 
     @pipeline(id=1)
-    def android_logins(cls, logins: Dataset[AndroidLogins]) -> Dataset:
+    @inputs(AndroidLogins)
+    def android_logins(cls, logins: Dataset):
         aggregated = logins.groupby(["uid"]).aggregate(
             [
                 Count(window=Window("1d"), into_field="num_logins_1d"),
@@ -284,7 +286,8 @@ class LoginStats:
         )
 
     @pipeline(id=2)
-    def ios_logins(cls, logins: Dataset[IOSLogins]) -> Dataset:
+    @inputs(IOSLogins)
+    def ios_logins(cls, logins: Dataset):
         aggregated = logins.groupby(["uid"]).aggregate(
             [
                 Count(window=Window("1d"), into_field="num_logins_1d"),

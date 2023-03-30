@@ -4,11 +4,10 @@ import pandas as pd
 import requests
 
 from fennel.datasets import dataset, field, Dataset, pipeline
-from fennel.featuresets import depends_on
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series
+from fennel.lib.schema import inputs, outputs
 from fennel.lib.schema import regex, oneof
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
@@ -52,9 +51,9 @@ class CityInfo:
     count: int
     timestamp: datetime
 
-    @classmethod
-    @pipeline(1)
-    def count_city_gender(cls, user_info: Dataset[UserInfo]):
+    @pipeline(id=1)
+    @inputs(UserInfo)
+    def count_city_gender(cls, user_info: Dataset):
         return user_info.groupby(["city", "gender"]).aggregate(
             [Count(window=Window("1y 5s"), into_field="count")]
         )
@@ -67,9 +66,9 @@ class UserViewsDataset:
     num_views: int
     time_stamp: datetime
 
-    @classmethod
     @pipeline(1)
-    def count_user_views(cls, view_data: Dataset[ViewData]):
+    @inputs(ViewData)
+    def count_user_views(cls, view_data: Dataset):
         return view_data.groupby("user_id").aggregate(
             [Count(window=Window("3y 8s"), into_field="num_views")]
         )
@@ -83,11 +82,9 @@ class UserCategoryDataset:
     num_views: int
     time_stamp: datetime
 
-    @classmethod
     @pipeline(1)
-    def count_user_views(
-        cls, view_data: Dataset[ViewData], post_info: Dataset[PostInfo]
-    ):
+    @inputs(ViewData, PostInfo)
+    def count_user_views(cls, view_data: Dataset, post_info: Dataset):
         post_info_enriched = view_data.left_join(post_info, on=["post_id"])
         post_info_enriched_t = post_info_enriched.transform(
             lambda df: df.fillna("unknown"),
@@ -115,24 +112,24 @@ class UserFeatures:
     num_category_views: int = feature(id=3)
     category_view_ratio: float = feature(id=4)
 
-    @depends_on(UserViewsDataset)
-    @extractor
-    def extract_user_views(
-        cls, ts: Series[datetime], user_ids: Series[Request.user_id]
-    ) -> Series[num_views]:
+    @extractor(depends_on=[UserViewsDataset])
+    @inputs(Request.user_id)
+    @outputs(num_views)
+    def extract_user_views(cls, ts: pd.Series, user_ids: pd.Series):
         views, _ = UserViewsDataset.lookup(ts, user_id=user_ids)  # type: ignore
         views = views.fillna(0)
 
         return views["num_views"]
 
-    @depends_on(UserCategoryDataset, UserViewsDataset)
-    @extractor
+    @extractor(depends_on=[UserCategoryDataset, UserViewsDataset])
+    @inputs(Request.user_id, Request.category)
+    @outputs(category_view_ratio, num_category_views)
     def extractor_category_view(
         cls,
-        ts: Series[datetime],
-        user_ids: Series[Request.user_id],
-        categories: Series[Request.category],
-    ) -> Series[category_view_ratio, num_category_views]:
+        ts: pd.Series,
+        user_ids: pd.Series,
+        categories: pd.Series,
+    ):
         category_views, _ = UserCategoryDataset.lookup(  # type: ignore
             ts, user_id=user_ids, category=categories
         )

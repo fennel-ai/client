@@ -11,11 +11,11 @@ import requests
 
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field
-from fennel.featuresets import featureset, feature, extractor, depends_on
+from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.aggregate import Count, Sum
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding
-from fennel.lib.schema import Series
+from fennel.lib.schema import inputs
 from fennel.lib.window import Window
 from fennel.sources import source
 from fennel.test_lib import mock_client
@@ -90,7 +90,8 @@ class Document:
     creation_timestamp: datetime
 
     @pipeline(id=1)
-    def notion_pipe(cls, ds: Dataset[NotionDocs]):
+    @inputs(NotionDocs)
+    def notion_pipe(cls, ds: Dataset):
         return ds.transform(
             lambda df: doc_pipeline_helper(df, "Notion"),
             schema={
@@ -104,7 +105,8 @@ class Document:
         )
 
     @pipeline(id=2)
-    def coda_pipe(cls, ds: Dataset[CodaDocs]):
+    @inputs(CodaDocs)
+    def coda_pipe(cls, ds: Dataset):
         return ds.transform(
             lambda df: doc_pipeline_helper(df, "Coda"),
             schema={
@@ -118,7 +120,8 @@ class Document:
         )
 
     @pipeline(id=3)
-    def google_docs_pipe(cls, ds: Dataset[GoogleDocs]):
+    @inputs(GoogleDocs)
+    def google_docs_pipe(cls, ds: Dataset):
         return ds.transform(
             lambda df: doc_pipeline_helper(df, "GoogleDocs"),
             schema={
@@ -190,10 +193,8 @@ class DocumentContentDataset:
     creation_timestamp: datetime
 
     @pipeline(id=1)
-    def content_features(
-        cls,
-        ds: Dataset[Document],
-    ):
+    @inputs(Document)
+    def content_features(cls, ds: Dataset):
         return ds.transform(
             get_content_features,
             schema={
@@ -229,7 +230,8 @@ class UserEngagementDataset:
     timestamp: datetime
 
     @pipeline(id=1)
-    def user_engagement_pipeline(cls, ds: Dataset[UserActivity]):
+    @inputs(UserActivity)
+    def user_engagement_pipeline(cls, ds: Dataset):
         def create_short_click(df: pd.DataFrame) -> pd.DataFrame:
             df["is_short_click"] = df[str(UserActivity.view_time)] < 5
             df["is_long_click"] = df[str(UserActivity.view_time)] >= 5
@@ -277,7 +279,8 @@ class DocumentEngagementDataset:
     timestamp: datetime
 
     @pipeline(id=1)
-    def doc_engagement_pipeline(cls, ds: Dataset[UserActivity]):
+    @inputs(UserActivity)
+    def doc_engagement_pipeline(cls, ds: Dataset):
         return ds.groupby("doc_id").aggregate(
             [
                 Count(window=Window("forever"), into_field=str(cls.num_views)),
@@ -314,9 +317,9 @@ class UserBehaviorFeatures:
     num_short_views_7d: int = feature(id=3)
     num_long_views: int = feature(id=4)
 
-    @extractor
-    @depends_on(UserEngagementDataset)
-    def get_features(cls, ts: Series[datetime], user_id: Series[Query.user_id]):
+    @extractor(depends_on=[UserEngagementDataset])
+    @inputs(Query.user_id)
+    def get_features(cls, ts: pd.Series, user_id: pd.Series):
         df, found = UserEngagementDataset.lookup(  # type: ignore
             ts, user_id=user_id  # type: ignore
         )
@@ -333,9 +336,9 @@ class DocumentFeatures:
     total_timespent_minutes: float = feature(id=4)
     num_views_28d: int = feature(id=5)
 
-    @extractor
-    @depends_on(DocumentEngagementDataset)
-    def get_features(cls, ts: Series[datetime], doc_id: Series[Query.doc_id]):
+    @extractor(depends_on=[DocumentEngagementDataset])
+    @inputs(Query.doc_id)
+    def get_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentEngagementDataset.lookup(  # type: ignore
             ts, doc_id=doc_id  # type: ignore
         )
@@ -355,9 +358,9 @@ class DocumentContentFeatures:
     num_stop_words: int = feature(id=5)
     top_10_unique_words: List[str] = feature(id=6)
 
-    @extractor
-    @depends_on(DocumentContentDataset)
-    def get_features(cls, ts: Series[datetime], doc_id: Series[Query.doc_id]):
+    @extractor(depends_on=[DocumentContentDataset])
+    @inputs(Query.doc_id)
+    def get_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentContentDataset.lookup(  # type: ignore
             ts, doc_id=doc_id  # type: ignore
         )

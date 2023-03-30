@@ -4,9 +4,11 @@ from fennel.lib.schema.schema import (
     oneof,
     dtype_to_string,
     data_schema_check,
-    Series,
-    DataFrame,
+    FENNEL_INPUTS,
+    FENNEL_OUTPUTS,
     Embedding,
     regex,
+    inputs,
+    outputs,
     get_dtype,
 )

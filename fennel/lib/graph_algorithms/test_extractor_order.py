@@ -1,10 +1,8 @@
-from datetime import datetime
-
 import pandas as pd
 
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.graph_algorithms import get_extractor_order
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import inputs, outputs
 
 
 @featureset
@@ -14,9 +12,8 @@ class A:
     root: int = feature(id=3)
 
     @extractor
-    def a1_a2(
-        cls, ts: Series[datetime], root: Series[root]
-    ) -> DataFrame[a1, a2]:
+    @inputs(root)
+    def a1_a2(cls, ts: pd.Series, root: pd.Series):
         pass
 
 
@@ -26,9 +23,8 @@ class B:
     b2: int = feature(id=2)
 
     @extractor
-    def b1_b2(
-        cls, ts: Series[datetime], a1: Series[A.a1], a2: Series[A.a2]
-    ) -> DataFrame[b1, b2]:
+    @inputs(A.a1, A.a2)
+    def b1_b2(cls, ts: pd.Series, a1: pd.Series, a2: pd.Series):
         pass
 
 
@@ -61,15 +57,15 @@ class C:
     c4: int = feature(id=4)
 
     @extractor
-    def c1_from_root(
-        cls, ts: Series[datetime], a1: Series[A.root]
-    ) -> Series[c1]:
+    @inputs(A.root)
+    @outputs(c1)
+    def c1_from_root(cls, ts: pd.Series, a1: pd.Series):
         pass
 
     @extractor
-    def from_c1(
-        cls, ts: Series[datetime], c1: Series[c1]
-    ) -> DataFrame[c2, c3, c4]:
+    @inputs(c1)
+    @outputs(c2, c3, c4)
+    def from_c1(cls, ts: pd.Series, c1: pd.Series):
         pass
 
 
@@ -79,9 +75,9 @@ def test_complex_extractor_path():
     extractors_to_run = [e.name for e in extractors]
     assert len(extractors_to_run) == 4
     assert extractors_to_run == [
+        "a1_a2",
         "c1_from_root",
         "from_c1",
-        "a1_a2",
         "b1_b2",
     ]
 
@@ -91,7 +87,7 @@ def test_complex_extractor_path():
     )
     extractors_to_run = [e.name for e in extractors]
     assert len(extractors_to_run) == 3
-    assert extractors_to_run == ["from_c1", "a1_a2", "b1_b2"]
+    assert extractors_to_run == ["a1_a2", "from_c1", "b1_b2"]
 
 
 @featureset
@@ -106,21 +102,23 @@ class UserInfo:
     is_name_common: bool = feature(id=7)
 
     @extractor
-    def get_user_age_and_name(
-        cls, ts: Series[datetime], user_id: Series[userid]
-    ) -> DataFrame[age, name]:
+    @inputs(userid)
+    @outputs(age, name)
+    def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
         pass
 
     @extractor
+    @inputs(age, name)
+    @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: Series[datetime], user_age: Series[age], name: Series[name]
-    ) -> DataFrame[age_squared, age_cubed, is_name_common]:
+        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
+    ):
         pass
 
     @extractor
-    def get_country_geoid(
-        cls, ts: Series[datetime], user_id: Series[userid]
-    ) -> Series[country_geoid]:
+    @inputs(userid)
+    @outputs(country_geoid)
+    def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
         pass
 
 
@@ -142,14 +140,10 @@ class UserInfoTransformedFeatures:
     is_name_common: bool = feature(id=2)
 
     @extractor
-    @extractor
+    @inputs(UserInfo.age, UserInfo.is_name_common)
     def get_user_transformed_features(
-        cls,
-        ts: Series[datetime],
-        user_features: DataFrame[UserInfo.age, UserInfo.is_name_common],
+        cls, ts: pd.Series, age: pd.Series, is_name_common: pd.Series
     ):
-        age = user_features[repr(UserInfo.age)]
-        is_name_common = user_features[repr(UserInfo.is_name_common)]
         age_power_four = age**4
         return pd.DataFrame(
             {
@@ -163,10 +157,8 @@ def test_age_feature_extraction_complex():
     extractors = get_extractor_order(
         [UserInfo.userid],
         [
-            DataFrame[
-                UserInfoTransformedFeatures.age_power_four,
-                UserInfoTransformedFeatures.is_name_common,
-            ]
+            UserInfoTransformedFeatures.age_power_four,
+            UserInfoTransformedFeatures.is_name_common,
         ],
         UserInfo.extractors + UserInfoTransformedFeatures.extractors,
     )

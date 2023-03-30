@@ -55,6 +55,7 @@ class Transaction:
 from fennel.datasets import pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum
 from fennel.lib.window import Window
+from fennel.lib.schema import inputs
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
@@ -66,11 +67,9 @@ class UserTransactionsAbroad:
     amount_1w: float
     timestamp: datetime = field(timestamp=True)
 
-    @classmethod
     @pipeline(id=1)
-    def first_pipeline(
-        cls, user: Dataset[User], transaction: Dataset[Transaction]
-    ):
+    @inputs(User, Transaction)
+    def first_pipeline(cls, user: Dataset, transaction: Dataset):
         joined = transaction.left_join(user, on=["uid"])
         abroad = joined.filter(
             lambda df: df["country"] != df["payment_country"]
@@ -90,7 +89,7 @@ from datetime import timedelta
 
 # docsnip featureset
 from fennel.featuresets import feature, featureset, extractor
-from fennel.lib.schema import Series
+from fennel.lib.schema import inputs, outputs
 
 
 @featureset
@@ -101,15 +100,17 @@ class UserFeature:
     dob: datetime = feature(id=4)
 
     @extractor
-    def get_age(cls, ts: Series[datetime], uids: Series[uid]) -> Series[age]:
+    @inputs(uid)
+    @outputs(age)
+    def get_age(cls, ts: pd.Series, uids: pd.Series):
         dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])
         ages = [dob - datetime.now() for dob in dobs]
         return pd.Series(ages)
 
     @extractor
-    def get_country(
-        cls, ts: Series[datetime], uids: Series[uid]
-    ) -> Series[country]:
+    @inputs(uid)
+    @outputs(country)
+    def get_country(cls, ts: pd.Series, uids: pd.Series):
         countries, _ = User.lookup(ts=ts, uid=uids, fields=["country"])
         return countries
 

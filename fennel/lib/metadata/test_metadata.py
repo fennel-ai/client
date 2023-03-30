@@ -2,14 +2,15 @@ from datetime import datetime
 from datetime import timedelta
 from typing import Optional, Dict, List
 
+import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, extractor, depends_on, feature
+from fennel.featuresets import featureset, extractor, feature
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.metadata import meta
-from fennel.lib.schema import DataFrame, Series
+from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import *
 
 
@@ -314,27 +315,24 @@ def test_featureset_with_extractors(grpc_stub):
         income: int = feature(id=5)
 
         @meta(owner="a@xyz.com", description="top_meta")
-        @extractor
-        @depends_on(UserInfoDataset)
-        def get_user_info1(
-            cls, ts: Series[datetime], user_id: Series[User.id]
-        ) -> DataFrame[userid, home_geoid]:
+        @extractor(depends_on=[UserInfoDataset])
+        @inputs(User.id)
+        @outputs(userid, home_geoid)
+        def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor
+        @extractor(depends_on=[UserInfoDataset])
+        @inputs(User.id)
+        @outputs(gender, age)
         @meta(owner="b@xyz.com", description="middle_meta")
-        @depends_on(UserInfoDataset)
-        def get_user_info2(
-            cls, ts: Series[datetime], user_id: Series[User.id]
-        ) -> DataFrame[gender, age]:
+        def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor
-        @depends_on(UserInfoDataset)
+        @extractor(depends_on=[UserInfoDataset])
+        @inputs(User.id)
+        @outputs(income)
         @meta(owner="c@xyz.com", description="bottom_meta")
-        def get_user_info3(
-            cls, ts: Series[datetime], user_id: Series[User.id]
-        ) -> Series[income]:
+        def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
     view = InternalTestClient(grpc_stub)

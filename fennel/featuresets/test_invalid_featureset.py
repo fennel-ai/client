@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import Optional, List
 
+import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, extractor, depends_on, feature
-from fennel.lib.schema import Series, DataFrame
+from fennel.featuresets import featureset, extractor, feature
+from fennel.lib.schema import inputs, outputs
 
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
@@ -38,17 +39,15 @@ def test_featureset_as_input(grpc_stub):
             userid: int = feature(id=1)
             home_geoid: int = feature(id=2)
 
-            @extractor
-            @depends_on(UserInfoDataset)
-            def get_user_info1(
-                cls, ts: Series[datetime], user_features: DataFrame[User]
-            ) -> DataFrame[userid, home_geoid]:
+            @extractor(depends_on=[UserInfoDataset])
+            @inputs(User)
+            @outputs(userid, home_geoid)
+            def get_user_info1(cls, ts: pd.Series, user: pd.Series):
                 pass
 
     assert (
         str(e.value)
-        == "Parameter `user_features` is not a feature or a DataFrame "
-        "of features but a `<class 'fennel.featuresets.featureset.Featureset'>`. Please note that Featuresets are mutable and hence not supported."
+        == "Parameter `User` is not a feature of but a `<class 'fennel.featuresets.featureset.Featureset'>`. Please note that Featuresets are mutable and hence not supported."
     )
 
 
@@ -64,24 +63,22 @@ def test_complex_featureset(grpc_stub):
             age: int = feature(id=4).meta(owner="aditya@fennel.ai")
             income: int = feature(id=5)
 
-            @extractor
-            @depends_on(UserInfoDataset)
-            def get_user_info1(
-                cls, ts: Series[datetime], user_id: Series[User.id]
-            ) -> DataFrame[userid, home_geoid]:
+            @extractor(depends_on=[UserInfoDataset])
+            @inputs(User.id)
+            @outputs(userid, home_geoid)
+            def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
+                pass
+
+            @extractor(depends_on=[UserInfoDataset])
+            @inputs(User.id)
+            @outputs(gender, age)
+            def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
             @extractor
-            @depends_on(UserInfoDataset)
-            def get_user_info2(
-                cls, ts: Series[datetime], user_id: Series[User.id]
-            ) -> DataFrame[gender, age]:
-                pass
-
-            @extractor
-            def get_user_info3(
-                cls, ts: Series[datetime], user_id: Series[User.id]
-            ) -> Series[gender]:
+            @inputs(User.id)
+            @outputs(gender)
+            def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
     assert (
@@ -102,14 +99,14 @@ def test_extract_anoather_featureset(grpc_stub):
             income: int = feature(id=5)
 
             @extractor
-            def get_user_info3(
-                cls, ts: Series[datetime], user_id: Series[User.id]
-            ) -> Series[User.age]:
+            @inputs(User.id)
+            @outputs(User.age)
+            def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
     assert (
         str(e.value) == "Extractors can only extract a feature defined in "
-        "the same featureset, found User.age"
+        "the same featureset, found (User.age,)."
     )
 
     with pytest.raises(TypeError) as e:
@@ -124,15 +121,14 @@ def test_extract_anoather_featureset(grpc_stub):
             income: int = feature(id=5)
 
             @extractor
-            def get_user_info3(
-                cls, ts: Series[datetime], user_id: Series[User.id]
-            ) -> DataFrame[User]:
+            @inputs(User.id)
+            @outputs(User)
+            def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
     assert (
-        str(e.value) == "Extractors can only return a Series[feature] or "
-        "a DataFrame[<list of features defined in this "
-        "Featureset>]."
+        str(e.value)
+        == "Extractor `get_user_info3` can only return a set of features, but found type <class 'fennel.featuresets.featureset.Featureset'> in output annotation."
     )
 
     with pytest.raises(TypeError) as e:
@@ -147,9 +143,9 @@ def test_extract_anoather_featureset(grpc_stub):
             income: int = feature(id=5)
 
             @extractor
-            def get_user_info3(
-                cls, ts: Series[datetime], user_id: Series[User.id]
-            ) -> DataFrame[User.age, User.id]:
+            @inputs(User.id)
+            @outputs(User.age, User.id)
+            def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
     assert (
@@ -169,9 +165,8 @@ def test_extract_anoather_featureset(grpc_stub):
             income: int = feature(id=5)
 
             @extractor(version="2")
-            def get_user_info3(
-                cls, ts: Series[datetime], user_id: Series[User.id]
-            ):
+            @inputs(User.id)
+            def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
     assert str(e.value) == "version for extractor must be an int."

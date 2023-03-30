@@ -1,10 +1,9 @@
-from datetime import datetime
-
+import pandas as pd
 import pytest
 
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.graph_algorithms import is_extractor_graph_cyclic
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import inputs, outputs
 
 
 @featureset
@@ -15,17 +14,21 @@ class A:
     a4: int = feature(id=4)
 
     @extractor
-    def a1_a2(cls, ts: Series[datetime], f: Series[a1]) -> DataFrame[a2, a4]:
+    @inputs(a1)
+    @outputs(a2, a4)
+    def a1_a2(cls, ts: pd.Series, f: pd.Series):
         pass
 
     @extractor
-    def a2_a3(
-        cls, ts: Series[datetime], f: Series[a2], f2: Series[a4]
-    ) -> Series[a3]:
+    @inputs(a2, a4)
+    @outputs(a3)
+    def a2_a3(cls, ts: pd.Series, f: pd.Series, f2: pd.Series):
         pass
 
     @extractor
-    def a3_a1(cls, ts: Series[datetime], f: Series[a3]) -> Series[a1]:
+    @inputs(a3)
+    @outputs(a1)
+    def a3_a1(cls, ts: pd.Series, f: pd.Series):
         pass
 
 

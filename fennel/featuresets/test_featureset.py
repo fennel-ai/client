@@ -1,13 +1,14 @@
 from datetime import datetime
 from typing import Optional
 
+import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, extractor, depends_on, feature
+from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import *
 
 
@@ -43,13 +44,10 @@ def test_simple_featureset(grpc_stub):
         age: int = feature(id=4).meta(owner="aditya@fennel.ai")
         income: int = feature(id=5).meta(deprecated=True)
 
-        @extractor(version=2)
-        @depends_on(UserInfoDataset)
+        @extractor(depends_on=[UserInfoDataset], version=2)
+        @inputs(User.id, User.age)
         def get_user_info(
-            cls,
-            ts: Series[datetime],
-            user_id: Series[User.id],
-            user_age: Series[User.age],
+            cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
         ):
             return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
 
@@ -175,24 +173,22 @@ def test_complex_featureset(grpc_stub):
         age: int = feature(id=4).meta(owner="aditya@fennel.ai")
         income: int = feature(id=5)
 
-        @extractor
-        @depends_on(UserInfoDataset)
-        def get_user_info1(
-            cls, ts: Series[datetime], user_id: Series[User.id]
-        ) -> DataFrame[userid, home_geoid]:
+        @extractor(depends_on=[UserInfoDataset])
+        @inputs(User.id)
+        @outputs(userid, home_geoid)
+        def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
+            pass
+
+        @extractor(depends_on=[UserInfoDataset])
+        @inputs(User.id)
+        @outputs(gender, age)
+        def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
         @extractor
-        @depends_on(UserInfoDataset)
-        def get_user_info2(
-            cls, ts: Series[datetime], user_id: Series[User.id]
-        ) -> DataFrame[gender, age]:
-            pass
-
-        @extractor
-        def get_user_info3(
-            cls, ts: Series[datetime], user_id: Series[User.id]
-        ) -> DataFrame[income]:
+        @inputs(User.id)
+        @outputs(income)
+        def get_user_info3(cls, ts: pd.Series, user_id: pd.Series) -> income:
             pass
 
     view = InternalTestClient(grpc_stub)

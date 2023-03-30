@@ -10,22 +10,8 @@ import pandas as pd
 
 import fennel.gen.schema_pb2 as schema_proto
 
-if TYPE_CHECKING:
-    Series = pd.Series
-else:
-
-    class Series:
-        def __class_getitem__(cls, item):
-            return item
-
-
-if TYPE_CHECKING:
-    DataFrame = pd.DataFrame
-else:
-
-    class DataFrame:
-        def __class_getitem__(cls, item):
-            return item
+FENNEL_INPUTS = "__fennel_inputs__"
+FENNEL_OUTPUTS = "__fennel_outputs__"
 
 
 def _get_args(type_: Any) -> Any:
@@ -497,3 +483,25 @@ def data_schema_check(
         except Exception as e:
             raise e
     return exceptions
+
+
+def inputs(*inps: Any):
+    if len(inps) == 0:
+        raise ValueError("No inputs specified")
+
+    def decorator(func):
+        setattr(func, FENNEL_INPUTS, inps)
+        return func
+
+    return decorator
+
+
+def outputs(*outs: Any):
+    if len(outs) == 0:
+        raise ValueError("No outputs specified")
+
+    def decorator(func):
+        setattr(func, FENNEL_OUTPUTS, outs)
+        return func
+
+    return decorator

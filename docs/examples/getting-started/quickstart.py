@@ -1,28 +1,26 @@
+import json
 from datetime import datetime, timedelta
-from typing import List, Dict, Tuple, Optional
+from typing import Optional
 
 import pandas as pd
-import json
-from fennel.test_lib import mock_client
 
 # docsnip quickstart
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.featuresets import (
     feature,
-    Feature,
     featureset,
     extractor,
-    depends_on,
 )
 from fennel.lib.aggregate import Count
-from fennel.lib.metadata import meta
-from fennel.lib.window import Window
-from fennel.lib.schema import oneof, DataFrame, Series
-from fennel.sources import source, Postgres, Snowflake
 from fennel.lib.expectations import (
     expectations,
     expect_column_values_to_be_between,
 )
+from fennel.lib.metadata import meta
+from fennel.lib.schema import oneof, inputs, outputs
+from fennel.lib.window import Window
+from fennel.sources import source, Postgres, Snowflake
+from fennel.test_lib import mock_client
 
 # Step 1: define connectors to your data sources. Here
 # it is done in the UI (so that credentials don't have to be
@@ -94,9 +92,8 @@ class FraudReportAggregateByCity:
     # datasets - you get SQL like power but with arbitrary Python.
     # and the same pipeline code works for batch & streaming data alike!
     @pipeline(id=1)
-    def create_fraud_dataset(
-        cls, activity: Dataset[Activity], merchant_info: Dataset[MerchantInfo]
-    ):
+    @inputs(Activity, MerchantInfo)
+    def create_fraud_dataset(cls, activity: Dataset, merchant_info: Dataset):
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
             df_metadata_dict = df["metadata"].apply(json.loads).apply(pd.Series)
             df["transaction_amount"] = df_metadata_dict["transaction_amt"]
@@ -158,11 +155,10 @@ class Merchant:
 
     # Fennel lets you specify code that knows how to
     # extract one or more features of a featureset
-    @extractor
-    @depends_on(MerchantInfo)
-    def get_merchant_info(
-        cls, ts: Series[datetime], merchant_id: Series[merchant_id]
-    ) -> Series[merchant_age]:
+    @extractor(depends_on=[MerchantInfo])
+    @inputs(merchant_id)
+    @outputs(merchant_age)
+    def get_merchant_info(cls, ts: pd.Series, merchant_id: pd.Series):
         df, _found = MerchantInfo.lookup(ts, merchant_id=merchant_id)
         df["current_timestamp"] = ts
         df["merchant_age"] = df.apply(
@@ -170,11 +166,10 @@ class Merchant:
         )
         return df[["merchant_age"]]
 
-    @extractor
-    @depends_on(MerchantInfo)
-    def get_merchant_features(
-        cls, ts: Series[datetime], merchant_id: Series[merchant_id]
-    ) -> DataFrame[merchant_category, city, merchant_num_employees]:
+    @extractor(depends_on=[MerchantInfo])
+    @inputs(merchant_id)
+    @outputs(merchant_category, city, merchant_num_employees)
+    def get_merchant_features(cls, ts: pd.Series, merchant_id: pd.Series):
         df, found = MerchantInfo.lookup(ts, merchant_id=merchant_id)
         df.fillna(
             {
@@ -194,18 +189,16 @@ class MerchantBehaviorFeatures:
     num_merchant_city_fraud_transactions_7d: int = feature(id=2)
     fradulent_transaction_ratio: float = feature(id=3)
 
-    @extractor
-    @depends_on(FraudReportAggregateByCity)
-    def get_merchant_fraud_features(
-        cls,
-        ts: Series[datetime],
-        merchant_id: Series[Merchant.merchant_id],
-        city: Series[Merchant.city],
-    ) -> DataFrame[
+    @extractor(depends_on=[FraudReportAggregateByCity])
+    @inputs(Merchant.merchant_id, Merchant.city)
+    @outputs(
         num_merchant_city_fraud_transactions,
         num_merchant_city_fraud_transactions_7d,
         fradulent_transaction_ratio,
-    ]:
+    )
+    def get_merchant_fraud_features(
+        cls, ts: pd.Series, merchant_id: pd.Series, city: pd.Series
+    ):
         df, _found = FraudReportAggregateByCity.lookup(
             ts, merchant_id=merchant_id, city=city
         )

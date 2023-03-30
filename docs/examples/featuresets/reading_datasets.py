@@ -1,13 +1,14 @@
 from datetime import datetime
+
 import pandas as pd
 
 from fennel.datasets import dataset, field
-from fennel.lib.schema import Series, DataFrame
-from fennel.test_lib import mock_client
-from fennel.lib.metadata import meta
 
 # docsnip featuresets_reading_datasets
-from fennel.featuresets import depends_on, featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature
+from fennel.lib.metadata import meta
+from fennel.lib.schema import inputs, outputs
+from fennel.test_lib import mock_client
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
@@ -24,9 +25,10 @@ class UserFeatures:
     uid: int = feature(id=1)
     name: str = feature(id=2)
 
-    @extractor
-    @depends_on(User)
-    def func(cls, ts: Series[datetime], uids: Series[uid]) -> Series[name]:
+    @extractor(depends_on=[User])
+    @inputs(uid)
+    @outputs(name)
+    def func(cls, ts: pd.Series, uids: pd.Series):
         names, found = User.lookup(ts, uid=uids)
         names.fillna("Unknown", inplace=True)
         return names[["name"]]

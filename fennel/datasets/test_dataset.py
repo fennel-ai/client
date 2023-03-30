@@ -11,7 +11,7 @@ from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding
+from fennel.lib.schema import Embedding, inputs
 from fennel.lib.window import Window
 from fennel.test_lib import *
 
@@ -172,7 +172,7 @@ def test_dataset_with_retention(grpc_stub):
 
 #         @on_demand(expires_after="7d")
 #         def pull_from_api(
-#             cls, ts: Series[datetime], user_id: Series[int], names: Series[str]
+#             cls, ts: pd.Series[datetime], user_id: pd.Series[int], names: pd.Series[str]
 #         ) -> pd.DataFrame:
 #             user_list = user_id.tolist()
 #             names = names.tolist()
@@ -281,7 +281,8 @@ def test_dataset_with_pipes(grpc_stub):
         t: datetime
 
         @pipeline(id=1)
-        def pipeline1(cls, a: Dataset[A], b: Dataset[B]):
+        @inputs(A, B)
+        def pipeline1(cls, a: Dataset, b: Dataset):
             return a.left_join(b, left_on=["a1"], right_on=["b1"])
 
     view = InternalTestClient(grpc_stub)
@@ -382,11 +383,8 @@ def test_dataset_with_complex_pipe(grpc_stub):
         num_merchant_fraudulent_transactions_7d: int
 
         @pipeline(id=1)
-        def create_fraud_dataset(
-            cls,
-            activity: Dataset[Activity],
-            user_info: Dataset[UserInfoDataset],
-        ):
+        @inputs(Activity, UserInfoDataset)
+        def create_fraud_dataset(cls, activity: Dataset, user_info: Dataset):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
                 df["metadata_dict"] = (
                     df["metadata"].apply(json.loads).apply(pd.Series)
@@ -635,7 +633,8 @@ def test_delete_and_rename_column(grpc_stub):
         t: datetime
 
         @pipeline(id=1)
-        def from_a(cls, a: Dataset[A]):
+        @inputs(A)
+        def from_a(cls, a: Dataset):
             x = a.rename({"a1": "b1"})
             return x.drop(["a2", "a3"])
 
@@ -658,7 +657,8 @@ def test_union_datasets(grpc_stub):
         t: datetime
 
         @pipeline(id=1)
-        def pipeline2_diamond(cls, a: Dataset[A]):
+        @inputs(A)
+        def pipeline2_diamond(cls, a: Dataset):
             b = a.transform(lambda df: df)
             c = a.transform(lambda df: df * 2)
             d = b + c
@@ -854,10 +854,8 @@ def test_search_dataset(grpc_stub):
         creation_timestamp: datetime
 
         @pipeline(id=1)
-        def content_features(
-            cls,
-            ds: Dataset[Document],
-        ):
+        @inputs(Document)
+        def content_features(cls, ds: Dataset):
             return ds.transform(
                 get_content_features,
                 schema={

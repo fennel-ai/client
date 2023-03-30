@@ -4,6 +4,7 @@ from typing import Optional, List
 import pytest
 
 from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.lib.schema import inputs
 from fennel.test_lib import *
 
 
@@ -99,7 +100,8 @@ def test_dataset_with_pipes(grpc_stub):
 
     assert (
         str(e.value)
-        == "pipeline `create_pipeline` must have Dataset[<Dataset Name>] as parameters."
+        == "pipeline `create_pipeline` must have Datasets as @input "
+        "parameters."
     )
 
     with pytest.raises(TypeError) as e:
@@ -112,7 +114,8 @@ def test_dataset_with_pipes(grpc_stub):
             d: datetime
 
             @pipeline(id=1)  # type: ignore
-            def create_pipeline(a: Dataset[XYZ]):  # type: ignore
+            @inputs(XYZ)
+            def create_pipeline(a: Dataset):  # type: ignore
                 return a
 
     assert (
@@ -139,7 +142,8 @@ def test_dataset_incorrect_join(grpc_stub):
             d: datetime
 
             @pipeline(id=1)
-            def create_pipeline(cls, a: Dataset[XYZ]):
+            @inputs(XYZ)
+            def create_pipeline(cls, a: Dataset):
                 b = a.transform(lambda x: x)
                 return a.left_join(b, on=["user_id"])  # type: ignore
 

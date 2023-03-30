@@ -5,9 +5,9 @@ from datetime import datetime
 import pandas as pd
 
 import fennel.utils
-from fennel.featuresets import featureset, feature, extractor, depends_on
+from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.metadata import meta
-from fennel.lib.schema import DataFrame, Series
+from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import *
 
 
@@ -58,15 +58,13 @@ def test_dataset_lookup(grpc_stub):
         age_cube: int = feature(id=4).meta(owner="mohit@fennel.ai")
         gender: str = feature(id=5)
 
-        @extractor
-        @depends_on(UserInfoDataset)
+        @extractor(depends_on=[UserInfoDataset])
+        @inputs(userid, name)
+        @outputs(age_sq, gender)
         @typing.no_type_check
         def user_age_sq(
-            cls,
-            ts: Series[datetime],
-            user_id: Series[userid],
-            names: Series[name],
-        ) -> DataFrame[age_sq, gender]:
+            cls, ts: pd.Series, user_id: pd.Series, names: pd.Series
+        ):
             user_id_plus_one = user_id * 5
             df, _ = UserInfoDataset.lookup(
                 ts,
@@ -77,15 +75,16 @@ def test_dataset_lookup(grpc_stub):
             df["age_sq"] = df["age"] * df["age"]
             return df[["age_sq", "gender"]]
 
-        @extractor
-        @depends_on(UserInfoDataset)
+        @extractor(depends_on=[UserInfoDataset])
+        @inputs(userid, name)
+        @outputs(age_cube)
         @typing.no_type_check
         def user_age_cube(
             cls,
-            ts: Series[datetime],
-            user_id: Series[userid],
-            names: Series[name],
-        ) -> Series[age_cube]:
+            ts: pd.Series,
+            user_id: pd.Series,
+            names: pd.Series,
+        ):
             user_id_into_three = user_id * 3
             df, _ = UserInfoDataset.lookup(
                 ts,
