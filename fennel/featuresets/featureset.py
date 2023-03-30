@@ -233,8 +233,6 @@ def extractor(
                             f"set of features, but found type {type(f)} in "
                             f"output annotation."
                         )
-                    print(return_annotation)
-                    print(f)
                     f = cast(Feature, f)
                     if "." in f.fqn() and len(f.fqn()) > 0:
                         raise TypeError(
@@ -274,17 +272,6 @@ def extractor(
     func = cast(Callable, func)
     # @extractor decorator was used without arguments
     return wrap(func)
-
-
-# def depends_on(*datasets: Any):
-#     if len(datasets) == 0:
-#         raise TypeError("depends_on must have at least one dataset")
-#
-#     def decorator(func):
-#         setattr(func, DEPENDS_ON_DATASETS_ATTR, list(datasets))
-#         return func
-#
-#     return decorator
 
 
 # ---------------------------------------------------------------------

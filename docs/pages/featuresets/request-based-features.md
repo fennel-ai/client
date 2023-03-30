@@ -25,7 +25,8 @@ class UserFeatures:
     ..
     
     @extractor
-    fn f(cls, ts: pd.Series[datetime], devices: pd.Series[SearchRequest.device_type]): 
+    @inputs(datetime, SearchRequest.device_type)
+    fn f(cls, ts: pd.Series, devices: pd.Series): 
         for device in devices:
             ...
 

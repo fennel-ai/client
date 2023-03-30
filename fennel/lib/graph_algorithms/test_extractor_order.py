@@ -76,7 +76,6 @@ def test_complex_extractor_path():
     extractors = get_extractor_order([A.root], [B.b1, B.b2, C.c2], extractors)
     extractors_to_run = [e.name for e in extractors]
     assert len(extractors_to_run) == 4
-    print(extractors_to_run)
     assert extractors_to_run == [
         "a1_a2",
         "c1_from_root",

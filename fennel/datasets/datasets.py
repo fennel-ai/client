@@ -1268,7 +1268,6 @@ class SchemaValidator(Visitor):
         input_schema = copy.deepcopy(self.visit(obj.node))
         input_schema.name = f"'[Pipeline:{self.pipeline_name}]->rename node'"
         for old, new in obj.column_mapping.items():
-            print(input_schema.fields())
             if old not in input_schema.fields():
                 raise ValueError(
                     f"Field {old} does not exist in schema of "

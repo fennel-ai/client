@@ -352,7 +352,6 @@ class MockClient(Client):
                 if input.fqn_ in intermediate_data:
                     args.append(intermediate_data[input.fqn_])
                 else:
-                    print(intermediate_data)
                     raise Exception(
                         f"Feature `{input}` could not be "
                         f"calculated by any extractor."
