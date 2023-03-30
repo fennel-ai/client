@@ -71,7 +71,8 @@ def dataset_lookup_impl(
         raise ValueError(
             f"Extractor `{extractor_name}` is not allowed to access dataset "
             f"`{cls_name}`, enabled datasets are {allowed_datasets}. "
-            f"Use `@depends_on` to specify dataset dependencies."
+            f"Use `depends_on` param in @extractor to specify dataset "
+            f"dependencies."
         )
     right_key_fields = datasets[cls_name].key_fields
     if len(right_key_fields) == 0:
@@ -351,8 +352,9 @@ class MockClient(Client):
                 if input.fqn_ in intermediate_data:
                     args.append(intermediate_data[input.fqn_])
                 else:
+                    print(intermediate_data)
                     raise Exception(
-                        f"Feature {input} could not be "
+                        f"Feature `{input}` could not be "
                         f"calculated by any extractor."
                     )
             elif isinstance(input, Featureset):

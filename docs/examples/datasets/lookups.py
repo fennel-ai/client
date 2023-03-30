@@ -3,10 +3,12 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, feature, extractor, depends_on
+from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series
+from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import mock_client
+
+Series = pd.Series
 
 
 # docsnip datasets_lookup
@@ -26,11 +28,10 @@ class UserFeature:
     name: str = feature(id=2)
     in_home_city: bool = feature(id=3)
 
-    @depends_on(User)
-    @extractor
-    def func(
-        cls, ts: Series[datetime], uid: Series[uid]
-    ) -> Series[in_home_city]:
+    @extractor(depends_on=[User])
+    @inputs(datetime, uid)
+    @outputs(in_home_city)
+    def func(cls, ts: Series, uid: Series):
         df, _found = User.lookup(ts, uid=uid)
         return df["home_city"] == df["cur_city"]
 

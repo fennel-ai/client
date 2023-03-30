@@ -9,15 +9,16 @@ import pytest
 import requests
 
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, extractor, depends_on, feature
+from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame, Embedding
+from fennel.lib.schema import Embedding, inputs, outputs
 from fennel.test_lib import mock_client
-
 
 ################################################################################
 #                           Feature Single Extractor Unit Tests
 ################################################################################
+
+Series = pd.Series
 
 
 @meta(owner="test@test.com")
@@ -39,11 +40,10 @@ class UserInfoSingleExtractor:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
 
-    @extractor
-    @depends_on(UserInfoDataset)
-    def get_user_info(
-        cls, ts: Series[datetime], user_id: Series[userid]
-    ) -> DataFrame[age, age_squared, age_cubed, is_name_common]:
+    @extractor(depends_on=[UserInfoDataset])
+    @inputs(datetime, userid)
+    @outputs(age, age_squared, age_cubed, is_name_common)
+    def get_user_info(cls, ts: Series, user_id: Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df[str(cls.userid)] = user_id
         df[str(cls.age_squared)] = df["age"] ** 2
@@ -80,18 +80,19 @@ class UserInfoMultipleExtractor:
     is_name_common: bool = feature(id=7)
     age_reciprocal: float = feature(id=8)
 
-    @extractor
-    @depends_on(UserInfoDataset)
-    def get_user_age_and_name(
-        cls, ts: Series[datetime], user_id: Series[userid]
-    ) -> DataFrame[age, name]:
+    @extractor(depends_on=[UserInfoDataset])
+    @inputs(datetime, userid)
+    @outputs(age, name)
+    def get_user_age_and_name(cls, ts: Series, user_id: Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df[[str(cls.age), str(cls.name)]]
 
     @extractor
+    @inputs(datetime, age, name)
+    @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: Series[datetime], user_age: Series[age], name: Series[name]
-    ) -> DataFrame[age_squared, age_cubed, is_name_common]:
+        cls, ts: Series, user_age: Series, name: Series
+    ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
         df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
@@ -102,16 +103,15 @@ class UserInfoMultipleExtractor:
         return df
 
     @extractor
-    def get_age_reciprocal(
-        cls, ts: Series[datetime], age: Series[age]
-    ) -> Series[age_reciprocal]:
+    @inputs(datetime, age)
+    @outputs(age_reciprocal)
+    def get_age_reciprocal(cls, ts: Series, age: Series):
         return age.apply(lambda x: 1 / (x / (3600.0 * 24)) + 0.01)
 
-    @extractor(version=2)
-    @depends_on(UserInfoDataset)
-    def get_country_geoid(
-        cls, ts: Series[datetime], user_id: Series[userid]
-    ) -> Series[country_geoid]:
+    @extractor(depends_on=[UserInfoDataset], version=2)
+    @inputs(datetime, userid)
+    @outputs(country_geoid)
+    def get_country_geoid(cls, ts: Series, user_id: Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df["country"].apply(get_country_geoid)
 
@@ -243,12 +243,18 @@ class UserInfoTransformedFeatures:
     country_geoid_square: int = feature(id=3)
 
     @extractor
+    @inputs(
+        datetime,
+        UserInfoMultipleExtractor.age,
+        UserInfoMultipleExtractor.is_name_common,
+        UserInfoMultipleExtractor.country_geoid,
+    )
     def get_user_transformed_features(
         cls,
-        ts: Series[datetime],
-        user_age: Series[UserInfoMultipleExtractor.age],
-        is_name_common: Series[UserInfoMultipleExtractor.is_name_common],
-        country_geoid: Series[UserInfoMultipleExtractor.country_geoid],
+        ts: Series,
+        user_age: Series,
+        is_name_common: Series,
+        country_geoid: Series,
     ):
         age_power_four = user_age**4
         country_geoid = country_geoid**2
@@ -288,11 +294,9 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 
         feature_df = client.extract_features(
             output_feature_list=[
-                DataFrame[
-                    UserInfoTransformedFeatures.age_power_four,
-                    UserInfoTransformedFeatures.is_name_common,
-                    UserInfoTransformedFeatures.country_geoid_square,
-                ]
+                UserInfoTransformedFeatures.age_power_four,
+                UserInfoTransformedFeatures.is_name_common,
+                UserInfoTransformedFeatures.country_geoid_square,
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
             input_dataframe=pd.DataFrame(
@@ -321,11 +325,9 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 
         feature_df = client.extract_historical_features(
             output_feature_list=[
-                DataFrame[
-                    UserInfoTransformedFeatures.age_power_four,
-                    UserInfoTransformedFeatures.is_name_common,
-                    UserInfoTransformedFeatures.country_geoid_square,
-                ],
+                UserInfoTransformedFeatures.age_power_four,
+                UserInfoTransformedFeatures.is_name_common,
+                UserInfoTransformedFeatures.country_geoid_square,
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
             input_dataframe=pd.DataFrame(
@@ -372,11 +374,10 @@ class DocumentFeatures:
     fast_text_embedding: Embedding[3] = feature(id=3)
     num_words: int = feature(id=4)
 
-    @extractor
-    @depends_on(DocumentContentDataset)
-    def get_doc_features(
-        cls, ts: Series[datetime], doc_id: Series[doc_id]
-    ) -> DataFrame[num_words, bert_embedding, fast_text_embedding]:
+    @extractor(depends_on=[DocumentContentDataset])
+    @inputs(datetime, doc_id)
+    @outputs(num_words, bert_embedding, fast_text_embedding)
+    def get_doc_features(cls, ts: Series, doc_id: Series):
         df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore
 
         df[str(cls.bert_embedding)] = df[str(cls.bert_embedding)].apply(

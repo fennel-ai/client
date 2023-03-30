@@ -35,7 +35,7 @@ from fennel.lib.metadata import (
     get_meta_attr,
     set_meta_attr,
 )
-from fennel.lib.schema import dtype_to_string, get_dtype
+from fennel.lib.schema import dtype_to_string, get_dtype, FENNEL_INPUTS
 from fennel.utils import (
     fhash,
     parse_annotation_comments,
@@ -531,20 +531,30 @@ def pipeline(id: int) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
                     f"pipeline functions are classmethods and must have cls "
                     f"as the first parameter, found `{name}` for pipeline `{pipeline_name}`."
                 )
-            elif not cls_param:
-                cls_param = True
-                continue
-
-            if not isinstance(param.annotation, Dataset):
-                if issubclass(param.annotation, Dataset):
+            break
+        if not hasattr(pipeline_func, FENNEL_INPUTS):
+            raise TypeError(
+                f"pipeline `{pipeline_name}` must have "
+                f"Datasets as @input parameters."
+            )
+        inputs = getattr(pipeline_func, FENNEL_INPUTS)
+        for inp in inputs:
+            if not isinstance(inp, Dataset):
+                if issubclass(inp, Dataset):
                     raise TypeError(
                         f"pipeline `{pipeline_name}` must have "
                         f"Dataset[<Dataset Name>] as parameters."
                     )
+                if hasattr(inp, "_name"):
+                    name = inp._name
+                elif hasattr(inp, "__name__"):
+                    name = inp.__name__
+                else:
+                    name = str(inp)
                 raise TypeError(
                     f"Parameter {name} is not a Dataset in {pipeline_name}"
                 )
-            params.append(param.annotation)
+            params.append(inp)
 
         setattr(
             pipeline_func,
@@ -801,25 +811,24 @@ class Dataset(_Node[T]):
                         f"on_demand functions are classmethods and must have "
                         f"cls as the first parameter, found {name}."
                     )
-                elif not cls_param:
-                    cls_param = True
-                    continue
-
+                break
+            inputs = getattr(on_demand.func, FENNEL_INPUTS)
+            for inp in inputs:
                 if not check_timestamp:
-                    if param.annotation == datetime.datetime:
+                    if inp == datetime.datetime:
                         check_timestamp = True
                         continue
                     raise ValueError(
                         f"on_demand method {on_demand.func.__name__} must take "
                         f"timestamp as first parameter with type Series[datetime]."
                     )
-                if param.annotation != key_fields[key_index].dtype:
+                if inp != key_fields[key_index].dtype:
                     raise ValueError(
                         f"on_demand method {on_demand.func.__name__} must take "
                         f"key fields in the same order as defined in the "
                         f"dataset with the same type, parameter "
                         f"{key_fields[key_index].name} has type"
-                        f" {param.annotation} but expected "
+                        f" {inp} but expected "
                         f" {key_fields[key_index].dtype} "
                     )
                 key_index += 1

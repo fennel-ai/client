@@ -3,11 +3,13 @@ from datetime import datetime
 import pandas as pd
 
 from fennel.datasets import dataset, field
-from fennel.featuresets import extractor, depends_on
+from fennel.featuresets import extractor
 from fennel.featuresets import feature, featureset
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import mock_client
+
+Series = pd.Series
 
 
 # docsnip featureset
@@ -17,9 +19,9 @@ class Movies:
     over_2hrs: bool = feature(id=2)
 
     @extractor
-    def my_extractor(
-        cls, ts: Series[datetime], durations: Series[duration]
-    ) -> Series[over_2hrs]:
+    @inputs(datetime, duration)
+    @outputs(over_2hrs)
+    def my_extractor(cls, ts: Series, durations: Series):
         return durations > 2 * 3600
 
 
@@ -40,9 +42,9 @@ class Movie:
 
     # docsnip featureset_extractor
     @extractor
-    def my_extractor(
-        cls, ts: Series[datetime], durations: Series[duration]
-    ) -> Series[over_2hrs]:
+    @inputs(datetime, duration)
+    @outputs(over_2hrs)
+    def my_extractor(cls, ts: Series, durations: Series):
         return durations > 2 * 3600
 
     # /docsnip
@@ -64,11 +66,10 @@ class UserLocationFeatures:
     latitude: float = feature(id=2)
     longitude: float = feature(id=3)
 
-    @extractor
-    @depends_on(UserInfo)
-    def get_user_city_coordinates(
-        cls, ts: Series[datetime], uid: Series[uid]
-    ) -> DataFrame[latitude, longitude]:
+    @extractor(depends_on=[UserInfo])
+    @inputs(datetime, uid)
+    @outputs(latitude, longitude)
+    def get_user_city_coordinates(cls, ts: Series, uid: Series):
         from geopy.geocoders import Nominatim
 
         df, found = UserInfo.lookup(ts, uid=uid)
@@ -130,11 +131,10 @@ class UserLocationFeaturesRefactored:
     latitude: float = feature(id=2)
     longitude: float = feature(id=3)
 
-    @extractor
-    @depends_on(UserInfo)
-    def get_country_geoid(
-        cls, ts: Series[datetime], uid: Series[Request.uid]
-    ) -> DataFrame[uid, latitude, longitude]:
+    @extractor(depends_on=[UserInfo])
+    @inputs(datetime, Request.uid)
+    @outputs(uid, latitude, longitude)
+    def get_country_geoid(cls, ts: Series, uid: Series):
         from geopy.geocoders import Nominatim
 
         df, found = UserInfo.lookup(ts, uid=uid)

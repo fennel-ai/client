@@ -6,10 +6,12 @@ import pandas as pd
 import requests
 
 from fennel.datasets import dataset, field
-from fennel.featuresets import feature, featureset, extractor, depends_on
+from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import mock_client
+
+Series = pd.Series
 
 
 @meta(owner="test@test.com")
@@ -43,18 +45,19 @@ class UserFeatures:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
 
-    @extractor
-    @depends_on(UserInfoDataset)
-    def get_user_age_and_name(
-        cls, ts: Series[datetime], user_id: Series[userid]
-    ) -> DataFrame[age, name]:
+    @extractor(depends_on=[UserInfoDataset])
+    @inputs(datetime, userid)
+    @outputs(age, name)
+    def get_user_age_and_name(cls, ts: Series, user_id: Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)
         return df[["age", "name"]]
 
     @extractor
+    @inputs(datetime, age, name)
+    @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: Series[datetime], user_age: Series[age], name: Series[name]
-    ) -> DataFrame[age_squared, age_cubed, is_name_common]:
+        cls, ts: Series, user_age: Series, name: Series
+    ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
         df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
@@ -64,13 +67,13 @@ class UserFeatures:
         ]
         return df
 
-    @extractor
-    @depends_on(UserInfoDataset)
-    def get_country_geoid(
-        cls, ts: Series[datetime], user_id: Series[userid]
-    ) -> Series[country_geoid]:
+    @extractor(depends_on=[UserInfoDataset])
+    @inputs(datetime, userid)
+    @outputs(country_geoid)
+    def get_country_geoid_extractor(cls, ts: Series, user_id: Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        return df["country"].apply(get_country_geoid)
+        df["country_geoid"] = df["country"].apply(get_country_geoid)
+        return df[["country_geoid"]]
 
 
 # this is your test code in some test module

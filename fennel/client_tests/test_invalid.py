@@ -5,12 +5,15 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, pipeline, field, Dataset
-from fennel.featuresets import featureset, extractor, feature, depends_on
+from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import inputs, outputs
+from fennel.test_lib import *
+
+Series = pd.Series
+
 
 # noinspection PyUnresolvedReferences
-from fennel.test_lib import *
 
 
 @featureset
@@ -57,7 +60,8 @@ class MemberActivityDatasetCopy:
     country: str
 
     @pipeline(id=1)
-    def copy(cls, ds: Dataset[MemberActivityDataset]):
+    @inputs(MemberActivityDataset)
+    def copy(cls, ds: Dataset):
         return ds
 
 
@@ -67,11 +71,10 @@ class DomainFeatures:
     domain: str = feature(id=1)
     DOMAIN_USED_COUNT: int = feature(id=2)
 
-    @extractor
-    @depends_on(MemberActivityDatasetCopy)
-    def get_domain_feature(
-        cls, ts: Series[datetime], domain: Series[Query.domain]
-    ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
+    @extractor(depends_on=[MemberActivityDatasetCopy])
+    @inputs(datetime, Query.domain)
+    @outputs(domain, DOMAIN_USED_COUNT)
+    def get_domain_feature(cls, ts: Series, domain: Series):
         df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
             ts, domain=domain
         )
@@ -87,13 +90,13 @@ class TestInvalidSync(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                str(e.value) == "Failed to sync: error: can not add edge: "
-                'from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
+                    str(e.value) == "Failed to sync: error: can not add edge: "
+                                    'from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
             )
         else:
             assert (
-                str(e.value) == "Dataset MemberActivityDatasetCopy "
-                "not found in sync call"
+                    str(e.value) == "Dataset MemberActivityDatasetCopy "
+                                    "not found in sync call"
             )
 
 
@@ -103,15 +106,14 @@ class DomainFeatures2:
     domain: str = feature(id=1)
     DOMAIN_USED_COUNT: int = feature(id=2)
 
-    @extractor
-    @depends_on(MemberDataset)
-    def get_domain_feature(
-        cls, ts: Series[datetime], domain: Series[Query.domain]
-    ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
+    @extractor()
+    @inputs(datetime, Query.domain)
+    @outputs(domain, DOMAIN_USED_COUNT)
+    def get_domain_feature(cls, ts: Series, domain: Series):
         df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
             ts, domain=domain
         )
-        return df
+        return df[[str(cls.domain), str(cls.DOMAIN_USED_COUNT)]]
 
 
 class TestInvalidExtractorDependsOn(unittest.TestCase):
@@ -153,7 +155,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             country: str
 
             @pipeline(id=1)
-            def copy(cls, ds: Dataset[MemberActivityDataset]):
+            @inputs(MemberActivityDataset)
+            def copy(cls, ds: Dataset):
                 return ds
 
         @meta(owner="test@fennel.ai")
@@ -162,18 +165,22 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             domain: str = feature(id=1)
             DOMAIN_USED_COUNT: int = feature(id=2)
 
-            @extractor
-            @depends_on(MemberActivityDatasetCopy)
-            def get_domain_feature(
-                cls, ts: Series[datetime], domain: Series[Query.domain]
-            ) -> DataFrame[domain, DOMAIN_USED_COUNT]:
+            @extractor(depends_on=[MemberActivityDatasetCopy])
+            @inputs(datetime, Query.domain)
+            @outputs(domain, DOMAIN_USED_COUNT)
+            def get_domain_feature(cls, ts: Series, domain: Series):
                 df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
                     ts, domain=domain
                 )
                 return df
 
         with pytest.raises(Exception) as e:
-            client.sync(datasets=[MemberDataset], featuresets=[DomainFeatures2])
+            client.sync(
+                datasets=[
+                    MemberActivityDatasetCopy,
+                ],
+                featuresets=[DomainFeatures],
+            )
             client.extract_features(
                 output_feature_list=[DomainFeatures2],
                 input_feature_list=[Query],
@@ -186,16 +193,16 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                     }
                 ),
             )
-
+        print(e.value)
         if client.is_integration_client():
             assert (
-                'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
-                in str(e.value)
+                    'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
+                    in str(e.value)
             )
         else:
             assert (
-                "Input dataframe does not contain all the required features"
-                in str(e.value)
+                    "Input dataframe does not contain all the required features"
+                    in str(e.value)
             )
 
     @pytest.mark.integration
@@ -218,13 +225,13 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
-                == str(e.value)
+                    'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
+                    == str(e.value)
             )
         else:
             assert (
-                "Dataset MemberActivityDatasetCopy not found, please ensure it is synced."
-                == str(e.value)
+                    "Dataset MemberActivityDatasetCopy not found, please ensure it is synced."
+                    == str(e.value)
             )
 
     @pytest.mark.integration
@@ -247,24 +254,21 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                     }
                 ),
             )
-
+        print(e.value)
         if client.is_integration_client():
             assert (
-                'Failed to sync: error: can not add edge: from vertex (Dataset, "MemberActivityDataset") not in graph'
-                == str(e.value)
+                    'Failed to sync: error: can not add edge: from vertex (Dataset, "MemberActivityDataset") not in graph'
+                    == str(e.value)
             )
         else:
             assert (
-                "Extractor `get_domain_feature` is not allowed to access "
-                "dataset `MemberActivityDatasetCopy`, enabled datasets are ["
-                "'MemberDataset']. Use `@depends_on` to specify dataset "
-                "dependencies." == str(e.value)
+                    "Extractor `get_domain_feature` is not allowed to access dataset `MemberActivityDatasetCopy`, enabled datasets are []. Use `depends_on` param in @extractor to specify dataset dependencies."
+                    == str(e.value)
             )
 
     @mock_client
     def test_drop_timestamp_col(self, client):
         with pytest.raises(Exception) as e:
-
             @meta(owner="test@fennel.ai")
             @dataset
             class MemberDatasetDerived:
@@ -276,9 +280,10 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 createdAt: datetime = field(timestamp=True)
 
                 @pipeline(id=1)
-                def del_timestamp(cls, d: Dataset[MemberDataset]):
+                @inputs(MemberDataset)
+                def del_timestamp(cls, d: Dataset):
                     return d.drop(columns=["createdAt"])
 
         assert (
-            "cannot drop timestamp field createdAt from '[Pipeline:del_timestamp]->drop node'"
-        ) == str(e.value)
+                   "cannot drop timestamp field createdAt from '[Pipeline:del_timestamp]->drop node'"
+               ) == str(e.value)

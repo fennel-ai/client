@@ -4,8 +4,10 @@ import pandas as pd
 
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import mock_client
+
+Series = pd.Series
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
@@ -15,7 +17,9 @@ class User:
     age: float = feature(id=2)
 
     @extractor
-    def user_age(cls, ts: Series[datetime], id: Series[id]) -> Series[age]:
+    @inputs(datetime, id)
+    @outputs(age)
+    def user_age(cls, ts: Series, id: Series):
         # Mock age calculation based on user id
         return id * 10
 
@@ -29,9 +33,9 @@ class UserPost:
     affinity: float = feature(id=4)
 
     @extractor
-    def user_post_affinity(
-        cls, ts: Series[datetime], uid: Series[uid], pid: Series[pid]
-    ) -> DataFrame[affinity, score]:
+    @inputs(datetime, uid, pid)
+    @outputs(score, affinity)
+    def user_post_affinity(cls, ts: Series, uid: Series, pid: Series):
         # Mock affinity calculation based on user id and post id
         return pd.DataFrame(
             {

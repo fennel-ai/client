@@ -1,11 +1,13 @@
 from datetime import datetime
+
 import pandas as pd
 
-from fennel.datasets import dataset, field
-from fennel.lib.schema import Series, DataFrame
-from fennel.test_lib import mock_client
+from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.metadata import meta
-from fennel.featuresets import feature, featureset, extractor, depends_on
+from fennel.lib.schema import inputs, outputs
+from fennel.test_lib import mock_client
+
+Series = pd.Series
 
 
 # docsnip featureset_metaflags
@@ -16,9 +18,9 @@ class Movie:
     over_2hrs: bool = feature(id=2).meta(owner="laura@fintech.com")
 
     @extractor
-    def func(
-        cls, ts: Series[datetime], durations: Series[duration]
-    ) -> Series[over_2hrs]:
+    @inputs(datetime, duration)
+    @outputs(over_2hrs)
+    def func(cls, ts: Series, durations: Series):
         return durations > 2 * 3600
 
 

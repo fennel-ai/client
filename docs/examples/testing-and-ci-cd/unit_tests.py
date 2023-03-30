@@ -4,11 +4,13 @@ from typing import Optional
 import pandas as pd
 import requests
 
+Series = pd.Series
+
 # docsnip datasets
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum, Average
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 
 
@@ -30,9 +32,9 @@ class MovieRating:
     sum_ratings: float
     t: datetime
 
-    @classmethod
     @pipeline(id=1)
-    def pipeline_aggregate(cls, activity: Dataset[RatingActivity]):
+    @inputs(RatingActivity)
+    def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
             [
                 Count(window=Window("7d"), into_field="num_ratings"),
@@ -101,7 +103,7 @@ class TestDataset(unittest.TestCase):
 # /docsnip
 
 # docsnip featuresets_testing
-from fennel.featuresets import feature, featureset, extractor, depends_on
+from fennel.featuresets import feature, featureset, extractor
 
 
 @meta(owner="test@test.com")
@@ -116,9 +118,11 @@ class UserInfoFeatures:
     is_name_common: bool = feature(id=7)
 
     @extractor
+    @inputs(datetime, age, name)
+    @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: Series[datetime], user_age: Series[age], name: Series[name]
-    ) -> DataFrame[age_squared, age_cubed, is_name_common]:
+        cls, ts: Series, user_age: Series, name: Series
+    ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
         df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
@@ -186,18 +190,19 @@ class UserInfoMultipleExtractor:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
 
-    @extractor
-    @depends_on(UserInfoDataset)
-    def get_user_age_and_name(
-        cls, ts: Series[datetime], user_id: Series[userid]
-    ) -> DataFrame[age, name]:
+    @extractor(depends_on=[UserInfoDataset])
+    @inputs(datetime, userid)
+    @outputs(age, name)
+    def get_user_age_and_name(cls, ts: Series, user_id: Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)
         return df[["age", "name"]]
 
     @extractor
+    @inputs(datetime, age, name)
+    @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: Series[datetime], user_age: Series[age], name: Series[name]
-    ) -> DataFrame[age_squared, age_cubed, is_name_common]:
+        cls, ts: Series, user_age: Series, name: Series
+    ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
         df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
@@ -207,11 +212,10 @@ class UserInfoMultipleExtractor:
         ]
         return df
 
-    @extractor
-    @depends_on(UserInfoDataset)
-    def get_country_geoid(
-        cls, ts: Series[datetime], user_id: Series[userid]
-    ) -> Series[country_geoid]:
+    @extractor(depends_on=[UserInfoDataset])
+    @inputs(datetime, userid)
+    @outputs(country_geoid)
+    def get_country_geoid(cls, ts: Series, user_id: Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df["country"].apply(get_country_geoid)
 
