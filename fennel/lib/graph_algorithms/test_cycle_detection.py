@@ -20,19 +20,19 @@ class A:
     @extractor
     @inputs(datetime, a1)
     @outputs(a2, a4)
-    def a1_a2(cls, ts: Series, f: Series):
+    def a1_a2(cls, ts: pd.Series, f: pd.Series):
         pass
 
     @extractor
     @inputs(datetime, a2, a4)
     @outputs(a3)
-    def a2_a3(cls, ts: Series, f: Series, f2: Series):
+    def a2_a3(cls, ts: pd.Series, f: pd.Series, f2: pd.Series):
         pass
 
     @extractor
     @inputs(datetime, a3)
     @outputs(a1)
-    def a3_a1(cls, ts: Series, f: Series):
+    def a3_a1(cls, ts: pd.Series, f: pd.Series):
         pass
 
 

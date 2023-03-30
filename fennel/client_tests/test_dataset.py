@@ -268,7 +268,7 @@ class TestDocumentDataset(unittest.TestCase):
 
             @on_demand(expires_after="3d")
             @inputs(datetime, int)
-            def get_embedding(cls, ts: Series, doc_ids: Series):
+            def get_embedding(cls, ts: pd.Series, doc_ids: pd.Series):
                 data = []
                 doc_ids = doc_ids.tolist()
                 for i in range(len(ts)):

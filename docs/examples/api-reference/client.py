@@ -48,7 +48,7 @@ class UserFeatures:
     @extractor(depends_on=[UserInfoDataset])
     @inputs(datetime, userid)
     @outputs(age, name)
-    def get_user_age_and_name(cls, ts: Series, user_id: Series):
+    def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)
         return df[["age", "name"]]
 
@@ -56,7 +56,7 @@ class UserFeatures:
     @inputs(datetime, age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: Series, user_age: Series, name: Series
+        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
         df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
@@ -70,7 +70,7 @@ class UserFeatures:
     @extractor(depends_on=[UserInfoDataset])
     @inputs(datetime, userid)
     @outputs(country_geoid)
-    def get_country_geoid_extractor(cls, ts: Series, user_id: Series):
+    def get_country_geoid_extractor(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df["country_geoid"] = df["country"].apply(get_country_geoid)
         return df[["country_geoid"]]

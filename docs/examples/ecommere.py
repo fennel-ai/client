@@ -9,7 +9,7 @@ from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import feature, featureset, extractor, depends_on
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import DataFrame
 from fennel.lib.window import Window
 
 # docsnip connector
@@ -71,7 +71,10 @@ class UserSeller:
     @depends_on(UserSellerOrders)
     @extractor
     def myextractor(
-        cls, ts: Series[datetime], uids: Series[uid], sellers: Series[seller_id]
+        cls,
+        ts: pd.Series[datetime],
+        uids: pd.Series[uid],
+        sellers: pd.Series[seller_id],
     ) -> DataFrame[num_orders_1d, num_orders_1w]:
         df, found = UserSellerOrders.lookup(ts, uid=uids, seller_id=sellers)
         df = df.fillna(0)

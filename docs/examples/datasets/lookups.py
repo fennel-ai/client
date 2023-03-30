@@ -31,7 +31,7 @@ class UserFeature:
     @extractor(depends_on=[User])
     @inputs(datetime, uid)
     @outputs(in_home_city)
-    def func(cls, ts: Series, uid: Series):
+    def func(cls, ts: pd.Series, uid: pd.Series):
         df, _found = User.lookup(ts, uid=uid)
         return df["home_city"] == df["cur_city"]
 

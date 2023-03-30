@@ -64,7 +64,9 @@ def test_dataset_lookup(grpc_stub):
         @inputs(datetime, userid, name)
         @outputs(age_sq, gender)
         @typing.no_type_check
-        def user_age_sq(cls, ts: Series, user_id: Series, names: Series):
+        def user_age_sq(
+            cls, ts: pd.Series, user_id: pd.Series, names: pd.Series
+        ):
             user_id_plus_one = user_id * 5
             df, _ = UserInfoDataset.lookup(
                 ts,
@@ -81,9 +83,9 @@ def test_dataset_lookup(grpc_stub):
         @typing.no_type_check
         def user_age_cube(
             cls,
-            ts: Series,
-            user_id: Series,
-            names: Series,
+            ts: pd.Series,
+            user_id: pd.Series,
+            names: pd.Series,
         ):
             user_id_into_three = user_id * 3
             df, _ = UserInfoDataset.lookup(

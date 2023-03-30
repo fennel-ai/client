@@ -30,7 +30,7 @@ class UserFeatures:
     @extractor(depends_on=[User])
     @inputs(datetime, uid)
     @outputs(name)
-    def func(cls, ts: Series, uids: Series):
+    def func(cls, ts: pd.Series, uids: pd.Series):
         names, found = User.lookup(ts, uid=uids)
         names.fillna("Unknown", inplace=True)
         return names[["name"]]

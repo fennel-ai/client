@@ -21,7 +21,7 @@ class Movies:
     @extractor
     @inputs(datetime, duration)
     @outputs(over_2hrs)
-    def my_extractor(cls, ts: Series, durations: Series):
+    def my_extractor(cls, ts: pd.Series, durations: pd.Series):
         return durations > 2 * 3600
 
 
@@ -44,7 +44,7 @@ class Movie:
     @extractor
     @inputs(datetime, duration)
     @outputs(over_2hrs)
-    def my_extractor(cls, ts: Series, durations: Series):
+    def my_extractor(cls, ts: pd.Series, durations: pd.Series):
         return durations > 2 * 3600
 
     # /docsnip
@@ -69,7 +69,7 @@ class UserLocationFeatures:
     @extractor(depends_on=[UserInfo])
     @inputs(datetime, uid)
     @outputs(latitude, longitude)
-    def get_user_city_coordinates(cls, ts: Series, uid: Series):
+    def get_user_city_coordinates(cls, ts: pd.Series, uid: pd.Series):
         from geopy.geocoders import Nominatim
 
         df, found = UserInfo.lookup(ts, uid=uid)
@@ -134,7 +134,7 @@ class UserLocationFeaturesRefactored:
     @extractor(depends_on=[UserInfo])
     @inputs(datetime, Request.uid)
     @outputs(uid, latitude, longitude)
-    def get_country_geoid(cls, ts: Series, uid: Series):
+    def get_country_geoid(cls, ts: pd.Series, uid: pd.Series):
         from geopy.geocoders import Nominatim
 
         df, found = UserInfo.lookup(ts, uid=uid)

@@ -321,7 +321,7 @@ class UserBehaviorFeatures:
 
     @extractor(depends_on=[UserEngagementDataset])
     @inputs(datetime, Query.user_id)
-    def get_features(cls, ts: Series, user_id: Series):
+    def get_features(cls, ts: pd.Series, user_id: pd.Series):
         df, found = UserEngagementDataset.lookup(  # type: ignore
             ts, user_id=user_id  # type: ignore
         )
@@ -340,7 +340,7 @@ class DocumentFeatures:
 
     @extractor(depends_on=[DocumentEngagementDataset])
     @inputs(datetime, Query.doc_id)
-    def get_features(cls, ts: Series, doc_id: Series):
+    def get_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentEngagementDataset.lookup(  # type: ignore
             ts, doc_id=doc_id  # type: ignore
         )
@@ -362,7 +362,7 @@ class DocumentContentFeatures:
 
     @extractor(depends_on=[DocumentContentDataset])
     @inputs(datetime, Query.doc_id)
-    def get_features(cls, ts: Series, doc_id: Series):
+    def get_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentContentDataset.lookup(  # type: ignore
             ts, doc_id=doc_id  # type: ignore
         )

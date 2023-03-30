@@ -128,9 +128,22 @@ def extractor(
 @overload
 def extractor(
     *,
-    depends_on: List,
+    depends_on: List[T],
     version: int,
 ):
+    ...
+
+
+@overload
+def extractor(
+    *,
+    depends_on: List[T],
+):
+    ...
+
+
+@overload
+def extractor():
     ...
 
 

@@ -172,7 +172,7 @@ def test_dataset_with_retention(grpc_stub):
 
 #         @on_demand(expires_after="7d")
 #         def pull_from_api(
-#             cls, ts: Series[datetime], user_id: Series[int], names: Series[str]
+#             cls, ts: pd.Series[datetime], user_id: pd.Series[int], names: pd.Series[str]
 #         ) -> pd.DataFrame:
 #             user_list = user_id.tolist()
 #             names = names.tolist()

@@ -4,8 +4,6 @@ from typing import Optional
 import pandas as pd
 import requests
 
-Series = pd.Series
-
 # docsnip datasets
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum, Average
@@ -121,10 +119,10 @@ class UserInfoFeatures:
     @inputs(datetime, age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: Series, user_age: Series, name: Series
+            cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
-        df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
+        df = pd.concat([user_age ** 2, user_age ** 3, is_name_common], axis=1)
         df.columns = [
             str(cls.age_squared),
             str(cls.age_cubed),
@@ -193,7 +191,7 @@ class UserInfoMultipleExtractor:
     @extractor(depends_on=[UserInfoDataset])
     @inputs(datetime, userid)
     @outputs(age, name)
-    def get_user_age_and_name(cls, ts: Series, user_id: Series):
+    def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)
         return df[["age", "name"]]
 
@@ -201,10 +199,10 @@ class UserInfoMultipleExtractor:
     @inputs(datetime, age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: Series, user_age: Series, name: Series
+            cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
-        df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
+        df = pd.concat([user_age ** 2, user_age ** 3, is_name_common], axis=1)
         df.columns = [
             str(cls.age_squared),
             str(cls.age_cubed),
@@ -215,7 +213,7 @@ class UserInfoMultipleExtractor:
     @extractor(depends_on=[UserInfoDataset])
     @inputs(datetime, userid)
     @outputs(country_geoid)
-    def get_country_geoid(cls, ts: Series, user_id: Series):
+    def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df["country"].apply(get_country_geoid)
 
@@ -248,6 +246,5 @@ class TestExtractorDAGResolution(unittest.TestCase):
             ),
         )
         self.assertEqual(feature_df.shape, (2, 7))
-
 
 # /docsnip

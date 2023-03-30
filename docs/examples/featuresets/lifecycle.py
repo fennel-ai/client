@@ -20,7 +20,7 @@ class Movie:
     @extractor
     @inputs(datetime, duration)
     @outputs(over_2hrs)
-    def func(cls, ts: Series, durations: Series):
+    def func(cls, ts: pd.Series, durations: pd.Series):
         return durations > 2 * 3600
 
 

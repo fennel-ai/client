@@ -117,7 +117,7 @@ class UserFeatures:
     @extractor(depends_on=[UserViewsDataset])
     @inputs(datetime, Request.user_id)
     @outputs(num_views)
-    def extract_user_views(cls, ts: Series, user_ids: Series):
+    def extract_user_views(cls, ts: pd.Series, user_ids: pd.Series):
         views, _ = UserViewsDataset.lookup(ts, user_id=user_ids)  # type: ignore
         views = views.fillna(0)
 
@@ -128,9 +128,9 @@ class UserFeatures:
     @outputs(category_view_ratio, num_category_views)
     def extractor_category_view(
         cls,
-        ts: Series,
-        user_ids: Series,
-        categories: Series,
+        ts: pd.Series,
+        user_ids: pd.Series,
+        categories: pd.Series,
     ):
         category_views, _ = UserCategoryDataset.lookup(  # type: ignore
             ts, user_id=user_ids, category=categories

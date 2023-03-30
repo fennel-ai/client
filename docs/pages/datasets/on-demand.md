@@ -21,7 +21,7 @@ class UserCreditScore:
     credit_score: int
     
     @on_demand(expires_after='7d')
-    def pull_from_api(ts: Series[datetime], uids: Series[uid]) -> DataFrame:
+    def pull_from_api(ts: pd.Series[datetime], uids: pd.Series[uid]) -> DataFrame:
         user_list = uids.tolist()
         resp = requests.get(
             API_ENDPOINT_URL, json={"users": user_list}
@@ -41,11 +41,11 @@ The signature of `on_demand` function is same as that of `lookup` but with just 
 ```python
 def <function_name>(
     cls, 
-    ts: Series[datetime],  
-    <ds_key1>: Series[<key1_dtype], 
-    <ds_key2>: Series[<key2_dtype],
+    ts: pd.Series[datetime],  
+    <ds_key1>: pd.Series[<key1_dtype], 
+    <ds_key2>: pd.Series[<key2_dtype],
     ..., 
-    <ds_keyn>: Series[<key1_dtype]
+    <ds_keyn>: pd.Series[<key1_dtype]
 ): -> Tuple[Dataframe, Series[bool]]
 ```
 

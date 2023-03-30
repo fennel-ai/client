@@ -33,7 +33,7 @@ Let's examine the signature of `func` more carefully - a lot of information is e
 
 **Input Parameters**
 
-1. Every extractor takes `ts: Series`, as the first positional argument. The `ts` parameter is used when doing a lookup operation on a Dataset. This parameter must be passed even if the extractor does not do any Dataset lookup.
+1. Every extractor takes `ts: pd.Series`, as the first positional argument. The `ts` parameter is used when doing a lookup operation on a Dataset. This parameter must be passed even if the extractor does not do any Dataset lookup.
 2. One or more parameters that are of the form:
    * `Series[<feature>]`
    * `DataFrame[<featureset>]`

@@ -44,7 +44,7 @@ def test_featureset_as_input(grpc_stub):
             @extractor(depends_on=[UserInfoDataset])
             @inputs(datetime, User)
             @outputs(userid, home_geoid)
-            def get_user_info1(cls, ts: Series, user: Series):
+            def get_user_info1(cls, ts: pd.Series, user: pd.Series):
                 pass
 
     assert (
@@ -68,19 +68,19 @@ def test_complex_featureset(grpc_stub):
             @extractor(depends_on=[UserInfoDataset])
             @inputs(datetime, User.id)
             @outputs(userid, home_geoid)
-            def get_user_info1(cls, ts: Series, user_id: Series):
+            def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
             @extractor(depends_on=[UserInfoDataset])
             @inputs(datetime, User.id)
             @outputs(gender, age)
-            def get_user_info2(cls, ts: Series, user_id: Series):
+            def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
             @extractor
             @inputs(datetime, User.id)
             @outputs(gender)
-            def get_user_info3(cls, ts: Series, user_id: Series):
+            def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
     assert (
@@ -103,7 +103,7 @@ def test_extract_anoather_featureset(grpc_stub):
             @extractor
             @inputs(datetime, User.id)
             @outputs(User.age)
-            def get_user_info3(cls, ts: Series, user_id: Series):
+            def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
     assert (
@@ -125,7 +125,7 @@ def test_extract_anoather_featureset(grpc_stub):
             @extractor
             @inputs(datetime, User.id)
             @outputs(User)
-            def get_user_info3(cls, ts: Series, user_id: Series):
+            def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
     assert (
@@ -147,7 +147,7 @@ def test_extract_anoather_featureset(grpc_stub):
             @extractor
             @inputs(datetime, User.id)
             @outputs(User.age, User.id)
-            def get_user_info3(cls, ts: Series, user_id: Series):
+            def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
     assert (
@@ -168,7 +168,7 @@ def test_extract_anoather_featureset(grpc_stub):
 
             @extractor(version="2")
             @inputs(datetime, User.id)
-            def get_user_info3(cls, ts: Series, user_id: Series):
+            def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
     assert str(e.value) == "version for extractor must be an int."

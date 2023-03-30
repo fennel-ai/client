@@ -160,7 +160,7 @@ class Merchant:
     @extractor(depends_on=[MerchantInfo])
     @inputs(datetime, merchant_id)
     @outputs(merchant_age)
-    def get_merchant_info(cls, ts: Series, merchant_id: Series):
+    def get_merchant_info(cls, ts: pd.Series, merchant_id: pd.Series):
         df, _found = MerchantInfo.lookup(ts, merchant_id=merchant_id)
         df["current_timestamp"] = ts
         df["merchant_age"] = df.apply(
@@ -171,7 +171,7 @@ class Merchant:
     @extractor(depends_on=[MerchantInfo])
     @inputs(datetime, merchant_id)
     @outputs(merchant_category, city, merchant_num_employees)
-    def get_merchant_features(cls, ts: Series, merchant_id: Series):
+    def get_merchant_features(cls, ts: pd.Series, merchant_id: pd.Series):
         df, found = MerchantInfo.lookup(ts, merchant_id=merchant_id)
         df.fillna(
             {
@@ -199,7 +199,7 @@ class MerchantBehaviorFeatures:
         fradulent_transaction_ratio,
     )
     def get_merchant_fraud_features(
-        cls, ts: Series, merchant_id: Series, city: Series
+        cls, ts: pd.Series, merchant_id: pd.Series, city: pd.Series
     ):
         df, _found = FraudReportAggregateByCity.lookup(
             ts, merchant_id=merchant_id, city=city

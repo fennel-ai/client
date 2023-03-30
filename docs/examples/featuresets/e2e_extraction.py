@@ -19,7 +19,7 @@ class User:
     @extractor
     @inputs(datetime, id)
     @outputs(age)
-    def user_age(cls, ts: Series, id: Series):
+    def user_age(cls, ts: pd.Series, id: pd.Series):
         # Mock age calculation based on user id
         return id * 10
 
@@ -35,7 +35,7 @@ class UserPost:
     @extractor
     @inputs(datetime, uid, pid)
     @outputs(score, affinity)
-    def user_post_affinity(cls, ts: Series, uid: Series, pid: Series):
+    def user_post_affinity(cls, ts: pd.Series, uid: pd.Series, pid: pd.Series):
         # Mock affinity calculation based on user id and post id
         return pd.DataFrame(
             {

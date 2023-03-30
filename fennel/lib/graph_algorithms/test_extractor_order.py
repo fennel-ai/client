@@ -17,7 +17,7 @@ class A:
 
     @extractor
     @inputs(datetime, root)
-    def a1_a2(cls, ts: Series, root: Series):
+    def a1_a2(cls, ts: pd.Series, root: pd.Series):
         pass
 
 
@@ -28,7 +28,7 @@ class B:
 
     @extractor
     @inputs(datetime, A.a1, A.a2)
-    def b1_b2(cls, ts: Series, a1: Series, a2: Series):
+    def b1_b2(cls, ts: pd.Series, a1: pd.Series, a2: pd.Series):
         pass
 
 
@@ -63,13 +63,13 @@ class C:
     @extractor
     @inputs(datetime, A.root)
     @outputs(c1)
-    def c1_from_root(cls, ts: Series, a1: Series):
+    def c1_from_root(cls, ts: pd.Series, a1: pd.Series):
         pass
 
     @extractor
     @inputs(datetime, c1)
     @outputs(c2, c3, c4)
-    def from_c1(cls, ts: Series, c1: Series):
+    def from_c1(cls, ts: pd.Series, c1: pd.Series):
         pass
 
 
@@ -109,21 +109,21 @@ class UserInfo:
     @extractor
     @inputs(datetime, userid)
     @outputs(age, name)
-    def get_user_age_and_name(cls, ts: Series, user_id: Series):
+    def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
         pass
 
     @extractor
     @inputs(datetime, age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-        cls, ts: Series, user_age: Series, name: Series
+        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         pass
 
     @extractor
     @inputs(datetime, userid)
     @outputs(country_geoid)
-    def get_country_geoid(cls, ts: Series, user_id: Series):
+    def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
         pass
 
 
@@ -147,7 +147,7 @@ class UserInfoTransformedFeatures:
     @extractor
     @inputs(datetime, UserInfo.age, UserInfo.is_name_common)
     def get_user_transformed_features(
-        cls, ts: Series, age: Series, is_name_common: Series
+        cls, ts: pd.Series, age: pd.Series, is_name_common: pd.Series
     ):
         age_power_four = age**4
         return pd.DataFrame(
