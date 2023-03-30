@@ -59,7 +59,7 @@ def test_dataset_lookup(grpc_stub):
         gender: str = feature(id=5)
 
         @extractor(depends_on=[UserInfoDataset])
-        @inputs(datetime, userid, name)
+        @inputs(userid, name)
         @outputs(age_sq, gender)
         @typing.no_type_check
         def user_age_sq(
@@ -76,7 +76,7 @@ def test_dataset_lookup(grpc_stub):
             return df[["age_sq", "gender"]]
 
         @extractor(depends_on=[UserInfoDataset])
-        @inputs(datetime, userid, name)
+        @inputs(userid, name)
         @outputs(age_cube)
         @typing.no_type_check
         def user_age_cube(

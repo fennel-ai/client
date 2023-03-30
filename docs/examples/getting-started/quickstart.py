@@ -156,7 +156,7 @@ class Merchant:
     # Fennel lets you specify code that knows how to
     # extract one or more features of a featureset
     @extractor(depends_on=[MerchantInfo])
-    @inputs(datetime, merchant_id)
+    @inputs(merchant_id)
     @outputs(merchant_age)
     def get_merchant_info(cls, ts: pd.Series, merchant_id: pd.Series):
         df, _found = MerchantInfo.lookup(ts, merchant_id=merchant_id)
@@ -167,7 +167,7 @@ class Merchant:
         return df[["merchant_age"]]
 
     @extractor(depends_on=[MerchantInfo])
-    @inputs(datetime, merchant_id)
+    @inputs(merchant_id)
     @outputs(merchant_category, city, merchant_num_employees)
     def get_merchant_features(cls, ts: pd.Series, merchant_id: pd.Series):
         df, found = MerchantInfo.lookup(ts, merchant_id=merchant_id)
@@ -190,7 +190,7 @@ class MerchantBehaviorFeatures:
     fradulent_transaction_ratio: float = feature(id=3)
 
     @extractor(depends_on=[FraudReportAggregateByCity])
-    @inputs(datetime, Merchant.merchant_id, Merchant.city)
+    @inputs(Merchant.merchant_id, Merchant.city)
     @outputs(
         num_merchant_city_fraud_transactions,
         num_merchant_city_fraud_transactions_7d,

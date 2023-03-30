@@ -26,7 +26,7 @@ class UserFeatures:
     name: str = feature(id=2)
 
     @extractor(depends_on=[User])
-    @inputs(datetime, uid)
+    @inputs(uid)
     @outputs(name)
     def func(cls, ts: pd.Series, uids: pd.Series):
         names, found = User.lookup(ts, uid=uids)

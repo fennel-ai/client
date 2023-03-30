@@ -45,7 +45,7 @@ def test_simple_featureset(grpc_stub):
         income: int = feature(id=5).meta(deprecated=True)
 
         @extractor(depends_on=[UserInfoDataset], version=2)
-        @inputs(datetime, User.id, User.age)
+        @inputs(User.id, User.age)
         def get_user_info(
             cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
         ):
@@ -174,19 +174,19 @@ def test_complex_featureset(grpc_stub):
         income: int = feature(id=5)
 
         @extractor(depends_on=[UserInfoDataset])
-        @inputs(datetime, User.id)
+        @inputs(User.id)
         @outputs(userid, home_geoid)
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
         @extractor(depends_on=[UserInfoDataset])
-        @inputs(datetime, User.id)
+        @inputs(User.id)
         @outputs(gender, age)
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
         @extractor
-        @inputs(datetime, User.id)
+        @inputs(User.id)
         @outputs(income)
         def get_user_info3(cls, ts: pd.Series, user_id: pd.Series) -> income:
             pass

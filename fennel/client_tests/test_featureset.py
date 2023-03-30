@@ -40,7 +40,7 @@ class UserInfoSingleExtractor:
     is_name_common: bool = feature(id=7)
 
     @extractor(depends_on=[UserInfoDataset])
-    @inputs(datetime, userid)
+    @inputs(userid)
     @outputs(age, age_squared, age_cubed, is_name_common)
     def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
@@ -80,14 +80,14 @@ class UserInfoMultipleExtractor:
     age_reciprocal: float = feature(id=8)
 
     @extractor(depends_on=[UserInfoDataset])
-    @inputs(datetime, userid)
+    @inputs(userid)
     @outputs(age, name)
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df[[str(cls.age), str(cls.name)]]
 
     @extractor
-    @inputs(datetime, age, name)
+    @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
         cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
@@ -102,13 +102,13 @@ class UserInfoMultipleExtractor:
         return df
 
     @extractor
-    @inputs(datetime, age)
+    @inputs(age)
     @outputs(age_reciprocal)
     def get_age_reciprocal(cls, ts: pd.Series, age: pd.Series):
         return age.apply(lambda x: 1 / (x / (3600.0 * 24)) + 0.01)
 
     @extractor(depends_on=[UserInfoDataset], version=2)
-    @inputs(datetime, userid)
+    @inputs(userid)
     @outputs(country_geoid)
     def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
@@ -243,7 +243,6 @@ class UserInfoTransformedFeatures:
 
     @extractor
     @inputs(
-        datetime,
         UserInfoMultipleExtractor.age,
         UserInfoMultipleExtractor.is_name_common,
         UserInfoMultipleExtractor.country_geoid,
@@ -374,7 +373,7 @@ class DocumentFeatures:
     num_words: int = feature(id=4)
 
     @extractor(depends_on=[DocumentContentDataset])
-    @inputs(datetime, doc_id)
+    @inputs(doc_id)
     @outputs(num_words, bert_embedding, fast_text_embedding)
     def get_doc_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore

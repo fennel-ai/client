@@ -116,7 +116,7 @@ class UserInfoFeatures:
     is_name_common: bool = feature(id=7)
 
     @extractor
-    @inputs(datetime, age, name)
+    @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
         cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
@@ -189,14 +189,14 @@ class UserInfoMultipleExtractor:
     is_name_common: bool = feature(id=7)
 
     @extractor(depends_on=[UserInfoDataset])
-    @inputs(datetime, userid)
+    @inputs(userid)
     @outputs(age, name)
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)
         return df[["age", "name"]]
 
     @extractor
-    @inputs(datetime, age, name)
+    @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
         cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
@@ -211,7 +211,7 @@ class UserInfoMultipleExtractor:
         return df
 
     @extractor(depends_on=[UserInfoDataset])
-    @inputs(datetime, userid)
+    @inputs(userid)
     @outputs(country_geoid)
     def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore

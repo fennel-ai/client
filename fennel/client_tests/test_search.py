@@ -318,7 +318,7 @@ class UserBehaviorFeatures:
     num_long_views: int = feature(id=4)
 
     @extractor(depends_on=[UserEngagementDataset])
-    @inputs(datetime, Query.user_id)
+    @inputs(Query.user_id)
     def get_features(cls, ts: pd.Series, user_id: pd.Series):
         df, found = UserEngagementDataset.lookup(  # type: ignore
             ts, user_id=user_id  # type: ignore
@@ -337,7 +337,7 @@ class DocumentFeatures:
     num_views_28d: int = feature(id=5)
 
     @extractor(depends_on=[DocumentEngagementDataset])
-    @inputs(datetime, Query.doc_id)
+    @inputs(Query.doc_id)
     def get_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentEngagementDataset.lookup(  # type: ignore
             ts, doc_id=doc_id  # type: ignore
@@ -359,7 +359,7 @@ class DocumentContentFeatures:
     top_10_unique_words: List[str] = feature(id=6)
 
     @extractor(depends_on=[DocumentContentDataset])
-    @inputs(datetime, Query.doc_id)
+    @inputs(Query.doc_id)
     def get_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentContentDataset.lookup(  # type: ignore
             ts, doc_id=doc_id  # type: ignore

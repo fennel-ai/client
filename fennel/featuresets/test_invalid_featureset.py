@@ -40,7 +40,7 @@ def test_featureset_as_input(grpc_stub):
             home_geoid: int = feature(id=2)
 
             @extractor(depends_on=[UserInfoDataset])
-            @inputs(datetime, User)
+            @inputs(User)
             @outputs(userid, home_geoid)
             def get_user_info1(cls, ts: pd.Series, user: pd.Series):
                 pass
@@ -64,19 +64,19 @@ def test_complex_featureset(grpc_stub):
             income: int = feature(id=5)
 
             @extractor(depends_on=[UserInfoDataset])
-            @inputs(datetime, User.id)
+            @inputs(User.id)
             @outputs(userid, home_geoid)
             def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
             @extractor(depends_on=[UserInfoDataset])
-            @inputs(datetime, User.id)
+            @inputs(User.id)
             @outputs(gender, age)
             def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
             @extractor
-            @inputs(datetime, User.id)
+            @inputs(User.id)
             @outputs(gender)
             def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
@@ -99,7 +99,7 @@ def test_extract_anoather_featureset(grpc_stub):
             income: int = feature(id=5)
 
             @extractor
-            @inputs(datetime, User.id)
+            @inputs(User.id)
             @outputs(User.age)
             def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
@@ -121,7 +121,7 @@ def test_extract_anoather_featureset(grpc_stub):
             income: int = feature(id=5)
 
             @extractor
-            @inputs(datetime, User.id)
+            @inputs(User.id)
             @outputs(User)
             def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
@@ -143,7 +143,7 @@ def test_extract_anoather_featureset(grpc_stub):
             income: int = feature(id=5)
 
             @extractor
-            @inputs(datetime, User.id)
+            @inputs(User.id)
             @outputs(User.age, User.id)
             def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
@@ -165,7 +165,7 @@ def test_extract_anoather_featureset(grpc_stub):
             income: int = feature(id=5)
 
             @extractor(version="2")
-            @inputs(datetime, User.id)
+            @inputs(User.id)
             def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 

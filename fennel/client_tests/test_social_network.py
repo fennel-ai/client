@@ -113,7 +113,7 @@ class UserFeatures:
     category_view_ratio: float = feature(id=4)
 
     @extractor(depends_on=[UserViewsDataset])
-    @inputs(datetime, Request.user_id)
+    @inputs(Request.user_id)
     @outputs(num_views)
     def extract_user_views(cls, ts: pd.Series, user_ids: pd.Series):
         views, _ = UserViewsDataset.lookup(ts, user_id=user_ids)  # type: ignore
@@ -122,7 +122,7 @@ class UserFeatures:
         return views["num_views"]
 
     @extractor(depends_on=[UserCategoryDataset, UserViewsDataset])
-    @inputs(datetime, Request.user_id, Request.category)
+    @inputs(Request.user_id, Request.category)
     @outputs(category_view_ratio, num_category_views)
     def extractor_category_view(
         cls,

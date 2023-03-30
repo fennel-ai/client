@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import pandas as pd
 
 from fennel.featuresets import featureset, extractor, feature
@@ -14,7 +12,7 @@ class A:
     root: int = feature(id=3)
 
     @extractor
-    @inputs(datetime, root)
+    @inputs(root)
     def a1_a2(cls, ts: pd.Series, root: pd.Series):
         pass
 
@@ -25,7 +23,7 @@ class B:
     b2: int = feature(id=2)
 
     @extractor
-    @inputs(datetime, A.a1, A.a2)
+    @inputs(A.a1, A.a2)
     def b1_b2(cls, ts: pd.Series, a1: pd.Series, a2: pd.Series):
         pass
 
@@ -59,13 +57,13 @@ class C:
     c4: int = feature(id=4)
 
     @extractor
-    @inputs(datetime, A.root)
+    @inputs(A.root)
     @outputs(c1)
     def c1_from_root(cls, ts: pd.Series, a1: pd.Series):
         pass
 
     @extractor
-    @inputs(datetime, c1)
+    @inputs(c1)
     @outputs(c2, c3, c4)
     def from_c1(cls, ts: pd.Series, c1: pd.Series):
         pass
@@ -104,13 +102,13 @@ class UserInfo:
     is_name_common: bool = feature(id=7)
 
     @extractor
-    @inputs(datetime, userid)
+    @inputs(userid)
     @outputs(age, name)
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
         pass
 
     @extractor
-    @inputs(datetime, age, name)
+    @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
         cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
@@ -118,7 +116,7 @@ class UserInfo:
         pass
 
     @extractor
-    @inputs(datetime, userid)
+    @inputs(userid)
     @outputs(country_geoid)
     def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
         pass
@@ -142,7 +140,7 @@ class UserInfoTransformedFeatures:
     is_name_common: bool = feature(id=2)
 
     @extractor
-    @inputs(datetime, UserInfo.age, UserInfo.is_name_common)
+    @inputs(UserInfo.age, UserInfo.is_name_common)
     def get_user_transformed_features(
         cls, ts: pd.Series, age: pd.Series, is_name_common: pd.Series
     ):

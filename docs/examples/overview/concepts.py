@@ -100,7 +100,7 @@ class UserFeature:
     dob: datetime = feature(id=4)
 
     @extractor
-    @inputs(datetime, uid)
+    @inputs(uid)
     @outputs(age)
     def get_age(cls, ts: pd.Series, uids: pd.Series):
         dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])
@@ -108,7 +108,7 @@ class UserFeature:
         return pd.Series(ages)
 
     @extractor
-    @inputs(datetime, uid)
+    @inputs(uid)
     @outputs(country)
     def get_country(cls, ts: pd.Series, uids: pd.Series):
         countries, _ = User.lookup(ts=ts, uid=uids, fields=["country"])

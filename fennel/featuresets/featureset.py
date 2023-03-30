@@ -3,7 +3,6 @@ from __future__ import annotations
 import functools
 import inspect
 from dataclasses import dataclass
-from datetime import datetime
 from typing import (
     Any,
     cast,
@@ -161,7 +160,6 @@ def extractor(
         sig = inspect.signature(extractor_func)
         extractor_name = extractor_func.__name__
         params = []
-        check_timestamp = False
         class_method = False
         setattr(extractor_func, DEPENDS_ON_DATASETS_ATTR, list(depends_on))
         if not hasattr(extractor_func, FENNEL_INPUTS):
@@ -176,17 +174,17 @@ def extractor(
                     f"extractor `{extractor_name}` should have cls as the "
                     f"first parameter since they are class methods"
                 )
+            else:
+                class_method = True
+                continue
+            if param.name != "ts":
+                raise TypeError(
+                    f"extractor `{extractor_name}` should have ts as the "
+                    f"second parameter"
+                )
             break
 
         for inp in inputs:
-            if not check_timestamp:
-                if inp == datetime:
-                    check_timestamp = True
-                    continue
-                raise TypeError(
-                    f"extractor `{extractor_name}` functions must have timestamp ( of type "
-                    f"datetime ) as the second parameter, found `{inp}` instead."
-                )
             if not isinstance(inp, Feature):
                 if hasattr(inp, "_name"):
                     name = inp._name

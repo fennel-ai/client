@@ -16,7 +16,7 @@ class Movie:
     over_2hrs: bool = feature(id=2).meta(owner="laura@fintech.com")
 
     @extractor
-    @inputs(datetime, duration)
+    @inputs(duration)
     @outputs(over_2hrs)
     def func(cls, ts: pd.Series, durations: pd.Series):
         return durations > 2 * 3600

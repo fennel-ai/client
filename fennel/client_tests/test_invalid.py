@@ -70,7 +70,7 @@ class DomainFeatures:
     DOMAIN_USED_COUNT: int = feature(id=2)
 
     @extractor(depends_on=[MemberActivityDatasetCopy])
-    @inputs(datetime, Query.domain)
+    @inputs(Query.domain)
     @outputs(domain, DOMAIN_USED_COUNT)
     def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
         df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
@@ -105,7 +105,7 @@ class DomainFeatures2:
     DOMAIN_USED_COUNT: int = feature(id=2)
 
     @extractor()
-    @inputs(datetime, Query.domain)
+    @inputs(Query.domain)
     @outputs(domain, DOMAIN_USED_COUNT)
     def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
         df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
@@ -164,7 +164,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             DOMAIN_USED_COUNT: int = feature(id=2)
 
             @extractor(depends_on=[MemberActivityDatasetCopy])
-            @inputs(datetime, Query.domain)
+            @inputs(Query.domain)
             @outputs(domain, DOMAIN_USED_COUNT)
             def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
                 df, found = MemberActivityDatasetCopy.lookup(  # type: ignore

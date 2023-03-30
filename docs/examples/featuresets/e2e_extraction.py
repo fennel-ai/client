@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import pandas as pd
 
 from fennel.featuresets import feature, featureset, extractor
@@ -15,7 +13,7 @@ class User:
     age: float = feature(id=2)
 
     @extractor
-    @inputs(datetime, id)
+    @inputs(id)
     @outputs(age)
     def user_age(cls, ts: pd.Series, id: pd.Series):
         # Mock age calculation based on user id
@@ -31,7 +29,7 @@ class UserPost:
     affinity: float = feature(id=4)
 
     @extractor
-    @inputs(datetime, uid, pid)
+    @inputs(uid, pid)
     @outputs(score, affinity)
     def user_post_affinity(cls, ts: pd.Series, uid: pd.Series, pid: pd.Series):
         # Mock affinity calculation based on user id and post id
