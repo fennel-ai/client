@@ -224,8 +224,7 @@ def _validate_field_in_df(
     if name not in df.columns:
         raise ValueError(
             f"Field `{name}` not found in dataframe. "
-            f"Please ensure the dataframe has the same schema as the "
-            f"dataset."
+            f"Please ensure the dataframe has the correct schema."
         )
 
     # Check for the optional type

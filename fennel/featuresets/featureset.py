@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import inspect
 from dataclasses import dataclass
 from typing import (
@@ -12,9 +13,10 @@ from typing import (
     Optional,
     List,
     overload,
-    Union,
-    Set
+    Set,
 )
+
+import pandas as pd
 
 from fennel.datasets import Dataset
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
@@ -49,7 +51,7 @@ RESERVED_FEATURE_NAMES = [
 
 
 def feature(
-        id: int,
+    id: int,
 ) -> T:  # type: ignore
     return cast(
         T,
@@ -70,10 +72,10 @@ def feature(
 
 
 def get_feature(
-        cls: Type,
-        annotation_name: str,
-        dtype: Type,
-        field2comment_map: Dict[str, str],
+    cls: Type,
+    annotation_name: str,
+    dtype: Type,
+    field2comment_map: Dict[str, str],
 ) -> Feature:
     feature = getattr(cls, annotation_name, None)
     if not isinstance(feature, Feature):
@@ -116,24 +118,24 @@ def featureset(featureset_cls: Type[T]):
 
 @overload
 def extractor(
-        func: Callable[..., T],
+    func: Callable[..., T],
 ):
     ...
 
 
 @overload
 def extractor(
-        *,
-        depends_on: List[T],
-        version: int,
+    *,
+    depends_on: List[T],
+    version: int,
 ):
     ...
 
 
 @overload
 def extractor(
-        *,
-        depends_on: List[T],
+    *,
+    depends_on: List[T],
 ):
     ...
 
@@ -144,7 +146,7 @@ def extractor():
 
 
 def extractor(
-        func: Optional[Callable] = None, depends_on: List = [], version: int = 0
+    func: Optional[Callable] = None, depends_on: List = [], version: int = 0
 ):
     """
     extractor is a decorator for a function that extracts a feature from a
@@ -160,11 +162,9 @@ def extractor(
         class_method = False
         setattr(extractor_func, DEPENDS_ON_DATASETS_ATTR, list(depends_on))
         if not hasattr(extractor_func, FENNEL_INPUTS):
-            raise TypeError(
-                f"extractor `{extractor_name}` must have a `fennel_inputs` "
-                f"attribute"
-            )
-        inputs = getattr(extractor_func, FENNEL_INPUTS)
+            inputs = []
+        else:
+            inputs = getattr(extractor_func, FENNEL_INPUTS)
         for name, param in sig.parameters.items():
             if not class_method and param.name != "cls":
                 raise TypeError(
@@ -180,7 +180,6 @@ def extractor(
                     f"second parameter"
                 )
             break
-
         for inp in inputs:
             if not isinstance(inp, Feature):
                 if hasattr(inp, "_name"):
@@ -200,17 +199,13 @@ def extractor(
         else:
             return_annotation = None
         outputs = []
-        if return_annotation == str:
-            print("here")
-        print(return_annotation, type(return_annotation))
-
         if return_annotation is not None:
             if isinstance(return_annotation, Feature):
                 # If feature name is set, it means that the feature is from another
                 # featureset.
                 if (
-                        "." in str(return_annotation.fqn())
-                        and len(return_annotation.fqn()) > 0
+                    "." in str(return_annotation.fqn())
+                    and len(return_annotation.fqn()) > 0
                 ):
                     raise TypeError(
                         "Extractors can only extract a feature defined "
@@ -251,7 +246,7 @@ def extractor(
             EXTRACTOR_ATTR,
             Extractor(extractor_name, params, extractor_func, outputs, version),
         )
-        return extractor_func
+        return classmethod(extractor_func)
 
     def wrap(c: Callable):
         return _create_extractor(c, version)
@@ -305,6 +300,30 @@ class Feature:
         return self.fqn_
 
 
+def _add_column_names(func, columns, fs_name):
+    """Rewrites the output column names of the extractor to be fully qualified names."""
+
+    @functools.wraps(func)
+    def inner(*args, **kwargs):
+        ret = func(*args, **kwargs)
+        if isinstance(ret, pd.Series):
+            ret.name = f"{fs_name}.{columns[0]}"
+        elif isinstance(ret, pd.DataFrame):
+            if len(ret.columns) != len(columns) or set(ret.columns) != set(
+                columns
+            ):
+                raise ValueError(
+                    f"Expected {len(columns)} columns ({columns}) but got"
+                    f" {len(ret.columns)} columns {ret.columns} in"
+                    f" {func.__name__}"
+                )
+            ret.columns = [f"{fs_name}.{x}" for x in ret.columns]
+        print(ret)
+        return ret
+
+    return inner
+
+
 class Featureset:
     """Featureset is a class that defines a group of features that belong to
     an entity. It contains several extractors that provide the
@@ -322,9 +341,9 @@ class Featureset:
     _expectation: Expectations
 
     def __init__(
-            self,
-            featureset_cls: Type[T],
-            features: List[Feature],
+        self,
+        featureset_cls: Type[T],
+        features: List[Feature],
     ):
         self.__fennel_original_cls__ = featureset_cls
         self._name = featureset_cls.__name__
@@ -353,8 +372,8 @@ class Featureset:
                 continue
             extractor = getattr(method, EXTRACTOR_ATTR)
             if (
-                    extractor.output_feature_ids is None
-                    or len(extractor.output_feature_ids) == 0
+                extractor.output_feature_ids is None
+                or len(extractor.output_feature_ids) == 0
             ):
                 extractor.output_feature_ids = [
                     feature.id for feature in self._features
@@ -389,8 +408,6 @@ class Featureset:
         extracted_features: Set[int] = set()
         for extractor in self._extractors:
             for feature_id in extractor.output_feature_ids:
-                print(extractor.name, feature_id, self._id_to_feature[
-                    feature_id].name)
                 if feature_id in extracted_features:
                     raise TypeError(
                         f"Feature `{self._id_to_feature[feature_id].name}` is "
@@ -406,6 +423,9 @@ class Featureset:
             ]
             if len(feature_names) == 0:
                 feature_names = [f.name for f in self._features]
+            extractor.func = _add_column_names(
+                extractor.func, feature_names, self._name
+            )
             setattr(self, extractor.func.__name__, extractor.func)
 
     def _get_expectations(self):
@@ -442,7 +462,7 @@ class Featureset:
 class Extractor:
     # Name of the function that implements the extractor.
     name: str
-    inputs: List[Union[Feature, Featureset]]
+    inputs: List[Feature]
     func: Callable
     featureset: str
     # If outputs is empty, entire featureset is being extracted
@@ -452,12 +472,12 @@ class Extractor:
     output_features: List[str]
 
     def __init__(
-            self,
-            name: str,
-            inputs: List,
-            func: Callable,
-            outputs: List[int],
-            version: int,
+        self,
+        name: str,
+        inputs: List,
+        func: Callable,
+        outputs: List[int],
+        version: int,
     ):
         self.name = name
         self.inputs = inputs
@@ -484,4 +504,4 @@ class Extractor:
     def get_included_modules(self) -> List[Callable]:
         if hasattr(self.func, FENNEL_INCLUDED_MOD):
             return getattr(self.func, FENNEL_INCLUDED_MOD)
-        return None
+        return []

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
-import re
-from textwrap import dedent
+from textwrap import dedent, indent
 from typing import Any, Dict, List, Optional, Tuple, Callable
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
@@ -31,6 +30,10 @@ from fennel.lib.include_mod import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr
 from fennel.lib.schema import get_datatype
 from fennel.lib.to_proto import Serializer
+from fennel.lib.to_proto.source_code import (
+    get_featureset_core_code,
+    get_dataset_core_code,
+)
 
 
 def _cleanup_dict(d) -> Dict[str, Any]:
@@ -38,7 +41,7 @@ def _cleanup_dict(d) -> Dict[str, Any]:
 
 
 def _expectations_to_proto(
-        exp: Any, entity_name: str, entity_type: str
+    exp: Any, entity_name: str, entity_type: str
 ) -> List[exp_proto.Expectations]:
     if exp is None:
         return []
@@ -68,7 +71,7 @@ def _expectations_to_proto(
 # Sync
 # ------------------------------------------------------------------------------
 def to_sync_request_proto(
-        registered_objs: List[Any],
+    registered_objs: List[Any],
 ) -> services_proto.SyncRequest:
     datasets = []
     pipelines = []
@@ -80,6 +83,11 @@ def to_sync_request_proto(
     features = []
     extractors = []
     expectations: List[exp_proto.Expectations] = []
+    featureset_obj_map = {}
+    for obj in registered_objs:
+        if isinstance(obj, Featureset):
+            featureset_obj_map[obj._name] = obj
+
     for obj in registered_objs:
         if isinstance(obj, Dataset):
             datasets.append(dataset_to_proto(obj))
@@ -98,7 +106,7 @@ def to_sync_request_proto(
         elif isinstance(obj, Featureset):
             featuresets.append(featureset_to_proto(obj))
             features.extend(features_from_fs(obj))
-            extractors.extend(extractors_from_fs(obj))
+            extractors.extend(extractors_from_fs(obj, featureset_obj_map))
         else:
             raise ValueError(f"Unknown object type {type(obj)}")
 
@@ -139,7 +147,8 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
         from fennel.datasets import *
         from fennel.lib.schema import *
         from fennel.datasets.datasets import dataset_lookup
-        """)
+        """
+    )
 
     return ds_proto.CoreDataset(
         name=ds.__name__,
@@ -150,11 +159,13 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
         field_metadata=_field_metadata(ds._fields),
         pycode=pycode_proto.PyCode(
             source_code=dedent(inspect.getsource(ds.__fennel_original_cls__)),
-            name=ds.__name__,
+            generated_code=get_dataset_core_code(ds),
+            core_code=get_dataset_core_code(ds),
+            entry_point=ds.__name__,
             includes=[],
-            ref_includes=[],
-            imports=imports
-        )
+            ref_includes={},
+            imports=imports,
+        ),
     )
 
 
@@ -197,7 +208,7 @@ def pipelines_from_ds(ds: Dataset) -> List[ds_proto.Pipeline]:
 
 
 def _pipeline_to_proto(
-        pipeline: Pipeline, dataset_name: str
+    pipeline: Pipeline, dataset_name: str
 ) -> ds_proto.Pipeline:
     return ds_proto.Pipeline(
         name=pipeline.name,
@@ -227,7 +238,7 @@ def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
 
 
 def sources_from_ds(
-        ds: Dataset, source_field
+    ds: Dataset, source_field
 ) -> Tuple[List[connector_proto.ExtDatabase], List[connector_proto.Source]]:
     if hasattr(ds, source_field):
         ext_dbs = []
@@ -248,7 +259,6 @@ def sources_from_ds(
 
 def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
     _check_owner_exists(fs)
-    print("fs._name", fs._name)
     imports = dedent(
         """
         from datetime import datetime
@@ -260,18 +270,20 @@ def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
         from fennel.lib.metadata import meta
         from fennel.lib.include_mod import includes
         from fennel.lib.schema import *
-        """)
-
+        """
+    )
     return fs_proto.CoreFeatureset(
         name=fs._name,
         metadata=get_metadata_proto(fs),
         pycode=pycode_proto.PyCode(
             source_code=dedent(inspect.getsource(fs.__fennel_original_cls__)),
-            name=fs._name,
+            core_code=get_featureset_core_code(fs),
+            generated_code=get_featureset_core_code(fs),
+            entry_point=fs._name,
             includes=[],
-            ref_includes=[],
+            ref_includes={},
             imports=imports,
-        )
+        ),
     )
 
 
@@ -292,10 +304,12 @@ def _feature_to_proto(f: Feature) -> fs_proto.Feature:
     )
 
 
-def extractors_from_fs(fs: Featureset) -> List[fs_proto.Extractor]:
+def extractors_from_fs(
+    fs: Featureset, fs_obj_map: Dict[str, Featureset]
+) -> List[fs_proto.Extractor]:
     extractors = []
     for extractor in fs._extractors:
-        extractors.append(_extractor_to_proto(extractor, fs))
+        extractors.append(_extractor_to_proto(extractor, fs, fs_obj_map))
     return extractors
 
 
@@ -311,7 +325,7 @@ def feature_to_proto_as_input(f: Feature) -> fs_proto.Input:
 
 # Extractor
 def _extractor_to_proto(
-        extractor: Extractor, fs: Featureset
+    extractor: Extractor, fs: Featureset, fs_obj_map: Dict[str, Featureset]
 ) -> fs_proto.Extractor:
     inputs = []
     for input in extractor.inputs:
@@ -339,7 +353,7 @@ def _extractor_to_proto(
         features=extractor.output_features,
         metadata=get_metadata_proto(extractor.func),
         version=extractor.version,
-        pycode=to_extractor_pycode(extractor, fs),
+        pycode=to_extractor_pycode(extractor, fs, fs_obj_map),
         feature_set_name=extractor.featureset,
     )
 
@@ -359,8 +373,8 @@ def _check_owner_exists(obj):
 # Connector
 # ------------------------------------------------------------------------------
 def _conn_to_source_proto(
-        connector: sources.DataConnector,
-        dataset_name: str,
+    connector: sources.DataConnector,
+    dataset_name: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if isinstance(connector, sources.S3Connector):
         return _s3_conn_to_source_proto(connector, dataset_name)
@@ -373,7 +387,7 @@ def _conn_to_source_proto(
 
 
 def _kafka_conn_to_source_proto(
-        connector: sources.KafkaConnector, dataset_name: str
+    connector: sources.KafkaConnector, dataset_name: str
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if not isinstance(data_source, sources.Kafka):
@@ -399,13 +413,13 @@ def _kafka_conn_to_source_proto(
 
 
 def _kafka_to_ext_db_proto(
-        name: str,
-        bootstrap_servers: str,
-        security_protocol: str,
-        sasl_mechanism: Optional[str],
-        sasl_plain_username: Optional[str],
-        sasl_plain_password: Optional[str],
-        sasl_jaas_config: Optional[str],
+    name: str,
+    bootstrap_servers: str,
+    security_protocol: str,
+    sasl_mechanism: Optional[str],
+    sasl_plain_username: Optional[str],
+    sasl_plain_password: Optional[str],
+    sasl_jaas_config: Optional[str],
 ) -> connector_proto.ExtDatabase:
     if sasl_mechanism is None:
         sasl_mechanism = ""
@@ -430,7 +444,7 @@ def _kafka_to_ext_db_proto(
 
 
 def _s3_conn_to_source_proto(
-        connector: sources.S3Connector, dataset_name: str
+    connector: sources.S3Connector, dataset_name: str
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if not isinstance(data_source, sources.S3):
@@ -458,7 +472,7 @@ def _s3_conn_to_source_proto(
 
 
 def _s3_to_ext_db_proto(
-        name: str, aws_access_key_id: str, aws_secret_access_key: str
+    name: str, aws_access_key_id: str, aws_secret_access_key: str
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -470,11 +484,11 @@ def _s3_to_ext_db_proto(
 
 
 def _s3_to_ext_table_proto(
-        db: connector_proto.ExtDatabase,
-        bucket: Optional[str],
-        path_prefix: Optional[str],
-        delimiter: str,
-        format: str,
+    db: connector_proto.ExtDatabase,
+    bucket: Optional[str],
+    path_prefix: Optional[str],
+    delimiter: str,
+    format: str,
 ) -> connector_proto.ExtTable:
     if bucket is None:
         raise ValueError("bucket must be specified")
@@ -492,7 +506,7 @@ def _s3_to_ext_table_proto(
 
 
 def _table_conn_to_source_proto(
-        connector: sources.TableConnector, dataset_name: str
+    connector: sources.TableConnector, dataset_name: str
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if isinstance(data_source, sources.BigQuery):
@@ -512,9 +526,9 @@ def _table_conn_to_source_proto(
 
 
 def _bigquery_conn_to_source_proto(
-        connector: sources.TableConnector,
-        data_source: sources.BigQuery,
-        dataset_name: str,
+    connector: sources.TableConnector,
+    data_source: sources.BigQuery,
+    dataset_name: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _bigquery_to_ext_db_proto(
         data_source.name,
@@ -539,7 +553,7 @@ def _bigquery_conn_to_source_proto(
 
 
 def _bigquery_to_ext_db_proto(
-        name: str, project_id: str, dataset_id: str, credentials_json: str
+    name: str, project_id: str, dataset_id: str, credentials_json: str
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -552,7 +566,7 @@ def _bigquery_to_ext_db_proto(
 
 
 def _bigquery_to_ext_table_proto(
-        db: connector_proto.ExtDatabase, table_name: str
+    db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         bigquery_table=connector_proto.BigqueryTable(
@@ -563,9 +577,9 @@ def _bigquery_to_ext_table_proto(
 
 
 def _snowflake_conn_to_source_proto(
-        connector: sources.TableConnector,
-        data_source: sources.Snowflake,
-        dataset_name: str,
+    connector: sources.TableConnector,
+    data_source: sources.Snowflake,
+    dataset_name: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _snowflake_to_ext_db_proto(
         name=data_source.name,
@@ -594,15 +608,15 @@ def _snowflake_conn_to_source_proto(
 
 
 def _snowflake_to_ext_db_proto(
-        name: str,
-        account: str,
-        user: str,
-        password: str,
-        schema: str,
-        warehouse: str,
-        role: str,
-        database: str,
-        jbdc_params: Optional[str] = None,
+    name: str,
+    account: str,
+    user: str,
+    password: str,
+    schema: str,
+    warehouse: str,
+    role: str,
+    database: str,
+    jbdc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
     if jbdc_params is None:
         jbdc_params = ""
@@ -623,7 +637,7 @@ def _snowflake_to_ext_db_proto(
 
 
 def _snowflake_to_ext_table_proto(
-        db: connector_proto.ExtDatabase, table_name: str
+    db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         snowflake_table=connector_proto.SnowflakeTable(
@@ -634,9 +648,9 @@ def _snowflake_to_ext_table_proto(
 
 
 def _mysql_conn_to_source_proto(
-        connector: sources.TableConnector,
-        data_source: sources.MySQL,
-        dataset_name: str,
+    connector: sources.TableConnector,
+    data_source: sources.MySQL,
+    dataset_name: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if data_source._get:
         ext_db = _mysql_ref_to_ext_db_proto(name=data_source.name)
@@ -666,13 +680,13 @@ def _mysql_conn_to_source_proto(
 
 
 def _mysql_to_ext_db_proto(
-        name: str,
-        host: str,
-        database: str,
-        user: str,
-        password: str,
-        port: int,
-        jdbc_params: Optional[str] = None,
+    name: str,
+    host: str,
+    database: str,
+    user: str,
+    password: str,
+    port: int,
+    jdbc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
     if jdbc_params is None:
         jdbc_params = ""
@@ -690,7 +704,7 @@ def _mysql_to_ext_db_proto(
 
 
 def _mysql_to_ext_table_proto(
-        db: connector_proto.ExtDatabase, table_name: str
+    db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         mysql_table=connector_proto.MySQLTable(
@@ -710,9 +724,9 @@ def _mysql_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
 
 
 def _pg_conn_to_source_proto(
-        connector: sources.TableConnector,
-        data_source: sources.Postgres,
-        dataset_name: str,
+    connector: sources.TableConnector,
+    data_source: sources.Postgres,
+    dataset_name: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if data_source._get:
         ext_db = _pg_ref_to_ext_db_proto(name=data_source.name)
@@ -742,13 +756,13 @@ def _pg_conn_to_source_proto(
 
 
 def _pg_to_ext_db_proto(
-        name: str,
-        host: str,
-        database: str,
-        user: str,
-        password: str,
-        port: int,
-        jdbc_params: Optional[str] = None,
+    name: str,
+    host: str,
+    database: str,
+    user: str,
+    password: str,
+    port: int,
+    jdbc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
     if jdbc_params is None:
         jdbc_params = ""
@@ -767,7 +781,7 @@ def _pg_to_ext_db_proto(
 
 
 def _pg_to_ext_table_proto(
-        db: connector_proto.ExtDatabase, table_name: str
+    db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         pg_table=connector_proto.PostgresTable(
@@ -809,37 +823,89 @@ def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
             dependencies.append(to_includes_proto(f))
 
     code = dedent(inspect.getsource(func))
-    code_refactored = re.sub(r"^\s*@.*", "", code, flags=re.MULTILINE)
     return pycode_proto.PyCode(
-        source_code=code_refactored,
-        name=func.__name__,
+        source_code=code,
+        generated_code=code,
+        core_code=code,
+        entry_point=func.__name__,
         includes=dependencies,
     )
 
 
+def _get_gen_code(dependencies: List[pycode_proto.PyCode]) -> str:
+    gen_code = ""
+    for dep in dependencies:
+        gen_code += _get_gen_code(dep.includes)
+        gen_code += dedent(dep.generated_code) + "\n"
+    return gen_code
+
+
 def to_extractor_pycode(
-        extractor: Extractor, featureset: Featureset
-) -> pycode_proto.ExtractorPyCode:
+    extractor: Extractor,
+    featureset: Featureset,
+    fs_obj_map: Dict[str, Featureset],
+) -> pycode_proto.PyCode:
     dependencies = []
     if hasattr(extractor.func, FENNEL_INCLUDED_MOD):
         dependencies = [
             to_includes_proto(f)
             for f in getattr(extractor.func, FENNEL_INCLUDED_MOD)
         ]
+    # Extractor code construction
+    gen_code = _get_gen_code(dependencies)
 
-    # Featureset code construction
+    for dataset in extractor.get_dataset_dependencies():
+        gen_code += get_dataset_core_code(dataset)
+
+    input_fs_added = set()
+    for input in extractor.inputs:
+        if not isinstance(input, Feature):
+            raise ValueError(
+                f"Extractor {extractor.name} must have inputs "
+                f"of type Feature, but got {type(input)}"
+            )
+        if input.featureset_name not in input_fs_added:
+            input_fs_added.add(input.featureset_name)
+            if input.featureset_name not in fs_obj_map:
+                raise ValueError(
+                    f"Extractor {extractor.name} has an input "
+                    f"feature {input.name} from featureset "
+                    f"{input.featureset_name} which is not synced"
+                )
+            gen_code = (
+                gen_code
+                + get_featureset_core_code(fs_obj_map[input.featureset_name])
+                + "\n"
+            )
 
     extractor_src_code = dedent(inspect.getsource(extractor.func))
-    # extractor_src_code = re.sub(
-    #     r"^\s*@.*", "", extractor_src_code, flags=re.MULTILINE
-    # )
+    indented_code = indent(extractor_src_code, " " * 4)
+    featureset_core_code = get_featureset_core_code(featureset)
+    gen_code = gen_code + "\n" + featureset_core_code + "\n" + indented_code
     ref_includes = {featureset._name: pycode_proto.RefType.Featureset}
     datasets = extractor.get_dataset_dependencies()
     for d in datasets:
         ref_includes[d._name] = pycode_proto.RefType.Dataset
+    imports = """
+from datetime import datetime
+import pandas as pd
+import numpy as np
+import functools
+from typing import List, Dict, Tuple, Optional, Union, Any, no_type_check
+from fennel.lib.metadata import meta
+from fennel.lib.include_mod import includes
+from fennel.datasets import *
+from fennel.featuresets import *
+from fennel.lib.schema import *
+from fennel.datasets.datasets import dataset_lookup
+
+"""
+    gen_code = imports + gen_code
     return pycode_proto.PyCode(
         source_code=extractor_src_code,
-        name=extractor.func.__name__,
+        core_code=extractor_src_code,
+        generated_code=gen_code,
+        entry_point=f"{featureset._name}.{extractor.func.__name__}",
         includes=dependencies,
         ref_includes=ref_includes,
     )

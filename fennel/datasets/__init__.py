@@ -5,7 +5,6 @@ from fennel.datasets.datasets import (
     Pipeline,
     field,
     on_demand,
-    lookup,
     OnDemand,
     Field,
     Transform,

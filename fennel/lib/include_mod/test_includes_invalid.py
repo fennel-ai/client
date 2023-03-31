@@ -7,10 +7,10 @@ import pytest
 import requests
 
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, extractor, depends_on, feature
+from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.include_mod import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Series, DataFrame
+from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import mock_client
 
 
@@ -46,11 +46,10 @@ class UserInfoSingleExtractor:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
 
-    @extractor
-    @depends_on(UserInfoDataset)
-    def get_user_info(
-        cls, ts: Series[datetime], user_id: Series[userid]
-    ) -> DataFrame[age, age_power_four, age_cubed, is_name_common]:
+    @extractor(depends_on=[UserInfoDataset])
+    @inputs(userid)
+    @outputs(age, age_power_four, age_cubed, is_name_common)
+    def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df[str(cls.userid)] = user_id
         df[str(cls.age_power_four)] = power_4(df["age"])

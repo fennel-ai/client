@@ -10,6 +10,7 @@ import requests
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
+from fennel.lib.include_mod import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, outputs
 from fennel.test_lib import mock_client
@@ -39,6 +40,7 @@ class UserInfoSingleExtractor:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
 
+    @classmethod
     @extractor(depends_on=[UserInfoDataset])
     @inputs(userid)
     @outputs(age, age_squared, age_cubed, is_name_common)
@@ -83,6 +85,9 @@ class UserInfoMultipleExtractor:
     @inputs(userid)
     @outputs(age, name)
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
+        print("----")
+        print(cls)
+        print(ts)
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df[[str(cls.age), str(cls.name)]]
 
@@ -90,10 +95,10 @@ class UserInfoMultipleExtractor:
     @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-            cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
+        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
-        df = pd.concat([user_age ** 2, user_age ** 3, is_name_common], axis=1)
+        df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
             str(cls.age_squared),
             str(cls.age_cubed),
@@ -105,12 +110,14 @@ class UserInfoMultipleExtractor:
     @inputs(age)
     @outputs(age_reciprocal)
     def get_age_reciprocal(cls, ts: pd.Series, age: pd.Series):
-        return age.apply(lambda x: 1 / (x / (3600.0 * 24)) + 0.01)
+        d = age.apply(lambda x: 1 / (x / (3600.0 * 24)) + 0.01)
+        return pd.Series(name="age_reciprocal", data=d)
 
     @extractor(depends_on=[UserInfoDataset], version=2)
+    @includes(get_country_geoid)
     @inputs(userid)
     @outputs(country_geoid)
-    def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
+    def get_country_geoid_extractor(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df["country_geoid"] = df["country"].apply(get_country_geoid)
         return df["country_geoid"]
@@ -127,15 +134,15 @@ class TestSimpleExtractor(unittest.TestCase):
         )
         self.assertEqual(df.shape, (2, 3))
         self.assertEqual(
-            df["age_squared"].tolist(),
+            df["UserInfoMultipleExtractor.age_squared"].tolist(),
             [1024, 576],
         )
         self.assertEqual(
-            df["age_cubed"].tolist(),
+            df["UserInfoMultipleExtractor.age_cubed"].tolist(),
             [32768, 13824],
         )
         self.assertEqual(
-            df["is_name_common"].tolist(),
+            df["UserInfoMultipleExtractor.is_name_common"].tolist(),
             [True, False],
         )
 
@@ -163,10 +170,17 @@ class TestSimpleExtractor(unittest.TestCase):
             UserInfoMultipleExtractor, ts, user_ids
         )
         self.assertEqual(df.shape, (2, 4))
-        self.assertEqual(df["age"].tolist(), [32, 24])
-        self.assertEqual(df["age_squared"].tolist(), [1024, 576])
-        self.assertEqual(df["age_cubed"].tolist(), [32768, 13824])
-        self.assertEqual(df["is_name_common"].tolist(), [True, False])
+        print(df)
+        self.assertEqual(df["UserInfoSingleExtractor.age"].tolist(), [32, 24])
+        self.assertEqual(
+            df["UserInfoSingleExtractor.age_squared"].tolist(), [1024, 576]
+        )
+        self.assertEqual(
+            df["UserInfoSingleExtractor.age_cubed"].tolist(), [32768, 13824]
+        )
+        self.assertEqual(
+            df["UserInfoSingleExtractor.is_name_common"].tolist(), [True, False]
+        )
 
         series = UserInfoMultipleExtractor.get_country_geoid_extractor(
             UserInfoMultipleExtractor, ts, user_ids
@@ -240,14 +254,14 @@ class UserInfoTransformedFeatures:
         UserInfoMultipleExtractor.country_geoid,
     )
     def get_user_transformed_features(
-            cls,
-            ts: pd.Series,
-            user_age: pd.Series,
-            is_name_common: pd.Series,
-            country_geoid: pd.Series,
+        cls,
+        ts: pd.Series,
+        user_age: pd.Series,
+        is_name_common: pd.Series,
+        country_geoid: pd.Series,
     ):
-        age_power_four = user_age ** 4
-        country_geoid = country_geoid ** 2
+        age_power_four = user_age**4
+        country_geoid = country_geoid**2
         return pd.DataFrame(
             {
                 str(cls.age_power_four): age_power_four,
@@ -442,8 +456,8 @@ class TestDocumentDataset(unittest.TestCase):
             9,
         ]
         assert (
-                feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
-                == [1, 2, 3, 4]
+            feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
+            == [1, 2, 3, 4]
         ).all()
 
         yesterday = datetime.now() - timedelta(days=1)

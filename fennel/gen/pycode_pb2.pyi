@@ -27,19 +27,7 @@ class _RefTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTy
     Dataset: _RefType.ValueType  # 0
     Featureset: _RefType.ValueType  # 1
 
-class RefType(_RefType, metaclass=_RefTypeEnumTypeWrapper):
-    """
-    message ExtractorPyCode {
-     string source_code = 1;
-     string extractor_name = 3;
-     string featureset = 4;
-     repeated PyCode includes = 5;
-     repeated string dataset_codes = 6;
-     repeated string dataset_names = 7;
-     string featureset_code = 8;
-     string imports = 9;
-    }
-    """
+class RefType(_RefType, metaclass=_RefTypeEnumTypeWrapper): ...
 
 Dataset: RefType.ValueType  # 0
 Featureset: RefType.ValueType  # 1
@@ -65,15 +53,17 @@ class PyCode(google.protobuf.message.Message):
         ) -> None: ...
         def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
 
+    ENTRY_POINT_FIELD_NUMBER: builtins.int
     SOURCE_CODE_FIELD_NUMBER: builtins.int
-    PICKLED_FIELD_NUMBER: builtins.int
-    NAME_FIELD_NUMBER: builtins.int
+    CORE_CODE_FIELD_NUMBER: builtins.int
+    GENERATED_CODE_FIELD_NUMBER: builtins.int
     INCLUDES_FIELD_NUMBER: builtins.int
     REF_INCLUDES_FIELD_NUMBER: builtins.int
     IMPORTS_FIELD_NUMBER: builtins.int
+    entry_point: builtins.str
     source_code: builtins.str
-    pickled: builtins.bytes
-    name: builtins.str
+    core_code: builtins.str
+    generated_code: builtins.str
     @property
     def includes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PyCode]: ...
     @property
@@ -82,13 +72,14 @@ class PyCode(google.protobuf.message.Message):
     def __init__(
         self,
         *,
+        entry_point: builtins.str = ...,
         source_code: builtins.str = ...,
-        pickled: builtins.bytes = ...,
-        name: builtins.str = ...,
+        core_code: builtins.str = ...,
+        generated_code: builtins.str = ...,
         includes: collections.abc.Iterable[global___PyCode] | None = ...,
         ref_includes: collections.abc.Mapping[builtins.str, global___RefType.ValueType] | None = ...,
         imports: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["imports", b"imports", "includes", b"includes", "name", b"name", "pickled", b"pickled", "ref_includes", b"ref_includes", "source_code", b"source_code"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["core_code", b"core_code", "entry_point", b"entry_point", "generated_code", b"generated_code", "imports", b"imports", "includes", b"includes", "ref_includes", b"ref_includes", "source_code", b"source_code"]) -> None: ...
 
 global___PyCode = PyCode

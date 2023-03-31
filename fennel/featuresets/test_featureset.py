@@ -47,22 +47,23 @@ def test_simple_featureset(grpc_stub):
         @extractor(depends_on=[UserInfoDataset], version=2)
         @inputs(User.id, User.age)
         def get_user_info(
-                cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
+            cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
         ):
             return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
 
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserInfo)
+    view.add(User)
     sync_request = view._get_sync_request_proto()
-    assert len(sync_request.feature_sets) == 1
+    assert len(sync_request.feature_sets) == 2
     assert len(sync_request.extractors) == 1
-    assert len(sync_request.features) == 5
+    assert len(sync_request.features) == 7
     featureset_request = sync_request.feature_sets[0]
     f = {
         "name": "UserInfo",
         "metadata": {"owner": "test@test.com"},
-        "pycode": {"source_code": ""}
+        "pycode": {"source_code": ""},
     }
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
     # Clear the pycode field in featureset_request as it is not deterministic
@@ -197,15 +198,18 @@ def test_complex_featureset(grpc_stub):
     view = InternalTestClient(grpc_stub)
     view.add(UserInfoDataset)
     view.add(UserInfo)
+    view.add(User)
     sync_request = view._get_sync_request_proto()
-    assert len(sync_request.feature_sets) == 1
+    assert len(sync_request.feature_sets) == 2
     assert len(sync_request.extractors) == 3
-    assert len(sync_request.features) == 5
+    assert len(sync_request.features) == 7
     f = {
         "name": "UserInfo",
         "metadata": {"owner": "test@test.com"},
+        "pycode": {},
     }
     featureset_request = sync_request.feature_sets[0]
+    featureset_request.pycode.Clear()
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request

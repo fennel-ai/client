@@ -3,6 +3,7 @@ from typing import List, no_type_check
 
 import pandas as pd
 
+import fennel.datasets.datasets
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.metadata import meta
@@ -22,8 +23,8 @@ class UserInfoDataset:
     timestamp: datetime
 
 
-def dataset_lookup(
-        cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame
+def fake_func(
+    cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame
 ):
     now = datetime.fromtimestamp(1668368655)
     if len(fields) > 0:
@@ -45,6 +46,8 @@ def dataset_lookup(
 
 
 def test_dataset_lookup(grpc_stub):
+    fennel.datasets.datasets.dataset_lookup = fake_func
+
     @meta(owner="test@test.com")
     @featureset
     class UserAgeFeatures:
@@ -60,7 +63,7 @@ def test_dataset_lookup(grpc_stub):
         @outputs(age_sq, gender)
         @no_type_check
         def user_age_sq(
-                cls, ts: pd.Series, user_id: pd.Series, names: pd.Series
+            cls, ts: pd.Series, user_id: pd.Series, names: pd.Series
         ):
             user_id_plus_one = user_id * 5
             df, _ = UserInfoDataset.lookup(
@@ -77,10 +80,10 @@ def test_dataset_lookup(grpc_stub):
         @outputs(age_cube)
         @no_type_check
         def user_age_cube(
-                cls,
-                ts: pd.Series,
-                user_id: pd.Series,
-                names: pd.Series,
+            cls,
+            ts: pd.Series,
+            user_id: pd.Series,
+            names: pd.Series,
         ):
             user_id_into_three = user_id * 3
             df, _ = UserInfoDataset.lookup(
@@ -99,23 +102,14 @@ def test_dataset_lookup(grpc_stub):
     user_sq_extractor = sync_request.extractors[1]
     assert user_sq_extractor.name == "user_age_sq"
 
-    dscode_dict = {
-        "UserInfoDataset": dataset_to_proto(UserInfoDataset),
-    }
-    fs_proto = featureset_to_proto(UserAgeFeatures)
-    # Call to the extractor function
-
-    user_sq_extractor_func, globals, locals = get_extractor_func(
-        sync_request.extractors[1], fs_proto, dscode_dict
-    )
-
+    c = get_extractor_func(sync_request.extractors[1]).__fennel_original_cls__
+    user_sq_extractor_func = getattr(c, "user_age_sq")
     now = datetime.fromtimestamp(1668368655)
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a", "b", "c"])
 
-    globals["dataset_lookup"] = dataset_lookup
-    df = user_sq_extractor_func(None, ts, user_id, names)
+    df = user_sq_extractor_func(ts, user_id, names)
     assert df["age_sq"].tolist() == [576, 529, 2025]
     assert df["gender"].tolist() == ["female", "female", "male"]
 
@@ -123,13 +117,10 @@ def test_dataset_lookup(grpc_stub):
     assert user_age_cube.name == "user_age_cube"
 
     # Call to the extractor function
-    user_age_cube_func, globals, locals = get_extractor_func(
-        sync_request.extractors[0], fs_proto, dscode_dict
-    )
-
+    c = get_extractor_func(sync_request.extractors[0]).__fennel_original_cls__
+    user_age_cube_func = getattr(c, "user_age_cube")
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a2", "b2", "c2"])
-    globals["dataset_lookup"] = dataset_lookup
-    df = user_age_cube_func(None, ts, user_id, names)
+    df = user_age_cube_func(ts, user_id, names)
     assert df["age_cube"].tolist() == [13824, 12167, 91125]

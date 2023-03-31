@@ -7,6 +7,7 @@ import requests
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import feature, featureset, extractor
+from fennel.lib.include_mod import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import mock_client
@@ -66,6 +67,7 @@ class UserFeatures:
         return df
 
     @extractor(depends_on=[UserInfoDataset])
+    @includes(get_country_geoid)
     @inputs(userid)
     @outputs(country_geoid)
     def get_country_geoid_extractor(cls, ts: pd.Series, user_id: pd.Series):

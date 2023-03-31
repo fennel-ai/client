@@ -102,10 +102,16 @@ def test_multiple_features_extracted(client):
             {"UserLocationFeatures.uid": [1, 2, 3]},
         ),
     )
-    assert df["UserLocationFeatures.latitude"].round(0).tolist() == \
-           [41, 52, 49, ]
-    assert df["UserLocationFeatures.longitude"].round(0).tolist() == \
-           [-74, 0, 2, ]
+    assert df["UserLocationFeatures.latitude"].round(0).tolist() == [
+        41,
+        52,
+        49,
+    ]
+    assert df["UserLocationFeatures.longitude"].round(0).tolist() == [
+        -74,
+        0,
+        2,
+    ]
 
 
 # docsnip extractors_across_featuresets

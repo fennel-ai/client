@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from textwrap import dedent
 from typing import Callable, Dict, Any, List
 
 import fennel.gen.dataset_pb2 as proto
@@ -17,7 +18,9 @@ def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
 
     return pycode_proto.PyCode(
         source_code=inspect.getsource(func),
-        name=func.__name__,
+        generated_code=dedent(inspect.getsource(func)),
+        core_code=dedent(inspect.getsource(func)),
+        entry_point=func.__name__,
         includes=[to_includes_proto(f) for f in dependencies],
     )
 

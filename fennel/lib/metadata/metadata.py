@@ -83,6 +83,7 @@ def meta(
 
 def get_meta(obj: Any) -> Optional[Metadata]:
     if not hasattr(obj, META_FIELD):
+        print("No metadata found", obj)
         return None
     return getattr(obj, META_FIELD)
 

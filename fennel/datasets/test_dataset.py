@@ -86,7 +86,7 @@ def test_simple_dataset(grpc_stub):
                     "country": {},
                     "timestamp": {},
                 },
-                "pycode": {}
+                "pycode": {},
             }
         ],
     }
@@ -147,7 +147,7 @@ def test_dataset_with_retention(grpc_stub):
                     "amount": {},
                     "timestamp": {},
                 },
-                "pycode": {}
+                "pycode": {},
             }
         ],
     }
@@ -306,7 +306,7 @@ def test_dataset_with_pipes(grpc_stub):
         "history": "63072000s",
         "retention": "63072000s",
         "field_metadata": {"a1": {}, "t": {}},
-        "pycode": {}
+        "pycode": {},
     }
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
@@ -484,7 +484,7 @@ def test_dataset_with_complex_pipe(grpc_stub):
             "num_merchant_fraudulent_transactions_7d": {},
             "timestamp": {},
         },
-        "pycode": {}
+        "pycode": {},
     }
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
@@ -549,7 +549,7 @@ def test_dataset_with_complex_pipe(grpc_stub):
         "dataset_name": "FraudReportAggregatedDataset",
         "filter": {
             "operandId": "Activity",
-            "pycode": {"pickled": b"", "source_code": ""},
+            "pycode": {"source_code": ""},
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -588,7 +588,7 @@ def test_dataset_with_complex_pipe(grpc_stub):
                 "timestamp": {"timestamp_type": {}},
                 "transaction_amount": {"double_type": {}},
             },
-            "pycode": {"pickled": b"", "source_code": ""},
+            "pycode": {"source_code": ""},
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -699,7 +699,7 @@ def test_union_datasets(grpc_stub):
             "a1": {},
             "t": {},
         },
-        "pycode": {}
+        "pycode": {},
     }
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
@@ -995,7 +995,7 @@ def test_search_dataset(grpc_stub):
                     "array_type": {"of": {"string_type": {}}}
                 },
             },
-            "pycode": {}
+            "pycode": {},
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
