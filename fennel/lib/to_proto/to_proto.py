@@ -887,6 +887,7 @@ def to_extractor_pycode(
     for d in datasets:
         ref_includes[d._name] = pycode_proto.RefType.Dataset
     imports = """
+import sys
 from datetime import datetime
 import pandas as pd
 import numpy as np

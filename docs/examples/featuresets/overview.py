@@ -21,7 +21,7 @@ class Movies:
     @inputs(duration)
     @outputs(over_2hrs)
     def my_extractor(cls, ts: pd.Series, durations: pd.Series):
-        return durations > 2 * 3600
+        return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
 
 # /docsnip
@@ -44,7 +44,7 @@ class Movie:
     @inputs(duration)
     @outputs(over_2hrs)
     def my_extractor(cls, ts: pd.Series, durations: pd.Series):
-        return durations > 2 * 3600
+        return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
     # /docsnip
 
