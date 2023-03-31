@@ -29,7 +29,7 @@ from fennel.lib.graph_algorithms import (
     get_extractor_order,
     is_extractor_graph_cyclic,
 )
-from fennel.lib.include_mod import includes  # noqa
+from fennel.lib.includes import includes  # noqa
 from fennel.lib.schema import data_schema_check
 from fennel.lib.to_proto import (
     dataset_to_proto,

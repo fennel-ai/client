@@ -7,7 +7,7 @@ from typing import Callable, Dict, Any, List
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
-from fennel.lib.include_mod import FENNEL_INCLUDED_MOD
+from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.schema import get_datatype
 
 

@@ -7,7 +7,7 @@ import requests
 # docsnip datasets
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum, Average
-from fennel.lib.include_mod import includes
+from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window

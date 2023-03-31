@@ -20,7 +20,7 @@ import pandas as pd
 
 from fennel.datasets import Dataset
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
-from fennel.lib.include_mod import FENNEL_INCLUDED_MOD
+from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,

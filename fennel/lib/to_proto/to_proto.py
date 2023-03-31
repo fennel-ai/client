@@ -26,7 +26,7 @@ from fennel.lib.duration import (
     Duration,
     duration_to_timedelta,
 )
-from fennel.lib.include_mod import FENNEL_INCLUDED_MOD
+from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr
 from fennel.lib.schema import get_datatype
 from fennel.lib.to_proto import Serializer
@@ -143,7 +143,7 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
         import numpy as np
         from typing import List, Dict, Tuple, Optional, Union, Any
         from fennel.lib.metadata import meta
-        from fennel.lib.include_mod import includes
+        from fennel.lib.includes import includes
         from fennel.datasets import *
         from fennel.lib.schema import *
         from fennel.datasets.datasets import dataset_lookup
@@ -268,7 +268,7 @@ def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
         from fennel.featuresets import *
         from fennel.featuresets import featureset, feature
         from fennel.lib.metadata import meta
-        from fennel.lib.include_mod import includes
+        from fennel.lib.includes import includes
         from fennel.lib.schema import *
         """
     )
@@ -893,7 +893,7 @@ import numpy as np
 import functools
 from typing import List, Dict, Tuple, Optional, Union, Any, no_type_check
 from fennel.lib.metadata import meta
-from fennel.lib.include_mod import includes
+from fennel.lib.includes import includes
 from fennel.datasets import *
 from fennel.featuresets import *
 from fennel.lib.schema import *

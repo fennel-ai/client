@@ -10,7 +10,7 @@ import requests
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
-from fennel.lib.include_mod import includes
+from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, outputs
 from fennel.test_lib import mock_client
