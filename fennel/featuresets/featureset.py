@@ -3,6 +3,8 @@ from __future__ import annotations
 import functools
 import inspect
 from dataclasses import dataclass
+
+import pandas as pd
 from typing import (
     Any,
     cast,
@@ -15,8 +17,6 @@ from typing import (
     overload,
     Set,
 )
-
-import pandas as pd
 
 from fennel.datasets import Dataset
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
@@ -318,7 +318,6 @@ def _add_column_names(func, columns, fs_name):
                     f" {func.__name__}"
                 )
             ret.columns = [f"{fs_name}.{x}" for x in ret.columns]
-        print(ret)
         return ret
 
     return inner

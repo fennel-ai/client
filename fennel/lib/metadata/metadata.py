@@ -15,9 +15,9 @@ indicate whether the object is deprecated, deleted, or a work in progress.
 
 import functools
 import re
-from typing import Any, List, Optional
 
 from pydantic import BaseModel, validator
+from typing import Any, List, Optional
 
 import fennel.gen.metadata_pb2 as proto
 
@@ -83,7 +83,6 @@ def meta(
 
 def get_meta(obj: Any) -> Optional[Metadata]:
     if not hasattr(obj, META_FIELD):
-        print("No metadata found", obj)
         return None
     return getattr(obj, META_FIELD)
 

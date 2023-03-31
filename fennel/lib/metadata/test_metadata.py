@@ -1,9 +1,9 @@
 from datetime import datetime
 from datetime import timedelta
-from typing import Optional, Dict, List
 
 import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
+from typing import Optional, Dict, List
 
 import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field
@@ -380,8 +380,6 @@ def test_featureset_with_extractors(grpc_stub):
     expected_extractor = ParseDict(e, fs_proto.Extractor())
     expected_extractor.pycode.Clear()
     actual_extractor.pycode.Clear()
-    print(actual_extractor)
-    print(expected_extractor)
     assert actual_extractor == expected_extractor, error_message(
         actual_extractor, expected_extractor
     )

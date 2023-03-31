@@ -1,12 +1,12 @@
 import time
 import unittest
 from datetime import datetime, timedelta
-from typing import Optional
 
 import numpy as np
 import pandas as pd
 import pytest
 import requests
+from typing import Optional
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
@@ -40,7 +40,6 @@ class UserInfoSingleExtractor:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
 
-    @classmethod
     @extractor(depends_on=[UserInfoDataset])
     @inputs(userid)
     @outputs(age, age_squared, age_cubed, is_name_common)
@@ -85,9 +84,6 @@ class UserInfoMultipleExtractor:
     @inputs(userid)
     @outputs(age, name)
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
-        print("----")
-        print(cls)
-        print(ts)
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         return df[[str(cls.age), str(cls.name)]]
 
@@ -170,7 +166,6 @@ class TestSimpleExtractor(unittest.TestCase):
             UserInfoMultipleExtractor, ts, user_ids
         )
         self.assertEqual(df.shape, (2, 4))
-        print(df)
         self.assertEqual(df["UserInfoSingleExtractor.age"].tolist(), [32, 24])
         self.assertEqual(
             df["UserInfoSingleExtractor.age_squared"].tolist(), [1024, 576]

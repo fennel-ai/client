@@ -8,11 +8,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from typing import Callable, Dict, List, Tuple, Union, Optional
 
 import numpy as np
 import pandas as pd
 from requests import Response
+from typing import Callable, Dict, List, Tuple, Union, Optional
 
 import fennel.datasets.datasets
 from fennel.client import Client
@@ -163,7 +163,6 @@ def get_functions(code):
 def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
     fqn = f"{extractor_proto.feature_set_name}.{extractor_proto.name}"
     mod = types.ModuleType(fqn)
-    print(extractor_proto.pycode.generated_code)
     exec(extractor_proto.pycode.generated_code, mod.__dict__)
     return mod.__dict__[extractor_proto.feature_set_name]
 

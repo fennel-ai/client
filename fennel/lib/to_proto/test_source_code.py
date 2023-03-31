@@ -32,7 +32,6 @@ class UserAgeNonTable:
     timestamp: datetime
 
 
-@meta(owner="me@fennel.ai")
 @dataset
 class UserAgeAggregated:
     city: str = field(key=True)
@@ -66,7 +65,6 @@ class UserAgeAggregated:
         )
 
 
-@meta(owner="data-eng-oncall@fennel.ai")
 @dataset
 class User:
     uid: int = field(key=True)
@@ -112,7 +110,6 @@ class UserFeature:
 
     assert expected_source_code == get_featureset_core_code(UserFeature)
     expected_source_code = """
-@meta(owner="me@fennel.ai")
 @dataset
 class UserAgeAggregated:
     city: str = field(key=True)

@@ -223,7 +223,6 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 ),
             )
 
-        print(str(e.value))
         if client.is_integration_client():
             assert (
                 'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
