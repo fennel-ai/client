@@ -164,7 +164,7 @@ def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
     fqn = f"{extractor_proto.feature_set_name}.{extractor_proto.name}"
     mod = types.ModuleType(fqn)
     exec(extractor_proto.pycode.generated_code, mod.__dict__)
-    return mod.__dict__[extractor_proto.feature_set_name]
+    return mod.__dict__[extractor_proto.pycode.entry_point]
 
 
 @dataclass
@@ -456,9 +456,7 @@ class MockClient(Client):
             extractor_fqn = f"{extractor.featureset}.{extractor.name}"
             func = self.extractor_funcs[extractor_fqn]
             try:
-                f = func.__fennel_original_cls__  # type: ignore
-                f = getattr(f, extractor.name)
-                output = f(timestamps, *prepare_args)
+                output = func(timestamps, *prepare_args)
             except Exception as e:
                 raise Exception(
                     f"Extractor `{extractor.name}` in `{extractor.featureset}` "

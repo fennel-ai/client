@@ -3,9 +3,9 @@ from __future__ import annotations
 import inspect
 import json
 from textwrap import dedent, indent
-from typing import Any, Dict, List, Optional, Tuple, Callable
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
+from typing import Any, Dict, List, Optional, Tuple, Callable
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
@@ -901,11 +901,19 @@ from fennel.datasets.datasets import dataset_lookup
 
 """
     gen_code = imports + gen_code
+
+    ret_code = f"""
+def {featureset._name}_{extractor.name}(*args, **kwargs):
+    x = {featureset._name}.__fennel_original_cls__
+    return getattr(x, "{extractor.name}")(*args, **kwargs)
+    """
+
+    gen_code = gen_code + ret_code
     return pycode_proto.PyCode(
         source_code=extractor_src_code,
         core_code=extractor_src_code,
         generated_code=gen_code,
-        entry_point=f"{featureset._name}.{extractor.func.__name__}",
+        entry_point=f"{featureset._name}_{extractor.name}",
         includes=dependencies,
         ref_includes=ref_includes,
     )

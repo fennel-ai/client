@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import List, no_type_check
 
 import pandas as pd
+from typing import List, no_type_check
 
 import fennel.datasets.datasets
 from fennel.datasets import dataset, field
@@ -102,8 +102,7 @@ def test_dataset_lookup(grpc_stub):
     user_sq_extractor = sync_request.extractors[1]
     assert user_sq_extractor.name == "user_age_sq"
 
-    c = get_extractor_func(sync_request.extractors[1]).__fennel_original_cls__
-    user_sq_extractor_func = getattr(c, "user_age_sq")
+    user_sq_extractor_func = get_extractor_func(sync_request.extractors[1])
     now = datetime.fromtimestamp(1668368655)
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
@@ -117,8 +116,7 @@ def test_dataset_lookup(grpc_stub):
     assert user_age_cube.name == "user_age_cube"
 
     # Call to the extractor function
-    c = get_extractor_func(sync_request.extractors[0]).__fennel_original_cls__
-    user_age_cube_func = getattr(c, "user_age_cube")
+    user_age_cube_func = get_extractor_func(sync_request.extractors[0])
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a2", "b2", "c2"])
