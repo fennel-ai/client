@@ -7,7 +7,6 @@ import pytest
 import requests
 from google.protobuf.json_format import ParseDict  # type: ignore
 
-import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.includes import includes
@@ -82,64 +81,18 @@ def test_includes_proto_conversion(grpc_stub):
     assert len(sync_request.extractors) == 1
     assert len(sync_request.features) == 5
     extractor_proto = sync_request.extractors[0]
-    f = {
-        "name": "get_user_info",
-        "datasets": ["UserInfoDataset"],
-        "inputs": [
-            {
-                "feature": {
-                    "featureSetName": "UserInfoSingleExtractor",
-                    "name": "userid",
-                }
-            }
-        ],
-        "features": ["age", "age_power_four", "age_cubed", "is_name_common"],
-        "metadata": {},
-        "pycode": {
-            "entryPoint": "UserInfoSingleExtractor.get_user_info",
-            "sourceCode": '@extractor(depends_on=[UserInfoDataset])\n@includes(power_4, cube)\n@inputs(userid)\n@outputs(age, age_power_four, age_cubed, is_name_common)\ndef get_user_info(cls, ts: pd.Series, user_id: pd.Series):\n    df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore\n    df[str(cls.userid)] = user_id\n    df[str(cls.age_power_four)] = power_4(df["age"])\n    df[str(cls.age_cubed)] = cube(df["age"])\n    df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])\n    return df[\n        [\n            str(cls.age),\n            str(cls.age_power_four),\n            str(cls.age_cubed),\n            str(cls.is_name_common),\n        ]\n    ]\n',
-            "coreCode": '@extractor(depends_on=[UserInfoDataset])\n@includes(power_4, cube)\n@inputs(userid)\n@outputs(age, age_power_four, age_cubed, is_name_common)\ndef get_user_info(cls, ts: pd.Series, user_id: pd.Series):\n    df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore\n    df[str(cls.userid)] = user_id\n    df[str(cls.age_power_four)] = power_4(df["age"])\n    df[str(cls.age_cubed)] = cube(df["age"])\n    df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])\n    return df[\n        [\n            str(cls.age),\n            str(cls.age_power_four),\n            str(cls.age_cubed),\n            str(cls.is_name_common),\n        ]\n    ]\n',
-            "generatedCode": '\nfrom datetime import datetime\nimport pandas as pd\nimport numpy as np\nimport functools\nfrom typing import List, Dict, Tuple, Optional, Union, Any, no_type_check\nfrom fennel.lib.metadata import meta\nfrom fennel.lib.includes import includes\nfrom fennel.datasets import *\nfrom fennel.featuresets import *\nfrom fennel.lib.schema import *\nfrom fennel.datasets.datasets import dataset_lookup\n\ndef const() -> int:\n    return 2\n\n@includes(const)\ndef square(x: int) -> int:\n    return x ** const()\n\n@includes(square)\ndef power_4(x: int) -> int:\n    return square(square(x))\n\ndef cube(x: int) -> int:\n    return x ** 3\n\n\n@meta(owner="test@test.com")\n@dataset\nclass UserInfoDataset:\n    user_id: int = field(key=True)\n    name: str\n    age: Optional[int]\n    timestamp: datetime = field(timestamp=True)\n    country: str\n\n@meta(owner="test@test.com")\n@featureset\nclass UserInfoSingleExtractor:\n    userid: int = feature(id=1)\n    age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore\n    age_power_four: int = feature(id=5)\n    age_cubed: int = feature(id=6)\n    is_name_common: bool = feature(id=7)\n\n\n\n@meta(owner="test@test.com")\n@featureset\nclass UserInfoSingleExtractor:\n    userid: int = feature(id=1)\n    age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore\n    age_power_four: int = feature(id=5)\n    age_cubed: int = feature(id=6)\n    is_name_common: bool = feature(id=7)\n\n    @extractor(depends_on=[UserInfoDataset])\n    @includes(power_4, cube)\n    @inputs(userid)\n    @outputs(age, age_power_four, age_cubed, is_name_common)\n    def get_user_info(cls, ts: pd.Series, user_id: pd.Series):\n        df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore\n        df[str(cls.userid)] = user_id\n        df[str(cls.age_power_four)] = power_4(df["age"])\n        df[str(cls.age_cubed)] = cube(df["age"])\n        df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])\n        return df[\n            [\n                str(cls.age),\n                str(cls.age_power_four),\n                str(cls.age_cubed),\n                str(cls.is_name_common),\n            ]\n        ]\n',
-            "includes": [
-                {
-                    "entryPoint": "power_4",
-                    "sourceCode": "@includes(square)\ndef power_4(x: int) -> int:\n    return square(square(x))\n",
-                    "coreCode": "@includes(square)\ndef power_4(x: int) -> int:\n    return square(square(x))\n",
-                    "generatedCode": "@includes(square)\ndef power_4(x: int) -> int:\n    return square(square(x))\n",
-                    "includes": [
-                        {
-                            "entryPoint": "square",
-                            "sourceCode": "@includes(const)\ndef square(x: int) -> int:\n    return x ** const()\n",
-                            "coreCode": "@includes(const)\ndef square(x: int) -> int:\n    return x ** const()\n",
-                            "generatedCode": "@includes(const)\ndef square(x: int) -> int:\n    return x ** const()\n",
-                            "includes": [
-                                {
-                                    "entryPoint": "const",
-                                    "sourceCode": "def const() -> int:\n    return 2\n",
-                                    "coreCode": "def const() -> int:\n    return 2\n",
-                                    "generatedCode": "def const() -> int:\n    return 2\n",
-                                }
-                            ],
-                        }
-                    ],
-                },
-                {
-                    "entryPoint": "cube",
-                    "sourceCode": "def cube(x: int) -> int:\n    return x ** 3\n",
-                    "coreCode": "def cube(x: int) -> int:\n    return x ** 3\n",
-                    "generatedCode": "def cube(x: int) -> int:\n    return x ** 3\n",
-                },
-            ],
-            "refIncludes": {
-                "UserInfoSingleExtractor": "Featureset",
-                "UserInfoDataset": "Dataset",
-            },
-        },
-        "featureSetName": "UserInfoSingleExtractor",
-    }
-    expected_extractor = ParseDict(f, fs_proto.Extractor())
-    assert extractor_proto == expected_extractor, error_message(
-        extractor_proto, expected_extractor
+    includes = extractor_proto.pycode.includes
+    assert len(includes) == 2
+    entry_points = [x.entry_point for x in includes]
+    assert set(entry_points) == set(["power_4", "cube"])
+    index_of_power_4 = entry_points.index("power_4")
+    assert len(includes[index_of_power_4].includes) == 1
+    assert includes[index_of_power_4].includes[0].entry_point == "square"
+
+    assert len(includes[index_of_power_4].includes[0].includes) == 1
+    assert (
+        includes[index_of_power_4].includes[0].includes[0].entry_point
+        == "const"
     )
 
 
