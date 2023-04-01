@@ -1,14 +1,17 @@
 import copy
+import types
 from dataclasses import dataclass
 from functools import reduce
-from typing import Optional, List
 
 import numpy as np
 import pandas as pd
+from typing import Optional, List
 
-from fennel.datasets import Pipeline, Visitor
+from fennel.datasets import Pipeline, Visitor, Dataset
 from fennel.lib.aggregate import Count, Sum, Max, Min, Average
 from fennel.lib.duration import duration_to_timedelta
+from fennel.lib.to_proto import Serializer
+from fennel.lib.to_proto.source_code import to_includes_proto
 
 
 @dataclass
@@ -29,10 +32,16 @@ def set_match(a: List[str], b: List[str]) -> bool:
 class Executor(Visitor):
     def __init__(self, data):
         super(Executor, self).__init__()
+        self.dependencies = []
+        self.lib_generated_code = ""
         self.data = data
 
-    def execute(self, pipeline: Pipeline) -> Optional[NodeRet]:
+    def execute(
+        self, pipeline: Pipeline, dataset: Dataset
+    ) -> Optional[NodeRet]:
         self.cur_pipeline_name = pipeline.name
+        self.serializer = Serializer(pipeline, dataset)
+
         return self.visit(pipeline.terminal_node)
 
     def visit(self, obj) -> Optional[NodeRet]:
@@ -49,8 +58,14 @@ class Executor(Visitor):
         input_ret = self.visit(obj.node)
         if input_ret is None:
             return None
+        transform_func_pycode = to_includes_proto(obj.func)
+        mod = types.ModuleType(obj.func.__name__)
+        gen_pycode = self.serializer.wrap_function(transform_func_pycode)
+        code = transform_func_pycode.imports + "\n" + gen_pycode.generated_code
+        exec(code, mod.__dict__)
+        func = mod.__dict__[gen_pycode.entry_point]
         try:
-            t_df = obj.func(copy.deepcopy(input_ret.df))
+            t_df = func(copy.deepcopy(input_ret.df))
         except Exception as e:
             raise Exception(
                 f"Error in transform function for pipeline "
@@ -92,13 +107,16 @@ class Executor(Visitor):
         input_ret = self.visit(obj.node)
         if input_ret is None:
             return None
-        filter_bool = obj.func(copy.deepcopy(input_ret.df))
-        if type(filter_bool) != pd.Series:
-            raise Exception(
-                f"Filter function {obj.func.__name__} returned "
-                f"non-boolean array"
-            )
-        f_df = input_ret.df[filter_bool]
+
+        filter_func_pycode = to_includes_proto(obj.func)
+        mod = types.ModuleType(filter_func_pycode.entry_point)
+        gen_pycode = self.serializer.wrap_function(
+            filter_func_pycode, is_filter=True
+        )
+        code = gen_pycode.imports + "\n" + gen_pycode.generated_code
+        exec(code, mod.__dict__)
+        func = mod.__dict__[gen_pycode.entry_point]
+        f_df = func(copy.deepcopy(input_ret.df))
         sorted_df = f_df.sort_values(input_ret.timestamp_field)
         return NodeRet(
             sorted_df, input_ret.timestamp_field, input_ret.key_fields

@@ -5,7 +5,7 @@ import json
 from textwrap import dedent, indent
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
-from typing import Any, Dict, List, Optional, Tuple, Callable
+from typing import Any, Dict, List, Optional, Tuple
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
@@ -33,7 +33,9 @@ from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import (
     get_featureset_core_code,
     get_dataset_core_code,
+    get_all_imports,
 )
+from fennel.lib.to_proto.source_code import to_includes_proto
 
 
 def _cleanup_dict(d) -> Dict[str, Any]:
@@ -224,12 +226,12 @@ def _pipeline_to_proto(
 def operators_from_ds(ds: Dataset) -> List[ds_proto.Operator]:
     operators = []
     for pipeline in ds._pipelines:
-        operators.extend(_operators_from_pipeline(pipeline))
+        operators.extend(_operators_from_pipeline(pipeline, ds))
     return operators
 
 
-def _operators_from_pipeline(pipeline: Pipeline):
-    serializer = Serializer(pipeline=pipeline)
+def _operators_from_pipeline(pipeline: Pipeline, ds: Dataset):
+    serializer = Serializer(pipeline=pipeline, dataset=ds)
     return serializer.serialize()
 
 
@@ -816,44 +818,20 @@ def to_duration_proto(duration: Duration) -> duration_proto.Duration:
 # ------------------------------------------------------------------------------
 
 
-def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
-    dependencies = []
-    if hasattr(func, FENNEL_INCLUDED_MOD):
-        for f in getattr(func, FENNEL_INCLUDED_MOD):
-            dependencies.append(to_includes_proto(f))
-
-    code = dedent(inspect.getsource(func))
-    return pycode_proto.PyCode(
-        source_code=code,
-        generated_code=code,
-        core_code=code,
-        entry_point=func.__name__,
-        includes=dependencies,
-    )
-
-
-def _get_gen_code(dependencies: List[pycode_proto.PyCode]) -> str:
-    gen_code = ""
-    for dep in dependencies:
-        gen_code += _get_gen_code(dep.includes)
-        gen_code += dedent(dep.generated_code) + "\n"
-    return gen_code
-
-
 def to_extractor_pycode(
     extractor: Extractor,
     featureset: Featureset,
     fs_obj_map: Dict[str, Featureset],
 ) -> pycode_proto.PyCode:
     dependencies = []
+    gen_code = ""
     if hasattr(extractor.func, FENNEL_INCLUDED_MOD):
-        dependencies = [
-            to_includes_proto(f)
-            for f in getattr(extractor.func, FENNEL_INCLUDED_MOD)
-        ]
-    # Extractor code construction
-    gen_code = _get_gen_code(dependencies)
+        for f in getattr(extractor.func, FENNEL_INCLUDED_MOD):
+            dep = to_includes_proto(f)
+            gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
+            dependencies.append(dep)
 
+    # Extractor code construction
     for dataset in extractor.get_dataset_dependencies():
         gen_code += get_dataset_core_code(dataset)
 
@@ -886,22 +864,6 @@ def to_extractor_pycode(
     datasets = extractor.get_dataset_dependencies()
     for d in datasets:
         ref_includes[d._name] = pycode_proto.RefType.Dataset
-    imports = """
-import sys
-from datetime import datetime
-import pandas as pd
-import numpy as np
-import functools
-from typing import List, Dict, Tuple, Optional, Union, Any, no_type_check
-from fennel.lib.metadata import meta
-from fennel.lib.includes import includes
-from fennel.datasets import *
-from fennel.featuresets import *
-from fennel.lib.schema import *
-from fennel.datasets.datasets import dataset_lookup
-
-"""
-    gen_code = imports + gen_code
 
     ret_code = f"""
 def {featureset._name}_{extractor.name}(*args, **kwargs):
@@ -917,4 +879,5 @@ def {featureset._name}_{extractor.name}(*args, **kwargs):
         entry_point=f"{featureset._name}_{extractor.name}",
         includes=dependencies,
         ref_includes=ref_includes,
+        imports=get_all_imports(),
     )

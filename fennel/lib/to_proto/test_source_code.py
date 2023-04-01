@@ -10,6 +10,7 @@ from fennel.lib.schema import inputs, outputs
 from fennel.lib.to_proto.source_code import (
     get_featureset_core_code,
     get_dataset_core_code,
+    lambda_to_python_regular_func,
 )
 from fennel.lib.window import Window
 
@@ -98,7 +99,7 @@ class UserFeature:
         return countries
 
 
-def test_featureset_source_code():
+def test_source_code_gen():
     expected_source_code = """
 @featureset
 class UserFeature:
@@ -117,3 +118,67 @@ class UserAgeAggregated:
     sum_age: int
 """
     assert expected_source_code == get_dataset_core_code(UserAgeAggregated)
+
+
+def test_lambda_source_code_gen():
+    a1 = "lambda x: x + 1"
+    expected_source_code = """
+def lambda_func(x):
+    return x + 1
+"""
+    assert expected_source_code == lambda_to_python_regular_func(a1)
+    a2 = """lambda df: df["club"] == "Manchester United" """
+    expected_source_code = """
+def lambda_func(df):
+    return df["club"] == "Manchester United"
+"""
+
+    assert expected_source_code == lambda_to_python_regular_func(a2)
+
+    a3 = """lambda df: df["club"] == "Manchester United" and df["age"] > 20"""
+    expected_source_code = """
+def lambda_func(df):
+    return df["club"] == "Manchester United" and df["age"] > 20
+"""
+    assert expected_source_code == lambda_to_python_regular_func(a3)
+
+    a4 = """lambda df: df["club"] == "Manchester United" and df["age"] > 20 and df["name"] == "Ronaldo" """
+    expected_source_code = """
+def lambda_func(df):
+    return df["club"] == "Manchester United" and df["age"] > 20 and df["name"] == "Ronaldo"
+"""
+    assert expected_source_code == lambda_to_python_regular_func(a4)
+
+    a5 = """filtered_ds = activity.filter(lambda df: df["action_type"] == "report")"""
+    expected_source_code = """
+def lambda_func(df):
+    return df["action_type"] == "report"
+"""
+    assert expected_source_code == lambda_to_python_regular_func(a5)
+
+    a6 = """filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)"""
+    expected_source_code = """
+def lambda_func(df):
+    return df["rating"] >= 3.5
+"""
+    assert expected_source_code == lambda_to_python_regular_func(a6)
+
+    a7 = """lambda df: df["club"] == "Manchester United")"""
+    expected_source_code = """
+def lambda_func(df):
+    return df["club"] == "Manchester United"
+"""
+    assert expected_source_code == lambda_to_python_regular_func(a7)
+
+    a8 = """lambda df: df["club"] == "Manchester United"))"""
+    assert expected_source_code == lambda_to_python_regular_func(a8)
+
+    a9 = """(lambda df: df["club"] == "Manchester United")"""
+    assert expected_source_code == lambda_to_python_regular_func(a9)
+
+    a10 = """lambda df: df.fillna({"city": "unknown"}),"""
+    expected_source_code = """
+def lambda_func(df):
+    return df.fillna({"city": "unknown"})
+"""
+    assert expected_source_code == lambda_to_python_regular_func(a10)

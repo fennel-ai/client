@@ -85,7 +85,7 @@ class TestInvalidSync(unittest.TestCase):
     @mock_client
     def test_invalid_sync(self, client):
         with pytest.raises(ValueError) as e:
-            client.sync(featuresets=[DomainFeatures])
+            client.sync(featuresets=[DomainFeatures, Query])
 
         if client.is_integration_client():
             assert (

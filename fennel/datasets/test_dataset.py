@@ -1,10 +1,10 @@
 import json
 from datetime import datetime, timedelta
-from typing import Optional, List
 
 import pandas as pd
 import requests  # type: ignore
 from google.protobuf.json_format import ParseDict  # type: ignore
+from typing import Optional, List
 
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset

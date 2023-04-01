@@ -91,10 +91,10 @@ class UserInfoMultipleExtractor:
     @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
     def get_age_and_name_features(
-            cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
+        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         is_name_common = name.isin(cls.get_common_names())
-        df = pd.concat([user_age ** 2, user_age ** 3, is_name_common], axis=1)
+        df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
             str(cls.age_squared),
             str(cls.age_cubed),
@@ -130,7 +130,8 @@ class TestSimpleExtractor(unittest.TestCase):
         name = pd.Series(["John", "Rahul"])
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
         df = UserInfoMultipleExtractor.get_age_and_name_features(
-            UserInfoMultipleExtractor.original_cls, ts, age, name)
+            UserInfoMultipleExtractor.original_cls, ts, age, name
+        )
         self.assertEqual(df.shape, (2, 3))
         self.assertEqual(
             df["UserInfoMultipleExtractor.age_squared"].tolist(),
@@ -253,14 +254,14 @@ class UserInfoTransformedFeatures:
         UserInfoMultipleExtractor.country_geoid,
     )
     def get_user_transformed_features(
-            cls,
-            ts: pd.Series,
-            user_age: pd.Series,
-            is_name_common: pd.Series,
-            country_geoid: pd.Series,
+        cls,
+        ts: pd.Series,
+        user_age: pd.Series,
+        is_name_common: pd.Series,
+        country_geoid: pd.Series,
     ):
-        age_power_four = user_age ** 4
-        country_geoid = country_geoid ** 2
+        age_power_four = user_age**4
+        country_geoid = country_geoid**2
         return pd.DataFrame(
             {
                 str(cls.age_power_four): age_power_four,
@@ -455,8 +456,8 @@ class TestDocumentDataset(unittest.TestCase):
             9,
         ]
         assert (
-                feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
-                == [1, 2, 3, 4]
+            feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
+            == [1, 2, 3, 4]
         ).all()
 
         yesterday = datetime.now() - timedelta(days=1)

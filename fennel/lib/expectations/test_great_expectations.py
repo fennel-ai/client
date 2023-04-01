@@ -1,10 +1,10 @@
 import unittest
 from datetime import datetime
-from typing import Optional
 
 import pytest
 import requests
 from google.protobuf.json_format import ParseDict  # type: ignore
+from typing import Optional
 
 import fennel.gen.expectations_pb2 as exp_proto
 from fennel.datasets import dataset, field

@@ -2,12 +2,12 @@ import json
 import time
 import unittest
 from datetime import datetime, timedelta
-from typing import Optional
 
 import numpy as np
 import pandas as pd
 import pytest
 import requests
+from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
 from fennel.lib.aggregate import Count, Sum, Average
@@ -72,7 +72,6 @@ class TestDataset(unittest.TestCase):
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
-    @pytest.mark.integration
     @mock_client
     def test_simple_delete_rename(self, client):
         # Sync the dataset

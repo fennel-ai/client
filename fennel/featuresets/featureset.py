@@ -52,7 +52,7 @@ RESERVED_FEATURE_NAMES = [
 
 
 def feature(
-        id: int,
+    id: int,
 ) -> T:  # type: ignore
     return cast(
         T,
@@ -73,10 +73,10 @@ def feature(
 
 
 def get_feature(
-        cls: Type,
-        annotation_name: str,
-        dtype: Type,
-        field2comment_map: Dict[str, str],
+    cls: Type,
+    annotation_name: str,
+    dtype: Type,
+    field2comment_map: Dict[str, str],
 ) -> Feature:
     feature = getattr(cls, annotation_name, None)
     if not isinstance(feature, Feature):
@@ -119,24 +119,24 @@ def featureset(featureset_cls: Type[T]):
 
 @overload
 def extractor(
-        func: Callable[..., T],
+    func: Callable[..., T],
 ):
     ...
 
 
 @overload
 def extractor(
-        *,
-        depends_on: List[T],
-        version: int,
+    *,
+    depends_on: List[T],
+    version: int,
 ):
     ...
 
 
 @overload
 def extractor(
-        *,
-        depends_on: List[T],
+    *,
+    depends_on: List[T],
 ):
     ...
 
@@ -147,7 +147,7 @@ def extractor():
 
 
 def extractor(
-        func: Optional[Callable] = None, depends_on: List = [], version: int = 0
+    func: Optional[Callable] = None, depends_on: List = [], version: int = 0
 ):
     """
     extractor is a decorator for a function that extracts a feature from a
@@ -205,8 +205,8 @@ def extractor(
                 # If feature name is set, it means that the feature is from another
                 # featureset.
                 if (
-                        "." in str(return_annotation.fqn())
-                        and len(return_annotation.fqn()) > 0
+                    "." in str(return_annotation.fqn())
+                    and len(return_annotation.fqn()) > 0
                 ):
                     raise TypeError(
                         "Extractors can only extract a feature defined "
@@ -341,9 +341,9 @@ class Featureset:
     _expectation: Expectations
 
     def __init__(
-            self,
-            featureset_cls: Type[T],
-            features: List[Feature],
+        self,
+        featureset_cls: Type[T],
+        features: List[Feature],
     ):
         self.__fennel_original_cls__ = featureset_cls
         self._name = featureset_cls.__name__
@@ -372,8 +372,8 @@ class Featureset:
                 continue
             extractor = getattr(method, EXTRACTOR_ATTR)
             if (
-                    extractor.output_feature_ids is None
-                    or len(extractor.output_feature_ids) == 0
+                extractor.output_feature_ids is None
+                or len(extractor.output_feature_ids) == 0
             ):
                 extractor.output_feature_ids = [
                     feature.id for feature in self._features
@@ -467,12 +467,12 @@ class Extractor:
     output_features: List[str]
 
     def __init__(
-            self,
-            name: str,
-            inputs: List,
-            func: Callable,
-            outputs: List[int],
-            version: int,
+        self,
+        name: str,
+        inputs: List,
+        func: Callable,
+        outputs: List[int],
+        version: int,
     ):
         self.name = name
         self.inputs = inputs

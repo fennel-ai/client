@@ -1,10 +1,10 @@
 import time
 from datetime import datetime
-from typing import Optional
 
 import pandas as pd
 import pytest
 import requests
+from typing import Optional
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
@@ -91,8 +91,35 @@ def test_simple_extractor(client):
                 {"UserInfoSingleExtractor.userid": [18232, 18234]}
             ),
         )
-    assert (
-        str(e.value)
-        == "Extractor `get_user_info` in `UserInfoSingleExtractor` "
-        "failed to run with error: name 'power_4' is not defined. "
-    )
+    if client.is_integration_client():
+        import sys
+
+        resp = client.extract_features(
+            output_feature_list=[UserInfoSingleExtractor],
+            input_feature_list=[UserInfoSingleExtractor.userid],
+            input_dataframe=pd.DataFrame(
+                {"UserInfoSingleExtractor.userid": [18232, 18234]}
+            ),
+        )
+        print(resp, file=sys.stderr)
+
+        print(e.value, file=sys.stderr)
+        assert (
+            " Extractor UserInfoSingleExtractor.get_user_info failed: "
+            in str(e.value)
+        )
+        assert "Value: name 'power_4' is not defined" in str(e.value)
+    else:
+        with pytest.raises(Exception) as e:
+            client.extract_features(
+                output_feature_list=[UserInfoSingleExtractor],
+                input_feature_list=[UserInfoSingleExtractor.userid],
+                input_dataframe=pd.DataFrame(
+                    {"UserInfoSingleExtractor.userid": [18232, 18234]}
+                ),
+            )
+        assert (
+            str(e.value)
+            == "Extractor `get_user_info` in `UserInfoSingleExtractor` "
+            "failed to run with error: name 'power_4' is not defined. "
+        )
