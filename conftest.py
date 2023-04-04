@@ -6,7 +6,7 @@ def pytest_addoption(parser):
         "--run_di",
         action="store_true",
         default=False,
-        help="run airbyte tests",
+        help="run data integration tests",
     )
     parser.addoption(
         "--run_slow",
@@ -18,7 +18,7 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", "airbyte: mark test that needs setup to " "run"
+        "markers", "di: mark test that needs setup to " "run"
     )
     config.addinivalue_line("markers", "slow: mark test as slow to run")
 

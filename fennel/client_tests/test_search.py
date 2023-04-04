@@ -75,11 +75,6 @@ class GoogleDocs:
     creation_timestamp: datetime
 
 
-def doc_pipeline_helper(df: pd.DataFrame, origin: str) -> pd.DataFrame:
-    df["origin"] = origin
-    return df
-
-
 @meta(owner="e2@company.com")
 @dataset
 class Document:
@@ -91,11 +86,10 @@ class Document:
     creation_timestamp: datetime
 
     @pipeline(id=1)
-    @includes(doc_pipeline_helper)
     @inputs(NotionDocs)
     def notion_pipe(cls, ds: Dataset):
         return ds.transform(
-            lambda df: doc_pipeline_helper(df, "Notion"),
+            lambda df: cls.doc_pipeline_helper(df, "Notion"),
             schema={
                 "doc_id": int,
                 "body": str,
@@ -107,11 +101,10 @@ class Document:
         )
 
     @pipeline(id=2)
-    @includes(doc_pipeline_helper)
     @inputs(CodaDocs)
     def coda_pipe(cls, ds: Dataset):
         return ds.transform(
-            lambda df: doc_pipeline_helper(df, "Coda"),
+            lambda df: cls.doc_pipeline_helper(df, "Coda"),
             schema={
                 "doc_id": int,
                 "body": str,
@@ -123,11 +116,10 @@ class Document:
         )
 
     @pipeline(id=3)
-    @includes(doc_pipeline_helper)
     @inputs(GoogleDocs)
     def google_docs_pipe(cls, ds: Dataset):
         return ds.transform(
-            lambda df: doc_pipeline_helper(df, "GoogleDocs"),
+            lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
             schema={
                 "doc_id": int,
                 "body": str,
@@ -137,6 +129,11 @@ class Document:
                 "origin": str,
             },
         )
+
+    @classmethod
+    def doc_pipeline_helper(cls, df: pd.DataFrame, origin: str) -> pd.DataFrame:
+        df["origin"] = origin
+        return df
 
 
 def get_bert_embedding(text: str):
