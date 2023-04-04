@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import types
 from collections import defaultdict
 from dataclasses import dataclass
@@ -152,12 +151,6 @@ def dataset_lookup_impl(
         df = df[fields]
     df = df.reset_index(drop=True)
     return df, found
-
-
-def get_functions(code):
-    pattern = r"(@\w+\n)*\s*def\s+([^\(]+)\("
-    new_source_code = re.sub(pattern, "", code, flags=re.MULTILINE)
-    return new_source_code
 
 
 def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:

@@ -98,8 +98,5 @@ def test_simple_invalid_extractor(client):
         )
         assert "Value: name 'power_4' is not defined" in str(e.value)
     else:
-
-        assert (
-            str(e.value) == "Extractor `get_user_info` in `UserInfoExtractor` "
-            "failed to run with error: name 'power_4' is not defined. "
-        )
+        str(e.value) == "Extractor `get_user_info` in `UserInfoExtractor` "
+        "failed to run with error: name 'power_4' is not defined. "

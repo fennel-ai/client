@@ -852,10 +852,6 @@ class Dataset(_Node[T]):
                     )
                 key_index += 1
             on_demand.bound_func = functools.partial(on_demand.func, self)
-            # cloudpickle.register_pickle_by_value(
-            #     inspect.getmodule(on_demand.func)
-            # )
-            # on_demand.pickled_func = cloudpickle.dumps(on_demand.bound_func)
         return on_demand
 
     def _get_pipelines(self) -> List[Pipeline]:

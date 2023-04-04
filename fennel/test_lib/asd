@@ -1,6 +1,0 @@
-class UserInfoDataset:
-    user_id: int = field(key=True)
-    name: str
-    age: Optional[int]
-    timestamp: datetime = field(timestamp=True)
-    country: str
