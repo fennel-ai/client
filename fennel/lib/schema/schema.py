@@ -3,10 +3,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Union, Any, List, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+from typing import Union, Any, List, TYPE_CHECKING
 
 import fennel.gen.schema_pb2 as schema_proto
 

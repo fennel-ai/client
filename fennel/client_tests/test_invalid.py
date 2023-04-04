@@ -19,7 +19,7 @@ from fennel.test_lib import *
 class Query:
     shortcut_id: int = feature(id=1)
     member_id: int = feature(id=2)
-    domain: int = feature(id=3)
+    domain: str = feature(id=3)
 
 
 @meta(owner="test@fennel.ai")
@@ -89,8 +89,8 @@ class TestInvalidSync(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                str(e.value) == "Failed to sync: error: can not add edge: "
-                'from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
+                str(e.value) == "Failed to sync: error: can not add edge "
+                'to (Extractor, "DomainFeatures.get_domain_feature"): from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
             )
         else:
             assert (
@@ -176,6 +176,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
         with pytest.raises(Exception) as e:
             client.sync(
                 datasets=[
+                    MemberActivityDataset,
                     MemberActivityDatasetCopy,
                 ],
                 featuresets=[DomainFeatures, Query],
@@ -192,24 +193,18 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                     }
                 ),
             )
-        if client.is_integration_client():
-            assert (
-                'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
-                in str(e.value)
-            )
-        else:
-            assert (
-                "Input dataframe does not contain all the required features"
-                in str(e.value)
-            )
+        assert (
+            "Input dataframe does not contain all the required features"
+            in str(e.value)
+        )
 
     @pytest.mark.integration
     @mock_client
     def test_missing_dataset(self, client):
+        client.sync(
+            datasets=[MemberDataset], featuresets=[DomainFeatures2, Query]
+        )
         with pytest.raises(Exception) as e:
-            client.sync(
-                datasets=[MemberDataset], featuresets=[DomainFeatures2, Query]
-            )
             client.extract_features(
                 output_feature_list=[DomainFeatures2],
                 input_feature_list=[Query.domain],
@@ -224,9 +219,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
 
         if client.is_integration_client():
-            assert (
-                'Failed to sync: error: can not add edge: from vertex (Feature, "Query.domain") not in graph'
-                == str(e.value)
+            assert "name 'MemberActivityDatasetCopy' is not defined" in str(
+                e.value
             )
         else:
             assert (
@@ -257,7 +251,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         if client.is_integration_client():
             assert (
-                'Failed to sync: error: can not add edge: from vertex (Dataset, "MemberActivityDataset") not in graph'
+                "Failed to sync: error: can not add edge to (Pipeline, "
+                '"MemberActivityDatasetCopy-copy"): from vertex (Dataset, "MemberActivityDataset") not in graph'
                 == str(e.value)
             )
         else:

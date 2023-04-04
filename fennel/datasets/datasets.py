@@ -1074,9 +1074,6 @@ class DSSchema:
                         f"present in `{other_name} {check_type}` schema."
                     )
 
-                dtype = get_dtype(dtype)
-                other_schema[name] = get_dtype(other_schema[name])
-
                 if dtype != other_schema[name]:
                     return TypeError(
                         f"Field `{name}` has type `{dtype_to_string(dtype)}` in"

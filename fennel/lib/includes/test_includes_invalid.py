@@ -39,7 +39,7 @@ def power_4(x: int) -> int:
 
 @meta(owner="test@test.com")
 @featureset
-class UserInfoSingleExtractor:
+class UserInfoExtractor:
     userid: int = feature(id=1)
     age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
     age_power_four: int = feature(id=5)
@@ -67,10 +67,10 @@ class UserInfoSingleExtractor:
 
 @pytest.mark.integration
 @mock_client
-def test_simple_extractor(client):
+def test_simple_invalid_extractor(client):
     client.sync(
         datasets=[UserInfoDataset],
-        featuresets=[UserInfoSingleExtractor],
+        featuresets=[UserInfoExtractor],
     )
     now = datetime.utcnow()
     data = [
@@ -83,43 +83,23 @@ def test_simple_extractor(client):
     assert response.status_code == requests.codes.OK, response.json()
     if client.is_integration_client():
         time.sleep(5)
+
     with pytest.raises(Exception) as e:
         client.extract_features(
-            output_feature_list=[UserInfoSingleExtractor],
-            input_feature_list=[UserInfoSingleExtractor.userid],
+            output_feature_list=[UserInfoExtractor],
+            input_feature_list=[UserInfoExtractor.userid],
             input_dataframe=pd.DataFrame(
-                {"UserInfoSingleExtractor.userid": [18232, 18234]}
+                {"UserInfoExtractor.userid": [18232, 18234]}
             ),
         )
     if client.is_integration_client():
-        import sys
-
-        resp = client.extract_features(
-            output_feature_list=[UserInfoSingleExtractor],
-            input_feature_list=[UserInfoSingleExtractor.userid],
-            input_dataframe=pd.DataFrame(
-                {"UserInfoSingleExtractor.userid": [18232, 18234]}
-            ),
-        )
-        print(resp, file=sys.stderr)
-
-        print(e.value, file=sys.stderr)
-        assert (
-            " Extractor UserInfoSingleExtractor.get_user_info failed: "
-            in str(e.value)
+        assert "Extractor UserInfoExtractor.get_user_info failed:" in str(
+            e.value
         )
         assert "Value: name 'power_4' is not defined" in str(e.value)
     else:
-        with pytest.raises(Exception) as e:
-            client.extract_features(
-                output_feature_list=[UserInfoSingleExtractor],
-                input_feature_list=[UserInfoSingleExtractor.userid],
-                input_dataframe=pd.DataFrame(
-                    {"UserInfoSingleExtractor.userid": [18232, 18234]}
-                ),
-            )
+
         assert (
-            str(e.value)
-            == "Extractor `get_user_info` in `UserInfoSingleExtractor` "
+            str(e.value) == "Extractor `get_user_info` in `UserInfoExtractor` "
             "failed to run with error: name 'power_4' is not defined. "
         )

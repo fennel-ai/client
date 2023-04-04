@@ -48,7 +48,7 @@ class ViewData:
 @dataset
 class CityInfo:
     city: str = field(key=True)
-    gender: str = field(key=True)
+    gender: oneof(str, ["Female", "Male"]) = field(key=True)  # type: ignore
     count: int
     timestamp: datetime
 

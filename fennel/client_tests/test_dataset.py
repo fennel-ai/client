@@ -10,9 +10,9 @@ import requests
 from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
-from fennel.lib.aggregate import Count, Sum, Average
+from fennel.lib.aggregate import Sum, Average, Count
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, oneof, inputs
+from fennel.lib.schema import oneof, inputs, Embedding
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
@@ -332,14 +332,16 @@ class TestDocumentDataset(unittest.TestCase):
 class RatingActivity:
     userid: int
     rating: float
-    movie: str
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
     t: datetime
 
 
 @meta(owner="test@test.com")
 @dataset
 class MovieRating:
-    movie: str = field(key=True)
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True
+    )
     rating: float
     num_ratings: int
     sum_ratings: float
@@ -370,7 +372,9 @@ class MovieRating:
 @meta(owner="test@test.com")
 @dataset
 class MovieRatingTransformed:
-    movie: str = field(key=True)
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True
+    )
     rating_sq: float
     rating_cube: float
     rating_into_5: float
@@ -390,7 +394,7 @@ class MovieRatingTransformed:
         return m.transform(
             t,
             schema={
-                "movie": str,
+                "movie": oneof(str, ["Jumanji", "Titanic", "RaOne"]),
                 "t": datetime,
                 "rating_sq": float,
                 "rating_cube": float,
@@ -454,7 +458,9 @@ class TestBasicTransform(unittest.TestCase):
 @meta(owner="test@test.com")
 @dataset
 class MovieRevenue:
-    movie: str = field(key=True)
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True
+    )
     revenue: int
     t: datetime
 
@@ -462,7 +468,7 @@ class MovieRevenue:
 @meta(owner="aditya@fennel.ai")
 @dataset
 class MovieStats:
-    movie: oneof(str, ["Jumanji", "Titanic"]) = field(  # type: ignore # noqa
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True
     )
     rating: float
@@ -489,7 +495,7 @@ class MovieStats:
         return c.transform(
             to_millions,
             schema={
-                str(cls.movie): str,
+                str(cls.movie): oneof(str, ["Jumanji", "Titanic", "RaOne"]),
                 str(cls.rating): float,
                 str(cls.t): datetime,
                 str(cls.revenue_in_millions): float,
@@ -606,7 +612,9 @@ class TestBasicAggregate(unittest.TestCase):
 @meta(owner="test@test.com")
 @dataset
 class MovieRatingWindowed:
-    movie: str = field(key=True)
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True
+    )
     num_ratings_3d: int
     sum_ratings_7d: float
     avg_rating_6h: float
@@ -766,7 +774,9 @@ class TestE2EPipeline(unittest.TestCase):
 @dataset
 class PositiveRatingActivity:
     cnt_rating: int
-    movie: str = field(key=True)
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True
+    )
     t: datetime
 
     @pipeline(id=1)
@@ -808,7 +818,7 @@ class TestBasicFilter(unittest.TestCase):
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
         response = client.log("RatingActivity", df)
-        assert response.status_code == requests.codes.OK
+        assert response.status_code == requests.codes.OK, response.json()
         if client.is_integration_client():
             time.sleep(3)
 
