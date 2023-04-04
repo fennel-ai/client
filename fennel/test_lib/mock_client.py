@@ -293,6 +293,7 @@ class MockClient(Client):
         fs_obj_map = {
             featureset._name: featureset for featureset in featuresets
         }
+
         for featureset in featuresets:
             proto_extractors = extractors_from_fs(featureset, fs_obj_map)
             for extractor in proto_extractors:

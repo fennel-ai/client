@@ -842,6 +842,9 @@ def to_extractor_pycode(
                 f"Extractor {extractor.name} must have inputs "
                 f"of type Feature, but got {type(input)}"
             )
+        # Dont add the featureset of the extractor itself
+        if input.featureset_name == featureset._name:
+            continue
         if input.featureset_name not in input_fs_added:
             input_fs_added.add(input.featureset_name)
             if input.featureset_name not in fs_obj_map:

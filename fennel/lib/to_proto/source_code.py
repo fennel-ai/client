@@ -26,12 +26,15 @@ def get_featureset_core_code(featureset: Featureset) -> str:
     for extractor in featureset.extractors:
         ext_code_lines, _ = inspect.getsourcelines(extractor.func)
         extractor_code = "".join(ext_code_lines)
+        extractor_code = indent(dedent(extractor_code), " " * 4)
         # Delete extractor code from source_code
         source_code = source_code.replace(extractor_code, "")
+
     # If python version 3.8 or below add @feature decorator
     if sys.version_info < (3, 9):
         source_code = f"@featureset\n{dedent(source_code)}"
-    return _remove_empty_lines(source_code)
+    z = _remove_empty_lines(source_code)
+    return z
 
 
 def get_dataset_core_code(dataset: Dataset) -> str:

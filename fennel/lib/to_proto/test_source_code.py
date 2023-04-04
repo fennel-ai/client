@@ -1,10 +1,12 @@
 from datetime import datetime
 
 import pandas as pd
+from typing import Optional
 
 from fennel.datasets import dataset, field, Dataset, pipeline
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.aggregate import Sum
+from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.to_proto.source_code import (
@@ -99,6 +101,57 @@ class UserFeature:
         return countries
 
 
+@meta(owner="test@test.com")
+@dataset
+class UserInfoDataset:
+    user_id: int = field(key=True)
+    name: str
+    age: Optional[int]
+    timestamp: datetime = field(timestamp=True)
+    country: str
+
+
+def square(x: int) -> int:
+    return x**2
+
+
+def cube(x: int) -> int:
+    return x**3
+
+
+@includes(square)
+def power_4(x: int) -> int:
+    return square(square(x))
+
+
+@featureset
+class UserInfoExtractor:
+    userid: int = feature(id=1)
+    age: int = feature(id=4)
+    age_power_four: int = feature(id=5)
+    age_cubed: int = feature(id=6)
+    is_name_common: bool = feature(id=7)
+
+    @extractor(depends_on=[UserInfoDataset])
+    @includes(power_4, cube)
+    @inputs(userid)
+    @outputs(age, age_power_four, age_cubed, is_name_common)
+    def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
+        df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
+        df[str(cls.userid)] = user_id
+        df[str(cls.age_power_four)] = power_4(df["age"])
+        df[str(cls.age_cubed)] = cube(df["age"])
+        df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])
+        return df[
+            [
+                str(cls.age),
+                str(cls.age_power_four),
+                str(cls.age_cubed),
+                str(cls.is_name_common),
+            ]
+        ]
+
+
 def test_source_code_gen():
     expected_source_code = """
 @featureset
@@ -118,6 +171,17 @@ class UserAgeAggregated:
     sum_age: int
 """
     assert expected_source_code == get_dataset_core_code(UserAgeAggregated)
+
+    expected_source_code = """
+@featureset
+class UserInfoExtractor:
+    userid: int = feature(id=1)
+    age: int = feature(id=4)
+    age_power_four: int = feature(id=5)
+    age_cubed: int = feature(id=6)
+    is_name_common: bool = feature(id=7)
+"""
+    assert expected_source_code == get_featureset_core_code(UserInfoExtractor)
 
 
 def test_lambda_source_code_gen():

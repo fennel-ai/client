@@ -1,11 +1,11 @@
 import time
 from datetime import datetime
-from typing import Optional
 
 import pandas as pd
 import pytest
 import requests
 from google.protobuf.json_format import ParseDict  # type: ignore
+from typing import Optional
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
