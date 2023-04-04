@@ -5,9 +5,9 @@ on:
     paths:
       - '.github/workflows/trigger-build.yml'
       # Paths to watch for content changes:
-      - 'pages/**'
-      - 'examples/**'
-      - 'index.yml'
+      - 'docs/pages/**'
+      - 'docs/examples/**'
+      - 'docs/index.yml'
     branches:
       - main
 jobs:
