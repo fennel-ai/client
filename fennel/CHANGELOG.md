@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.11] - 2023-04-05
+- Use new lambda based execution. 
+
 ## [0.9.1] - 2023-04-03
 - Use source code based execution. 
 

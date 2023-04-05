@@ -184,65 +184,50 @@ class UserInfoExtractor:
     assert expected_source_code == get_featureset_core_code(UserInfoExtractor)
 
 
+# fmt: off
 def test_lambda_source_code_gen():
-    a1 = "lambda x: x + 1"
-    expected_source_code = """
-def lambda_func(x):
-    return x + 1
-"""
+    a1 = lambda x: x + 1  # type: ignore # noqa: E731
+    expected_source_code = """lambda x: x + 1  # type: ignore # noqa: E731"""
     assert expected_source_code == lambda_to_python_regular_func(a1)
-    a2 = """lambda df: df["club"] == "Manchester United" """
-    expected_source_code = """
-def lambda_func(df):
-    return df["club"] == "Manchester United"
-"""
 
+    a2 = lambda x, y: x + \
+                      y  # type: ignore # noqa: E731
+    expected_source_code = """lambda x, y: x + y  # type: ignore # noqa: E731"""
     assert expected_source_code == lambda_to_python_regular_func(a2)
 
-    a3 = """lambda df: df["club"] == "Manchester United" and df["age"] > 20"""
-    expected_source_code = """
-def lambda_func(df):
-    return df["club"] == "Manchester United" and df["age"] > 20
-"""
-    assert expected_source_code == lambda_to_python_regular_func(a3)
+    def get_lambda(x):
+        return x
 
-    a4 = """lambda df: df["club"] == "Manchester United" and df["age"] > 20 and df["name"] == "Ronaldo" """
-    expected_source_code = """
-def lambda_func(df):
-    return df["club"] == "Manchester United" and df["age"] > 20 and df["name"] == "Ronaldo"
-"""
-    assert expected_source_code == lambda_to_python_regular_func(a4)
+    y1 = get_lambda(lambda x: x * (x + 2) + x + 4)
 
-    a5 = """filtered_ds = activity.filter(lambda df: df["action_type"] == "report")"""
-    expected_source_code = """
-def lambda_func(df):
-    return df["action_type"] == "report"
-"""
-    assert expected_source_code == lambda_to_python_regular_func(a5)
+    y2 = get_lambda(get_lambda(get_lambda(get_lambda(get_lambda(lambda x:
+    x * x + 1 + 2 * 3 + 4)))))
+    expected_source_code = """lambda x:x * x + 1 + 2 * 3 + 4"""
+    assert expected_source_code == lambda_to_python_regular_func(y2)
 
-    a6 = """filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)"""
-    expected_source_code = """
-def lambda_func(df):
-    return df["rating"] >= 3.5
-"""
-    assert expected_source_code == lambda_to_python_regular_func(a6)
+    y3 = get_lambda(get_lambda(get_lambda(get_lambda(get_lambda(get_lambda(
+        lambda x: x * x + 1 + 2 * 3 + 4))))))
+    expected_source_code = """lambda x: x * x + 1 + 2 * 3 + 4"""
+    assert expected_source_code == lambda_to_python_regular_func(y3)
 
-    a7 = """lambda df: df["club"] == "Manchester United")"""
-    expected_source_code = """
-def lambda_func(df):
-    return df["club"] == "Manchester United"
-"""
-    assert expected_source_code == lambda_to_python_regular_func(a7)
+    expected_source_code = """lambda x: x * (x + 2) + x + 4"""
+    assert expected_source_code == lambda_to_python_regular_func(y1)
 
-    a8 = """lambda df: df["club"] == "Manchester United"))"""
-    assert expected_source_code == lambda_to_python_regular_func(a8)
+    def get_lambda_tuple(x, y, ret_first=True):
+        if ret_first:
+            return x
+        else:
+            return y
 
-    a9 = """(lambda df: df["club"] == "Manchester United")"""
-    assert expected_source_code == lambda_to_python_regular_func(a9)
+    z1 = get_lambda_tuple(lambda x, y: x * x, lambda x, y: x * y)
+    expected_source_code = """lambda x, y: x * x"""
+    assert expected_source_code == lambda_to_python_regular_func(z1)
 
-    a10 = """lambda df: df.fillna({"city": "unknown"}),"""
-    expected_source_code = """
-def lambda_func(df):
-    return df.fillna({"city": "unknown"})
-"""
-    assert expected_source_code == lambda_to_python_regular_func(a10)
+    z2, _ = get_lambda(
+        lambda x: {"a": x, "b": x + 1, "c": len(x)}), 5  # type: ignore
+    expected_source_code = """lambda x: {"a": x, "b": x + 1, "c": len(x)}"""
+    assert expected_source_code == lambda_to_python_regular_func(z2)
+
+    z3 = get_lambda(lambda x: {"a": x, "b": x + 1, "c": len(x)})
+    assert expected_source_code == lambda_to_python_regular_func(z3)
+# fmt: on

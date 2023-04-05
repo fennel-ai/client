@@ -42,7 +42,15 @@ class Serializer(Visitor):
         random_str = str(np.random.randint(0, 1000000))
 
         gen_function_name = f"wrapper_{random_str}"
-        wrapper_function = f"""
+        if op_pycode.entry_point == "<lambda>":
+            wrapper_function = f"""
+@classmethod
+def {gen_function_name}(cls, *args, **kwargs):
+    x = {op_pycode.generated_code.strip()}
+    return x(*args, **kwargs)
+"""
+        else:
+            wrapper_function = f"""
 @classmethod
 def {gen_function_name}(cls, *args, **kwargs):
     {indent(op_pycode.generated_code, "    ")}
