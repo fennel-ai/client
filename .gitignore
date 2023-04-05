@@ -130,11 +130,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Idea files
-.idea/
+# IDE files
+**/.idea/
+**/.vscode
 
 *.ipynb
+
 /fennel/client_tests/data/view_data.csv
 /data/*.csv
-output.txt
-**/.vscode
+
