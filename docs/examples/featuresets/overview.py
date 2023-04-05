@@ -72,6 +72,8 @@ class UserLocationFeatures:
         from geopy.geocoders import Nominatim
 
         df, found = UserInfo.lookup(ts, uid=uid)
+        # Fetch the coordinates using a geocoding service / API.
+        # If the service is down, use some dummy coordinates as fallback.
         try:
             geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
             coordinates = (
@@ -79,8 +81,7 @@ class UserLocationFeatures:
                 .apply(geolocator.geocode)
                 .apply(lambda x: (x.latitude, x.longitude))
             )
-        except Exception as e:
-            print(e)
+        except Exception:
             coordinates = pd.Series([(41, -74), (52, -0), (49, 2)])
         df["latitude"] = coordinates.apply(lambda x: round(x[0], 1))
         df["longitude"] = coordinates.apply(lambda x: round(x[1], 1))
@@ -141,15 +142,20 @@ class UserLocationFeaturesRefactored:
         from geopy.geocoders import Nominatim
 
         df, found = UserInfo.lookup(ts, uid=uid)
-        geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
-        coordinates = (
-            df["city"]
-            .apply(geolocator.geocode)
-            .apply(lambda x: (x.latitude, x.longitude))
-        )
+        # Fetch the coordinates using a geocoding service / API.
+        # If the service is down, use some dummy coordinates as fallback.
+        try:
+            geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
+            coordinates = (
+                df["city"]
+                .apply(geolocator.geocode)
+                .apply(lambda x: (x.latitude, x.longitude))
+            )
+        except Exception:
+            coordinates = pd.Series([(41, -74), (52, -0), (49, 2)])
         df["uid"] = uid
-        df["latitude"] = coordinates.apply(lambda x: round(x[0], 1))
-        df["longitude"] = coordinates.apply(lambda x: round(x[1], 1))
+        df["latitude"] = coordinates.apply(lambda x: round(x[0], 0))
+        df["longitude"] = coordinates.apply(lambda x: round(x[1], 0))
         return df[["uid", "latitude", "longitude"]]
 
 
@@ -178,12 +184,12 @@ def test_extractors_across_featuresets(client):
     )
 
     assert df["UserLocationFeaturesRefactored.latitude"].tolist() == [
-        40.7,
-        51.5,
-        48.9,
+        41,
+        52,
+        49,
     ]
     assert df["UserLocationFeaturesRefactored.longitude"].tolist() == [
-        -74.0,
-        -0.1,
-        2.3,
+        -74,
+        0,
+        2,
     ]

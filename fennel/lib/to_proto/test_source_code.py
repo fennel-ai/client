@@ -184,7 +184,51 @@ class UserInfoExtractor:
     assert expected_source_code == get_featureset_core_code(UserInfoExtractor)
 
 
+# fmt: off
 def test_lambda_source_code_gen():
-    a1 = lambda x: x + 1
-    expected_source_code = """lambda x: x + 1"""
+    a1 = lambda x: x + 1  # type: ignore # noqa: E731
+    expected_source_code = """lambda x: x + 1  # type: ignore # noqa: E731"""
     assert expected_source_code == lambda_to_python_regular_func(a1)
+
+    a2 = lambda x, y: x + \
+                      y  # type: ignore # noqa: E731 
+    expected_source_code = """lambda x, y: x + y  # type: ignore # noqa: E731"""
+    assert expected_source_code == lambda_to_python_regular_func(a2)
+
+    def get_lambda(x):
+        return x
+
+    y1 = get_lambda(lambda x: x * (x + 2) + x + 4)
+
+    y2 = get_lambda(get_lambda(get_lambda(get_lambda(get_lambda(lambda x:
+    x * x + 1 + 2 * 3 + 4)))))
+    expected_source_code = """lambda x:x * x + 1 + 2 * 3 + 4"""
+    assert expected_source_code == lambda_to_python_regular_func(y2)
+
+    y3 = get_lambda(get_lambda(get_lambda(get_lambda(get_lambda(get_lambda(
+        lambda x: x * x + 1 + 2 * 3 + 4))))))
+    expected_source_code = """lambda x: x * x + 1 + 2 * 3 + 4"""
+    assert expected_source_code == lambda_to_python_regular_func(y3)
+
+    expected_source_code = """lambda x: x * (x + 2) + x + 4"""
+    assert expected_source_code == lambda_to_python_regular_func(y1)
+
+    def get_lambda_tuple(x, y, ret_first=True):
+        if ret_first:
+            return x
+        else:
+            return y
+
+    z1 = get_lambda_tuple(lambda x, y: x * x, lambda x, y: x * y)
+    expected_source_code = """lambda x, y: x * x"""
+    assert expected_source_code == lambda_to_python_regular_func(z1)
+
+    z2, _ = get_lambda(
+        lambda x: {"a": x, "b": x + 1, "c": len(x)}), 5  # type: ignore
+    expected_source_code = """lambda x: {"a": x, "b": x + 1, "c": len(x)}"""
+    assert expected_source_code == lambda_to_python_regular_func(z2)
+
+    z3 = get_lambda(lambda x: {"a": x, "b": x + 1, "c": len(x)})  # This is a
+    # comment
+    assert expected_source_code == lambda_to_python_regular_func(z3)
+# fmt: on

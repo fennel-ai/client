@@ -37,7 +37,7 @@ class Executor(Visitor):
         self.data = data
 
     def execute(
-            self, pipeline: Pipeline, dataset: Dataset
+        self, pipeline: Pipeline, dataset: Dataset
     ) -> Optional[NodeRet]:
         self.cur_pipeline_name = pipeline.name
         self.serializer = Serializer(pipeline, dataset)
@@ -89,7 +89,7 @@ class Executor(Visitor):
             else:
                 output_expected_column_names = obj.schema.keys()
                 if not set_match(
-                        output_expected_column_names, output_column_names
+                    output_expected_column_names, output_column_names
                 ):
                     raise ValueError(
                         "Output schema doesnt match in transform of pipeline "
