@@ -1,11 +1,12 @@
 import json
 from datetime import datetime, timedelta
-from typing import Optional
 
 import pandas as pd
 import requests
+from typing import Optional
 
 from fennel.datasets import dataset, field
+from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
 from fennel.test_lib import mock_client
@@ -259,6 +260,11 @@ class IOSLogins:
     login_time: datetime
 
 
+def add_platform(df: pd.DataFrame, name: str) -> pd.DataFrame:
+    df["platform"] = name
+    return df
+
+
 @meta(owner="me@fennel.ai")
 @dataset
 class LoginStats:
@@ -269,6 +275,7 @@ class LoginStats:
 
     @pipeline(id=1)
     @inputs(AndroidLogins)
+    @includes(add_platform)
     def android_logins(cls, logins: Dataset):
         aggregated = logins.groupby(["uid"]).aggregate(
             [
@@ -286,6 +293,7 @@ class LoginStats:
         )
 
     @pipeline(id=2)
+    @includes(add_platform)
     @inputs(IOSLogins)
     def ios_logins(cls, logins: Dataset):
         aggregated = logins.groupby(["uid"]).aggregate(
@@ -302,11 +310,6 @@ class LoginStats:
                 "platform": str,
             },
         )
-
-
-def add_platform(df: pd.DataFrame, name: str) -> pd.DataFrame:
-    df["platform"] = name
-    return df
 
 
 # /docsnip

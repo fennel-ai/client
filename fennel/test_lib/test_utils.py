@@ -26,7 +26,7 @@ def erase_extractor_pycode(extractor: Extractor) -> Extractor:
         features=extractor.features,
         metadata=extractor.metadata,
         feature_set_name=extractor.feature_set_name,
-        pycode=PyCode(pickled=b"", source_code=""),
+        pycode=PyCode(),
     )
     return new_extractor
 
@@ -41,7 +41,7 @@ def erase_operator_pycode(operator: Operator) -> Operator:
             is_root=operator.is_root,
             filter=Filter(
                 operand_id=operator.filter.operand_id,
-                pycode=PyCode(pickled=b"", source_code=""),
+                pycode=PyCode(source_code=""),
             ),
         )
     if operator.HasField("transform"):
@@ -54,7 +54,7 @@ def erase_operator_pycode(operator: Operator) -> Operator:
             transform=Transform(
                 operand_id=operator.transform.operand_id,
                 schema=operator.transform.schema,
-                pycode=PyCode(pickled=b"", source_code=""),
+                pycode=PyCode(source_code=""),
             ),
         )
     raise ValueError(f"Operator {operator} has no pycode field")

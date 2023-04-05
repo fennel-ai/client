@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+import pytest
 import requests
 
 from fennel.datasets import dataset, field, Dataset, pipeline
@@ -47,7 +48,7 @@ class ViewData:
 @dataset
 class CityInfo:
     city: str = field(key=True)
-    gender: str = field(key=True)
+    gender: oneof(str, ["Female", "Male"]) = field(key=True)  # type: ignore
     count: int
     timestamp: datetime
 
@@ -146,6 +147,7 @@ class UserFeatures:
         )
 
 
+@pytest.mark.slow
 @mock_client
 def test_social_network(client):
     client.sync(

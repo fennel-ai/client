@@ -49,6 +49,7 @@ class CoreDataset(google.protobuf.message.Message):
     HISTORY_FIELD_NUMBER: builtins.int
     RETENTION_FIELD_NUMBER: builtins.int
     FIELD_METADATA_FIELD_NUMBER: builtins.int
+    PYCODE_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
@@ -60,6 +61,8 @@ class CoreDataset(google.protobuf.message.Message):
     def retention(self) -> google.protobuf.duration_pb2.Duration: ...
     @property
     def field_metadata(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, metadata_pb2.Metadata]: ...
+    @property
+    def pycode(self) -> pycode_pb2.PyCode: ...
     def __init__(
         self,
         *,
@@ -69,9 +72,10 @@ class CoreDataset(google.protobuf.message.Message):
         history: google.protobuf.duration_pb2.Duration | None = ...,
         retention: google.protobuf.duration_pb2.Duration | None = ...,
         field_metadata: collections.abc.Mapping[builtins.str, metadata_pb2.Metadata] | None = ...,
+        pycode: pycode_pb2.PyCode | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "history", b"history", "metadata", b"metadata", "retention", b"retention"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "field_metadata", b"field_metadata", "history", b"history", "metadata", b"metadata", "name", b"name", "retention", b"retention"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "history", b"history", "metadata", b"metadata", "pycode", b"pycode", "retention", b"retention"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "field_metadata", b"field_metadata", "history", b"history", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "retention", b"retention"]) -> None: ...
 
 global___CoreDataset = CoreDataset
 

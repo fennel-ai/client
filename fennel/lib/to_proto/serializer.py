@@ -1,26 +1,86 @@
 from __future__ import annotations
 
-import inspect
+from textwrap import dedent, indent
+
+import numpy as np
 from typing import Dict, Any, List
 
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
+from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.schema import get_datatype
+from fennel.lib.to_proto.source_code import (
+    to_includes_proto,
+    get_dataset_core_code,
+)
 
 
 class Serializer(Visitor):
-    def __init__(self, pipeline: Pipeline):
+    def __init__(self, pipeline: Pipeline, dataset: Dataset):
         super(Serializer, self).__init__()
         self.pipeline_name = pipeline.name
         self.dataset_name = pipeline.dataset_name
         self.terminal_node = pipeline.terminal_node
         self.proto_by_operator_id: Dict[str, Any] = {}
         self.operators: List[Any] = []
+        # Get all includes from the pipeline
+        gen_code = ""
+        if hasattr(pipeline.func, FENNEL_INCLUDED_MOD):
+            for f in getattr(pipeline.func, FENNEL_INCLUDED_MOD):
+                dep = to_includes_proto(f)
+            gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
+        self.lib_generated_code = gen_code
+        self.dataset_code = get_dataset_core_code(dataset)
+        self.dataset_name = dataset._name
 
     def serialize(self):
         _ = self.visit(self.terminal_node)
         return self.operators
+
+    def wrap_function(self, op_pycode, is_filter=False) -> pycode_proto.PyCode:
+        random_str = str(np.random.randint(0, 1000000))
+
+        gen_function_name = f"wrapper_{random_str}"
+        wrapper_function = f"""
+@classmethod
+def {gen_function_name}(cls, *args, **kwargs):
+    {indent(op_pycode.generated_code, "    ")}
+    return {op_pycode.entry_point}(*args, **kwargs)
+"""
+        wrapper_function = indent(dedent(wrapper_function), "    ")
+        gen_code = (
+            dedent(self.lib_generated_code)
+            + "\n"
+            + self.dataset_code
+            + "\n"
+            + wrapper_function
+        )
+
+        new_entry_point = f"{self.dataset_name}_{gen_function_name}"
+        ret_code = f"""
+def {new_entry_point}(*args, **kwargs):
+    x = {self.dataset_name}.__fennel_original_cls__
+    return getattr(x, "{gen_function_name}")(*args, **kwargs)
+"""
+        gen_code = gen_code + "\n" + dedent(ret_code)
+
+        if is_filter:
+            old_entry_point = new_entry_point
+            new_entry_point = f"{old_entry_point}_filter"
+            gen_code += f"""
+def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
+    return df[df.apply({old_entry_point}, axis=1)]
+"""
+
+        return pycode_proto.PyCode(
+            entry_point=f"{new_entry_point}",
+            generated_code=gen_code,
+            core_code=op_pycode.core_code,
+            source_code=op_pycode.source_code,
+            includes=op_pycode.includes,
+            imports=op_pycode.imports,
+        )
 
     def visit(self, obj) -> str:
         if isinstance(obj, Dataset):
@@ -57,6 +117,8 @@ class Serializer(Visitor):
             if obj.schema is not None
             else None
         )
+        transform_func_pycode = to_includes_proto(obj.func)
+        gen_pycode = self.wrap_function(transform_func_pycode)
         return proto.Operator(
             id=obj.signature(),
             is_root=obj == self.terminal_node,
@@ -65,14 +127,13 @@ class Serializer(Visitor):
             transform=proto.Transform(
                 operand_id=self.visit(obj.node),
                 schema=schema,
-                pycode=pycode_proto.PyCode(
-                    pickled=obj.pickled_func,
-                    source_code=inspect.getsource(obj.func),
-                ),
+                pycode=gen_pycode,
             ),
         )
 
     def visitFilter(self, obj):
+        filter_func_pycode = to_includes_proto(obj.func)
+        gen_pycode = self.wrap_function(filter_func_pycode, is_filter=True)
         return proto.Operator(
             id=obj.signature(),
             is_root=obj == self.terminal_node,
@@ -80,10 +141,7 @@ class Serializer(Visitor):
             dataset_name=self.dataset_name,
             filter=proto.Filter(
                 operand_id=self.visit(obj.node),
-                pycode=pycode_proto.PyCode(
-                    pickled=obj.pickled_func,
-                    source_code=inspect.getsource(obj.func),
-                ),
+                pycode=gen_pycode,
             ),
         )
 

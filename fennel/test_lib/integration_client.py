@@ -1,8 +1,8 @@
 import json
 import time
-from typing import List, Set, Tuple, Union
 
 import pandas as pd
+from typing import List, Set, Tuple, Union
 
 try:
     import pyarrow as pa
@@ -66,6 +66,8 @@ class IntegrationClient:
     def sync(
         self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
     ):
+        self.to_register_objects = []
+        self.to_register = set()
         for dataset in datasets:
             self.add(dataset)
         for featureset in featuresets:

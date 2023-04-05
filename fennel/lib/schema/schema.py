@@ -3,10 +3,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Union, Any, List, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+from typing import Union, Any, List, TYPE_CHECKING
 
 import fennel.gen.schema_pb2 as schema_proto
 
@@ -224,8 +224,7 @@ def _validate_field_in_df(
     if name not in df.columns:
         raise ValueError(
             f"Field `{name}` not found in dataframe. "
-            f"Please ensure the dataframe has the same schema as the "
-            f"dataset."
+            f"Please ensure the dataframe has the correct schema."
         )
 
     # Check for the optional type

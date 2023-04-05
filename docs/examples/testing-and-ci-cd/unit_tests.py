@@ -7,6 +7,7 @@ import requests
 # docsnip datasets
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum, Average
+from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
@@ -211,11 +212,13 @@ class UserInfoMultipleExtractor:
         return df
 
     @extractor(depends_on=[UserInfoDataset])
+    @includes(get_country_geoid)
     @inputs(userid)
     @outputs(country_geoid)
-    def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
+    def get_country_geoid_extractor(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        return df["country"].apply(get_country_geoid)
+        df["country_geoid"] = df["country"].apply(get_country_geoid)
+        return df["country_geoid"]
 
 
 # this is your test code in some test module

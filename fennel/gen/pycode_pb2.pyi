@@ -3,31 +3,83 @@
 isort:skip_file
 """
 import builtins
+import collections.abc
 import google.protobuf.descriptor
+import google.protobuf.internal.containers
+import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import sys
+import typing
 
-if sys.version_info >= (3, 8):
+if sys.version_info >= (3, 10):
     import typing as typing_extensions
 else:
     import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+class _RefType:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _RefTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_RefType.ValueType], builtins.type):
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    Dataset: _RefType.ValueType  # 0
+    Featureset: _RefType.ValueType  # 1
+
+class RefType(_RefType, metaclass=_RefTypeEnumTypeWrapper): ...
+
+Dataset: RefType.ValueType  # 0
+Featureset: RefType.ValueType  # 1
+global___RefType = RefType
+
 @typing_extensions.final
 class PyCode(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
+    class RefIncludesEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        value: global___RefType.ValueType
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: global___RefType.ValueType = ...,
+        ) -> None: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
+    ENTRY_POINT_FIELD_NUMBER: builtins.int
     SOURCE_CODE_FIELD_NUMBER: builtins.int
-    PICKLED_FIELD_NUMBER: builtins.int
+    CORE_CODE_FIELD_NUMBER: builtins.int
+    GENERATED_CODE_FIELD_NUMBER: builtins.int
+    INCLUDES_FIELD_NUMBER: builtins.int
+    REF_INCLUDES_FIELD_NUMBER: builtins.int
+    IMPORTS_FIELD_NUMBER: builtins.int
+    entry_point: builtins.str
     source_code: builtins.str
-    pickled: builtins.bytes
+    core_code: builtins.str
+    generated_code: builtins.str
+    @property
+    def includes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PyCode]: ...
+    @property
+    def ref_includes(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, global___RefType.ValueType]: ...
+    imports: builtins.str
     def __init__(
         self,
         *,
+        entry_point: builtins.str = ...,
         source_code: builtins.str = ...,
-        pickled: builtins.bytes = ...,
+        core_code: builtins.str = ...,
+        generated_code: builtins.str = ...,
+        includes: collections.abc.Iterable[global___PyCode] | None = ...,
+        ref_includes: collections.abc.Mapping[builtins.str, global___RefType.ValueType] | None = ...,
+        imports: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["pickled", b"pickled", "source_code", b"source_code"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["core_code", b"core_code", "entry_point", b"entry_point", "generated_code", b"generated_code", "imports", b"imports", "includes", b"includes", "ref_includes", b"ref_includes", "source_code", b"source_code"]) -> None: ...
 
 global___PyCode = PyCode

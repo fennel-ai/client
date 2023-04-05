@@ -3,6 +3,8 @@ from __future__ import annotations
 import functools
 import inspect
 from dataclasses import dataclass
+
+import pandas as pd
 from typing import (
     Any,
     cast,
@@ -13,15 +15,12 @@ from typing import (
     Optional,
     List,
     overload,
-    Union,
     Set,
 )
 
-import cloudpickle
-import pandas as pd
-
 from fennel.datasets import Dataset
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
+from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
@@ -36,6 +35,7 @@ from fennel.utils import (
 T = TypeVar("T")
 EXTRACTOR_ATTR = "__fennel_extractor__"
 DEPENDS_ON_DATASETS_ATTR = "__fennel_depends_on_datasets"
+
 RESERVED_FEATURE_NAMES = [
     "fqn_",
     "dtype",
@@ -163,11 +163,9 @@ def extractor(
         class_method = False
         setattr(extractor_func, DEPENDS_ON_DATASETS_ATTR, list(depends_on))
         if not hasattr(extractor_func, FENNEL_INPUTS):
-            raise TypeError(
-                f"extractor `{extractor_name}` must have a `fennel_inputs` "
-                f"attribute"
-            )
-        inputs = getattr(extractor_func, FENNEL_INPUTS)
+            inputs = []
+        else:
+            inputs = getattr(extractor_func, FENNEL_INPUTS)
         for name, param in sig.parameters.items():
             if not class_method and param.name != "cls":
                 raise TypeError(
@@ -183,7 +181,6 @@ def extractor(
                     f"second parameter"
                 )
             break
-
         for inp in inputs:
             if not isinstance(inp, Feature):
                 if hasattr(inp, "_name"):
@@ -218,11 +215,6 @@ def extractor(
                     )
                 return_annotation = cast(Feature, return_annotation)
                 outputs.append(return_annotation.id)
-            elif isinstance(return_annotation, str):
-                raise TypeError(
-                    "str datatype not supported, please ensure "
-                    "from __future__ import annotations is disabled"
-                )
             elif isinstance(return_annotation, tuple):
                 for f in return_annotation:
                     if not isinstance(f, Feature):
@@ -249,12 +241,14 @@ def extractor(
                     f"Return annotation {return_annotation} is not a "
                     f"Series or DataFrame, found {type(return_annotation)}"
                 )
+
+        extractor_func = _add_featureset_name(extractor_func)
         setattr(
             extractor_func,
             EXTRACTOR_ATTR,
             Extractor(extractor_name, params, extractor_func, outputs, version),
         )
-        return extractor_func
+        return classmethod(extractor_func)
 
     def wrap(c: Callable):
         return _create_extractor(c, version)
@@ -266,7 +260,6 @@ def extractor(
         if not isinstance(version, int):
             raise TypeError("version for extractor must be an int.")
         return wrap
-
     func = cast(Callable, func)
     # @extractor decorator was used without arguments
     return wrap(func)
@@ -309,23 +302,22 @@ class Feature:
         return self.fqn_
 
 
-def _add_column_names(func, columns, fs_name):
+def _add_featureset_name(func):
     """Rewrites the output column names of the extractor to be fully qualified names."""
 
     @functools.wraps(func)
     def inner(*args, **kwargs):
         ret = func(*args, **kwargs)
+        fs_name = func.__qualname__.split(".")[0]
         if isinstance(ret, pd.Series):
-            ret.name = f"{fs_name}.{columns[0]}"
-        elif isinstance(ret, pd.DataFrame):
-            if len(ret.columns) != len(columns) or set(ret.columns) != set(
-                columns
-            ):
+            if ret.name is None:
                 raise ValueError(
-                    f"Expected {len(columns)} columns ({columns}) but got"
-                    f" {len(ret.columns)} columns {ret.columns} in"
-                    f" {func.__name__}"
+                    f"Expected a named Series but got {ret} in "
+                    f"{func.__qualname__}. Please use pd.Series(data=..., "
+                    f"name=...)."
                 )
+            ret.name = f"{fs_name}.{ret.name}"
+        elif isinstance(ret, pd.DataFrame):
             ret.columns = [f"{fs_name}.{x}" for x in ret.columns]
         return ret
 
@@ -425,22 +417,7 @@ class Featureset:
 
     def _set_extractors_as_attributes(self):
         for extractor in self._extractors:
-            feature_names = [
-                self._id_to_feature[output].name
-                for output in extractor.output_feature_ids
-            ]
-            if len(feature_names) == 0:
-                feature_names = [f.name for f in self._features]
-            extractor.func = _add_column_names(
-                extractor.func, feature_names, self._name
-            )
             setattr(self, extractor.func.__name__, extractor.func)
-            extractor.bound_func = functools.partial(extractor.func, self)
-            setattr(extractor.bound_func, "__name__", extractor.func.__name__)
-            cloudpickle.register_pickle_by_value(
-                inspect.getmodule(extractor.func)
-            )
-            extractor.pickled_func = cloudpickle.dumps(extractor.bound_func)
 
     def _get_expectations(self):
         expectation = None
@@ -472,11 +449,15 @@ class Featureset:
     def features(self):
         return self._features
 
+    @property
+    def original_cls(self):
+        return self.__fennel_original_cls__
+
 
 class Extractor:
     # Name of the function that implements the extractor.
     name: str
-    inputs: List[Union[Feature, Featureset]]
+    inputs: List[Feature]
     func: Callable
     featureset: str
     # If outputs is empty, entire featureset is being extracted
@@ -484,9 +465,6 @@ class Extractor:
     output_feature_ids: List[int]
     # List of names of features that this extractor produces
     output_features: List[str]
-    pickled_func: bytes
-    # Same as func but bound with Featureset as the first argument.
-    bound_func: Callable
 
     def __init__(
         self,
@@ -517,3 +495,8 @@ class Extractor:
         if hasattr(self.func, DEPENDS_ON_DATASETS_ATTR):
             depended_datasets = getattr(self.func, DEPENDS_ON_DATASETS_ATTR)
         return depended_datasets
+
+    def get_included_modules(self) -> List[Callable]:
+        if hasattr(self.func, FENNEL_INCLUDED_MOD):
+            return getattr(self.func, FENNEL_INCLUDED_MOD)
+        return []

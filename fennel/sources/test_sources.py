@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Optional
 
 from google.protobuf.json_format import ParseDict  # type: ignore
+from typing import Optional
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
@@ -115,6 +115,8 @@ def test_simple_source(grpc_stub):
         },
     }
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    expected_dataset_request.pycode.Clear()
+    dataset_request.pycode.Clear()
     assert dataset_request == expected_dataset_request, error_message(
         dataset_request, expected_dataset_request
     )

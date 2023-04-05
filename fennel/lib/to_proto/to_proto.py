@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import inspect
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from textwrap import dedent, indent
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
+from typing import Any, Dict, List, Optional, Tuple
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
@@ -25,9 +26,16 @@ from fennel.lib.duration import (
     Duration,
     duration_to_timedelta,
 )
+from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr
 from fennel.lib.schema import get_datatype
 from fennel.lib.to_proto import Serializer
+from fennel.lib.to_proto.source_code import (
+    get_featureset_core_code,
+    get_dataset_core_code,
+    get_all_imports,
+)
+from fennel.lib.to_proto.source_code import to_includes_proto
 
 
 def _cleanup_dict(d) -> Dict[str, Any]:
@@ -77,6 +85,11 @@ def to_sync_request_proto(
     features = []
     extractors = []
     expectations: List[exp_proto.Expectations] = []
+    featureset_obj_map = {}
+    for obj in registered_objs:
+        if isinstance(obj, Featureset):
+            featureset_obj_map[obj._name] = obj
+
     for obj in registered_objs:
         if isinstance(obj, Dataset):
             datasets.append(dataset_to_proto(obj))
@@ -95,7 +108,7 @@ def to_sync_request_proto(
         elif isinstance(obj, Featureset):
             featuresets.append(featureset_to_proto(obj))
             features.extend(features_from_fs(obj))
-            extractors.extend(extractors_from_fs(obj))
+            extractors.extend(extractors_from_fs(obj, featureset_obj_map))
         else:
             raise ValueError(f"Unknown object type {type(obj)}")
 
@@ -125,6 +138,20 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
     # TODO(mohit, aditya): add support for `retention` in Dataset
     retention = duration_proto.Duration()
     retention.FromTimedelta(ds._history)
+    imports = dedent(
+        """
+        from datetime import datetime
+        import pandas as pd
+        import numpy as np
+        from typing import List, Dict, Tuple, Optional, Union, Any
+        from fennel.lib.metadata import meta
+        from fennel.lib.includes import includes
+        from fennel.datasets import *
+        from fennel.lib.schema import *
+        from fennel.datasets.datasets import dataset_lookup
+        """
+    )
+
     return ds_proto.CoreDataset(
         name=ds.__name__,
         metadata=get_metadata_proto(ds),
@@ -132,6 +159,15 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
         history=history,
         retention=retention,
         field_metadata=_field_metadata(ds._fields),
+        pycode=pycode_proto.PyCode(
+            source_code=dedent(inspect.getsource(ds.__fennel_original_cls__)),
+            generated_code=get_dataset_core_code(ds),
+            core_code=get_dataset_core_code(ds),
+            entry_point=ds.__name__,
+            includes=[],
+            ref_includes={},
+            imports=imports,
+        ),
     )
 
 
@@ -190,12 +226,12 @@ def _pipeline_to_proto(
 def operators_from_ds(ds: Dataset) -> List[ds_proto.Operator]:
     operators = []
     for pipeline in ds._pipelines:
-        operators.extend(_operators_from_pipeline(pipeline))
+        operators.extend(_operators_from_pipeline(pipeline, ds))
     return operators
 
 
-def _operators_from_pipeline(pipeline: Pipeline):
-    serializer = Serializer(pipeline=pipeline)
+def _operators_from_pipeline(pipeline: Pipeline, ds: Dataset):
+    serializer = Serializer(pipeline=pipeline, dataset=ds)
     return serializer.serialize()
 
 
@@ -225,9 +261,31 @@ def sources_from_ds(
 
 def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
     _check_owner_exists(fs)
+    imports = dedent(
+        """
+        from datetime import datetime
+        import pandas as pd
+        import numpy as np
+        from typing import List, Dict, Tuple, Optional, Union, Any, no_type_check
+        from fennel.featuresets import *
+        from fennel.featuresets import featureset, feature
+        from fennel.lib.metadata import meta
+        from fennel.lib.includes import includes
+        from fennel.lib.schema import *
+        """
+    )
     return fs_proto.CoreFeatureset(
         name=fs._name,
         metadata=get_metadata_proto(fs),
+        pycode=pycode_proto.PyCode(
+            source_code=dedent(inspect.getsource(fs.__fennel_original_cls__)),
+            core_code=get_featureset_core_code(fs),
+            generated_code=get_featureset_core_code(fs),
+            entry_point=fs._name,
+            includes=[],
+            ref_includes={},
+            imports=imports,
+        ),
     )
 
 
@@ -248,10 +306,12 @@ def _feature_to_proto(f: Feature) -> fs_proto.Feature:
     )
 
 
-def extractors_from_fs(fs: Featureset) -> List[fs_proto.Extractor]:
+def extractors_from_fs(
+    fs: Featureset, fs_obj_map: Dict[str, Featureset]
+) -> List[fs_proto.Extractor]:
     extractors = []
     for extractor in fs._extractors:
-        extractors.append(_extractor_to_proto(extractor))
+        extractors.append(_extractor_to_proto(extractor, fs, fs_obj_map))
     return extractors
 
 
@@ -266,7 +326,9 @@ def feature_to_proto_as_input(f: Feature) -> fs_proto.Input:
 
 
 # Extractor
-def _extractor_to_proto(extractor: Extractor) -> fs_proto.Extractor:
+def _extractor_to_proto(
+    extractor: Extractor, fs: Featureset, fs_obj_map: Dict[str, Featureset]
+) -> fs_proto.Extractor:
     inputs = []
     for input in extractor.inputs:
         if isinstance(input, Feature):
@@ -293,10 +355,7 @@ def _extractor_to_proto(extractor: Extractor) -> fs_proto.Extractor:
         features=extractor.output_features,
         metadata=get_metadata_proto(extractor.func),
         version=extractor.version,
-        pycode=pycode_proto.PyCode(
-            pickled=extractor.pickled_func,
-            source_code=inspect.getsource(extractor.func),
-        ),
+        pycode=to_extractor_pycode(extractor, fs, fs_obj_map),
         feature_set_name=extractor.featureset,
     )
 
@@ -752,3 +811,76 @@ def to_duration_proto(duration: Duration) -> duration_proto.Duration:
     proto = duration_proto.Duration()
     proto.FromTimedelta(duration_to_timedelta(duration))
     return proto
+
+
+# ------------------------------------------------------------------------------
+# Includes
+# ------------------------------------------------------------------------------
+
+
+def to_extractor_pycode(
+    extractor: Extractor,
+    featureset: Featureset,
+    fs_obj_map: Dict[str, Featureset],
+) -> pycode_proto.PyCode:
+    dependencies = []
+    gen_code = ""
+    if hasattr(extractor.func, FENNEL_INCLUDED_MOD):
+        for f in getattr(extractor.func, FENNEL_INCLUDED_MOD):
+            dep = to_includes_proto(f)
+            gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
+            dependencies.append(dep)
+
+    # Extractor code construction
+    for dataset in extractor.get_dataset_dependencies():
+        gen_code += get_dataset_core_code(dataset)
+
+    input_fs_added = set()
+    for input in extractor.inputs:
+        if not isinstance(input, Feature):
+            raise ValueError(
+                f"Extractor {extractor.name} must have inputs "
+                f"of type Feature, but got {type(input)}"
+            )
+        # Dont add the featureset of the extractor itself
+        if input.featureset_name == featureset._name:
+            continue
+        if input.featureset_name not in input_fs_added:
+            input_fs_added.add(input.featureset_name)
+            if input.featureset_name not in fs_obj_map:
+                raise ValueError(
+                    f"Extractor {extractor.name} has an input "
+                    f"feature {input.name} from featureset "
+                    f"{input.featureset_name} which is not synced"
+                )
+            gen_code = (
+                gen_code
+                + get_featureset_core_code(fs_obj_map[input.featureset_name])
+                + "\n"
+            )
+
+    extractor_src_code = dedent(inspect.getsource(extractor.func))
+    indented_code = indent(extractor_src_code, " " * 4)
+    featureset_core_code = get_featureset_core_code(featureset)
+    gen_code = gen_code + "\n" + featureset_core_code + "\n" + indented_code
+    ref_includes = {featureset._name: pycode_proto.RefType.Featureset}
+    datasets = extractor.get_dataset_dependencies()
+    for d in datasets:
+        ref_includes[d._name] = pycode_proto.RefType.Dataset
+
+    ret_code = f"""
+def {featureset._name}_{extractor.name}(*args, **kwargs):
+    x = {featureset._name}.__fennel_original_cls__
+    return getattr(x, "{extractor.name}")(*args, **kwargs)
+    """
+
+    gen_code = gen_code + ret_code
+    return pycode_proto.PyCode(
+        source_code=extractor_src_code,
+        core_code=extractor_src_code,
+        generated_code=gen_code,
+        entry_point=f"{featureset._name}_{extractor.name}",
+        includes=dependencies,
+        ref_includes=ref_includes,
+        imports=get_all_imports(),
+    )

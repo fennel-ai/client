@@ -1,10 +1,10 @@
-import pickle
-import typing
 from datetime import datetime
 
 import pandas as pd
+from typing import List, no_type_check
 
-import fennel.utils
+import fennel.datasets.datasets
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
@@ -12,10 +12,10 @@ from fennel.test_lib import *
 
 
 @meta(owner="test@test.com")
-@fennel.dataset
+@dataset
 class UserInfoDataset:
-    user_id: int = fennel.field(key=True)
-    name: str = fennel.field(key=True)
+    user_id: int = field(key=True)
+    name: str = field(key=True)
     gender: str
     # Users date of birth
     dob: str
@@ -24,7 +24,7 @@ class UserInfoDataset:
 
 
 def fake_func(
-    cls_name, ts: pd.Series, fields: typing.List[str], df: pd.DataFrame
+    cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame
 ):
     now = datetime.fromtimestamp(1668368655)
     if len(fields) > 0:
@@ -61,7 +61,7 @@ def test_dataset_lookup(grpc_stub):
         @extractor(depends_on=[UserInfoDataset])
         @inputs(userid, name)
         @outputs(age_sq, gender)
-        @typing.no_type_check
+        @no_type_check
         def user_age_sq(
             cls, ts: pd.Series, user_id: pd.Series, names: pd.Series
         ):
@@ -78,7 +78,7 @@ def test_dataset_lookup(grpc_stub):
         @extractor(depends_on=[UserInfoDataset])
         @inputs(userid, name)
         @outputs(age_cube)
-        @typing.no_type_check
+        @no_type_check
         def user_age_cube(
             cls,
             ts: pd.Series,
@@ -102,12 +102,12 @@ def test_dataset_lookup(grpc_stub):
     user_sq_extractor = sync_request.extractors[1]
     assert user_sq_extractor.name == "user_age_sq"
 
-    # Call to the extractor function
-    user_sq_extractor_func = pickle.loads(user_sq_extractor.pycode.pickled)
+    user_sq_extractor_func = get_extractor_func(sync_request.extractors[1])
     now = datetime.fromtimestamp(1668368655)
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a", "b", "c"])
+
     df = user_sq_extractor_func(ts, user_id, names)
     assert df["UserAgeFeatures.age_sq"].tolist() == [576, 529, 2025]
     assert df["UserAgeFeatures.gender"].tolist() == ["female", "female", "male"]
@@ -116,7 +116,7 @@ def test_dataset_lookup(grpc_stub):
     assert user_age_cube.name == "user_age_cube"
 
     # Call to the extractor function
-    user_age_cube_func = pickle.loads(user_age_cube.pycode.pickled)
+    user_age_cube_func = get_extractor_func(sync_request.extractors[0])
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a2", "b2", "c2"])

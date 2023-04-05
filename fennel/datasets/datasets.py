@@ -5,6 +5,9 @@ import datetime
 import functools
 import inspect
 from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
 from typing import (
     cast,
     Any,
@@ -19,10 +22,6 @@ from typing import (
     Union,
     overload,
 )
-
-import cloudpickle
-import numpy as np
-import pandas as pd
 
 from fennel.lib.aggregate import AggregateType
 from fennel.lib.duration.duration import (
@@ -218,8 +217,14 @@ class Transform(_Node):
         self.node = node
         self.node.out_edges.append(self)
         self.schema = schema
-        cloudpickle.register_pickle_by_value(inspect.getmodule(func))
-        self.pickled_func = cloudpickle.dumps(func)
+        if func.__name__ == "<lambda>":
+            num_lines = len(inspect.getsourcelines(func)[0])
+            if num_lines > 1:
+                raise ValueError(
+                    "Complex lambda functions using "
+                    "multiple lines are not supported for "
+                    "transforms."
+                )
 
     def signature(self):
         if isinstance(self.node, Dataset):
@@ -230,12 +235,17 @@ class Transform(_Node):
 class Filter(_Node):
     def __init__(self, node: _Node, func: Callable):
         super().__init__()
-        self.func = func
         self.node = node
         self.node.out_edges.append(self)
-        cloudpickle.register_pickle_by_value(inspect.getmodule(func))
-        wrapped_func = lambda df: df[func(df)]  # noqa: E731
-        self.pickled_func = cloudpickle.dumps(wrapped_func)
+        if func.__name__ == "<lambda>":
+            num_lines = len(inspect.getsourcelines(func)[0])
+            if num_lines > 1:
+                raise ValueError(
+                    "Complex lambda functions using "
+                    "multiple lines are not supported for "
+                    "filters."
+                )
+        self.func = func  # noqa: E731
 
     def signature(self):
         if isinstance(self.node, Dataset):
@@ -346,6 +356,9 @@ class Rename(_Node):
         self.column_mapping = columns
         self.node.out_edges.append(self)
 
+    def signature(self):
+        return fhash(self.node.signature(), self.column_mapping)
+
 
 class Drop(_Node):
     def __init__(self, node: _Node, columns: List[str]):
@@ -353,6 +366,9 @@ class Drop(_Node):
         self.node = node
         self.columns = columns
         self.node.out_edges.append(self)
+
+    def signature(self):
+        return fhash(self.node.signature(), self.columns)
 
 
 # ---------------------------------------------------------------------
@@ -499,7 +515,7 @@ def dataset(
         return _create_dataset(c, cast(Duration, history))
 
     if cls is None:
-        # We're being called as @dataset()
+        # We're being called as @dataset(arguments)
         return wrap
     cls = cast(Type[T], cls)
     # @dataset decorator was used without arguments
@@ -684,6 +700,7 @@ class Dataset(_Node[T]):
         self._sign = self._create_signature()
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
+        self._add_fields_as_attributes()
         propogate_fennel_attributes(cls, self)
         self.expectations = self._get_expectations()
 
@@ -696,6 +713,9 @@ class Dataset(_Node[T]):
         return self._sign
 
     # ------------------- Private Methods ----------------------------------
+    def _add_fields_as_attributes(self):
+        for field in self._fields:
+            setattr(self.__fennel_original_cls__, field.name, field)
 
     def _validate_field_names(self, fields: List[Field]):
         names = set()
@@ -749,9 +769,8 @@ class Dataset(_Node[T]):
         # Find a field that has datetime type and set it as timestamp.
 
         for field in self._fields:
-            if field.dtype != datetime.datetime:
+            if field.dtype != datetime.datetime and field.dtype != "datetime":
                 continue
-
             if not timestamp_field_set:
                 field.timestamp = True
                 timestamp_field_set = True
@@ -833,10 +852,6 @@ class Dataset(_Node[T]):
                     )
                 key_index += 1
             on_demand.bound_func = functools.partial(on_demand.func, self)
-            cloudpickle.register_pickle_by_value(
-                inspect.getmodule(on_demand.func)
-            )
-            on_demand.pickled_func = cloudpickle.dumps(on_demand.bound_func)
         return on_demand
 
     def _get_pipelines(self) -> List[Pipeline]:
@@ -1054,9 +1069,6 @@ class DSSchema:
                         f"`{check_type}` schema but not "
                         f"present in `{other_name} {check_type}` schema."
                     )
-
-                dtype = get_dtype(dtype)
-                other_schema[name] = get_dtype(other_schema[name])
 
                 if dtype != other_schema[name]:
                     return TypeError(

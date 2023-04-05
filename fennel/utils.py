@@ -11,7 +11,6 @@ from typing import Any
 from typing import cast, Callable, Dict, List, Tuple, Union
 
 import astunparse  # type: ignore
-import cloudpickle
 import requests  # type: ignore
 
 Tags = Union[List[str], Tuple[str, ...], str]
@@ -48,12 +47,6 @@ def del_namespace(obj, depth):
                 del_namespace(v1, depth + 1)
         else:
             del_namespace(v, depth + 1)
-
-
-def fennel_pickle(obj: Any) -> bytes:
-    """Pickle an object using the Fennel protocol"""
-    del_namespace(obj, 0)
-    return cloudpickle.dumps(obj)
 
 
 class RemoveOffsetsTransformer(ast.NodeTransformer):

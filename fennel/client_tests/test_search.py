@@ -2,17 +2,18 @@ import time
 import unittest
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 import pytest
 import requests
+from typing import Dict, List
 
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.aggregate import Count, Sum
+from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding
 from fennel.lib.schema import inputs
@@ -74,11 +75,6 @@ class GoogleDocs:
     creation_timestamp: datetime
 
 
-def doc_pipeline_helper(df: pd.DataFrame, origin: str) -> pd.DataFrame:
-    df["origin"] = origin
-    return df
-
-
 @meta(owner="e2@company.com")
 @dataset
 class Document:
@@ -93,7 +89,7 @@ class Document:
     @inputs(NotionDocs)
     def notion_pipe(cls, ds: Dataset):
         return ds.transform(
-            lambda df: doc_pipeline_helper(df, "Notion"),
+            lambda df: cls.doc_pipeline_helper(df, "Notion"),
             schema={
                 "doc_id": int,
                 "body": str,
@@ -108,7 +104,7 @@ class Document:
     @inputs(CodaDocs)
     def coda_pipe(cls, ds: Dataset):
         return ds.transform(
-            lambda df: doc_pipeline_helper(df, "Coda"),
+            lambda df: cls.doc_pipeline_helper(df, "Coda"),
             schema={
                 "doc_id": int,
                 "body": str,
@@ -123,7 +119,7 @@ class Document:
     @inputs(GoogleDocs)
     def google_docs_pipe(cls, ds: Dataset):
         return ds.transform(
-            lambda df: doc_pipeline_helper(df, "GoogleDocs"),
+            lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
             schema={
                 "doc_id": int,
                 "body": str,
@@ -134,15 +130,18 @@ class Document:
             },
         )
 
+    @classmethod
+    def doc_pipeline_helper(cls, df: pd.DataFrame, origin: str) -> pd.DataFrame:
+        df["origin"] = origin
+        return df
 
-class HuggingFace:
-    @staticmethod
-    def get_bert_embedding(text: str):
-        return np.random.rand(128)
 
-    @staticmethod
-    def get_fasttext_embedding(text: str):
-        return np.random.rand(256)
+def get_bert_embedding(text: str):
+    return np.random.rand(128)
+
+
+def get_fasttext_embedding(text: str):
+    return np.random.rand(256)
 
 
 def get_top_10_unique_words(text: str):
@@ -154,12 +153,11 @@ def get_top_10_unique_words(text: str):
     return [x[0] for x in res]
 
 
+@includes(get_bert_embedding, get_fasttext_embedding, get_top_10_unique_words)
 def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
-    df["bert_embedding"] = df["body"].apply(
-        lambda x: HuggingFace.get_bert_embedding(x)
-    )
+    df["bert_embedding"] = df["body"].apply(lambda x: get_bert_embedding(x))
     df["fast_text_embedding"] = df["body"].apply(
-        lambda x: HuggingFace.get_fasttext_embedding(x)
+        lambda x: get_fasttext_embedding(x)
     )
     df["num_words"] = df["body"].apply(lambda x: len(x.split(" ")))
     df["num_stop_words"] = df["body"].apply(
@@ -233,8 +231,8 @@ class UserEngagementDataset:
     @inputs(UserActivity)
     def user_engagement_pipeline(cls, ds: Dataset):
         def create_short_click(df: pd.DataFrame) -> pd.DataFrame:
-            df["is_short_click"] = df[str(UserActivity.view_time)] < 5
-            df["is_long_click"] = df[str(UserActivity.view_time)] >= 5
+            df["is_short_click"] = df["view_time"] < 5
+            df["is_long_click"] = df["view_time"] >= 5
             df["is_short_click"].astype(int)
             df["is_long_click"].astype(int)
             return df

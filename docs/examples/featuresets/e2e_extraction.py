@@ -17,7 +17,7 @@ class User:
     @outputs(age)
     def user_age(cls, ts: pd.Series, id: pd.Series):
         # Mock age calculation based on user id
-        return id * 10
+        return pd.Series(name="age", data=id * 10)
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
