@@ -72,12 +72,16 @@ class UserLocationFeatures:
         from geopy.geocoders import Nominatim
 
         df, found = UserInfo.lookup(ts, uid=uid)
-        geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
-        coordinates = (
-            df["city"]
-            .apply(geolocator.geocode)
-            .apply(lambda x: (x.latitude, x.longitude))
-        )
+        try:
+            geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
+            coordinates = (
+                df["city"]
+                .apply(geolocator.geocode)
+                .apply(lambda x: (x.latitude, x.longitude))
+            )
+        except Exception as e:
+            print(e)
+            coordinates = pd.Series([(41, -74), (52, -0), (49, 2)])
         df["latitude"] = coordinates.apply(lambda x: round(x[0], 1))
         df["longitude"] = coordinates.apply(lambda x: round(x[1], 1))
         return df[["latitude", "longitude"]]

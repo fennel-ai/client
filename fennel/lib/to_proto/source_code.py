@@ -1,4 +1,6 @@
+import ast
 import inspect
+import os
 import re
 import sys
 from textwrap import dedent, indent
@@ -55,45 +57,55 @@ def get_dataset_core_code(dataset: Dataset) -> str:
     return _remove_empty_lines(source_code)
 
 
-def lambda_to_python_regular_func(lambda_str, func_name="lambda_func"):
-    """Converts a lambda function to a regular python function. Only works
-    for 1 line lambda functions.
+def lambda_to_python_regular_func(lambda_func):
+    """Return the source of a (short) lambda function.
+    If it's impossible to obtain, returns None.
     """
-    # Parse the lambda string to get the argument name and expression
-    lambda_parts = lambda_str.split(":", 1)
-    # Pick arg name from the part between "lambda" and ":" using regex
-    arg_name = re.search(r"lambda\s+(\w+)", lambda_str).group(1)
-    expression = lambda_parts[1].strip()
-
-    # Remove any unbalanced parentheses in expression
-    # This is to avoid any syntax errors in the generated code
-    while expression.count("(") != expression.count(")"):
-        if expression.count("(") > expression.count(")"):
-            expression = expression[1:]
-        else:
-            expression = expression[:-1]
-
-    # Remove any trailing commas in the expression
-    # This is to avoid any syntax errors in the generated code
-    while expression.endswith(","):
-        expression = expression[:-1]
-
-    # Generate the source code for the regular function
-    source_code = f"""
-def {func_name}({arg_name}):
-    return {expression}
-"""
-    source_code = "\n" + dedent(source_code.strip()) + "\n"
-
-    # Check if the generated code is valid
     try:
-        exec(source_code, {}, {})
-    except Exception:
-        raise ValueError(
-            f"Unable to convert lambda function to regular function. "
-            f"for {lambda_str}. Please use a regular function instead of a lambda."
-        )
-    return source_code
+        source_lines, _ = inspect.getsourcelines(lambda_func)
+    except (IOError, TypeError):
+        return None
+
+    # skip `def`-ed functions and long lambdas
+    if len(source_lines) != 1:
+        return None
+
+    source_text = os.linesep.join(source_lines).strip()
+
+    # find the AST node of a lambda definition
+    # so we can locate it in the source code
+    source_ast = ast.parse(source_text)
+    lambda_node = next(
+        (node for node in ast.walk(source_ast) if isinstance(node, ast.Lambda)),
+        None,
+    )
+    if lambda_node is None:  # could be a single line `def fn(x): ...`
+        return None
+
+    # HACK: Since we can (and most likely will) get source lines
+    # where lambdas are just a part of bigger expressions, they will have
+    # some trailing junk after their definition.
+    #
+    # Unfortunately, AST nodes only keep their _starting_ offsets
+    # from the original source, so we have to determine the end ourselves.
+    # We do that by gradually shaving extra junk from after the definition.
+    lambda_text = source_text[lambda_node.col_offset :]
+    lambda_body_text = source_text[lambda_node.body.col_offset :]
+    min_length = len("lambda:_")  # shortest possible lambda expression
+    while len(lambda_text) > min_length:
+        # Ensure code compiles
+        try:
+            code = compile(lambda_body_text, "<unused filename>", "eval")
+
+            # Byte code matching.
+            if len(code.co_code) == len(lambda_func.__code__.co_code):
+                return lambda_text
+        except SyntaxError:
+            pass
+        lambda_text = lambda_text[:-1]
+        lambda_body_text = lambda_body_text[:-1]
+
+    return None
 
 
 def get_all_imports() -> str:
@@ -142,10 +154,8 @@ def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
                 "Lambda functions with more than 1 line are not supported."
             )
         # generate a random name for the lambda function
-        entry_point = "lambda_func_" + str(hash(func))
-        code = dedent(
-            lambda_to_python_regular_func(inspect.getsource(func), entry_point)
-        )
+        entry_point = "<lambda>"
+        code = dedent(lambda_to_python_regular_func(func))
     else:
         code = dedent(inspect.getsource(func))
 
