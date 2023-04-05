@@ -191,7 +191,7 @@ def test_lambda_source_code_gen():
     assert expected_source_code == lambda_to_python_regular_func(a1)
 
     a2 = lambda x, y: x + \
-                      y  # type: ignore # noqa: E731 
+                      y  # type: ignore # noqa: E731
     expected_source_code = """lambda x, y: x + y  # type: ignore # noqa: E731"""
     assert expected_source_code == lambda_to_python_regular_func(a2)
 
@@ -228,7 +228,6 @@ def test_lambda_source_code_gen():
     expected_source_code = """lambda x: {"a": x, "b": x + 1, "c": len(x)}"""
     assert expected_source_code == lambda_to_python_regular_func(z2)
 
-    z3 = get_lambda(lambda x: {"a": x, "b": x + 1, "c": len(x)})  # This is a
-    # comment
+    z3 = get_lambda(lambda x: {"a": x, "b": x + 1, "c": len(x)})
     assert expected_source_code == lambda_to_python_regular_func(z3)
 # fmt: on

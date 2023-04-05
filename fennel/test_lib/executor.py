@@ -62,6 +62,7 @@ class Executor(Visitor):
         mod = types.ModuleType(obj.func.__name__)
         gen_pycode = self.serializer.wrap_function(transform_func_pycode)
         code = transform_func_pycode.imports + "\n" + gen_pycode.generated_code
+        print(code)
         exec(code, mod.__dict__)
         func = mod.__dict__[gen_pycode.entry_point]
         try:

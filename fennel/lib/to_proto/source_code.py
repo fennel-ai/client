@@ -61,6 +61,7 @@ def lambda_to_python_regular_func(lambda_func):
     """Return the source of a (short) lambda function.
     If it's impossible to obtain, returns None.
     """
+    print("HEre")
     try:
         source_lines, line_num = inspect.getsourcelines(lambda_func)
     except (IOError, TypeError):
@@ -127,18 +128,33 @@ def lambda_to_python_regular_func(lambda_func):
     lambda_text = source_text[lambda_node.col_offset :]  # noqa
     lambda_body_text = source_text[lambda_node.body.col_offset :]  # noqa
     min_length = len("lambda:_")  # shortest possible lambda expression
+    backup_code = ""
     while len(lambda_text) > min_length:
         # Ensure code compiles
         try:
             code = compile(lambda_body_text, "<unused filename>", "eval")
+            if backup_code == "":
+                backup_code = lambda_text
 
             # Byte code matching.
             if len(code.co_code) == len(lambda_func.__code__.co_code):
+                if lambda_text[-1] == ",":
+                    lambda_text = lambda_text[:-1]
                 return lambda_text
         except SyntaxError:
             pass
         lambda_text = lambda_text[:-1]
         lambda_body_text = lambda_body_text[:-1]
+
+    # TODO: This is a hack for python 3.11 and should be removed when
+    # we have a better solution.
+    # We try to return the longest compilable code, but if we can't, we return
+    # None.
+    if sys.version_info >= (3, 11):
+        if len(backup_code) > 0:
+            if backup_code[-1] == ",":
+                backup_code = backup_code[:-1]
+            return backup_code
 
     return None
 
