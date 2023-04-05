@@ -1,11 +1,13 @@
 import functools
 import math
-from typing import *
+from typing import Dict, Optional, Any, Set, List, Union
 from urllib.parse import urljoin, urlparse
 
 import pandas as pd
 import requests  # type: ignore
 import grpc
+import json
+import gzip
 
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
@@ -119,10 +121,23 @@ class Client:
                 "dataset_name": dataset_name,
                 "rows": payload,
             }
-            response = self.http.post(
-                self._url("{}/log".format(V1_API)), json=req
-            )
-            check_response(response)
+            response = self._post("{}/log".format(V1_API), req)
+        return response
+
+    def _post(self, path: str, req: Dict[str, Any], compress: bool = True):
+        payload = json.dumps(req).encode("utf-8")
+        if compress:
+            payload = gzip.compress(payload)
+        response = self.http.request(
+            "POST",
+            self._url(path),
+            data=payload,
+            headers={
+                "Content-Encoding": "gzip",
+                "Content-Type": "application/json",
+            },
+        )
+        check_response(response)
         return response
 
     def extract_features(
@@ -183,10 +198,7 @@ class Client:
         if sampling_rate is not None:
             req["sampling_rate"] = sampling_rate
 
-        response = self.http.post(
-            self._url("{}/extract_features".format(V1_API)),
-            json=req,
-        )
+        response = self._post("{}/extract_features".format(V1_API), req)
         check_response(response)
         if len(output_feature_list) > 1 or isinstance(
             output_feature_list[0], Featureset
@@ -247,11 +259,9 @@ class Client:
             "timestamps": timestamps.to_json(orient="records"),
         }
 
-        response = self.http.post(
-            self._url("{}/extract_historical_features".format(V1_API)),
-            json=req,
+        response = self._post(
+            "{}/extract_historical_features".format(V1_API), req
         )
-        check_response(response)
         if len(output_feature_list) > 1 or isinstance(
             output_feature_list[0], Featureset
         ):
