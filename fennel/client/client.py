@@ -1,19 +1,19 @@
 import functools
+import gzip
+import json
 import math
-from typing import Dict, Optional, Any, Set, List, Union
 from urllib.parse import urljoin, urlparse
 
+import grpc
 import pandas as pd
 import requests  # type: ignore
-import grpc
-import json
-import gzip
+from typing import Dict, Optional, Any, Set, List, Union
 
+import fennel.gen.services_pb2_grpc as services_pb2_grpc
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
 from fennel.lib.to_proto import to_sync_request_proto
 from fennel.utils import check_response
-import fennel.gen.services_pb2_grpc as services_pb2_grpc
 
 V1_API = "/api/v1"
 
@@ -61,9 +61,9 @@ class Client:
             raise NotImplementedError
 
     def sync(
-        self,
-        datasets: Optional[List[Dataset]] = None,
-        featuresets: Optional[List[Featureset]] = None,
+            self,
+            datasets: Optional[List[Dataset]] = None,
+            featuresets: Optional[List[Featureset]] = None,
     ):
         """
         Sync the client with the server. This will register any datasets or
@@ -97,7 +97,8 @@ class Client:
         self.stub.Sync(sync_request, timeout=_DEFAULT_GRPC_TIMEOUT)
 
     def log(
-        self, dataset_name: str, dataframe: pd.DataFrame, batch_size: int = 1000
+            self, dataset_name: str, dataframe: pd.DataFrame,
+            batch_size: int = 1000
     ):
         """
         Log data to a dataset.
@@ -116,7 +117,7 @@ class Client:
             start = i * batch_size
             end = min((i + 1) * batch_size, num_rows)
             mini_df = dataframe[start:end]
-            payload = mini_df.to_json(orient="records")
+            payload = mini_df.to_dict(orient="dict")
             req = {
                 "dataset_name": dataset_name,
                 "rows": payload,
@@ -141,13 +142,13 @@ class Client:
         return response
 
     def extract_features(
-        self,
-        input_feature_list: List[Union[Feature, Featureset]],
-        output_feature_list: List[Union[Feature, Featureset]],
-        input_dataframe: pd.DataFrame,
-        log: bool = False,
-        workflow: Optional[str] = None,
-        sampling_rate: Optional[float] = None,
+            self,
+            input_feature_list: List[Union[Feature, Featureset]],
+            output_feature_list: List[Union[Feature, Featureset]],
+            input_dataframe: pd.DataFrame,
+            log: bool = False,
+            workflow: Optional[str] = None,
+            sampling_rate: Optional[float] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         """
         Extract features for a given output feature list from an input
@@ -190,7 +191,7 @@ class Client:
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
-            "data": input_dataframe.to_json(orient="records"),
+            "data": input_dataframe.to_dict(orient="dict"),
             "log": log,
         }
         if workflow is not None:
@@ -201,18 +202,18 @@ class Client:
         response = self._post("{}/extract_features".format(V1_API), req)
         check_response(response)
         if len(output_feature_list) > 1 or isinstance(
-            output_feature_list[0], Featureset
+                output_feature_list[0], Featureset
         ):
             return pd.DataFrame(response.json())
         else:
             return pd.Series(response.json())
 
     def extract_historical_features(
-        self,
-        input_feature_list: List[Union[Feature, Featureset]],
-        output_feature_list: List[Union[Feature, Featureset]],
-        input_dataframe: pd.DataFrame,
-        timestamps: pd.Series,
+            self,
+            input_feature_list: List[Union[Feature, Featureset]],
+            output_feature_list: List[Union[Feature, Featureset]],
+            input_dataframe: pd.DataFrame,
+            timestamps: pd.Series,
     ) -> Union[pd.DataFrame, pd.Series]:
         """
         Extract point in time correct features from a dataframe, where the
@@ -255,15 +256,15 @@ class Client:
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
-            "data": input_dataframe.to_json(orient="records"),
-            "timestamps": timestamps.to_json(orient="records"),
+            "data": input_dataframe.to_dict(orient="dict"),
+            "timestamps": timestamps.to_dict(orient="dict"),
         }
 
         response = self._post(
             "{}/extract_historical_features".format(V1_API), req
         )
         if len(output_feature_list) > 1 or isinstance(
-            output_feature_list[0], Featureset
+                output_feature_list[0], Featureset
         ):
             return pd.DataFrame(response.json())
         else:
