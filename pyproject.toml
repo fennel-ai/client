@@ -48,6 +48,7 @@ testpaths = [
 ]
 python_files = [
     "docs/examples/*/*.py",
+    "docs/examples/*.py",
     "*_test.py",
     "test_*.py",
 ]

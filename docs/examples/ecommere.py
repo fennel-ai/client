@@ -6,10 +6,10 @@ import pandas as pd
 import requests
 
 from fennel.datasets import dataset, pipeline, field, Dataset
-from fennel.featuresets import feature, featureset, extractor, depends_on
+from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
-from fennel.lib.schema import DataFrame
+from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 
 # docsnip connector
@@ -51,7 +51,8 @@ class UserSellerOrders:
     timestamp: datetime
 
     @pipeline(id=1)
-    def my_pipeline(cls, orders: Dataset[Order]):
+    @inputs(Order)
+    def my_pipeline(cls, orders: Dataset):
         return orders.groupby("uid", "seller_id").aggregate(
             [
                 Count(window=Window("1d"), into_field="num_orders_1d"),
@@ -68,14 +69,10 @@ class UserSeller:
     num_orders_1d: int = feature(id=3)
     num_orders_1w: int = feature(id=4)
 
-    @depends_on(UserSellerOrders)
-    @extractor
-    def myextractor(
-        cls,
-        ts: pd.Series[datetime],
-        uids: pd.Series[uid],
-        sellers: pd.Series[seller_id],
-    ) -> DataFrame[num_orders_1d, num_orders_1w]:
+    @extractor(depends_on=[UserSellerOrders])
+    @inputs(uid, seller_id)
+    @outputs(num_orders_1d, num_orders_1w)
+    def myextractor(cls, ts: pd.Series, uids: pd.Series, sellers: pd.Series):
         df, found = UserSellerOrders.lookup(ts, uid=uids, seller_id=sellers)
         df = df.fillna(0)
         df["num_orders_1d"] = df["num_orders_1d"].astype(int)
