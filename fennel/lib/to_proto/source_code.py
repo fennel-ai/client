@@ -11,6 +11,7 @@ import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset
 from fennel.lib.includes.include_mod import FENNEL_INCLUDED_MOD
+from fennel.utils import fennel_get_source
 
 
 def _remove_empty_lines(source_code: str) -> str:
@@ -24,10 +25,9 @@ def _remove_empty_lines(source_code: str) -> str:
 
 def get_featureset_core_code(featureset: Featureset) -> str:
     # Keep all lines till class definition
-    source_code = dedent(inspect.getsource(featureset.__fennel_original_cls__))
+    source_code = fennel_get_source(featureset.__fennel_original_cls__)
     for extractor in featureset.extractors:
-        ext_code_lines, _ = inspect.getsourcelines(extractor.func)
-        extractor_code = "".join(ext_code_lines)
+        extractor_code = fennel_get_source(extractor.func)
         extractor_code = indent(dedent(extractor_code), " " * 4)
         # Delete extractor code from source_code
         source_code = source_code.replace(extractor_code, "")
@@ -40,10 +40,10 @@ def get_featureset_core_code(featureset: Featureset) -> str:
 
 
 def get_dataset_core_code(dataset: Dataset) -> str:
-    source_code = dedent(inspect.getsource(dataset.__fennel_original_cls__))
+    source_code = fennel_get_source(dataset.__fennel_original_cls__)
     for pipeline in dataset._pipelines:
-        pipe_code_lines, line_number = inspect.getsourcelines(pipeline.func)
-        pipeline_code = "".join(pipe_code_lines)
+        # pipe_code_lines, _ = inspect.getsourcelines(pipeline.func)
+        pipeline_code = fennel_get_source(pipeline.func)
         pipeline_code = indent(dedent(pipeline_code), " " * 4)
         # Delete pipeline code from source_code
         source_code = source_code.replace(pipeline_code, "")
@@ -61,7 +61,6 @@ def lambda_to_python_regular_func(lambda_func):
     """Return the source of a (short) lambda function.
     If it's impossible to obtain, returns None.
     """
-    print("HEre")
     try:
         source_lines, line_num = inspect.getsourcelines(lambda_func)
     except (IOError, TypeError):
@@ -196,7 +195,6 @@ def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
             dep = to_includes_proto(f)
             gen_code = dedent(dep.generated_code) + "\n" + gen_code
             dependencies.append(dep)
-
     entry_point = func.__name__
     if func.__name__ == "<lambda>":
         num_lines = len(inspect.getsourcelines(func)[0])
@@ -214,7 +212,7 @@ def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
             )
         code = dedent(code)
     else:
-        code = dedent(inspect.getsource(func))
+        code = fennel_get_source(func)
 
     gen_code = gen_code + "\n" + code + "\n"
 

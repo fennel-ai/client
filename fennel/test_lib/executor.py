@@ -62,7 +62,6 @@ class Executor(Visitor):
         mod = types.ModuleType(obj.func.__name__)
         gen_pycode = self.serializer.wrap_function(transform_func_pycode)
         code = transform_func_pycode.imports + "\n" + gen_pycode.generated_code
-        print(code)
         exec(code, mod.__dict__)
         func = mod.__dict__[gen_pycode.entry_point]
         try:
@@ -178,6 +177,9 @@ class Executor(Visitor):
                     )
                     filtered_df = filtered_df.loc[select_rows]
 
+                print(current_timestamp, filtered_df.shape)
+                print(filtered_df.head(10))
+
                 if isinstance(aggregate, Count):
                     # Count needs some column to aggregate on, so we use the
                     # timestamp field
@@ -201,9 +203,12 @@ class Executor(Visitor):
                         column=aggregate.of, aggfunc="max"
                     )
                 agg_df = filtered_df.groupby(obj.keys).agg(**aggs).reset_index()
+                print(agg_df)
                 agg_df[input_ret.timestamp_field] = current_timestamp
                 agg_dfs.append(agg_df)
                 aggs = {}
+
+            print("Merging", len(agg_dfs))
 
             join_columns = obj.keys + [input_ret.timestamp_field]
             df_merged = reduce(

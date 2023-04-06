@@ -34,7 +34,7 @@ class FakeResponse(Response):
 
 
 def lookup_wrapper(
-        ds_name: str, ts: pd.Series, fields: List[str], keys: pd.DataFrame
+    ds_name: str, ts: pd.Series, fields: List[str], keys: pd.DataFrame
 ) -> Tuple[pd.DataFrame, pd.Series]:
     # convert to pyarrow datastructures
     ts_pa = pa.Array.from_pandas(ts)
@@ -56,7 +56,7 @@ class IntegrationClient:
         return True
 
     def log(self, dataset_name: str, df: pd.DataFrame):
-        df_json = df.to_dict(orient="dict")
+        df_json = df.to_json(orient="records")
         try:
             self._client.log(dataset_name, df_json)
         except Exception as e:
@@ -64,8 +64,7 @@ class IntegrationClient:
         return FakeResponse(200, "OK")
 
     def sync(
-            self, datasets: List[Dataset] = [],
-            featuresets: List[Featureset] = []
+        self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
     ):
         self.to_register_objects = []
         self.to_register = set()
@@ -79,13 +78,13 @@ class IntegrationClient:
         return FakeResponse(200, "OK")
 
     def extract_features(
-            self,
-            input_feature_list: List[Union[Feature, Featureset]],
-            output_feature_list: List[Union[Feature, Featureset]],
-            input_dataframe: pd.DataFrame,
-            log: bool = False,
-            workflow: str = "default",
-            sampling_rate: float = 1.0,
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: str = "default",
+        sampling_rate: float = 1.0,
     ) -> pd.DataFrame:
         if input_dataframe.empty:
             return pd.DataFrame()
@@ -117,7 +116,7 @@ class IntegrationClient:
             elif type(output_feature) is tuple:
                 output_feature_names.extend([f.fqn_ for f in output_feature])
 
-        input_df_json = input_dataframe.to_dict(orient="dict")
+        input_df_json = input_dataframe.to_json(orient="records")
         output_record_batch = self._client.extract_features(
             input_feature_names,
             output_feature_names,

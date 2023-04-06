@@ -30,6 +30,7 @@ from fennel.lib.schema import FENNEL_INPUTS, FENNEL_OUTPUTS
 from fennel.utils import (
     parse_annotation_comments,
     propogate_fennel_attributes,
+    FENNEL_VIRTUAL_FILE,
 )
 
 T = TypeVar("T")
@@ -110,6 +111,13 @@ def featureset(featureset_cls: Type[T]):
         )
         for name in cls_annotations
     ]
+
+    try:
+        if len(inspect.stack()) > 2:
+            file_name = inspect.stack()[1].filename
+            setattr(featureset_cls, FENNEL_VIRTUAL_FILE, file_name)
+    except Exception:
+        pass
 
     return Featureset(
         featureset_cls,

@@ -39,6 +39,7 @@ from fennel.utils import (
     fhash,
     parse_annotation_comments,
     propogate_fennel_attributes,
+    FENNEL_VIRTUAL_FILE,
 )
 
 Tags = Union[List[str], Tuple[str, ...], str]
@@ -154,7 +155,6 @@ def field(
         Field(
             key=key,
             timestamp=timestamp,
-            # These fields will be filled in later.
             name="",
             dtype=None,
         ),
@@ -406,6 +406,14 @@ def dataset(
         The maximum amount of time that data in the dataset can be stale.
     """
 
+    try:
+        if len(inspect.stack()) > 2:
+            file_name = inspect.stack()[1].filename
+        else:
+            file_name = ""
+    except Exception:
+        file_name = ""
+
     def _create_lookup_function(
         cls_name: str, key_fields: List[str]
     ) -> Optional[Callable]:
@@ -502,7 +510,15 @@ def dataset(
             for name in cls_annotations
         ]
 
+        setattr(dataset_cls, FENNEL_VIRTUAL_FILE, file_name)
+
         key_fields = [f.name for f in fields if f.key]
+        # save_get_file = inspect.getfile
+        # inspect.getfile = new_getfile
+        #
+        # print("adding lookup function")
+        # print(inspect.getsource(dataset_cls))
+        # inspect.getfile = save_get_file
 
         return Dataset(
             dataset_cls,
