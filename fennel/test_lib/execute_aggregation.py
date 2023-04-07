@@ -264,8 +264,6 @@ def get_aggregated_df(
         )
         # Reset the index
     df = df.reset_index(drop=True)
-    ret_df_rows = []
-
     if isinstance(aggregate, Count):
         df[FENNEL_FAKE_OF_FIELD] = 1
         of_field = FENNEL_FAKE_OF_FIELD
@@ -275,23 +273,18 @@ def get_aggregated_df(
         of_field = aggregate.of  # type: ignore
 
     state: Dict[int, AggState] = {}
-
+    result_vals = []
     for i, row in df.iterrows():
         val = row.loc[of_field]
         row_key_fields = []
         for key_field in key_fields:
             row_key_fields.append(row.loc[key_field])
         key = hash(tuple(row_key_fields))
-
         # If the row is a delete row, delete from state.
         if row[FENNEL_ROW_TYPE] == -1:
             if key not in state:
                 raise Exception("Delete row without insert row")
-            new_val = state[key].del_val_from_state(val)
-            new_row = row.copy()
-            new_row[aggregate.into_field] = new_val
-            if aggregate.into_field != of_field:
-                new_row.drop(of_field, inplace=True)
+            result_vals.append(state[key].del_val_from_state(val))
         else:
             # Add val to state
             if key not in state:
@@ -317,15 +310,12 @@ def get_aggregated_df(
                     raise Exception(
                         f"Unsupported aggregate function {aggregate}"
                     )
-            new_val = state[key].add_val_to_state(val)
-            # Create a new row with the aggregate value, row_key_fields and ts_field
-            new_row = row.copy()
-            new_row[aggregate.into_field] = new_val
-            if aggregate.into_field != of_field:
-                new_row.drop(of_field, inplace=True)
-        ret_df_rows.append(new_row)
-    ret_df = pd.DataFrame(ret_df_rows)
+            result_vals.append(state[key].add_val_to_state(val))
+
+    df[aggregate.into_field] = result_vals
+    if aggregate.into_field != of_field:
+        df.drop(of_field, inplace=True, axis=1)
     # Drop the fennel_row_type column
-    ret_df.drop(FENNEL_ROW_TYPE, inplace=True, axis=1)
-    ret_df.fillna(0, inplace=True)
-    return ret_df
+    df.drop(FENNEL_ROW_TYPE, inplace=True, axis=1)
+    df.fillna(0, inplace=True)
+    return df
