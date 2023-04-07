@@ -238,7 +238,7 @@ class MockClient(Client):
             print(f"Skipping log of empty dataframe for dataset {dataset_name}")
             return
 
-        if df.shape[0] > _batch_size:
+        if df.shape[0] > _batch_size * 10:
             print(
                 "Warning: Dataframe is too large, consider using a small dataframe"
             )

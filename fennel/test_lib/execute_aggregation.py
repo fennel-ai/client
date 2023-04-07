@@ -114,11 +114,11 @@ class LastKState(AggState):
         return self.vals[-self.k:]
 
 
-def get_aggregated_df(df: pd.DataFrame, aggregate: AggregateType,
+def get_aggregated_df(input_df: pd.DataFrame, aggregate: AggregateType,
                       ts_field: str,
                       key_fields: List[str]) -> pd.DataFrame:
-    df[FENNEL_ROW_TYPE] = 1
-
+    df = input_df.copy()
+    df.loc[:, FENNEL_ROW_TYPE] = 1
     if aggregate.window.start != "forever":
         window_secs = duration_to_timedelta(
             aggregate.window.start).total_seconds()
@@ -134,8 +134,7 @@ def get_aggregated_df(df: pd.DataFrame, aggregate: AggregateType,
             ascending=[True, False])
         # Reset the index
     df = df.reset_index(drop=True)
-
-    ret_df = pd.DataFrame()
+    ret_df_rows = []
 
     if isinstance(aggregate, Count):
         df[FENNEL_FAKE_OF_FIELD] = 1
@@ -180,7 +179,8 @@ def get_aggregated_df(df: pd.DataFrame, aggregate: AggregateType,
             new_row[aggregate.into_field] = new_val
             if aggregate.into_field != of_field:
                 new_row.drop(of_field, inplace=True)
-        ret_df = ret_df.append(new_row, ignore_index=True)
+        ret_df_rows.append(new_row)
+    ret_df = pd.DataFrame(ret_df_rows)
     # Drop the fennel_row_type column
     ret_df.drop(FENNEL_ROW_TYPE, inplace=True, axis=1)
     ret_df.fillna(0, inplace=True)
