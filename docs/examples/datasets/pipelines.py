@@ -35,7 +35,7 @@ class Transaction:
 
 # docsnip pipeline
 from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Count, Sum
+from fennel.lib.aggregate import Count, Sum, LastK
 from fennel.lib.window import Window
 
 
@@ -46,6 +46,7 @@ class UserTransactionsAbroad:
     count: int
     amount_1d: float
     amount_1w: float
+    recent_merchant_ids: List[int]
     timestamp: datetime
 
     @classmethod
@@ -62,6 +63,13 @@ class UserTransactionsAbroad:
                 Count(window=Window("forever"), into_field="count"),
                 Sum(of="amount", window=Window("1d"), into_field="amount_1d"),
                 Sum(of="amount", window=Window("1d"), into_field="amount_1w"),
+                LastK(
+                    of="merchant_id",
+                    window=Window("1d"),
+                    into_field="recent_merchant_ids",
+                    limit=5,
+                    dedup=True,
+                ),
             ]
         )
 
@@ -118,6 +126,7 @@ def test_transaction_aggregation_example(client):
     assert data["uid"].tolist() == [1, 2, 3, 4]
     assert data["count"].tolist() == [2, 2, 3, None]
     assert data["amount_1d"].tolist() == [500, 400, 600, None]
+    assert set(data["recent_merchant_ids"].tolist()) == {1, 2, 3}
     assert found.to_list() == [True, True, True, False]
 
 

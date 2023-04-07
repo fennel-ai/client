@@ -8,6 +8,7 @@ import pandas as pd
 
 from fennel.datasets import Pipeline, Visitor
 from fennel.lib.aggregate import Count, Sum, Max, Min, Average
+from fennel.lib.aggregate.aggregate import LastK
 from fennel.lib.duration import duration_to_timedelta
 
 
@@ -180,6 +181,15 @@ class Executor(Visitor):
                 elif isinstance(aggregate, Max):
                     aggs[aggregate.into_field] = pd.NamedAgg(
                         column=aggregate.of, aggfunc="max"
+                    )
+                elif isinstance(aggregate, LastK):
+                    raise NotImplementedError(
+                        "LastK not implemented for aggregate"
+                    )
+                else:
+                    raise Exception(
+                        f"Unknown aggregate type {type(aggregate)} in "
+                        f"pipeline {self.cur_pipeline_name}"
                     )
                 agg_df = filtered_df.groupby(obj.keys).agg(**aggs).reset_index()
                 agg_df[input_ret.timestamp_field] = current_timestamp
