@@ -59,6 +59,7 @@ class TestMovieInfo103(unittest.TestCase):
         ]
         columns = ["movieId", "title", "genres", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
+
         response = client.log("MovieInfo103", df)
         assert response.status_code == requests.codes.OK, response.json()
 

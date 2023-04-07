@@ -36,6 +36,7 @@ from fennel.lib.to_proto.source_code import (
     get_all_imports,
 )
 from fennel.lib.to_proto.source_code import to_includes_proto
+from fennel.utils import fennel_get_source
 
 
 def _cleanup_dict(d) -> Dict[str, Any]:
@@ -160,7 +161,7 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
         retention=retention,
         field_metadata=_field_metadata(ds._fields),
         pycode=pycode_proto.PyCode(
-            source_code=dedent(inspect.getsource(ds.__fennel_original_cls__)),
+            source_code=fennel_get_source(ds.__fennel_original_cls__),
             generated_code=get_dataset_core_code(ds),
             core_code=get_dataset_core_code(ds),
             entry_point=ds.__name__,
@@ -274,11 +275,12 @@ def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
         from fennel.lib.schema import *
         """
     )
+
     return fs_proto.CoreFeatureset(
         name=fs._name,
         metadata=get_metadata_proto(fs),
         pycode=pycode_proto.PyCode(
-            source_code=dedent(inspect.getsource(fs.__fennel_original_cls__)),
+            source_code=fennel_get_source(fs.__fennel_original_cls__),
             core_code=get_featureset_core_code(fs),
             generated_code=get_featureset_core_code(fs),
             entry_point=fs._name,

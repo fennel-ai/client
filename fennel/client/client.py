@@ -1,19 +1,19 @@
 import functools
+import gzip
+import json
 import math
-from typing import Dict, Optional, Any, Set, List, Union
 from urllib.parse import urljoin, urlparse
 
+import grpc
 import pandas as pd
 import requests  # type: ignore
-import grpc
-import json
-import gzip
+from typing import Dict, Optional, Any, Set, List, Union
 
+import fennel.gen.services_pb2_grpc as services_pb2_grpc
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
 from fennel.lib.to_proto import to_sync_request_proto
 from fennel.utils import check_response
-import fennel.gen.services_pb2_grpc as services_pb2_grpc
 
 V1_API = "/api/v1"
 

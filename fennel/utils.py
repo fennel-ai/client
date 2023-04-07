@@ -6,16 +6,68 @@ import datetime
 import hashlib
 import inspect
 import json
+import sys
 import textwrap
-from typing import Any
-from typing import cast, Callable, Dict, List, Tuple, Union
 
 import astunparse  # type: ignore
 import requests  # type: ignore
+from typing import Any
+from typing import cast, Callable, Dict, List, Tuple, Union
 
 Tags = Union[List[str], Tuple[str, ...], str]
 
 FHASH_ATTR = "__fennel_fhash__"
+
+FENNEL_VIRTUAL_FILE = "__fennel_virtual_file__"
+
+
+def new_getfile(object, _old_getfile=inspect.getfile):
+    if not inspect.isclass(object):
+        return _old_getfile(object)
+
+    # Lookup by parent module (as in current inspect)
+    if hasattr(object, "__module__"):
+        object_ = sys.modules.get(object.__module__)
+        if hasattr(object_, "__file__"):
+            return object_.__file__
+
+    for name, member in inspect.getmembers(object):
+        if (
+            inspect.isfunction(member)
+            and object.__qualname__ + "." + member.__name__
+            == member.__qualname__
+        ):
+            return inspect.getfile(member)
+
+    class_methods = [
+        method
+        for method in dir(object)
+        if inspect.ismethod(getattr(object, method))
+    ]
+    for method in class_methods:
+        func = getattr(object, method)
+        file_name = inspect.getfile(func)
+        if "ipykernel" in file_name:
+            return inspect.getfile(func)
+
+    # Get file name
+    if hasattr(object, FENNEL_VIRTUAL_FILE):
+        filename = getattr(object, FENNEL_VIRTUAL_FILE)
+        if len(filename) > 0:
+            return filename
+    raise TypeError("Source for {!r} not found".format(object))
+
+
+def fennel_get_source(obj: Any) -> str:
+    try:
+        code = inspect.getsource(obj)
+    except Exception:
+        save_get_file = inspect.getfile
+        inspect.getfile = new_getfile
+        ds_code_lines = inspect.getsource(obj)
+        inspect.getfile = save_get_file
+        code = "".join(ds_code_lines)
+    return textwrap.dedent(code)
 
 
 def check_response(response: requests.Response):
@@ -111,7 +163,7 @@ def fhash(*items: Any):
 
 def parse_annotation_comments(cls: Any) -> Dict[str, str]:
     try:
-        source = textwrap.dedent(inspect.getsource(cls))
+        source = fennel_get_source(cls)
         source_lines = source.splitlines()
         tree = ast.parse(source)
         if len(tree.body) != 1:
