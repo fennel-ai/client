@@ -41,7 +41,7 @@ class Executor(Visitor):
         self.agg_state = agg_state
 
     def execute(
-            self, pipeline: Pipeline, dataset: Dataset
+        self, pipeline: Pipeline, dataset: Dataset
     ) -> Optional[NodeRet]:
         self.cur_pipeline_name = pipeline.name
         self.serializer = Serializer(pipeline, dataset)
@@ -94,7 +94,7 @@ class Executor(Visitor):
             else:
                 output_expected_column_names = obj.schema.keys()
                 if not set_match(
-                        output_expected_column_names, output_column_names
+                    output_expected_column_names, output_column_names
                 ):
                     raise ValueError(
                         "Output schema doesnt match in transform of pipeline "
@@ -127,8 +127,9 @@ class Executor(Visitor):
             sorted_df, input_ret.timestamp_field, input_ret.key_fields
         )
 
-    def _merge_df(self, df1: pd.DataFrame, df2: pd.DataFrame, ts: str) -> \
-            pd.DataFrame:
+    def _merge_df(
+        self, df1: pd.DataFrame, df2: pd.DataFrame, ts: str
+    ) -> pd.DataFrame:
         merged_df = pd.concat([df1, df2])
 
         # Sort by timestamp
@@ -149,8 +150,9 @@ class Executor(Visitor):
         df = df.sort_values(input_ret.timestamp_field)
         if self.cur_ds_name in self.agg_state:
             # Merge the current dataframe with the previous state
-            df = self._merge_df(self.agg_state[self.cur_ds_name], df,
-                input_ret.timestamp_field)
+            df = self._merge_df(
+                self.agg_state[self.cur_ds_name], df, input_ret.timestamp_field
+            )
             self.agg_state[self.cur_ds_name] = df
         else:
             self.agg_state[self.cur_ds_name] = df
@@ -166,11 +168,12 @@ class Executor(Visitor):
             if not isinstance(aggregate, Count):
                 fields.append(aggregate.of)
             filtered_df = df[fields]
-            result[aggregate.into_field] = get_aggregated_df(filtered_df,
-                aggregate, input_ret.timestamp_field, obj.keys)
+            result[aggregate.into_field] = get_aggregated_df(
+                filtered_df, aggregate, input_ret.timestamp_field, obj.keys
+            )
         return NodeRet(
-            pd.DataFrame(), input_ret.timestamp_field, obj.keys,
-            result, True)
+            pd.DataFrame(), input_ret.timestamp_field, obj.keys, result, True
+        )
 
     def visitAggregate2(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)

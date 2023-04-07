@@ -134,13 +134,13 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                    response.json()["error"]
-                    == """error: input parse error: expected Int, but got String("32")"""
+                response.json()["error"]
+                == """error: input parse error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                    response.json()["error"]
-                    == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
+                response.json()["error"]
+                == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
             )
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
@@ -230,6 +230,7 @@ class TestDataset(unittest.TestCase):
     @mock_client
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
+
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -242,12 +243,12 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-                str(e.exception)
-                == "Dataset currently does not support deleted or deprecated fields."
+            str(e.exception)
+            == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
-# On demand datasets are not supported
+# On demand datasets are not supported for now.
 
 # class TestDocumentDataset(unittest.TestCase):
 #     @mock_client
@@ -338,7 +339,7 @@ class RatingActivity:
 
 @meta(owner="test@test.com")
 @dataset
-class MovieRating:
+class MovieRatingCalculated:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True
     )
@@ -367,6 +368,19 @@ class MovieRating:
                 ),
             ]
         )
+
+
+# Copy of above dataset but can be used as an input to another pipeline.
+@meta(owner="test@test.com")
+@dataset
+class MovieRating:
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True
+    )
+    rating: float
+    num_ratings: int
+    sum_ratings: float
+    t: datetime
 
 
 @meta(owner="test@test.com")
@@ -567,7 +581,7 @@ class TestBasicAggregate(unittest.TestCase):
     def test_basic_aggregate(self, client):
         # # Sync the dataset
         client.sync(
-            datasets=[MovieRating, RatingActivity],
+            datasets=[MovieRatingCalculated, RatingActivity],
         )
         now = datetime.now()
         one_hour_ago = now - timedelta(hours=1)
@@ -598,7 +612,7 @@ class TestBasicAggregate(unittest.TestCase):
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
-        df, _ = MovieRating.lookup(
+        df, _ = MovieRatingCalculated.lookup(
             ts,
             movie=names,
         )
@@ -712,64 +726,6 @@ class TestBasicWindowAggregate(unittest.TestCase):
         assert df["sum_ratings_7d"].tolist() == [13, 19, 12, 17, 7, 4]
         assert df["avg_rating_6h"].tolist() == [0.0, 0.0, 0.0, 0.0, 2.0, 4.0]
         assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
-
-
-# Post aggregation pipelines are not supported
-
-# class TestE2EPipeline(unittest.TestCase):
-#     @pytest.mark.integration
-#     @mock_client
-#     def test_e2e_pipeline(self, client):
-#         """We enter ratings activity and we get movie stats."""
-#         # # Sync the dataset
-#         client.sync(
-#             datasets=[MovieRating, MovieRevenue, RatingActivity, MovieStats],
-#         )
-#         now = datetime.now()
-#         minute_ago = now - timedelta(minutes=1)
-#         one_hour_ago = now - timedelta(hours=1)
-#         two_hours_ago = now - timedelta(hours=2)
-#         three_hours_ago = now - timedelta(hours=3)
-#         four_hours_ago = now - timedelta(hours=4)
-#         five_hours_ago = now - timedelta(hours=5)
-#         data = [
-#             [18231, 2, "Jumanji", five_hours_ago],
-#             [18231, 3, "Jumanji", four_hours_ago],
-#             [18231, 2, "Jumanji", three_hours_ago],
-#             [18231, 5, "Jumanji", five_hours_ago],
-#             [18231, 4, "Titanic", three_hours_ago],
-#             [18231, 3, "Titanic", two_hours_ago],
-#             [18231, 5, "Titanic", one_hour_ago],
-#             [18231, 5, "Titanic", minute_ago],
-#             [18231, 3, "Titanic", two_hours_ago],
-#         ]
-#         columns = ["userid", "rating", "movie", "t"]
-#         df = pd.DataFrame(data, columns=columns)
-#         response = client.log("RatingActivity", df)
-#         assert response.status_code == requests.codes.OK, response.json()
-#
-#         data = [
-#             ["Jumanji", 1000000, five_hours_ago],
-#             ["Titanic", 50000000, three_hours_ago],
-#         ]
-#         columns = ["movie", "revenue", "t"]
-#         df = pd.DataFrame(data, columns=columns)
-#         response = client.log("MovieRevenue", df)
-#         assert response.status_code == requests.codes.OK
-#         if client.is_integration_client():
-#             time.sleep(3)
-#
-#         # Do some lookups to verify data flow is working as expected
-#         ts = pd.Series([now, now])
-#         names = pd.Series(["Jumanji", "Titanic"])
-#         df, _ = MovieStats.lookup(
-#             ts,
-#             movie=names,
-#         )
-#         assert df.shape == (2, 4)
-#         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
-#         assert df["rating"].tolist() == [3, 4]
-#         assert df["revenue_in_millions"].tolist() == [1, 50]
 
 
 @meta(owner="test@test.com")
@@ -1179,7 +1135,7 @@ class ManchesterUnitedPlayerInfo:
     @pipeline(id=1)
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54

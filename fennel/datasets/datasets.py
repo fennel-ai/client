@@ -581,6 +581,11 @@ def pipeline(id: int) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
                 raise TypeError(
                     f"Parameter {name} is not a Dataset in {pipeline_name}"
                 )
+            if inp.is_terminal:
+                raise TypeError(
+                    f"pipeline `{pipeline_name}` cannot have terminal "
+                    f"dataset `{inp._name}` as input."
+                )
             params.append(inp)
 
         setattr(
@@ -657,10 +662,11 @@ class Pipeline:
     def signature(self):
         return f"{self._dataset_name}.{self._root}"
 
-    def set_terminal_node(self, node: _Node):
+    def set_terminal_node(self, node: _Node) -> bool:
         if node is None:
             raise Exception(f"Pipeline {self.name} cannot return None.")
         self.terminal_node = node
+        return isinstance(node, Aggregate)
 
     def set_dataset_name(self, ds_name: str):
         self._dataset_name = ds_name
@@ -688,6 +694,7 @@ class Dataset(_Node[T]):
     __fennel_original_cls__: Any
     expectations: List[Expectations]
     lookup: Callable
+    is_terminal: bool
 
     def __init__(
         self,
@@ -699,6 +706,7 @@ class Dataset(_Node[T]):
         super().__init__()
         self._name = cls.__name__  # type: ignore
         self.__name__ = self._name
+        self.is_terminal = False
         self._validate_field_names(fields)
         self._fields = fields
         self._add_fields_to_class()
@@ -888,7 +896,11 @@ class Dataset(_Node[T]):
                     f"Duplicate pipeline name {pipeline.name} for dataset {dataset_name}."
                 )
             names.add(pipeline.name)
-            pipeline.set_terminal_node(pipeline.func(self, *pipeline.inputs))
+            is_terminal = pipeline.set_terminal_node(
+                pipeline.func(self, *pipeline.inputs)
+            )
+            if is_terminal:
+                self.is_terminal = is_terminal
             pipelines.append(pipeline)
             pipelines[-1].set_dataset_name(dataset_name)
 
@@ -1205,17 +1217,17 @@ class SchemaValidator(Visitor):
                     raise TypeError(
                         f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
                     )
-                values[agg.into_field] = dtype
+                values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Average):
-                values[agg.into_field] = float
+                values[agg.into_field] = float  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
-                values[agg.into_field] = List[dtype]
+                values[agg.into_field] = List[dtype]  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
         return DSSchema(
             keys=keys,
-            values=values,
+            values=values,  # type: ignore
             timestamp=input_schema.timestamp,
             name=f"'[Pipeline:{self.pipeline_name}]->aggregate node'",
         )

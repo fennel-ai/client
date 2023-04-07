@@ -566,39 +566,37 @@ class TestSearchExample(unittest.TestCase):
         assert df["DocumentFeatures.num_views_28d"].tolist() == [1, 2]
         if client.is_integration_client():
             assert (
-                    df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                        0]
-                    == ["This", "is", "a", "random", "Coda", "document"]
+                df["DocumentContentFeatures.top_10_unique_words"].tolist()[0]
+                == ["This", "is", "a", "random", "Coda", "document"]
             ).all()
             assert (
-                    df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                        1]
-                    == [
-                        "This",
-                        "is",
-                        "a",
-                        "rand",
-                        "document",
-                        "in",
-                        "Coda",
-                        "with",
-                        "words",
-                    ]
+                df["DocumentContentFeatures.top_10_unique_words"].tolist()[1]
+                == [
+                    "This",
+                    "is",
+                    "a",
+                    "rand",
+                    "document",
+                    "in",
+                    "Coda",
+                    "with",
+                    "words",
+                ]
             ).all()
         else:
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                       0
-                   ] == ["This", "is", "a", "random", "Coda", "document"]
+                0
+            ] == ["This", "is", "a", "random", "Coda", "document"]
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                       1
-                   ] == [
-                       "This",
-                       "is",
-                       "a",
-                       "rand",
-                       "document",
-                       "in",
-                       "Coda",
-                       "with",
-                       "words",
-                   ]
+                1
+            ] == [
+                "This",
+                "is",
+                "a",
+                "rand",
+                "document",
+                "in",
+                "Coda",
+                "with",
+                "words",
+            ]

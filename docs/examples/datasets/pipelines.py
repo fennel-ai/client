@@ -127,8 +127,12 @@ def test_transaction_aggregation_example(client):
     assert data["uid"].tolist() == [1, 2, 3, 4]
     assert data["count"].tolist() == [2, 2, 3, None]
     assert data["amount_1d"].tolist() == [500, 400, 600, None]
-    assert data["recent_merchant_ids"].tolist() == [[2, 3], [1, 3], [1, 2, 3],
-                                                    None]
+    assert data["recent_merchant_ids"].tolist() == [
+        [2, 3],
+        [1, 3],
+        [1, 2, 3],
+        None,
+    ]
     assert found.to_list() == [True, True, True, False]
 
 
@@ -347,7 +351,10 @@ def test_multiple_pipelines(client):
     res = client.log("IOSLogins", df)
     assert res.status_code == 200, res.json()
     ts = pd.Series([now, now, now, now])
-    df, found = LoginStats.lookup(ts, uid=pd.Series([1, 2, 3, 12]),
-        platform=pd.Series(["ios", "android", "android", "ios"]))
+    df, found = LoginStats.lookup(
+        ts,
+        uid=pd.Series([1, 2, 3, 12]),
+        platform=pd.Series(["ios", "android", "android", "ios"]),
+    )
     assert df.shape == (4, 4)
     assert found.sum() == 4

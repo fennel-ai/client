@@ -126,10 +126,10 @@ class UserFeatures:
     @inputs(Request.user_id, Request.category)
     @outputs(category_view_ratio, num_category_views)
     def extractor_category_view(
-            cls,
-            ts: pd.Series,
-            user_ids: pd.Series,
-            categories: pd.Series,
+        cls,
+        ts: pd.Series,
+        user_ids: pd.Series,
+        categories: pd.Series,
     ):
         category_views, _ = UserCategoryDataset.lookup(  # type: ignore
             ts, user_id=user_ids, category=categories

@@ -1,5 +1,5 @@
 [flake8]
-ignore = W503, E501, F405, E128,  F403, F401, E126, F821, F722
+ignore = W503, E501, F405, E128,  F403, F401, E126, F821, F722, E203
 exclude =
     fennel/gen/
     ./.ipynb_checkpoints/

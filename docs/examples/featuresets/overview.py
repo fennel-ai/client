@@ -91,6 +91,7 @@ class UserLocationFeatures:
 # /docsnip
 
 
+@pytest.mark.slow
 @mock_client
 def test_multiple_features_extracted(client):
     client.sync(datasets=[UserInfo], featuresets=[UserLocationFeatures])
