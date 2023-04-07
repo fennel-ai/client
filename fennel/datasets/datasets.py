@@ -513,12 +513,6 @@ def dataset(
         setattr(dataset_cls, FENNEL_VIRTUAL_FILE, file_name)
 
         key_fields = [f.name for f in fields if f.key]
-        # save_get_file = inspect.getfile
-        # inspect.getfile = new_getfile
-        #
-        # print("adding lookup function")
-        # print(inspect.getsource(dataset_cls))
-        # inspect.getfile = save_get_file
 
         return Dataset(
             dataset_cls,

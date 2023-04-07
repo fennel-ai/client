@@ -42,7 +42,6 @@ def get_featureset_core_code(featureset: Featureset) -> str:
 def get_dataset_core_code(dataset: Dataset) -> str:
     source_code = fennel_get_source(dataset.__fennel_original_cls__)
     for pipeline in dataset._pipelines:
-        # pipe_code_lines, _ = inspect.getsourcelines(pipeline.func)
         pipeline_code = fennel_get_source(pipeline.func)
         pipeline_code = indent(dedent(pipeline_code), " " * 4)
         # Delete pipeline code from source_code

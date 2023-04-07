@@ -177,9 +177,6 @@ class Executor(Visitor):
                     )
                     filtered_df = filtered_df.loc[select_rows]
 
-                print(current_timestamp, filtered_df.shape)
-                print(filtered_df.head(10))
-
                 if isinstance(aggregate, Count):
                     # Count needs some column to aggregate on, so we use the
                     # timestamp field
@@ -203,12 +200,9 @@ class Executor(Visitor):
                         column=aggregate.of, aggfunc="max"
                     )
                 agg_df = filtered_df.groupby(obj.keys).agg(**aggs).reset_index()
-                print(agg_df)
                 agg_df[input_ret.timestamp_field] = current_timestamp
                 agg_dfs.append(agg_df)
                 aggs = {}
-
-            print("Merging", len(agg_dfs))
 
             join_columns = obj.keys + [input_ret.timestamp_field]
             df_merged = reduce(
