@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import requests
-from typing import Optional
+from typing import Optional, List
 
 from fennel.datasets import dataset, field
 from fennel.lib.includes import includes
@@ -37,7 +37,7 @@ class Transaction:
 
 # docsnip pipeline
 from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Count, Sum
+from fennel.lib.aggregate import Count, Sum, LastK
 from fennel.lib.window import Window
 
 
@@ -48,6 +48,7 @@ class UserTransactionsAbroad:
     count: int
     amount_1d: float
     amount_1w: float
+    recent_merchant_ids: List[int]
     timestamp: datetime
 
     @classmethod
@@ -63,6 +64,13 @@ class UserTransactionsAbroad:
                 Count(window=Window("forever"), into_field="count"),
                 Sum(of="amount", window=Window("1d"), into_field="amount_1d"),
                 Sum(of="amount", window=Window("1d"), into_field="amount_1w"),
+                LastK(
+                    of="merchant_id",
+                    window=Window("1d"),
+                    into_field="recent_merchant_ids",
+                    limit=5,
+                    dedup=True,
+                ),
             ]
         )
 
@@ -119,6 +127,8 @@ def test_transaction_aggregation_example(client):
     assert data["uid"].tolist() == [1, 2, 3, 4]
     assert data["count"].tolist() == [2, 2, 3, None]
     assert data["amount_1d"].tolist() == [500, 400, 600, None]
+    assert data["recent_merchant_ids"].tolist() == [[2, 3], [1, 3], [1, 2, 3],
+                                                    None]
     assert found.to_list() == [True, True, True, False]
 
 
@@ -269,7 +279,7 @@ def add_platform(df: pd.DataFrame, name: str) -> pd.DataFrame:
 @dataset
 class LoginStats:
     uid: int = field(key=True)
-    platform: str
+    platform: str = field(key=True)
     num_logins_1d: int
     login_time: datetime
 
@@ -277,38 +287,36 @@ class LoginStats:
     @inputs(AndroidLogins)
     @includes(add_platform)
     def android_logins(cls, logins: Dataset):
-        aggregated = logins.groupby(["uid"]).aggregate(
-            [
-                Count(window=Window("1d"), into_field="num_logins_1d"),
-            ]
-        )
-        return aggregated.transform(
+        with_platform = logins.transform(
             lambda df: add_platform(df, "android"),
             schema={
                 "uid": int,
-                "num_logins_1d": int,
                 "login_time": datetime,
                 "platform": str,
             },
+        )
+        return with_platform.groupby(["uid", "platform"]).aggregate(
+            [
+                Count(window=Window("1d"), into_field="num_logins_1d"),
+            ]
         )
 
     @pipeline(id=2)
     @includes(add_platform)
     @inputs(IOSLogins)
     def ios_logins(cls, logins: Dataset):
-        aggregated = logins.groupby(["uid"]).aggregate(
-            [
-                Count(window=Window("1d"), into_field="num_logins_1d"),
-            ]
-        )
-        return aggregated.transform(
+        with_platform = logins.transform(
             lambda df: add_platform(df, "ios"),
             schema={
                 "uid": int,
-                "num_logins_1d": int,
                 "login_time": datetime,
                 "platform": str,
             },
+        )
+        return with_platform.groupby(["uid", "platform"]).aggregate(
+            [
+                Count(window=Window("1d"), into_field="num_logins_1d"),
+            ]
         )
 
 
@@ -339,7 +347,7 @@ def test_multiple_pipelines(client):
     res = client.log("IOSLogins", df)
     assert res.status_code == 200, res.json()
     ts = pd.Series([now, now, now, now])
-    df, found = LoginStats.lookup(ts, uid=pd.Series([1, 2, 3, 12]))
+    df, found = LoginStats.lookup(ts, uid=pd.Series([1, 2, 3, 12]),
+        platform=pd.Series(["ios", "android", "android", "ios"]))
     assert df.shape == (4, 4)
-    assert df["platform"].tolist() == ["ios", "android", "android", "ios"]
-    assert found.all()
+    assert found.sum() == 4

@@ -135,5 +135,6 @@ dmypy.json
 
 *.ipynb
 
-data/
+/data/*.csv
 output.txt
+**/.vscode

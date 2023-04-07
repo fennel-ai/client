@@ -5,13 +5,14 @@ from functools import reduce
 
 import numpy as np
 import pandas as pd
-from typing import Optional, List
+from typing import Any, Optional, Dict, List
 
 from fennel.datasets import Pipeline, Visitor, Dataset
-from fennel.lib.aggregate import Count, Sum, Max, Min, Average
+from fennel.lib.aggregate import Count, Sum, Max, Min, Average, LastK
 from fennel.lib.duration import duration_to_timedelta
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import to_includes_proto
+from fennel.test_lib.execute_aggregation import get_aggregated_df
 
 
 @dataclass
@@ -19,6 +20,8 @@ class NodeRet:
     df: pd.DataFrame
     timestamp_field: str
     key_fields: List[str]
+    agg_result: Optional[Dict[str, Any]] = None
+    is_aggregate: bool = False
 
 
 def is_subset(subset: List[str], superset: List[str]) -> bool:
@@ -30,17 +33,19 @@ def set_match(a: List[str], b: List[str]) -> bool:
 
 
 class Executor(Visitor):
-    def __init__(self, data):
+    def __init__(self, data, agg_state):
         super(Executor, self).__init__()
         self.dependencies = []
         self.lib_generated_code = ""
         self.data = data
+        self.agg_state = agg_state
 
     def execute(
-        self, pipeline: Pipeline, dataset: Dataset
+            self, pipeline: Pipeline, dataset: Dataset
     ) -> Optional[NodeRet]:
         self.cur_pipeline_name = pipeline.name
         self.serializer = Serializer(pipeline, dataset)
+        self.cur_ds_name = dataset._name
 
         return self.visit(pipeline.terminal_node)
 
@@ -89,7 +94,7 @@ class Executor(Visitor):
             else:
                 output_expected_column_names = obj.schema.keys()
                 if not set_match(
-                    output_expected_column_names, output_column_names
+                        output_expected_column_names, output_column_names
                 ):
                     raise ValueError(
                         "Output schema doesnt match in transform of pipeline "
@@ -122,7 +127,52 @@ class Executor(Visitor):
             sorted_df, input_ret.timestamp_field, input_ret.key_fields
         )
 
-    def visitAggregate(self, obj) -> Optional[NodeRet]:
+    def _merge_df(self, df1: pd.DataFrame, df2: pd.DataFrame, ts: str) -> \
+            pd.DataFrame:
+        merged_df = pd.concat([df1, df2])
+
+        # Sort by timestamp
+        return merged_df.sort_values(ts)
+
+    def visitAggregate(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        df = copy.deepcopy(input_ret.df)
+
+        if len(input_ret.key_fields) > 0:
+            # Pick the latest value for each key
+            df = df.groupby(input_ret.key_fields).apply(
+                lambda x: x.sort_values(input_ret.timestamp_field).iloc[-1]
+            )
+            df = df.reset_index(drop=True)
+        df = df.sort_values(input_ret.timestamp_field)
+        if self.cur_ds_name in self.agg_state:
+            # Merge the current dataframe with the previous state
+            df = self._merge_df(self.agg_state[self.cur_ds_name], df,
+                input_ret.timestamp_field)
+            self.agg_state[self.cur_ds_name] = df
+        else:
+            self.agg_state[self.cur_ds_name] = df
+        # For aggregates the result is not a dataframe but a dictionary
+        # of fields to the dataframe that contains the aggregate values
+        # for each timestamp for that field.
+        result = {}
+        for aggregate in obj.aggregates:
+            # Select the columns that are needed for the aggregate
+            # and drop the rest
+
+            fields = obj.keys + [input_ret.timestamp_field]
+            if not isinstance(aggregate, Count):
+                fields.append(aggregate.of)
+            filtered_df = df[fields]
+            result[aggregate.into_field] = get_aggregated_df(filtered_df,
+                aggregate, input_ret.timestamp_field, obj.keys)
+        return NodeRet(
+            pd.DataFrame(), input_ret.timestamp_field, obj.keys,
+            result, True)
+
+    def visitAggregate2(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)
         if input_ret is None:
             return None
@@ -198,6 +248,15 @@ class Executor(Visitor):
                 elif isinstance(aggregate, Max):
                     aggs[aggregate.into_field] = pd.NamedAgg(
                         column=aggregate.of, aggfunc="max"
+                    )
+                elif isinstance(aggregate, LastK):
+                    raise NotImplementedError(
+                        "LastK not implemented for aggregate"
+                    )
+                else:
+                    raise Exception(
+                        f"Unknown aggregate type {type(aggregate)} in "
+                        f"pipeline {self.cur_pipeline_name}"
                     )
                 agg_df = filtered_df.groupby(obj.keys).agg(**aggs).reset_index()
                 agg_df[input_ret.timestamp_field] = current_timestamp

@@ -24,6 +24,7 @@ from typing import (
 )
 
 from fennel.lib.aggregate import AggregateType
+from fennel.lib.aggregate.aggregate import Average, Count, LastK, Sum
 from fennel.lib.duration.duration import (
     Duration,
     duration_to_timedelta,
@@ -1196,10 +1197,22 @@ class SchemaValidator(Visitor):
         keys = {f: input_schema.get_type(f) for f in obj.keys}
         values = {}
         for agg in obj.aggregates:
-            if hasattr(agg, "of"):
-                values[agg.into_field] = input_schema.get_type(agg.of)
-            else:
+            if isinstance(agg, Count):
                 values[agg.into_field] = int
+            elif isinstance(agg, Sum):
+                dtype = input_schema.get_type(agg.of)
+                if dtype not in [int, float]:
+                    raise TypeError(
+                        f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
+                    )
+                values[agg.into_field] = dtype
+            elif isinstance(agg, Average):
+                values[agg.into_field] = float
+            elif isinstance(agg, LastK):
+                dtype = input_schema.get_type(agg.of)
+                values[agg.into_field] = List[dtype]
+            else:
+                raise TypeError(f"Unknown aggregate type {type(agg)}")
         return DSSchema(
             keys=keys,
             values=values,

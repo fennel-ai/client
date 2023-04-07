@@ -317,7 +317,7 @@ class UserBehaviorFeatures:
 
     @extractor(depends_on=[UserEngagementDataset])
     @inputs(Query.user_id)
-    def get_features(cls, ts: pd.Series, user_id: pd.Series):
+    def get_user_features(cls, ts: pd.Series, user_id: pd.Series):
         df, found = UserEngagementDataset.lookup(  # type: ignore
             ts, user_id=user_id  # type: ignore
         )
@@ -336,7 +336,7 @@ class DocumentFeatures:
 
     @extractor(depends_on=[DocumentEngagementDataset])
     @inputs(Query.doc_id)
-    def get_features(cls, ts: pd.Series, doc_id: pd.Series):
+    def get_doc_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentEngagementDataset.lookup(  # type: ignore
             ts, doc_id=doc_id  # type: ignore
         )
@@ -526,6 +526,8 @@ class TestSearchExample(unittest.TestCase):
         self.log_engagement_data(client)
         if client.is_integration_client():
             time.sleep(3)
+        # set pd display all columns
+        pd.set_option("display.max_columns", None)
         input_df = pd.DataFrame(
             {
                 "Query.user_id": [123, 342],
@@ -564,37 +566,39 @@ class TestSearchExample(unittest.TestCase):
         assert df["DocumentFeatures.num_views_28d"].tolist() == [1, 2]
         if client.is_integration_client():
             assert (
-                df["DocumentContentFeatures.top_10_unique_words"].tolist()[0]
-                == ["This", "is", "a", "random", "Coda", "document"]
+                    df["DocumentContentFeatures.top_10_unique_words"].tolist()[
+                        0]
+                    == ["This", "is", "a", "random", "Coda", "document"]
             ).all()
             assert (
-                df["DocumentContentFeatures.top_10_unique_words"].tolist()[1]
-                == [
-                    "This",
-                    "is",
-                    "a",
-                    "rand",
-                    "document",
-                    "in",
-                    "Coda",
-                    "with",
-                    "words",
-                ]
+                    df["DocumentContentFeatures.top_10_unique_words"].tolist()[
+                        1]
+                    == [
+                        "This",
+                        "is",
+                        "a",
+                        "rand",
+                        "document",
+                        "in",
+                        "Coda",
+                        "with",
+                        "words",
+                    ]
             ).all()
         else:
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                0
-            ] == ["This", "is", "a", "random", "Coda", "document"]
+                       0
+                   ] == ["This", "is", "a", "random", "Coda", "document"]
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                1
-            ] == [
-                "This",
-                "is",
-                "a",
-                "rand",
-                "document",
-                "in",
-                "Coda",
-                "with",
-                "words",
-            ]
+                       1
+                   ] == [
+                       "This",
+                       "is",
+                       "a",
+                       "rand",
+                       "document",
+                       "in",
+                       "Coda",
+                       "with",
+                       "words",
+                   ]

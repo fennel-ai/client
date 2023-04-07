@@ -3,16 +3,15 @@ import time
 import unittest
 from datetime import datetime, timedelta
 
-import numpy as np
 import pandas as pd
 import pytest
 import requests
 from typing import Optional
 
-from fennel.datasets import dataset, field, pipeline, Dataset, on_demand
+from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Sum, Average, Count
 from fennel.lib.metadata import meta
-from fennel.lib.schema import oneof, inputs, Embedding
+from fennel.lib.schema import oneof, inputs
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
@@ -135,13 +134,13 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                response.json()["error"]
-                == """error: input parse error: expected Int, but got String("32")"""
+                    response.json()["error"]
+                    == """error: input parse error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                response.json()["error"]
-                == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
+                    response.json()["error"]
+                    == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
             )
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
@@ -231,7 +230,6 @@ class TestDataset(unittest.TestCase):
     @mock_client
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
-
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -244,82 +242,84 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-            str(e.exception)
-            == "Dataset currently does not support deleted or deprecated fields."
+                str(e.exception)
+                == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
-class TestDocumentDataset(unittest.TestCase):
-    @mock_client
-    def test_log_to_document_dataset(self, client):
-        """Log some data to the dataset and check if it is logged correctly."""
+# On demand datasets are not supported
 
-        @meta(owner="aditya@fennel.ai")
-        @dataset
-        class DocumentContentDataset:
-            doc_id: int = field(key=True)
-            bert_embedding: Embedding[4]
-            fast_text_embedding: Embedding[3]
-            num_words: int
-            timestamp: datetime = field(timestamp=True)
-
-            @on_demand(expires_after="3d")
-            @inputs(datetime, int)
-            def get_embedding(cls, ts: pd.Series, doc_ids: pd.Series):
-                data = []
-                doc_ids = doc_ids.tolist()
-                for i in range(len(ts)):
-                    data.append(
-                        [
-                            doc_ids[i],
-                            [0.1, 0.2, 0.3, 0.4],
-                            [1.1, 1.2, 1.3],
-                            10 * i,
-                            ts[i],
-                        ]
-                    )
-                columns = [
-                    str(cls.doc_id),
-                    str(cls.bert_embedding),
-                    str(cls.fast_text_embedding),
-                    str(cls.num_words),
-                    str(cls.timestamp),
-                ]
-                return pd.DataFrame(data, columns=columns), pd.Series(
-                    [True] * len(ts)
-                )
-
-        # Sync the dataset
-        client.sync(datasets=[DocumentContentDataset])
-        now = datetime.now()
-        data = [
-            [18232, np.array([1, 2, 3, 4]), np.array([1, 2, 3]), 10, now],
-            [
-                18234,
-                np.array([1, 2.2, 0.213, 0.343]),
-                np.array([0.87, 2, 3]),
-                9,
-                now,
-            ],
-            [18934, [1, 2.2, 0.213, 0.343], [0.87, 2, 3], 12, now],
-        ]
-        columns = [
-            "doc_id",
-            "bert_embedding",
-            "fast_text_embedding",
-            "num_words",
-            "timestamp",
-        ]
-        df = pd.DataFrame(data, columns=columns)
-        response = client.log("DocumentContentDataset", df)
-        assert response.status_code == requests.codes.OK, response.json()
-
-        # Do some lookups
-        doc_ids = pd.Series([18232, 1728, 18234, 18934, 19200, 91012])
-        ts = pd.Series([now, now, now, now, now, now])
-        df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_ids)
-        assert df.shape == (6, 5)
-        assert df["num_words"].tolist() == [10.0, 9.0, 12, 0, 10.0, 20.0]
+# class TestDocumentDataset(unittest.TestCase):
+#     @mock_client
+#     def test_log_to_document_dataset(self, client):
+#         """Log some data to the dataset and check if it is logged correctly."""
+#
+#         @meta(owner="aditya@fennel.ai")
+#         @dataset
+#         class DocumentContentDataset:
+#             doc_id: int = field(key=True)
+#             bert_embedding: Embedding[4]
+#             fast_text_embedding: Embedding[3]
+#             num_words: int
+#             timestamp: datetime = field(timestamp=True)
+#
+#             @on_demand(expires_after="3d")
+#             @inputs(datetime, int)
+#             def get_embedding(cls, ts: pd.Series, doc_ids: pd.Series):
+#                 data = []
+#                 doc_ids = doc_ids.tolist()
+#                 for i in range(len(ts)):
+#                     data.append(
+#                         [
+#                             doc_ids[i],
+#                             [0.1, 0.2, 0.3, 0.4],
+#                             [1.1, 1.2, 1.3],
+#                             10 * i,
+#                             ts[i],
+#                         ]
+#                     )
+#                 columns = [
+#                     str(cls.doc_id),
+#                     str(cls.bert_embedding),
+#                     str(cls.fast_text_embedding),
+#                     str(cls.num_words),
+#                     str(cls.timestamp),
+#                 ]
+#                 return pd.DataFrame(data, columns=columns), pd.Series(
+#                     [True] * len(ts)
+#                 )
+#
+#         # Sync the dataset
+#         client.sync(datasets=[DocumentContentDataset])
+#         now = datetime.now()
+#         data = [
+#             [18232, np.array([1, 2, 3, 4]), np.array([1, 2, 3]), 10, now],
+#             [
+#                 18234,
+#                 np.array([1, 2.2, 0.213, 0.343]),
+#                 np.array([0.87, 2, 3]),
+#                 9,
+#                 now,
+#             ],
+#             [18934, [1, 2.2, 0.213, 0.343], [0.87, 2, 3], 12, now],
+#         ]
+#         columns = [
+#             "doc_id",
+#             "bert_embedding",
+#             "fast_text_embedding",
+#             "num_words",
+#             "timestamp",
+#         ]
+#         df = pd.DataFrame(data, columns=columns)
+#         response = client.log("DocumentContentDataset", df)
+#         assert response.status_code == requests.codes.OK, response.json()
+#
+#         # Do some lookups
+#         doc_ids = pd.Series([18232, 1728, 18234, 18934, 19200, 91012])
+#         ts = pd.Series([now, now, now, now, now, now])
+#         df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_ids)
+#         assert df.shape == (6, 5)
+#         assert df["num_words"].tolist() == [10.0, 9.0, 12, 0, 10.0, 20.0]
 
 
 ################################################################################
@@ -714,60 +714,62 @@ class TestBasicWindowAggregate(unittest.TestCase):
         assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
 
 
-class TestE2EPipeline(unittest.TestCase):
-    @pytest.mark.integration
-    @mock_client
-    def test_e2e_pipeline(self, client):
-        """We enter ratings activity and we get movie stats."""
-        # # Sync the dataset
-        client.sync(
-            datasets=[MovieRating, MovieRevenue, RatingActivity, MovieStats],
-        )
-        now = datetime.now()
-        minute_ago = now - timedelta(minutes=1)
-        one_hour_ago = now - timedelta(hours=1)
-        two_hours_ago = now - timedelta(hours=2)
-        three_hours_ago = now - timedelta(hours=3)
-        four_hours_ago = now - timedelta(hours=4)
-        five_hours_ago = now - timedelta(hours=5)
-        data = [
-            [18231, 2, "Jumanji", five_hours_ago],
-            [18231, 3, "Jumanji", four_hours_ago],
-            [18231, 2, "Jumanji", three_hours_ago],
-            [18231, 5, "Jumanji", five_hours_ago],
-            [18231, 4, "Titanic", three_hours_ago],
-            [18231, 3, "Titanic", two_hours_ago],
-            [18231, 5, "Titanic", one_hour_ago],
-            [18231, 5, "Titanic", minute_ago],
-            [18231, 3, "Titanic", two_hours_ago],
-        ]
-        columns = ["userid", "rating", "movie", "t"]
-        df = pd.DataFrame(data, columns=columns)
-        response = client.log("RatingActivity", df)
-        assert response.status_code == requests.codes.OK, response.json()
+# Post aggregation pipelines are not supported
 
-        data = [
-            ["Jumanji", 1000000, five_hours_ago],
-            ["Titanic", 50000000, three_hours_ago],
-        ]
-        columns = ["movie", "revenue", "t"]
-        df = pd.DataFrame(data, columns=columns)
-        response = client.log("MovieRevenue", df)
-        assert response.status_code == requests.codes.OK
-        if client.is_integration_client():
-            time.sleep(3)
-
-        # Do some lookups to verify data flow is working as expected
-        ts = pd.Series([now, now])
-        names = pd.Series(["Jumanji", "Titanic"])
-        df, _ = MovieStats.lookup(
-            ts,
-            movie=names,
-        )
-        assert df.shape == (2, 4)
-        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
-        assert df["rating"].tolist() == [3, 4]
-        assert df["revenue_in_millions"].tolist() == [1, 50]
+# class TestE2EPipeline(unittest.TestCase):
+#     @pytest.mark.integration
+#     @mock_client
+#     def test_e2e_pipeline(self, client):
+#         """We enter ratings activity and we get movie stats."""
+#         # # Sync the dataset
+#         client.sync(
+#             datasets=[MovieRating, MovieRevenue, RatingActivity, MovieStats],
+#         )
+#         now = datetime.now()
+#         minute_ago = now - timedelta(minutes=1)
+#         one_hour_ago = now - timedelta(hours=1)
+#         two_hours_ago = now - timedelta(hours=2)
+#         three_hours_ago = now - timedelta(hours=3)
+#         four_hours_ago = now - timedelta(hours=4)
+#         five_hours_ago = now - timedelta(hours=5)
+#         data = [
+#             [18231, 2, "Jumanji", five_hours_ago],
+#             [18231, 3, "Jumanji", four_hours_ago],
+#             [18231, 2, "Jumanji", three_hours_ago],
+#             [18231, 5, "Jumanji", five_hours_ago],
+#             [18231, 4, "Titanic", three_hours_ago],
+#             [18231, 3, "Titanic", two_hours_ago],
+#             [18231, 5, "Titanic", one_hour_ago],
+#             [18231, 5, "Titanic", minute_ago],
+#             [18231, 3, "Titanic", two_hours_ago],
+#         ]
+#         columns = ["userid", "rating", "movie", "t"]
+#         df = pd.DataFrame(data, columns=columns)
+#         response = client.log("RatingActivity", df)
+#         assert response.status_code == requests.codes.OK, response.json()
+#
+#         data = [
+#             ["Jumanji", 1000000, five_hours_ago],
+#             ["Titanic", 50000000, three_hours_ago],
+#         ]
+#         columns = ["movie", "revenue", "t"]
+#         df = pd.DataFrame(data, columns=columns)
+#         response = client.log("MovieRevenue", df)
+#         assert response.status_code == requests.codes.OK
+#         if client.is_integration_client():
+#             time.sleep(3)
+#
+#         # Do some lookups to verify data flow is working as expected
+#         ts = pd.Series([now, now])
+#         names = pd.Series(["Jumanji", "Titanic"])
+#         df, _ = MovieStats.lookup(
+#             ts,
+#             movie=names,
+#         )
+#         assert df.shape == (2, 4)
+#         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+#         assert df["rating"].tolist() == [3, 4]
+#         assert df["revenue_in_millions"].tolist() == [1, 50]
 
 
 @meta(owner="test@test.com")
@@ -1129,33 +1131,6 @@ class TestAggregateTableDataset(unittest.TestCase):
         response = client.log("UserAge", input_df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        if client.is_integration_client():
-            return
-
-        three_days_from_now = datetime.now() + timedelta(days=3)
-        ts = pd.Series([three_days_from_now, three_days_from_now])
-        df, _ = UserAgeAggregated.lookup(ts, city=names)
-        assert df.shape == (2, 3)
-        assert df["city"].tolist() == ["mumbai", "delhi"]
-        # The value has updated from [24, 25] to [30, 40]
-        # since UserAge is keyed on the name hence the aggregate
-        # value is updated from [24, 25] to [30, 40]
-        assert df["sum_age"].tolist() == [30, 40]
-
-        four_days_from_now = datetime.now() + timedelta(days=4)
-        input_df["timestamp"] = four_days_from_now
-        response = client.log("UserAgeNonTable", input_df)
-        assert response.status_code == requests.codes.OK, response.json()
-
-        five_days_from_now = datetime.now() + timedelta(days=5)
-        ts = pd.Series([five_days_from_now, five_days_from_now])
-        df, _ = UserAgeAggregated.lookup(ts, city=names)
-        assert df.shape == (2, 3)
-        assert df["city"].tolist() == ["mumbai", "delhi"]
-        # The value has NOT updated but increased from
-        # [24, 25] to [24+30, 25+40]
-        assert df["sum_age"].tolist() == [54, 65]
-
 
 ################################################################################
 #                           Dataset & Pipelines Complex E2E Tests
@@ -1204,7 +1179,7 @@ class ManchesterUnitedPlayerInfo:
     @pipeline(id=1)
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54

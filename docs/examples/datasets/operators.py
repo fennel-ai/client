@@ -1,13 +1,13 @@
 from datetime import datetime
 from datetime import timedelta
-from typing import Optional
 
 import pandas as pd
+from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs
+from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 from fennel.test_lib import mock_client
 
@@ -190,10 +190,28 @@ class UserAdStats:
 
 # /docsnip
 
+from fennel.featuresets import featureset, feature, extractor
+
+
+@meta(owner="ml-eng@fennel.ai")
+@featureset
+class UserAdStatsFeatures:
+    uid: int = feature(id=1)
+    num_clicks: int = feature(id=2)
+    num_clicks_1w: int = feature(id=3)
+
+    @extractor(depends_on=[UserAdStats])
+    @inputs(uid)
+    @outputs(num_clicks, num_clicks_1w)
+    def extract(cls, ts, uids):
+        df, found = UserAdStats.lookup(ts, uid=uids)
+        return df
+
 
 @mock_client
 def test_aggregate(client):
-    client.sync(datasets=[AdClickStream, UserAdStats])
+    client.sync(datasets=[AdClickStream, UserAdStats], featuresets=[
+        UserAdStatsFeatures])
     data = [
         {"uid": 1, "adid": 1, "at": datetime(2020, 1, 1)},
         {"uid": 1, "adid": 2, "at": datetime(2020, 1, 1)},
@@ -205,12 +223,16 @@ def test_aggregate(client):
     ]
     df = pd.DataFrame(data)
     client.log("AdClickStream", df)
-    df = client.data["UserAdStats"]
     dt = datetime(2020, 1, 13)
     yes = dt - timedelta(days=1)
     three_days_ago = dt - timedelta(days=3)
     ts_series = pd.Series([dt, yes, dt, three_days_ago, yes])
-    df, found = UserAdStats.lookup(ts_series, uid=pd.Series([1, 1, 2, 2, 2]))
-    assert found.sum() == 5
-    assert df["num_clicks"].tolist() == [4, 4, 3, 2, 2]
-    assert df["num_clicks_1w"].tolist() == [2, 2, 2, 1, 1]
+    uids = pd.Series([1, 1, 2, 2, 2])
+    df = client.extract_historical_features(
+        input_feature_list=[UserAdStatsFeatures.uid],
+        output_feature_list=[UserAdStatsFeatures],
+        input_dataframe=pd.DataFrame({"UserAdStatsFeatures.uid": uids}),
+        timestamps=ts_series,
+    )
+    assert df["UserAdStatsFeatures.num_clicks"].tolist() == [4, 4, 3, 2, 2]
+    assert df["UserAdStatsFeatures.num_clicks_1w"].tolist() == [2, 2, 2, 1, 1]
