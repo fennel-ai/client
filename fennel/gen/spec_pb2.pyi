@@ -22,22 +22,26 @@ class PreSpec(google.protobuf.message.Message):
     SUM_FIELD_NUMBER: builtins.int
     AVERAGE_FIELD_NUMBER: builtins.int
     COUNT_FIELD_NUMBER: builtins.int
+    LAST_K_FIELD_NUMBER: builtins.int
     @property
     def sum(self) -> global___Sum: ...
     @property
     def average(self) -> global___Average: ...
     @property
     def count(self) -> global___Count: ...
+    @property
+    def last_k(self) -> global___LastK: ...
     def __init__(
         self,
         *,
         sum: global___Sum | None = ...,
         average: global___Average | None = ...,
         count: global___Count | None = ...,
+        last_k: global___LastK | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "sum", b"sum", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "sum", b"sum", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sum", "average", "count"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "last_k", b"last_k", "sum", b"sum", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "last_k", b"last_k", "sum", b"sum", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sum", "average", "count", "last_k"] | None: ...
 
 global___PreSpec = PreSpec
 
@@ -109,3 +113,32 @@ class Count(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "window", b"window"]) -> None: ...
 
 global___Count = Count
+
+@typing_extensions.final
+class LastK(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    OF_FIELD_NUMBER: builtins.int
+    NAME_FIELD_NUMBER: builtins.int
+    LIMIT_FIELD_NUMBER: builtins.int
+    DEDUP_FIELD_NUMBER: builtins.int
+    WINDOW_FIELD_NUMBER: builtins.int
+    of: builtins.str
+    name: builtins.str
+    limit: builtins.int
+    dedup: builtins.bool
+    @property
+    def window(self) -> window_pb2.Window: ...
+    def __init__(
+        self,
+        *,
+        of: builtins.str = ...,
+        name: builtins.str = ...,
+        limit: builtins.int = ...,
+        dedup: builtins.bool = ...,
+        window: window_pb2.Window | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dedup", b"dedup", "limit", b"limit", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
+
+global___LastK = LastK

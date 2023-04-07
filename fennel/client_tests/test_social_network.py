@@ -71,7 +71,7 @@ class UserViewsDataset:
     @inputs(ViewData)
     def count_user_views(cls, view_data: Dataset):
         return view_data.groupby("user_id").aggregate(
-            [Count(window=Window("3y 8s"), into_field="num_views")]
+            [Count(window=Window("5y 8s"), into_field="num_views")]
         )
 
 
@@ -92,7 +92,7 @@ class UserCategoryDataset:
             schema={"user_id": str, "category": str, "time_stamp": datetime},
         )
         return post_info_enriched_t.groupby("user_id", "category").aggregate(
-            [Count(window=Window("3y 8s"), into_field="num_views")]
+            [Count(window=Window("5y 8s"), into_field="num_views")]
         )
 
 
@@ -161,7 +161,6 @@ def test_social_network(client):
         ],
         featuresets=[Request, UserFeatures],
     )
-
     user_data_df = pd.read_csv("fennel/client_tests/data/user_data.csv")
     post_data_df = pd.read_csv("fennel/client_tests/data/post_data.csv")
     view_data_df = pd.read_csv("fennel/client_tests/data/view_data_sampled.csv")
@@ -171,7 +170,6 @@ def test_social_network(client):
     view_data_df["time_stamp"] = view_data_df["time_stamp"].apply(
         lambda x: datetime.strptime(x, "%m/%d/%Y %H:%M %p")
     )
-
     res = client.log("UserInfo", user_data_df)
     assert res.status_code == requests.codes.OK, res.json()
 
@@ -201,9 +199,9 @@ def test_social_network(client):
             }
         ),
     )
-    assert feature_df["UserFeatures.num_views"].to_list() == [1, 1]
+    assert feature_df["UserFeatures.num_views"].to_list() == [2, 4]
     assert feature_df["UserFeatures.num_category_views"].to_list() == [0, 1]
     assert feature_df["UserFeatures.category_view_ratio"].to_list() == [
         0.0,
-        1.0,
+        0.25,
     ]

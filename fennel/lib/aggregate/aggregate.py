@@ -1,6 +1,5 @@
-from typing import List, Union
-
 from pydantic import BaseModel, Extra
+from typing import List, Union
 
 import fennel.gen.spec_pb2 as spec_proto
 from fennel.lib.window import Window
@@ -63,6 +62,7 @@ class Sum(AggregateType):
 
 class Average(AggregateType):
     of: str
+    default: float = 0.0
 
     def to_proto(self):
         return spec_proto.PreSpec(
@@ -70,6 +70,7 @@ class Average(AggregateType):
                 window=self.window.to_proto(),
                 name=self.into_field,
                 of=self.of,
+                default=self.default,
             )
         )
 
@@ -101,6 +102,23 @@ class Min(AggregateType):
 
     def agg_type(self):
         return "min"
+
+
+class LastK(AggregateType):
+    of: str
+    limit: int
+    dedup: bool
+
+    def to_proto(self):
+        return spec_proto.PreSpec(
+            lastk=spec_proto.LastK(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+                limit=self.limit,
+                dedup=self.dedup,
+            )
+        )
 
 
 class TopK(AggregateType):

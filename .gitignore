@@ -134,6 +134,7 @@ dmypy.json
 .idea/
 
 *.ipynb
-
-data/
+/fennel/client_tests/data/view_data.csv
+/data/*.csv
 output.txt
+**/.vscode
