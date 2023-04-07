@@ -62,8 +62,9 @@ def test_lastk_state_dedup():
     state = LastKState(k=3, dedup=True)
     assert state.add_val_to_state(1) == [1]
     assert state.add_val_to_state(2) == [1, 2]
-    assert state.add_val_to_state(3) == [1, 2, 3]
-    assert state.add_val_to_state(4) == [2, 3, 4]
+    assert state.add_val_to_state(1) == [2, 1]
+    assert state.add_val_to_state(3) == [2, 1, 3]
+    assert state.add_val_to_state(4) == [1, 3, 4]
     assert state.add_val_to_state(1) == [3, 4, 1]
 
     assert state.del_val_from_state(3) == [2, 4, 1]

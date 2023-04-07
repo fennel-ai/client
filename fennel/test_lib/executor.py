@@ -1,15 +1,12 @@
 import copy
 import types
 from dataclasses import dataclass
-from functools import reduce
 
-import numpy as np
 import pandas as pd
 from typing import Any, Optional, Dict, List
 
 from fennel.datasets import Pipeline, Visitor, Dataset
-from fennel.lib.aggregate import Count, Sum, Max, Min, Average, LastK
-from fennel.lib.duration import duration_to_timedelta
+from fennel.lib.aggregate import Count
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import to_includes_proto
 from fennel.test_lib.execute_aggregation import get_aggregated_df
@@ -131,8 +128,6 @@ class Executor(Visitor):
         self, df1: pd.DataFrame, df2: pd.DataFrame, ts: str
     ) -> pd.DataFrame:
         merged_df = pd.concat([df1, df2])
-
-        # Sort by timestamp
         return merged_df.sort_values(ts)
 
     def visitAggregate(self, obj):
@@ -163,7 +158,6 @@ class Executor(Visitor):
         for aggregate in obj.aggregates:
             # Select the columns that are needed for the aggregate
             # and drop the rest
-
             fields = obj.keys + [input_ret.timestamp_field]
             if not isinstance(aggregate, Count):
                 fields.append(aggregate.of)
@@ -173,131 +167,6 @@ class Executor(Visitor):
             )
         return NodeRet(
             pd.DataFrame(), input_ret.timestamp_field, obj.keys, result, True
-        )
-
-    def visitAggregate2(self, obj) -> Optional[NodeRet]:
-        input_ret = self.visit(obj.node)
-        if input_ret is None:
-            return None
-        df = copy.deepcopy(input_ret.df)
-        if len(input_ret.key_fields) > 0:
-            # Pick the latest value for each key
-            df = df.groupby(input_ret.key_fields).apply(
-                lambda x: x.sort_values(input_ret.timestamp_field).iloc[-1]
-            )
-            df = df.reset_index(drop=True)
-        # Run an aggregate for each timestamp in the dataframe
-        # So that appropriate windows can be applied and correct
-        # timestamps can be assigned
-        df = df.sort_values(input_ret.timestamp_field)
-        timestamps = df[input_ret.timestamp_field].unique()
-        timestamps_with_expired_events = copy.deepcopy(timestamps)
-        for current_timestamp in timestamps:
-            for aggregate in obj.aggregates:
-                if aggregate.window.start != "forever":
-                    window_secs = duration_to_timedelta(
-                        aggregate.window.start
-                    ).total_seconds()
-                    expired_timestamp = current_timestamp + np.timedelta64(
-                        int(window_secs + 1), "s"
-                    )
-                    timestamps_with_expired_events = np.append(
-                        timestamps_with_expired_events, expired_timestamp
-                    )
-        timestamps_with_expired_events.sort()
-        timestamps_with_expired_events = np.unique(
-            timestamps_with_expired_events
-        )
-        timestamped_dfs = []
-        for current_timestamp in timestamps_with_expired_events:
-            aggs = {}
-            agg_dfs = []
-            for aggregate in obj.aggregates:
-                # Run the aggregate for all data upto the current row
-                # for the given window and assign it the timestamp of the row.
-                filtered_df = copy.deepcopy(
-                    df[df[input_ret.timestamp_field] <= current_timestamp]
-                )
-                if aggregate.window.start != "forever":
-                    window_secs = duration_to_timedelta(
-                        aggregate.window.start
-                    ).total_seconds()
-                    past_timestamp = current_timestamp - np.timedelta64(
-                        int(window_secs), "s"
-                    )
-                    select_rows = filtered_df[input_ret.timestamp_field] >= (
-                        past_timestamp
-                    )
-                    filtered_df = filtered_df.loc[select_rows]
-
-                if isinstance(aggregate, Count):
-                    # Count needs some column to aggregate on, so we use the
-                    # timestamp field
-                    aggs[aggregate.into_field] = pd.NamedAgg(
-                        column=input_ret.timestamp_field, aggfunc="count"
-                    )
-                elif isinstance(aggregate, Sum):
-                    aggs[aggregate.into_field] = pd.NamedAgg(
-                        column=aggregate.of, aggfunc="sum"
-                    )
-                elif isinstance(aggregate, Average):
-                    aggs[aggregate.into_field] = pd.NamedAgg(
-                        column=aggregate.of, aggfunc="mean"
-                    )
-                elif isinstance(aggregate, Min):
-                    aggs[aggregate.into_field] = pd.NamedAgg(
-                        column=aggregate.of, aggfunc="min"
-                    )
-                elif isinstance(aggregate, Max):
-                    aggs[aggregate.into_field] = pd.NamedAgg(
-                        column=aggregate.of, aggfunc="max"
-                    )
-                elif isinstance(aggregate, LastK):
-                    raise NotImplementedError(
-                        "LastK not implemented for aggregate"
-                    )
-                else:
-                    raise Exception(
-                        f"Unknown aggregate type {type(aggregate)} in "
-                        f"pipeline {self.cur_pipeline_name}"
-                    )
-                agg_df = filtered_df.groupby(obj.keys).agg(**aggs).reset_index()
-                agg_df[input_ret.timestamp_field] = current_timestamp
-                agg_dfs.append(agg_df)
-                aggs = {}
-
-            join_columns = obj.keys + [input_ret.timestamp_field]
-            df_merged = reduce(
-                lambda left, right: pd.merge(
-                    left, right, on=join_columns, how="outer"
-                ),
-                agg_dfs,
-            )
-            timestamped_dfs.append(df_merged)
-        post_aggregated_data = pd.concat(timestamped_dfs)
-        post_aggregated_data = post_aggregated_data.reset_index(drop=True)
-        post_aggregated_data.fillna(0, inplace=True)
-        post_aggregated_data = post_aggregated_data.convert_dtypes(
-            convert_string=False
-        )
-
-        for col in post_aggregated_data.columns:
-            # Cast columns to numpy dtypes from pandas types
-            if isinstance(post_aggregated_data[col].dtype, pd.Int64Dtype):
-                post_aggregated_data[col] = post_aggregated_data[col].astype(
-                    np.int64
-                )
-            elif isinstance(post_aggregated_data[col].dtype, pd.Float64Dtype):
-                post_aggregated_data[col] = post_aggregated_data[col].astype(
-                    np.float64
-                )
-            elif isinstance(post_aggregated_data[col].dtype, pd.BooleanDtype):
-                post_aggregated_data[col] = post_aggregated_data[col].astype(
-                    np.bool_
-                )
-
-        return NodeRet(
-            post_aggregated_data, input_ret.timestamp_field, obj.keys
         )
 
     def visitJoin(self, obj) -> Optional[NodeRet]:

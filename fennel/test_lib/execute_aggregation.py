@@ -14,9 +14,6 @@ FENNEL_ROW_TYPE = "__fennel_row_type__"
 FENNEL_FAKE_OF_FIELD = "fennel_fake_of_field"
 
 
-# Interface needed for an aggregate function
-# 1. Add value to state
-# 2. Remove value from state
 class AggState(ABC):
     @abstractmethod
     def add_val_to_state(self, val):
