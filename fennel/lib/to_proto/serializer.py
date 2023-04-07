@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 from textwrap import dedent, indent
 
-import numpy as np
 from typing import Dict, Any, List
 
 import fennel.gen.dataset_pb2 as proto
@@ -39,9 +39,11 @@ class Serializer(Visitor):
         return self.operators
 
     def wrap_function(self, op_pycode, is_filter=False) -> pycode_proto.PyCode:
-        random_str = str(np.random.randint(0, 1000000))
+        gen_func_name = hashlib.sha256(
+            op_pycode.core_code.encode()
+        ).hexdigest()[:10]
 
-        gen_function_name = f"wrapper_{random_str}"
+        gen_function_name = f"wrapper_{gen_func_name}"
         if op_pycode.entry_point == "<lambda>":
             wrapper_function = f"""
 @classmethod
