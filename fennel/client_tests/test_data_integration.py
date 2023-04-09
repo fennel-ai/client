@@ -13,15 +13,15 @@ from fennel.test_lib import mock_client
 
 s3 = S3(
     name="ratings_source",
-    aws_access_key_id="AKIAQOLFGTNXKQAT3UF5",
-    aws_secret_access_key="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",
+    aws_access_key_id="AKIA3753GVTYE67PLGHF",
+    aws_secret_access_key="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",
 )
 
 
 @meta(owner="xiao@fennel.ai")
 @source(
     s3.bucket(
-        bucket_name="fennel-demo-data",
+        bucket_name="data-integration-client-test",
         prefix="movielens_sampled/movies_timestamped.csv",
     ),
     every="1h",
