@@ -32,10 +32,7 @@ from fennel.utils import (
     propogate_fennel_attributes,
     FENNEL_VIRTUAL_FILE,
 )
-<<<<<<< HEAD
 
-=======
->>>>>>> 1c9d6e3 (Added anoather featureset)
 T = TypeVar("T")
 EXTRACTOR_ATTR = "__fennel_extractor__"
 DEPENDS_ON_DATASETS_ATTR = "__fennel_depends_on_datasets"

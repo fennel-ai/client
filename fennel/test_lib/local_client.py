@@ -14,8 +14,7 @@ _DEFAULT_GRPC_TIMEOUT = 60
 
 class LocalClient(Client):
     def __init__(
-            self, grpc_url: str, rest_url: str,
-            http_session: Optional[Any] = None
+        self, grpc_url: str, rest_url: str, http_session: Optional[Any] = None
     ):
         Client.__init__(self, grpc_url, http_session)
         self.rest_url = rest_url
@@ -23,9 +22,9 @@ class LocalClient(Client):
         self.stub = services_pb2_grpc.FennelFeatureStoreStub(self.channel)
 
     def sync(
-            self,
-            datasets: Optional[List[Dataset]] = None,
-            featuresets: Optional[List[Featureset]] = None,
+        self,
+        datasets: Optional[List[Dataset]] = None,
+        featuresets: Optional[List[Featureset]] = None,
     ):
         """
         Sync the client with the server. This will register any datasets or

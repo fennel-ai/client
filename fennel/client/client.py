@@ -125,18 +125,21 @@ class Client:
             response = self._post("{}/log".format(V1_API), req)
         return response
 
-    def _post(self, path: str, req: Dict[str, Any], compress: bool = True):
+    def _post(self, path: str, req: Dict[str, Any], compress: bool = False):
         payload = json.dumps(req).encode("utf-8")
         if compress:
             payload = gzip.compress(payload)
+            headers = {
+                "Content-Encoding": "gzip",
+                "Content-Type": "application/json",
+            }
+        else:
+            headers = {"Content-Type": "application/json"}
         response = self.http.request(
             "POST",
             self._url(path),
             data=payload,
-            headers={
-                "Content-Encoding": "gzip",
-                "Content-Type": "application/json",
-            },
+            headers=headers,
         )
         check_response(response)
         return response
@@ -161,8 +164,6 @@ class Client:
         """
         if input_dataframe.empty or len(output_feature_list) == 0:
             return pd.DataFrame()
-
-        print("Extracting features...")
 
         input_feature_names = []
         for input_feature in input_feature_list:
