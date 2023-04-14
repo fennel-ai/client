@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.11.4] - 2023-04-05
+- Update generated protos and test code around it
+
 ## [0.11] - 2023-04-05
 - Use new lambda based execution. 
 
