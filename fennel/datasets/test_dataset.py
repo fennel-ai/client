@@ -86,13 +86,11 @@ def test_simple_dataset(grpc_stub):
                     "country": {},
                     "timestamp": {},
                 },
-                "pycode": {},
             }
         ],
     }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
-    sync_request.datasets[0].pycode.Clear()
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
@@ -147,13 +145,11 @@ def test_dataset_with_retention(grpc_stub):
                     "amount": {},
                     "timestamp": {},
                 },
-                "pycode": {},
             }
         ],
     }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
-    sync_request.datasets[0].pycode.Clear()
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
@@ -306,10 +302,8 @@ def test_dataset_with_pipes(grpc_stub):
         "history": "63072000s",
         "retention": "63072000s",
         "field_metadata": {"a1": {}, "t": {}},
-        "pycode": {},
     }
     dataset_req = sync_request.datasets[0]
-    dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
@@ -484,10 +478,8 @@ def test_dataset_with_complex_pipe(grpc_stub):
             "num_merchant_fraudulent_transactions_7d": {},
             "timestamp": {},
         },
-        "pycode": {},
     }
     dataset_req = sync_request.datasets[0]
-    dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
@@ -699,10 +691,8 @@ def test_union_datasets(grpc_stub):
             "a1": {},
             "t": {},
         },
-        "pycode": {},
     }
     dataset_req = sync_request.datasets[0]
-    dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
@@ -933,10 +923,8 @@ def test_search_dataset(grpc_stub):
             "top_10_unique_words": {},
             "creation_timestamp": {},
         },
-        "pycode": {},
     }
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    dataset_req.pycode.Clear()
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
     )

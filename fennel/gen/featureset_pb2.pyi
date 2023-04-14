@@ -19,31 +19,25 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
 class CoreFeatureset(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     NAME_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
-    PYCODE_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
-    @property
-    def pycode(self) -> pycode_pb2.PyCode: ...
     def __init__(
         self,
         *,
         name: builtins.str = ...,
         metadata: metadata_pb2.Metadata | None = ...,
-        pycode: pycode_pb2.PyCode | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "name", b"name", "pycode", b"pycode"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "name", b"name"]) -> None: ...
 
 global___CoreFeatureset = CoreFeatureset
 
-@typing_extensions.final
 class Feature(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -73,7 +67,6 @@ class Feature(google.protobuf.message.Message):
 
 global___Feature = Feature
 
-@typing_extensions.final
 class Extractor(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -116,11 +109,9 @@ class Extractor(google.protobuf.message.Message):
 
 global___Extractor = Extractor
 
-@typing_extensions.final
 class Input(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
     class Feature(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -149,7 +140,6 @@ class Input(google.protobuf.message.Message):
 
 global___Input = Input
 
-@typing_extensions.final
 class Model(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 

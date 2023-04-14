@@ -63,11 +63,8 @@ def test_simple_featureset(grpc_stub):
     f = {
         "name": "UserInfo",
         "metadata": {"owner": "test@test.com"},
-        "pycode": {"source_code": ""},
     }
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
-    # Clear the pycode field in featureset_request as it is not deterministic
-    featureset_request.pycode.Clear()
 
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request
@@ -206,10 +203,8 @@ def test_complex_featureset(grpc_stub):
     f = {
         "name": "UserInfo",
         "metadata": {"owner": "test@test.com"},
-        "pycode": {},
     }
     featureset_request = sync_request.feature_sets[0]
-    featureset_request.pycode.Clear()
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request

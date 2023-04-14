@@ -22,7 +22,7 @@ class _RefType:
     ValueType = typing.NewType("ValueType", builtins.int)
     V: typing_extensions.TypeAlias = ValueType
 
-class _RefTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_RefType.ValueType], builtins.type):
+class _RefTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_RefType.ValueType], builtins.type):  # noqa: F821
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     Dataset: _RefType.ValueType  # 0
     Featureset: _RefType.ValueType  # 1
@@ -33,11 +33,9 @@ Dataset: RefType.ValueType  # 0
 Featureset: RefType.ValueType  # 1
 global___RefType = RefType
 
-@typing_extensions.final
 class PyCode(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
     class RefIncludesEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -62,13 +60,28 @@ class PyCode(google.protobuf.message.Message):
     IMPORTS_FIELD_NUMBER: builtins.int
     entry_point: builtins.str
     source_code: builtins.str
+    """This is the code that we use for logical equality, and if this code
+    changes we update/throw an error.
+    """
     core_code: builtins.str
+    """This is purely the code of the function/module."""
     generated_code: builtins.str
+    """This is the fully specified code apart from imports that can be used to
+    run this pycode and contains all the required dependencies. This is the
+    code that we use for physical equality. If changed, an update is pushed.
+    """
     @property
-    def includes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PyCode]: ...
+    def includes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PyCode]:
+        """These are other python functions that a fennel objects depends on to run.
+        These are already included in the generated_code.
+        """
     @property
-    def ref_includes(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, global___RefType.ValueType]: ...
+    def ref_includes(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, global___RefType.ValueType]:
+        """This contains symbolic references to other objects needed apart from the source_code.
+        The generated code already contains the actual code for these objects.
+        """
     imports: builtins.str
+    """The list of imports that are required for this code to run."""
     def __init__(
         self,
         *,

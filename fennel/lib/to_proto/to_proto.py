@@ -139,19 +139,6 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
     # TODO(mohit, aditya): add support for `retention` in Dataset
     retention = duration_proto.Duration()
     retention.FromTimedelta(ds._history)
-    imports = dedent(
-        """
-        from datetime import datetime
-        import pandas as pd
-        import numpy as np
-        from typing import List, Dict, Tuple, Optional, Union, Any
-        from fennel.lib.metadata import meta
-        from fennel.lib.includes import includes
-        from fennel.datasets import *
-        from fennel.lib.schema import *
-        from fennel.datasets.datasets import dataset_lookup
-        """
-    )
 
     return ds_proto.CoreDataset(
         name=ds.__name__,
@@ -160,15 +147,6 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
         history=history,
         retention=retention,
         field_metadata=_field_metadata(ds._fields),
-        pycode=pycode_proto.PyCode(
-            source_code=fennel_get_source(ds.__fennel_original_cls__),
-            generated_code=get_dataset_core_code(ds),
-            core_code=get_dataset_core_code(ds),
-            entry_point=ds.__name__,
-            includes=[],
-            ref_includes={},
-            imports=imports,
-        ),
     )
 
 
@@ -262,32 +240,10 @@ def sources_from_ds(
 
 def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
     _check_owner_exists(fs)
-    imports = dedent(
-        """
-        from datetime import datetime
-        import pandas as pd
-        import numpy as np
-        from typing import List, Dict, Tuple, Optional, Union, Any, no_type_check
-        from fennel.featuresets import *
-        from fennel.featuresets import featureset, feature
-        from fennel.lib.metadata import meta
-        from fennel.lib.includes import includes
-        from fennel.lib.schema import *
-        """
-    )
 
     return fs_proto.CoreFeatureset(
         name=fs._name,
         metadata=get_metadata_proto(fs),
-        pycode=pycode_proto.PyCode(
-            source_code=fennel_get_source(fs.__fennel_original_cls__),
-            core_code=get_featureset_core_code(fs),
-            generated_code=get_featureset_core_code(fs),
-            entry_point=fs._name,
-            includes=[],
-            ref_includes={},
-            imports=imports,
-        ),
     )
 
 

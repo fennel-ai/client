@@ -89,11 +89,8 @@ def test_simple_dataset(grpc_stub):
             "country": {},
             "timestamp": {},
         },
-        "pycode": {},
     }
     expected_sync_request = ParseDict(d, CoreDataset())
-    sync_request.datasets[0].pycode.Clear()
-    expected_sync_request.pycode.Clear()
     assert sync_request.datasets[0] == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
@@ -198,8 +195,6 @@ def test_complex_dataset_with_fields(grpc_stub):
         ],
     }
     expected_sync_request = ParseDict(d, SyncRequest())
-    expected_sync_request.datasets[0].pycode.Clear()
-    sync_request.datasets[0].pycode.Clear()
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
@@ -228,11 +223,8 @@ def test_simple_featureset(grpc_stub):
             "description": "test",
             "tags": ["test"],
         },
-        "pycode": {},
     }
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
-    expected_fs_request.ClearField("pycode")
-    featureset_request.ClearField("pycode")
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request
     )
@@ -351,8 +343,6 @@ def test_featureset_with_extractors(grpc_stub):
         "metadata": {"owner": "yolo@liveonce.com"},
     }
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
-    expected_fs_request.ClearField("pycode")
-    featureset_request.ClearField("pycode")
     assert featureset_request == expected_fs_request, error_message(
         featureset_request, expected_fs_request
     )
