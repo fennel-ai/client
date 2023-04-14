@@ -21,11 +21,9 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
 class CoreDataset(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
     class FieldMetadataEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -79,7 +77,6 @@ class CoreDataset(google.protobuf.message.Message):
 
 global___CoreDataset = CoreDataset
 
-@typing_extensions.final
 class OnDemand(google.protobuf.message.Message):
     """All integers representing time are in microseconds and hence should be int64."""
 
@@ -103,7 +100,6 @@ class OnDemand(google.protobuf.message.Message):
 
 global___OnDemand = OnDemand
 
-@typing_extensions.final
 class Pipeline(google.protobuf.message.Message):
     """----------------------------------------------------------------------------------------------
     Pipeline
@@ -141,7 +137,6 @@ class Pipeline(google.protobuf.message.Message):
 
 global___Pipeline = Pipeline
 
-@typing_extensions.final
 class Operator(google.protobuf.message.Message):
     """Each operator corresponds to a valid operation as part of a pipeline"""
 
@@ -207,7 +202,6 @@ class Operator(google.protobuf.message.Message):
 
 global___Operator = Operator
 
-@typing_extensions.final
 class Aggregate(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -236,11 +230,9 @@ class Aggregate(google.protobuf.message.Message):
 
 global___Aggregate = Aggregate
 
-@typing_extensions.final
 class Join(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
     class OnEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -285,11 +277,9 @@ class Join(google.protobuf.message.Message):
 
 global___Join = Join
 
-@typing_extensions.final
 class Transform(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
     class SchemaEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -333,7 +323,6 @@ class Transform(google.protobuf.message.Message):
 
 global___Transform = Transform
 
-@typing_extensions.final
 class Filter(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -359,7 +348,6 @@ class Filter(google.protobuf.message.Message):
 
 global___Filter = Filter
 
-@typing_extensions.final
 class Union(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -382,7 +370,6 @@ class Union(google.protobuf.message.Message):
 
 global___Union = Union
 
-@typing_extensions.final
 class DatasetRef(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
