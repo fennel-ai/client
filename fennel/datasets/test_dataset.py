@@ -10,6 +10,7 @@ import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
+from fennel.lib.duration import Duration
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs
 from fennel.lib.window import Window
@@ -363,7 +364,7 @@ def test_dataset_with_pipes(grpc_stub):
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "816d3f87d7dc94cfb4c9d8513e0d9234",
+        "id": "7e89417507044ac2c4fddfdf04df414e",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABCDataset",
@@ -371,6 +372,536 @@ def test_dataset_with_pipes(grpc_stub):
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+
+def test_dataset_with_pipes_bounds(grpc_stub):
+    @meta(owner="test@test.com")
+    @dataset
+    class A:
+        a1: int = field(key=True)
+        t: datetime
+
+    @meta(owner="test@test.com")
+    @dataset
+    class B:
+        b1: int = field(key=True)
+        t: datetime
+
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class ABCDatasetDefault:
+        a1: int = field(key=True)
+        t: datetime
+
+        @pipeline(id=1)
+        @inputs(A, B)
+        def pipeline1(cls, a: Dataset, b: Dataset):
+            return a.left_join(b, left_on=["a1"], right_on=["b1"])
+
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class ABDatasetLow:
+        a1: int = field(key=True)
+        t: datetime
+
+        @pipeline(id=1)
+        @inputs(A, B)
+        def pipeline1(cls, a: Dataset, b: Dataset):
+            return a.left_join(
+                b,
+                left_on=["a1"],
+                right_on=["b1"],
+                within=("1h", "0s"),
+            )
+
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class ABDatasetHigh:
+        a1: int = field(key=True)
+        t: datetime
+
+        @pipeline(id=1)
+        @inputs(A, B)
+        def pipeline1(cls, a: Dataset, b: Dataset):
+            return a.left_join(
+                b,
+                left_on=["a1"],
+                right_on=["b1"],
+                within=("forever", "1d"),
+            )
+
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class ABDataset:
+        a1: int = field(key=True)
+        t: datetime
+
+        @pipeline(id=1)
+        @inputs(A, B)
+        def pipeline1(cls, a: Dataset, b: Dataset):
+            return a.left_join(
+                b,
+                left_on=["a1"],
+                right_on=["b1"],
+                within=("3d", "1y"),
+            )
+
+    view = InternalTestClient(grpc_stub)
+    view.add(ABCDatasetDefault)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "ABCDatasetDefault",
+        "dsschema": {
+            "keys": {
+                "fields": [{"name": "a1", "dtype": {"int_type": {}}}],
+            },
+            "values": {},
+            "timestamp": "t",
+        },
+        "metadata": {"owner": "aditya@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {"a1": {}, "t": {}},
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+    # There is one pipeline
+    assert len(sync_request.pipelines) == 1
+    pipeline_req = sync_request.pipelines[0]
+    p = {
+        "name": "pipeline1",
+        "dataset_name": "ABCDatasetDefault",
+        "signature": "pipeline1",
+        "metadata": {},
+        "input_dataset_names": ["A", "B"],
+        "idx": 1,
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert pipeline_req == expected_pipeline_request, error_message(
+        pipeline_req, expected_pipeline_request
+    )
+
+    # There are 3 operators
+    assert len(sync_request.operators) == 3
+    operator_req = sync_request.operators[0]
+    o = {
+        "id": "B",
+        "is_root": False,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABCDatasetDefault",
+        "dataset_ref": {
+            "referring_dataset_name": "B",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    operator_req = sync_request.operators[1]
+    o = {
+        "id": "A",
+        "is_root": False,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABCDatasetDefault",
+        "dataset_ref": {
+            "referring_dataset_name": "A",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    operator_req = sync_request.operators[2]
+    o = {
+        "id": "7e89417507044ac2c4fddfdf04df414e",
+        "is_root": True,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABCDatasetDefault",
+        "join": {
+            "lhs_operand_id": "A",
+            "rhs_dsref_operand_id": "B",
+            "on": {"a1": "b1"},
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    # ----- ABCDatasetDefault -----
+
+    view = InternalTestClient(grpc_stub)
+    view.add(ABCDatasetDefault)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "ABCDatasetDefault",
+        "dsschema": {
+            "keys": {
+                "fields": [{"name": "a1", "dtype": {"int_type": {}}}],
+            },
+            "values": {},
+            "timestamp": "t",
+        },
+        "metadata": {"owner": "aditya@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {"a1": {}, "t": {}},
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+    # There is one pipeline
+    assert len(sync_request.pipelines) == 1
+    pipeline_req = sync_request.pipelines[0]
+    p = {
+        "name": "pipeline1",
+        "dataset_name": "ABCDatasetDefault",
+        "signature": "pipeline1",
+        "metadata": {},
+        "input_dataset_names": ["A", "B"],
+        "idx": 1,
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert pipeline_req == expected_pipeline_request, error_message(
+        pipeline_req, expected_pipeline_request
+    )
+
+    # There are 3 operators
+    assert len(sync_request.operators) == 3
+    operator_req = sync_request.operators[0]
+    o = {
+        "id": "B",
+        "is_root": False,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABCDatasetDefault",
+        "dataset_ref": {
+            "referring_dataset_name": "B",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    operator_req = sync_request.operators[1]
+    o = {
+        "id": "A",
+        "is_root": False,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABCDatasetDefault",
+        "dataset_ref": {
+            "referring_dataset_name": "A",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    operator_req = sync_request.operators[2]
+    o = {
+        "id": "7e89417507044ac2c4fddfdf04df414e",
+        "is_root": True,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABCDatasetDefault",
+        "join": {
+            "lhs_operand_id": "A",
+            "rhs_dsref_operand_id": "B",
+            "on": {"a1": "b1"},
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    # ----- ABDatasetLow -----
+
+    view = InternalTestClient(grpc_stub)
+    view.add(ABDatasetLow)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "ABDatasetLow",
+        "dsschema": {
+            "keys": {
+                "fields": [{"name": "a1", "dtype": {"int_type": {}}}],
+            },
+            "values": {},
+            "timestamp": "t",
+        },
+        "metadata": {"owner": "aditya@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {"a1": {}, "t": {}},
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+    # There is one pipeline
+    assert len(sync_request.pipelines) == 1
+    pipeline_req = sync_request.pipelines[0]
+    p = {
+        "name": "pipeline1",
+        "dataset_name": "ABDatasetLow",
+        "signature": "pipeline1",
+        "metadata": {},
+        "input_dataset_names": ["A", "B"],
+        "idx": 1,
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert pipeline_req == expected_pipeline_request, error_message(
+        pipeline_req, expected_pipeline_request
+    )
+
+    # There are 3 operators
+    assert len(sync_request.operators) == 3
+    operator_req = sync_request.operators[0]
+    o = {
+        "id": "B",
+        "is_root": False,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABDatasetLow",
+        "dataset_ref": {
+            "referring_dataset_name": "B",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    operator_req = sync_request.operators[1]
+    o = {
+        "id": "A",
+        "is_root": False,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABDatasetLow",
+        "dataset_ref": {
+            "referring_dataset_name": "A",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    operator_req = sync_request.operators[2]
+    o = {
+        "id": "5e0f878ae07c4059f5d15a167aebff46",
+        "is_root": True,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABDatasetLow",
+        "join": {
+            "lhs_operand_id": "A",
+            "rhs_dsref_operand_id": "B",
+            "on": {"a1": "b1"},
+            "within_low": "3600s",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    # ----- ABDatasetHigh -----
+
+    view = InternalTestClient(grpc_stub)
+    view.add(ABDatasetHigh)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "ABDatasetHigh",
+        "dsschema": {
+            "keys": {
+                "fields": [{"name": "a1", "dtype": {"int_type": {}}}],
+            },
+            "values": {},
+            "timestamp": "t",
+        },
+        "metadata": {"owner": "aditya@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {"a1": {}, "t": {}},
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+    # There is one pipeline
+    assert len(sync_request.pipelines) == 1
+    pipeline_req = sync_request.pipelines[0]
+    p = {
+        "name": "pipeline1",
+        "dataset_name": "ABDatasetHigh",
+        "signature": "pipeline1",
+        "metadata": {},
+        "input_dataset_names": ["A", "B"],
+        "idx": 1,
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert pipeline_req == expected_pipeline_request, error_message(
+        pipeline_req, expected_pipeline_request
+    )
+
+    # There are 3 operators
+    assert len(sync_request.operators) == 3
+    operator_req = sync_request.operators[0]
+    o = {
+        "id": "B",
+        "is_root": False,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABDatasetHigh",
+        "dataset_ref": {
+            "referring_dataset_name": "B",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    operator_req = sync_request.operators[1]
+    o = {
+        "id": "A",
+        "is_root": False,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABDatasetHigh",
+        "dataset_ref": {
+            "referring_dataset_name": "A",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    operator_req = sync_request.operators[2]
+    o = {
+        "id": "a421bb327a667672ac419772711d7ff0",
+        "is_root": True,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABDatasetHigh",
+        "join": {
+            "lhs_operand_id": "A",
+            "rhs_dsref_operand_id": "B",
+            "on": {"a1": "b1"},
+            "within_high": "86400s",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    # ----- ABDataset -----
+
+    view = InternalTestClient(grpc_stub)
+    view.add(ABDataset)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "ABDataset",
+        "dsschema": {
+            "keys": {
+                "fields": [{"name": "a1", "dtype": {"int_type": {}}}],
+            },
+            "values": {},
+            "timestamp": "t",
+        },
+        "metadata": {"owner": "aditya@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {"a1": {}, "t": {}},
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+    # There is one pipeline
+    assert len(sync_request.pipelines) == 1
+    pipeline_req = sync_request.pipelines[0]
+    p = {
+        "name": "pipeline1",
+        "dataset_name": "ABDataset",
+        "signature": "pipeline1",
+        "metadata": {},
+        "input_dataset_names": ["A", "B"],
+        "idx": 1,
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert pipeline_req == expected_pipeline_request, error_message(
+        pipeline_req, expected_pipeline_request
+    )
+
+    # There are 3 operators
+    assert len(sync_request.operators) == 3
+    operator_req = sync_request.operators[0]
+    o = {
+        "id": "B",
+        "is_root": False,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABDataset",
+        "dataset_ref": {
+            "referring_dataset_name": "B",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    operator_req = sync_request.operators[1]
+    o = {
+        "id": "A",
+        "is_root": False,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABDataset",
+        "dataset_ref": {
+            "referring_dataset_name": "A",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    operator_req = sync_request.operators[2]
+    o = {
+        "id": "ab3159d192c521972821225b2f67e80d",
+        "is_root": True,
+        "pipeline_name": "pipeline1",
+        "dataset_name": "ABDataset",
+        "join": {
+            "lhs_operand_id": "A",
+            "rhs_dsref_operand_id": "B",
+            "on": {"a1": "b1"},
+            "within_low": "259200s",
+            "within_high": "31536000s",
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -559,7 +1090,7 @@ def test_dataset_with_complex_pipe(grpc_stub):
 
     operator_req = sync_request.operators[3]
     o = {
-        "id": "d41e03e92a5a7e4a01fa04ce487c46ef",
+        "id": "20ff856e7211dfd06c0c48b6d280de76",
         "is_root": False,
         "pipeline_name": "create_fraud_dataset",
         "dataset_name": "FraudReportAggregatedDataset",
@@ -576,12 +1107,12 @@ def test_dataset_with_complex_pipe(grpc_stub):
 
     operator_req = erase_operator_pycode(sync_request.operators[4])
     o = {
-        "id": "273b322b23d9316ccd54d3eb61c1039d",
+        "id": "d6077bd9ba3812672a6628146230ab38",
         "is_root": False,
         "pipeline_name": "create_fraud_dataset",
         "dataset_name": "FraudReportAggregatedDataset",
         "transform": {
-            "operand_id": "d41e03e92a5a7e4a01fa04ce487c46ef",
+            "operand_id": "20ff856e7211dfd06c0c48b6d280de76",
             "schema": {
                 "user_id": {"int_type": {}},
                 "merchant_id": {"int_type": {}},
@@ -598,12 +1129,12 @@ def test_dataset_with_complex_pipe(grpc_stub):
 
     operator_req = sync_request.operators[5]
     o = {
-        "id": "04b74f251fd2ca9c97c01eb7d48a2dd7",
+        "id": "ca7789a99ba52babbdc5106d0c97ef43",
         "is_root": True,
         "pipeline_name": "create_fraud_dataset",
         "dataset_name": "FraudReportAggregatedDataset",
         "aggregate": {
-            "operand_id": "273b322b23d9316ccd54d3eb61c1039d",
+            "operand_id": "d6077bd9ba3812672a6628146230ab38",
             "keys": ["merchant_id"],
             "specs": [
                 {

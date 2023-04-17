@@ -167,6 +167,24 @@ def field(
 # ---------------------------------------------------------------------
 
 
+def _validate_join_bounds(within: Tuple[Duration, Duration]):
+    if len(within) != 2:
+        raise ValueError(
+            f"Invalid within clause: {within}. "
+            "Should be a tuple of 2 values. e.g. ('forever', '0s')"
+        )
+    # Neither of them can be None
+    if within[0] is None or within[1] is None:
+        raise ValueError(
+            f"Invalid within clause: {within}. " "Neither bounds can be None"
+        )
+    if within[1] == "forever":
+        raise ValueError(
+            f"Invalid within clause: {within}. "
+            "Upper bound cannot be `forever`"
+        )
+
+
 class _Node(Generic[T]):
     def __init__(self):
         self.out_edges = []
@@ -188,12 +206,14 @@ class _Node(Generic[T]):
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
+        within: Tuple[Duration, Duration] = ("forever", "0s"),
     ) -> Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError("Cannot join with an intermediate dataset")
         if not isinstance(other, _Node):
             raise TypeError("Cannot join with a non-dataset object")
-        return Join(self, other, on, left_on, right_on)
+        _validate_join_bounds(within)
+        return Join(self, other, within, on, left_on, right_on)
 
     def __add__(self, other):
         return Union_(self, other)
@@ -296,6 +316,7 @@ class Join(_Node):
         self,
         node: _Node,
         dataset: Dataset,
+        within: Tuple[Duration, Duration],
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
@@ -306,7 +327,9 @@ class Join(_Node):
         self.on = on
         self.left_on = left_on
         self.right_on = right_on
+        self.within = within
         self.node.out_edges.append(self)
+        _validate_join_bounds(within)
         if on is not None:
             if left_on is not None or right_on is not None:
                 raise ValueError("Cannot specify on and left_on/right_on")
@@ -329,6 +352,7 @@ class Join(_Node):
                 self.on,
                 self.left_on,
                 self.right_on,
+                self.within,
             )
         return fhash(
             self.node.signature(),
@@ -336,6 +360,7 @@ class Join(_Node):
             self.on,
             self.left_on,
             self.right_on,
+            self.within,
         )
 
 

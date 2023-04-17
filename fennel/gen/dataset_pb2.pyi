@@ -13,6 +13,7 @@ import pycode_pb2
 import schema_pb2
 import spec_pb2
 import sys
+import typing
 
 if sys.version_info >= (3, 8):
     import typing as typing_extensions
@@ -251,6 +252,8 @@ class Join(google.protobuf.message.Message):
     LHS_OPERAND_ID_FIELD_NUMBER: builtins.int
     RHS_DSREF_OPERAND_ID_FIELD_NUMBER: builtins.int
     ON_FIELD_NUMBER: builtins.int
+    WITHIN_LOW_FIELD_NUMBER: builtins.int
+    WITHIN_HIGH_FIELD_NUMBER: builtins.int
     LHS_OPERAND_NAME_FIELD_NUMBER: builtins.int
     RHS_DSREF_OPERAND_NAME_FIELD_NUMBER: builtins.int
     lhs_operand_id: builtins.str
@@ -259,6 +262,10 @@ class Join(google.protobuf.message.Message):
     @property
     def on(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]:
         """Map of left field name to right field name to join on."""
+    @property
+    def within_low(self) -> google.protobuf.duration_pb2.Duration: ...
+    @property
+    def within_high(self) -> google.protobuf.duration_pb2.Duration: ...
     lhs_operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
     THE CLIENT
@@ -270,10 +277,17 @@ class Join(google.protobuf.message.Message):
         lhs_operand_id: builtins.str = ...,
         rhs_dsref_operand_id: builtins.str = ...,
         on: collections.abc.Mapping[builtins.str, builtins.str] | None = ...,
+        within_low: google.protobuf.duration_pb2.Duration | None = ...,
+        within_high: google.protobuf.duration_pb2.Duration | None = ...,
         lhs_operand_name: builtins.str = ...,
         rhs_dsref_operand_name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["lhs_operand_id", b"lhs_operand_id", "lhs_operand_name", b"lhs_operand_name", "on", b"on", "rhs_dsref_operand_id", b"rhs_dsref_operand_id", "rhs_dsref_operand_name", b"rhs_dsref_operand_name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_within_high", b"_within_high", "_within_low", b"_within_low", "within_high", b"within_high", "within_low", b"within_low"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_within_high", b"_within_high", "_within_low", b"_within_low", "lhs_operand_id", b"lhs_operand_id", "lhs_operand_name", b"lhs_operand_name", "on", b"on", "rhs_dsref_operand_id", b"rhs_dsref_operand_id", "rhs_dsref_operand_name", b"rhs_dsref_operand_name", "within_high", b"within_high", "within_low", b"within_low"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_within_high", b"_within_high"]) -> typing_extensions.Literal["within_high"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_within_low", b"_within_low"]) -> typing_extensions.Literal["within_low"] | None: ...
 
 global___Join = Join
 

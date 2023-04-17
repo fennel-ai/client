@@ -1,12 +1,15 @@
 import copy
 import types
 from dataclasses import dataclass
+from datetime import datetime
 
+import numpy as np
 import pandas as pd
 from typing import Any, Optional, Dict, List
 
 from fennel.datasets import Pipeline, Visitor, Dataset
 from fennel.lib.aggregate import Count
+from fennel.lib.duration import duration_to_timedelta
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import to_includes_proto
 from fennel.test_lib.execute_aggregation import get_aggregated_df
@@ -180,9 +183,54 @@ class Executor(Visitor):
 
         right_timestamp_field = right_ret.timestamp_field
         left_timestamp_field = input_ret.timestamp_field
+        ts_query_field = "_@@_query_ts"
+        tmp_right_ts = "_@@_right_ts"
+        tmp_left_ts = "_@@_left_ts"
+        tmp_ts_low = "_@@_ts_low"
+
+        # Add a column to the right dataframe that contains the timestamp which will be used for `asof_join`
+        right_df[ts_query_field] = right_df[right_timestamp_field]
+        # rename the right timestamp to avoid conflicts
         right_df = right_df.rename(
-            columns={right_timestamp_field: left_timestamp_field}
+            columns={right_timestamp_field: tmp_right_ts}
         )
+
+        # change dtype of right dataframe so that the merged dataframe can accommodate optional values
+        for column in right_df.columns:
+            # TODO: Currently doing it for only the int64 type, add more later in the future
+            if (
+                column not in left_df.columns.values
+                and right_df[column].dtype == np.int64
+            ):
+                right_df[column] = right_df[column].astype(pd.Int64Dtype())
+
+        # Set the value of the left timestamp - this is the timestamp that will be used for the join
+        # - to be the upper bound of the join query (this is the max ts of a valid right dataset entry)
+        def add_within_high(row):
+            return row[left_timestamp_field] + duration_to_timedelta(
+                obj.within[1]
+            )
+
+        left_df[ts_query_field] = left_df.apply(
+            lambda row: add_within_high(row), axis=1
+        )
+
+        # Add a column to the left dataframe to specify the lower bound of the join query - this
+        # is the timestamp below which we will not consider any rows from the right dataframe for joins
+        def sub_within_low(row):
+            if obj.within[0] == "forever":
+                return datetime.min
+            else:
+                return row[left_timestamp_field] - duration_to_timedelta(
+                    obj.within[0]
+                )
+
+        left_df[tmp_ts_low] = left_df.apply(
+            lambda row: sub_within_low(row), axis=1
+        )
+
+        # rename the left timestamp to avoid conflicts
+        left_df = left_df.rename(columns={left_timestamp_field: tmp_left_ts})
         if obj.on is not None and len(obj.on) > 0:
             if not is_subset(obj.on, left_df.columns):
                 raise Exception(
@@ -193,7 +241,7 @@ class Executor(Visitor):
                     f"Join on fields {obj.on} not present in right dataframe"
                 )
             merged_df = pd.merge_asof(
-                left=left_df, right=right_df, on=left_timestamp_field, by=obj.on
+                left=left_df, right=right_df, on=ts_query_field, by=obj.on
             )
         else:
             if not is_subset(obj.left_on, left_df.columns):
@@ -207,10 +255,50 @@ class Executor(Visitor):
             merged_df = pd.merge_asof(
                 left=left_df,
                 right=right_df,
-                on=left_timestamp_field,
+                on=ts_query_field,
                 left_by=obj.left_on,
                 right_by=obj.right_on,
             )
+
+        # Filter out rows that are outside the bounds of the join query
+        def filter_bounded_row(row):
+            # if the dataset was not found, we want to keep the row around with null values
+            if pd.isnull(row[tmp_right_ts]):
+                return row
+            if row[tmp_right_ts] >= row[tmp_ts_low]:
+                return row
+            # if the row is outside the bounds, we want to assume that right join did not succeed
+            # - we do so by setting all the right columns to null
+            for col in right_df.columns.values:
+                if col not in left_df.columns.values:
+                    row[col] = np.nan
+            return row
+
+        original_dtypes = merged_df.dtypes
+        merged_df = merged_df.transform(
+            lambda row: filter_bounded_row(row), axis=1
+        ).astype(original_dtypes)
+
+        # Set the timestamp of the row to be the max of the left and right timestamps - this is the timestamp
+        # that is present in the downstream operators. We take the max because it is possible that upper bound is
+        # specified and join occurred with an entry with larger value than the query ts.
+        def emited_ts(row):
+            if pd.isnull(row[tmp_right_ts]):
+                return row[tmp_left_ts]
+            else:
+                return max(row[tmp_right_ts], row[tmp_left_ts])
+
+        merged_df[left_timestamp_field] = merged_df.apply(
+            lambda row: emited_ts(row), axis=1
+        )
+
+        # drop the temporary columns
+        merged_df.drop(
+            columns=[tmp_ts_low, ts_query_field, tmp_left_ts, tmp_right_ts],
+            inplace=True,
+        )
+
+        # sort the dataframe by the timestamp
         sorted_df = merged_df.sort_values(left_timestamp_field)
         return NodeRet(sorted_df, left_timestamp_field, input_ret.key_fields)
 
