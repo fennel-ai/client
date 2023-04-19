@@ -1,348 +1,201 @@
-import json
-from datetime import datetime, timedelta
+# docsnip imports
 from typing import Optional
-
+from datetime import datetime, timedelta
+import requests
 import pandas as pd
 
-# docsnip quickstart
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.featuresets import (
-    feature,
-    featureset,
-    extractor,
-)
+from fennel.datasets import dataset, pipeline, field, Dataset
+from datetime import datetime
+from fennel.lib.metadata import meta
 from fennel.lib.aggregate import Count
+from fennel.lib.window import Window
+from fennel.featuresets import feature, featureset, extractor
+from fennel.sources import source, Postgres, Snowflake, Kafka
+from fennel.lib.schema import oneof, inputs, outputs
 from fennel.lib.expectations import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.lib.metadata import meta
-from fennel.lib.schema import oneof, inputs, outputs
-from fennel.lib.window import Window
-from fennel.sources import source, Postgres, Snowflake
-from fennel.test_lib import mock_client
 
-# Step 1: define connectors to your data sources. Here
-# it is done in the UI (so that credentials don't have to be
-# put in code) and referred by the names given to them
+# /docsnip
+
+# docsnip connectors
 postgres = Postgres.get(name="my_rdbms")
 warehouse = Snowflake.get(name="my_warehouse")
+kafka = Kafka.get(name="my_kafka")
+# /docsnip
 
 
-# Step 2: define a few datasets - each dataset has some
-# typed fields, an owner, and can optionally be given tags
-# datasets can be sourced from sources defined in step 1
+# docsnip datasets
 @dataset
-@source(postgres.table("merchant_info", cursor="last_modified"), every="1m")
-@meta(owner="aditya@fennel.ai")
-class MerchantInfo:
-    merchant_id: int = field(key=True)
-    merchant_category: str
-    city: str
-    merchant_num_employees: int
-    created_on: datetime
+@source(postgres.table("product_info", cursor="last_modified"), every="1m")
+@meta(owner="chris@fennel.ai", tags=["PII"])
+class Product:
+    product_id: int = field(key=True)
+    seller_id: int
+    price: float
+    desc: Optional[str]
     last_modified: datetime = field(timestamp=True)
 
-
-@dataset
-@source(postgres.table("user_info", cursor="last_modified"), every="1m")
-@meta(owner="nikhil@fennel.ai", tags=["PII"])
-class UserInfo:
-    user_id: int = field(key=True)
-    name: str
-    gender: oneof(str, ["male", "female"])
-    dob: str
-    age: int
-    country: Optional[str]
-    last_modified: datetime = field(timestamp=True)
-
+    # Powerful primitives like data expectations for data hygiene
     @expectations
     def get_expectations(cls):
         return [
             expect_column_values_to_be_between(
-                column=str(cls.age), min_value=13, max_value=100, mostly=0.95
+                column="price", min_value=1, max_value=1e4, mostly=0.95
             )
         ]
 
 
-# Here Fennel brings data from warehouse. This way, Fennel
-# let you bring data from disparate systems in the same plane
-# which makes it easier to work across many data sysetms
+# ingesting realtime data from Kafka works exactly the same way
+@meta(owner="eva@fennel.ai")
+@source(kafka.topic("orders"), lateness="1h")
 @dataset
-@source(warehouse.table("user_activity", cursor="timestamp"), every="15m")
-@meta(owner="luke@fennel.ai")
-class Activity:
-    user_id: int
-    action_type: str
-    amount: Optional[float]
-    metadata: str
+class Order:
+    uid: int
+    product_id: int
     timestamp: datetime
-
-
-@dataset
-@meta(owner="laura@fennel.ai")
-class FraudReportAggregateByCity:
-    merchant_id: int = field(key=True)
-    city: str = field(key=True)
-    timestamp: datetime
-    num_merchant_city_fraud_transactions: int
-    num_merchant_city_fraud_transactions_7d: int
-
-    # Fennel lets you write pipelines that operate on one or more
-    # datasets - you get SQL like power but with arbitrary Python.
-    # and the same pipeline code works for batch & streaming data alike!
-    @pipeline(id=1)
-    @inputs(Activity, MerchantInfo)
-    def create_fraud_dataset(cls, activity: Dataset, merchant_info: Dataset):
-        def extract_info(df: pd.DataFrame) -> pd.DataFrame:
-            df_metadata_dict = df["metadata"].apply(json.loads).apply(pd.Series)
-            df["transaction_amount"] = df_metadata_dict["transaction_amt"]
-            df["merchant_id"] = df_metadata_dict["merchant_id"]
-            return df[
-                ["merchant_id", "transaction_amount", "user_id", "timestamp"]
-            ]
-
-        filtered = activity.filter(lambda r: r["action_type"] == "report_txn")
-        extracted = filtered.transform(
-            extract_info,
-            schema={
-                "transaction_amount": float,
-                "merchant_id": int,
-                "user_id": int,
-                "timestamp": datetime,
-            },
-        )
-        joined = extracted.left_join(merchant_info, on=["merchant_id"])
-        transformed = joined.transform(
-            lambda df: df.fillna({"city": "unknown"}),
-            schema={
-                "merchant_id": int,
-                "transaction_amount": float,
-                "timestamp": datetime,
-                "city": str,
-            },
-        )
-        return transformed.groupby("merchant_id", "city").aggregate(
-            [
-                Count(
-                    window=Window("forever"),
-                    into_field="num_merchant_city_fraud_transactions",
-                ),
-                Count(
-                    window=Window("1w"),
-                    into_field="num_merchant_city_fraud_transactions_7d",
-                ),
-            ]
-        )
-
-
-# --------------------- Featuresets ---------------------#
-
-
-# Step 3: define some featuresets - each featureset
-# is a collection of logically related features. Features
-# can be added/removed from featuresets following a tagging
-# mechanism similar to protobufs and each feature itself is
-# immutable once created
-@featureset
-@meta(owner="anti-fraud-team@fennel.ai")
-class Merchant:
-    merchant_id: int = feature(id=1)
-    merchant_category: str = feature(id=2)
-    city: str = feature(id=3)
-    merchant_age: int = feature(id=4)
-    merchant_num_employees: int = feature(id=5)
-
-    # Fennel lets you specify code that knows how to
-    # extract one or more features of a featureset
-    @extractor(depends_on=[MerchantInfo])
-    @inputs(merchant_id)
-    @outputs(merchant_age)
-    def get_merchant_info(cls, ts: pd.Series, merchant_id: pd.Series):
-        df, _found = MerchantInfo.lookup(ts, merchant_id=merchant_id)
-        df["current_timestamp"] = ts
-        df["merchant_age"] = df.apply(
-            lambda x: (x["current_timestamp"] - x["created_on"]).days, axis=1
-        )
-        return df[["merchant_age"]]
-
-    @extractor(depends_on=[MerchantInfo])
-    @inputs(merchant_id)
-    @outputs(merchant_category, city, merchant_num_employees)
-    def get_merchant_features(cls, ts: pd.Series, merchant_id: pd.Series):
-        df, found = MerchantInfo.lookup(ts, merchant_id=merchant_id)
-        df.fillna(
-            {
-                "merchant_category": "unknown",
-                "city": -1,
-                "merchant_num_employees": 0,
-            },
-            inplace=True,
-        )
-        return df[["merchant_category", "city", "merchant_num_employees"]]
-
-
-@featureset
-@meta(owner="abhay@fennel.ai")
-class MerchantBehaviorFeatures:
-    num_merchant_city_fraud_transactions: int = feature(id=1)
-    num_merchant_city_fraud_transactions_7d: int = feature(id=2)
-    fradulent_transaction_ratio: float = feature(id=3)
-
-    @extractor(depends_on=[FraudReportAggregateByCity])
-    @inputs(Merchant.merchant_id, Merchant.city)
-    @outputs(
-        num_merchant_city_fraud_transactions,
-        num_merchant_city_fraud_transactions_7d,
-        fradulent_transaction_ratio,
-    )
-    def get_merchant_fraud_features(
-        cls, ts: pd.Series, merchant_id: pd.Series, city: pd.Series
-    ):
-        df, _found = FraudReportAggregateByCity.lookup(
-            ts, merchant_id=merchant_id, city=city
-        )
-        df["fradulent_transaction_ratio"] = df.apply(
-            lambda x: x.num_merchant_city_fraud_transactions_7d
-            / x.num_merchant_city_fraud_transactions,
-            axis=1,
-        )
-        return df[
-            [
-                "num_merchant_city_fraud_transactions_7d",
-                "num_merchant_city_fraud_transactions",
-                "fradulent_transaction_ratio",
-            ]
-        ]
 
 
 # /docsnip
 
 
-@mock_client
-def test_fraud_detection_pipeline(client):
-    client.sync(
-        datasets=[
-            MerchantInfo,
-            UserInfo,
-            Activity,
-            FraudReportAggregateByCity,
-        ],
-        featuresets=[
-            Merchant,
-            MerchantBehaviorFeatures,
-        ],
-    )
-    now = datetime.now()
-    data = [
-        {
-            "merchant_id": 1,
-            "merchant_category": "food",
-            "city": "NY",
-            "merchant_num_employees": 100,
-            "created_on": now - timedelta(days=10),
-            "last_modified": now,
-        },
-        {
-            "merchant_id": 2,
-            "merchant_category": "retail",
-            "city": "SF",
-            "merchant_num_employees": 500,
-            "created_on": now - timedelta(days=30),
-            "last_modified": now,
-        },
-        {
-            "merchant_id": 3,
-            "merchant_category": "retail",
-            "city": "NY",
-            "merchant_num_employees": 300,
-            "created_on": now - timedelta(days=20),
-            "last_modified": now,
-        },
-    ]
-    res = client.log("MerchantInfo", pd.DataFrame(data))
-    assert res.status_code == 200, res.json()
+# docsnip pipelines
+@meta(owner="mark@fennel.ai")
+@dataset
+class UserSellerOrders:
+    uid: int = field(key=True)
+    seller_id: int = field(key=True)
+    num_orders_1d: int
+    num_orders_1w: int
+    timestamp: datetime
 
-    data = [
-        {
-            "user_id": 111,
-            "dob": "1990-11-01",
-            "age": 32,
-            "country": "US",
-            "last_modified": now,
-            "name": "John",
-            "gender": "male",
-        },
-        {
-            "user_id": 222,
-            "dob": "1992-01-04",
-            "age": 31,
-            "country": "India",
-            "last_modified": now,
-            "name": "Raj",
-            "gender": "male",
-        },
-        {
-            "user_id": 331,
-            "dob": "1994-03-01",
-            "age": 29,
-            "country": "US",
-            "last_modified": now,
-            "gender": "female",
-            "name": "Laura",
-        },
-    ]
-    res = client.log("UserInfo", pd.DataFrame(data))
-    assert res.status_code == 200, res.json()
+    @pipeline(id=1)
+    @inputs(Order, Product)
+    def my_pipeline(cls, orders: Dataset, products: Dataset):
+        orders = orders.left_join(products, on=["product_id"])
+        orders = orders.transform(
+            lambda df: df[["uid", "seller_id", "timestamp"]].fillna(0),
+            schema={
+                "uid": int,
+                "seller_id": int,
+                "timestamp": datetime,
+            },
+        )
 
-    data = [
-        {
-            "user_id": 111,
-            "action_type": "report_txn",
-            "amount": 100,
-            "metadata": json.dumps({"transaction_amt": 100, "merchant_id": 1}),
-            "timestamp": now,
-        },
-        {
-            "user_id": 222,
-            "action_type": "report_txn",
-            "amount": 100,
-            "metadata": json.dumps({"transaction_amt": 100, "merchant_id": 2}),
-            "timestamp": now,
-        },
-        {
-            "user_id": 331,
-            "action_type": "report_txn",
-            "amount": 100,
-            "metadata": json.dumps({"transaction_amt": 100, "merchant_id": 3}),
-            "timestamp": now,
-        },
-        {
-            "user_id": 111,
-            "action_type": "report_txn",
-            "amount": 100,
-            "metadata": json.dumps({"transaction_amt": 100, "merchant_id": 1}),
-            "timestamp": now,
-        },
-    ]
-    res = client.log("Activity", pd.DataFrame(data))
-    assert res.status_code == 200, res.json()
+        return orders.groupby("uid", "seller_id").aggregate(
+            [
+                Count(window=Window("1d"), into_field="num_orders_1d"),
+                Count(window=Window("1w"), into_field="num_orders_1w"),
+            ]
+        )
 
-    feature_df = client.extract_features(
-        output_feature_list=[MerchantBehaviorFeatures, Merchant.merchant_age],
-        input_feature_list=[Merchant.merchant_id],
-        input_dataframe=pd.DataFrame({"Merchant.merchant_id": [1, 2, 3]}),
-    )
-    assert feature_df.shape == (3, 4)
-    assert feature_df["Merchant.merchant_age"].tolist() == [
-        10,
-        30,
-        20,
-    ]
-    assert feature_df[
-        "MerchantBehaviorFeatures.num_merchant_city_fraud_transactions"
-    ].tolist() == [
-        2,
-        1,
-        1,
-    ]
+
+# /docsnip
+
+
+# docsnip features
+@meta(owner="nikhil@fennel.ai")
+@featureset
+class UserSellerFeatures:
+    uid: int = feature(id=1)
+    seller_id: int = feature(id=2)
+    num_orders_1d: int = feature(id=3)
+    num_orders_1w: int = feature(id=4)
+
+    @extractor(depends_on=[UserSellerOrders])
+    @inputs(uid, seller_id)
+    @outputs(num_orders_1d, num_orders_1w)
+    def myextractor(cls, ts: pd.Series, uids: pd.Series, sellers: pd.Series):
+        df, found = UserSellerOrders.lookup(ts, seller_id=sellers, uid=uids)
+        df = df.fillna(0)
+        df["num_orders_1d"] = df["num_orders_1d"].astype(int)
+        df["num_orders_1w"] = df["num_orders_1w"].astype(int)
+        return df[["num_orders_1d", "num_orders_1w"]]
+
+
+# /docsnip
+
+
+# docsnip sync
+from fennel.client.client import Client
+from fennel.test_lib import MockClient
+
+# client = Client('<FENNEL SERVER URL>') # uncomment this line to use a real Fennel server
+client = MockClient()  # comment this line to use a real Fennel server
+client.sync(
+    datasets=[Order, Product, UserSellerOrders],
+    featuresets=[UserSellerFeatures],
+)
+
+now = datetime.now()
+# create some product data
+columns = ["product_id", "seller_id", "price", "desc", "last_modified"]
+data = [
+    [1, 1, 10.0, "product 1", now],
+    [2, 2, 20.0, "product 2", now],
+    [3, 1, 30.0, "product 3", now],
+]
+df = pd.DataFrame(data, columns=columns)
+response = client.log("Product", df)
+assert response.status_code == requests.codes.OK, response.json()
+
+columns = ["uid", "product_id", "timestamp"]
+data = [[1, 1, now], [1, 2, now], [1, 3, now]]
+df = pd.DataFrame(data, columns=columns)
+response = client.log("Order", df)
+assert response.status_code == requests.codes.OK, response.json()
+# /docsnip
+
+# docsnip query
+feature_df = client.extract_features(
+    output_feature_list=[
+        UserSellerFeatures.num_orders_1d,
+        UserSellerFeatures.num_orders_1w,
+    ],
+    input_feature_list=[
+        UserSellerFeatures.uid,
+        UserSellerFeatures.seller_id,
+    ],
+    input_dataframe=pd.DataFrame(
+        {
+            "UserSellerFeatures.uid": [1, 1],
+            "UserSellerFeatures.seller_id": [1, 2],
+        }
+    ),
+)
+assert feature_df.columns.tolist() == [
+    "UserSellerFeatures.num_orders_1d",
+    "UserSellerFeatures.num_orders_1w",
+]
+assert feature_df["UserSellerFeatures.num_orders_1d"].tolist() == [2, 1]
+assert feature_df["UserSellerFeatures.num_orders_1w"].tolist() == [2, 1]
+# /docsnip
+
+# docsnip historical
+feature_df = client.extract_historical_features(
+    output_feature_list=[
+        UserSellerFeatures.num_orders_1d,
+        UserSellerFeatures.num_orders_1w,
+    ],
+    input_feature_list=[
+        UserSellerFeatures.uid,
+        UserSellerFeatures.seller_id,
+    ],
+    input_dataframe=pd.DataFrame(
+        {
+            "UserSellerFeatures.uid": [1, 1, 1, 1],
+            "UserSellerFeatures.seller_id": [1, 2, 1, 2],
+        }
+    ),
+    timestamps=pd.Series(
+        [now, now, now - timedelta(days=1), now - timedelta(days=1)]
+    ),
+)
+assert feature_df.columns.tolist() == [
+    "UserSellerFeatures.num_orders_1d",
+    "UserSellerFeatures.num_orders_1w",
+]
+assert feature_df["UserSellerFeatures.num_orders_1d"].tolist() == [2, 1, 0, 0]
+assert feature_df["UserSellerFeatures.num_orders_1w"].tolist() == [2, 1, 0, 0]
+# /docsnip
