@@ -10,6 +10,7 @@ from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Sum, Average, Count
+from fennel.lib.duration import Duration
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof, inputs
 from fennel.lib.window import Window
@@ -1162,6 +1163,50 @@ class ManchesterUnitedPlayerInfo:
         return manchester_players.left_join(wag, on=["name"])
 
 
+@meta(owner="gianni@fifa.com")
+@dataset
+class ManchesterUnitedPlayerInfoBounded:
+    name: str = field(key=True)
+    timestamp: datetime
+    age: int
+    height: float = field().meta(description="in cm")  # type: ignore
+    weight: float = field().meta(description="in kg")  # type: ignore
+    club: str
+    salary: Optional[int]
+    wag: Optional[str]
+
+    @pipeline(id=1)
+    @inputs(PlayerInfo, ClubSalary, WAG)
+    def create_player_detailed_info(
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+    ):
+        def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
+            df["height"] = df["height"] * 2.54
+            df["weight"] = df["weight"] * 0.453592
+            return df
+
+        metric_stats = player_info.transform(
+            convert_to_metric_stats,
+            schema={
+                "name": str,
+                "age": int,
+                "height": float,
+                "weight": float,
+                "club": str,
+                "timestamp": datetime,
+            },
+        )
+        player_info_with_salary = metric_stats.left_join(
+            club_salary, on=["club"], within=("60s", "0s")
+        )
+        manchester_players = player_info_with_salary.filter(
+            lambda df: df["club"] == "Manchester United"
+        )
+        return manchester_players.left_join(
+            wag, on=["name"], within=("forever", "60s")
+        )
+
+
 class TestE2eIntegrationTestMUInfo(unittest.TestCase):
     @pytest.mark.integration
     @mock_client
@@ -1240,6 +1285,116 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         ]
         assert df["wag"].tolist() == [
             "Lucia",
+            "Fern",
+            None,
+            "Georgina",
+            "Rosilene",
+        ]
+
+
+class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
+    @pytest.mark.integration
+    @mock_client
+    def test_muinfo_e2e_bounded(self, client):
+        client.sync(
+            datasets=[
+                PlayerInfo,
+                ClubSalary,
+                WAG,
+                ManchesterUnitedPlayerInfoBounded,
+            ],
+        )
+
+        now = datetime.now()
+        minute_ago = now - timedelta(minutes=1)
+        second_ahead = now + timedelta(seconds=1)
+        minute_ahead = now + timedelta(minutes=1)
+        couple_minutes_ahead = now + timedelta(minutes=2)
+        data = [
+            ["Rashford", 25, 71, 154, "Manchester United", now],
+            ["Maguire", 29, 76, 198, "Manchester United", now],
+            ["Messi", 35, 67, 148, "PSG", now],
+            ["Christiano Ronaldo", 37, 74, 187, "Al-Nassr", now],
+            ["Christiano Ronaldo", 30, 74, 177, "Manchester United", now],
+            [
+                "Antony",
+                22,
+                69,
+                139,
+                "Manchester United",
+                second_ahead,
+            ],  # This will be skipped in salary join
+        ]
+        columns = ["name", "age", "height", "weight", "club", "timestamp"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("PlayerInfo", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        if client.is_integration_client():
+            time.sleep(3)
+        data = [
+            ["Manchester United", minute_ago, 1000000],
+            ["PSG", minute_ago, 2000000],
+            ["Al-Nassr", minute_ago, 3000000],
+        ]
+        columns = ["club", "timestamp", "salary"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("ClubSalary", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        if client.is_integration_client():
+            time.sleep(3)
+        data = [
+            [
+                "Rashford",
+                couple_minutes_ahead,
+                "Lucia",
+            ],  # This will be skipped in wag join
+            ["Maguire", minute_ahead, "Fern"],
+            ["Messi", minute_ahead, "Antonela"],
+            ["Christiano Ronaldo", minute_ahead, "Georgina"],
+            ["Antony", minute_ahead, "Rosilene"],
+        ]
+        columns = ["name", "timestamp", "wag"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("WAG", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        ts = pd.Series(
+            [
+                couple_minutes_ahead,
+                couple_minutes_ahead,
+                couple_minutes_ahead,
+                couple_minutes_ahead,
+                couple_minutes_ahead,
+            ]
+        )
+        names = pd.Series(
+            [
+                "Rashford",
+                "Maguire",
+                "Messi",
+                "Christiano Ronaldo",
+                "Antony",
+            ]
+        )
+        if client.is_integration_client():
+            time.sleep(30)
+        df, _ = ManchesterUnitedPlayerInfoBounded.lookup(ts, name=names)
+        assert df.shape == (5, 8)
+        assert df["club"].tolist() == [
+            "Manchester United",
+            "Manchester United",
+            None,
+            "Manchester United",
+            "Manchester United",
+        ]
+        assert df["salary"].tolist() == [
+            1000000,
+            1000000,
+            None,
+            1000000,
+            None,
+        ]
+        assert df["wag"].tolist() == [
+            None,
             "Fern",
             None,
             "Georgina",

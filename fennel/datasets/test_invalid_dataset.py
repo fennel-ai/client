@@ -150,6 +150,128 @@ def test_dataset_incorrect_join(grpc_stub):
     assert str(e.value) == "Cannot join with an intermediate dataset"
 
 
+def test_dataset_incorrect_join_bounds(grpc_stub):
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            t: datetime
+
+        @dataset
+        class B:
+            b1: int = field(key=True)
+            t: datetime
+
+        @dataset
+        class ABCDataset1:
+            a1: int = field(key=True)
+            t: datetime
+
+            @pipeline(id=1)
+            @inputs(A, B)
+            def pipeline1(cls, a: Dataset, b: Dataset):
+                return a.left_join(b, left_on=["a1"], right_on=["b1"], within=("0s",))  # type: ignore
+
+    assert "Should be a tuple of 2 values" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            t: datetime
+
+        @dataset
+        class B:
+            b1: int = field(key=True)
+            t: datetime
+
+        @dataset
+        class ABCDataset3:
+            a1: int = field(key=True)
+            t: datetime
+
+            @pipeline(id=1)
+            @inputs(A, B)
+            def pipeline1(cls, a: Dataset, b: Dataset):
+                return a.left_join(b, left_on=["a1"], right_on=["b1"], within=(None, "0s"))  # type: ignore
+
+    assert "Neither bounds can be None" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            t: datetime
+
+        @dataset
+        class B:
+            b1: int = field(key=True)
+            t: datetime
+
+        @dataset
+        class ABCDataset4:
+            a1: int = field(key=True)
+            t: datetime
+
+            @pipeline(id=1)
+            @inputs(A, B)
+            def pipeline1(cls, a: Dataset, b: Dataset):
+                return a.left_join(b, left_on=["a1"], right_on=["b1"], within=("forever", None))  # type: ignore
+
+    assert "Neither bounds can be None" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            t: datetime
+
+        @dataset
+        class B:
+            b1: int = field(key=True)
+            t: datetime
+
+        @dataset
+        class ABCDataset5:
+            a1: int = field(key=True)
+            t: datetime
+
+            @pipeline(id=1)
+            @inputs(A, B)
+            def pipeline1(cls, a: Dataset, b: Dataset):
+                return a.left_join(b, left_on=["a1"], right_on=["b1"], within=(None, None))  # type: ignore
+
+    assert "Neither bounds can be None" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            t: datetime
+
+        @dataset
+        class B:
+            b1: int = field(key=True)
+            t: datetime
+
+        @dataset
+        class ABCDataset6:
+            a1: int = field(key=True)
+            t: datetime
+
+            @pipeline(id=1)
+            @inputs(A, B)
+            def pipeline1(cls, a: Dataset, b: Dataset):
+                return a.left_join(b, left_on=["a1"], right_on=["b1"], within=("forever", "forever"))  # type: ignore
+
+    assert "Upper bound cannot be `forever`" in str(e.value)
+
+
 def test_dataset_optional_key(grpc_stub):
     with pytest.raises(ValueError) as e:
 

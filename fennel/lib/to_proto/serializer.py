@@ -5,9 +5,14 @@ from textwrap import dedent, indent
 
 from typing import Dict, Any, List
 
+import google.protobuf.duration_pb2 as duration_proto
+from fennel.datasets.datasets import _validate_join_bounds  # type: ignore
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
+from fennel.lib.duration import (
+    duration_to_timedelta,
+)
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.schema import get_datatype
 from fennel.lib.to_proto.source_code import (
@@ -179,6 +184,16 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             ret = self.visitDataset(obj.dataset)
             self.proto_by_operator_id[rhs_operator_id] = ret
             self.operators.append(ret)
+        _validate_join_bounds(obj.within)
+        # "forever" is a special value that means no lower bound.
+        within_low, within_high = None, None
+        if obj.within[0] != "forever":
+            within_low = duration_proto.Duration()
+            within_low.FromTimedelta(duration_to_timedelta(obj.within[0]))
+        within_high_td = duration_to_timedelta(obj.within[1])
+        if within_high_td.total_seconds() != 0:
+            within_high = duration_proto.Duration()
+            within_high.FromTimedelta(within_high_td)
 
         return proto.Operator(
             id=obj.signature(),
@@ -189,6 +204,8 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 lhs_operand_id=self.visit(obj.node),
                 rhs_dsref_operand_id=rhs_operator_id,
                 on=on,
+                within_low=within_low,
+                within_high=within_high,
             ),
         )
 

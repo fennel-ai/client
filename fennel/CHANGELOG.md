@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.12] - 2023-04-17
+- Add support for intervals in Join Operator
+
 ## [0.11] - 2023-04-05
 - Use new lambda based execution. 
 
