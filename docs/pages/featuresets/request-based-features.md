@@ -26,7 +26,7 @@ class UserFeatures:
     
     @extractor
     @inputs(SearchRequest.device_type)
-    fn f(cls, ts: pd.Series, devices: pd.Series): 
+    def f(cls, ts: pd.Series, devices: pd.Series): 
         for device in devices:
             ...
 

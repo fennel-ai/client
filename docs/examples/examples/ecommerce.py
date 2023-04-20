@@ -12,12 +12,12 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 
-# docsnip connector
 from fennel.sources import Postgres, source
 from fennel.test_lib import mock_client
 
 # /docsnip
 
+# docsnip connector
 postgres = Postgres(
     name="my-postgres",
     host="somedb",
@@ -25,12 +25,10 @@ postgres = Postgres(
     username="myuser",
     password="mypassword",
 )
-
-
 # /docsnip
 
 
-# docsnip definitions
+# docsnip datasets
 @source(postgres.table("orders", cursor="timestamp"), every="1m", lateness="1d")
 @meta(owner="data-eng-oncall@fennel.ai")
 @dataset
@@ -61,6 +59,10 @@ class UserSellerOrders:
         )
 
 
+# /docsnip
+
+
+# docsnip featuresets
 @meta(owner="feed-ranking-team@fennel.ai")
 @featureset
 class UserSeller:
