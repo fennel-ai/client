@@ -1,10 +1,10 @@
 ---
-title: 'Concepts'
+title: 'Introduction'
 order: 0
 status: 'published'
 ---
 
-# Concepts
+# Introduction
 
 Fennel has two main concepts -- datasets and featuresets. Let's look at both one by one
 

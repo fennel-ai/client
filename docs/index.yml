@@ -4,18 +4,23 @@ sidebar:
     title: "Getting Started"
     pages:
       - "/"
-      - "getting-started/quickstart"
       - "getting-started/installation"
+      - "getting-started/quickstart"
       - "getting-started/examples"
 
-  - slug: "overview"
-    title: "Overview"
+  - slug: "concepts"
+    title: "Concepts"
     pages:
-      - "overview/concepts"
-      - "overview/deployment-model"
-      - "overview/architecture"
-      - "overview/read-write-separation"
-      - "overview/cost-optimizations"
+      - "concepts/introduction"
+
+  - slug: "architecture"
+    title: "Architecture"
+    pages:
+      - "architecture/deployment-model"
+      - "architecture/architecture"
+      - "architecture/read-write-separation"
+      - "architecture/cost-optimizations"
+
 
   - slug: "datasets"
     title: "Datasets"
