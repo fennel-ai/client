@@ -1,10 +1,10 @@
 ---
-title: 'Overview'
-order: 0
+title: 'Dataset'
+order: 2
 status: 'published'
 ---
 
-# Overview
+# Dataset
 
 Datasets refer to a table like data with typed columns. Datasets can be sourced from external datasets (e.g. Kafka, Snowflake, Postgres etc.) or derived from other datasets.&#x20;
 
