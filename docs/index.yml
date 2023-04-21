@@ -12,6 +12,7 @@ sidebar:
     title: "Concepts"
     pages:
       - "concepts/introduction"
+      - "concepts/source"
 
   - slug: "architecture"
     title: "Architecture"
@@ -26,7 +27,6 @@ sidebar:
     title: "Datasets"
     pages:
       - "datasets/overview"
-      - "datasets/sources"
       - "datasets/lookups"
       - "datasets/pipelines"
       - "datasets/operators"
