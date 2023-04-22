@@ -592,12 +592,37 @@ class ShortcutDetailsFeatureset:
 class TestOslash(unittest.TestCase):
 
     def test_reset(self):
-        client = Client(url="http://k8s-testing-testinga-3b4f67b998-29c1c19eb9f569d3.elb.us-west-2.amazonaws.com")
+        client = Client(url="http://k8s-backupte-backupte-6c7b644eaf-005475c62f1c153c.elb.us-west-2.amazonaws.com")
+        client.sync(
+            datasets=[
+                ShortcutDataset,  # 1
+                MemberDataset,  # 2
+                ShortcutActivitySourceDataset,  # 3
+                MemberActivityDataset,  # 4
+                ShortcutActivityDataset,  # 5
+                MemberShortcutGranularUsageDataset,  # 6
+                MemberShortcutDomainGranularUsageDataset,  # 7
+                DomainShortcutGranularUsageDataset,  # 8
+                ShortcutUsageAggByShortcutDataset,  # 9
+                MemberShortcutCoarseDomainGranularUsageDataset,  # 10
+                CoarseDomainShortcutGranularUsageDataset,  # 11
+            ],
+            featuresets=[
+                Query,  # 1
+                MemberShortcutGranularUsageFeatureset,  # 2
+                MemberShortcutDomainGranularUsageFeatureset,  # 3
+                DomainShortcutGranularUsageFeatureset,  # 4
+                ShortcutUsageAggByShortcutFeatureset,  # 5
+                ShortcutDetailsFeatureset,  # 6
+                MemberShortcutCoarseDomainGranularUsageFeatureset,  # 7
+                CoarseDomainShortcutGranularUsageFeatureset,  # 8
+            ],
+        )
         client.sync([])
 
     @pytest.mark.integration
     def test_oslash_extract_features_blocked(self):
-        client = Client(url="http://k8s-backupte-backupte-6344e5ee32-c9fee3ec8c03e226.elb.us-west-2.amazonaws.com")
+        client = Client(url="http://k8s-backupte-backupte-6c7b644eaf-005475c62f1c153c.elb.us-west-2.amazonaws.com")
         # client.sync([])
         client.sync(
             datasets=[
@@ -628,15 +653,15 @@ class TestOslash(unittest.TestCase):
         shortcutDf = pd.read_csv("/Users/mohitreddy/fennel-ai/client/fennel/client_tests/CsvData/v2/shortcutsData.csv", on_bad_lines="skip")
         shortcutDf["created_at"] = pd.to_datetime(shortcutDf["created_at"]).dt.tz_localize(None)
         shortcutDf = shortcutDf.fillna("NotAvailable")
-        shortcutDf = shortcutDf.head(1000)
+        # shortcutDf = shortcutDf.head(1000)
 
         memberDf = pd.read_csv("/Users/mohitreddy/fennel-ai/client/fennel/client_tests/CsvData/v2/membersData.csv", on_bad_lines="skip")
         memberDf["created_at"] = pd.to_datetime(memberDf["created_at"]).dt.tz_localize(None)
         memberDf = memberDf.fillna("NotAvailable")
-        memberDf = memberDf.head(1000)
+        # memberDf = memberDf.head(1000)
         # memberDf.head(2)
 
-        shortcutActivityDf = pd.read_csv("/Users/mohitreddy/fennel-ai/client/fennel/client_tests/CsvData/v2/shortcutActivity.csv")
+        shortcutActivityDf = pd.read_csv("/Users/mohitreddy/fennel-ai/client/fennel/client_tests/CsvData/v2/shortcutActivityLarge.csv")
         shortcutActivityDf["time"] = pd.to_datetime(shortcutActivityDf["time"])
         shortcutActivityDf = shortcutActivityDf.dropna()
         shortcutActivityDf = shortcutActivityDf.merge(
@@ -645,11 +670,11 @@ class TestOslash(unittest.TestCase):
         # # drop column org_y and rename org_x to org
         shortcutActivityDf = shortcutActivityDf.drop(columns=["org_y"])
         shortcutActivityDf = shortcutActivityDf.rename(columns={"org_x": "org"})
-        shortcutActivityDf = shortcutActivityDf.head(1000)
+        # shortcutActivityDf = shortcutActivityDf.head(1000)
 
         memberActivityDf = pd.read_csv("/Users/mohitreddy/fennel-ai/client/fennel/client_tests/CsvData/v2/memberActivity.csv")
         memberActivityDf["time"] = pd.to_datetime(memberActivityDf["time"])
-        memberActivityDf = memberActivityDf.head(1000)
+        # memberActivityDf = memberActivityDf.head(1000)
         # # memberActivityDf.head(2)
 
         log_to_client("ShortcutDataset", client, shortcutDf)
