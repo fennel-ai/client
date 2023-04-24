@@ -92,3 +92,18 @@ Overtime, you'd have many more datasets and featuresets - you'd send all of them
 
 Assuming the call succeeds, any datasets/featuresets that don't yet exist will be created, any datasets/featuresets that exist but are not provided in the sync call are deleted and rest are left unchanged. See the [section on CI/CD](/testing-and-ci-cd/ci-cd-workflows) to learn how the end to end deployment could work in a production environment
 
+
+### Learn more
+
+Datasets and Featuresets, despite being very simple abstraction, together pack a
+punch in terms of power. Here are a few topics to read next to learn more:
+
+<Grid>
+	<PageReference href="/concepts/sources/" illustration="/assets/illustrations/sources.svg" title="Sources">
+		Ingest data from external data sources to populate Fennel datasets.
+	</PageReference>
+
+	<PageReference href="/concepts/pipelines/" illustration="/assets/illustrations/pipelines.svg" title="Pipelines">
+		Create pipelines to derive new datasets from existing datasets.
+	</PageReference>
+</Grid>
