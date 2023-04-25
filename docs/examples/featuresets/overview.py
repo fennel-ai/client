@@ -20,7 +20,7 @@ class Movies:
     @extractor
     @inputs(duration)
     @outputs(over_2hrs)
-    def my_extractor(cls, ts: pd.Series, durations: pd.Series):
+    def my_extractor(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
         return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
 
@@ -34,6 +34,114 @@ def test_featureset():
     assert res.tolist() == [False, False, True, True]
 
 
+# docsnip featureset_zero_extractors
+@featureset
+class Movies:
+    duration: int = feature(id=1)
+    over_2hrs: bool = feature(id=2)
+
+
+# /docsnip
+
+
+# docsnip featureset_many_extractors
+@featureset
+class Movies:
+    duration: int = feature(id=1)
+    over_2hrs: bool = feature(id=2)
+    over_3hrs: bool = feature(id=3)
+
+    @extractor
+    @inputs(duration)
+    @outputs(over_2hrs)
+    def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+        return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
+
+    @extractor
+    @inputs(duration)
+    @outputs(over_3hrs)
+    def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+        return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
+
+
+# /docsnip
+
+
+def test_multiple_extractors_of_same_feature():
+    with pytest.raises(Exception):
+        # docsnip featureset_extractors_of_same_feature
+        @featureset
+        class Movies:
+            duration: int = feature(id=1)
+            over_2hrs: bool = feature(id=2)
+            # invalid: both e1 & e2 output `over_3hrs`
+            over_3hrs: bool = feature(id=3)
+
+            @extractor
+            @inputs(duration)
+            @outputs(over_2hrs, over_3hrs)
+            def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.DataFrame:
+                two_hrs = durations > 2 * 3600
+                three_hrs = durations > 3 * 3600
+                return pd.DataFrame(
+                    {"over_2hrs": two_hrs, "over_3hrs": three_hrs}
+                )
+
+            @extractor
+            @inputs(duration)
+            @outputs(over_3hrs)
+            def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+                return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
+
+
+# /docsnip
+
+
+# docsnip remote_feature_as_input
+@featureset
+class Length:
+    limit_secs: int = feature(id=1)
+
+
+@featureset
+class Movies:
+    duration: int = feature(id=1)
+    over_limit: bool = feature(id=2)
+
+    @extractor
+    @inputs(Length.limit_secs, duration)
+    @outputs(over_limit)
+    def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
+        return pd.Series(name="over_limit", data=durations > limits)
+
+
+# /docsnip
+
+
+def test_multiple_extractors_of_same_feature():
+    with pytest.raises(Exception):
+        # docsnip remote_feature_as_output
+        @featureset
+        class Request:
+            too_long: bool = feature(id=1)
+
+        @featureset
+        class Movies:
+            duration: int = feature(id=1)
+            limit_secs: int = feature(id=2)
+
+            @extractor
+            @inputs(limit_secs, duration)
+            @outputs(
+                Request.too_long
+            )  # can not output feature of another featureset
+            def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
+                return pd.Series(name="movie_too_long", data=durations > limits)
+
+
+# /docsnip
+
+
 @featureset
 class Movie:
     duration: int = feature(id=1)
@@ -43,7 +151,7 @@ class Movie:
     @extractor
     @inputs(duration)
     @outputs(over_2hrs)
-    def my_extractor(cls, ts: pd.Series, durations: pd.Series):
+    def my_extractor(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
         return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
     # /docsnip

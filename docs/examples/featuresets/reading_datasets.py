@@ -4,14 +4,14 @@ import pandas as pd
 
 from fennel.datasets import dataset, field
 
-# docsnip featuresets_reading_datasets
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.test_lib import mock_client
 
 
-@meta(owner="data-eng-oncall@fennel.ai")
+# docsnip featuresets_reading_datasets
+@meta(owner="data-eng-team@fennel.ai")
 @dataset
 class User:
     uid: int = field(key=True)
@@ -19,7 +19,7 @@ class User:
     timestamp: datetime
 
 
-@meta(owner="data-eng-oncall@fennel.ai")
+@meta(owner="data-science-team@fennel.ai")
 @featureset
 class UserFeatures:
     uid: int = feature(id=1)
