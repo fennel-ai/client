@@ -41,6 +41,7 @@ sidebar:
     title: "Development"
     pages:
       - "development/unit-testing"
+      - "development/ci-cd-workflows"
 
   - slug: "guides"
     title: "Guides"
@@ -59,12 +60,6 @@ sidebar:
       - "featuresets/composite-features"
       - "featuresets/lifecycle-management"
 
-  - slug: "testing-and-ci-cd"
-    title: "Testing & CI/CD"
-    pages:
-      - "testing-and-ci-cd/integration-tests"
-      - "testing-and-ci-cd/ci-cd-workflows"
-    
   - slug: "governance"
     title: "Governance"
     pages:
