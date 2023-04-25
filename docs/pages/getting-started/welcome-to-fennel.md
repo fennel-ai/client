@@ -29,7 +29,7 @@ architected from the ground up in service of three design goals.
    way to to cutting edge streaming joins. 
 
 Fennel tries to meet these goals while also being lower on cloud costs compared 
-to other alternatives by squeezing as much out of cloud hardware as possible See
+to other alternatives by squeezing as much out of cloud hardware as possible. See
 [this](/overview/cost-optimizations) for how Fennel does this.
 
 ## Benefits of Fennel
