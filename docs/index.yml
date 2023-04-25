@@ -20,10 +20,11 @@ sidebar:
   - slug: "architecture"
     title: "Architecture"
     pages:
-      - "architecture/deployment-model"
-      - "architecture/architecture"
+      - "architecture/overview"
       - "architecture/read-write-separation"
+      - "architecture/deployment-model"
       - "architecture/cost-optimizations"
+      - "architecture/privacy-security"
 
   - slug: "featuresets"
     title: "Featuresets"
