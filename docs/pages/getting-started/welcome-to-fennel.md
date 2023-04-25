@@ -55,9 +55,9 @@ cases. Here are some of the most common ones:
 [Start](/getting-started/quickstart) here if you want to directly dive deep into
  an end-to-end example.&#x20;
 
-Or if you are not in a hurry, read about the main [concepts](/overview/concepts) 
+Or if you are not in a hurry, read about the main [concepts](/concepts/introduction) 
 first followed by some more details about the [datasets](/datasets/overview) 
-and [featuresets](/featuresets/overview).&#x20;
+and [featuresets](/featuresets/overview).
 
 We, the team behind Fennel, have thoroughly enjoyed building Fennel and hope 
 learning and using Fennel brings as much delight to you as well!

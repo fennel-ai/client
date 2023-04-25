@@ -1,18 +1,21 @@
 ---
 title: 'Cost Optimizations'
-order: 4
+order: 3
 status: 'published'
 ---
 
 # Cost Optimizations
 
-Keeping cloud costs low is one of the top 3 design goals for Fennel (the other two being ease of use and encouraging best practices).&#x20;
-
-Fennel delivers on this goal by investing in advanced cost optimizations -- optimizations which which are harder to invest in for each company individually but become feasible due to economics of scale enjoyed by Fennel. Together, these optimizations significantly reduce cloud spend for the same workloads.&#x20;
+Production feature engineering systems deal with lots of data at low latencies
+and hence can be very costly on cloud infrastructures. Fennel goes an extra
+mile in trying to keep cloud costs by squeezing as much out of hardware as 
+possible. This is accomplished by a long tail of cost optimizations -- many of
+which are too low ROI for each team to invest in individually but become feasible
+due to economies of scale enjoyed by Fennel.
 
 Here is a non-exhaustive list of such optimizations:
 
-* Keeping services stateless whenever possible and then using spot instances
+* Keeping services stateless whenever possible so that spot instances could power them
 * Serve features using RocksDB based disk/RAM hybrid instead of more costly options like DynamoDB or Redis (which keeps all data in RAM)
 * Using minimal managed services provided by cloud vendors and instead running the open source versions on our own on top of just the EC2 (this avoid 2-3x markup charged by cloud vendors)
 * Using efficient Rust to power all services to reduce CPU demands

@@ -1,6 +1,6 @@
 ---
 title: 'Read/Write Separation'
-order: 3
+order: 1
 status: 'published'
 ---
 
