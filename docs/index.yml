@@ -26,6 +26,29 @@ sidebar:
       - "architecture/cost-optimizations"
       - "architecture/privacy-security"
 
+  - slug: "data-quality"
+    title: "Data Quality"
+    pages:
+      - "data-quality/approach"
+      - "data-quality/strong-typing"
+      - "data-quality/immutability-versioning"
+      - "data-quality/lineage-validation"
+      - "data-quality/ownership"
+      - "data-quality/data-expectations"
+
+
+  - slug: "development"
+    title: "Development"
+    pages:
+      - "development/unit-testing"
+
+  - slug: "guides"
+    title: "Guides"
+    pages: 
+      - "guides/request-based-features"
+      - "guides/composite-features"
+      - "guides/out-of-order-data"
+
   - slug: "featuresets"
     title: "Featuresets"
     pages: 
@@ -39,7 +62,6 @@ sidebar:
   - slug: "testing-and-ci-cd"
     title: "Testing & CI/CD"
     pages:
-      - "testing-and-ci-cd/unit-tests"
       - "testing-and-ci-cd/integration-tests"
       - "testing-and-ci-cd/ci-cd-workflows"
     
@@ -48,13 +70,6 @@ sidebar:
     pages:
       - "governance/privacy-and-security"
       - "governance/metaflags"
-
-  - slug: "data-quality"
-    title: "Data Quality"
-    pages:
-      - "data-quality/data-expectations"
-      - "data-quality/lifecycle-management"
-      - "data-quality/drift-monitoring"
 
   - slug: "api-reference"
     title: "API Reference"
