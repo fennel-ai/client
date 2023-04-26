@@ -5,7 +5,6 @@ import requests
 import pandas as pd
 
 from fennel.datasets import dataset, pipeline, field, Dataset
-from datetime import datetime
 from fennel.lib.metadata import meta
 from fennel.lib.aggregate import Count
 from fennel.lib.window import Window
