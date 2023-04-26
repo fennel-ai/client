@@ -3,7 +3,8 @@ from unittest.mock import patch
 
 import requests
 
-url = "http://localhost:8000/api/v1/"
+
+SERVER = "http://localhost:8000/"
 
 
 class TestRestAPI(unittest.TestCase):
@@ -11,6 +12,7 @@ class TestRestAPI(unittest.TestCase):
     def test_log(self, mock_post):
         mock_post.return_value.status_code = 200
         # docsnip rest_log_api
+        url = "{}/api/v1/log".format(SERVER)
         headers = {"Content-Type": "application/json"}
         data = [
             {
@@ -41,6 +43,7 @@ class TestRestAPI(unittest.TestCase):
         # /docsnip
 
         # docsnip rest_extract_features_api
+        url = "{}/api/v1/extract_features".format(SERVER)
         headers = {"Content-Type": "application/json"}
         data = [
             {"UserFeatures.userid": 1},
