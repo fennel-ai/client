@@ -50,16 +50,6 @@ sidebar:
       - "guides/composite-features"
       - "guides/out-of-order-data"
 
-  - slug: "featuresets"
-    title: "Featuresets"
-    pages: 
-      - "featuresets/overview"
-      - "featuresets/end-to-end-extraction"
-      - "featuresets/reading-datasets"
-      - "featuresets/request-based-features"
-      - "featuresets/composite-features"
-      - "featuresets/lifecycle-management"
-
   - slug: "api-reference"
     title: "API Reference"
     pages:
