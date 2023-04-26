@@ -33,7 +33,7 @@ sidebar:
       - "data-quality/strong-typing"
       - "data-quality/immutability-versioning"
       - "data-quality/lineage-validation"
-      - "data-quality/ownership"
+      - "data-quality/metaflags"
       - "data-quality/data-expectations"
 
 
@@ -59,12 +59,6 @@ sidebar:
       - "featuresets/request-based-features"
       - "featuresets/composite-features"
       - "featuresets/lifecycle-management"
-
-  - slug: "governance"
-    title: "Governance"
-    pages:
-      - "governance/privacy-and-security"
-      - "governance/metaflags"
 
   - slug: "api-reference"
     title: "API Reference"
