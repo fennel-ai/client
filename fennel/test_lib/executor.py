@@ -195,15 +195,6 @@ class Executor(Visitor):
             columns={right_timestamp_field: tmp_right_ts}
         )
 
-        # change dtype of right dataframe so that the merged dataframe can accommodate optional values
-        for column in right_df.columns:
-            # TODO: Currently doing it for only the int64 type, add more later in the future
-            if (
-                column not in left_df.columns.values
-                and right_df[column].dtype == np.int64
-            ):
-                right_df[column] = right_df[column].astype(pd.Int64Dtype())
-
         # Set the value of the left timestamp - this is the timestamp that will be used for the join
         # - to be the upper bound of the join query (this is the max ts of a valid right dataset entry)
         def add_within_high(row):
@@ -275,13 +266,28 @@ class Executor(Visitor):
             return row
 
         original_dtypes = merged_df.dtypes
+        # If any of the columns in the merged df was transformed to have NaN values (these are columns from RHS),
+        # check if the dtype of the column is int, if so, convert that into float so that
+        # it will accept NaN values - this is what Pandas does, emulating the same behavior here.
         merged_df = merged_df.transform(
             lambda row: filter_bounded_row(row), axis=1
-        ).astype(original_dtypes)
-
+        )
+        # Try transforming to the original dtypes
+        # In case of failures, ignore them, which will result in the column being converted to `object` dtype
+        merged_df = merged_df.astype(original_dtypes, errors="ignore")
+        transformed_dtypes = merged_df.dtypes
+        for index, dtype in zip(original_dtypes.index, original_dtypes.values):
+            if (
+                index in right_df.columns.values
+                and index not in left_df.columns.values
+            ):
+                if dtype == np.int64 and transformed_dtypes[index] == object:
+                    original_dtypes[index] = np.dtype(np.float64)
+        merged_df = merged_df.astype(original_dtypes)
         # Set the timestamp of the row to be the max of the left and right timestamps - this is the timestamp
         # that is present in the downstream operators. We take the max because it is possible that upper bound is
         # specified and join occurred with an entry with larger value than the query ts.
+
         def emited_ts(row):
             if pd.isnull(row[tmp_right_ts]):
                 return row[tmp_left_ts]

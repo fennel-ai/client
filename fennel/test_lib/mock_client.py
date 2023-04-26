@@ -266,6 +266,20 @@ class MockClient(Client):
             )
         # Check if the dataframe has the same schema as the dataset
         schema = dataset_req.dsschema
+        # TODO(mohit, aditya): Instead of validating data schema, we should attempt to cast the
+        # df returned to the likely pd dtypes for a DF corresponding to the Dataset and re-raise
+        # the exception from it.
+        #
+        # The following scenario is currently possible
+        # Assume D1, D2 and D3 are datasets.
+        #  - D3 = transform(D1.left_join(D2))
+        # Since entries of D1 may not be present in D2, few columns could have NaN values.
+        # Say one of these columns with NaN is a key field for D3, which as part of transform is filled
+        # with a default value with a schema to match the field type in D3.
+        # Since left_join will automatically convert the int columns to a float type and
+        # this code not enforcing type casting at the Transform layer, the resulting DF will have a float
+        # column. Future lookups on this DF will fail as well since Lookup impl uses `merge_asof`
+        # and requires the merge columns to have the same type.
         exceptions = data_schema_check(schema, df)
         if len(exceptions) > 0:
             return FakeResponse(400, str(exceptions))
