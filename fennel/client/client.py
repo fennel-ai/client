@@ -27,17 +27,13 @@ _DEFAULT_GRPC_TIMEOUT = 60
 
 
 class Client:
-    def __init__(self, url: str, http_session: Optional[Any] = None):
+    def __init__(self, url: str, auth_token: Optional[str] = None):
         self.url = url
-        # strip the protocol and any trailing paths to get the grpc endpoint
-        self.channel = grpc.insecure_channel(urlparse(url).netloc)
-        self.stub = services_pb2_grpc.FennelFeatureStoreStub(self.channel)
+        self.auth_token = auth_token
+        self.stub = self._get_grpc_stub(url)
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
-        if http_session:
-            self.http = http_session
-        else:
-            self.http = self._get_session()
+        self.http = self._get_session()
 
     def add(self, obj: Union[Dataset, Featureset]):
         """
@@ -94,7 +90,16 @@ class Client:
                     )
                 self.add(featureset)
         sync_request = self._get_sync_request_proto()
-        self.stub.Sync(sync_request, timeout=_DEFAULT_GRPC_TIMEOUT)
+        if self.auth_token:
+            # Note: grpc metadata keys must be lowercase.
+            metadata = [("authorization", self.auth_token)]
+        else:
+            metadata = []
+        return self.stub.Sync(
+            sync_request,
+            timeout=_DEFAULT_GRPC_TIMEOUT,
+            metadata=metadata,
+        )
 
     def log(
         self, dataset_name: str, dataframe: pd.DataFrame, batch_size: int = 1000
@@ -132,6 +137,8 @@ class Client:
         if compress:
             payload = gzip.compress(payload)
             headers["Content-Encoding"] = "gzip"
+        if self.auth_token:
+            headers["Authorization"] = self.auth_token
         response = self.http.request(
             "POST",
             self._url(path),
@@ -279,9 +286,24 @@ class Client:
     def _get_session():
         http = requests.Session()
         http.request = functools.partial(
-            http.request, timeout=(_DEFAULT_CONNECT_TIMEOUT, _DEFAULT_TIMEOUT)
+            http.request,
+            timeout=(_DEFAULT_CONNECT_TIMEOUT, _DEFAULT_TIMEOUT),
         )
         return http
+
+    @staticmethod
+    def _get_grpc_stub(url: str):
+        parsed_url = urlparse(url)
+        # strip the protocol and any trailing paths to get the grpc endpoint
+        target = parsed_url.netloc
+        tls = parsed_url.scheme == "https"
+        if tls:
+            channel = grpc.secure_channel(
+                target, grpc.ssl_channel_credentials()
+            )
+        else:
+            channel = grpc.insecure_channel(target)
+        return services_pb2_grpc.FennelFeatureStoreStub(channel)
 
     def _get_sync_request_proto(self):
         return to_sync_request_proto(self.to_register_objects)
