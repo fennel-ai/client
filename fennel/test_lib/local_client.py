@@ -5,10 +5,8 @@ from fennel.client import Client
 
 
 class LocalClient(Client):
-    def __init__(
-        self, grpc_url: str, rest_url: str, http_session: Optional[Any] = None
-    ):
-        Client.__init__(self, grpc_url, http_session)
+    def __init__(self, grpc_url: str, rest_url: str):
+        Client.__init__(self, grpc_url)
         self.rest_url = rest_url
 
     def _url(self, path):
