@@ -19,7 +19,7 @@ Here are some of the key ideas that help prevent/diagnose data quality issues:
 | ---------- | ------------------------------- | --------------------------------------------- |
 | Preventive | Strong Typing                   | [Link](/data-quality/strong-typing)           |
 | Preventive | Immutability & Versioning       | [Link](/data-quality/immutability-versioning) |
-| Preventive | Unit Testing                    | Link                                          |
+| Preventive | Unit Testing                    | [Link](/development/unit-testing)             |
 | Preventive | Compile time lineage validation | [Link](/data-quality/lineage-validation)      |
 | Preventive | Structured metadata & ownership | [Link](/data-quality/metaflags)               |
 | Diagnostic | Data Expectations               | [Link](/data-quality/data-expectations)       |

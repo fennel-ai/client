@@ -1,6 +1,5 @@
 ---
 title: 'Welcome to Fennel'
-description: The modern realtime feature engineering platform
 order: 0
 status: 'published'
 slug: '/'
@@ -56,8 +55,8 @@ cases. Here are some of the most common ones:
  an end-to-end example.&#x20;
 
 Or if you are not in a hurry, read about the main [concepts](/concepts/introduction) 
-first followed by some more details about the [datasets](/datasets/overview) 
-and [featuresets](/featuresets/overview).
+first followed by some more details about Fennel's [architecture](/architecture/overview)
+and the [approach](/data-quality/approach) to maintaining a high data/feature quality.
 
 We, the team behind Fennel, have thoroughly enjoyed building Fennel and hope 
 learning and using Fennel brings as much delight to you as well!
