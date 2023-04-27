@@ -36,7 +36,7 @@ def test_featureset():
 
 # docsnip featureset_zero_extractors
 @featureset
-class Movies:
+class MoviesZeroExtractors:
     duration: int = feature(id=1)
     over_2hrs: bool = feature(id=2)
 
@@ -46,7 +46,7 @@ class Movies:
 
 # docsnip featureset_many_extractors
 @featureset
-class Movies:
+class MoviesManyExtractors:
     duration: int = feature(id=1)
     over_2hrs: bool = feature(id=2)
     over_3hrs: bool = feature(id=3)
@@ -104,7 +104,7 @@ class Length:
 
 
 @featureset
-class Movies:
+class MoviesForeignFeatureInput:
     duration: int = feature(id=1)
     over_limit: bool = feature(id=2)
 
@@ -118,7 +118,7 @@ class Movies:
 # /docsnip
 
 
-def test_multiple_extractors_of_same_feature():
+def test_remote_feature_as_output():
     with pytest.raises(Exception):
         # docsnip remote_feature_as_output
         @featureset
