@@ -138,7 +138,7 @@ class Client:
             payload = gzip.compress(payload)
             headers["Content-Encoding"] = "gzip"
         if self.token:
-            headers["Authorization"] = self.token
+            headers["Authorization"] = "Bearer " + self.token
         response = self.http.request(
             "POST",
             self._url(path),
