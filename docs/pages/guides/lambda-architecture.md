@@ -1,4 +1,8 @@
-
+---
+title: Lambda Architecture
+order: 4
+status: 'draft'
+---
 ### **How do the pipelines actually work?**
 
 When a sync call is made, Fennel client parses all the pipelines on all the datasets and runs those functions right there (which is possible since they are classmethods with no state) - the output of the pipeline function is interpreted as an AST describing the pipeline topology. This pipeline topology is sent to Fennel servers where the server type-checks the pipeline nodes and materializes a herd of jobs. Each such job is a continuous event loop waiting for new data to arrive before doing their computation and forwarding it to other jobs until the data reaches the destination dataset.&#x20;
