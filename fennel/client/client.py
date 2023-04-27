@@ -27,9 +27,9 @@ _DEFAULT_GRPC_TIMEOUT = 60
 
 
 class Client:
-    def __init__(self, url: str, auth_token: Optional[str] = None):
+    def __init__(self, url: str, token: Optional[str] = None):
         self.url = url
-        self.auth_token = auth_token
+        self.token = token
         self.stub = self._get_grpc_stub(url)
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
@@ -90,9 +90,9 @@ class Client:
                     )
                 self.add(featureset)
         sync_request = self._get_sync_request_proto()
-        if self.auth_token:
+        if self.token:
             # Note: grpc metadata keys must be lowercase.
-            metadata = [("authorization", self.auth_token)]
+            metadata = [("authorization", "Bearer " + self.token)]
         else:
             metadata = []
         return self.stub.Sync(
@@ -137,8 +137,8 @@ class Client:
         if compress:
             payload = gzip.compress(payload)
             headers["Content-Encoding"] = "gzip"
-        if self.auth_token:
-            headers["Authorization"] = self.auth_token
+        if self.token:
+            headers["Authorization"] = "Bearer " + self.token
         response = self.http.request(
             "POST",
             self._url(path),
