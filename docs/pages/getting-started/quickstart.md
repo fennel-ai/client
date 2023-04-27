@@ -13,8 +13,11 @@ We only need to install Fennel's Python client to run this example, so let's ins
 pip install fennel-ai
 ```
 
-For brevity, this example doesn't show imports that are needed though the full working code can be
-seen [here](docs.fennel.ai).
+And while we are at it, let's add all the imports that we will need in the 
+rest of the tutorial:
+
+<pre snippet="getting-started/quickstart#imports" />
+
 
 ### 1. Data Connectors
 
