@@ -20,7 +20,7 @@ architected from the ground up in service of three design goals.
    & features, native support for testing, strong typing, compile time 
    validations, enforcement of code ownership, keeping online/offline features in 
    sync, data expectations and lot more to ensure that your features are always 
-   correct and reliable.
+   correct and reliable. (See [this](/data-quality/approach) for details)
 3. **Flexible & powerful enough for everyone** - everyone's ML use cases are 
    different. Fennel tries to be opinionated in the right places (to offer ease
    and correctness) and yet stay flexible via its read/write separation. Fennel 
