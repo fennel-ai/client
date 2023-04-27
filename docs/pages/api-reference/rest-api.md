@@ -21,6 +21,7 @@ Used to log data to a dataset. It's post call with the following properties:
 
 ### /api/v1/extract\_features
 
+
 Used to extract a set of output features given known values of some input features. It's a POST call with the following parameters:
 
 * `input_features`: list of fully qualified names of input features

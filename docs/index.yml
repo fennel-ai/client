@@ -4,59 +4,51 @@ sidebar:
     title: "Getting Started"
     pages:
       - "/"
-      - "getting-started/why-fennel"
       - "getting-started/installation"
       - "getting-started/quickstart"
       - "getting-started/examples"
 
-  - slug: "overview"
-    title: "Overview"
+  - slug: "concepts"
+    title: "Concepts"
     pages:
-      - "overview/concepts"
-      - "overview/deployment-model"
-      - "overview/architecture"
-      - "overview/read-write-separation"
-      - "overview/cost-optimizations"
+      - "concepts/introduction"
+      - "concepts/source"
+      - "concepts/dataset"
+      - "concepts/pipeline"
+      - "concepts/featureset"
 
-  - slug: "datasets"
-    title: "Datasets"
+  - slug: "architecture"
+    title: "Architecture"
     pages:
-      - "datasets/overview"
-      - "datasets/sources"
-      - "datasets/lookups"
-      - "datasets/pipelines"
-      - "datasets/operators"
-      - "datasets/on-demand"
-
-  - slug: "featuresets"
-    title: "Featuresets"
-    pages: 
-      - "featuresets/overview"
-      - "featuresets/end-to-end-extraction"
-      - "featuresets/reading-datasets"
-      - "featuresets/request-based-features"
-      - "featuresets/composite-features"
-      - "featuresets/lifecycle-management"
-
-  - slug: "testing-and-ci-cd"
-    title: "Testing & CI/CD"
-    pages:
-      - "testing-and-ci-cd/unit-tests"
-      - "testing-and-ci-cd/integration-tests"
-      - "testing-and-ci-cd/ci-cd-workflows"
-    
-  - slug: "governance"
-    title: "Governance"
-    pages:
-      - "governance/privacy-and-security"
-      - "governance/metaflags"
+      - "architecture/overview"
+      - "architecture/read-write-separation"
+      - "architecture/deployment-model"
+      - "architecture/cost-optimizations"
+      - "architecture/privacy-security"
 
   - slug: "data-quality"
     title: "Data Quality"
     pages:
+      - "data-quality/approach"
+      - "data-quality/strong-typing"
+      - "data-quality/immutability-versioning"
+      - "data-quality/lineage-validation"
+      - "data-quality/metaflags"
       - "data-quality/data-expectations"
-      - "data-quality/lifecycle-management"
-      - "data-quality/drift-monitoring"
+
+
+  - slug: "development"
+    title: "Development"
+    pages:
+      - "development/unit-testing"
+      - "development/ci-cd-workflows"
+
+  - slug: "guides"
+    title: "Guides"
+    pages: 
+      - "guides/request-based-features"
+      - "guides/composite-features"
+      - "guides/out-of-order-data"
 
   - slug: "api-reference"
     title: "API Reference"

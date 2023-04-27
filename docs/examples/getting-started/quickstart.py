@@ -10,7 +10,7 @@ from fennel.lib.aggregate import Count
 from fennel.lib.window import Window
 from fennel.featuresets import feature, featureset, extractor
 from fennel.sources import source, Postgres, Snowflake, Kafka
-from fennel.lib.schema import oneof, inputs, outputs
+from fennel.lib.schema import inputs, outputs
 from fennel.lib.expectations import (
     expectations,
     expect_column_values_to_be_between,

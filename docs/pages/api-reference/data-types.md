@@ -35,6 +35,11 @@ Fennel supports the following data types, expressed as native Python type hints.
 	</TypesListRow>
 </TypesList>
 
+
+Note that types don't auto-typecast. For instance, if something was expected to
+be of type `float` but received an `int`, Fennel will declare that to be an error.
+
+
 ### Type Restrictions
 
 Imagine that you have a field that denotes a US zip code but stored as string. Not all strings denote valid zip codes - only those that match a particular regex do but this can be hard to encode, which can lead to incorrect data being stored.&#x20;

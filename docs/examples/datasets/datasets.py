@@ -26,12 +26,23 @@ class User:
 def test_valid_user_dataset():
     def indentation(s):
         # docsnip valid_user_dataset
-        @meta(owner="data-eng-oncall@fennel.ai")
+        @meta(owner="henry@fennel.ai")
         @dataset
         class UserValidDataset:
             uid: int
             country: str
             update_time: datetime
+
+        # /docsnip
+
+        # docsnip valid_dataset_multiple_datetime_fields
+        @meta(owner="laura@fennel.ai")
+        @dataset
+        class User:
+            uid: int
+            country: str
+            update_time: datetime = field(timestamp=True)
+            signup_time: datetime
 
         # /docsnip
 

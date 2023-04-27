@@ -1,14 +1,19 @@
 ---
-title: Unit Tests
+title: Unit Testing
 order: 0
 status: 'published'
 ---
 
 # Unit Tests
 
-Fennel's Python client ships with an (inefficient) mock server inside it - this makes it possible to do local development and run unit tests against the mock server to verify correctness.  This works even if you don't have any remote Fennel server - heck it works even if you don't have internet.&#x20;
+Fennel's Python client ships with an (inefficient) mock server inside it - this
+makes it possible to do local development and run unit tests against the mock
+server to verify correctness. This works even if you don't have any remote 
+Fennel server - heck it works even if you don't have internet.
 
-This mock server has near parity with the actual server with one notable exception - it doesn't support data connectors to external data systems (after all, it is completely local with zero remote dependencies!)
+This mock server has near parity with the actual server with one notable 
+exception - it doesn't support data connectors to external data systems 
+(after all, it is completely local with zero remote dependencies!)
 
 ### Example
 

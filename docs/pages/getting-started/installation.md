@@ -6,23 +6,22 @@ status: 'published'
 
 # Installation
 
-## 1. Install the client library
+Fennel has a client/server model. A Python client is used to define the 
+features, which are then synced with the server. The server is responsible for 
+computing, storing, and serving the actual features.
+
+Client can simply be pip-installed like this:
 
 ```bash
 pip install fennel-ai
 ```
 
-To find the version of the installed library
+Currently, there is no self-serve option for provisioning a server - please
+contact Fennel team (hello[at]fennel.ai) if you want to provision one. 
+However, the client itself ships with a mock server which has near feature
+parity with the real server. All the code samples in the documentation can be 
+run just via the mock server. See [quickstart](/getting-started/quickstart) 
+as an example.
 
-```bash
-pip show fennel-ai
-```
-
-_To try out the abstraction without a real cluster checkout using a mock client under_ [_Unit Tests_](/testing/unit-tests)
-
-
-
-## 2. Provision a cluster
-
-Currently, the self-serve option to create a cluster doesn't exist. Instead, ask your contact at Fennel to create a dedicated cluster for you and give you its URL. Also, see [deployment model](/overview/deployment-model) to learn more about how Fennel cluster can be provisioned inside your VPC.
-
+In other words, once you have pip installed the client, you are all setup to 
+explore Fennel.

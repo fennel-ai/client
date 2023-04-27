@@ -10,6 +10,9 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
 from fennel.test_lib import mock_client
+from fennel.datasets import pipeline, Dataset
+from fennel.lib.aggregate import Count, Sum, LastK
+from fennel.lib.window import Window
 
 
 # docsnip data_sets
@@ -36,12 +39,7 @@ class Transaction:
 
 
 # docsnip pipeline
-from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Count, Sum, LastK
-from fennel.lib.window import Window
-
-
-@meta(owner="data-eng-oncall@fennel.ai")
+@meta(owner="ahmed@fennel.ai")
 @dataset
 class UserTransactionsAbroad:
     uid: int = field(key=True)
@@ -163,12 +161,7 @@ class FraudActivityDataset:
             df = pd.concat([df_json, df[["user_id", "timestamp"]]], axis=1)
             df["transaction_amount"] = df["transaction_amount"] / 100
             return df[
-                [
-                    "merchant_id",
-                    "transaction_amount",
-                    "user_id",
-                    "timestamp",
-                ]
+                ["merchant_id", "transaction_amount", "user_id", "timestamp"]
             ]
 
         filtered_ds = activity.filter(lambda df: df["action_type"] == "report")
