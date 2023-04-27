@@ -7,10 +7,7 @@ status: 'published'
 # Overview
 
 Here are some of the key ideas & principles behind Fennel's architecture that 
-allow it to meet its [design goals](/getting-started/welcome-to-fennel) of:
-1. Being easy to install, learn, and use
-2. Maintain correctness of data and features
-3. Be flexible and powerful enough for a wide variety of needs
+allow it to meet its [design goals](/getting-started/welcome-to-fennel):
 
 ## Read Write Separation
 

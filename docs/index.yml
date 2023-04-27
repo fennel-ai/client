@@ -21,6 +21,7 @@ sidebar:
     title: "Architecture"
     pages:
       - "architecture/overview"
+      - "architecture/technologies"
       - "architecture/read-write-separation"
       - "architecture/deployment-model"
       - "architecture/cost-optimizations"
