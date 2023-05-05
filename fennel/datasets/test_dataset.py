@@ -31,9 +31,9 @@ class UserInfoDataset:
     timestamp: datetime = field(timestamp=True)
 
 
-def test_simple_dataset(grpc_stub):
+def test_simple_dataset():
     assert UserInfoDataset._history == timedelta(days=730)
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -108,9 +108,9 @@ class Activity:
     timestamp: datetime
 
 
-def test_dataset_with_retention(grpc_stub):
+def test_dataset_with_retention():
     assert Activity._history == timedelta(days=120)
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(Activity)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -162,7 +162,7 @@ def test_dataset_with_retention(grpc_stub):
 
 # TODO(mohit): Uncomment once support for ondemand funcs is added on protos
 #
-# def test_dataset_with_pull(grpc_stub):
+# def test_dataset_with_pull():
 #     API_ENDPOINT_URL = "http://transunion.com/v1/credit_score"
 
 #     @meta(owner="test@test.com")
@@ -195,7 +195,7 @@ def test_dataset_with_retention(grpc_stub):
 #             return df, pd.Series([True] * len(df))
 
 #     assert UserCreditScore._history == timedelta(days=365)
-#     view = InternalTestClient(grpc_stub)
+#     view = InternalTestClient()
 #     view.add(UserCreditScore)
 #     sync_request = view._get_sync_request_proto()
 #     assert len(sync_request.datasets) == 1
@@ -261,7 +261,7 @@ def test_dataset_with_retention(grpc_stub):
 #     )
 
 
-def test_dataset_with_pipes(grpc_stub):
+def test_dataset_with_pipes():
     @meta(owner="test@test.com")
     @dataset
     class A:
@@ -290,7 +290,7 @@ def test_dataset_with_pipes(grpc_stub):
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.left_join(b, left_on=["a1"], right_on=["b1"])
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(ABCDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -380,7 +380,7 @@ def test_dataset_with_pipes(grpc_stub):
     )
 
 
-def test_dataset_with_pipes_bounds(grpc_stub):
+def test_dataset_with_pipes_bounds():
     @meta(owner="test@test.com")
     @dataset
     class A:
@@ -452,7 +452,7 @@ def test_dataset_with_pipes_bounds(grpc_stub):
                 within=("3d", "1y"),
             )
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(ABCDatasetDefault)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -543,7 +543,7 @@ def test_dataset_with_pipes_bounds(grpc_stub):
 
     # ----- ABCDatasetDefault -----
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(ABCDatasetDefault)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -634,7 +634,7 @@ def test_dataset_with_pipes_bounds(grpc_stub):
 
     # ----- ABDatasetLow -----
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(ABDatasetLow)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -726,7 +726,7 @@ def test_dataset_with_pipes_bounds(grpc_stub):
 
     # ----- ABDatasetHigh -----
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(ABDatasetHigh)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -818,7 +818,7 @@ def test_dataset_with_pipes_bounds(grpc_stub):
 
     # ----- ABDataset -----
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(ABDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -910,7 +910,7 @@ def test_dataset_with_pipes_bounds(grpc_stub):
     )
 
 
-def test_dataset_with_complex_pipe(grpc_stub):
+def test_dataset_with_complex_pipe():
     @meta(owner="test@test.com")
     @dataset
     class FraudReportAggregatedDataset:
@@ -977,7 +977,7 @@ def test_dataset_with_complex_pipe(grpc_stub):
                 ]
             )
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(FraudReportAggregatedDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -1158,7 +1158,7 @@ def test_dataset_with_complex_pipe(grpc_stub):
     )
 
 
-def test_delete_and_rename_column(grpc_stub):
+def test_delete_and_rename_column():
     @dataset
     class A:
         a1: int = field(key=True)
@@ -1178,7 +1178,7 @@ def test_delete_and_rename_column(grpc_stub):
             return x.drop(["a2", "a3"])
 
 
-def test_union_datasets(grpc_stub):
+def test_union_datasets():
     @dataset
     class A:
         a1: int = field(key=True)
@@ -1205,7 +1205,7 @@ def test_union_datasets(grpc_stub):
             f = d.transform(lambda df: df * 4)
             return e + f
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(ABCDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -1382,7 +1382,7 @@ def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
     pass
 
 
-def test_search_dataset(grpc_stub):
+def test_search_dataset():
     @meta(owner="aditya@fennel.ai")
     @dataset
     class DocumentContentDataset:
@@ -1410,7 +1410,7 @@ def test_search_dataset(grpc_stub):
                 },
             )
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(DocumentContentDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1

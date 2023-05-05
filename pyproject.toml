@@ -13,8 +13,6 @@ python = "^3.8"
 pandas = "^1.5.0"
 numpy = "^1.23.3"
 requests = "^2.28.1"
-grpcio = "^1.49.1"
-grpcio-tools = "^1.49.1"
 pydantic = "^1.10.2"
 jsondiff = "^2.0.0"
 astunparse = "^1.6.3"
@@ -29,7 +27,6 @@ black = "^22.6.0"
 mypy = "^0.981"
 pyarrow = "^10.0.1"
 mypy-protobuf = "^3.4.0"
-pytest-grpc = "^0.8.0"
 build = "^0.9.0"
 geopy = "^2.3.0"
 jupyterlab = "^3.6.3"
@@ -64,7 +61,7 @@ markers = [
 [tool.mypy]
 python_version = "3.8"
 ignore_missing_imports = true
-exclude = '''(pb2\.py$|grpc\.py$|.*_pb2.pyi|docs/examples)'''
+exclude = '''(pb2\.py$|.*_pb2.pyi|docs/examples)'''
 
 [[tool.mypy.overrides]]
 module = "pyarrow"
@@ -88,14 +85,6 @@ ignore_errors = true
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = "grpc"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "grpc_tools"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
 module = "google.protobuf.*"
 ignore_missing_imports = true
 
@@ -104,7 +93,6 @@ line-length = 80
 extend-exclude = '''
 (
     .*_pb2.py
-    | .*_pb2_grpc.py
     | fennel/gen/*.py
 )
 '''

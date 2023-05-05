@@ -33,7 +33,7 @@ class User:
     age: float = feature(id=2)
 
 
-def test_simple_featureset(grpc_stub):
+def test_simple_featureset():
     @meta(owner="test@test.com")
     @featureset
     class UserInfo:
@@ -51,7 +51,7 @@ def test_simple_featureset(grpc_stub):
         ):
             return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoDataset)
     view.add(UserInfo)
     view.add(User)
@@ -166,7 +166,7 @@ def test_simple_featureset(grpc_stub):
     )
 
 
-def test_complex_featureset(grpc_stub):
+def test_complex_featureset():
     @meta(owner="test@test.com")
     @featureset
     class UserInfo:
@@ -195,7 +195,7 @@ def test_complex_featureset(grpc_stub):
         def get_user_info3(cls, ts: pd.Series, user_id: pd.Series) -> income:
             pass
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoDataset)
     view.add(UserInfo)
     view.add(User)
