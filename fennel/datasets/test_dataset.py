@@ -9,7 +9,6 @@ import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
-from fennel.lib.duration import Duration
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs
 from fennel.lib.window import Window
