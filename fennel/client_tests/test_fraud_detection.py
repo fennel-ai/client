@@ -8,10 +8,12 @@ from fennel.lib.aggregate import Sum
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
+from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
 
 @meta(owner="henry@fennel.ai")
+@source(Webhook("CreditCardTransactions"))
 @dataset
 class CreditCardTransactions:
     trans_num: str = field(key=True)  # Id
@@ -41,6 +43,7 @@ class CreditCardTransactions:
 
 
 @meta(owner="henry@fennel.ai")
+@source(Webhook("Regions"))
 @dataset
 class Regions:
     created_at: datetime
@@ -62,7 +65,7 @@ class UserTransactionSums:
 
     # sum_amt_30d: float
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(CreditCardTransactions)
     def first_pipeline(cls, transactions: Dataset):
         return transactions.groupby("cc_num").aggregate(

@@ -5,11 +5,13 @@ import pandas as pd
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof, between, regex
+from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
 
 # docsnip dataset_type_restrictions
 @meta(owner="test@test.com")
+@source(Webhook("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

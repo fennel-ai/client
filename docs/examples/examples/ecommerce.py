@@ -11,7 +11,6 @@ from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
-
 from fennel.sources import Postgres, source
 from fennel.test_lib import mock_client
 
@@ -25,6 +24,8 @@ postgres = Postgres(
     username="myuser",
     password="mypassword",
 )
+
+
 # /docsnip
 
 
@@ -48,7 +49,7 @@ class UserSellerOrders:
     num_orders_1w: int
     timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Order)
     def my_pipeline(cls, orders: Dataset):
         return orders.groupby("uid", "seller_id").aggregate(

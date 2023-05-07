@@ -5,6 +5,7 @@ from fennel.sources.sources import (
     S3,
     Kafka,
     Snowflake,
+    Webhook,
     source,
     sink,
     SOURCE_FIELD,

@@ -17,11 +17,13 @@ from fennel.lib.expectations import (
 )
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof
+from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
 
 def test_dataset_expectation_creation():
     @meta(owner="test@test.com")
+    @source(Webhook("UserInfoDS"))
     @dataset
     class UserInfoDS:
         user_id: int = field(key=True)
@@ -84,6 +86,7 @@ def test_dataset_expectation_creation():
 
 
 @meta(owner="test@test.com")
+@source(Webhook("UserInfoDS"))
 @dataset
 class UserInfoDS:
     user_id: int = field(key=True)

@@ -12,6 +12,7 @@ from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
+from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
 
@@ -22,6 +23,7 @@ from fennel.test_lib import *
     deprecated=True,
 )
 @dataset
+@source(Webhook("UserInfoDataset"))
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -42,54 +44,46 @@ def test_simple_dataset():
     assert len(sync_request.datasets) == 1
     d = {
         "name": "UserInfoDataset",
-        "dsschema": {
-            "keys": {
-                "fields": [
-                    {
-                        "name": "user_id",
-                        "dtype": {"int_type": {}},
-                    }
-                ],
-            },
-            "values": {
-                "fields": [
-                    {"name": "name", "dtype": {"string_type": {}}},
-                    {"name": "gender", "dtype": {"string_type": {}}},
-                    {"name": "dob", "dtype": {"string_type": {}}},
-                    {"name": "age", "dtype": {"int_type": {}}},
-                    {
-                        "name": "account_creation_date",
-                        "dtype": {"timestamp_type": {}},
-                    },
-                    {
-                        "name": "country",
-                        "dtype": {"optional_type": {"of": {"string_type": {}}}},
-                    },
-                ],
-            },
-            "timestamp": "timestamp",
-        },
         "metadata": {
             "owner": "aditya@fennel.ai",
             "description": "test",
             "tags": ["test"],
             "deprecated": True,
         },
+        "dsschema": {
+            "keys": {"fields": [{"name": "user_id", "dtype": {"intType": {}}}]},
+            "values": {
+                "fields": [
+                    {"name": "name", "dtype": {"stringType": {}}},
+                    {"name": "gender", "dtype": {"stringType": {}}},
+                    {"name": "dob", "dtype": {"stringType": {}}},
+                    {"name": "age", "dtype": {"intType": {}}},
+                    {
+                        "name": "account_creation_date",
+                        "dtype": {"timestampType": {}},
+                    },
+                    {
+                        "name": "country",
+                        "dtype": {"optionalType": {"of": {"stringType": {}}}},
+                    },
+                ]
+            },
+            "timestamp": "timestamp",
+        },
         "history": "63072000s",
         "retention": "63072000s",
         "fieldMetadata": {
-            "user_id": {},
-            "name": {},
-            "gender": {},
-            "dob": {
-                "description": "Users date of birth",
-            },
             "age": {},
+            "name": {},
             "account_creation_date": {},
             "country": {},
+            "user_id": {},
+            "gender": {},
             "timestamp": {},
+            "dob": {"description": "Users date of birth"},
         },
         "pycode": {},
+        "isSourceDataset": True,
     }
     expected_sync_request = ParseDict(d, CoreDataset())
     sync_request.datasets[0].pycode.Clear()
@@ -101,6 +95,7 @@ def test_simple_dataset():
 
 def test_complex_dataset_with_fields():
     @dataset(history="1y")
+    @source(Webhook("YextUserInfoDataset"))
     @meta(owner="daniel@yext.com", description="test")
     class YextUserInfoDataset:
         user_id: int = field(key=True).meta(
@@ -124,41 +119,39 @@ def test_complex_dataset_with_fields():
         "datasets": [
             {
                 "name": "YextUserInfoDataset",
+                "metadata": {"owner": "daniel@yext.com", "description": "test"},
                 "dsschema": {
                     "keys": {
                         "fields": [
-                            {
-                                "name": "user_id",
-                                "dtype": {"int_type": {}},
-                            }
-                        ],
+                            {"name": "user_id", "dtype": {"intType": {}}}
+                        ]
                     },
                     "values": {
                         "fields": [
-                            {"name": "name", "dtype": {"string_type": {}}},
-                            {"name": "gender", "dtype": {"string_type": {}}},
-                            {"name": "dob", "dtype": {"string_type": {}}},
-                            {"name": "age", "dtype": {"int_type": {}}},
+                            {"name": "name", "dtype": {"stringType": {}}},
+                            {"name": "gender", "dtype": {"stringType": {}}},
+                            {"name": "dob", "dtype": {"stringType": {}}},
+                            {"name": "age", "dtype": {"intType": {}}},
                             {
                                 "name": "account_creation_date",
-                                "dtype": {"timestamp_type": {}},
+                                "dtype": {"timestampType": {}},
                             },
                             {
                                 "name": "country",
                                 "dtype": {
-                                    "optional_type": {
+                                    "optionalType": {
                                         "of": {
-                                            "map_type": {
-                                                "key": {"string_type": {}},
+                                            "mapType": {
+                                                "key": {"stringType": {}},
                                                 "value": {
-                                                    "array_type": {
+                                                    "arrayType": {
                                                         "of": {
-                                                            "map_type": {
+                                                            "mapType": {
                                                                 "key": {
-                                                                    "string_type": {}
+                                                                    "stringType": {}
                                                                 },
                                                                 "value": {
-                                                                    "double_type": {}
+                                                                    "doubleType": {}
                                                                 },
                                                             }
                                                         }
@@ -169,31 +162,40 @@ def test_complex_dataset_with_fields():
                                     }
                                 },
                             },
-                        ],
+                        ]
                     },
                     "timestamp": "timestamp",
-                },
-                "metadata": {
-                    "owner": "daniel@yext.com",
-                    "description": "test",
                 },
                 "history": "31536000s",
                 "retention": "31536000s",
                 "fieldMetadata": {
-                    "user_id": {
-                        "description": "test",
-                        "owner": "jack@yext.com",
-                    },
-                    "name": {},
                     "age": {},
+                    "name": {},
                     "account_creation_date": {},
                     "country": {},
-                    "gender": {"description": "sex", "tags": ["senstive"]},
-                    "dob": {
-                        "description": "Users date of birth",
+                    "user_id": {
+                        "owner": "jack@yext.com",
+                        "description": "test",
                     },
+                    "gender": {"description": "sex", "tags": ["senstive"]},
                     "timestamp": {},
+                    "dob": {"description": "Users date of birth"},
                 },
+                "pycode": {},
+                "isSourceDataset": True,
+            }
+        ],
+        "sources": [
+            {
+                "table": {"webhook": {"name": "YextUserInfoDataset"}},
+                "dataset": "YextUserInfoDataset",
+                "lateness": "3600s",
+            }
+        ],
+        "extdbs": [
+            {
+                "name": "YextUserInfoDataset",
+                "webhook": {"name": "YextUserInfoDataset"},
             }
         ],
     }

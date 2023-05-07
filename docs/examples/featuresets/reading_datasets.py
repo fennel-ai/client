@@ -3,15 +3,16 @@ from datetime import datetime
 import pandas as pd
 
 from fennel.datasets import dataset, field
-
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
+from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
 
 # docsnip featuresets_reading_datasets
 @meta(owner="data-eng-team@fennel.ai")
+@source(Webhook("User"))
 @dataset
 class User:
     uid: int = field(key=True)

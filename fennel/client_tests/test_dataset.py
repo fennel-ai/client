@@ -10,10 +10,10 @@ from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Sum, Average, Count
-from fennel.lib.duration import Duration
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof, inputs
 from fennel.lib.window import Window
+from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
 
@@ -23,6 +23,7 @@ from fennel.test_lib import mock_client
 
 
 @meta(owner="test@test.com")
+@source(Webhook("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -40,7 +41,7 @@ class UserInfoDatasetDerived:
     country_name: Optional[str]
     ts: datetime = field(timestamp=True)
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(UserInfoDataset)
     def get_info(cls, info: Dataset):
         x = info.rename({"country": "country_name", "timestamp": "ts"})
@@ -114,8 +115,7 @@ class TestDataset(unittest.TestCase):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset])
-        if client.is_integration_client():
-            time.sleep(5)
+
         now = datetime.now()
         yesterday = now - pd.Timedelta(days=1)
         data = [
@@ -143,9 +143,11 @@ class TestDataset(unittest.TestCase):
                 response.json()["error"]
                 == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
             )
+        client.sleep(10)
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
-        ts = pd.Series([now, now, now])
+        lookup_now = datetime.now() + pd.Timedelta(minutes=1)
+        ts = pd.Series([lookup_now, lookup_now, lookup_now])
         df, found = UserInfoDataset.lookup(
             ts,
             user_id=user_ids,
@@ -187,6 +189,9 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("UserInfoDataset", df)
         assert response.status_code == requests.codes.OK
+
+        client.sleep()
+
         # Do some lookups
         one_day_from_now = now + pd.Timedelta(days=1)
         three_days_from_now = now + pd.Timedelta(days=3)
@@ -330,6 +335,7 @@ class TestDataset(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
+@source(Webhook("RatingActivity"))
 @dataset
 class RatingActivity:
     userid: int
@@ -349,7 +355,7 @@ class MovieRatingCalculated:
     sum_ratings: float
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
@@ -373,6 +379,7 @@ class MovieRatingCalculated:
 
 # Copy of above dataset but can be used as an input to another pipeline.
 @meta(owner="test@test.com")
+@source(Webhook("MovieRating"))
 @dataset
 class MovieRating:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -395,7 +402,7 @@ class MovieRatingTransformed:
     rating_into_5: float
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(MovieRating)
     def pipeline_transform(cls, m: Dataset):
         def t(df: pd.DataFrame) -> pd.DataFrame:
@@ -436,8 +443,7 @@ class TestBasicTransform(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         # Do some lookups to verify pipeline_transform is working as expected
         an_hour_ago = now - timedelta(hours=1)
         ts = pd.Series([an_hour_ago, an_hour_ago])
@@ -456,8 +462,7 @@ class TestBasicTransform(unittest.TestCase):
 
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         df, _ = MovieRatingTransformed.lookup(
             ts,
             movie=names,
@@ -471,6 +476,7 @@ class TestBasicTransform(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
+@source(Webhook("MovieRevenue"))
 @dataset
 class MovieRevenue:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -490,7 +496,7 @@ class MovieStats:
     revenue_in_millions: float
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(MovieRating, MovieRevenue)
     def pipeline_join(cls, rating: Dataset, revenue: Dataset):
         def to_millions(df: pd.DataFrame) -> pd.DataFrame:
@@ -547,8 +553,7 @@ class TestBasicJoin(unittest.TestCase):
         # Do some lookups to verify pipeline_join is working as expected
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         df, _ = MovieStats.lookup(
             ts,
             movie=names,
@@ -607,8 +612,7 @@ class TestBasicAggregate(unittest.TestCase):
         response = client.log("RatingActivity", df)
         assert response.status_code == requests.codes.OK
 
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
 
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([now, now])
@@ -636,7 +640,7 @@ class MovieRatingWindowed:
     total_ratings: int
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
@@ -696,8 +700,8 @@ class TestBasicWindowAggregate(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("RatingActivity", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+
+        client.sleep()
 
         now = true_now - timedelta(days=10)
         eight_days = now + timedelta(days=8)
@@ -738,7 +742,7 @@ class PositiveRatingActivity:
     )
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(RatingActivity)
     def filter_positive_ratings(cls, rating: Dataset):
         filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
@@ -778,8 +782,8 @@ class TestBasicFilter(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("RatingActivity", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+
+        client.sleep()
 
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([now, now, now])
@@ -808,6 +812,7 @@ class TestBasicFilter(unittest.TestCase):
 
 
 @meta(owner="me@fennel.ai")
+@source(Webhook("Activity"))
 @dataset(history="4m")
 class Activity:
     user_id: int
@@ -818,6 +823,7 @@ class Activity:
 
 
 @meta(owner="me@fenne.ai")
+@source(Webhook("MerchantInfo"))
 @dataset(history="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
@@ -831,15 +837,12 @@ class MerchantInfo:
 class FraudReportAggregatedDataset:
     category: str = field(key=True)
     timestamp: datetime
-    # merchant_id: int
-    # location: str
-    # transaction_amount: float
 
     num_categ_fraudulent_transactions: int
     num_categ_fraudulent_transactions_7d: int
     sum_categ_fraudulent_transactions_7d: float
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Activity, MerchantInfo)
     def create_fraud_dataset(cls, activity: Dataset, merchant_info: Dataset):
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -848,7 +851,8 @@ class FraudReportAggregatedDataset:
             return df_timestamp
 
         def fillna(df: pd.DataFrame) -> pd.DataFrame:
-            df["category"].fillna("unknown", inplace=True)
+            df["category"] = df["category"].fillna("unknown")
+            df["location"] = df["location"].fillna("unknown")
             return df
 
         filtered_ds = activity.filter(lambda df: df["action_type"] == "report")
@@ -966,6 +970,8 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         response = client.log("Activity", df)
         assert response.status_code == requests.codes.OK, response.json()
 
+        client.sleep()
+
         two_days_ago = now - timedelta(days=2)
         data = [
             [1322, "grocery", "mumbai", two_days_ago],
@@ -977,9 +983,9 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         response = client.log("MerchantInfo", df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        if client.is_integration_client():
-            time.sleep(3)
-        now = datetime.now()
+        client.sleep()
+
+        now = datetime.now() + timedelta(minutes=1)
         ts = pd.Series([now, now])
         categories = pd.Series(["grocery", "entertainment"])
         df, _ = FraudReportAggregatedDataset.lookup(ts, category=categories)
@@ -995,6 +1001,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
 
 
 @meta(owner="me@fennel.ai")
+@source(Webhook("UserAge"))
 @dataset
 class UserAge:
     name: str = field(key=True)
@@ -1004,6 +1011,7 @@ class UserAge:
 
 
 @meta(owner="me@fennel.ai")
+@source(Webhook("UserAgeNonTable"))
 @dataset
 class UserAgeNonTable:
     name: str
@@ -1019,7 +1027,7 @@ class UserAgeAggregated:
     timestamp: datetime
     sum_age: int
 
-    @pipeline(id=1)
+    @pipeline(version=1, active=True)
     @inputs(UserAge)
     def create_user_age_aggregated(cls, user_age: Dataset):
         return user_age.groupby("city").aggregate(
@@ -1032,7 +1040,7 @@ class UserAgeAggregated:
             ]
         )
 
-    @pipeline(id=2)
+    @pipeline(version=2)
     @inputs(UserAgeNonTable)
     def create_user_age_aggregated2(cls, user_age: Dataset):
         return user_age.groupby("city").aggregate(
@@ -1051,8 +1059,7 @@ class TestAggregateTableDataset(unittest.TestCase):
     @mock_client
     def test_table_aggregation(self, client):
         client.sync(datasets=[UserAge, UserAgeNonTable, UserAgeAggregated])
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
         yesterday = datetime.now() - timedelta(days=1)
         now = datetime.now()
         tomorrow = datetime.now() + timedelta(days=1)
@@ -1066,6 +1073,8 @@ class TestAggregateTableDataset(unittest.TestCase):
         input_df = pd.DataFrame(data, columns=columns)
         response = client.log("UserAge", input_df)
         assert response.status_code == requests.codes.OK, response.json()
+
+        client.sleep()
 
         ts = pd.Series([now, now])
         names = pd.Series(["mumbai", "delhi"])
@@ -1081,13 +1090,6 @@ class TestAggregateTableDataset(unittest.TestCase):
         assert df["city"].tolist() == ["mumbai", "delhi"]
         assert df["sum_age"].tolist() == [24, 25]
 
-        # Change the age of Sonu and Monu
-        input_df["age"] = [30, 40]
-        two_days_from_now = datetime.now() + timedelta(days=2)
-        input_df["timestamp"] = two_days_from_now
-        response = client.log("UserAge", input_df)
-        assert response.status_code == requests.codes.OK, response.json()
-
 
 ################################################################################
 #                           Dataset & Pipelines Complex E2E Tests
@@ -1095,6 +1097,7 @@ class TestAggregateTableDataset(unittest.TestCase):
 
 
 @meta(owner="gianni@fifa.com")
+@source(Webhook("PlayerInfo"))
 @dataset
 class PlayerInfo:
     name: str = field(key=True)
@@ -1106,6 +1109,7 @@ class PlayerInfo:
 
 
 @meta(owner="gianni@fifa.com")
+@source(Webhook("ClubSalary"))
 @dataset
 class ClubSalary:
     club: str = field(key=True)
@@ -1114,6 +1118,7 @@ class ClubSalary:
 
 
 @meta(owner="gianni@fifa.com")
+@source(Webhook("WAG"))
 @dataset
 class WAG:
     name: str = field(key=True)
@@ -1133,7 +1138,7 @@ class ManchesterUnitedPlayerInfo:
     salary: Optional[int]
     wag: Optional[str]
 
-    @pipeline(id=1)
+    @pipeline()
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
         cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
@@ -1175,7 +1180,7 @@ class ManchesterUnitedPlayerInfoBounded:
     salary: Optional[int]
     wag: Optional[str]
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
         cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
@@ -1229,8 +1234,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         input_df = pd.DataFrame(data, columns=columns)
         response = client.log("PlayerInfo", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         data = [
             ["Manchester United", yesterday, 1000000],
             ["PSG", yesterday, 2000000],
@@ -1240,8 +1244,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         input_df = pd.DataFrame(data, columns=columns)
         response = client.log("ClubSalary", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         data = [
             ["Rashford", yesterday, "Lucia"],
             ["Maguire", yesterday, "Fern"],
@@ -1265,8 +1268,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
                 "Antony",
             ]
         )
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
         df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
         assert df.shape == (5, 8)
         assert df["club"].tolist() == [
@@ -1329,8 +1331,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
         input_df = pd.DataFrame(data, columns=columns)
         response = client.log("PlayerInfo", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         data = [
             ["Manchester United", minute_ago, 1000000],
             ["PSG", minute_ago, 2000000],
@@ -1340,8 +1341,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
         input_df = pd.DataFrame(data, columns=columns)
         response = client.log("ClubSalary", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         data = [
             [
                 "Rashford",

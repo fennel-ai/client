@@ -8,12 +8,14 @@ import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.lib.schema.schema import oneof, regex, between
+from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+"
 
 
 @meta(owner="test@test.com")
+@source(Webhook("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore

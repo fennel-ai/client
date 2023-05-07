@@ -9,11 +9,13 @@ from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
+from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
 
 # docsnip filter
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(Webhook("Action"))
 @dataset
 class Action:
     uid: int
@@ -28,7 +30,7 @@ class Likes:
     action_type: str
     timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Action)
     def filter_likes(cls, actions: Dataset):
         return actions.filter(lambda df: df["action_type"] == "like")
@@ -55,6 +57,7 @@ def test_filter(client):
 
 # docsnip transform
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(Webhook("Rating"))
 @dataset
 class Rating:
     movie: str = field(key=True)
@@ -69,7 +72,7 @@ class RatingRescaled:
     rescaled: float
     timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Rating)
     def pipeline_transform(cls, ratings: Dataset):
         def rescale(df: pd.DataFrame) -> pd.DataFrame:
@@ -106,6 +109,7 @@ def test_transform(client):
 
 # docsnip join
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(Webhook("Product"))
 @dataset
 class Product:
     pid: int = field(key=True)
@@ -114,6 +118,7 @@ class Product:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(Webhook("OrderActivity"))
 @dataset
 class OrderActivity:
     uid: int
@@ -129,7 +134,7 @@ class UserSellerActivity:
     seller_id: Optional[int]
     at: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Product, OrderActivity)
     def join_orders(cls, products: Dataset, orders: Dataset) -> Dataset:
         return orders.left_join(products, on=["pid"])
@@ -162,6 +167,7 @@ def test_join(client):
 
 # docsnip aggregate
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(Webhook("AdClickStream"))
 @dataset
 class AdClickStream:
     uid: int
@@ -177,7 +183,7 @@ class UserAdStats:
     num_clicks_1w: int
     at: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(AdClickStream)
     def aggregate_ad_clicks(cls, ad_clicks: Dataset):
         return ad_clicks.groupby("uid").aggregate(

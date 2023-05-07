@@ -1,20 +1,21 @@
 # docsnip imports
-from typing import Optional
 from datetime import datetime, timedelta
-import requests
+
 import pandas as pd
+import requests
+from typing import Optional
 
 from fennel.datasets import dataset, pipeline, field, Dataset
-from fennel.lib.metadata import meta
-from fennel.lib.aggregate import Count
-from fennel.lib.window import Window
 from fennel.featuresets import feature, featureset, extractor
-from fennel.sources import source, Postgres, Snowflake, Kafka
-from fennel.lib.schema import inputs, outputs
+from fennel.lib.aggregate import Count
 from fennel.lib.expectations import (
     expectations,
     expect_column_values_to_be_between,
 )
+from fennel.lib.metadata import meta
+from fennel.lib.schema import inputs, outputs
+from fennel.lib.window import Window
+from fennel.sources import source, Postgres, Snowflake, Kafka
 
 # /docsnip
 
@@ -22,6 +23,8 @@ from fennel.lib.expectations import (
 postgres = Postgres.get(name="my_rdbms")
 warehouse = Snowflake.get(name="my_warehouse")
 kafka = Kafka.get(name="my_kafka")
+
+
 # /docsnip
 
 
@@ -69,7 +72,7 @@ class UserSellerOrders:
     num_orders_1w: int
     timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Order, Product)
     def my_pipeline(cls, orders: Dataset, products: Dataset):
         orders = orders.left_join(products, on=["product_id"])
@@ -117,7 +120,6 @@ class UserSellerFeatures:
 
 
 # docsnip sync
-from fennel.client.client import Client
 from fennel.test_lib import MockClient
 
 # client = Client('<FENNEL SERVER URL>') # uncomment this line to use a real Fennel server

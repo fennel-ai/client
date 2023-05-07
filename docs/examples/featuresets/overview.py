@@ -8,6 +8,7 @@ from fennel.featuresets import extractor
 from fennel.featuresets import feature, featureset
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
+from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
 
@@ -158,6 +159,7 @@ class Movie:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(Webhook("UserInfo"))
 @dataset
 class UserInfo:
     uid: int = field(key=True)
@@ -217,12 +219,12 @@ def test_multiple_features_extracted(client):
         ),
     )
     assert df["UserLocationFeatures.latitude"].round(0).tolist() == [
-        41,
+        43,
         52,
         49,
     ]
     assert df["UserLocationFeatures.longitude"].round(0).tolist() == [
-        -74,
+        -76,
         0,
         2,
     ]
@@ -293,12 +295,12 @@ def test_extractors_across_featuresets(client):
     )
 
     assert df["UserLocationFeaturesRefactored.latitude"].tolist() == [
-        41,
+        43,
         52,
         49,
     ]
     assert df["UserLocationFeaturesRefactored.longitude"].tolist() == [
-        -74,
+        -76,
         0,
         2,
     ]

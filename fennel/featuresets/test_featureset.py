@@ -1,18 +1,20 @@
 from datetime import datetime
-from typing import Optional
 
 import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
+from typing import Optional
 
 import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
+from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
 
 @meta(owner="test@test.com")
+@source(Webhook("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

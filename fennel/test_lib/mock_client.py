@@ -234,12 +234,18 @@ class MockClient(Client):
 
     # ----------------- Public methods -----------------
 
+    def sleep(self, seconds: float = 0):
+        pass
+
+    def integration_mode(self):
+        return "mock"
+
     def is_integration_client(self) -> bool:
         return False
 
-    def log(self, dataset_name: str, df: pd.DataFrame, _batch_size: int = 1000):
+    def log(self, webhook: str, df: pd.DataFrame, _batch_size: int = 1000):
         if df.shape[0] == 0:
-            print(f"Skipping log of empty dataframe for dataset {dataset_name}")
+            print(f"Skipping log of empty dataframe for dataset {webhook}")
             return
 
         if df.shape[0] > _batch_size * 10:
@@ -247,22 +253,22 @@ class MockClient(Client):
                 "Warning: Dataframe is too large, consider using a small dataframe"
             )
 
-        if dataset_name not in self.dataset_requests:
-            return FakeResponse(404, f"Dataset {dataset_name} not found")
-        dataset_req = self.dataset_requests[dataset_name]
-        timestamp_field = self.dataset_info[dataset_name].timestamp_field
+        if webhook not in self.dataset_requests:
+            return FakeResponse(404, f"Dataset {webhook} not found")
+        dataset_req = self.dataset_requests[webhook]
+        timestamp_field = self.dataset_info[webhook].timestamp_field
         if timestamp_field not in df.columns:
             return FakeResponse(
                 400,
                 f"Timestamp field {timestamp_field} not found in dataframe "
-                f"while logging to dataset `{dataset_name}`",
+                f"while logging to dataset `{webhook}`",
             )
         if str(df[timestamp_field].dtype) != "datetime64[ns]":
             return FakeResponse(
                 400,
                 f"Timestamp field {timestamp_field} is not of type "
                 f"datetime64[ns] but found {df[timestamp_field].dtype} in "
-                f"dataset {dataset_name}",
+                f"dataset {webhook}",
             )
         # Check if the dataframe has the same schema as the dataset
         schema = dataset_req.dsschema
@@ -283,8 +289,8 @@ class MockClient(Client):
         exceptions = data_schema_check(schema, df)
         if len(exceptions) > 0:
             return FakeResponse(400, str(exceptions))
-        self._merge_df(df, dataset_name)
-        for pipeline in self.listeners[dataset_name]:
+        self._merge_df(df, webhook)
+        for pipeline in self.listeners[webhook]:
             executor = Executor(self.data, self.agg_state)
             ret = executor.execute(
                 pipeline, self.datasets[pipeline._dataset_name]
@@ -326,6 +332,14 @@ class MockClient(Client):
                 dataset.timestamp_field,
                 dataset.on_demand,
             )
+            if (
+                not self.dataset_requests[dataset._name].is_source_dataset
+                and len(dataset._pipelines) == 0
+            ):
+                raise ValueError(
+                    f"Dataset {dataset._name} has no pipelines and is not a source dataset"
+                )
+
             for pipeline in dataset._pipelines:
                 for input in pipeline.inputs:
                     self.listeners[input._name].append(pipeline)
@@ -629,8 +643,9 @@ def mock_client(test_func):
             "USE_INT_CLIENT" in os.environ
             and int(os.environ.get("USE_INT_CLIENT")) == 1
         ):
-            print("Running rust client tests")
-            client = IntegrationClient()
+            mode = os.environ.get("FENNEL_TEST_MODE", "inmemory")
+            print("Running rust client tests in mode:", mode)
+            client = IntegrationClient(mode)
             f = test_func(*args, **kwargs, client=client)
         return f
 

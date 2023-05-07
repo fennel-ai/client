@@ -41,10 +41,12 @@ class TestMovieInfo103(unittest.TestCase):
     @mock_client
     def test_log_to_MovieInfo103(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
+        if client.integration_mode() == "local":
+            pytest.skip("Skipping integration test in local mode")
+
         # Sync the dataset
         client.sync(datasets=[MovieInfo103])
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
         t = datetime.fromtimestamp(1672858163)
         data = [
             [
@@ -100,8 +102,7 @@ class TestMovieInfo103(unittest.TestCase):
         """Same test as test_log_to_MovieInfo103 but with an S3 source."""
         # Sync the dataset
         client.sync(datasets=[MovieInfo103])
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
 
         # Time for data_integration to do its magic
         time.sleep(10)

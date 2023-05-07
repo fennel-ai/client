@@ -67,7 +67,7 @@ class UserTransactionsAbroad:
     amount_1w: float
     timestamp: datetime = field(timestamp=True)
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(User, Transaction)
     def first_pipeline(cls, user: Dataset, transaction: Dataset):
         joined = transaction.left_join(user, on=["uid"])

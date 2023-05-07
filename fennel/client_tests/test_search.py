@@ -1,4 +1,3 @@
-import time
 import unittest
 from collections import defaultdict
 from datetime import datetime
@@ -85,49 +84,32 @@ class Document:
     origin: str
     creation_timestamp: datetime
 
-    @pipeline(id=1)
-    @inputs(NotionDocs)
-    def notion_pipe(cls, ds: Dataset):
-        return ds.transform(
-            lambda df: cls.doc_pipeline_helper(df, "Notion"),
-            schema={
-                "doc_id": int,
-                "body": str,
-                "title": str,
-                "owner": str,
-                "creation_timestamp": datetime,
-                "origin": str,
-            },
-        )
-
-    @pipeline(id=2)
-    @inputs(CodaDocs)
-    def coda_pipe(cls, ds: Dataset):
-        return ds.transform(
-            lambda df: cls.doc_pipeline_helper(df, "Coda"),
-            schema={
-                "doc_id": int,
-                "body": str,
-                "title": str,
-                "owner": str,
-                "creation_timestamp": datetime,
-                "origin": str,
-            },
-        )
-
-    @pipeline(id=3)
-    @inputs(GoogleDocs)
-    def google_docs_pipe(cls, ds: Dataset):
-        return ds.transform(
-            lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
-            schema={
-                "doc_id": int,
-                "body": str,
-                "title": str,
-                "owner": str,
-                "creation_timestamp": datetime,
-                "origin": str,
-            },
+    @pipeline()
+    @inputs(NotionDocs, CodaDocs, GoogleDocs)
+    def notion_pipe(
+        cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
+    ):
+        new_schema = {
+            "doc_id": int,
+            "body": str,
+            "title": str,
+            "owner": str,
+            "creation_timestamp": datetime,
+            "origin": str,
+        }
+        return (
+            notion_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "Notion"),
+                schema=new_schema,
+            )
+            + coda_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "Coda"),
+                schema=new_schema,
+            )
+            + google_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
+                schema=new_schema,
+            )
         )
 
     @classmethod
@@ -190,7 +172,7 @@ class DocumentContentDataset:
     top_10_unique_words: List[str]
     creation_timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Document)
     def content_features(cls, ds: Dataset):
         return ds.transform(
@@ -227,7 +209,7 @@ class UserEngagementDataset:
     num_long_views: int
     timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(UserActivity)
     def user_engagement_pipeline(cls, ds: Dataset):
         def create_short_click(df: pd.DataFrame) -> pd.DataFrame:
@@ -276,7 +258,7 @@ class DocumentEngagementDataset:
     total_timespent: float
     timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(UserActivity)
     def doc_engagement_pipeline(cls, ds: Dataset):
         return ds.groupby("doc_id").aggregate(
@@ -452,10 +434,12 @@ class TestSearchExample(unittest.TestCase):
     @pytest.mark.integration
     @mock_client
     def test_search_datasets1(self, client):
+        if client.integration_mode() == "local":
+            pytest.skip("Skipping integration test in local mode")
+
         client.sync(datasets=[NotionDocs, CodaDocs, GoogleDocs, Document])
         self.log_document_data(client)
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
 
@@ -474,6 +458,9 @@ class TestSearchExample(unittest.TestCase):
     @pytest.mark.integration
     @mock_client
     def test_search_datasets2(self, client):
+        if client.integration_mode() == "local":
+            pytest.skip("Skipping integration test in local mode")
+
         client.sync(
             datasets=[
                 UserActivity,
@@ -483,8 +470,7 @@ class TestSearchExample(unittest.TestCase):
         )
 
         self.log_engagement_data(client)
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         now = datetime.utcnow()
         ts = pd.Series([now, now])
         user_ids = pd.Series([123, 342])
@@ -501,6 +487,9 @@ class TestSearchExample(unittest.TestCase):
     @pytest.mark.integration
     @mock_client
     def test_search_e2e(self, client):
+        if client.integration_mode() == "local":
+            pytest.skip("Skipping integration test in local mode")
+
         client.sync(
             datasets=[
                 NotionDocs,
@@ -521,11 +510,9 @@ class TestSearchExample(unittest.TestCase):
         )
 
         self.log_document_data(client)
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         self.log_engagement_data(client)
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep(30)
         # set pd display all columns
         pd.set_option("display.max_columns", None)
         input_df = pd.DataFrame(
@@ -564,25 +551,27 @@ class TestSearchExample(unittest.TestCase):
         assert df["DocumentContentFeatures.doc_id"].tolist() == [31234, 33234]
         assert df["UserBehaviorFeatures.num_short_views_7d"].tolist() == [2, 0]
         assert df["DocumentFeatures.num_views_28d"].tolist() == [1, 2]
+
         if client.is_integration_client():
-            assert (
-                df["DocumentContentFeatures.top_10_unique_words"].tolist()[0]
-                == ["This", "is", "a", "random", "Coda", "document"]
-            ).all()
-            assert (
-                df["DocumentContentFeatures.top_10_unique_words"].tolist()[1]
-                == [
-                    "This",
-                    "is",
-                    "a",
-                    "rand",
-                    "document",
-                    "in",
-                    "Coda",
-                    "with",
-                    "words",
-                ]
-            ).all()
+            result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
+                0
+            ] == ["This", "is", "a", "random", "Coda", "document"]
+            assert result.all()
+
+            result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
+                1
+            ] == [
+                "This",
+                "is",
+                "a",
+                "rand",
+                "document",
+                "in",
+                "Coda",
+                "with",
+                "words",
+            ]
+            assert result.all()
         else:
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
                 0

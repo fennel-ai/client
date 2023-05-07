@@ -92,19 +92,19 @@ class Client:
         check_response(response)
 
     def log(
-        self, dataset_name: str, dataframe: pd.DataFrame, batch_size: int = 1000
+        self, webhook: str, dataframe: pd.DataFrame, batch_size: int = 1000
     ):
         """
         Log data to a dataset.
 
-        :param dataset_name: Name of the dataset to log data to.
+        :param webhook: Name of the dataset to log data to.
         :param dataframe: Dataframe to log to the dataset.
         :param batch_size: Batch size to use when logging data.
         :return:
         """
         num_rows = dataframe.shape[0]
         if num_rows == 0:
-            print("No rows to log to dataset", dataset_name)
+            print("No rows to log to dataset", webhook)
             return
 
         for i in range(math.ceil(num_rows / batch_size)):
@@ -113,7 +113,7 @@ class Client:
             mini_df = dataframe[start:end]
             payload = mini_df.to_json(orient="records")
             req = {
-                "dataset_name": dataset_name,
+                "webhook": webhook,
                 "rows": payload,
             }
             response = self._post_json("{}/log".format(V1_API), req)

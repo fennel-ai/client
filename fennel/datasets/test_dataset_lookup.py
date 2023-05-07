@@ -8,10 +8,12 @@ from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
+from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
 
 @meta(owner="test@test.com")
+@source(Webhook("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

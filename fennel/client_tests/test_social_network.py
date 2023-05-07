@@ -11,10 +11,12 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.schema import regex, oneof
 from fennel.lib.window import Window
+from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
 
 @meta(owner="data-eng@myspace.com")
+@source(Webhook("UserInfo"))
 @dataset
 class UserInfo:
     user_id: str = field(key=True)
@@ -27,6 +29,7 @@ class UserInfo:
     timestamp: datetime
 
 
+@source(Webhook("PostInfo"))
 @dataset
 @meta(owner="data-eng@myspace.com")
 class PostInfo:
@@ -38,6 +41,7 @@ class PostInfo:
 
 @meta(owner="data-eng@myspace.com")
 @dataset
+@source(Webhook("ViewData"))
 class ViewData:
     user_id: str
     post_id: int
@@ -52,7 +56,7 @@ class CityInfo:
     count: int
     timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(UserInfo)
     def count_city_gender(cls, user_info: Dataset):
         return user_info.groupby(["city", "gender"]).aggregate(

@@ -1,19 +1,21 @@
 import unittest
 from datetime import datetime
-from typing import Optional
 
 import pandas as pd
 import requests
+from typing import Optional
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
+from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
 
 @meta(owner="test@test.com")
+@source(Webhook("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

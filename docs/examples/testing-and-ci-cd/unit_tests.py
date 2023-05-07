@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
-from typing import Optional
 
 import pandas as pd
 import requests
+from typing import Optional
 
 # docsnip datasets
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -11,9 +11,11 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
+from fennel.sources import source, Webhook
 
 
 @meta(owner="test@test.com")
+@source(Webhook("RatingActivity"))
 @dataset
 class RatingActivity:
     userid: int
@@ -31,7 +33,7 @@ class MovieRating:
     sum_ratings: float
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
@@ -168,6 +170,7 @@ def get_country_geoid(country: str) -> int:
 
 # docsnip featuresets_testing_with_dataset
 @meta(owner="test@test.com")
+@source(Webhook("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

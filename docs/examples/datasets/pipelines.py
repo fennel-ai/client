@@ -6,17 +6,19 @@ import requests
 from typing import Optional, List
 
 from fennel.datasets import dataset, field
+from fennel.datasets import pipeline, Dataset
+from fennel.lib.aggregate import Count, Sum, LastK
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
-from fennel.test_lib import mock_client
-from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Count, Sum, LastK
 from fennel.lib.window import Window
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock_client
 
 
 # docsnip data_sets
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(Webhook("User"))
 @dataset
 class User:
     uid: int = field(key=True)
@@ -26,6 +28,7 @@ class User:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(Webhook("Transaction"))
 @dataset
 class Transaction:
     uid: int
@@ -50,7 +53,7 @@ class UserTransactionsAbroad:
     timestamp: datetime
 
     @classmethod
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(User, Transaction)
     def first_pipeline(cls, user: Dataset, transaction: Dataset):
         joined = transaction.left_join(user, on=["uid"])
@@ -135,6 +138,7 @@ def test_transaction_aggregation_example(client):
 
 
 @meta(owner="me@fennel.ai")
+@source(Webhook("Activity"))
 @dataset(history="4m")
 class Activity:
     user_id: int
@@ -153,7 +157,7 @@ class FraudActivityDataset:
     merchant_id: int
     transaction_amount: float
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Activity)
     def create_fraud_dataset(cls, activity: Dataset):
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -254,6 +258,7 @@ def test_fraud(client):
 
 # docsnip multiple_pipelines
 @meta(owner="me@fennel.ai")
+@source(Webhook("AndroidLogins"))
 @dataset
 class AndroidLogins:
     uid: int
@@ -261,6 +266,7 @@ class AndroidLogins:
 
 
 @meta(owner="me@fennel.ai")
+@source(Webhook("IOSLogins"))
 @dataset
 class IOSLogins:
     uid: int
@@ -280,11 +286,11 @@ class LoginStats:
     num_logins_1d: int
     login_time: datetime
 
-    @pipeline(id=1)
-    @inputs(AndroidLogins)
+    @pipeline(version=1, active=True)
+    @inputs(AndroidLogins, IOSLogins)
     @includes(add_platform)
-    def android_logins(cls, logins: Dataset):
-        with_platform = logins.transform(
+    def android_logins(cls, android_logins: Dataset, ios_logins: Dataset):
+        with_android_platform = android_logins.transform(
             lambda df: add_platform(df, "android"),
             schema={
                 "uid": int,
@@ -292,17 +298,7 @@ class LoginStats:
                 "platform": str,
             },
         )
-        return with_platform.groupby(["uid", "platform"]).aggregate(
-            [
-                Count(window=Window("1d"), into_field="num_logins_1d"),
-            ]
-        )
-
-    @pipeline(id=2)
-    @includes(add_platform)
-    @inputs(IOSLogins)
-    def ios_logins(cls, logins: Dataset):
-        with_platform = logins.transform(
+        with_ios_platform = ios_logins.transform(
             lambda df: add_platform(df, "ios"),
             schema={
                 "uid": int,
@@ -310,7 +306,8 @@ class LoginStats:
                 "platform": str,
             },
         )
-        return with_platform.groupby(["uid", "platform"]).aggregate(
+        union = with_ios_platform + with_android_platform
+        return union.groupby(["uid", "platform"]).aggregate(
             [
                 Count(window=Window("1d"), into_field="num_logins_1d"),
             ]

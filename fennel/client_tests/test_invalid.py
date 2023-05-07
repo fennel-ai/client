@@ -8,6 +8,7 @@ from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
+from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
 
@@ -36,6 +37,7 @@ class MemberActivityDataset:
 
 
 @meta(owner="test@fennel.ai")
+@source(Webhook("MemberDataset"))
 @dataset
 class MemberDataset:
     pk: str
@@ -58,7 +60,7 @@ class MemberActivityDatasetCopy:
     hasShortcut: bool
     country: str
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(MemberActivityDataset)
     def copy(cls, ds: Dataset):
         return ds
@@ -120,6 +122,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
     @mock_client
     def test_missing_features(self, client):
         @meta(owner="test@fennel.ai")
+        @source(Webhook("MemberActivityDataset"))
         @dataset
         class MemberActivityDataset:
             url: str
@@ -132,6 +135,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             DOMAIN_USED_COUNT: int
 
         @meta(owner="test@fennel.ai")
+        @source(Webhook("MemberDataset"))
         @dataset
         class MemberDataset:
             pk: str
@@ -153,7 +157,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             hasShortcut: bool
             country: str
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(MemberActivityDataset)
             def copy(cls, ds: Dataset):
                 return ds
@@ -276,7 +280,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 displayName: str
                 createdAt: datetime = field(timestamp=True)
 
-                @pipeline(id=1)
+                @pipeline(version=1)
                 @inputs(MemberDataset)
                 def del_timestamp(cls, d: Dataset):
                     return d.drop(columns=["createdAt"])

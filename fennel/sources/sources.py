@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
+
 from typing import Any, Callable, List, Optional, TypeVar
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
-
 from fennel.lib.duration import (
     Duration,
 )
@@ -22,9 +22,9 @@ DEFAULT_LATENESS = Duration("1h")
 
 
 def source(
-    conn: DataConnector,
-    every: Optional[Duration] = None,
-    lateness: Optional[Duration] = None,
+        conn: DataConnector,
+        every: Optional[Duration] = None,
+        lateness: Optional[Duration] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
@@ -38,18 +38,19 @@ def source(
         conn.every = every if every is not None else DEFAULT_EVERY
         conn.lateness = lateness if lateness is not None else DEFAULT_LATENESS
         if hasattr(dataset_cls, SOURCE_FIELD):
-            connectors = getattr(dataset_cls, SOURCE_FIELD)
-            connectors.append(conn)
-            setattr(dataset_cls, SOURCE_FIELD, connectors)
+            raise Exception(
+                "Multiple sources are not supported in dataset `%s`."
+                % dataset_cls.__name__  # type: ignore
+            )
         else:
-            setattr(dataset_cls, SOURCE_FIELD, [conn])
+            setattr(dataset_cls, SOURCE_FIELD, conn)
         return dataset_cls
 
     return decorator
 
 
 def sink(
-    conn: DataConnector, every: Optional[Duration] = None
+        conn: DataConnector, every: Optional[Duration] = None
 ) -> Callable[[T], Any]:
     def decorator(dataset_cls: T):
         if every is not None:
@@ -112,7 +113,7 @@ class SQLSource(DataSource):
         if not isinstance(self.password, str):
             exceptions.append(TypeError("password must be a string"))
         if self.jdbc_params is not None and not isinstance(
-            self.jdbc_params, str
+                self.jdbc_params, str
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
@@ -129,12 +130,12 @@ class S3(DataSource):
         return []
 
     def bucket(
-        self,
-        bucket_name: str,
-        prefix: str,
-        delimiter: str = ",",
-        format: str = "csv",
-        cursor: Optional[str] = None,
+            self,
+            bucket_name: str,
+            prefix: str,
+            delimiter: str = ",",
+            format: str = "csv",
+            cursor: Optional[str] = None,
     ) -> S3Connector:
         return S3Connector(
             self,
@@ -297,7 +298,7 @@ class Snowflake(DataSource):
         if not isinstance(self.role, str):
             exceptions.append(TypeError("role must be a string"))
         if self.jdbc_params is not None and not isinstance(
-            self.jdbc_params, str
+                self.jdbc_params, str
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
@@ -343,6 +344,13 @@ class DataConnector:
         return []
 
 
+class Webhook(DataConnector):
+    name: str
+
+    def __init__(self, name):
+        self.name = name
+
+
 class TableConnector(DataConnector):
     """DataConnectors which only need a table name and a cursor to be
     specified. Includes BigQuery, MySQL, Postgres, and Snowflake."""
@@ -375,13 +383,13 @@ class S3Connector(DataConnector):
     cursor: Optional[str] = None
 
     def __init__(
-        self,
-        data_source,
-        bucket_name,
-        path_prefix,
-        delimiter,
-        format,
-        cursor,
+            self,
+            data_source,
+            bucket_name,
+            path_prefix,
+            delimiter,
+            format,
+            cursor,
     ):
         self.data_source = data_source
         self.bucket_name = bucket_name

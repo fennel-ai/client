@@ -1,4 +1,3 @@
-import time
 from datetime import datetime
 
 import pandas as pd
@@ -11,10 +10,12 @@ from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
+from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
 
 @meta(owner="test@test.com")
+@source(Webhook("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -86,7 +87,7 @@ def test_simple_invalid_extractor(client):
     response = client.log("UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
     if client.is_integration_client():
-        time.sleep(5)
+        client.sleep()
 
     with pytest.raises(Exception) as e:
         client.extract_features(
