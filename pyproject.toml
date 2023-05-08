@@ -109,6 +109,7 @@ line-length = 80
 extend-exclude = '''
 (
     .*_pb2.py
+    | fennel/_vendor/*
     | fennel/gen/*.py
 )
 '''
