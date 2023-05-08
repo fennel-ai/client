@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import pytest
-import requests
+import fennel._vendor.requests as requests
 from typing import Optional
 
 from fennel.datasets import dataset, field

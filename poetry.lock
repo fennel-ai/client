@@ -300,7 +300,7 @@ virtualenv = ["virtualenv (>=20.0.35)"]
 name = "certifi"
 version = "2023.5.7"
 description = "Python package for providing Mozilla's CA Bundle."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -389,7 +389,7 @@ pycparser = "*"
 name = "charset-normalizer"
 version = "3.1.0"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7.0"
 files = [
@@ -683,7 +683,7 @@ timezone = ["pytz"]
 name = "idna"
 version = "3.4"
 description = "Internationalized Domain Names in Applications (IDNA)"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
 files = [
@@ -2319,7 +2319,7 @@ cffi = {version = "*", markers = "implementation_name == \"pypy\""}
 name = "requests"
 version = "2.30.0"
 description = "Python HTTP for Humans."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -2601,7 +2601,7 @@ dev = ["flake8 (<4.0.0)", "flake8-annotations", "flake8-bugbear", "flake8-commas
 name = "urllib3"
 version = "2.0.2"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -2811,4 +2811,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "573409f650add6e4d954a0a23ce554eeb46e5ead3dab3d8a79024631fccceec2"
+content-hash = "4b414a0661d03581c412675f59bb86b5f4448bd5b0b6efb3133a8310bf19eb16"

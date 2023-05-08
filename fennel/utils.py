@@ -10,7 +10,7 @@ import sys
 import textwrap
 
 import fennel._vendor.astunparse as astunparse  # type: ignore
-import requests  # type: ignore
+import fennel._vendor.requests as requests  # type: ignore
 from typing import Any
 from typing import cast, Callable, Dict, List, Tuple, Union
 

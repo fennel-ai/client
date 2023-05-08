@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-import requests
+import fennel._vendor.requests as requests
 from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional
 
