@@ -40,7 +40,7 @@ is at <https://requests.readthedocs.io>.
 
 import warnings
 
-from fennel._vendor import urllib3
+import urllib3
 
 from .exceptions import RequestsDependencyWarning
 
@@ -50,7 +50,7 @@ except ImportError:
     charset_normalizer_version = None
 
 try:
-    from fennel._vendor.chardet import __version__ as chardet_version
+    from chardet import __version__ as chardet_version
 except ImportError:
     chardet_version = None
 
@@ -124,7 +124,7 @@ try:
         ssl = None
 
     if not getattr(ssl, "HAS_SNI", False):
-        from fennel._vendor.urllib3.contrib import pyopenssl
+        from urllib3.contrib import pyopenssl
 
         pyopenssl.inject_into_urllib3()
 
@@ -136,7 +136,7 @@ except ImportError:
     pass
 
 # urllib3's DependencyWarnings should be silenced.
-from fennel._vendor.urllib3.exceptions import DependencyWarning
+from urllib3.exceptions import DependencyWarning
 
 warnings.simplefilter("ignore", DependencyWarning)
 

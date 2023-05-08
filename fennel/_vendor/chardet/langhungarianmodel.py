@@ -1,4 +1,4 @@
-from fennel._vendor.chardet.sbcharsetprober import SingleByteCharSetModel
+from chardet.sbcharsetprober import SingleByteCharSetModel
 
 # 3: Positive
 # 2: Likely

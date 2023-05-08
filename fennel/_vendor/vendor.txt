@@ -8,3 +8,4 @@ pydantic==1.10.2
 astunparse==1.6.3
     six==1.16.0
 grandalf==0.7
+jsondiff==2.0.0

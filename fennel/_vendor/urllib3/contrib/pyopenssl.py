@@ -24,7 +24,7 @@ module, or at any other time before your application begins using ``urllib3``,
 like this::
 
     try:
-        import fennel._vendor.urllib3.contrib.pyopenssl as urllib3_pyopenssl
+        import urllib3.contrib.pyopenssl as urllib3_pyopenssl
         urllib3_pyopenssl.inject_into_urllib3()
     except ImportError:
         pass
@@ -175,7 +175,7 @@ def _dnsname_to_stdlib(name):
         that we can't just safely call `idna.encode`: it can explode for
         wildcard names. This avoids that problem.
         """
-        from fennel._vendor import idna
+        import idna
 
         try:
             for prefix in [u'*.', u'.']:

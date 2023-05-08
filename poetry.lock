@@ -1856,7 +1856,7 @@ wcwidth = "*"
 name = "protobuf"
 version = "4.22.4"
 description = ""
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -2811,4 +2811,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "4b414a0661d03581c412675f59bb86b5f4448bd5b0b6efb3133a8310bf19eb16"
+content-hash = "4fc91a005dbb13864c45031cad3f2fce7db592daa0edfb154371c97865b8a4d7"

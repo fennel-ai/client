@@ -8,7 +8,7 @@ compatibility until the next major version.
 """
 
 try:
-    from fennel._vendor import chardet
+    import chardet
 except ImportError:
     import charset_normalizer as chardet
 

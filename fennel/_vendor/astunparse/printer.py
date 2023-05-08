@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import sys
 import ast
-from fennel._vendor import six
+import six
 
 
 class Printer(ast.NodeVisitor):

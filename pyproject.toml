@@ -10,7 +10,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pandas = "^1.5.0"
+pandas = "^1.0.0"
+protobuf = "^4.22.4"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"
@@ -24,7 +25,6 @@ geopy = "^2.3.0"
 jupyterlab = "^3.6.3"
 pytest-mock = "^3.9.0"
 pytest = "^7.1.3"
-jsondiff = "^2.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

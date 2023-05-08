@@ -49,7 +49,7 @@ from typing import (
     overload,
 )
 
-from fennel._vendor.typing_extensions import dataclass_transform
+from typing_extensions import dataclass_transform
 
 from .class_validators import gather_all_validators
 from .config import BaseConfig, ConfigDict, Extra, get_config

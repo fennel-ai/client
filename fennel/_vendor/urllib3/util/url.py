@@ -207,7 +207,7 @@ def parse_url(url):
     def idna_encode(name):
         if name and any([ord(x) > 128 for x in name]):
             try:
-                from fennel._vendor import idna
+                import idna
             except ImportError:
                 raise LocationParseError("Unable to parse URL without the 'idna' module")
             try:

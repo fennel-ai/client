@@ -13,7 +13,7 @@
 #  shall be performed by the drawing engine associated with 'views'.
 #  (e.g. look at intersectC when the node shape is a circle)
 
-from fennel._vendor.grandalf.utils.geometry import intersectR, getangle, sqrt
+from grandalf.utils.geometry import intersectR, getangle, sqrt
 
 # ------------------------------------------------------------------------------
 class EdgeViewer(object):
@@ -39,7 +39,7 @@ def route_with_lines(e, pts):
 #  enhanced edge routing where 'corners' of the above polyline route are
 #  rounded with a bezier curve.
 def route_with_splines(e, pts):
-    from fennel._vendor.grandalf.utils.geometry import setroundcorner
+    from grandalf.utils.geometry import setroundcorner
 
     route_with_lines(e, pts)
     splines = setroundcorner(e, pts)
@@ -47,7 +47,7 @@ def route_with_splines(e, pts):
 
 
 def _gen_point(p1, p2, new_distance):
-    from fennel._vendor.grandalf.utils.geometry import new_point_at_distance
+    from grandalf.utils.geometry import new_point_at_distance
 
     initial_distance = distance = sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
     if initial_distance < 1e-10:
