@@ -16,7 +16,6 @@ requests = "^2.28.1"
 pydantic = "^1.10.2"
 jsondiff = "^2.0.0"
 astunparse = "^1.6.3"
-types-requests = "^2.28.11"
 grandalf = "^0.7"
 
 [tool.poetry.dev-dependencies]
