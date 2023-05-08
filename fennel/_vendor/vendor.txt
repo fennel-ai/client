@@ -1,3 +1,5 @@
+pydantic==1.10.2
+    typing_extensions==4.5.0
 astunparse==1.6.3
     six==1.16.0
 grandalf==0.7
