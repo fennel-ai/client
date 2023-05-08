@@ -9,7 +9,7 @@ import json
 import sys
 import textwrap
 
-import astunparse  # type: ignore
+import fennel._vendor.astunparse as astunparse  # type: ignore
 import requests  # type: ignore
 from typing import Any
 from typing import cast, Callable, Dict, List, Tuple, Union
