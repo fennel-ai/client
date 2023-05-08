@@ -933,7 +933,7 @@ dev = ["hypothesis"]
 name = "jsondiff"
 version = "2.0.0"
 description = "Diff JSON and JSON-like structures in Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 files = [
@@ -2834,4 +2834,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "c5e71c8ec1db775e048efad24ce620b86ee717339fbace6462d9fc09f4400299"
+content-hash = "ae8b1d49722b31460fb48c8ac0f5eac55c60290425d7d0b572ddb993ff9ac4fa"
