@@ -75,9 +75,14 @@ markers = [
 
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.11"
 ignore_missing_imports = true
-exclude = '''(pb2\.py$|.*_pb2.pyi|docs/examples)'''
+exclude = [
+    'pb2\.py$',
+    '.*_pb2.pyi',
+    'docs/examples',
+    'fennel/_vendor'  # ignore vendored packages
+]
 
 [[tool.mypy.overrides]]
 module = "pyarrow"
