@@ -5,7 +5,7 @@ import math
 from urllib.parse import urljoin, urlparse
 
 import pandas as pd
-import requests  # type: ignore
+import fennel._vendor.requests as requests  # type: ignore
 from typing import Dict, Optional, Any, Set, List, Union
 
 from fennel.datasets import Dataset

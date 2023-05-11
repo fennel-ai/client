@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15] - 2023-05-11
+- Vendor in dependencies of the client
+
 ## [0.12] - 2023-04-17
 - Add support for intervals in Join Operator
 

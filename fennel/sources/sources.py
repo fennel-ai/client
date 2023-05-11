@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Callable, List, Optional, TypeVar
 
-from pydantic import BaseModel
+from fennel._vendor.pydantic import BaseModel  # type: ignore
 
 from fennel.lib.duration import (
     Duration,

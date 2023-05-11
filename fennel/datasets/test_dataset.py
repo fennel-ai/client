@@ -2,7 +2,6 @@ import json
 from datetime import datetime, timedelta
 
 import pandas as pd
-import requests  # type: ignore
 from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional, List
 

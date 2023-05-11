@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-import requests
+import fennel._vendor.requests as requests
 
 from fennel.datasets import dataset, field, Dataset, pipeline
 from fennel.featuresets import featureset, feature, extractor

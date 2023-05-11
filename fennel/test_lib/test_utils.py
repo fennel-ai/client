@@ -1,6 +1,6 @@
 from typing import Any
 
-import jsondiff  # type: ignore
+from fennel._vendor import jsondiff  # type: ignore
 from google.protobuf.json_format import MessageToDict  # type: ignore
 
 from fennel.gen.dataset_pb2 import Operator, Filter, Transform

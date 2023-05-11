@@ -1,0 +1,13 @@
+diff --git a/fennel/_vendor/grandalf/layouts.py b/fennel/_vendor/grandalf/layouts.py
+index 9a2e4b2..4946d92 100644
+--- a/fennel/_vendor/grandalf/layouts.py
++++ b/fennel/_vendor/grandalf/layouts.py
+@@ -822,7 +822,7 @@ class SugiyamaLayout(object):
+ 
+ 
+ class DigcoLayout(object):
+-    linalg = importlib.import_module("grandalf.utils.geometry")
++    linalg = importlib.import_module("fennel._vendor.grandalf.utils.geometry")
+ 
+     def __init__(self, g):
+         # drawing parameters:

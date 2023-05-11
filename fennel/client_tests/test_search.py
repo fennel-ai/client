@@ -6,7 +6,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import pytest
-import requests
+import fennel._vendor.requests as requests
 from typing import Dict, List
 
 from fennel import sources

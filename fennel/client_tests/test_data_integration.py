@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-import requests
+import fennel._vendor.requests as requests
 
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta

@@ -6,12 +6,12 @@ import os
 import pydoc
 import sys
 
-from grandalf.graphs import Edge  # type: ignore
-from grandalf.graphs import Graph
-from grandalf.graphs import Vertex
-from grandalf.layouts import SugiyamaLayout  # type: ignore
-from grandalf.routing import EdgeViewer  # type: ignore
-from grandalf.routing import route_with_lines
+from fennel._vendor.grandalf.graphs import Edge  # type: ignore
+from fennel._vendor.grandalf.graphs import Graph
+from fennel._vendor.grandalf.graphs import Vertex
+from fennel._vendor.grandalf.layouts import SugiyamaLayout  # type: ignore
+from fennel._vendor.grandalf.routing import EdgeViewer  # type: ignore
+from fennel._vendor.grandalf.routing import route_with_lines
 
 logger = logging.getLogger(__name__)
 

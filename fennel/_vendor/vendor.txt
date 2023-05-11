@@ -1,0 +1,11 @@
+requests==2.28.1
+    certifi==2023.5.7
+    chardet==5.1.0
+    idna==3.4
+    urllib3==1.25.3  # using a version which has license
+pydantic==1.10.2
+    typing_extensions==4.5.0
+astunparse==1.6.3
+    six==1.16.0
+grandalf==0.7
+jsondiff==2.0.0

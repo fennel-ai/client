@@ -16,7 +16,7 @@ indicate whether the object is deprecated, deleted, or a work in progress.
 import functools
 import re
 
-from pydantic import BaseModel, validator
+from fennel._vendor.pydantic import BaseModel, validator  # type: ignore
 from typing import Any, List, Optional
 
 import fennel.gen.metadata_pb2 as proto
