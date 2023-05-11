@@ -8,7 +8,7 @@ from fennel.lib.schema import inputs
 from fennel.test_lib import *
 
 
-def test_multiple_date_time(grpc_stub):
+def test_multiple_date_time():
     with pytest.raises(ValueError) as e:
 
         @dataset
@@ -23,14 +23,14 @@ def test_multiple_date_time(grpc_stub):
             country: Optional[str]
             timestamp: datetime
 
-    _ = InternalTestClient(grpc_stub)
+    _ = InternalTestClient()
     assert (
         str(e.value) == "Multiple timestamp fields are not supported in "
         "dataset `UserInfoDataset`."
     )
 
 
-def test_invalid_retention_window(grpc_stub):
+def test_invalid_retention_window():
     with pytest.raises(TypeError) as e:
 
         @dataset(history=324)
@@ -46,7 +46,7 @@ def test_invalid_retention_window(grpc_stub):
     )
 
 
-def test_dataset_with_pipes(grpc_stub):
+def test_dataset_with_pipes():
     @dataset
     class XYZ:
         user_id: int
@@ -125,7 +125,7 @@ def test_dataset_with_pipes(grpc_stub):
     )
 
 
-def test_dataset_incorrect_join(grpc_stub):
+def test_dataset_incorrect_join():
     with pytest.raises(ValueError) as e:
 
         @dataset
@@ -150,7 +150,7 @@ def test_dataset_incorrect_join(grpc_stub):
     assert str(e.value) == "Cannot join with an intermediate dataset"
 
 
-def test_dataset_incorrect_join_bounds(grpc_stub):
+def test_dataset_incorrect_join_bounds():
     with pytest.raises(ValueError) as e:
 
         @dataset
@@ -272,7 +272,7 @@ def test_dataset_incorrect_join_bounds(grpc_stub):
     assert "Upper bound cannot be `forever`" in str(e.value)
 
 
-def test_dataset_optional_key(grpc_stub):
+def test_dataset_optional_key():
     with pytest.raises(ValueError) as e:
 
         @dataset
@@ -284,7 +284,7 @@ def test_dataset_optional_key(grpc_stub):
     assert str(e.value) == "Key name in dataset XYZ cannot be Optional."
 
 
-def test_protected_fields(grpc_stub):
+def test_protected_fields():
     with pytest.raises(Exception) as e:
 
         @dataset(history="324d")

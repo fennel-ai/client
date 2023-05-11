@@ -34,9 +34,9 @@ class UserInfoDataset:
     timestamp: datetime = field(timestamp=True)
 
 
-def test_simple_dataset(grpc_stub):
+def test_simple_dataset():
     assert UserInfoDataset._history == timedelta(days=730)
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -99,7 +99,7 @@ def test_simple_dataset(grpc_stub):
     )
 
 
-def test_complex_dataset_with_fields(grpc_stub):
+def test_complex_dataset_with_fields():
     @dataset(history="1y")
     @meta(owner="daniel@yext.com", description="test")
     class YextUserInfoDataset:
@@ -116,7 +116,7 @@ def test_complex_dataset_with_fields(grpc_stub):
         timestamp: datetime = field(timestamp=True)
 
     assert YextUserInfoDataset._history == timedelta(days=365)
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(YextUserInfoDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -205,7 +205,7 @@ def test_complex_dataset_with_fields(grpc_stub):
     )
 
 
-def test_simple_featureset(grpc_stub):
+def test_simple_featureset():
     @meta(owner="aditya@fennel.ai", description="test", tags=["test"])
     @featureset
     class UserInfoSimple:
@@ -216,7 +216,7 @@ def test_simple_featureset(grpc_stub):
         age_no_bar: int = feature(id=4).meta(owner="srk@bollywood.com")
         income: int = feature(id=5).meta(deprecated=True)
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoSimple)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.feature_sets) == 1
@@ -300,7 +300,7 @@ def test_simple_featureset(grpc_stub):
     )
 
 
-def test_featureset_with_extractors(grpc_stub):
+def test_featureset_with_extractors():
     @meta(owner="test@test.com")
     @featureset
     class User:
@@ -338,7 +338,7 @@ def test_featureset_with_extractors(grpc_stub):
         def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoDataset)
     view.add(UserInfo)
     view.add(User)

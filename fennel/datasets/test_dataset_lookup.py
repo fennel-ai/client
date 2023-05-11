@@ -45,7 +45,7 @@ def fake_func(
         return df, pd.Series([True, True, True])
 
 
-def test_dataset_lookup(grpc_stub):
+def test_dataset_lookup():
     fennel.datasets.datasets.dataset_lookup = fake_func
 
     @meta(owner="test@test.com")
@@ -94,7 +94,7 @@ def test_dataset_lookup(grpc_stub):
             df["age_cube"] = df["age"] * df["age"] * df["age"]
             return df[["age_cube"]]
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoDataset)
     view.add(UserAgeFeatures)
     sync_request = view._get_sync_request_proto()

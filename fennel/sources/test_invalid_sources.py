@@ -18,7 +18,7 @@ mysql = MySQL(
 )
 
 
-def test_simple_source(grpc_stub):
+def test_simple_source():
     with pytest.raises(TypeError) as e:
 
         @source(mysql.table("user"), every="1h")
@@ -88,7 +88,7 @@ s3 = S3(
 )
 
 
-def test_invalid_s3_source(grpc_stub):
+def test_invalid_s3_source():
     with pytest.raises(AttributeError) as e:
 
         @source(s3.table("user"), every="1h")
@@ -104,7 +104,7 @@ def test_invalid_s3_source(grpc_stub):
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-        view = InternalTestClient(grpc_stub)
+        view = InternalTestClient()
         view.add(UserInfoDataset)
         sync_request = view._get_sync_request_proto()
         assert len(sync_request.dataset_info) == 1

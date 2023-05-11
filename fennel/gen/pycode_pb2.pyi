@@ -22,7 +22,7 @@ class _RefType:
     ValueType = typing.NewType("ValueType", builtins.int)
     V: typing_extensions.TypeAlias = ValueType
 
-class _RefTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_RefType.ValueType], builtins.type):  # noqa: F821
+class _RefTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_RefType.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     Dataset: _RefType.ValueType  # 0
     Featureset: _RefType.ValueType  # 1
@@ -33,9 +33,11 @@ Dataset: RefType.ValueType  # 0
 Featureset: RefType.ValueType  # 1
 global___RefType = RefType
 
+@typing_extensions.final
 class PyCode(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
     class RefIncludesEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 

@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-import requests
+import fennel._vendor.requests as requests
 from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional
 
@@ -72,8 +72,8 @@ class UserInfoSingleExtractor:
         ]
 
 
-def test_includes_proto_conversion(grpc_stub):
-    view = InternalTestClient(grpc_stub)
+def test_includes_proto_conversion():
+    view = InternalTestClient()
     view.add(UserInfoDataset)
     view.add(UserInfoSingleExtractor)
     sync_request = view._get_sync_request_proto()

@@ -4,12 +4,10 @@ import json
 import math
 from urllib.parse import urljoin, urlparse
 
-import grpc
 import pandas as pd
-import requests  # type: ignore
+import fennel._vendor.requests as requests  # type: ignore
 from typing import Dict, Optional, Any, Set, List, Union
 
-import fennel.gen.services_pb2_grpc as services_pb2_grpc
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
 from fennel.lib.to_proto import to_sync_request_proto
@@ -23,14 +21,12 @@ V1_API = "/api/v1"
 _DEFAULT_CONNECT_TIMEOUT = 10
 # Default request timeout(s).
 _DEFAULT_TIMEOUT = 30
-_DEFAULT_GRPC_TIMEOUT = 60
 
 
 class Client:
     def __init__(self, url: str, token: Optional[str] = None):
         self.url = url
         self.token = token
-        self.stub = self._get_grpc_stub(url)
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
         self.http = self._get_session()
@@ -90,16 +86,10 @@ class Client:
                     )
                 self.add(featureset)
         sync_request = self._get_sync_request_proto()
-        if self.token:
-            # Note: grpc metadata keys must be lowercase.
-            metadata = [("authorization", "Bearer " + self.token)]
-        else:
-            metadata = []
-        return self.stub.Sync(
-            sync_request,
-            timeout=_DEFAULT_GRPC_TIMEOUT,
-            metadata=metadata,
+        response = self._post_bytes(
+            "{}/sync".format(V1_API), sync_request.SerializeToString()
         )
+        check_response(response)
 
     def log(
         self, dataset_name: str, dataframe: pd.DataFrame, batch_size: int = 1000
@@ -126,23 +116,40 @@ class Client:
                 "dataset_name": dataset_name,
                 "rows": payload,
             }
-            response = self._post("{}/log".format(V1_API), req)
+            response = self._post_json("{}/log".format(V1_API), req)
         return response
 
-    def _post(self, path: str, req: Dict[str, Any], compress: bool = False):
+    def _post_json(
+        self, path: str, req: Dict[str, Any], compress: bool = False
+    ):
         payload = json.dumps(req).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
         }
+        return self._post(path, payload, headers, compress)
+
+    def _post_bytes(self, path: str, req: bytes, compress: bool = False):
+        headers = {
+            "Content-Type": "application/octet-stream",
+        }
+        return self._post(path, req, headers, compress)
+
+    def _post(
+        self,
+        path: str,
+        data: Any,
+        headers: Dict[str, str],
+        compress: bool = False,
+    ):
         if compress:
-            payload = gzip.compress(payload)
+            data = gzip.compress(data)
             headers["Content-Encoding"] = "gzip"
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
         response = self.http.request(
             "POST",
             self._url(path),
-            data=payload,
+            data=data,
             headers=headers,
         )
         check_response(response)
@@ -206,7 +213,7 @@ class Client:
         if sampling_rate is not None:
             req["sampling_rate"] = sampling_rate
 
-        response = self._post("{}/extract_features".format(V1_API), req)
+        response = self._post_json("{}/extract_features".format(V1_API), req)
         check_response(response)
         if len(output_feature_list) > 1 or isinstance(
             output_feature_list[0], Featureset
@@ -267,7 +274,7 @@ class Client:
             "timestamps": timestamps.to_json(orient="records"),
         }
 
-        response = self._post(
+        response = self._post_json(
             "{}/extract_historical_features".format(V1_API), req
         )
         if len(output_feature_list) > 1 or isinstance(
@@ -290,20 +297,6 @@ class Client:
             timeout=(_DEFAULT_CONNECT_TIMEOUT, _DEFAULT_TIMEOUT),
         )
         return http
-
-    @staticmethod
-    def _get_grpc_stub(url: str):
-        parsed_url = urlparse(url)
-        # strip the protocol and any trailing paths to get the grpc endpoint
-        target = parsed_url.netloc
-        tls = parsed_url.scheme == "https"
-        if tls:
-            channel = grpc.secure_channel(
-                target, grpc.ssl_channel_credentials()
-            )
-        else:
-            channel = grpc.insecure_channel(target)
-        return services_pb2_grpc.FennelFeatureStoreStub(channel)
 
     def _get_sync_request_proto(self):
         return to_sync_request_proto(self.to_register_objects)

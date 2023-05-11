@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 
 import pytest
-import requests
+import fennel._vendor.requests as requests
 from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional
 
@@ -20,7 +20,7 @@ from fennel.lib.schema import oneof
 from fennel.test_lib import *
 
 
-def test_dataset_expectation_creation(grpc_stub):
+def test_dataset_expectation_creation():
     @meta(owner="test@test.com")
     @dataset
     class UserInfoDS:
@@ -50,7 +50,7 @@ def test_dataset_expectation_creation(grpc_stub):
                 ),
             ]
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoDS)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Extra
+from fennel._vendor.pydantic import BaseModel, Extra  # type: ignore
 from typing import List, Union
 
 import fennel.gen.spec_pb2 as spec_proto

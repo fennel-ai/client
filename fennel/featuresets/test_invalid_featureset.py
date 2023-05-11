@@ -31,7 +31,7 @@ class User:
     age: float = feature(id=2)
 
 
-def test_featureset_as_input(grpc_stub):
+def test_featureset_as_input():
     with pytest.raises(TypeError) as e:
 
         @featureset
@@ -51,7 +51,7 @@ def test_featureset_as_input(grpc_stub):
     )
 
 
-def test_complex_featureset(grpc_stub):
+def test_complex_featureset():
     with pytest.raises(TypeError) as e:
 
         @featureset
@@ -86,7 +86,7 @@ def test_complex_featureset(grpc_stub):
     )
 
 
-def test_extract_anoather_featureset(grpc_stub):
+def test_extract_anoather_featureset():
     with pytest.raises(TypeError) as e:
 
         @featureset
@@ -172,7 +172,7 @@ def test_extract_anoather_featureset(grpc_stub):
     assert str(e.value) == "version for extractor must be an int."
 
 
-def test_missing_id(grpc_stub):
+def test_missing_id():
     with pytest.raises(TypeError) as e:
 
         @featureset
@@ -185,7 +185,7 @@ def test_missing_id(grpc_stub):
     )
 
 
-def test_duplicate_id(grpc_stub):
+def test_duplicate_id():
     with pytest.raises(ValueError) as e:
 
         @featureset
@@ -200,7 +200,7 @@ def test_duplicate_id(grpc_stub):
     )
 
 
-def test_deprecated_id(grpc_stub):
+def test_deprecated_id():
     with pytest.raises(ValueError) as e:
 
         @featureset
@@ -216,7 +216,7 @@ def test_deprecated_id(grpc_stub):
     )
 
 
-def test_invalid_featureset(grpc_stub):
+def test_invalid_featureset():
     with pytest.raises(ValueError) as e:
 
         @featureset

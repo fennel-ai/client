@@ -29,7 +29,7 @@ mysql = MySQL(
 )
 
 
-def test_simple_source(grpc_stub):
+def test_simple_source():
     @source(
         mysql.table(
             "users",
@@ -51,7 +51,7 @@ def test_simple_source(grpc_stub):
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -212,7 +212,7 @@ kafka = Kafka(
 )
 
 
-def test_multiple_sources(grpc_stub):
+def test_multiple_sources():
     @meta(owner="test@test.com")
     @source(kafka.topic("test_topic"))
     @source(mysql.table("users_mysql", cursor="added_on"), every="1h")
@@ -240,7 +240,7 @@ def test_multiple_sources(grpc_stub):
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -448,7 +448,7 @@ s3_console = S3.get(
 )
 
 
-def test_console_source(grpc_stub):
+def test_console_source():
     @source(posgres_console.table("users", cursor="added_on"), every="1h")
     @source(mysql_console.table("users", cursor="added_on"), every="1h")
     @source(snowflake_console.table("users", cursor="added_on"), every="1h")
@@ -466,7 +466,7 @@ def test_console_source(grpc_stub):
         user_id: int = field(key=True)
         timestamp: datetime = field(timestamp=True)
 
-    view = InternalTestClient(grpc_stub)
+    view = InternalTestClient()
     view.add(UserInfoDataset)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
