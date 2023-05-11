@@ -21,7 +21,7 @@ import importlib
 from bisect import bisect
 from sys import getrecursionlimit, setrecursionlimit
 
-from grandalf.utils import *
+from fennel._vendor.grandalf.utils import *
 
 # ------------------------------------------------------------------------------
 
@@ -373,7 +373,7 @@ class SugiyamaLayout(object):
     """
 
     def __init__(self, g):
-        from grandalf.utils.geometry import median_wh
+        from fennel._vendor.grandalf.utils.geometry import median_wh
 
         # drawing parameters:
         self.dirvh = 0
@@ -822,7 +822,7 @@ class SugiyamaLayout(object):
 
 
 class DigcoLayout(object):
-    linalg = importlib.import_module("grandalf.utils.geometry")
+    linalg = importlib.import_module("fennel._vendor.grandalf.utils.geometry")
 
     def __init__(self, g):
         # drawing parameters:

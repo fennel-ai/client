@@ -24,7 +24,7 @@ from . import uri
 
 
 try:
-    import idna
+    from fennel._vendor import idna
 except ImportError:  # pragma: no cover
     idna = None
 

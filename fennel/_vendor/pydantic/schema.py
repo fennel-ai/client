@@ -28,7 +28,7 @@ from typing import (
 )
 from uuid import UUID
 
-from typing_extensions import Annotated, Literal
+from fennel._vendor.typing_extensions import Annotated, Literal
 
 from .fields import (
     MAPPING_LIKE_SHAPES,

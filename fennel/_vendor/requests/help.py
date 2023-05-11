@@ -5,8 +5,8 @@ import platform
 import ssl
 import sys
 
-import idna
-import urllib3
+from fennel._vendor import idna
+from fennel._vendor import urllib3
 
 from . import __version__ as requests_version
 
@@ -16,12 +16,12 @@ except ImportError:
     charset_normalizer = None
 
 try:
-    import chardet
+    from fennel._vendor import chardet
 except ImportError:
     chardet = None
 
 try:
-    from urllib3.contrib import pyopenssl
+    from fennel._vendor.urllib3.contrib import pyopenssl
 except ImportError:
     pyopenssl = None
     OpenSSL = None
