@@ -15,7 +15,6 @@ from fennel.sources import (
     BigQuery,
     Kafka,
 )
-
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -214,6 +213,290 @@ kafka = Kafka(
 s3_console = S3.get(
     name="s3_test",
 )
+
+
+def test_multiple_sources():
+    @meta(owner="test@test.com")
+    @source(
+        s3.bucket(
+            bucket_name="all_ratings",
+            prefix="prod/apac/",
+        ),
+        every="1h",
+        lateness="2d",
+    )
+    @dataset
+    class UserInfoDatasetS3:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetS3)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.extdbs) == 1
+
+    # s3 source
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "s3Table": {
+                "bucket": "all_ratings",
+                "pathPrefix": "prod/apac/",
+                "delimiter": ",",
+                "format": "csv",
+                "db": {
+                    "name": "ratings_source",
+                    "s3": {
+                        "awsSecretAccessKey": "8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
+                        "awsAccessKeyId": "ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
+                    },
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetS3",
+        "every": "3600s",
+        "lateness": "172800s",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "ratings_source",
+        "s3": {
+            "awsSecretAccessKey": "8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
+            "awsAccessKeyId": "ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(snowflake.table("users_Sf", cursor="added_on"), every="1h")
+    @dataset
+    class UserInfoDatasetSnowFlake:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # snowflake source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetSnowFlake)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "snowflakeTable": {
+                "db": {
+                    "snowflake": {
+                        "account": "nhb38793.us-west-2.snowflakecomputing.com",
+                        "user": "<username>",
+                        "password": "<password>",
+                        "schema": "PUBLIC",
+                        "warehouse": "TEST",
+                        "role": "ACCOUNTADMIN",
+                        "database": "MOVIELENS",
+                    },
+                    "name": "snowflake_src",
+                },
+                "tableName": "users_Sf",
+            }
+        },
+        "dataset": "UserInfoDatasetSnowFlake",
+        "every": "3600s",
+        "lateness": "3600s",
+        "cursor": "added_on",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "snowflake_src",
+        "snowflake": {
+            "account": "nhb38793.us-west-2.snowflakecomputing.com",
+            "user": "<username>",
+            "password": "<password>",
+            "schema": "PUBLIC",
+            "warehouse": "TEST",
+            "role": "ACCOUNTADMIN",
+            "database": "MOVIELENS",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        bigquery.table("users_bq", cursor="added_on"), every="1h", lateness="2h"
+    )
+    @dataset
+    class UserInfoDatasetBigQuery:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # bigquery source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetBigQuery)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "bigqueryTable": {
+                "db": {
+                    "name": "bq_movie_tags",
+                    "bigquery": {
+                        "dataset": "movie_tags",
+                        "credentialsJson": '{\n        "type": "service_account",\n        "project_id": "fake-project-356105",\n        "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",\n        "client_id": "103688493243243272951",\n        "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n        "token_uri": "https://oauth2.googleapis.com/token",\n        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n    }',
+                        "projectId": "gold-cocoa-356105",
+                    },
+                },
+                "tableName": "users_bq",
+            }
+        },
+        "dataset": "UserInfoDatasetBigQuery",
+        "every": "3600s",
+        "lateness": "7200s",
+        "cursor": "added_on",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "bq_movie_tags",
+        "bigquery": {
+            "dataset": "movie_tags",
+            "credentialsJson": '{\n        "type": "service_account",\n        "project_id": "fake-project-356105",\n        "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",\n        "client_id": "103688493243243272951",\n        "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n        "token_uri": "https://oauth2.googleapis.com/token",\n        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n    }',
+            "projectId": "gold-cocoa-356105",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(mysql.table("users_mysql", cursor="added_on"), every="1h")
+    @dataset
+    class UserInfoDatasetMySql:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mysql source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMySql)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "mysql_table": {
+                "db": {
+                    "name": "mysql",
+                    "mysql": {
+                        "host": "localhost",
+                        "database": "test",
+                        "user": "root",
+                        "password": "root",
+                        "port": 3306,
+                    },
+                },
+                "table_name": "users_mysql",
+            },
+        },
+        "dataset": "UserInfoDatasetMySql",
+        "every": "3600s",
+        "lateness": "3600s",
+        "cursor": "added_on",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "mysql",
+        "mysql": {
+            "host": "localhost",
+            "database": "test",
+            "user": "root",
+            "password": "root",
+            "port": 3306,
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(kafka.topic("test_topic"))
+    @dataset
+    class UserInfoDatasetKafka:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetKafka)
+    sync_request = view._get_sync_request_proto()
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "kafka_src",
+        "kafka": {
+            "bootstrap_servers": "localhost:9092",
+            "security_protocol": "PLAINTEXT",
+            "sasl_mechanism": "PLAIN",
+            "sasl_plain_username": "test",
+            "sasl_plain_password": "test",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
 
 
 def test_console_source():

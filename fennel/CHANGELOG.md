@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15.1] - 2023-05-12
+- Support backfilling of pipelines + Webhook support 
+
 ## [0.15] - 2023-05-11
 - Vendor in dependencies of the client
 
