@@ -22,9 +22,9 @@ DEFAULT_LATENESS = Duration("1h")
 
 
 def source(
-        conn: DataConnector,
-        every: Optional[Duration] = None,
-        lateness: Optional[Duration] = None,
+    conn: DataConnector,
+    every: Optional[Duration] = None,
+    lateness: Optional[Duration] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
@@ -50,7 +50,7 @@ def source(
 
 
 def sink(
-        conn: DataConnector, every: Optional[Duration] = None
+    conn: DataConnector, every: Optional[Duration] = None
 ) -> Callable[[T], Any]:
     def decorator(dataset_cls: T):
         if every is not None:
@@ -113,7 +113,7 @@ class SQLSource(DataSource):
         if not isinstance(self.password, str):
             exceptions.append(TypeError("password must be a string"))
         if self.jdbc_params is not None and not isinstance(
-                self.jdbc_params, str
+            self.jdbc_params, str
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
@@ -130,12 +130,12 @@ class S3(DataSource):
         return []
 
     def bucket(
-            self,
-            bucket_name: str,
-            prefix: str,
-            delimiter: str = ",",
-            format: str = "csv",
-            cursor: Optional[str] = None,
+        self,
+        bucket_name: str,
+        prefix: str,
+        delimiter: str = ",",
+        format: str = "csv",
+        cursor: Optional[str] = None,
     ) -> S3Connector:
         return S3Connector(
             self,
@@ -298,7 +298,7 @@ class Snowflake(DataSource):
         if not isinstance(self.role, str):
             exceptions.append(TypeError("role must be a string"))
         if self.jdbc_params is not None and not isinstance(
-                self.jdbc_params, str
+            self.jdbc_params, str
         ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
@@ -383,13 +383,13 @@ class S3Connector(DataConnector):
     cursor: Optional[str] = None
 
     def __init__(
-            self,
-            data_source,
-            bucket_name,
-            path_prefix,
-            delimiter,
-            format,
-            cursor,
+        self,
+        data_source,
+        bucket_name,
+        path_prefix,
+        delimiter,
+        format,
+        cursor,
     ):
         self.data_source = data_source
         self.bucket_name = bucket_name

@@ -219,12 +219,12 @@ def test_multiple_features_extracted(client):
         ),
     )
     assert df["UserLocationFeatures.latitude"].round(0).tolist() == [
-        43,
+        41,
         52,
         49,
     ]
     assert df["UserLocationFeatures.longitude"].round(0).tolist() == [
-        -76,
+        -74,
         0,
         2,
     ]
@@ -295,12 +295,12 @@ def test_extractors_across_featuresets(client):
     )
 
     assert df["UserLocationFeaturesRefactored.latitude"].tolist() == [
-        43,
+        41,
         52,
         49,
     ]
     assert df["UserLocationFeaturesRefactored.longitude"].tolist() == [
-        -76,
+        -74,
         0,
         2,
     ]

@@ -10,7 +10,7 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from fennel._vendor.requests import Response
+from fennel._vendor.requests import Response  # type: ignore
 from typing import Callable, Dict, List, Tuple, Union, Optional
 
 import fennel.datasets.datasets

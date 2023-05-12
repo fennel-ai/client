@@ -143,7 +143,7 @@ def test_invalid_s3_source():
     assert str(e.value) == "'S3' object has no attribute 'table'"
 
 
-def test_multiple_sources(grpc_stub):
+def test_multiple_sources():
     with pytest.raises(Exception) as e:
 
         @meta(owner="test@test.com")

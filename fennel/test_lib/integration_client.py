@@ -11,7 +11,7 @@ try:
 except ImportError:
     pass
 
-from fennel._vendor.requests import Response
+from fennel._vendor.requests import Response  # type: ignore
 
 import fennel.datasets.datasets
 from fennel.datasets import Dataset

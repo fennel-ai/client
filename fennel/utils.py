@@ -70,7 +70,7 @@ def fennel_get_source(obj: Any) -> str:
     return textwrap.dedent(code)
 
 
-def check_response(response: requests.Response):
+def check_response(response: requests.Response):  # type: ignore
     """Check the response from the server and raise an exception if the response is not OK"""
     if response.status_code != 200:
         raise Exception(

@@ -15,6 +15,7 @@ from fennel.sources import (
     BigQuery,
     Kafka,
 )
+
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -215,7 +216,7 @@ s3_console = S3.get(
 )
 
 
-def test_console_source(grpc_stub):
+def test_console_source():
     @source(
         s3_console.bucket(
             bucket_name="all_ratings",
