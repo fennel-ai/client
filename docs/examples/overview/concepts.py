@@ -155,7 +155,7 @@ def test_overview(client):
             "timestamp",
         ],
     )
-    res = client.log("Transaction", df)
+    res = client.log("kafka:kafka:transactions", df)
     assert res.status_code == 200, res.json()
 
     # Do a lookup on UserTransactionsAbroad

@@ -353,6 +353,7 @@ class Webhook(DataConnector):
     name: str
 
     def __init__(self, name):
+        self.data_source = DataSource(name=name)
         self.name = name
 
 

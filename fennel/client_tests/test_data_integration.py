@@ -4,8 +4,8 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-import fennel._vendor.requests as requests
 
+import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.sources import source, S3
@@ -62,7 +62,13 @@ class TestMovieInfo103(unittest.TestCase):
         columns = ["movieId", "title", "genres", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
 
-        response = client.log("MovieInfo103", df)
+        if client.is_integration_client():
+            response = client.log("s3:ratings_source:movies_timestamped.csv",
+                df)
+        else:
+            response = client.log(
+                "s3:ratings_source:fennel-demo-data:movielens_sampled/movies_timestamped.csv",
+                df)
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups

@@ -138,13 +138,13 @@ data = [
     [3, 1, 30.0, "product 3", now],
 ]
 df = pd.DataFrame(data, columns=columns)
-response = client.log("Product", df)
+response = client.log("db:my_rdbms:product_info", df)
 assert response.status_code == requests.codes.OK, response.json()
 
 columns = ["uid", "product_id", "timestamp"]
 data = [[1, 1, now], [1, 2, now], [1, 3, now]]
 df = pd.DataFrame(data, columns=columns)
-response = client.log("Order", df)
+response = client.log("kafka:my_kafka:orders", df)
 assert response.status_code == requests.codes.OK, response.json()
 # /docsnip
 

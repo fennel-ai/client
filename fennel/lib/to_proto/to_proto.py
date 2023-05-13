@@ -44,7 +44,7 @@ def _cleanup_dict(d) -> Dict[str, Any]:
 
 
 def _expectations_to_proto(
-    exp: Any, entity_name: str, entity_type: str
+        exp: Any, entity_name: str, entity_type: str
 ) -> List[exp_proto.Expectations]:
     if exp is None:
         return []
@@ -74,7 +74,7 @@ def _expectations_to_proto(
 # Sync
 # ------------------------------------------------------------------------------
 def to_sync_request_proto(
-    registered_objs: List[Any],
+        registered_objs: List[Any],
 ) -> services_proto.SyncRequest:
     datasets = []
     pipelines = []
@@ -222,7 +222,7 @@ def pipelines_from_ds(ds: Dataset) -> List[ds_proto.Pipeline]:
 
 
 def _pipeline_to_proto(
-    pipeline: Pipeline, dataset_name: str
+        pipeline: Pipeline, dataset_name: str
 ) -> ds_proto.Pipeline:
     return ds_proto.Pipeline(
         name=pipeline.name,
@@ -253,7 +253,7 @@ def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
 
 
 def sources_from_ds(
-    ds: Dataset, source_field
+        ds: Dataset, source_field
 ) -> Optional[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
     if hasattr(ds, source_field):
         source: sources.DataConnector = getattr(ds, source_field)
@@ -315,7 +315,7 @@ def _feature_to_proto(f: Feature) -> fs_proto.Feature:
 
 
 def extractors_from_fs(
-    fs: Featureset, fs_obj_map: Dict[str, Featureset]
+        fs: Featureset, fs_obj_map: Dict[str, Featureset]
 ) -> List[fs_proto.Extractor]:
     extractors = []
     for extractor in fs._extractors:
@@ -335,7 +335,7 @@ def feature_to_proto_as_input(f: Feature) -> fs_proto.Input:
 
 # Extractor
 def _extractor_to_proto(
-    extractor: Extractor, fs: Featureset, fs_obj_map: Dict[str, Featureset]
+        extractor: Extractor, fs: Featureset, fs_obj_map: Dict[str, Featureset]
 ) -> fs_proto.Extractor:
     inputs = []
     for input in extractor.inputs:
@@ -383,8 +383,8 @@ def _check_owner_exists(obj):
 # Connector
 # ------------------------------------------------------------------------------
 def _conn_to_source_proto(
-    connector: sources.DataConnector,
-    dataset_name: str,
+        connector: sources.DataConnector,
+        dataset_name: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if isinstance(connector, sources.S3Connector):
         return _s3_conn_to_source_proto(connector, dataset_name)
@@ -416,7 +416,7 @@ def _webhook_to_source_proto(connector: sources.Webhook, dataset_name: str):
 
 
 def _kafka_conn_to_source_proto(
-    connector: sources.KafkaConnector, dataset_name: str
+        connector: sources.KafkaConnector, dataset_name: str
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if not isinstance(data_source, sources.Kafka):
@@ -444,13 +444,13 @@ def _kafka_conn_to_source_proto(
 
 
 def _kafka_to_ext_db_proto(
-    name: str,
-    bootstrap_servers: str,
-    security_protocol: str,
-    sasl_mechanism: Optional[str],
-    sasl_plain_username: Optional[str],
-    sasl_plain_password: Optional[str],
-    sasl_jaas_config: Optional[str],
+        name: str,
+        bootstrap_servers: str,
+        security_protocol: str,
+        sasl_mechanism: Optional[str],
+        sasl_plain_username: Optional[str],
+        sasl_plain_password: Optional[str],
+        sasl_jaas_config: Optional[str],
 ) -> connector_proto.ExtDatabase:
     if sasl_mechanism is None:
         sasl_mechanism = ""
@@ -475,7 +475,7 @@ def _kafka_to_ext_db_proto(
 
 
 def _s3_conn_to_source_proto(
-    connector: sources.S3Connector, dataset_name: str
+        connector: sources.S3Connector, dataset_name: str
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if not isinstance(data_source, sources.S3):
@@ -503,7 +503,7 @@ def _s3_conn_to_source_proto(
 
 
 def _s3_to_ext_db_proto(
-    name: str, aws_access_key_id: str, aws_secret_access_key: str
+        name: str, aws_access_key_id: str, aws_secret_access_key: str
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -515,11 +515,11 @@ def _s3_to_ext_db_proto(
 
 
 def _s3_to_ext_table_proto(
-    db: connector_proto.ExtDatabase,
-    bucket: Optional[str],
-    path_prefix: Optional[str],
-    delimiter: str,
-    format: str,
+        db: connector_proto.ExtDatabase,
+        bucket: Optional[str],
+        path_prefix: Optional[str],
+        delimiter: str,
+        format: str,
 ) -> connector_proto.ExtTable:
     if bucket is None:
         raise ValueError("bucket must be specified")
@@ -537,7 +537,7 @@ def _s3_to_ext_table_proto(
 
 
 def _table_conn_to_source_proto(
-    connector: sources.TableConnector, dataset_name: str
+        connector: sources.TableConnector, dataset_name: str
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if isinstance(data_source, sources.BigQuery):
@@ -557,9 +557,9 @@ def _table_conn_to_source_proto(
 
 
 def _bigquery_conn_to_source_proto(
-    connector: sources.TableConnector,
-    data_source: sources.BigQuery,
-    dataset_name: str,
+        connector: sources.TableConnector,
+        data_source: sources.BigQuery,
+        dataset_name: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _bigquery_to_ext_db_proto(
         data_source.name,
@@ -584,7 +584,7 @@ def _bigquery_conn_to_source_proto(
 
 
 def _bigquery_to_ext_db_proto(
-    name: str, project_id: str, dataset_id: str, credentials_json: str
+        name: str, project_id: str, dataset_id: str, credentials_json: str
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -597,7 +597,7 @@ def _bigquery_to_ext_db_proto(
 
 
 def _bigquery_to_ext_table_proto(
-    db: connector_proto.ExtDatabase, table_name: str
+        db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         bigquery_table=connector_proto.BigqueryTable(
@@ -608,9 +608,9 @@ def _bigquery_to_ext_table_proto(
 
 
 def _snowflake_conn_to_source_proto(
-    connector: sources.TableConnector,
-    data_source: sources.Snowflake,
-    dataset_name: str,
+        connector: sources.TableConnector,
+        data_source: sources.Snowflake,
+        dataset_name: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _snowflake_to_ext_db_proto(
         name=data_source.name,
@@ -639,15 +639,15 @@ def _snowflake_conn_to_source_proto(
 
 
 def _snowflake_to_ext_db_proto(
-    name: str,
-    account: str,
-    user: str,
-    password: str,
-    schema: str,
-    warehouse: str,
-    role: str,
-    database: str,
-    jbdc_params: Optional[str] = None,
+        name: str,
+        account: str,
+        user: str,
+        password: str,
+        schema: str,
+        warehouse: str,
+        role: str,
+        database: str,
+        jbdc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
     if jbdc_params is None:
         jbdc_params = ""
@@ -668,7 +668,7 @@ def _snowflake_to_ext_db_proto(
 
 
 def _snowflake_to_ext_table_proto(
-    db: connector_proto.ExtDatabase, table_name: str
+        db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         snowflake_table=connector_proto.SnowflakeTable(
@@ -679,9 +679,9 @@ def _snowflake_to_ext_table_proto(
 
 
 def _mysql_conn_to_source_proto(
-    connector: sources.TableConnector,
-    data_source: sources.MySQL,
-    dataset_name: str,
+        connector: sources.TableConnector,
+        data_source: sources.MySQL,
+        dataset_name: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if data_source._get:
         ext_db = _mysql_ref_to_ext_db_proto(name=data_source.name)
@@ -711,13 +711,13 @@ def _mysql_conn_to_source_proto(
 
 
 def _mysql_to_ext_db_proto(
-    name: str,
-    host: str,
-    database: str,
-    user: str,
-    password: str,
-    port: int,
-    jdbc_params: Optional[str] = None,
+        name: str,
+        host: str,
+        database: str,
+        user: str,
+        password: str,
+        port: int,
+        jdbc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
     if jdbc_params is None:
         jdbc_params = ""
@@ -735,7 +735,7 @@ def _mysql_to_ext_db_proto(
 
 
 def _mysql_to_ext_table_proto(
-    db: connector_proto.ExtDatabase, table_name: str
+        db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         mysql_table=connector_proto.MySQLTable(
@@ -755,9 +755,9 @@ def _mysql_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
 
 
 def _pg_conn_to_source_proto(
-    connector: sources.TableConnector,
-    data_source: sources.Postgres,
-    dataset_name: str,
+        connector: sources.TableConnector,
+        data_source: sources.Postgres,
+        dataset_name: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if data_source._get:
         ext_db = _pg_ref_to_ext_db_proto(name=data_source.name)
@@ -787,13 +787,13 @@ def _pg_conn_to_source_proto(
 
 
 def _pg_to_ext_db_proto(
-    name: str,
-    host: str,
-    database: str,
-    user: str,
-    password: str,
-    port: int,
-    jdbc_params: Optional[str] = None,
+        name: str,
+        host: str,
+        database: str,
+        user: str,
+        password: str,
+        port: int,
+        jdbc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
     if jdbc_params is None:
         jdbc_params = ""
@@ -812,7 +812,7 @@ def _pg_to_ext_db_proto(
 
 
 def _pg_to_ext_table_proto(
-    db: connector_proto.ExtDatabase, table_name: str
+        db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         pg_table=connector_proto.PostgresTable(
@@ -848,9 +848,9 @@ def to_duration_proto(duration: Duration) -> duration_proto.Duration:
 
 
 def to_extractor_pycode(
-    extractor: Extractor,
-    featureset: Featureset,
-    fs_obj_map: Dict[str, Featureset],
+        extractor: Extractor,
+        featureset: Featureset,
+        fs_obj_map: Dict[str, Featureset],
 ) -> pycode_proto.PyCode:
     dependencies = []
     gen_code = ""
@@ -883,9 +883,10 @@ def to_extractor_pycode(
                     f"{input.featureset_name} which is not synced"
                 )
             gen_code = (
-                gen_code
-                + get_featureset_core_code(fs_obj_map[input.featureset_name])
-                + "\n"
+                    gen_code
+                    + get_featureset_core_code(
+                fs_obj_map[input.featureset_name])
+                    + "\n"
             )
 
     extractor_src_code = dedent(inspect.getsource(extractor.func))
