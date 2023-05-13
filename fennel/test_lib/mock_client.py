@@ -10,10 +10,11 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from fennel._vendor.requests import Response
-from typing import Callable, Dict, List, Tuple, Union, Optional
+from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import fennel.datasets.datasets
+import fennel.sources as sources
+from fennel._vendor.requests import Response  # type: ignore
 from fennel.client import Client
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.featuresets import Featureset, Feature, Extractor
@@ -37,6 +38,7 @@ from fennel.lib.to_proto import (
     featureset_to_proto,
 )
 from fennel.test_lib.executor import Executor
+from fennel.test_lib.fake_data_plane import FakeDataPlane
 from fennel.test_lib.integration_client import IntegrationClient
 
 TEST_PORT = 50051
@@ -209,7 +211,7 @@ class _DatasetInfo:
 
 
 class MockClient(Client):
-    def __init__(self):
+    def __init__(self, data_plane: FakeDataPlane = None):
         self.dataset_requests: Dict[str, CoreDataset] = {}
         self.featureset_requests: Dict[str, CoreFeatureset] = {}
         self.features_for_fs: Dict[str, List[ProtoFeature]]
@@ -218,7 +220,7 @@ class MockClient(Client):
         self.datasets: Dict[str, Dataset] = {}
         # Map of dataset name to the dataframe
         self.data: Dict[str, pd.DataFrame] = {}
-        self.agg_state = {}
+        self.agg_state = {}  # type: ignore
         # Map of datasets to pipelines it is an input to
         self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
         self.aggregated_datasets: Dict = {}
@@ -230,16 +232,22 @@ class MockClient(Client):
             None,
             None,
         )
+        self.data_plane = data_plane
+        self.webhook_to_dataset_map: Dict[str, List[str]] = defaultdict(list)
+        self.dataplane_to_dataset_map: Dict[str, List[str]] = defaultdict(list)
         self.extractors: List[Extractor] = []
 
-    # ----------------- Public methods -----------------
+    # ----------------- Public methods -----------------------------------------
 
-    def is_integration_client(self) -> bool:
-        return False
-
-    def log(self, dataset_name: str, df: pd.DataFrame, _batch_size: int = 1000):
+    def log(
+        self,
+        webhook: str,
+        endpoint: str,
+        df: pd.DataFrame,
+        _batch_size: int = 1000,
+    ):
         if df.shape[0] == 0:
-            print(f"Skipping log of empty dataframe for dataset {dataset_name}")
+            print(f"Skipping log of empty dataframe for webhook {webhook}")
             return
 
         if df.shape[0] > _batch_size * 10:
@@ -247,57 +255,14 @@ class MockClient(Client):
                 "Warning: Dataframe is too large, consider using a small dataframe"
             )
 
-        if dataset_name not in self.dataset_requests:
-            return FakeResponse(404, f"Dataset {dataset_name} not found")
-        dataset_req = self.dataset_requests[dataset_name]
-        timestamp_field = self.dataset_info[dataset_name].timestamp_field
-        if timestamp_field not in df.columns:
+        webhook_endpoint = f"{webhook}:{endpoint}"
+        if webhook_endpoint not in self.webhook_to_dataset_map:
             return FakeResponse(
-                400,
-                f"Timestamp field {timestamp_field} not found in dataframe "
-                f"while logging to dataset `{dataset_name}`",
+                404, f"Webhook endpoint {webhook_endpoint} not " f"found"
             )
-        if str(df[timestamp_field].dtype) != "datetime64[ns]":
-            return FakeResponse(
-                400,
-                f"Timestamp field {timestamp_field} is not of type "
-                f"datetime64[ns] but found {df[timestamp_field].dtype} in "
-                f"dataset {dataset_name}",
-            )
-        # Check if the dataframe has the same schema as the dataset
-        schema = dataset_req.dsschema
-        # TODO(mohit, aditya): Instead of validating data schema, we should attempt to cast the
-        # df returned to the likely pd dtypes for a DF corresponding to the Dataset and re-raise
-        # the exception from it.
-        #
-        # The following scenario is currently possible
-        # Assume D1, D2 and D3 are datasets.
-        #  - D3 = transform(D1.left_join(D2))
-        # Since entries of D1 may not be present in D2, few columns could have NaN values.
-        # Say one of these columns with NaN is a key field for D3, which as part of transform is filled
-        # with a default value with a schema to match the field type in D3.
-        # Since left_join will automatically convert the int columns to a float type and
-        # this code not enforcing type casting at the Transform layer, the resulting DF will have a float
-        # column. Future lookups on this DF will fail as well since Lookup impl uses `merge_asof`
-        # and requires the merge columns to have the same type.
-        exceptions = data_schema_check(schema, df)
-        if len(exceptions) > 0:
-            return FakeResponse(400, str(exceptions))
-        self._merge_df(df, dataset_name)
-        for pipeline in self.listeners[dataset_name]:
-            executor = Executor(self.data, self.agg_state)
-            ret = executor.execute(
-                pipeline, self.datasets[pipeline._dataset_name]
-            )
-            if ret is None:
-                continue
-            if ret.is_aggregate:
-                # Aggregate pipelines are not logged
-                self.aggregated_datasets[pipeline.dataset_name] = ret.agg_result
-                continue
 
-            # Recursively log the output of the pipeline to the datasets
-            resp = self.log(pipeline.dataset_name, ret.df)
+        for ds in self.webhook_to_dataset_map[webhook_endpoint]:
+            resp = self._internal_log(ds, df)
             if resp.status_code != 200:
                 return resp
         return FakeResponse(200, "OK")
@@ -319,6 +284,9 @@ class MockClient(Client):
                     f" of type `{type(dataset)}` instead."
                 )
             self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
+            if hasattr(dataset, sources.SOURCE_FIELD):
+                self._process_data_connector(dataset)
+
             self.datasets[dataset._name] = dataset
             self.dataset_info[dataset._name] = _DatasetInfo(
                 [f.name for f in dataset.fields],
@@ -326,6 +294,14 @@ class MockClient(Client):
                 dataset.timestamp_field,
                 dataset.on_demand,
             )
+            if (
+                not self.dataset_requests[dataset._name].is_source_dataset
+                and len(dataset._pipelines) == 0
+            ):
+                raise ValueError(
+                    f"Dataset {dataset._name} has no pipelines and is not a source dataset"
+                )
+
             for pipeline in dataset._pipelines:
                 for input in pipeline.inputs:
                     self.listeners[input._name].append(pipeline)
@@ -436,7 +412,103 @@ class MockClient(Client):
             extractors, input_dataframe, output_feature_list, timestamps
         )
 
-    # ----------------- Private methods -----------------
+    # --------------- Public MockClient Specific methods -------------------
+
+    def sleep(self, seconds: float = 0):
+        pass
+
+    def integration_mode(self):
+        return "mock"
+
+    def is_integration_client(self) -> bool:
+        return False
+
+    def process_data_plane_records(self, data_plane_id: str, df: pd.DataFrame):
+        if data_plane_id not in self.dataplane_to_dataset_map:
+            raise Exception(
+                f"Data plane {data_plane_id} not found in mock client"
+            )
+        for dataset_name in self.dataplane_to_dataset_map[data_plane_id]:
+            response = self._internal_log(dataset_name, df)
+            if response.status_code != 200:
+                raise Exception(
+                    f"Error logging data to dataset {dataset_name}: "
+                    f"{response.text}"
+                )
+        return FakeResponse(200, "OK")
+
+    # ----------------- Private methods --------------------------------------
+
+    def _process_data_connector(self, dataset: Dataset):
+        connector = getattr(dataset, sources.SOURCE_FIELD)
+        if isinstance(connector, sources.WebhookConnector):
+            src = connector.data_source
+            webhook_endpoint = f"{src.name}:{connector.endpoint}"
+            self.webhook_to_dataset_map[webhook_endpoint].append(dataset._name)
+        else:
+            self.dataplane_to_dataset_map[connector.identifier()].append(
+                dataset._name
+            )
+
+    def _internal_log(self, dataset_name: str, df: pd.DataFrame):
+        if df.shape[0] == 0:
+            print(f"Skipping log of empty dataframe for webhook {dataset_name}")
+            return
+
+        if dataset_name not in self.dataset_requests:
+            return FakeResponse(404, f"Dataset {dataset_name} not found")
+        dataset_req = self.dataset_requests[dataset_name]
+        timestamp_field = self.dataset_info[dataset_name].timestamp_field
+        if timestamp_field not in df.columns:
+            return FakeResponse(
+                400,
+                f"Timestamp field {timestamp_field} not found in dataframe "
+                f"while logging to dataset `{dataset_name}`",
+            )
+        if str(df[timestamp_field].dtype) != "datetime64[ns]":
+            return FakeResponse(
+                400,
+                f"Timestamp field {timestamp_field} is not of type "
+                f"datetime64[ns] but found {df[timestamp_field].dtype} in "
+                f"dataset {dataset_name}",
+            )
+        # Check if the dataframe has the same schema as the dataset
+        schema = dataset_req.dsschema
+        # TODO(mohit, aditya): Instead of validating data schema, we should attempt to cast the
+        # df returned to the likely pd dtypes for a DF corresponding to the Dataset and re-raise
+        # the exception from it.
+        #
+        # The following scenario is currently possible
+        # Assume D1, D2 and D3 are datasets.
+        #  - D3 = transform(D1.left_join(D2))
+        # Since entries of D1 may not be present in D2, few columns could have NaN values.
+        # Say one of these columns with NaN is a key field for D3, which as part of transform is filled
+        # with a default value with a schema to match the field type in D3.
+        # Since left_join will automatically convert the int columns to a float type and
+        # this code not enforcing type casting at the Transform layer, the resulting DF will have a float
+        # column. Future lookups on this DF will fail as well since Lookup impl uses `merge_asof`
+        # and requires the merge columns to have the same type.
+        exceptions = data_schema_check(schema, df)
+        if len(exceptions) > 0:
+            return FakeResponse(400, str(exceptions))
+        self._merge_df(df, dataset_name)
+        for pipeline in self.listeners[dataset_name]:
+            executor = Executor(self.data, self.agg_state)
+            ret = executor.execute(
+                pipeline, self.datasets[pipeline._dataset_name]
+            )
+            if ret is None:
+                continue
+            if ret.is_aggregate:
+                # Aggregate pipelines are not logged
+                self.aggregated_datasets[pipeline.dataset_name] = ret.agg_result
+                continue
+
+            # Recursively log the output of the pipeline to the datasets
+            resp = self._internal_log(pipeline.dataset_name, ret.df)
+            if resp.status_code != 200:
+                return resp
+        return FakeResponse(200, "OK")
 
     def _prepare_extractor_args(
         self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]
@@ -619,19 +691,23 @@ class MockClient(Client):
         self.agg_state = {}
 
 
-def mock_client(test_func):
+def mock(test_func):
     def wrapper(*args, **kwargs):
         f = True
         if "data_integration" not in test_func.__name__:
             client = MockClient()
-            f = test_func(*args, **kwargs, client=client)
+            data_plane = FakeDataPlane(client)
+            f = test_func(
+                *args, **kwargs, client=client, fake_data_plane=data_plane
+            )
         if (
             "USE_INT_CLIENT" in os.environ
             and int(os.environ.get("USE_INT_CLIENT")) == 1
         ):
-            print("Running rust client tests")
-            client = IntegrationClient()
-            f = test_func(*args, **kwargs, client=client)
+            mode = os.environ.get("FENNEL_TEST_MODE", "inmemory")
+            print("Running rust client tests in mode:", mode)
+            client = IntegrationClient(mode)
+            f = test_func(*args, **kwargs, client=client, fake_data_plane=None)
         return f
 
     return wrapper

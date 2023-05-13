@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Optional, List
 
 import pytest
+from typing import Optional, List
 
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.lib.schema import inputs
@@ -94,7 +94,7 @@ def test_dataset_with_pipes():
             c: int
             d: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             def create_pipeline(cls, a: Dataset):
                 return a
 
@@ -113,7 +113,7 @@ def test_dataset_with_pipes():
             c: int
             d: datetime
 
-            @pipeline(id=1)  # type: ignore
+            @pipeline(version=1)  # type: ignore
             @inputs(XYZ)
             def create_pipeline(a: Dataset):  # type: ignore
                 return a
@@ -141,7 +141,7 @@ def test_dataset_incorrect_join():
             c: int
             d: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(XYZ)
             def create_pipeline(cls, a: Dataset):
                 b = a.transform(lambda x: x)
@@ -168,10 +168,15 @@ def test_dataset_incorrect_join_bounds():
             a1: int = field(key=True)
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                return a.left_join(b, left_on=["a1"], right_on=["b1"], within=("0s",))  # type: ignore
+                return a.left_join(
+                    b,
+                    left_on=["a1"],
+                    right_on=["b1"],
+                    within=("0s",),  # type: ignore
+                )
 
     assert "Should be a tuple of 2 values" in str(e.value)
 
@@ -192,10 +197,15 @@ def test_dataset_incorrect_join_bounds():
             a1: int = field(key=True)
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                return a.left_join(b, left_on=["a1"], right_on=["b1"], within=(None, "0s"))  # type: ignore
+                return a.left_join(
+                    b,
+                    left_on=["a1"],
+                    right_on=["b1"],
+                    within=(None, "0s"),  # type: ignore
+                )
 
     assert "Neither bounds can be None" in str(e.value)
 
@@ -216,10 +226,15 @@ def test_dataset_incorrect_join_bounds():
             a1: int = field(key=True)
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                return a.left_join(b, left_on=["a1"], right_on=["b1"], within=("forever", None))  # type: ignore
+                return a.left_join(
+                    b,
+                    left_on=["a1"],
+                    right_on=["b1"],
+                    within=("forever", None),  # type: ignore
+                )
 
     assert "Neither bounds can be None" in str(e.value)
 
@@ -240,10 +255,15 @@ def test_dataset_incorrect_join_bounds():
             a1: int = field(key=True)
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                return a.left_join(b, left_on=["a1"], right_on=["b1"], within=(None, None))  # type: ignore
+                return a.left_join(
+                    b,
+                    left_on=["a1"],
+                    right_on=["b1"],
+                    within=(None, None),  # type: ignore
+                )
 
     assert "Neither bounds can be None" in str(e.value)
 
@@ -264,10 +284,15 @@ def test_dataset_incorrect_join_bounds():
             a1: int = field(key=True)
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                return a.left_join(b, left_on=["a1"], right_on=["b1"], within=("forever", "forever"))  # type: ignore
+                return a.left_join(
+                    b,
+                    left_on=["a1"],
+                    right_on=["b1"],
+                    within=("forever", "forever"),
+                )  # type: ignore
 
     assert "Upper bound cannot be `forever`" in str(e.value)
 

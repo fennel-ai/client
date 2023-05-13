@@ -1,4 +1,3 @@
-import time
 import unittest
 from collections import defaultdict
 from datetime import datetime
@@ -6,9 +5,9 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import pytest
-import fennel._vendor.requests as requests
 from typing import Dict, List
 
+import fennel._vendor.requests as requests
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field
 from fennel.featuresets import featureset, feature, extractor
@@ -19,7 +18,7 @@ from fennel.lib.schema import Embedding
 from fennel.lib.schema import inputs
 from fennel.lib.window import Window
 from fennel.sources import source
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 biq_query = sources.BigQuery(
     name="bg_source",
@@ -85,49 +84,32 @@ class Document:
     origin: str
     creation_timestamp: datetime
 
-    @pipeline(id=1)
-    @inputs(NotionDocs)
-    def notion_pipe(cls, ds: Dataset):
-        return ds.transform(
-            lambda df: cls.doc_pipeline_helper(df, "Notion"),
-            schema={
-                "doc_id": int,
-                "body": str,
-                "title": str,
-                "owner": str,
-                "creation_timestamp": datetime,
-                "origin": str,
-            },
-        )
-
-    @pipeline(id=2)
-    @inputs(CodaDocs)
-    def coda_pipe(cls, ds: Dataset):
-        return ds.transform(
-            lambda df: cls.doc_pipeline_helper(df, "Coda"),
-            schema={
-                "doc_id": int,
-                "body": str,
-                "title": str,
-                "owner": str,
-                "creation_timestamp": datetime,
-                "origin": str,
-            },
-        )
-
-    @pipeline(id=3)
-    @inputs(GoogleDocs)
-    def google_docs_pipe(cls, ds: Dataset):
-        return ds.transform(
-            lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
-            schema={
-                "doc_id": int,
-                "body": str,
-                "title": str,
-                "owner": str,
-                "creation_timestamp": datetime,
-                "origin": str,
-            },
+    @pipeline()
+    @inputs(NotionDocs, CodaDocs, GoogleDocs)
+    def notion_pipe(
+        cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
+    ):
+        new_schema = {
+            "doc_id": int,
+            "body": str,
+            "title": str,
+            "owner": str,
+            "creation_timestamp": datetime,
+            "origin": str,
+        }
+        return (
+            notion_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "Notion"),
+                schema=new_schema,
+            )
+            + coda_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "Coda"),
+                schema=new_schema,
+            )
+            + google_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
+                schema=new_schema,
+            )
         )
 
     @classmethod
@@ -190,7 +172,7 @@ class DocumentContentDataset:
     top_10_unique_words: List[str]
     creation_timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Document)
     def content_features(cls, ds: Dataset):
         return ds.transform(
@@ -227,7 +209,7 @@ class UserEngagementDataset:
     num_long_views: int
     timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(UserActivity)
     def user_engagement_pipeline(cls, ds: Dataset):
         def create_short_click(df: pd.DataFrame) -> pd.DataFrame:
@@ -276,7 +258,7 @@ class DocumentEngagementDataset:
     total_timespent: float
     timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(UserActivity)
     def doc_engagement_pipeline(cls, ds: Dataset):
         return ds.groupby("doc_id").aggregate(
@@ -367,7 +349,7 @@ class DocumentContentFeatures:
 
 
 class TestSearchExample(unittest.TestCase):
-    def log_document_data(self, client):
+    def log_document_data(self, client, fake_data_plane):
         now = datetime.utcnow()
         data = [
             [141234, "This is a random document", "Random Title", "Sagar", now],
@@ -395,7 +377,18 @@ class TestSearchExample(unittest.TestCase):
         ]
         columns = ["doc_id", "body", "title", "owner", "creation_timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("NotionDocs", df)
+        if client.is_integration_client():
+            response = client.log("fennel_webhook", "NotionDocs", df)
+        else:
+            response = (
+                fake_data_plane[s3]
+                .bucket(
+                    bucket_name="engagement",
+                    prefix="notion",
+                )
+                .upload(df)
+            )
+
         assert response.status_code == requests.codes.OK, response.json()
 
         yesterday = now - pd.Timedelta(days=1)
@@ -431,10 +424,21 @@ class TestSearchExample(unittest.TestCase):
         ]
         columns = ["doc_id", "body", "title", "owner", "creation_timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("CodaDocs", df)
+        if client.is_integration_client():
+            response = client.log("fennel_webhook", "CodaDocs", df)
+        else:
+            response = (
+                fake_data_plane[s3]
+                .bucket(
+                    bucket_name="engagement",
+                    prefix="coda",
+                )
+                .upload(df)
+            )
+
         assert response.status_code == requests.codes.OK, response.json()
 
-    def log_engagement_data(self, client):
+    def log_engagement_data(self, client, fake_data_plane):
         now = datetime.utcnow()
         data = [
             [123, 31234, "view", 5, now],
@@ -446,16 +450,25 @@ class TestSearchExample(unittest.TestCase):
         ]
         columns = ["user_id", "doc_id", "action_type", "view_time", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserActivity", df)
+        if client.is_integration_client():
+            response = client.log("fennel_webhook", "UserActivity", df)
+        else:
+            response = (
+                fake_data_plane[biq_query]
+                .table("user_activity", cursor="timestamp")
+                .upload(df)
+            )
         assert response.status_code == requests.codes.OK, response.json()
 
     @pytest.mark.integration
-    @mock_client
-    def test_search_datasets1(self, client):
+    @mock
+    def test_search_datasets1(self, client, fake_data_plane):
+        if client.integration_mode() == "local":
+            pytest.skip("Skipping integration test in local mode")
+
         client.sync(datasets=[NotionDocs, CodaDocs, GoogleDocs, Document])
-        self.log_document_data(client)
-        if client.is_integration_client():
-            time.sleep(3)
+        self.log_document_data(client, fake_data_plane)
+        client.sleep()
         now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
 
@@ -472,8 +485,11 @@ class TestSearchExample(unittest.TestCase):
         assert found.tolist() == [False, False, True, False]
 
     @pytest.mark.integration
-    @mock_client
-    def test_search_datasets2(self, client):
+    @mock
+    def test_search_datasets2(self, client, fake_data_plane):
+        if client.integration_mode() == "local":
+            pytest.skip("Skipping integration test in local mode")
+
         client.sync(
             datasets=[
                 UserActivity,
@@ -482,9 +498,8 @@ class TestSearchExample(unittest.TestCase):
             ]
         )
 
-        self.log_engagement_data(client)
-        if client.is_integration_client():
-            time.sleep(3)
+        self.log_engagement_data(client, fake_data_plane)
+        client.sleep()
         now = datetime.utcnow()
         ts = pd.Series([now, now])
         user_ids = pd.Series([123, 342])
@@ -499,8 +514,11 @@ class TestSearchExample(unittest.TestCase):
         assert found.tolist() == [True, True, True]
 
     @pytest.mark.integration
-    @mock_client
-    def test_search_e2e(self, client):
+    @mock
+    def test_search_e2e(self, client, fake_data_plane):
+        if client.integration_mode() == "local":
+            pytest.skip("Skipping integration test in local mode")
+
         client.sync(
             datasets=[
                 NotionDocs,
@@ -520,12 +538,10 @@ class TestSearchExample(unittest.TestCase):
             ],
         )
 
-        self.log_document_data(client)
-        if client.is_integration_client():
-            time.sleep(3)
-        self.log_engagement_data(client)
-        if client.is_integration_client():
-            time.sleep(3)
+        self.log_document_data(client, fake_data_plane)
+        client.sleep()
+        self.log_engagement_data(client, fake_data_plane)
+        client.sleep(30)
         # set pd display all columns
         pd.set_option("display.max_columns", None)
         input_df = pd.DataFrame(
@@ -564,25 +580,27 @@ class TestSearchExample(unittest.TestCase):
         assert df["DocumentContentFeatures.doc_id"].tolist() == [31234, 33234]
         assert df["UserBehaviorFeatures.num_short_views_7d"].tolist() == [2, 0]
         assert df["DocumentFeatures.num_views_28d"].tolist() == [1, 2]
+
         if client.is_integration_client():
-            assert (
-                df["DocumentContentFeatures.top_10_unique_words"].tolist()[0]
-                == ["This", "is", "a", "random", "Coda", "document"]
-            ).all()
-            assert (
-                df["DocumentContentFeatures.top_10_unique_words"].tolist()[1]
-                == [
-                    "This",
-                    "is",
-                    "a",
-                    "rand",
-                    "document",
-                    "in",
-                    "Coda",
-                    "with",
-                    "words",
-                ]
-            ).all()
+            result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
+                0
+            ] == ["This", "is", "a", "random", "Coda", "document"]
+            assert result.all()
+
+            result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
+                1
+            ] == [
+                "This",
+                "is",
+                "a",
+                "rand",
+                "document",
+                "in",
+                "Coda",
+                "with",
+                "words",
+            ]
+            assert result.all()
         else:
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
                 0

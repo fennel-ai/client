@@ -1,9 +1,9 @@
 import json
 from datetime import datetime
-from typing import Optional
 
 import pandas as pd
 import pytest
+from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Sum
@@ -39,7 +39,7 @@ def test_join_schema_validation():
             revenue: int
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(MovieRating, MovieRevenue)
             def pipeline_join(cls, rating: Dataset, revenue: Dataset):
                 return rating.left_join(revenue, on=[str(cls.movie)])
@@ -70,7 +70,7 @@ def test_add_key():
             movie: str = field(key=True)
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(RatingActivity)
             def filter_positive_ratings(cls, rating: Dataset):
                 return rating.filter(lambda df: df[df["rating"] >= 3.5])
@@ -110,7 +110,7 @@ def test_aggregation():
             timestamp: datetime
             sum_categ_fraudulent_transactions_7d: int
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(Activity, MerchantInfo)
             def create_fraud_dataset(
                 cls, activity: Dataset, merchant_info: Dataset
@@ -185,7 +185,7 @@ def test_transform():
             b1: float
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A)
             def transform(cls, a: Dataset):
                 return a.transform(
@@ -211,7 +211,7 @@ def test_transform():
             b1: float
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A)
             def transform(cls, a: Dataset):
                 return a.transform(
@@ -237,7 +237,7 @@ def test_transform():
             b1: int
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A)
             def transform(cls, a: Dataset):
                 return a.transform(
@@ -263,7 +263,7 @@ def test_transform():
             b1: int
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A)
             def transform(cls, a: Dataset):
                 return a.transform(
@@ -300,7 +300,7 @@ def test_join_schema_validation_value():
             revenue: int
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A, B)
             def pipeline_join(cls, a: Dataset, b: Dataset):
                 return a.left_join(b, left_on=["a1"], right_on=["b1", "b2"])
@@ -341,7 +341,7 @@ def test_join_schema_validation_type():
             b3: Optional[str]
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A, C)
             def pipeline_join(cls, a: Dataset, c: Dataset):
                 return a.left_join(c, left_on=["a1"], right_on=["b1"])
@@ -362,7 +362,7 @@ def test_join_schema_validation_type():
             b3: Optional[str]
             t: datetime
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(A, E)
             def pipeline_join(cls, a: Dataset, e: Dataset):
                 return a.left_join(e, on=["a1"])

@@ -11,7 +11,7 @@ try:
 except ImportError:
     pass
 
-from fennel._vendor.requests import Response
+from fennel._vendor.requests import Response  # type: ignore
 
 import fennel.datasets.datasets
 from fennel.datasets import Dataset
@@ -46,19 +46,33 @@ def lookup_wrapper(
 
 
 class IntegrationClient:
-    def __init__(self):
+    def __init__(self, mode: str):
         self._client = RustClient()
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
-        fennel.datasets.datasets.dataset_lookup = lookup_wrapper
+        self.mode = mode
+        if self.mode == "local":
+            self.sleep_time = 15
+        else:
+            self.sleep_time = 3
+        fennel.datasets.datasets.dataset_lookup = lookup_wrapper  # type: ignore
 
     def is_integration_client(self):
         return True
 
+    def integration_mode(self):
+        return self.mode
+
+    def sleep(self, seconds: float = 0):
+        if seconds > 0:
+            time.sleep(seconds)
+        else:
+            time.sleep(self.sleep_time)
+
     def log(self, dataset_name: str, df: pd.DataFrame):
         df_json = df.to_json(orient="records")
         try:
-            self._client.log(dataset_name, df_json)
+            self._client.log("fennel_webhook", dataset_name, df_json)
         except Exception as e:
             return FakeResponse(400, str(e))
         return FakeResponse(200, "OK")
@@ -72,6 +86,7 @@ class IntegrationClient:
             self.add(dataset)
         for featureset in featuresets:
             self.add(featureset)
+
         sync_request = self._get_sync_request_proto()
         self._client.sync(sync_request.SerializeToString())
         time.sleep(1.1)

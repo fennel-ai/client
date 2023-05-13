@@ -5,11 +5,15 @@ import pandas as pd
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof, between, regex
-from fennel.test_lib import mock_client
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
+
+webhook = Webhook(name="fennel_webhook")
 
 
 # docsnip dataset_type_restrictions
 @meta(owner="test@test.com")
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -23,8 +27,8 @@ class UserInfoDataset:
 # /docsnip
 
 
-@mock_client
-def test_restrictions(client):
+@mock
+def test_restrictions(client, fake_data_plane):
     client.sync(datasets=[UserInfoDataset])
     now = datetime.now()
     data = [
@@ -45,7 +49,7 @@ def test_restrictions(client):
             "timestamp": now,
         },
     ]
-    res = client.log("UserInfoDataset", pd.DataFrame(data))
+    res = client.log("fennel_webhook", "UserInfoDataset", pd.DataFrame(data))
     assert res.status_code == 200, res.json()
 
     data = [
@@ -58,5 +62,5 @@ def test_restrictions(client):
             "timestamp": now,
         },
     ]
-    res = client.log("UserInfoDataset", pd.DataFrame(data))
+    res = client.log("fennel_webhook", "UserInfoDataset", pd.DataFrame(data))
     assert res.status_code == 400, res.json()

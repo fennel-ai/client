@@ -8,10 +8,14 @@ from fennel.lib.aggregate import Sum
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
-from fennel.test_lib import mock_client
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
+
+webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="henry@fennel.ai")
+@source(webhook.endpoint("CreditCardTransactions"))
 @dataset
 class CreditCardTransactions:
     trans_num: str = field(key=True)  # Id
@@ -41,6 +45,7 @@ class CreditCardTransactions:
 
 
 @meta(owner="henry@fennel.ai")
+@source(webhook.endpoint("Regions"))
 @dataset
 class Regions:
     created_at: datetime
@@ -62,7 +67,7 @@ class UserTransactionSums:
 
     # sum_amt_30d: float
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(CreditCardTransactions)
     def first_pipeline(cls, transactions: Dataset):
         return transactions.groupby("cc_num").aggregate(
@@ -99,8 +104,8 @@ class UserTransactionSumsFeatures:
         return df[["sum_amt_1d", "sum_amt_7d"]]
 
 
-@mock_client
-def test_fraud_detection_pipeline(client):
+@mock
+def test_fraud_detection_pipeline(client, fake_data_plane):
     states_to_regions = {
         "WA": "West",
         "OR": "West",
@@ -178,10 +183,12 @@ def test_fraud_detection_pipeline(client):
         featuresets=[UserTransactionSumsFeatures],
     )
 
-    response = client.log("CreditCardTransactions", transaction_data_sample)
+    response = client.log(
+        "fennel_webhook", "CreditCardTransactions", transaction_data_sample
+    )
     assert response.status_code == 200
     # Upload region_to_state dataframe to the Regions dataset on the mock client
-    response = client.log("Regions", region_to_state)
+    response = client.log("fennel_webhook", "Regions", region_to_state)
     assert response.status_code == 200
 
     assert len(client.aggregated_datasets["UserTransactionSums"]) == 2

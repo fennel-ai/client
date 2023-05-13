@@ -8,10 +8,12 @@ from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
+from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
-
 # noinspection PyUnresolvedReferences
+
+webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@fennel.ai")
@@ -36,6 +38,7 @@ class MemberActivityDataset:
 
 
 @meta(owner="test@fennel.ai")
+@source(webhook.endpoint("MemberDataset"))
 @dataset
 class MemberDataset:
     pk: str
@@ -58,7 +61,7 @@ class MemberActivityDatasetCopy:
     hasShortcut: bool
     country: str
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(MemberActivityDataset)
     def copy(cls, ds: Dataset):
         return ds
@@ -82,8 +85,8 @@ class DomainFeatures:
 
 class TestInvalidSync(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_invalid_sync(self, client):
+    @mock
+    def test_invalid_sync(self, client, fake_data_plane):
         with pytest.raises(ValueError) as e:
             client.sync(featuresets=[DomainFeatures, Query])
 
@@ -117,9 +120,10 @@ class DomainFeatures2:
 
 class TestInvalidExtractorDependsOn(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_missing_features(self, client):
+    @mock
+    def test_missing_features(self, client, fake_data_plane):
         @meta(owner="test@fennel.ai")
+        @source(webhook.endpoint("MemberActivityDataset"))
         @dataset
         class MemberActivityDataset:
             url: str
@@ -132,6 +136,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             DOMAIN_USED_COUNT: int
 
         @meta(owner="test@fennel.ai")
+        @source(webhook.endpoint("MemberDataset"))
         @dataset
         class MemberDataset:
             pk: str
@@ -153,7 +158,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             hasShortcut: bool
             country: str
 
-            @pipeline(id=1)
+            @pipeline(version=1)
             @inputs(MemberActivityDataset)
             def copy(cls, ds: Dataset):
                 return ds
@@ -199,8 +204,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
         )
 
     @pytest.mark.integration
-    @mock_client
-    def test_missing_dataset(self, client):
+    @mock
+    def test_missing_dataset(self, client, fake_data_plane):
         client.sync(
             datasets=[MemberDataset], featuresets=[DomainFeatures2, Query]
         )
@@ -230,8 +235,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
 
     @pytest.mark.integration
-    @mock_client
-    def test_no_access(self, client):
+    @mock
+    def test_no_access(self, client, fake_data_plane):
         with pytest.raises(Exception) as e:
             client.sync(
                 datasets=[MemberDataset, MemberActivityDatasetCopy],
@@ -262,8 +267,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 "'MemberActivityDatasetCopy' is not defined. " == str(e.value)
             )
 
-    @mock_client
-    def test_drop_timestamp_col(self, client):
+    @mock
+    def test_drop_timestamp_col(self, client, fake_data_plane):
         with pytest.raises(Exception) as e:
 
             @meta(owner="test@fennel.ai")
@@ -276,7 +281,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 displayName: str
                 createdAt: datetime = field(timestamp=True)
 
-                @pipeline(id=1)
+                @pipeline(version=1)
                 @inputs(MemberDataset)
                 def del_timestamp(cls, d: Dataset):
                     return d.drop(columns=["createdAt"])

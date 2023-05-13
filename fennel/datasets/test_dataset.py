@@ -9,14 +9,17 @@ import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
-from fennel.lib.duration import Duration
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs
 from fennel.lib.window import Window
+from fennel.sources import source, Webhook
 from fennel.test_lib import *
+
+webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -40,54 +43,58 @@ def test_simple_dataset():
         "datasets": [
             {
                 "name": "UserInfoDataset",
+                "metadata": {"owner": "test@test.com"},
                 "dsschema": {
                     "keys": {
                         "fields": [
-                            {
-                                "name": "user_id",
-                                "dtype": {"int_type": {}},
-                            }
-                        ],
+                            {"name": "user_id", "dtype": {"intType": {}}}
+                        ]
                     },
                     "values": {
                         "fields": [
-                            {"name": "name", "dtype": {"string_type": {}}},
-                            {"name": "gender", "dtype": {"string_type": {}}},
-                            {"name": "dob", "dtype": {"string_type": {}}},
-                            {"name": "age", "dtype": {"int_type": {}}},
+                            {"name": "name", "dtype": {"stringType": {}}},
+                            {"name": "gender", "dtype": {"stringType": {}}},
+                            {"name": "dob", "dtype": {"stringType": {}}},
+                            {"name": "age", "dtype": {"intType": {}}},
                             {
                                 "name": "account_creation_date",
-                                "dtype": {"timestamp_type": {}},
+                                "dtype": {"timestampType": {}},
                             },
                             {
                                 "name": "country",
                                 "dtype": {
-                                    "optional_type": {"of": {"string_type": {}}}
+                                    "optionalType": {"of": {"stringType": {}}}
                                 },
                             },
-                        ],
+                        ]
                     },
                     "timestamp": "timestamp",
                 },
                 "history": "63072000s",
                 "retention": "63072000s",
-                "metadata": {
-                    "owner": "test@test.com",
-                },
                 "fieldMetadata": {
-                    "user_id": {},
-                    "name": {},
-                    "gender": {},
-                    "dob": {
-                        "description": "Users date of birth",
-                    },
                     "age": {},
+                    "name": {},
                     "account_creation_date": {},
                     "country": {},
+                    "user_id": {},
+                    "gender": {},
                     "timestamp": {},
+                    "dob": {"description": "Users date of birth"},
                 },
                 "pycode": {},
+                "isSourceDataset": True,
             }
+        ],
+        "sources": [
+            {
+                "table": {"endpoint": {"endpoint": "UserInfoDataset"}},
+                "dataset": "UserInfoDataset",
+                "lateness": "3600s",
+            }
+        ],
+        "extdbs": [
+            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
         ],
     }
     # Ignoring schema validation since they are bytes and not human readable
@@ -98,6 +105,7 @@ def test_simple_dataset():
     )
 
 
+@source(webhook.endpoint("Activity"))
 @meta(owner="test@test.com")
 @dataset(history="120d")
 class Activity:
@@ -117,38 +125,47 @@ def test_dataset_with_retention():
         "datasets": [
             {
                 "name": "Activity",
+                "metadata": {"owner": "test@test.com"},
                 "dsschema": {
                     "keys": {},
                     "values": {
                         "fields": [
-                            {"name": "user_id", "dtype": {"int_type": {}}},
+                            {"name": "user_id", "dtype": {"intType": {}}},
                             {
                                 "name": "action_type",
-                                "dtype": {"double_type": {}},
+                                "dtype": {"doubleType": {}},
                             },
                             {
                                 "name": "amount",
                                 "dtype": {
-                                    "optional_type": {"of": {"double_type": {}}}
+                                    "optionalType": {"of": {"doubleType": {}}}
                                 },
                             },
-                        ],
+                        ]
                     },
                     "timestamp": "timestamp",
                 },
                 "history": "10368000s",
                 "retention": "10368000s",
-                "metadata": {
-                    "owner": "test@test.com",
-                },
                 "fieldMetadata": {
-                    "user_id": {},
                     "action_type": {},
-                    "amount": {},
+                    "user_id": {},
                     "timestamp": {},
+                    "amount": {},
                 },
                 "pycode": {},
+                "isSourceDataset": True,
             }
+        ],
+        "sources": [
+            {
+                "table": {"endpoint": {"endpoint": "Activity"}},
+                "dataset": "Activity",
+                "lateness": "3600s",
+            }
+        ],
+        "extdbs": [
+            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
         ],
     }
     # Ignoring schema validation since they are bytes and not human readable
@@ -284,7 +301,7 @@ def test_dataset_with_pipes():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(id=1)
+        @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.left_join(b, left_on=["a1"], right_on=["b1"])
@@ -325,6 +342,7 @@ def test_dataset_with_pipes():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "idx": 1,
+        "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -398,7 +416,7 @@ def test_dataset_with_pipes_bounds():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(id=1)
+        @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.left_join(b, left_on=["a1"], right_on=["b1"])
@@ -409,7 +427,7 @@ def test_dataset_with_pipes_bounds():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(id=1)
+        @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.left_join(
@@ -425,7 +443,7 @@ def test_dataset_with_pipes_bounds():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(id=1)
+        @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.left_join(
@@ -441,7 +459,7 @@ def test_dataset_with_pipes_bounds():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(id=1)
+        @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.left_join(
@@ -487,6 +505,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "idx": 1,
+        "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -578,6 +597,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "idx": 1,
+        "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -669,6 +689,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "idx": 1,
+        "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -761,6 +782,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "idx": 1,
+        "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -853,6 +875,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "idx": 1,
+        "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -918,7 +941,7 @@ def test_dataset_with_complex_pipe():
         num_merchant_fraudulent_transactions: int
         num_merchant_fraudulent_transactions_7d: int
 
-        @pipeline(id=1)
+        @pipeline(version=1)
         @inputs(Activity, UserInfoDataset)
         def create_fraud_dataset(cls, activity: Dataset, user_info: Dataset):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -1033,6 +1056,7 @@ def test_dataset_with_complex_pipe():
         "metadata": {},
         "input_dataset_names": ["Activity", "UserInfoDataset"],
         "idx": 1,
+        "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1170,7 +1194,7 @@ def test_delete_and_rename_column():
         b1: int = field(key=True)
         t: datetime
 
-        @pipeline(id=1)
+        @pipeline(version=1)
         @inputs(A)
         def from_a(cls, a: Dataset):
             x = a.rename({"a1": "b1"})
@@ -1194,7 +1218,7 @@ def test_union_datasets():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(id=1)
+        @pipeline(version=1)
         @inputs(A)
         def pipeline2_diamond(cls, a: Dataset):
             b = a.transform(lambda df: df)
@@ -1247,6 +1271,7 @@ def test_union_datasets():
         "metadata": {},
         "idx": 1,
         "input_dataset_names": ["A"],
+        "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1393,7 +1418,7 @@ def test_search_dataset():
         top_10_unique_words: List[str]
         creation_timestamp: datetime
 
-        @pipeline(id=1)
+        @pipeline(version=1)
         @inputs(Document)
         def content_features(cls, ds: Dataset):
             return ds.transform(
@@ -1481,6 +1506,7 @@ def test_search_dataset():
         "metadata": {},
         "idx": 1,
         "input_dataset_names": ["Document"],
+        "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(

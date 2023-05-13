@@ -6,17 +6,21 @@ import requests
 from typing import Optional, List
 
 from fennel.datasets import dataset, field
+from fennel.datasets import pipeline, Dataset
+from fennel.lib.aggregate import Count, Sum, LastK
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
-from fennel.test_lib import mock_client
-from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Count, Sum, LastK
 from fennel.lib.window import Window
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
+
+webhook = Webhook(name="fennel_webhook")
 
 
 # docsnip data_sets
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(webhook.endpoint("User"))
 @dataset
 class User:
     uid: int = field(key=True)
@@ -26,6 +30,7 @@ class User:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(webhook.endpoint("Transaction"))
 @dataset
 class Transaction:
     uid: int
@@ -50,7 +55,7 @@ class UserTransactionsAbroad:
     timestamp: datetime
 
     @classmethod
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(User, Transaction)
     def first_pipeline(cls, user: Dataset, transaction: Dataset):
         joined = transaction.left_join(user, on=["uid"])
@@ -77,8 +82,8 @@ class UserTransactionsAbroad:
 
 
 # Tests to ensure that there are no run time errors in the snippets
-@mock_client
-def test_transaction_aggregation_example(client):
+@mock
+def test_transaction_aggregation_example(client, fake_data_plane):
     client.sync(datasets=[User, Transaction, UserTransactionsAbroad])
     now = datetime.now()
     dob = now - timedelta(days=365 * 30)
@@ -90,7 +95,7 @@ def test_transaction_aggregation_example(client):
 
     df = pd.DataFrame(data, columns=["uid", "dob", "country", "signup_time"])
 
-    client.log("User", df)
+    client.log("fennel_webhook", "User", df)
 
     data = [
         [1, 100, "US", 1, now],
@@ -113,7 +118,7 @@ def test_transaction_aggregation_example(client):
             "timestamp",
         ],
     )
-    res = client.log("Transaction", df)
+    res = client.log("fennel_webhook", "Transaction", df)
     assert res.status_code == 200, res.json()
 
     # Do a lookup on UserTransactionsAbroad
@@ -135,6 +140,7 @@ def test_transaction_aggregation_example(client):
 
 
 @meta(owner="me@fennel.ai")
+@source(webhook.endpoint("Activity"))
 @dataset(history="4m")
 class Activity:
     user_id: int
@@ -153,7 +159,7 @@ class FraudActivityDataset:
     merchant_id: int
     transaction_amount: float
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Activity)
     def create_fraud_dataset(cls, activity: Dataset):
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -179,8 +185,8 @@ class FraudActivityDataset:
 # /docsnip
 
 
-@mock_client
-def test_fraud(client):
+@mock
+def test_fraud(client, fake_data_plane):
     # # Sync the dataset
     client.sync(datasets=[Activity, FraudActivityDataset])
     now = datetime.now()
@@ -245,7 +251,7 @@ def test_fraud(client):
     ]
     columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
     df = pd.DataFrame(data, columns=columns)
-    response = client.log("Activity", df)
+    response = client.log("fennel_webhook", "Activity", df)
     assert response.status_code == requests.codes.OK, response.json()
     # Only the mock client contains the data parameter to access the data
     # directly for all datasets.
@@ -254,6 +260,7 @@ def test_fraud(client):
 
 # docsnip multiple_pipelines
 @meta(owner="me@fennel.ai")
+@source(webhook.endpoint("AndroidLogins"))
 @dataset
 class AndroidLogins:
     uid: int
@@ -261,6 +268,7 @@ class AndroidLogins:
 
 
 @meta(owner="me@fennel.ai")
+@source(webhook.endpoint("IOSLogins"))
 @dataset
 class IOSLogins:
     uid: int
@@ -280,11 +288,11 @@ class LoginStats:
     num_logins_1d: int
     login_time: datetime
 
-    @pipeline(id=1)
-    @inputs(AndroidLogins)
+    @pipeline(version=1, active=True)
+    @inputs(AndroidLogins, IOSLogins)
     @includes(add_platform)
-    def android_logins(cls, logins: Dataset):
-        with_platform = logins.transform(
+    def android_logins(cls, android_logins: Dataset, ios_logins: Dataset):
+        with_android_platform = android_logins.transform(
             lambda df: add_platform(df, "android"),
             schema={
                 "uid": int,
@@ -292,17 +300,7 @@ class LoginStats:
                 "platform": str,
             },
         )
-        return with_platform.groupby(["uid", "platform"]).aggregate(
-            [
-                Count(window=Window("1d"), into_field="num_logins_1d"),
-            ]
-        )
-
-    @pipeline(id=2)
-    @includes(add_platform)
-    @inputs(IOSLogins)
-    def ios_logins(cls, logins: Dataset):
-        with_platform = logins.transform(
+        with_ios_platform = ios_logins.transform(
             lambda df: add_platform(df, "ios"),
             schema={
                 "uid": int,
@@ -310,7 +308,8 @@ class LoginStats:
                 "platform": str,
             },
         )
-        return with_platform.groupby(["uid", "platform"]).aggregate(
+        union = with_ios_platform + with_android_platform
+        return union.groupby(["uid", "platform"]).aggregate(
             [
                 Count(window=Window("1d"), into_field="num_logins_1d"),
             ]
@@ -320,8 +319,8 @@ class LoginStats:
 # /docsnip
 
 
-@mock_client
-def test_multiple_pipelines(client):
+@mock
+def test_multiple_pipelines(client, fake_data_plane):
     client.sync(datasets=[AndroidLogins, IOSLogins, LoginStats])
     now = datetime.now()
     data = [
@@ -331,7 +330,7 @@ def test_multiple_pipelines(client):
         [3, now],
     ]
     df = pd.DataFrame(data, columns=["uid", "login_time"])
-    res = client.log("AndroidLogins", df)
+    res = client.log("fennel_webhook", "AndroidLogins", df)
     assert res.status_code == 200, res.json()
 
     data = [
@@ -341,7 +340,7 @@ def test_multiple_pipelines(client):
         [13, now],
     ]
     df = pd.DataFrame(data, columns=["uid", "login_time"])
-    res = client.log("IOSLogins", df)
+    res = client.log("fennel_webhook", "IOSLogins", df)
     assert res.status_code == 200, res.json()
     ts = pd.Series([now, now, now, now])
     df, found = LoginStats.lookup(

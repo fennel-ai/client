@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
-from typing import Optional
 
 import pandas as pd
 import requests
+from typing import Optional
 
 # docsnip datasets
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -11,9 +11,13 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
+from fennel.sources import source, Webhook
+
+webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
+@source(webhook.endpoint("RatingActivity"))
 @dataset
 class RatingActivity:
     userid: int
@@ -31,7 +35,7 @@ class MovieRating:
     sum_ratings: float
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
@@ -51,12 +55,12 @@ class MovieRating:
 # docsnip datasets_testing
 import unittest
 
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 
 class TestDataset(unittest.TestCase):
-    @mock_client
-    def test_dataset(self, client):
+    @mock
+    def test_dataset(self, client, fake_data_plane):
         # Sync the dataset
         client.sync(
             datasets=[MovieRating, RatingActivity],
@@ -81,7 +85,7 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("RatingActivity", df)
+        response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK
 
         # Do some lookups to verify pipeline_aggregate
@@ -168,6 +172,7 @@ def get_country_geoid(country: str) -> int:
 
 # docsnip featuresets_testing_with_dataset
 @meta(owner="test@test.com")
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -223,8 +228,8 @@ class UserInfoMultipleExtractor:
 
 # this is your test code in some test module
 class TestExtractorDAGResolution(unittest.TestCase):
-    @mock_client
-    def test_dag_resolution(self, client):
+    @mock
+    def test_dag_resolution(self, client, fake_data_plane):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
@@ -236,7 +241,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         feature_df = client.extract_features(

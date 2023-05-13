@@ -51,6 +51,9 @@ class CoreDataset(google.protobuf.message.Message):
     RETENTION_FIELD_NUMBER: builtins.int
     FIELD_METADATA_FIELD_NUMBER: builtins.int
     PYCODE_FIELD_NUMBER: builtins.int
+    IS_SOURCE_DATASET_FIELD_NUMBER: builtins.int
+    LINEAGE_FIELD_NUMBER: builtins.int
+    ACTIVE_LINEAGE_NODES_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
@@ -64,6 +67,14 @@ class CoreDataset(google.protobuf.message.Message):
     def field_metadata(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, metadata_pb2.Metadata]: ...
     @property
     def pycode(self) -> pycode_pb2.PyCode: ...
+    is_source_dataset: builtins.bool
+    @property
+    def lineage(self) -> global___DatasetLineage:
+        """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
+        THE CLIENT
+        """
+    @property
+    def active_lineage_nodes(self) -> global___LineagePath: ...
     def __init__(
         self,
         *,
@@ -74,9 +85,12 @@ class CoreDataset(google.protobuf.message.Message):
         retention: google.protobuf.duration_pb2.Duration | None = ...,
         field_metadata: collections.abc.Mapping[builtins.str, metadata_pb2.Metadata] | None = ...,
         pycode: pycode_pb2.PyCode | None = ...,
+        is_source_dataset: builtins.bool = ...,
+        lineage: global___DatasetLineage | None = ...,
+        active_lineage_nodes: global___LineagePath | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "history", b"history", "metadata", b"metadata", "pycode", b"pycode", "retention", b"retention"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "field_metadata", b"field_metadata", "history", b"history", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "retention", b"retention"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["active_lineage_nodes", b"active_lineage_nodes", "dsschema", b"dsschema", "history", b"history", "lineage", b"lineage", "metadata", b"metadata", "pycode", b"pycode", "retention", b"retention"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["active_lineage_nodes", b"active_lineage_nodes", "dsschema", b"dsschema", "field_metadata", b"field_metadata", "history", b"history", "is_source_dataset", b"is_source_dataset", "lineage", b"lineage", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "retention", b"retention"]) -> None: ...
 
 global___CoreDataset = CoreDataset
 
@@ -119,6 +133,8 @@ class Pipeline(google.protobuf.message.Message):
     METADATA_FIELD_NUMBER: builtins.int
     INPUT_DATASET_NAMES_FIELD_NUMBER: builtins.int
     IDX_FIELD_NUMBER: builtins.int
+    ACTIVE_FIELD_NUMBER: builtins.int
+    LINEAGE_FIELD_NUMBER: builtins.int
     name: builtins.str
     dataset_name: builtins.str
     signature: builtins.str
@@ -127,6 +143,12 @@ class Pipeline(google.protobuf.message.Message):
     @property
     def input_dataset_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     idx: builtins.int
+    active: builtins.bool
+    @property
+    def lineage(self) -> global___PipelineLineage:
+        """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
+        THE CLIENT
+        """
     def __init__(
         self,
         *,
@@ -136,9 +158,11 @@ class Pipeline(google.protobuf.message.Message):
         metadata: metadata_pb2.Metadata | None = ...,
         input_dataset_names: collections.abc.Iterable[builtins.str] | None = ...,
         idx: builtins.int = ...,
+        active: builtins.bool = ...,
+        lineage: global___PipelineLineage | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "idx", b"idx", "input_dataset_names", b"input_dataset_names", "metadata", b"metadata", "name", b"name", "signature", b"signature"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["lineage", b"lineage", "metadata", b"metadata"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["active", b"active", "dataset_name", b"dataset_name", "idx", b"idx", "input_dataset_names", b"input_dataset_names", "lineage", b"lineage", "metadata", b"metadata", "name", b"name", "signature", b"signature"]) -> None: ...
 
 global___Pipeline = Pipeline
 
@@ -182,7 +206,7 @@ class Operator(google.protobuf.message.Message):
     @property
     def dataset_ref(self) -> global___DatasetRef: ...
     name: builtins.str
-    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
 
     Name of the operator assigned by the server
@@ -222,7 +246,7 @@ class Aggregate(google.protobuf.message.Message):
     @property
     def specs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[spec_pb2.PreSpec]: ...
     operand_name: builtins.str
-    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
     """
     def __init__(
@@ -275,7 +299,7 @@ class Join(google.protobuf.message.Message):
     @property
     def within_high(self) -> google.protobuf.duration_pb2.Duration: ...
     lhs_operand_name: builtins.str
-    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
     """
     rhs_dsref_operand_name: builtins.str
@@ -331,7 +355,7 @@ class Transform(google.protobuf.message.Message):
     @property
     def pycode(self) -> pycode_pb2.PyCode: ...
     operand_name: builtins.str
-    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
     """
     def __init__(
@@ -358,7 +382,7 @@ class Filter(google.protobuf.message.Message):
     @property
     def pycode(self) -> pycode_pb2.PyCode: ...
     operand_name: builtins.str
-    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
     """
     def __init__(
@@ -383,7 +407,7 @@ class Union(google.protobuf.message.Message):
     def operand_ids(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
     def operand_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
-        """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED SET BY
+        """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
         THE CLIENT
         """
     def __init__(
@@ -410,3 +434,129 @@ class DatasetRef(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["referring_dataset_name", b"referring_dataset_name"]) -> None: ...
 
 global___DatasetRef = DatasetRef
+
+@typing_extensions.final
+class LineagePath(google.protobuf.message.Message):
+    """----------------------------------------------------------------------------------------------
+    Lineage
+    ----------------------------------------------------------------------------------------------
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    NODES_FIELD_NUMBER: builtins.int
+    @property
+    def nodes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___LineageNode]: ...
+    def __init__(
+        self,
+        *,
+        nodes: collections.abc.Iterable[global___LineageNode] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["nodes", b"nodes"]) -> None: ...
+
+global___LineagePath = LineagePath
+
+@typing_extensions.final
+class LineageNode(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    @typing_extensions.final
+    class InputDatasetLineage(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        PATHS_FIELD_NUMBER: builtins.int
+        @property
+        def paths(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___LineagePath]: ...
+        def __init__(
+            self,
+            *,
+            paths: collections.abc.Iterable[global___LineagePath] | None = ...,
+        ) -> None: ...
+        def ClearField(self, field_name: typing_extensions.Literal["paths", b"paths"]) -> None: ...
+
+    DATASET_NAME_FIELD_NUMBER: builtins.int
+    PIPELINE_NAME_FIELD_NUMBER: builtins.int
+    INPUT_DATASETS_FIELD_NUMBER: builtins.int
+    dataset_name: builtins.str
+    pipeline_name: builtins.str
+    @property
+    def input_datasets(self) -> global___LineageNode.InputDatasetLineage: ...
+    def __init__(
+        self,
+        *,
+        dataset_name: builtins.str = ...,
+        pipeline_name: builtins.str = ...,
+        input_datasets: global___LineageNode.InputDatasetLineage | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "input_datasets", b"input_datasets", "kind", b"kind", "pipeline_name", b"pipeline_name"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "input_datasets", b"input_datasets", "kind", b"kind", "pipeline_name", b"pipeline_name"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["dataset_name", "pipeline_name", "input_datasets"] | None: ...
+
+global___LineageNode = LineageNode
+
+@typing_extensions.final
+class PipelineLineage(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DATASET_NAME_FIELD_NUMBER: builtins.int
+    PIPELINE_NAME_FIELD_NUMBER: builtins.int
+    INPUT_DATASETS_FIELD_NUMBER: builtins.int
+    ACTIVE_FIELD_NUMBER: builtins.int
+    dataset_name: builtins.str
+    pipeline_name: builtins.str
+    @property
+    def input_datasets(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___DatasetLineage]: ...
+    active: builtins.bool
+    def __init__(
+        self,
+        *,
+        dataset_name: builtins.str = ...,
+        pipeline_name: builtins.str = ...,
+        input_datasets: collections.abc.Iterable[global___DatasetLineage] | None = ...,
+        active: builtins.bool = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["active", b"active", "dataset_name", b"dataset_name", "input_datasets", b"input_datasets", "pipeline_name", b"pipeline_name"]) -> None: ...
+
+global___PipelineLineage = PipelineLineage
+
+@typing_extensions.final
+class DatasetPipelineLineage(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DATASET_NAME_FIELD_NUMBER: builtins.int
+    PIPELINE_LINEAGES_FIELD_NUMBER: builtins.int
+    dataset_name: builtins.str
+    @property
+    def pipeline_lineages(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PipelineLineage]: ...
+    def __init__(
+        self,
+        *,
+        dataset_name: builtins.str = ...,
+        pipeline_lineages: collections.abc.Iterable[global___PipelineLineage] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "pipeline_lineages", b"pipeline_lineages"]) -> None: ...
+
+global___DatasetPipelineLineage = DatasetPipelineLineage
+
+@typing_extensions.final
+class DatasetLineage(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SOURCE_DATASET_FIELD_NUMBER: builtins.int
+    PIPELINE_LINEAGE_FIELD_NUMBER: builtins.int
+    source_dataset: builtins.str
+    """If it is a source dataset, it will have a source dataset name."""
+    @property
+    def pipeline_lineage(self) -> global___DatasetPipelineLineage:
+        """If it is a derived dataset, it will have a pipeline lineage."""
+    def __init__(
+        self,
+        *,
+        source_dataset: builtins.str = ...,
+        pipeline_lineage: global___DatasetPipelineLineage | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["kind", b"kind", "pipeline_lineage", b"pipeline_lineage", "source_dataset", b"source_dataset"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["kind", b"kind", "pipeline_lineage", b"pipeline_lineage", "source_dataset", b"source_dataset"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["source_dataset", "pipeline_lineage"] | None: ...
+
+global___DatasetLineage = DatasetLineage

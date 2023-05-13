@@ -46,7 +46,6 @@ class Executor(Visitor):
         self.cur_pipeline_name = pipeline.name
         self.serializer = Serializer(pipeline, dataset)
         self.cur_ds_name = dataset._name
-
         return self.visit(pipeline.terminal_node)
 
     def visit(self, obj) -> Optional[NodeRet]:
@@ -175,12 +174,12 @@ class Executor(Visitor):
     def visitJoin(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)
         right_ret = self.visit(obj.dataset)
+
         if input_ret is None or right_ret is None:
             return None
 
         left_df = input_ret.df
         right_df = copy.deepcopy(right_ret.df)
-
         right_timestamp_field = right_ret.timestamp_field
         left_timestamp_field = input_ret.timestamp_field
         ts_query_field = "_@@_query_ts"
@@ -284,6 +283,7 @@ class Executor(Visitor):
                 if dtype == np.int64 and transformed_dtypes[index] == object:
                     original_dtypes[index] = np.dtype(np.float64)
         merged_df = merged_df.astype(original_dtypes)
+
         # Set the timestamp of the row to be the max of the left and right timestamps - this is the timestamp
         # that is present in the downstream operators. We take the max because it is possible that upper bound is
         # specified and join occurred with an entry with larger value than the query ts.

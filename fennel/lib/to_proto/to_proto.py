@@ -93,19 +93,29 @@ def to_sync_request_proto(
 
     for obj in registered_objs:
         if isinstance(obj, Dataset):
+            is_source_dataset = hasattr(obj, sources.SOURCE_FIELD)
+            if len(obj._pipelines) == 0 and not is_source_dataset:
+                raise ValueError(
+                    f"Dataset {obj._name} has no pipelines defined. "
+                    f"Please define at least one pipeline or mark it as a source "
+                    f"data set by defining a @source decorator."
+                )
+
             datasets.append(dataset_to_proto(obj))
             pipelines.extend(pipelines_from_ds(obj))
             operators.extend(operators_from_ds(obj))
             expectations.extend(expectations_from_ds(obj))
-            (ext_dbs, s) = sources_from_ds(obj, sources.SOURCE_FIELD)
-            conn_sources.extend(s)
+            res = sources_from_ds(obj, sources.SOURCE_FIELD)
+            if res is None:
+                continue
+            (ext_db, s) = res
+            conn_sources.append(s)
             # dedup external dbs by the name
-            for ext_db in ext_dbs:
-                # TODO(mohit): Also validate that if the name is the same, there should
-                # be no difference in the other fields
-                if ext_db.name not in external_dbs_by_name:
-                    external_dbs_by_name[ext_db.name] = ext_db
-                    external_dbs.append(ext_db)
+            # TODO(mohit): Also validate that if the name is the same, there should
+            # be no difference in the other fields
+            if ext_db.name not in external_dbs_by_name:
+                external_dbs_by_name[ext_db.name] = ext_db
+                external_dbs.append(ext_db)
         elif isinstance(obj, Featureset):
             featuresets.append(featureset_to_proto(obj))
             features.extend(features_from_fs(obj))
@@ -169,6 +179,7 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
             ref_includes={},
             imports=imports,
         ),
+        is_source_dataset=hasattr(ds, sources.SOURCE_FIELD),
     )
 
 
@@ -220,7 +231,8 @@ def _pipeline_to_proto(
         signature=pipeline.name,
         metadata=get_metadata_proto(pipeline.func),
         input_dataset_names=[dataset._name for dataset in pipeline.inputs],
-        idx=pipeline.id,
+        idx=pipeline.version,
+        active=pipeline.active,
     )
 
 
@@ -242,17 +254,11 @@ def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
 
 def sources_from_ds(
     ds: Dataset, source_field
-) -> Tuple[List[connector_proto.ExtDatabase], List[connector_proto.Source]]:
+) -> Optional[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
     if hasattr(ds, source_field):
-        ext_dbs = []
-        conn_sources = []
-        ds_sources: List[sources.DataConnector] = getattr(ds, source_field)
-        for source in ds_sources:
-            (extdb, s) = _conn_to_source_proto(source, ds._name)
-            ext_dbs.append(extdb)
-            conn_sources.append(s)
-        return (ext_dbs, conn_sources)
-    return ([], [])
+        source: sources.DataConnector = getattr(ds, source_field)
+        return _conn_to_source_proto(source, ds._name)
+    return None  # type: ignore
 
 
 # ------------------------------------------------------------------------------
@@ -386,8 +392,32 @@ def _conn_to_source_proto(
         return _table_conn_to_source_proto(connector, dataset_name)
     elif isinstance(connector, sources.KafkaConnector):
         return _kafka_conn_to_source_proto(connector, dataset_name)
+    elif isinstance(connector, sources.WebhookConnector):
+        return _webhook_to_source_proto(connector, dataset_name)
     else:
         raise ValueError(f"Unknown connector type: {type(connector)}")
+
+
+def _webhook_to_source_proto(
+    connector: sources.WebhookConnector, dataset_name: str
+):
+    data_source = connector.data_source
+    ext_db = connector_proto.ExtDatabase(
+        name=data_source.name,
+        webhook=connector_proto.Webhook(name=data_source.name),
+    )
+    return [
+        ext_db,
+        connector_proto.Source(
+            table=connector_proto.ExtTable(
+                endpoint=connector_proto.WebhookEndpoint(
+                    endpoint=connector.endpoint
+                )
+            ),
+            lateness=to_duration_proto(connector.lateness),
+            dataset=dataset_name,
+        ),
+    ]
 
 
 def _kafka_conn_to_source_proto(
@@ -411,7 +441,9 @@ def _kafka_conn_to_source_proto(
                 topic=connector.topic,
                 db=ext_db,
             ),
-        )
+        ),
+        lateness=to_duration_proto(connector.lateness),
+        dataset=dataset_name,
     )
     return (ext_db, source)
 

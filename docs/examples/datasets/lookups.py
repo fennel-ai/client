@@ -6,11 +6,15 @@ from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.test_lib import mock_client
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
+
+webhook = Webhook(name="fennel_webhook")
 
 
 # docsnip datasets_lookup
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(webhook.endpoint("User"))
 @dataset
 class User:
     uid: int = field(key=True)
@@ -39,8 +43,8 @@ class UserFeature:
 # /docsnip
 
 
-@mock_client
-def test_user_dataset_lookup(client):
+@mock
+def test_user_dataset_lookup(client, fake_data_plane):
     client.sync(datasets=[User], featuresets=[UserFeature])
     now = datetime.now()
 
@@ -54,7 +58,7 @@ def test_user_dataset_lookup(client):
         data, columns=["uid", "home_city", "cur_city", "timestamp"]
     )
 
-    res = client.log("User", df)
+    res = client.log("fennel_webhook", "User", df)
     assert res.status_code == 200, res.json()
     feature_df = client.extract_features(
         output_feature_list=[UserFeature.in_home_city],

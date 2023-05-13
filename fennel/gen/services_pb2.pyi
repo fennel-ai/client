@@ -22,17 +22,6 @@ DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
 @typing_extensions.final
 class SyncRequest(google.protobuf.message.Message):
-    """
-    The generated code needs to be hand modified to add the following
-    import stream_pb2 as stream__pb2 to import fennel.gen.stream_pb2 as stream__pb2
-    More info: https://github.com/protocolbuffers/protobuf/issues/1491 &
-    https://github.com/protocolbuffers/protobuf/issues/881
-
-    Use the following command from client ( root ) directory to generated the
-    required files -
-    https://gist.github.com/aditya-nambiar/87c8b55fe509c1c1cd06d212b8a8ded1
-    """
-
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     DATASETS_FIELD_NUMBER: builtins.int

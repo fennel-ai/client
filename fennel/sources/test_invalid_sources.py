@@ -4,7 +4,14 @@ import pytest
 from typing import Optional
 
 from fennel.datasets import dataset, field
-from fennel.sources import source, S3, MySQL
+from fennel.lib.metadata import meta
+from fennel.sources import (
+    source,
+    MySQL,
+    S3,
+    Snowflake,
+    Kafka,
+)
 
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
@@ -15,6 +22,28 @@ mysql = MySQL(
     db_name="test",
     username="root",
     password="root",
+)
+
+snowflake = Snowflake(
+    name="snowflake_src",
+    account="nhb38793.us-west-2.snowflakecomputing.com",
+    warehouse="TEST",
+    db_name="MOVIELENS",
+    src_schema="PUBLIC",
+    role="ACCOUNTADMIN",
+    username="<username>",
+    password="<password>",
+)
+
+kafka = Kafka(
+    name="kafka_src",
+    bootstrap_servers="localhost:9092",
+    topic="test_topic",
+    group_id="test_group",
+    security_protocol="PLAINTEXT",
+    sasl_mechanism="PLAIN",
+    sasl_plain_username="test",
+    sasl_plain_password="test",
 )
 
 
@@ -112,3 +141,36 @@ def test_invalid_s3_source():
         assert len(dataset_request.sources) == 3
 
     assert str(e.value) == "'S3' object has no attribute 'table'"
+
+
+def test_multiple_sources():
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="test@test.com")
+        @source(kafka.topic("test_topic"))
+        @source(mysql.table("users_mysql", cursor="added_on"), every="1h")
+        @source(snowflake.table("users_Sf", cursor="added_on"), every="1h")
+        @source(
+            s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+            ),
+            every="1h",
+            lateness="2d",
+        )
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+    assert (
+        str(e.value)
+        == "Multiple sources are not supported in dataset `UserInfoDataset`."
+    )

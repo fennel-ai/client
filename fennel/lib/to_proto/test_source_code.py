@@ -41,7 +41,7 @@ class UserAgeAggregated:
     timestamp: datetime
     sum_age: int
 
-    @pipeline(id=1)
+    @pipeline(version=1, active=True)
     @inputs(UserAge)
     def create_user_age_aggregated(cls, user_age: Dataset):
         return user_age.groupby("city").aggregate(
@@ -54,7 +54,7 @@ class UserAgeAggregated:
             ]
         )
 
-    @pipeline(id=2)
+    @pipeline(version=2)
     @inputs(UserAgeNonTable)
     def create_user_age_aggregated2(cls, user_age: Dataset):
         return user_age.groupby("city").aggregate(

@@ -1,27 +1,29 @@
-import time
 import unittest
 from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
 import pytest
-import fennel._vendor.requests as requests
 from typing import Optional
 
+import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, outputs
-from fennel.test_lib import mock_client
-
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
 
 ################################################################################
 #                           Feature Single Extractor Unit Tests
 ################################################################################
 
+webhook = Webhook(name="fennel_webhook")
+
 
 @meta(owner="test@test.com")
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -148,8 +150,8 @@ class TestSimpleExtractor(unittest.TestCase):
         )
 
     @pytest.mark.integration
-    @mock_client
-    def test_simple_extractor(self, client):
+    @mock
+    def test_simple_extractor(self, client, fake_data_plane):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
@@ -161,10 +163,9 @@ class TestSimpleExtractor(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
         ts = pd.Series([now, now])
         user_ids = pd.Series([18232, 18234])
         df = UserInfoSingleExtractor.get_user_info(
@@ -190,8 +191,8 @@ class TestSimpleExtractor(unittest.TestCase):
 
 class TestExtractorDAGResolution(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_dag_resolution2(self, client):
+    @mock
+    def test_dag_resolution2(self, client, fake_data_plane):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
@@ -203,10 +204,9 @@ class TestExtractorDAGResolution(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
         feature_df = client.extract_features(
             output_feature_list=[
                 UserInfoMultipleExtractor.userid,
@@ -273,8 +273,8 @@ class UserInfoTransformedFeatures:
 
 class TestExtractorDAGResolutionComplex(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_dag_resolution_complex(self, client):
+    @mock
+    def test_dag_resolution_complex(self, client, fake_data_plane):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[
@@ -282,8 +282,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
                 UserInfoTransformedFeatures,
             ],
         )
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
         now = datetime.utcnow()
         data = [
             [18232, "John", 32, "USA", now],
@@ -291,10 +290,9 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(1)
+        client.sleep()
 
         feature_df = client.extract_features(
             output_feature_list=[
@@ -361,6 +359,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 
 
 @meta(owner="aditya@fennel.ai")
+@source(webhook.endpoint("DocumentContentDataset"))
 @dataset
 class DocumentContentDataset:
     doc_id: int = field(key=True)
@@ -402,8 +401,8 @@ class DocumentFeatures:
 
 class TestDocumentDataset(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_document_featureset(self, client):
+    @mock
+    def test_document_featureset(self, client, fake_data_plane):
         client.sync(
             datasets=[DocumentContentDataset], featuresets=[DocumentFeatures]
         )
@@ -427,10 +426,9 @@ class TestDocumentDataset(unittest.TestCase):
             "timestamp",
         ]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("DocumentContentDataset", df)
+        response = client.log("fennel_webhook", "DocumentContentDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         feature_df = client.extract_features(
             output_feature_list=[
                 DocumentFeatures,

@@ -20,17 +20,18 @@ exception - it doesn't support data connectors to external data systems
 Let's first see how it will work and later we will see a fully functional unit test example.
 
 ```python
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
+
 
 class TestDataset(unittest.TestCase):
-    @mock_client
-    def test_dataset(self, client):
+    @mock
+    def test_dataset(self, client, fake_data_plane):
         # client talks to the mock server
         # ... do any setup
         # Sync the dataset
         client.sync(datasets=[User])
         # ... some other stuff
-        client.log('User', pd.Dataframe(...))
+        client.log("fennel_webhook", 'User', pd.Dataframe(...))
         # ... some other stuff
         found = client.extract_features(...)
         self.assertEqual(found, expected)    

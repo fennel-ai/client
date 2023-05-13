@@ -2,8 +2,8 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-import fennel._vendor.requests as requests
 
+import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, Dataset, pipeline
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.aggregate import Count
@@ -11,10 +11,14 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.schema import regex, oneof
 from fennel.lib.window import Window
-from fennel.test_lib import mock_client
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
+
+webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="data-eng@myspace.com")
+@source(webhook.endpoint("UserInfo"))
 @dataset
 class UserInfo:
     user_id: str = field(key=True)
@@ -27,6 +31,7 @@ class UserInfo:
     timestamp: datetime
 
 
+@source(webhook.endpoint("PostInfo"))
 @dataset
 @meta(owner="data-eng@myspace.com")
 class PostInfo:
@@ -38,6 +43,7 @@ class PostInfo:
 
 @meta(owner="data-eng@myspace.com")
 @dataset
+@source(webhook.endpoint("ViewData"))
 class ViewData:
     user_id: str
     post_id: int
@@ -52,7 +58,7 @@ class CityInfo:
     count: int
     timestamp: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(UserInfo)
     def count_city_gender(cls, user_info: Dataset):
         return user_info.groupby(["city", "gender"]).aggregate(
@@ -148,8 +154,8 @@ class UserFeatures:
 
 
 @pytest.mark.slow
-@mock_client
-def test_social_network(client):
+@mock
+def test_social_network(client, fake_data_plane):
     client.sync(
         datasets=[
             UserInfo,
@@ -170,12 +176,12 @@ def test_social_network(client):
     view_data_df["time_stamp"] = view_data_df["time_stamp"].apply(
         lambda x: datetime.strptime(x, "%m/%d/%Y %H:%M %p")
     )
-    res = client.log("UserInfo", user_data_df)
+    res = client.log("fennel_webhook", "UserInfo", user_data_df)
     assert res.status_code == requests.codes.OK, res.json()
 
-    res = client.log("PostInfo", post_data_df)
+    res = client.log("fennel_webhook", "PostInfo", post_data_df)
     assert res.status_code == requests.codes.OK, res.json()
-    res = client.log("ViewData", view_data_df)
+    res = client.log("fennel_webhook", "ViewData", view_data_df)
     assert res.status_code == requests.codes.OK, res.json()
     now = datetime.now()
     ts = pd.Series([now, now, now])

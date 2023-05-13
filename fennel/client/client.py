@@ -1,13 +1,13 @@
 import functools
 import gzip
 import json
-import math
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
+import math
 import pandas as pd
-import fennel._vendor.requests as requests  # type: ignore
 from typing import Dict, Optional, Any, Set, List, Union
 
+import fennel._vendor.requests as requests  # type: ignore
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
 from fennel.lib.to_proto import to_sync_request_proto
@@ -92,19 +92,24 @@ class Client:
         check_response(response)
 
     def log(
-        self, dataset_name: str, dataframe: pd.DataFrame, batch_size: int = 1000
+        self,
+        webhook: str,
+        endpoint: str,
+        dataframe: pd.DataFrame,
+        batch_size: int = 1000,
     ):
         """
-        Log data to a dataset.
+        Log data to a webhook.
 
-        :param dataset_name: Name of the dataset to log data to.
+        :param webhook: Name of the webhook to log data to.
+        :param endpoint: Endpoint within the webhook to log data to.
         :param dataframe: Dataframe to log to the dataset.
         :param batch_size: Batch size to use when logging data.
         :return:
         """
         num_rows = dataframe.shape[0]
         if num_rows == 0:
-            print("No rows to log to dataset", dataset_name)
+            print(f"No rows to log to webhook {webhook}:{endpoint}")
             return
 
         for i in range(math.ceil(num_rows / batch_size)):
@@ -113,7 +118,8 @@ class Client:
             mini_df = dataframe[start:end]
             payload = mini_df.to_json(orient="records")
             req = {
-                "dataset_name": dataset_name,
+                "webhook": webhook,
+                "endpoint": endpoint,
                 "rows": payload,
             }
             response = self._post_json("{}/log".format(V1_API), req)

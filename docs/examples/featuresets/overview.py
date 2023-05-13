@@ -8,7 +8,10 @@ from fennel.featuresets import extractor
 from fennel.featuresets import feature, featureset
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.test_lib import mock_client
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
+
+webhook = Webhook(name="fennel_webhook")
 
 
 # docsnip featureset
@@ -158,6 +161,7 @@ class Movie:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
+@source(webhook.endpoint("UserInfo"))
 @dataset
 class UserInfo:
     uid: int = field(key=True)
@@ -200,13 +204,13 @@ class UserLocationFeatures:
 
 
 @pytest.mark.slow
-@mock_client
-def test_multiple_features_extracted(client):
+@mock
+def test_multiple_features_extracted(client, fake_data_plane):
     client.sync(datasets=[UserInfo], featuresets=[UserLocationFeatures])
     now = datetime.now()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
     df = pd.DataFrame(data, columns=["uid", "city", "update_time"])
-    res = client.log("UserInfo", df)
+    res = client.log("fennel_webhook", "UserInfo", df)
     assert res.status_code == 200
 
     df = client.extract_features(
@@ -272,8 +276,8 @@ class UserLocationFeaturesRefactored:
 
 
 @pytest.mark.slow
-@mock_client
-def test_extractors_across_featuresets(client):
+@mock
+def test_extractors_across_featuresets(client, fake_data_plane):
     client.sync(
         datasets=[UserInfo],
         featuresets=[Request, UserLocationFeaturesRefactored],
@@ -281,7 +285,7 @@ def test_extractors_across_featuresets(client):
     now = datetime.now()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
     df = pd.DataFrame(data, columns=["uid", "city", "update_time"])
-    res = client.log("UserInfo", df)
+    res = client.log("fennel_webhook", "UserInfo", df)
     assert res.status_code == 200
 
     df = client.extract_features(

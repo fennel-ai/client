@@ -1,19 +1,23 @@
 import unittest
 from datetime import datetime
-from typing import Optional
 
 import pandas as pd
 import requests
+from typing import Optional
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.test_lib import mock_client
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
+
+webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -78,8 +82,8 @@ class UserFeatures:
 
 # this is your test code in some test module
 class TestExtractorDAGResolution(unittest.TestCase):
-    @mock_client
-    def test_dag_resolution(self, client):
+    @mock
+    def test_dag_resolution(self, client, fake_data_plane):
         # docsnip sync_api
         client.sync(
             datasets=[UserInfoDataset],
@@ -94,7 +98,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         # /docsnip
 

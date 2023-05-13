@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
+
 from typing import Any, Callable, List, Optional, TypeVar
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
-
 from fennel.lib.duration import (
     Duration,
 )
@@ -38,11 +38,12 @@ def source(
         conn.every = every if every is not None else DEFAULT_EVERY
         conn.lateness = lateness if lateness is not None else DEFAULT_LATENESS
         if hasattr(dataset_cls, SOURCE_FIELD):
-            connectors = getattr(dataset_cls, SOURCE_FIELD)
-            connectors.append(conn)
-            setattr(dataset_cls, SOURCE_FIELD, connectors)
+            raise Exception(
+                "Multiple sources are not supported in dataset `%s`."
+                % dataset_cls.__name__  # type: ignore
+            )
         else:
-            setattr(dataset_cls, SOURCE_FIELD, [conn])
+            setattr(dataset_cls, SOURCE_FIELD, conn)
         return dataset_cls
 
     return decorator
@@ -91,6 +92,20 @@ class DataSource(BaseModel):
 
     def required_fields(self) -> List[str]:
         raise NotImplementedError()
+
+    def identifier(self) -> str:
+        raise NotImplementedError()
+
+
+class Webhook(DataSource):
+    def required_fields(self) -> List[str]:
+        return ["endpoint"]
+
+    def endpoint(self, endpoint: str) -> WebhookConnector:
+        return WebhookConnector(self, endpoint)
+
+    def identifier(self) -> str:
+        return f"[Webhook: {self.name}]"
 
 
 class SQLSource(DataSource):
@@ -157,6 +172,9 @@ class S3(DataSource):
             aws_secret_access_key="",
         )
 
+    def identifier(self) -> str:
+        return f"[S3: {self.name}]"
+
 
 class BigQuery(DataSource):
     project_id: str
@@ -186,6 +204,9 @@ class BigQuery(DataSource):
             dataset_id="",
             credentials_json="",
         )
+
+    def identifier(self) -> str:
+        return f"[BigQuery: {self.name}]"
 
 
 class Kafka(DataSource):
@@ -230,6 +251,9 @@ class Kafka(DataSource):
             sasl_jaas_config="",
         )
 
+    def identifier(self) -> str:
+        return f"[Kafka: {self.name}]"
+
 
 class Postgres(SQLSource):
     port: int = 5432
@@ -248,6 +272,9 @@ class Postgres(SQLSource):
             password="",
         )
 
+    def identifier(self) -> str:
+        return f"[Postgres: {self.name}]"
+
 
 class MySQL(SQLSource):
     port: int = 3306
@@ -265,6 +292,9 @@ class MySQL(SQLSource):
             username="",
             password="",
         )
+
+    def identifier(self) -> str:
+        return f"[MySQL: {self.name}]"
 
 
 class Snowflake(DataSource):
@@ -319,6 +349,9 @@ class Snowflake(DataSource):
             role="",
         )
 
+    def identifier(self) -> str:
+        return f"[Snowflake: {self.name}]"
+
 
 # ------------------------------------------------------------------------------
 # DataConnector
@@ -342,6 +375,26 @@ class DataConnector:
     def _validate(self) -> List[Exception]:
         return []
 
+    def identifier(self):
+        raise NotImplementedError
+
+
+class WebhookConnector(DataConnector):
+    """
+    Webhook is a DataConnector that is push based rather than pull based.
+    This connector enables users to push data directly to fennel either using
+    the REST API or the Python SDK.
+    """
+
+    endpoint: str
+
+    def __init__(self, source, endpoint):
+        self.data_source = source
+        self.endpoint = endpoint
+
+    def identifier(self) -> str:
+        return f"{self.data_source.identifier()}(endpoint={self.endpoint})"
+
 
 class TableConnector(DataConnector):
     """DataConnectors which only need a table name and a cursor to be
@@ -355,6 +408,9 @@ class TableConnector(DataConnector):
         self.table_name = table_name
         self.cursor = cursor
 
+    def identifier(self) -> str:
+        return f"{self.data_source.identifier()}(table={self.table_name})"
+
 
 class KafkaConnector(DataConnector):
     """DataConnectors which only need a topic to be specified. Includes
@@ -365,6 +421,9 @@ class KafkaConnector(DataConnector):
     def __init__(self, source, topic):
         self.data_source = source
         self.topic = topic
+
+    def identifier(self) -> str:
+        return f"{self.data_source.identifier()}(topic={self.topic})"
 
 
 class S3Connector(DataConnector):
@@ -399,3 +458,9 @@ class S3Connector(DataConnector):
                 Exception("delimiter must be one of [',', '\t', '|']")
             )
         return exceptions
+
+    def identifier(self) -> str:
+        return (
+            f"{self.data_source.identifier()}(bucket={self.bucket_name}"
+            f",prefix={self.path_prefix})"
+        )

@@ -558,17 +558,23 @@ def dataset(
     return wrap(cls)
 
 
-def pipeline(id: int) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    if isinstance(id, Callable) or isinstance(id, Dataset):  # type: ignore
-        if hasattr(id, "__name__"):
-            callable_name = id.__name__  # type: ignore
+def pipeline(
+    version: int = 1, active: bool = False
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    if isinstance(version, Callable) or isinstance(  # type: ignore
+        version, Dataset
+    ):
+        if hasattr(version, "__name__"):
+            callable_name = version.__name__  # type: ignore
         else:
-            callable_name = str(id)
+            callable_name = str(version)
         raise ValueError(
             f"pipeline `{callable_name}` must be called with an id."
         )
-    if type(id) != int:
-        raise ValueError("pipeline id must be an integer, found %s" % type(id))
+    if type(version) != int:
+        raise ValueError(
+            "pipeline id must be an integer, found %s" % type(version)
+        )
 
     def wrapper(pipeline_func: Callable) -> Callable:
         if not callable(pipeline_func):
@@ -616,7 +622,12 @@ def pipeline(id: int) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         setattr(
             pipeline_func,
             PIPELINE_ATTR,
-            Pipeline(inputs=list(params), func=pipeline_func, id=id),
+            Pipeline(
+                inputs=list(params),
+                func=pipeline_func,
+                version=version,
+                active=active,
+            ),
         )
         return pipeline_func
 
@@ -670,13 +681,21 @@ class Pipeline:
     _dataset_name: str
     func: Callable
     name: str
-    id: int
+    version: int
+    active: bool
 
-    def __init__(self, inputs: List[Dataset], func: Callable, id: int):
+    def __init__(
+        self,
+        inputs: List[Dataset],
+        func: Callable,
+        version: int,
+        active: bool = False,
+    ):
         self.inputs = inputs
         self.func = func  # type: ignore
         self.name = func.__name__
-        self.id = id
+        self.version = version
+        self.active = active
 
     # Validate the schema of all intermediate nodes
     # and return the schema of the terminal node.
@@ -739,13 +758,13 @@ class Dataset(_Node[T]):
         self._set_key_fields()
         self._history = history
         self.__fennel_original_cls__ = cls
+        propogate_fennel_attributes(cls, self)
         self._pipelines = self._get_pipelines()
         self._on_demand = self._get_on_demand()
         self._sign = self._create_signature()
         if lookup_fn is not None:
             self.lookup = lookup_fn  # type: ignore
         self._add_fields_as_attributes()
-        propogate_fennel_attributes(cls, self)
         self.expectations = self._get_expectations()
 
     def __class_getitem__(cls, item):
@@ -901,7 +920,7 @@ class Dataset(_Node[T]):
     def _get_pipelines(self) -> List[Pipeline]:
         pipelines = []
         dataset_name = self._name
-        ids = set()
+        versions = set()
         names = set()
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
             if not callable(method):
@@ -911,11 +930,11 @@ class Dataset(_Node[T]):
 
             pipeline = getattr(method, PIPELINE_ATTR)
 
-            if pipeline.id in ids:
+            if pipeline.version in versions:
                 raise ValueError(
-                    f"Duplicate pipeline id {pipeline.id} for dataset {dataset_name}."
+                    f"Duplicate pipeline id {pipeline.version} for dataset {dataset_name}."
                 )
-            ids.add(pipeline.id)
+            versions.add(pipeline.version)
             if pipeline.name in names:
                 raise ValueError(
                     f"Duplicate pipeline name {pipeline.name} for dataset {dataset_name}."
@@ -930,6 +949,10 @@ class Dataset(_Node[T]):
             pipelines[-1].set_dataset_name(dataset_name)
 
         self._validate_pipelines(pipelines)
+
+        if len(pipelines) == 1:
+            pipelines[0].active = True
+
         return pipelines
 
     def _validate_pipelines(self, pipelines: List[Pipeline]):
@@ -944,13 +967,25 @@ class Dataset(_Node[T]):
             timestamp=self.timestamp_field,
         )
 
+        found_active = False
         for pipeline in pipelines:
             pipeline_schema = pipeline.get_terminal_schema()
+            if pipeline.active and found_active:
+                raise ValueError(
+                    f"Multiple active pipelines are not supported for dataset {self._name}."
+                )
+            if pipeline.active:
+                found_active = True
             err = pipeline_schema.matches(
                 ds_schema, f"pipeline {pipeline.name} output", self._name
             )
             if len(err) > 0:
                 exceptions.extend(err)
+        if not found_active and len(pipelines) > 1:
+            raise ValueError(
+                f"No active pipeline found for dataset {self._name}."
+            )
+
         if exceptions:
             raise TypeError(exceptions)
 

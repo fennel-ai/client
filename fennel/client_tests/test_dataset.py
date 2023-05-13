@@ -5,24 +5,26 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import pytest
-import fennel._vendor.requests as requests
 from typing import Optional
 
+import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Sum, Average, Count
-from fennel.lib.duration import Duration
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof, inputs
 from fennel.lib.window import Window
-from fennel.test_lib import mock_client
-
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
 
 ################################################################################
 #                           Dataset Unit Tests
 ################################################################################
 
+webhook = Webhook(name="fennel_webhook")
+
 
 @meta(owner="test@test.com")
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -40,7 +42,7 @@ class UserInfoDatasetDerived:
     country_name: Optional[str]
     ts: datetime = field(timestamp=True)
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(UserInfoDataset)
     def get_info(cls, info: Dataset):
         x = info.rename({"country": "country_name", "timestamp": "ts"})
@@ -49,16 +51,16 @@ class UserInfoDatasetDerived:
 
 class TestDataset(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_sync_dataset(self, client):
+    @mock
+    def test_sync_dataset(self, client, fake_data_plane):
         """Sync the dataset and check if it is synced correctly."""
         # Sync the dataset
         response = client.sync(datasets=[UserInfoDataset])
         assert response.status_code == requests.codes.OK, response.json()
 
     @pytest.mark.integration
-    @mock_client
-    def test_simple_log(self, client):
+    @mock
+    def test_simple_log(self, client, fake_data_plane):
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset])
         now = datetime.now()
@@ -69,11 +71,11 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
-    @mock_client
-    def test_simple_delete_rename(self, client):
+    @mock
+    def test_simple_delete_rename(self, client, fake_data_plane):
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset, UserInfoDatasetDerived])
         now = datetime.now()
@@ -84,7 +86,7 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do lookup on UserInfoDataset
@@ -109,13 +111,12 @@ class TestDataset(unittest.TestCase):
         assert "age" not in df.columns
 
     @pytest.mark.integration
-    @mock_client
-    def test_log_to_dataset(self, client):
+    @mock
+    def test_log_to_dataset(self, client, fake_data_plane):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset])
-        if client.is_integration_client():
-            time.sleep(5)
+
         now = datetime.now()
         yesterday = now - pd.Timedelta(days=1)
         data = [
@@ -124,14 +125,14 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         data = [
             [18232, "Ross", "32", "USA", now],
             [18234, "Monica", 24, "Chile", yesterday],
         ]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
@@ -143,9 +144,11 @@ class TestDataset(unittest.TestCase):
                 response.json()["error"]
                 == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
             )
+        client.sleep(10)
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920])
-        ts = pd.Series([now, now, now])
+        lookup_now = datetime.now() + pd.Timedelta(minutes=1)
+        ts = pd.Series([lookup_now, lookup_now, lookup_now])
         df, found = UserInfoDataset.lookup(
             ts,
             user_id=user_ids,
@@ -185,8 +188,11 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK
+
+        client.sleep()
+
         # Do some lookups
         one_day_from_now = now + pd.Timedelta(days=1)
         three_days_from_now = now + pd.Timedelta(days=3)
@@ -213,8 +219,8 @@ class TestDataset(unittest.TestCase):
         assert df["country"].tolist() == ["Russia", "Columbia"]
 
     @pytest.mark.integration
-    @mock_client
-    def test_invalid_dataschema(self, client):
+    @mock
+    def test_invalid_dataschema(self, client, fake_data_plane):
         """Check if invalid data raises an error."""
         client.sync(datasets=[UserInfoDataset])
         data = [
@@ -223,13 +229,13 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         assert len(response.json()["error"]) > 0
 
     @pytest.mark.integration
-    @mock_client
-    def test_deleted_field(self, client):
+    @mock
+    def test_deleted_field(self, client, fake_data_plane):
         with self.assertRaises(Exception) as e:
 
             @meta(owner="test@test.com")
@@ -253,7 +259,7 @@ class TestDataset(unittest.TestCase):
 
 # class TestDocumentDataset(unittest.TestCase):
 #     @mock_client
-#     def test_log_to_document_dataset(self, client):
+#     def test_log_to_document_dataset(self, client, fake_data_plane):
 #         """Log some data to the dataset and check if it is logged correctly."""
 #
 #         @meta(owner="aditya@fennel.ai")
@@ -313,7 +319,7 @@ class TestDataset(unittest.TestCase):
 #             "timestamp",
 #         ]
 #         df = pd.DataFrame(data, columns=columns)
-#         response = client.log("DocumentContentDataset", df)
+#         response = client.log("fennel_webhook","DocumentContentDataset", df)
 #         assert response.status_code == requests.codes.OK, response.json()
 #
 #         # Do some lookups
@@ -330,6 +336,7 @@ class TestDataset(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
+@source(webhook.endpoint("RatingActivity"))
 @dataset
 class RatingActivity:
     userid: int
@@ -349,7 +356,7 @@ class MovieRatingCalculated:
     sum_ratings: float
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
@@ -373,6 +380,7 @@ class MovieRatingCalculated:
 
 # Copy of above dataset but can be used as an input to another pipeline.
 @meta(owner="test@test.com")
+@source(webhook.endpoint("MovieRating"))
 @dataset
 class MovieRating:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -395,7 +403,7 @@ class MovieRatingTransformed:
     rating_into_5: float
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(MovieRating)
     def pipeline_transform(cls, m: Dataset):
         def t(df: pd.DataFrame) -> pd.DataFrame:
@@ -420,8 +428,8 @@ class MovieRatingTransformed:
 
 class TestBasicTransform(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_basic_transform(self, client):
+    @mock
+    def test_basic_transform(self, client, fake_data_plane):
         # # Sync the dataset
         client.sync(
             datasets=[MovieRating, MovieRatingTransformed, RatingActivity],
@@ -434,10 +442,9 @@ class TestBasicTransform(unittest.TestCase):
         ]
         columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("MovieRating", df)
+        response = client.log("fennel_webhook", "MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         # Do some lookups to verify pipeline_transform is working as expected
         an_hour_ago = now - timedelta(hours=1)
         ts = pd.Series([an_hour_ago, an_hour_ago])
@@ -456,8 +463,7 @@ class TestBasicTransform(unittest.TestCase):
 
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         df, _ = MovieRatingTransformed.lookup(
             ts,
             movie=names,
@@ -471,6 +477,7 @@ class TestBasicTransform(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
+@source(webhook.endpoint("MovieRevenue"))
 @dataset
 class MovieRevenue:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -490,7 +497,7 @@ class MovieStats:
     revenue_in_millions: float
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(MovieRating, MovieRevenue)
     def pipeline_join(cls, rating: Dataset, revenue: Dataset):
         def to_millions(df: pd.DataFrame) -> pd.DataFrame:
@@ -520,8 +527,8 @@ class MovieStats:
 
 class TestBasicJoin(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_basic_join(self, client):
+    @mock
+    def test_basic_join(self, client, fake_data_plane):
         # # Sync the dataset
         client.sync(
             datasets=[MovieRating, MovieRevenue, MovieStats, RatingActivity],
@@ -534,21 +541,20 @@ class TestBasicJoin(unittest.TestCase):
         ]
         columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("MovieRating", df)
+        response = client.log("fennel_webhook", "MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         two_hours_ago = now - timedelta(hours=2)
         data = [["Jumanji", 2000000, two_hours_ago], ["Titanic", 50000000, now]]
         columns = ["movie", "revenue", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("MovieRevenue", df)
+        response = client.log("fennel_webhook", "MovieRevenue", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups to verify pipeline_join is working as expected
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         df, _ = MovieStats.lookup(
             ts,
             movie=names,
@@ -578,8 +584,8 @@ class TestBasicJoin(unittest.TestCase):
 
 class TestBasicAggregate(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_basic_aggregate(self, client):
+    @mock
+    def test_basic_aggregate(self, client, fake_data_plane):
         # # Sync the dataset
         client.sync(
             datasets=[MovieRatingCalculated, RatingActivity],
@@ -604,11 +610,10 @@ class TestBasicAggregate(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("RatingActivity", df)
+        response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK
 
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
 
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([now, now])
@@ -636,7 +641,7 @@ class MovieRatingWindowed:
     total_ratings: int
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
@@ -661,8 +666,8 @@ class MovieRatingWindowed:
 
 class TestBasicWindowAggregate(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_basic_window_aggregate(self, client):
+    @mock
+    def test_basic_window_aggregate(self, client, fake_data_plane):
         # # Sync the dataset
         client.sync(
             datasets=[MovieRatingWindowed, RatingActivity],
@@ -694,10 +699,10 @@ class TestBasicWindowAggregate(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("RatingActivity", df)
+        response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+
+        client.sleep()
 
         now = true_now - timedelta(days=10)
         eight_days = now + timedelta(days=8)
@@ -738,7 +743,7 @@ class PositiveRatingActivity:
     )
     t: datetime
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(RatingActivity)
     def filter_positive_ratings(cls, rating: Dataset):
         filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
@@ -749,8 +754,8 @@ class PositiveRatingActivity:
 
 class TestBasicFilter(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_basic_filter(self, client):
+    @mock
+    def test_basic_filter(self, client, fake_data_plane):
         # # Sync the dataset
         client.sync(
             datasets=[PositiveRatingActivity, RatingActivity],
@@ -776,10 +781,10 @@ class TestBasicFilter(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("RatingActivity", df)
+        response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+
+        client.sleep()
 
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([now, now, now])
@@ -808,6 +813,7 @@ class TestBasicFilter(unittest.TestCase):
 
 
 @meta(owner="me@fennel.ai")
+@source(webhook.endpoint("Activity"))
 @dataset(history="4m")
 class Activity:
     user_id: int
@@ -818,6 +824,7 @@ class Activity:
 
 
 @meta(owner="me@fenne.ai")
+@source(webhook.endpoint("MerchantInfo"))
 @dataset(history="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
@@ -831,15 +838,12 @@ class MerchantInfo:
 class FraudReportAggregatedDataset:
     category: str = field(key=True)
     timestamp: datetime
-    # merchant_id: int
-    # location: str
-    # transaction_amount: float
 
     num_categ_fraudulent_transactions: int
     num_categ_fraudulent_transactions_7d: int
     sum_categ_fraudulent_transactions_7d: float
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(Activity, MerchantInfo)
     def create_fraud_dataset(cls, activity: Dataset, merchant_info: Dataset):
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -848,7 +852,8 @@ class FraudReportAggregatedDataset:
             return df_timestamp
 
         def fillna(df: pd.DataFrame) -> pd.DataFrame:
-            df["category"].fillna("unknown", inplace=True)
+            df["category"] = df["category"].fillna("unknown")
+            df["location"] = df["location"].fillna("unknown")
             return df
 
         filtered_ds = activity.filter(lambda df: df["action_type"] == "report")
@@ -895,8 +900,8 @@ class FraudReportAggregatedDataset:
 
 class TestFraudReportAggregatedDataset(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_fraud(self, client):
+    @mock
+    def test_fraud(self, client, fake_data_plane):
         # # Sync the dataset
         client.sync(
             datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset]
@@ -963,8 +968,10 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         ]
         columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("Activity", df)
+        response = client.log("fennel_webhook", "Activity", df)
         assert response.status_code == requests.codes.OK, response.json()
+
+        client.sleep()
 
         two_days_ago = now - timedelta(days=2)
         data = [
@@ -974,12 +981,12 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
 
         columns = ["merchant_id", "category", "location", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("MerchantInfo", df)
+        response = client.log("fennel_webhook", "MerchantInfo", df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        if client.is_integration_client():
-            time.sleep(3)
-        now = datetime.now()
+        client.sleep()
+
+        now = datetime.now() + timedelta(minutes=1)
         ts = pd.Series([now, now])
         categories = pd.Series(["grocery", "entertainment"])
         df, _ = FraudReportAggregatedDataset.lookup(ts, category=categories)
@@ -995,6 +1002,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
 
 
 @meta(owner="me@fennel.ai")
+@source(webhook.endpoint("UserAge"))
 @dataset
 class UserAge:
     name: str = field(key=True)
@@ -1004,6 +1012,7 @@ class UserAge:
 
 
 @meta(owner="me@fennel.ai")
+@source(webhook.endpoint("UserAgeNonTable"))
 @dataset
 class UserAgeNonTable:
     name: str
@@ -1019,7 +1028,7 @@ class UserAgeAggregated:
     timestamp: datetime
     sum_age: int
 
-    @pipeline(id=1)
+    @pipeline(version=1, active=True)
     @inputs(UserAge)
     def create_user_age_aggregated(cls, user_age: Dataset):
         return user_age.groupby("city").aggregate(
@@ -1032,7 +1041,7 @@ class UserAgeAggregated:
             ]
         )
 
-    @pipeline(id=2)
+    @pipeline(version=2)
     @inputs(UserAgeNonTable)
     def create_user_age_aggregated2(cls, user_age: Dataset):
         return user_age.groupby("city").aggregate(
@@ -1048,11 +1057,10 @@ class UserAgeAggregated:
 
 class TestAggregateTableDataset(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_table_aggregation(self, client):
+    @mock
+    def test_table_aggregation(self, client, fake_data_plane):
         client.sync(datasets=[UserAge, UserAgeNonTable, UserAgeAggregated])
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
         yesterday = datetime.now() - timedelta(days=1)
         now = datetime.now()
         tomorrow = datetime.now() + timedelta(days=1)
@@ -1064,8 +1072,10 @@ class TestAggregateTableDataset(unittest.TestCase):
 
         columns = ["name", "age", "city", "timestamp"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserAge", input_df)
+        response = client.log("fennel_webhook", "UserAge", input_df)
         assert response.status_code == requests.codes.OK, response.json()
+
+        client.sleep()
 
         ts = pd.Series([now, now])
         names = pd.Series(["mumbai", "delhi"])
@@ -1074,19 +1084,12 @@ class TestAggregateTableDataset(unittest.TestCase):
         assert df["sum_age"].tolist() == [24, 25]
 
         input_df["timestamp"] = tomorrow
-        response = client.log("UserAgeNonTable", input_df)
+        response = client.log("fennel_webhook", "UserAgeNonTable", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         df, _ = UserAgeAggregated.lookup(ts, city=names)
         assert df.shape == (2, 3)
         assert df["city"].tolist() == ["mumbai", "delhi"]
         assert df["sum_age"].tolist() == [24, 25]
-
-        # Change the age of Sonu and Monu
-        input_df["age"] = [30, 40]
-        two_days_from_now = datetime.now() + timedelta(days=2)
-        input_df["timestamp"] = two_days_from_now
-        response = client.log("UserAge", input_df)
-        assert response.status_code == requests.codes.OK, response.json()
 
 
 ################################################################################
@@ -1095,6 +1098,7 @@ class TestAggregateTableDataset(unittest.TestCase):
 
 
 @meta(owner="gianni@fifa.com")
+@source(webhook.endpoint("PlayerInfo"))
 @dataset
 class PlayerInfo:
     name: str = field(key=True)
@@ -1106,6 +1110,7 @@ class PlayerInfo:
 
 
 @meta(owner="gianni@fifa.com")
+@source(webhook.endpoint("ClubSalary"))
 @dataset
 class ClubSalary:
     club: str = field(key=True)
@@ -1114,6 +1119,7 @@ class ClubSalary:
 
 
 @meta(owner="gianni@fifa.com")
+@source(webhook.endpoint("WAG"))
 @dataset
 class WAG:
     name: str = field(key=True)
@@ -1133,7 +1139,7 @@ class ManchesterUnitedPlayerInfo:
     salary: Optional[int]
     wag: Optional[str]
 
-    @pipeline(id=1)
+    @pipeline()
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
         cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
@@ -1175,7 +1181,7 @@ class ManchesterUnitedPlayerInfoBounded:
     salary: Optional[int]
     wag: Optional[str]
 
-    @pipeline(id=1)
+    @pipeline(version=1)
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
         cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
@@ -1209,8 +1215,8 @@ class ManchesterUnitedPlayerInfoBounded:
 
 class TestE2eIntegrationTestMUInfo(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_muinfo_e2e_test(self, client):
+    @mock
+    def test_muinfo_e2e_test(self, client, fake_data_plane):
         client.sync(
             datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo],
         )
@@ -1227,10 +1233,9 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         ]
         columns = ["name", "age", "height", "weight", "club", "timestamp"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("PlayerInfo", input_df)
+        response = client.log("fennel_webhook", "PlayerInfo", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         data = [
             ["Manchester United", yesterday, 1000000],
             ["PSG", yesterday, 2000000],
@@ -1238,10 +1243,9 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         ]
         columns = ["club", "timestamp", "salary"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("ClubSalary", input_df)
+        response = client.log("fennel_webhook", "ClubSalary", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         data = [
             ["Rashford", yesterday, "Lucia"],
             ["Maguire", yesterday, "Fern"],
@@ -1251,7 +1255,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         ]
         columns = ["name", "timestamp", "wag"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("WAG", input_df)
+        response = client.log("fennel_webhook", "WAG", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         # Do a lookup
         # Check with Nikhil on timestamp for CR7 - yesterday
@@ -1265,8 +1269,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
                 "Antony",
             ]
         )
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
         df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
         assert df.shape == (5, 8)
         assert df["club"].tolist() == [
@@ -1294,8 +1297,8 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
 
 class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_muinfo_e2e_bounded(self, client):
+    @mock
+    def test_muinfo_e2e_bounded(self, client, fake_data_plane):
         client.sync(
             datasets=[
                 PlayerInfo,
@@ -1327,10 +1330,9 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
         ]
         columns = ["name", "age", "height", "weight", "club", "timestamp"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("PlayerInfo", input_df)
+        response = client.log("fennel_webhook", "PlayerInfo", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         data = [
             ["Manchester United", minute_ago, 1000000],
             ["PSG", minute_ago, 2000000],
@@ -1338,10 +1340,9 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
         ]
         columns = ["club", "timestamp", "salary"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("ClubSalary", input_df)
+        response = client.log("fennel_webhook", "ClubSalary", input_df)
         assert response.status_code == requests.codes.OK, response.json()
-        if client.is_integration_client():
-            time.sleep(3)
+        client.sleep()
         data = [
             [
                 "Rashford",
@@ -1355,7 +1356,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
         ]
         columns = ["name", "timestamp", "wag"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("WAG", input_df)
+        response = client.log("fennel_webhook", "WAG", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         ts = pd.Series(
             [

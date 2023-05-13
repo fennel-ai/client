@@ -1,20 +1,23 @@
-import time
 from datetime import datetime
 
 import pandas as pd
 import pytest
-import fennel._vendor.requests as requests
 from typing import Optional
 
+import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.test_lib import mock_client
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
+
+webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -70,8 +73,8 @@ def power_4_alt(x: int) -> int:
 
 
 @pytest.mark.integration
-@mock_client
-def test_simple_invalid_extractor(client):
+@mock
+def test_simple_invalid_extractor(client, fake_data_plane):
     client.sync(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoExtractor],
@@ -83,10 +86,10 @@ def test_simple_invalid_extractor(client):
     ]
     columns = ["user_id", "name", "age", "country", "timestamp"]
     df = pd.DataFrame(data, columns=columns)
-    response = client.log("UserInfoDataset", df)
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
     if client.is_integration_client():
-        time.sleep(5)
+        client.sleep()
 
     with pytest.raises(Exception) as e:
         client.extract_features(
@@ -109,8 +112,8 @@ def test_simple_invalid_extractor(client):
 # This test is only an integration test because it requires a backend
 # to store state in.
 @pytest.mark.integration
-@mock_client
-def test_invalid_code_changes(client):
+@mock
+def test_invalid_code_changes(client, fake_data_plane):
     def sync():
         @meta(owner="test@test.com")
         @featureset

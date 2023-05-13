@@ -3,15 +3,18 @@ from datetime import datetime
 import pandas as pd
 
 from fennel.datasets import dataset, field
-
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.test_lib import mock_client
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
+
+webhook = Webhook(name="fennel_webhook")
 
 
 # docsnip featuresets_reading_datasets
 @meta(owner="data-eng-team@fennel.ai")
+@source(webhook.endpoint("User"))
 @dataset
 class User:
     uid: int = field(key=True)
@@ -37,8 +40,8 @@ class UserFeatures:
 # /docsnip
 
 
-@mock_client
-def test_lookup_in_extractor(client):
+@mock
+def test_lookup_in_extractor(client, fake_data_plane):
     client.sync(datasets=[User], featuresets=[UserFeatures])
     now = datetime.now()
     data = pd.DataFrame(
@@ -48,7 +51,7 @@ def test_lookup_in_extractor(client):
             "timestamp": [now, now, now],
         }
     )
-    res = client.log("User", data)
+    res = client.log("fennel_webhook", "User", data)
     assert res.status_code == 200, res.json()
 
     feature_df = client.extract_features(

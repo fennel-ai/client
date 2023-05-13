@@ -8,12 +8,16 @@ import requests
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.lib.schema.schema import oneof, regex, between
-from fennel.test_lib import mock_client
+from fennel.sources import source, Webhook
+from fennel.test_lib import mock
 
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+"
 
+webhook = Webhook(name="fennel_webhook")
+
 
 @meta(owner="test@test.com")
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -32,8 +36,8 @@ class UserInfoDataset:
 
 # docsnip testing_multiple_snippets
 class TestDataset(unittest.TestCase):
-    @mock_client
-    def test_log_with_additional_schema(self, client):
+    @mock
+    def test_log_with_additional_schema(self, client, fake_data_plane):
         # Log correct data
         client.sync(datasets=[UserInfoDataset])
         now = datetime.now()
@@ -49,7 +53,7 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         # Log incorrect data
@@ -66,7 +70,7 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD
         if client.is_integration_client():
             assert (
@@ -92,7 +96,7 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD
         if client.is_integration_client():
             assert (
@@ -118,7 +122,7 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD
         if client.is_integration_client():
             assert (

@@ -4,12 +4,12 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-import fennel._vendor.requests as requests
 
+import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.sources import source, S3
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 s3 = S3(
     name="ratings_source",
@@ -38,13 +38,15 @@ class MovieInfo103:
 
 class TestMovieInfo103(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_log_to_MovieInfo103(self, client):
+    @mock
+    def test_log_to_MovieInfo103(self, client, fake_data_plane):
         """Log some data to the dataset and check if it is logged correctly."""
+        if client.integration_mode() == "local":
+            pytest.skip("Skipping integration test in local mode")
+
         # Sync the dataset
         client.sync(datasets=[MovieInfo103])
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
         t = datetime.fromtimestamp(1672858163)
         data = [
             [
@@ -60,7 +62,17 @@ class TestMovieInfo103(unittest.TestCase):
         columns = ["movieId", "title", "genres", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
 
-        response = client.log("MovieInfo103", df)
+        if client.is_integration_client():
+            response = client.log("MovieInfo103", df)
+        else:
+            response = (
+                fake_data_plane[s3]
+                .bucket(
+                    bucket_name="fennel-demo-data",
+                    prefix="movielens_sampled/movies_timestamped.csv",
+                )
+                .upload(df)
+            )
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups
@@ -95,13 +107,12 @@ class TestMovieInfo103(unittest.TestCase):
         assert found.tolist() == [False, False, True, False]
 
     @pytest.mark.data_integration
-    @mock_client
-    def test_s3_data_integration_source(self, client):
+    @mock
+    def test_s3_data_integration_source(self, client, fake_data_plane):
         """Same test as test_log_to_MovieInfo103 but with an S3 source."""
         # Sync the dataset
         client.sync(datasets=[MovieInfo103])
-        if client.is_integration_client():
-            time.sleep(5)
+        client.sleep()
 
         # Time for data_integration to do its magic
         time.sleep(10)
