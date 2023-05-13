@@ -11,8 +11,9 @@ from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
-
 # noinspection PyUnresolvedReferences
+
+webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@fennel.ai")
@@ -37,7 +38,7 @@ class MemberActivityDataset:
 
 
 @meta(owner="test@fennel.ai")
-@source(Webhook("MemberDataset"))
+@source(webhook.endpoint("MemberDataset"))
 @dataset
 class MemberDataset:
     pk: str
@@ -122,7 +123,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
     @mock_client
     def test_missing_features(self, client):
         @meta(owner="test@fennel.ai")
-        @source(Webhook("MemberActivityDataset"))
+        @source(webhook.endpoint("MemberActivityDataset"))
         @dataset
         class MemberActivityDataset:
             url: str
@@ -135,7 +136,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             DOMAIN_USED_COUNT: int
 
         @meta(owner="test@fennel.ai")
-        @source(Webhook("MemberDataset"))
+        @source(webhook.endpoint("MemberDataset"))
         @dataset
         class MemberDataset:
             pk: str

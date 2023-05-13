@@ -319,7 +319,7 @@ class ExtTable(google.protobuf.message.Message):
     KAFKA_TOPIC_FIELD_NUMBER: builtins.int
     SNOWFLAKE_TABLE_FIELD_NUMBER: builtins.int
     BIGQUERY_TABLE_FIELD_NUMBER: builtins.int
-    WEBHOOK_FIELD_NUMBER: builtins.int
+    ENDPOINT_FIELD_NUMBER: builtins.int
     @property
     def mysql_table(self) -> global___MySQLTable: ...
     @property
@@ -333,7 +333,7 @@ class ExtTable(google.protobuf.message.Message):
     @property
     def bigquery_table(self) -> global___BigqueryTable: ...
     @property
-    def webhook(self) -> global___Webhook: ...
+    def endpoint(self) -> global___WebhookEndpoint: ...
     def __init__(
         self,
         *,
@@ -343,11 +343,11 @@ class ExtTable(google.protobuf.message.Message):
         kafka_topic: global___KafkaTopic | None = ...,
         snowflake_table: global___SnowflakeTable | None = ...,
         bigquery_table: global___BigqueryTable | None = ...,
-        webhook: global___Webhook | None = ...,
+        endpoint: global___WebhookEndpoint | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bigquery_table", b"bigquery_table", "kafka_topic", b"kafka_topic", "mysql_table", b"mysql_table", "pg_table", b"pg_table", "s3_table", b"s3_table", "snowflake_table", b"snowflake_table", "variant", b"variant", "webhook", b"webhook"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bigquery_table", b"bigquery_table", "kafka_topic", b"kafka_topic", "mysql_table", b"mysql_table", "pg_table", b"pg_table", "s3_table", b"s3_table", "snowflake_table", b"snowflake_table", "variant", b"variant", "webhook", b"webhook"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql_table", "pg_table", "s3_table", "kafka_topic", "snowflake_table", "bigquery_table", "webhook"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bigquery_table", b"bigquery_table", "endpoint", b"endpoint", "kafka_topic", b"kafka_topic", "mysql_table", b"mysql_table", "pg_table", b"pg_table", "s3_table", b"s3_table", "snowflake_table", b"snowflake_table", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bigquery_table", b"bigquery_table", "endpoint", b"endpoint", "kafka_topic", b"kafka_topic", "mysql_table", b"mysql_table", "pg_table", b"pg_table", "s3_table", b"s3_table", "snowflake_table", b"snowflake_table", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql_table", "pg_table", "s3_table", "kafka_topic", "snowflake_table", "bigquery_table", "endpoint"] | None: ...
 
 global___ExtTable = ExtTable
 
@@ -479,6 +479,26 @@ class SnowflakeTable(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "table_name", b"table_name"]) -> None: ...
 
 global___SnowflakeTable = SnowflakeTable
+
+@typing_extensions.final
+class WebhookEndpoint(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DB_FIELD_NUMBER: builtins.int
+    ENDPOINT_FIELD_NUMBER: builtins.int
+    @property
+    def db(self) -> global___ExtDatabase: ...
+    endpoint: builtins.str
+    def __init__(
+        self,
+        *,
+        db: global___ExtDatabase | None = ...,
+        endpoint: builtins.str = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "endpoint", b"endpoint"]) -> None: ...
+
+global___WebhookEndpoint = WebhookEndpoint
 
 @typing_extensions.final
 class Source(google.protobuf.message.Message):

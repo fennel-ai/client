@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import pytest
-import fennel._vendor.requests as requests
 from typing import Optional
 
+import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Sum, Average, Count
 from fennel.lib.metadata import meta
@@ -16,14 +16,15 @@ from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
-
 ################################################################################
 #                           Dataset Unit Tests
 ################################################################################
 
+webhook = Webhook(name="fennel_webhook")
+
 
 @meta(owner="test@test.com")
-@source(Webhook("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -70,7 +71,7 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
     @mock_client
@@ -85,7 +86,7 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do lookup on UserInfoDataset
@@ -124,14 +125,14 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         data = [
             [18232, "Ross", "32", "USA", now],
             [18234, "Monica", 24, "Chile", yesterday],
         ]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
@@ -187,7 +188,7 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK
 
         client.sleep()
@@ -228,7 +229,7 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         assert len(response.json()["error"]) > 0
 
@@ -318,7 +319,7 @@ class TestDataset(unittest.TestCase):
 #             "timestamp",
 #         ]
 #         df = pd.DataFrame(data, columns=columns)
-#         response = client.log("DocumentContentDataset", df)
+#         response = client.log("fennel_webhook","DocumentContentDataset", df)
 #         assert response.status_code == requests.codes.OK, response.json()
 #
 #         # Do some lookups
@@ -335,7 +336,7 @@ class TestDataset(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
-@source(Webhook("RatingActivity"))
+@source(webhook.endpoint("RatingActivity"))
 @dataset
 class RatingActivity:
     userid: int
@@ -379,7 +380,7 @@ class MovieRatingCalculated:
 
 # Copy of above dataset but can be used as an input to another pipeline.
 @meta(owner="test@test.com")
-@source(Webhook("MovieRating"))
+@source(webhook.endpoint("MovieRating"))
 @dataset
 class MovieRating:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -441,7 +442,7 @@ class TestBasicTransform(unittest.TestCase):
         ]
         columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("MovieRating", df)
+        response = client.log("fennel_webhook", "MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         # Do some lookups to verify pipeline_transform is working as expected
@@ -476,7 +477,7 @@ class TestBasicTransform(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
-@source(Webhook("MovieRevenue"))
+@source(webhook.endpoint("MovieRevenue"))
 @dataset
 class MovieRevenue:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -540,14 +541,14 @@ class TestBasicJoin(unittest.TestCase):
         ]
         columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("MovieRating", df)
+        response = client.log("fennel_webhook", "MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         two_hours_ago = now - timedelta(hours=2)
         data = [["Jumanji", 2000000, two_hours_ago], ["Titanic", 50000000, now]]
         columns = ["movie", "revenue", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("MovieRevenue", df)
+        response = client.log("fennel_webhook", "MovieRevenue", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups to verify pipeline_join is working as expected
@@ -609,7 +610,7 @@ class TestBasicAggregate(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("RatingActivity", df)
+        response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK
 
         client.sleep()
@@ -698,7 +699,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("RatingActivity", df)
+        response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         client.sleep()
@@ -780,7 +781,7 @@ class TestBasicFilter(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("RatingActivity", df)
+        response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         client.sleep()
@@ -812,7 +813,7 @@ class TestBasicFilter(unittest.TestCase):
 
 
 @meta(owner="me@fennel.ai")
-@source(Webhook("Activity"))
+@source(webhook.endpoint("Activity"))
 @dataset(history="4m")
 class Activity:
     user_id: int
@@ -823,7 +824,7 @@ class Activity:
 
 
 @meta(owner="me@fenne.ai")
-@source(Webhook("MerchantInfo"))
+@source(webhook.endpoint("MerchantInfo"))
 @dataset(history="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
@@ -967,7 +968,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         ]
         columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("Activity", df)
+        response = client.log("fennel_webhook", "Activity", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         client.sleep()
@@ -980,7 +981,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
 
         columns = ["merchant_id", "category", "location", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("MerchantInfo", df)
+        response = client.log("fennel_webhook", "MerchantInfo", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         client.sleep()
@@ -1001,7 +1002,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
 
 
 @meta(owner="me@fennel.ai")
-@source(Webhook("UserAge"))
+@source(webhook.endpoint("UserAge"))
 @dataset
 class UserAge:
     name: str = field(key=True)
@@ -1011,7 +1012,7 @@ class UserAge:
 
 
 @meta(owner="me@fennel.ai")
-@source(Webhook("UserAgeNonTable"))
+@source(webhook.endpoint("UserAgeNonTable"))
 @dataset
 class UserAgeNonTable:
     name: str
@@ -1071,7 +1072,7 @@ class TestAggregateTableDataset(unittest.TestCase):
 
         columns = ["name", "age", "city", "timestamp"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserAge", input_df)
+        response = client.log("fennel_webhook", "UserAge", input_df)
         assert response.status_code == requests.codes.OK, response.json()
 
         client.sleep()
@@ -1083,7 +1084,7 @@ class TestAggregateTableDataset(unittest.TestCase):
         assert df["sum_age"].tolist() == [24, 25]
 
         input_df["timestamp"] = tomorrow
-        response = client.log("UserAgeNonTable", input_df)
+        response = client.log("fennel_webhook", "UserAgeNonTable", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         df, _ = UserAgeAggregated.lookup(ts, city=names)
         assert df.shape == (2, 3)
@@ -1097,7 +1098,7 @@ class TestAggregateTableDataset(unittest.TestCase):
 
 
 @meta(owner="gianni@fifa.com")
-@source(Webhook("PlayerInfo"))
+@source(webhook.endpoint("PlayerInfo"))
 @dataset
 class PlayerInfo:
     name: str = field(key=True)
@@ -1109,7 +1110,7 @@ class PlayerInfo:
 
 
 @meta(owner="gianni@fifa.com")
-@source(Webhook("ClubSalary"))
+@source(webhook.endpoint("ClubSalary"))
 @dataset
 class ClubSalary:
     club: str = field(key=True)
@@ -1118,7 +1119,7 @@ class ClubSalary:
 
 
 @meta(owner="gianni@fifa.com")
-@source(Webhook("WAG"))
+@source(webhook.endpoint("WAG"))
 @dataset
 class WAG:
     name: str = field(key=True)
@@ -1232,7 +1233,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         ]
         columns = ["name", "age", "height", "weight", "club", "timestamp"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("PlayerInfo", input_df)
+        response = client.log("fennel_webhook", "PlayerInfo", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         data = [
@@ -1242,7 +1243,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         ]
         columns = ["club", "timestamp", "salary"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("ClubSalary", input_df)
+        response = client.log("fennel_webhook", "ClubSalary", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         data = [
@@ -1254,7 +1255,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         ]
         columns = ["name", "timestamp", "wag"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("WAG", input_df)
+        response = client.log("fennel_webhook", "WAG", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         # Do a lookup
         # Check with Nikhil on timestamp for CR7 - yesterday
@@ -1329,7 +1330,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
         ]
         columns = ["name", "age", "height", "weight", "club", "timestamp"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("PlayerInfo", input_df)
+        response = client.log("fennel_webhook", "PlayerInfo", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         data = [
@@ -1339,7 +1340,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
         ]
         columns = ["club", "timestamp", "salary"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("ClubSalary", input_df)
+        response = client.log("fennel_webhook", "ClubSalary", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         data = [
@@ -1355,7 +1356,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
         ]
         columns = ["name", "timestamp", "wag"]
         input_df = pd.DataFrame(data, columns=columns)
-        response = client.log("WAG", input_df)
+        response = client.log("fennel_webhook", "WAG", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         ts = pd.Series(
             [

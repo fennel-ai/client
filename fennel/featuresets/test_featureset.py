@@ -12,9 +12,11 @@ from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
+webhook = Webhook(name="fennel_webhook")
+
 
 @meta(owner="test@test.com")
-@source(Webhook("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

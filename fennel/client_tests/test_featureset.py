@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import pytest
-import fennel._vendor.requests as requests
 from typing import Optional
 
+import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.includes import includes
@@ -15,14 +15,15 @@ from fennel.lib.schema import Embedding, inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
-
 ################################################################################
 #                           Feature Single Extractor Unit Tests
 ################################################################################
 
+webhook = Webhook(name="fennel_webhook")
+
 
 @meta(owner="test@test.com")
-@source(Webhook("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -162,7 +163,7 @@ class TestSimpleExtractor(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         ts = pd.Series([now, now])
@@ -203,7 +204,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         feature_df = client.extract_features(
@@ -289,7 +290,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
 
@@ -358,7 +359,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 
 
 @meta(owner="aditya@fennel.ai")
-@source(Webhook("DocumentContentDataset"))
+@source(webhook.endpoint("DocumentContentDataset"))
 @dataset
 class DocumentContentDataset:
     doc_id: int = field(key=True)
@@ -425,7 +426,7 @@ class TestDocumentDataset(unittest.TestCase):
             "timestamp",
         ]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("DocumentContentDataset", df)
+        response = client.log("fennel_webhook", "DocumentContentDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         feature_df = client.extract_features(

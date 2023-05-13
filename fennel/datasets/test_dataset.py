@@ -15,9 +15,11 @@ from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
+webhook = Webhook(name="fennel_webhook")
+
 
 @meta(owner="test@test.com")
-@source(Webhook("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -86,13 +88,13 @@ def test_simple_dataset():
         ],
         "sources": [
             {
-                "table": {"webhook": {"name": "UserInfoDataset"}},
+                "table": {"endpoint": {"endpoint": "UserInfoDataset"}},
                 "dataset": "UserInfoDataset",
                 "lateness": "3600s",
             }
         ],
         "extdbs": [
-            {"name": "UserInfoDataset", "webhook": {"name": "UserInfoDataset"}}
+            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
         ],
     }
     # Ignoring schema validation since they are bytes and not human readable
@@ -103,7 +105,7 @@ def test_simple_dataset():
     )
 
 
-@source(Webhook("Activity"))
+@source(webhook.endpoint("Activity"))
 @meta(owner="test@test.com")
 @dataset(history="120d")
 class Activity:
@@ -157,12 +159,14 @@ def test_dataset_with_retention():
         ],
         "sources": [
             {
-                "table": {"webhook": {"name": "Activity"}},
+                "table": {"endpoint": {"endpoint": "Activity"}},
                 "dataset": "Activity",
                 "lateness": "3600s",
             }
         ],
-        "extdbs": [{"name": "Activity", "webhook": {"name": "Activity"}}],
+        "extdbs": [
+            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
+        ],
     }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())

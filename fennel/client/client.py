@@ -53,9 +53,9 @@ class Client:
             raise NotImplementedError
 
     def sync(
-            self,
-            datasets: Optional[List[Dataset]] = None,
-            featuresets: Optional[List[Featureset]] = None,
+        self,
+        datasets: Optional[List[Dataset]] = None,
+        featuresets: Optional[List[Featureset]] = None,
     ):
         """
         Sync the client with the server. This will register any datasets or
@@ -92,19 +92,24 @@ class Client:
         check_response(response)
 
     def log(
-            self, webhook: str, dataframe: pd.DataFrame, batch_size: int = 1000
+        self,
+        webhook: str,
+        endpoint: str,
+        dataframe: pd.DataFrame,
+        batch_size: int = 1000,
     ):
         """
         Log data to a webhook.
 
         :param webhook: Name of the webhook to log data to.
+        :param endpoint: Endpoint within the webhook to log data to.
         :param dataframe: Dataframe to log to the dataset.
         :param batch_size: Batch size to use when logging data.
         :return:
         """
         num_rows = dataframe.shape[0]
         if num_rows == 0:
-            print("No rows to log to webhook", webhook)
+            print(f"No rows to log to webhook {webhook}:{endpoint}")
             return
 
         for i in range(math.ceil(num_rows / batch_size)):
@@ -114,13 +119,14 @@ class Client:
             payload = mini_df.to_json(orient="records")
             req = {
                 "webhook": webhook,
+                "endpoint": endpoint,
                 "rows": payload,
             }
             response = self._post_json("{}/log".format(V1_API), req)
         return response
 
     def _post_json(
-            self, path: str, req: Dict[str, Any], compress: bool = False
+        self, path: str, req: Dict[str, Any], compress: bool = False
     ):
         payload = json.dumps(req).encode("utf-8")
         headers = {
@@ -135,11 +141,11 @@ class Client:
         return self._post(path, req, headers, compress)
 
     def _post(
-            self,
-            path: str,
-            data: Any,
-            headers: Dict[str, str],
-            compress: bool = False,
+        self,
+        path: str,
+        data: Any,
+        headers: Dict[str, str],
+        compress: bool = False,
     ):
         if compress:
             data = gzip.compress(data)
@@ -156,13 +162,13 @@ class Client:
         return response
 
     def extract_features(
-            self,
-            input_feature_list: List[Union[Feature, Featureset]],
-            output_feature_list: List[Union[Feature, Featureset]],
-            input_dataframe: pd.DataFrame,
-            log: bool = False,
-            workflow: Optional[str] = None,
-            sampling_rate: Optional[float] = None,
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: Optional[str] = None,
+        sampling_rate: Optional[float] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         """
         Extract features for a given output feature list from an input
@@ -216,18 +222,18 @@ class Client:
         response = self._post_json("{}/extract_features".format(V1_API), req)
         check_response(response)
         if len(output_feature_list) > 1 or isinstance(
-                output_feature_list[0], Featureset
+            output_feature_list[0], Featureset
         ):
             return pd.DataFrame(response.json())
         else:
             return pd.Series(response.json())
 
     def extract_historical_features(
-            self,
-            input_feature_list: List[Union[Feature, Featureset]],
-            output_feature_list: List[Union[Feature, Featureset]],
-            input_dataframe: pd.DataFrame,
-            timestamps: pd.Series,
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_dataframe: pd.DataFrame,
+        timestamps: pd.Series,
     ) -> Union[pd.DataFrame, pd.Series]:
         """
         Extract point in time correct features from a dataframe, where the
@@ -278,7 +284,7 @@ class Client:
             "{}/extract_historical_features".format(V1_API), req
         )
         if len(output_feature_list) > 1 or isinstance(
-                output_feature_list[0], Featureset
+            output_feature_list[0], Featureset
         ):
             return pd.DataFrame(response.json())
         else:

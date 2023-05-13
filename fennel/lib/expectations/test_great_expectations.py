@@ -2,10 +2,10 @@ import unittest
 from datetime import datetime
 
 import pytest
-import fennel._vendor.requests as requests
 from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional
 
+import fennel._vendor.requests as requests
 import fennel.gen.expectations_pb2 as exp_proto
 from fennel.datasets import dataset, field
 from fennel.lib.expectations import (
@@ -20,10 +20,12 @@ from fennel.lib.schema import oneof
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
+webhook = Webhook(name="fennel_webhook")
+
 
 def test_dataset_expectation_creation():
     @meta(owner="test@test.com")
-    @source(Webhook("UserInfoDS"))
+    @source(webhook.endpoint("UserInfoDS"))
     @dataset
     class UserInfoDS:
         user_id: int = field(key=True)
@@ -86,7 +88,7 @@ def test_dataset_expectation_creation():
 
 
 @meta(owner="test@test.com")
-@source(Webhook("UserInfoDS"))
+@source(webhook.endpoint("UserInfoDS"))
 @dataset
 class UserInfoDS:
     user_id: int = field(key=True)

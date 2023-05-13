@@ -30,7 +30,7 @@ class TestDataset(unittest.TestCase):
         # Sync the dataset
         client.sync(datasets=[User])
         # ... some other stuff
-        client.log('User', pd.Dataframe(...))
+        client.log("fennel_webhook",'User', pd.Dataframe(...))
         # ... some other stuff
         found = client.extract_features(...)
         self.assertEqual(found, expected)    

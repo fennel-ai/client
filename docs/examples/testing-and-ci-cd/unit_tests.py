@@ -13,9 +13,11 @@ from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 
+webhook = Webhook(name="fennel_webhook")
+
 
 @meta(owner="test@test.com")
-@source(Webhook("RatingActivity"))
+@source(webhook.endpoint("RatingActivity"))
 @dataset
 class RatingActivity:
     userid: int
@@ -83,7 +85,7 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("RatingActivity", df)
+        response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK
 
         # Do some lookups to verify pipeline_aggregate
@@ -170,7 +172,7 @@ def get_country_geoid(country: str) -> int:
 
 # docsnip featuresets_testing_with_dataset
 @meta(owner="test@test.com")
-@source(Webhook("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -239,7 +241,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         feature_df = client.extract_features(

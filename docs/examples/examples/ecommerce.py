@@ -103,7 +103,7 @@ class TestUserLivestreamFeatures(unittest.TestCase):
             [1, 312, 2, now - timedelta(hours=4)],
         ]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("db:my-postgres:orders", df)
+        response = client.log("fennel_webhook", "db:my-postgres:orders", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         feature_df = client.extract_features(
@@ -134,5 +134,6 @@ class TestUserLivestreamFeatures(unittest.TestCase):
         self.assertEqual(
             feature_df["UserSeller.num_orders_1w"].tolist(), [2, 1, 0]
         )
+
 
 # /docsnip

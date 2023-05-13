@@ -72,7 +72,7 @@ class IntegrationClient:
     def log(self, dataset_name: str, df: pd.DataFrame):
         df_json = df.to_json(orient="records")
         try:
-            self._client.log(dataset_name, df_json)
+            self._client.log("fennel_webhook", dataset_name, df_json)
         except Exception as e:
             return FakeResponse(400, str(e))
         return FakeResponse(200, "OK")

@@ -87,7 +87,7 @@ class Document:
     @pipeline()
     @inputs(NotionDocs, CodaDocs, GoogleDocs)
     def notion_pipe(
-            cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
+        cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
     ):
         new_schema = {
             "doc_id": int,
@@ -98,18 +98,18 @@ class Document:
             "origin": str,
         }
         return (
-                notion_docs.transform(
-                    lambda df: cls.doc_pipeline_helper(df, "Notion"),
-                    schema=new_schema,
-                )
-                + coda_docs.transform(
-            lambda df: cls.doc_pipeline_helper(df, "Coda"),
-            schema=new_schema,
-        )
-                + google_docs.transform(
-            lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
-            schema=new_schema,
-        )
+            notion_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "Notion"),
+                schema=new_schema,
+            )
+            + coda_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "Coda"),
+                schema=new_schema,
+            )
+            + google_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
+                schema=new_schema,
+            )
         )
 
     @classmethod
@@ -378,9 +378,11 @@ class TestSearchExample(unittest.TestCase):
         columns = ["doc_id", "body", "title", "owner", "creation_timestamp"]
         df = pd.DataFrame(data, columns=columns)
         if client.is_integration_client():
-            response = client.log("NotionDocs", df)
+            response = client.log("fennel_webhook", "NotionDocs", df)
         else:
-            response = client.log("s3:s3_source:engagement:notion", df)
+            response = client.log(
+                "fennel_webhook", "s3:s3_source:engagement:notion", df
+            )
 
         assert response.status_code == requests.codes.OK, response.json()
 
@@ -418,9 +420,11 @@ class TestSearchExample(unittest.TestCase):
         columns = ["doc_id", "body", "title", "owner", "creation_timestamp"]
         df = pd.DataFrame(data, columns=columns)
         if client.is_integration_client():
-            response = client.log("CodaDocs", df)
+            response = client.log("fennel_webhook", "CodaDocs", df)
         else:
-            response = client.log("s3:s3_source:engagement:coda", df)
+            response = client.log(
+                "fennel_webhook", "s3:s3_source:engagement:coda", df
+            )
 
         assert response.status_code == requests.codes.OK, response.json()
 
@@ -437,9 +441,11 @@ class TestSearchExample(unittest.TestCase):
         columns = ["user_id", "doc_id", "action_type", "view_time", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
         if client.is_integration_client():
-            response = client.log("UserActivity", df)
+            response = client.log("fennel_webhook", "UserActivity", df)
         else:
-            response = client.log("db:bg_source:user_activity", df)
+            response = client.log(
+                "fennel_webhook", "db:bg_source:user_activity", df
+            )
         assert response.status_code == requests.codes.OK, response.json()
 
     @pytest.mark.integration
@@ -565,38 +571,38 @@ class TestSearchExample(unittest.TestCase):
 
         if client.is_integration_client():
             result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                         0
-                     ] == ["This", "is", "a", "random", "Coda", "document"]
+                0
+            ] == ["This", "is", "a", "random", "Coda", "document"]
             assert result.all()
 
             result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                         1
-                     ] == [
-                         "This",
-                         "is",
-                         "a",
-                         "rand",
-                         "document",
-                         "in",
-                         "Coda",
-                         "with",
-                         "words",
-                     ]
+                1
+            ] == [
+                "This",
+                "is",
+                "a",
+                "rand",
+                "document",
+                "in",
+                "Coda",
+                "with",
+                "words",
+            ]
             assert result.all()
         else:
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                       0
-                   ] == ["This", "is", "a", "random", "Coda", "document"]
+                0
+            ] == ["This", "is", "a", "random", "Coda", "document"]
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                       1
-                   ] == [
-                       "This",
-                       "is",
-                       "a",
-                       "rand",
-                       "document",
-                       "in",
-                       "Coda",
-                       "with",
-                       "words",
-                   ]
+                1
+            ] == [
+                "This",
+                "is",
+                "a",
+                "rand",
+                "document",
+                "in",
+                "Coda",
+                "with",
+                "words",
+            ]

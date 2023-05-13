@@ -11,6 +11,8 @@ from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
+webhook = Webhook(name="fennel_webhook")
+
 
 # docsnip featureset
 @featureset
@@ -159,7 +161,7 @@ class Movie:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(Webhook("UserInfo"))
+@source(webhook.endpoint("UserInfo"))
 @dataset
 class UserInfo:
     uid: int = field(key=True)
@@ -208,7 +210,7 @@ def test_multiple_features_extracted(client):
     now = datetime.now()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
     df = pd.DataFrame(data, columns=["uid", "city", "update_time"])
-    res = client.log("UserInfo", df)
+    res = client.log("fennel_webhook", "UserInfo", df)
     assert res.status_code == 200
 
     df = client.extract_features(
@@ -283,7 +285,7 @@ def test_extractors_across_featuresets(client):
     now = datetime.now()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
     df = pd.DataFrame(data, columns=["uid", "city", "update_time"])
-    res = client.log("UserInfo", df)
+    res = client.log("fennel_webhook", "UserInfo", df)
     assert res.status_code == 200
 
     df = client.extract_features(

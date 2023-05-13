@@ -132,7 +132,7 @@ def test_overview(client):
 
     df = pd.DataFrame(data, columns=["uid", "dob", "country", "signup_time"])
 
-    client.log("User", df)
+    client.log("fennel_webhook", "User", df)
 
     data = [
         [1, 100, "US", 1, now],
@@ -155,7 +155,7 @@ def test_overview(client):
             "timestamp",
         ],
     )
-    res = client.log("kafka:kafka:transactions", df)
+    res = client.log("fennel_webhook", "kafka:kafka:transactions", df)
     assert res.status_code == 200, res.json()
 
     # Do a lookup on UserTransactionsAbroad

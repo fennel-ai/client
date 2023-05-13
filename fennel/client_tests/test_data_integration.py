@@ -39,7 +39,7 @@ class MovieInfo103:
 class TestMovieInfo103(unittest.TestCase):
     @pytest.mark.integration
     @mock_client
-    def test_log_to_MovieInfo103(self, client):
+    def test_log_to_MovieInfo103(self, client, mock_data_plane):
         """Log some data to the dataset and check if it is logged correctly."""
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
@@ -63,12 +63,14 @@ class TestMovieInfo103(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
 
         if client.is_integration_client():
-            response = client.log("s3:ratings_source:movies_timestamped.csv",
-                df)
-        else:
             response = client.log(
-                "s3:ratings_source:fennel-demo-data:movielens_sampled/movies_timestamped.csv",
-                df)
+                "MovieInfo103", df
+            )
+        else:
+            response = mock_data_plane[s3].bucket(
+                bucket_name="fennel-demo-data",
+                prefix="movielens_sampled/movies_timestamped.csv",
+            ).send(df)
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups

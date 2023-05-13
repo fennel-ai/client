@@ -15,6 +15,8 @@ from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
+webhook = Webhook(name="fennel_webhook")
+
 
 @meta(
     owner="aditya@fennel.ai",
@@ -23,7 +25,7 @@ from fennel.test_lib import *
     deprecated=True,
 )
 @dataset
-@source(Webhook("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"))
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -95,7 +97,7 @@ def test_simple_dataset():
 
 def test_complex_dataset_with_fields():
     @dataset(history="1y")
-    @source(Webhook("YextUserInfoDataset"))
+    @source(webhook.endpoint("YextUserInfoDataset"))
     @meta(owner="daniel@yext.com", description="test")
     class YextUserInfoDataset:
         user_id: int = field(key=True).meta(
@@ -187,18 +189,16 @@ def test_complex_dataset_with_fields():
         ],
         "sources": [
             {
-                "table": {"webhook": {"name": "YextUserInfoDataset"}},
+                "table": {"endpoint": {"endpoint": "YextUserInfoDataset"}},
                 "dataset": "YextUserInfoDataset",
                 "lateness": "3600s",
             }
         ],
         "extdbs": [
-            {
-                "name": "YextUserInfoDataset",
-                "webhook": {"name": "YextUserInfoDataset"},
-            }
+            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
         ],
     }
+
     expected_sync_request = ParseDict(d, SyncRequest())
     expected_sync_request.datasets[0].pycode.Clear()
     sync_request.datasets[0].pycode.Clear()

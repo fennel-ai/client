@@ -15,6 +15,7 @@ from fennel.sources import (
     BigQuery,
     Kafka,
 )
+
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 

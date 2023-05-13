@@ -15,4 +15,5 @@ from fennel.sources.sources import (
     S3Connector,
     KafkaConnector,
     TableConnector,
+    WebhookConnector,
 )

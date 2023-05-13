@@ -39,6 +39,7 @@ from fennel.lib.to_proto import (
 )
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.integration_client import IntegrationClient
+from fennel.test_lib.test_data_plane import TestDataPlane
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -210,7 +211,7 @@ class _DatasetInfo:
 
 
 class MockClient(Client):
-    def __init__(self):
+    def __init__(self, data_plane: TestDataPlane = None):
         self.dataset_requests: Dict[str, CoreDataset] = {}
         self.featureset_requests: Dict[str, CoreFeatureset] = {}
         self.features_for_fs: Dict[str, List[ProtoFeature]]
@@ -231,7 +232,8 @@ class MockClient(Client):
             None,
             None,
         )
-        self.source_to_dataset_map = defaultdict(list)
+        self.data_plane = data_plane
+        self.webhook_to_dataset_map = defaultdict(list)
         self.extractors: List[Extractor] = []
 
     # ----------------- Public methods -----------------
@@ -245,7 +247,13 @@ class MockClient(Client):
     def is_integration_client(self) -> bool:
         return False
 
-    def log(self, webhook: str, df: pd.DataFrame, _batch_size: int = 1000):
+    def log(
+            self,
+            webhook: str,
+            endpoint: str,
+            df: pd.DataFrame,
+            _batch_size: int = 1000,
+    ):
         if df.shape[0] == 0:
             print(f"Skipping log of empty dataframe for webhook {webhook}")
             return
@@ -255,10 +263,13 @@ class MockClient(Client):
                 "Warning: Dataframe is too large, consider using a small dataframe"
             )
 
-        if webhook not in self.source_to_dataset_map:
-            return FakeResponse(404, f"Source {webhook} not found")
+        webhook_endpoint = f"{webhook}:{endpoint}"
+        if webhook_endpoint not in self.webhook_to_dataset_map:
+            return FakeResponse(
+                404, f"Webhook endpoint {webhook_endpoint} not " f"found"
+            )
 
-        for ds in self.source_to_dataset_map[webhook]:
+        for ds in self.webhook_to_dataset_map[webhook_endpoint]:
             resp = self._internal_log(ds, df)
             if resp.status_code != 200:
                 return resp
@@ -283,12 +294,12 @@ class MockClient(Client):
             self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
             if hasattr(dataset, sources.SOURCE_FIELD):
                 connector = getattr(dataset, sources.SOURCE_FIELD)
-                self.source_to_dataset_map[self._connector_to_mock_name(
-                    connector)].append(dataset._name)
-                print(
-                    f"Registering source {self._connector_to_mock_name(connector)}"
-                    f" for dataset {dataset._name}"
-                )
+                if isinstance(connector, sources.WebhookConnector):
+                    src = connector.data_source
+                    webhook_endpoint = f"{src.name}:{connector.endpoint}"
+                    self.webhook_to_dataset_map[webhook_endpoint].append(
+                        dataset._name
+                    )
 
             self.datasets[dataset._name] = dataset
             self.dataset_info[dataset._name] = _DatasetInfo(
@@ -419,8 +430,7 @@ class MockClient(Client):
 
     def _internal_log(self, dataset_name: str, df: pd.DataFrame):
         if df.shape[0] == 0:
-            print(
-                f"Skipping log of empty dataframe for webhook {dataset_name}")
+            print(f"Skipping log of empty dataframe for webhook {dataset_name}")
             return
 
         if dataset_name not in self.dataset_requests:
@@ -469,8 +479,7 @@ class MockClient(Client):
                 continue
             if ret.is_aggregate:
                 # Aggregate pipelines are not logged
-                self.aggregated_datasets[
-                    pipeline.dataset_name] = ret.agg_result
+                self.aggregated_datasets[pipeline.dataset_name] = ret.agg_result
                 continue
 
             # Recursively log the output of the pipeline to the datasets
@@ -478,17 +487,6 @@ class MockClient(Client):
             if resp.status_code != 200:
                 return resp
         return FakeResponse(200, "OK")
-
-    def _connector_to_mock_name(self, connector: sources.DataConnector):
-        source = connector.data_source
-        if isinstance(connector, sources.S3Connector):
-            return f"s3:{source.name}:{connector.bucket_name}:{connector.path_prefix}"
-        elif isinstance(connector, sources.TableConnector):
-            return f"db:{source.name}:{connector.table_name}"
-        elif isinstance(connector, sources.KafkaConnector):
-            return f"kafka:{source.name}:{connector.topic}"
-        elif isinstance(connector, sources.Webhook):
-            return source.name
 
     def _prepare_extractor_args(
             self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]
@@ -675,7 +673,8 @@ def mock_client(test_func):
     def wrapper(*args, **kwargs):
         f = True
         if "data_integration" not in test_func.__name__:
-            client = MockClient()
+            data_plane = TestDataPlane()
+            client = MockClient(data_plane)
             f = test_func(*args, **kwargs, client=client)
         if (
                 "USE_INT_CLIENT" in os.environ

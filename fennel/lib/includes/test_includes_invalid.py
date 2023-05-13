@@ -2,9 +2,9 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-import fennel._vendor.requests as requests
 from typing import Optional
 
+import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.includes import includes
@@ -13,9 +13,11 @@ from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
+webhook = Webhook(name="fennel_webhook")
+
 
 @meta(owner="test@test.com")
-@source(Webhook("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -84,7 +86,7 @@ def test_simple_invalid_extractor(client):
     ]
     columns = ["user_id", "name", "age", "country", "timestamp"]
     df = pd.DataFrame(data, columns=columns)
-    response = client.log("UserInfoDataset", df)
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
     if client.is_integration_client():
         client.sleep()

@@ -12,10 +12,12 @@ from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
+webhook = Webhook(name="fennel_webhook")
+
 
 # docsnip filter
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(Webhook("Action"))
+@source(webhook.endpoint("Action"))
 @dataset
 class Action:
     uid: int
@@ -50,14 +52,14 @@ def test_filter(client):
         {"uid": 2, "action_type": "share", "timestamp": datetime(2020, 1, 1)},
     ]
     df = pd.DataFrame(data)
-    client.log("Action", df)
+    client.log("fennel_webhook", "Action", df)
     df = client.data["Likes"]
     assert df.shape == (3, 3)
 
 
 # docsnip transform
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(Webhook("Rating"))
+@source(webhook.endpoint("Rating"))
 @dataset
 class Rating:
     movie: str = field(key=True)
@@ -101,7 +103,7 @@ def test_transform(client):
         {"movie": "movie3", "rating": 5.0, "timestamp": datetime(2020, 1, 1)},
     ]
     df = pd.DataFrame(data)
-    client.log("Rating", df)
+    client.log("fennel_webhook", "Rating", df)
     df = client.data["RatingRescaled"]
     assert df.shape == (3, 3)
     assert df["rescaled"].sum() == 2.4  # 3/5 + 4/5 + 5/5
@@ -109,7 +111,7 @@ def test_transform(client):
 
 # docsnip join
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(Webhook("Product"))
+@source(webhook.endpoint("Product"))
 @dataset
 class Product:
     pid: int = field(key=True)
@@ -118,7 +120,7 @@ class Product:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(Webhook("OrderActivity"))
+@source(webhook.endpoint("OrderActivity"))
 @dataset
 class OrderActivity:
     uid: int
@@ -152,14 +154,14 @@ def test_join(client):
         {"pid": 3, "seller_id": 13, "creation": datetime(2020, 1, 1)},
     ]
     df = pd.DataFrame(data)
-    client.log("Product", df)
+    client.log("fennel_webhook", "Product", df)
     data = [
         {"uid": 1, "pid": 1, "at": datetime(2020, 1, 1)},
         {"uid": 1, "pid": 2, "at": datetime(2020, 1, 1)},
         {"uid": 2, "pid": 3, "at": datetime(2020, 1, 1)},
     ]
     df = pd.DataFrame(data)
-    client.log("OrderActivity", df)
+    client.log("fennel_webhook", "OrderActivity", df)
     df = client.data["UserSellerActivity"]
     assert df.shape == (3, 4)
     assert df["seller_id"].tolist() == [1, 2, 13]
@@ -167,7 +169,7 @@ def test_join(client):
 
 # docsnip aggregate
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(Webhook("AdClickStream"))
+@source(webhook.endpoint("AdClickStream"))
 @dataset
 class AdClickStream:
     uid: int
@@ -229,7 +231,7 @@ def test_aggregate(client):
         {"uid": 2, "adid": 3, "at": datetime(2020, 1, 13)},
     ]
     df = pd.DataFrame(data)
-    client.log("AdClickStream", df)
+    client.log("fennel_webhook", "AdClickStream", df)
     dt = datetime(2020, 1, 13)
     yes = dt - timedelta(days=1)
     three_days_ago = dt - timedelta(days=3)

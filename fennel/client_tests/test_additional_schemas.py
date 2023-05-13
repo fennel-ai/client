@@ -13,11 +13,11 @@ from fennel.test_lib import mock_client
 
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+"
 
-wb = Webhook("UserInfoDataset")
+wh = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(wb)
+@source(wh.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -50,7 +50,7 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         # Log incorrect data
@@ -67,17 +67,17 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD
         if client.is_integration_client():
             assert (
-                    response.json()["error"]
-                    == """error: input parse error: value 123 does not match between type Between(Between { dtype: Int, min: Int(0), max: Int(100), strict_min: false, strict_max: false })"""
+                response.json()["error"]
+                == """error: input parse error: value 123 does not match between type Between(Between { dtype: Int, min: Int(0), max: Int(100), strict_min: false, strict_max: false })"""
             )
         else:
             assert (
-                    response.json()["error"]
-                    == "[ValueError('Field `age` is of type between, but the value `123` is out of bounds.')]"
+                response.json()["error"]
+                == "[ValueError('Field `age` is of type between, but the value `123` is out of bounds.')]"
             )
 
         now = datetime.now()
@@ -93,17 +93,17 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD
         if client.is_integration_client():
             assert (
-                    response.json()["error"]
-                    == """error: input parse error: expected string in [String("male"), String("female")], but got transgender"""
+                response.json()["error"]
+                == """error: input parse error: expected string in [String("male"), String("female")], but got transgender"""
             )
         else:
             assert (
-                    response.json()["error"]
-                    == """[ValueError("Field 'gender' is of type oneof, but the value 'transgender' is not found in the set of options ['female', 'male']."), ValueError("Field 'country_code' is of type oneof, but the value '11' is not found in the set of options [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].")]"""
+                response.json()["error"]
+                == """[ValueError("Field 'gender' is of type oneof, but the value 'transgender' is not found in the set of options ['female', 'male']."), ValueError("Field 'country_code' is of type oneof, but the value '11' is not found in the set of options [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].")]"""
             )
 
         now = datetime.now()
@@ -119,15 +119,15 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        response = client.log("UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD
         if client.is_integration_client():
             assert (
-                    response.json()["error"]
-                    == """error: input parse error: expected regex string [a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+ to match, but got johnfennel"""
+                response.json()["error"]
+                == """error: input parse error: expected regex string [a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+ to match, but got johnfennel"""
             )
         else:
             assert (
-                    response.json()["error"]
-                    == """[ValueError('Field `email` is of type regex, but the value `johnfennel` does not match the regex `[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+`.')]"""
+                response.json()["error"]
+                == """[ValueError('Field `email` is of type regex, but the value `johnfennel` does not match the regex `[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+`.')]"""
             )

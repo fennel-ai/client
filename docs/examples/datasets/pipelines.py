@@ -15,10 +15,12 @@ from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
+webhook = Webhook(name="fennel_webhook")
+
 
 # docsnip data_sets
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(Webhook("User"))
+@source(webhook.endpoint("User"))
 @dataset
 class User:
     uid: int = field(key=True)
@@ -28,7 +30,7 @@ class User:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(Webhook("Transaction"))
+@source(webhook.endpoint("Transaction"))
 @dataset
 class Transaction:
     uid: int
@@ -93,7 +95,7 @@ def test_transaction_aggregation_example(client):
 
     df = pd.DataFrame(data, columns=["uid", "dob", "country", "signup_time"])
 
-    client.log("User", df)
+    client.log("fennel_webhook", "User", df)
 
     data = [
         [1, 100, "US", 1, now],
@@ -116,7 +118,7 @@ def test_transaction_aggregation_example(client):
             "timestamp",
         ],
     )
-    res = client.log("Transaction", df)
+    res = client.log("fennel_webhook", "Transaction", df)
     assert res.status_code == 200, res.json()
 
     # Do a lookup on UserTransactionsAbroad
@@ -138,7 +140,7 @@ def test_transaction_aggregation_example(client):
 
 
 @meta(owner="me@fennel.ai")
-@source(Webhook("Activity"))
+@source(webhook.endpoint("Activity"))
 @dataset(history="4m")
 class Activity:
     user_id: int
@@ -249,7 +251,7 @@ def test_fraud(client):
     ]
     columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
     df = pd.DataFrame(data, columns=columns)
-    response = client.log("Activity", df)
+    response = client.log("fennel_webhook", "Activity", df)
     assert response.status_code == requests.codes.OK, response.json()
     # Only the mock client contains the data parameter to access the data
     # directly for all datasets.
@@ -258,7 +260,7 @@ def test_fraud(client):
 
 # docsnip multiple_pipelines
 @meta(owner="me@fennel.ai")
-@source(Webhook("AndroidLogins"))
+@source(webhook.endpoint("AndroidLogins"))
 @dataset
 class AndroidLogins:
     uid: int
@@ -266,7 +268,7 @@ class AndroidLogins:
 
 
 @meta(owner="me@fennel.ai")
-@source(Webhook("IOSLogins"))
+@source(webhook.endpoint("IOSLogins"))
 @dataset
 class IOSLogins:
     uid: int
@@ -328,7 +330,7 @@ def test_multiple_pipelines(client):
         [3, now],
     ]
     df = pd.DataFrame(data, columns=["uid", "login_time"])
-    res = client.log("AndroidLogins", df)
+    res = client.log("fennel_webhook", "AndroidLogins", df)
     assert res.status_code == 200, res.json()
 
     data = [
@@ -338,7 +340,7 @@ def test_multiple_pipelines(client):
         [13, now],
     ]
     df = pd.DataFrame(data, columns=["uid", "login_time"])
-    res = client.log("IOSLogins", df)
+    res = client.log("fennel_webhook", "IOSLogins", df)
     assert res.status_code == 200, res.json()
     ts = pd.Series([now, now, now, now])
     df, found = LoginStats.lookup(

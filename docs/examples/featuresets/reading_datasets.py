@@ -9,10 +9,12 @@ from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock_client
 
+webhook = Webhook(name="fennel_webhook")
+
 
 # docsnip featuresets_reading_datasets
 @meta(owner="data-eng-team@fennel.ai")
-@source(Webhook("User"))
+@source(webhook.endpoint("User"))
 @dataset
 class User:
     uid: int = field(key=True)
@@ -49,7 +51,7 @@ def test_lookup_in_extractor(client):
             "timestamp": [now, now, now],
         }
     )
-    res = client.log("User", data)
+    res = client.log("fennel_webhook", "User", data)
     assert res.status_code == 200, res.json()
 
     feature_df = client.extract_features(
