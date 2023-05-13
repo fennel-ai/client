@@ -9,7 +9,7 @@ from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.lib.schema.schema import oneof, regex, between
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+"
 
@@ -33,8 +33,8 @@ class UserInfoDataset:
 
 class TestDataset(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_log_with_additional_schema(self, client):
+    @mock
+    def test_log_with_additional_schema(self, client, fake_data_plane):
         # Log correct data
         client.sync(datasets=[UserInfoDataset])
         now = datetime.now()

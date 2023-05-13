@@ -12,7 +12,7 @@ from fennel.lib.schema import inputs, outputs
 from fennel.lib.schema import regex, oneof
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -154,8 +154,8 @@ class UserFeatures:
 
 
 @pytest.mark.slow
-@mock_client
-def test_social_network(client):
+@mock
+def test_social_network(client, fake_data_plane):
     client.sync(
         datasets=[
             UserInfo,

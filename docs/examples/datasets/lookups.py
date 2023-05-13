@@ -7,7 +7,7 @@ from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -43,8 +43,8 @@ class UserFeature:
 # /docsnip
 
 
-@mock_client
-def test_user_dataset_lookup(client):
+@mock
+def test_user_dataset_lookup(client, fake_data_plane):
     client.sync(datasets=[User], featuresets=[UserFeature])
     now = datetime.now()
 

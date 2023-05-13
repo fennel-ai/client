@@ -9,7 +9,7 @@ from fennel.featuresets import feature, featureset
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -204,8 +204,8 @@ class UserLocationFeatures:
 
 
 @pytest.mark.slow
-@mock_client
-def test_multiple_features_extracted(client):
+@mock
+def test_multiple_features_extracted(client, fake_data_plane):
     client.sync(datasets=[UserInfo], featuresets=[UserLocationFeatures])
     now = datetime.now()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
@@ -276,8 +276,8 @@ class UserLocationFeaturesRefactored:
 
 
 @pytest.mark.slow
-@mock_client
-def test_extractors_across_featuresets(client):
+@mock
+def test_extractors_across_featuresets(client, fake_data_plane):
     client.sync(
         datasets=[UserInfo],
         featuresets=[Request, UserLocationFeaturesRefactored],

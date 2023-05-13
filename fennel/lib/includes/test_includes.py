@@ -100,8 +100,8 @@ def test_includes_proto_conversion():
 
 
 @pytest.mark.integration
-@mock_client
-def test_simple_extractor(client):
+@mock
+def test_simple_extractor(client, fake_data_plane):
     client.sync(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoSingleExtractor],

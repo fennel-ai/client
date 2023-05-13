@@ -10,7 +10,7 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from typing import Callable, Dict, List, Tuple, Optional
+from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import fennel.datasets.datasets
 import fennel.sources as sources
@@ -38,8 +38,8 @@ from fennel.lib.to_proto import (
     featureset_to_proto,
 )
 from fennel.test_lib.executor import Executor
+from fennel.test_lib.fake_data_plane import FakeDataPlane
 from fennel.test_lib.integration_client import IntegrationClient
-from fennel.test_lib.test_data_plane import TestDataPlane
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -63,15 +63,15 @@ class FakeResponse(Response):
 
 
 def dataset_lookup_impl(
-        data: Dict[str, pd.DataFrame],
-        aggregated_datasets: Dict,
-        datasets: Dict[str, _DatasetInfo],
-        allowed_datasets: Optional[List[str]],
-        extractor_name: Optional[str],
-        cls_name: str,
-        ts: pd.Series,
-        fields: List[str],
-        keys: pd.DataFrame,
+    data: Dict[str, pd.DataFrame],
+    aggregated_datasets: Dict,
+    datasets: Dict[str, _DatasetInfo],
+    allowed_datasets: Optional[List[str]],
+    extractor_name: Optional[str],
+    cls_name: str,
+    ts: pd.Series,
+    fields: List[str],
+    keys: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     if cls_name not in datasets:
         raise ValueError(
@@ -196,7 +196,7 @@ def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
     fqn = f"{extractor_proto.feature_set_name}.{extractor_proto.name}"
     mod = types.ModuleType(fqn)
     code = (
-            extractor_proto.pycode.imports + extractor_proto.pycode.generated_code
+        extractor_proto.pycode.imports + extractor_proto.pycode.generated_code
     )
     exec(code, mod.__dict__)
     return mod.__dict__[extractor_proto.pycode.entry_point]
@@ -211,7 +211,7 @@ class _DatasetInfo:
 
 
 class MockClient(Client):
-    def __init__(self, data_plane: TestDataPlane = None):
+    def __init__(self, data_plane: FakeDataPlane = None):
         self.dataset_requests: Dict[str, CoreDataset] = {}
         self.featureset_requests: Dict[str, CoreFeatureset] = {}
         self.features_for_fs: Dict[str, List[ProtoFeature]]
@@ -220,7 +220,7 @@ class MockClient(Client):
         self.datasets: Dict[str, Dataset] = {}
         # Map of dataset name to the dataframe
         self.data: Dict[str, pd.DataFrame] = {}
-        self.agg_state = {}
+        self.agg_state = {}  # type: ignore
         # Map of datasets to pipelines it is an input to
         self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
         self.aggregated_datasets: Dict = {}
@@ -233,26 +233,18 @@ class MockClient(Client):
             None,
         )
         self.data_plane = data_plane
-        self.webhook_to_dataset_map = defaultdict(list)
+        self.webhook_to_dataset_map: Dict[str, List[str]] = defaultdict(list)
+        self.dataplane_to_dataset_map: Dict[str, List[str]] = defaultdict(list)
         self.extractors: List[Extractor] = []
 
-    # ----------------- Public methods -----------------
-
-    def sleep(self, seconds: float = 0):
-        pass
-
-    def integration_mode(self):
-        return "mock"
-
-    def is_integration_client(self) -> bool:
-        return False
+    # ----------------- Public methods -----------------------------------------
 
     def log(
-            self,
-            webhook: str,
-            endpoint: str,
-            df: pd.DataFrame,
-            _batch_size: int = 1000,
+        self,
+        webhook: str,
+        endpoint: str,
+        df: pd.DataFrame,
+        _batch_size: int = 1000,
     ):
         if df.shape[0] == 0:
             print(f"Skipping log of empty dataframe for webhook {webhook}")
@@ -276,9 +268,9 @@ class MockClient(Client):
         return FakeResponse(200, "OK")
 
     def sync(
-            self,
-            datasets: Optional[List[Dataset]] = None,
-            featuresets: Optional[List[Featureset]] = None,
+        self,
+        datasets: Optional[List[Dataset]] = None,
+        featuresets: Optional[List[Featureset]] = None,
     ):
         self._reset()
         if datasets is None:
@@ -293,13 +285,7 @@ class MockClient(Client):
                 )
             self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
             if hasattr(dataset, sources.SOURCE_FIELD):
-                connector = getattr(dataset, sources.SOURCE_FIELD)
-                if isinstance(connector, sources.WebhookConnector):
-                    src = connector.data_source
-                    webhook_endpoint = f"{src.name}:{connector.endpoint}"
-                    self.webhook_to_dataset_map[webhook_endpoint].append(
-                        dataset._name
-                    )
+                self._process_data_connector(dataset)
 
             self.datasets[dataset._name] = dataset
             self.dataset_info[dataset._name] = _DatasetInfo(
@@ -309,8 +295,8 @@ class MockClient(Client):
                 dataset.on_demand,
             )
             if (
-                    not self.dataset_requests[dataset._name].is_source_dataset
-                    and len(dataset._pipelines) == 0
+                not self.dataset_requests[dataset._name].is_source_dataset
+                and len(dataset._pipelines) == 0
             ):
                 raise ValueError(
                     f"Dataset {dataset._name} has no pipelines and is not a source dataset"
@@ -360,13 +346,13 @@ class MockClient(Client):
         return FakeResponse(200, "OK")
 
     def extract_features(
-            self,
-            input_feature_list: List[Union[Feature, Featureset]],
-            output_feature_list: List[Union[Feature, Featureset]],
-            input_dataframe: pd.DataFrame,
-            log: bool = False,
-            workflow: Optional[str] = "default",
-            sampling_rate: Optional[float] = 1.0,
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: Optional[str] = "default",
+        sampling_rate: Optional[float] = 1.0,
     ) -> pd.DataFrame:
         if log:
             raise NotImplementedError("log is not supported in MockClient")
@@ -396,11 +382,11 @@ class MockClient(Client):
         )
 
     def extract_historical_features(
-            self,
-            input_feature_list: List[Union[Feature, Featureset]],
-            output_feature_list: List[Union[Feature, Featureset]],
-            input_dataframe: pd.DataFrame,
-            timestamps: pd.Series,
+        self,
+        input_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset]],
+        input_dataframe: pd.DataFrame,
+        timestamps: pd.Series,
     ) -> Union[pd.DataFrame, pd.Series]:
         if input_dataframe.empty:
             return pd.DataFrame()
@@ -426,7 +412,43 @@ class MockClient(Client):
             extractors, input_dataframe, output_feature_list, timestamps
         )
 
-        # ----------------- Private methods -----------------
+    # --------------- Public MockClient Specific methods -------------------
+
+    def sleep(self, seconds: float = 0):
+        pass
+
+    def integration_mode(self):
+        return "mock"
+
+    def is_integration_client(self) -> bool:
+        return False
+
+    def process_data_plane_records(self, data_plane_id: str, df: pd.DataFrame):
+        if data_plane_id not in self.dataplane_to_dataset_map:
+            raise Exception(
+                f"Data plane {data_plane_id} not found in mock client"
+            )
+        for dataset_name in self.dataplane_to_dataset_map[data_plane_id]:
+            response = self._internal_log(dataset_name, df)
+            if response.status_code != 200:
+                raise Exception(
+                    f"Error logging data to dataset {dataset_name}: "
+                    f"{response.text}"
+                )
+        return FakeResponse(200, "OK")
+
+    # ----------------- Private methods --------------------------------------
+
+    def _process_data_connector(self, dataset: Dataset):
+        connector = getattr(dataset, sources.SOURCE_FIELD)
+        if isinstance(connector, sources.WebhookConnector):
+            src = connector.data_source
+            webhook_endpoint = f"{src.name}:{connector.endpoint}"
+            self.webhook_to_dataset_map[webhook_endpoint].append(dataset._name)
+        else:
+            self.dataplane_to_dataset_map[connector.identifier()].append(
+                dataset._name
+            )
 
     def _internal_log(self, dataset_name: str, df: pd.DataFrame):
         if df.shape[0] == 0:
@@ -489,7 +511,7 @@ class MockClient(Client):
         return FakeResponse(200, "OK")
 
     def _prepare_extractor_args(
-            self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]
+        self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]
     ):
         args = []
         for input in extractor.inputs:
@@ -525,11 +547,11 @@ class MockClient(Client):
         return args
 
     def _run_extractors(
-            self,
-            extractors: List[Extractor],
-            input_df: pd.DataFrame,
-            output_feature_list: List[Union[Feature, Featureset]],
-            timestamps: pd.Series,
+        self,
+        extractors: List[Extractor],
+        input_df: pd.DataFrame,
+        output_feature_list: List[Union[Feature, Featureset]],
+        timestamps: pd.Series,
     ):
         # Map of feature name to the pandas series
         intermediate_data: Dict[str, pd.Series] = {}
@@ -669,21 +691,23 @@ class MockClient(Client):
         self.agg_state = {}
 
 
-def mock_client(test_func):
+def mock(test_func):
     def wrapper(*args, **kwargs):
         f = True
         if "data_integration" not in test_func.__name__:
-            data_plane = TestDataPlane()
-            client = MockClient(data_plane)
-            f = test_func(*args, **kwargs, client=client)
+            client = MockClient()
+            data_plane = FakeDataPlane(client)
+            f = test_func(
+                *args, **kwargs, client=client, fake_data_plane=data_plane
+            )
         if (
-                "USE_INT_CLIENT" in os.environ
-                and int(os.environ.get("USE_INT_CLIENT")) == 1
+            "USE_INT_CLIENT" in os.environ
+            and int(os.environ.get("USE_INT_CLIENT")) == 1
         ):
             mode = os.environ.get("FENNEL_TEST_MODE", "inmemory")
             print("Running rust client tests in mode:", mode)
             client = IntegrationClient(mode)
-            f = test_func(*args, **kwargs, client=client)
+            f = test_func(*args, **kwargs, client=client, fake_data_plane=None)
         return f
 
     return wrapper

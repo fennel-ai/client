@@ -12,7 +12,7 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 from fennel.sources import Postgres, source
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 # /docsnip
 
@@ -89,8 +89,8 @@ class UserSeller:
 # We can write a unit test to verify that the feature is working as expected
 # docsnip test
 class TestUserLivestreamFeatures(unittest.TestCase):
-    @mock_client
-    def test_feature(self, client):
+    @mock
+    def test_feature(self, client, fake_data_plane):
         client.sync(
             datasets=[Order, UserSellerOrders], featuresets=[UserSeller]
         )
@@ -103,7 +103,7 @@ class TestUserLivestreamFeatures(unittest.TestCase):
             [1, 312, 2, now - timedelta(hours=4)],
         ]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "db:my-postgres:orders", df)
+        response = fake_data_plane[postgres].table("orders").upload(df)
         assert response.status_code == requests.codes.OK, response.json()
 
         feature_df = client.extract_features(

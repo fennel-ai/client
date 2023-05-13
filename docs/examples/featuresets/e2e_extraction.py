@@ -3,7 +3,7 @@ import pandas as pd
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
@@ -47,8 +47,8 @@ class Request:
     ip: str = feature(id=1)
 
 
-@mock_client
-def test_e2e_extraction(client):
+@mock
+def test_e2e_extraction(client, fake_data_plane):
     client.sync(featuresets=[User, UserPost, Request])
     # docsnip e2e_extraction
     feature_df = client.extract_features(

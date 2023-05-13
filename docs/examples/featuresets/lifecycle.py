@@ -5,7 +5,7 @@ import pandas as pd
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 
 # docsnip featureset_metaflags
@@ -25,8 +25,8 @@ class Movie:
 # /docsnip
 
 
-@mock_client
-def test_featureset_metaflags(client):
+@mock
+def test_featureset_metaflags(client, fake_data_plane):
     client.sync(featuresets=[Movie])
 
     ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 2)])

@@ -10,7 +10,7 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -41,8 +41,8 @@ class Likes:
 # /docsnip
 
 
-@mock_client
-def test_filter(client):
+@mock
+def test_filter(client, fake_data_plane):
     client.sync(datasets=[Action, Likes])
     data = [
         {"uid": 1, "action_type": "like", "timestamp": datetime(2020, 1, 1)},
@@ -94,8 +94,8 @@ class RatingRescaled:
 # /docsnip
 
 
-@mock_client
-def test_transform(client):
+@mock
+def test_transform(client, fake_data_plane):
     client.sync(datasets=[Rating, RatingRescaled])
     data = [
         {"movie": "movie1", "rating": 3.0, "timestamp": datetime(2020, 1, 1)},
@@ -145,8 +145,8 @@ class UserSellerActivity:
 # /docsnip
 
 
-@mock_client
-def test_join(client):
+@mock
+def test_join(client, fake_data_plane):
     client.sync(datasets=[Product, OrderActivity, UserSellerActivity])
     data = [
         {"pid": 1, "seller_id": 1, "creation": datetime(2020, 1, 1)},
@@ -216,8 +216,8 @@ class UserAdStatsFeatures:
         return df
 
 
-@mock_client
-def test_aggregate(client):
+@mock
+def test_aggregate(client, fake_data_plane):
     client.sync(
         datasets=[AdClickStream, UserAdStats], featuresets=[UserAdStatsFeatures]
     )

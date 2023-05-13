@@ -6,7 +6,7 @@ from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof, between, regex
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -27,8 +27,8 @@ class UserInfoDataset:
 # /docsnip
 
 
-@mock_client
-def test_restrictions(client):
+@mock
+def test_restrictions(client, fake_data_plane):
     client.sync(datasets=[UserInfoDataset])
     now = datetime.now()
     data = [

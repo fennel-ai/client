@@ -4,7 +4,7 @@ import pandas as pd
 
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 
 # docsnip user_dataset
@@ -119,8 +119,8 @@ class UserFeature:
 
 
 # Tests to ensure that there are no run time errors in the snippets
-@mock_client
-def test_overview(client):
+@mock
+def test_overview(client, fake_data_plane):
     client.sync(datasets=[User, Transaction, UserTransactionsAbroad])
     now = datetime.now()
     dob = now - timedelta(days=365 * 30)
@@ -132,7 +132,8 @@ def test_overview(client):
 
     df = pd.DataFrame(data, columns=["uid", "dob", "country", "signup_time"])
 
-    client.log("fennel_webhook", "User", df)
+    response = fake_data_plane[postgres].table("user").upload(df)
+    assert response.status_code == 200, response.json()
 
     data = [
         [1, 100, "US", 1, now],
@@ -155,7 +156,7 @@ def test_overview(client):
             "timestamp",
         ],
     )
-    res = client.log("fennel_webhook", "kafka:kafka:transactions", df)
+    res = fake_data_plane[kafka].topic("transactions").upload(df)
     assert res.status_code == 200, res.json()
 
     # Do a lookup on UserTransactionsAbroad
@@ -164,6 +165,7 @@ def test_overview(client):
     ts = pd.Series([now, now, now, now])
     data, found = UserTransactionsAbroad.lookup(ts, uid=uids)
     # /docsnip
+
     assert data["uid"].tolist() == [1, 2, 3, 4]
     assert data["count"].tolist() == [2, 2, 3, None]
     assert data["amount_1d"].tolist() == [500, 400, 600, None]

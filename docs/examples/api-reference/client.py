@@ -11,7 +11,7 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -82,8 +82,8 @@ class UserFeatures:
 
 # this is your test code in some test module
 class TestExtractorDAGResolution(unittest.TestCase):
-    @mock_client
-    def test_dag_resolution(self, client):
+    @mock
+    def test_dag_resolution(self, client, fake_data_plane):
         # docsnip sync_api
         client.sync(
             datasets=[UserInfoDataset],

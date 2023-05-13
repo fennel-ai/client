@@ -18,7 +18,7 @@ from fennel.lib.schema import Embedding
 from fennel.lib.schema import inputs
 from fennel.lib.window import Window
 from fennel.sources import source
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 biq_query = sources.BigQuery(
     name="bg_source",
@@ -349,7 +349,7 @@ class DocumentContentFeatures:
 
 
 class TestSearchExample(unittest.TestCase):
-    def log_document_data(self, client):
+    def log_document_data(self, client, fake_data_plane):
         now = datetime.utcnow()
         data = [
             [141234, "This is a random document", "Random Title", "Sagar", now],
@@ -380,8 +380,13 @@ class TestSearchExample(unittest.TestCase):
         if client.is_integration_client():
             response = client.log("fennel_webhook", "NotionDocs", df)
         else:
-            response = client.log(
-                "fennel_webhook", "s3:s3_source:engagement:notion", df
+            response = (
+                fake_data_plane[s3]
+                .bucket(
+                    bucket_name="engagement",
+                    prefix="notion",
+                )
+                .upload(df)
             )
 
         assert response.status_code == requests.codes.OK, response.json()
@@ -422,13 +427,18 @@ class TestSearchExample(unittest.TestCase):
         if client.is_integration_client():
             response = client.log("fennel_webhook", "CodaDocs", df)
         else:
-            response = client.log(
-                "fennel_webhook", "s3:s3_source:engagement:coda", df
+            response = (
+                fake_data_plane[s3]
+                .bucket(
+                    bucket_name="engagement",
+                    prefix="coda",
+                )
+                .upload(df)
             )
 
         assert response.status_code == requests.codes.OK, response.json()
 
-    def log_engagement_data(self, client):
+    def log_engagement_data(self, client, fake_data_plane):
         now = datetime.utcnow()
         data = [
             [123, 31234, "view", 5, now],
@@ -443,19 +453,21 @@ class TestSearchExample(unittest.TestCase):
         if client.is_integration_client():
             response = client.log("fennel_webhook", "UserActivity", df)
         else:
-            response = client.log(
-                "fennel_webhook", "db:bg_source:user_activity", df
+            response = (
+                fake_data_plane[biq_query]
+                .table("user_activity", cursor="timestamp")
+                .upload(df)
             )
         assert response.status_code == requests.codes.OK, response.json()
 
     @pytest.mark.integration
-    @mock_client
-    def test_search_datasets1(self, client):
+    @mock
+    def test_search_datasets1(self, client, fake_data_plane):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
         client.sync(datasets=[NotionDocs, CodaDocs, GoogleDocs, Document])
-        self.log_document_data(client)
+        self.log_document_data(client, fake_data_plane)
         client.sleep()
         now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
@@ -473,8 +485,8 @@ class TestSearchExample(unittest.TestCase):
         assert found.tolist() == [False, False, True, False]
 
     @pytest.mark.integration
-    @mock_client
-    def test_search_datasets2(self, client):
+    @mock
+    def test_search_datasets2(self, client, fake_data_plane):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
@@ -486,7 +498,7 @@ class TestSearchExample(unittest.TestCase):
             ]
         )
 
-        self.log_engagement_data(client)
+        self.log_engagement_data(client, fake_data_plane)
         client.sleep()
         now = datetime.utcnow()
         ts = pd.Series([now, now])
@@ -502,8 +514,8 @@ class TestSearchExample(unittest.TestCase):
         assert found.tolist() == [True, True, True]
 
     @pytest.mark.integration
-    @mock_client
-    def test_search_e2e(self, client):
+    @mock
+    def test_search_e2e(self, client, fake_data_plane):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
@@ -526,9 +538,9 @@ class TestSearchExample(unittest.TestCase):
             ],
         )
 
-        self.log_document_data(client)
+        self.log_document_data(client, fake_data_plane)
         client.sleep()
-        self.log_engagement_data(client)
+        self.log_engagement_data(client, fake_data_plane)
         client.sleep(30)
         # set pd display all columns
         pd.set_option("display.max_columns", None)

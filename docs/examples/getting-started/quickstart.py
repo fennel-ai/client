@@ -120,10 +120,11 @@ class UserSellerFeatures:
 
 
 # docsnip sync
-from fennel.test_lib import MockClient
+from fennel.test_lib import MockClient, FakeDataPlane
 
 # client = Client('<FENNEL SERVER URL>') # uncomment this line to use a real Fennel server
 client = MockClient()  # comment this line to use a real Fennel server
+data_plane = FakeDataPlane(client)
 client.sync(
     datasets=[Order, Product, UserSellerOrders],
     featuresets=[UserSellerFeatures],
@@ -138,13 +139,13 @@ data = [
     [3, 1, 30.0, "product 3", now],
 ]
 df = pd.DataFrame(data, columns=columns)
-response = client.log("fennel_webhook", "db:my_rdbms:product_info", "", df)
+response = data_plane[postgres].table("product_info").upload(df)
 assert response.status_code == requests.codes.OK, response.json()
 
 columns = ["uid", "product_id", "timestamp"]
 data = [[1, 1, now], [1, 2, now], [1, 3, now]]
 df = pd.DataFrame(data, columns=columns)
-response = client.log("fennel_webhook", "kafka:my_kafka:orders", "", df)
+response = data_plane[kafka].topic("orders").upload(df)
 assert response.status_code == requests.codes.OK, response.json()
 # /docsnip
 

@@ -7,7 +7,7 @@ from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -40,8 +40,8 @@ class UserFeatures:
 # /docsnip
 
 
-@mock_client
-def test_lookup_in_extractor(client):
+@mock
+def test_lookup_in_extractor(client, fake_data_plane):
     client.sync(datasets=[User], featuresets=[UserFeatures])
     now = datetime.now()
     data = pd.DataFrame(

@@ -13,7 +13,7 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, outputs
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 ################################################################################
 #                           Feature Single Extractor Unit Tests
@@ -150,8 +150,8 @@ class TestSimpleExtractor(unittest.TestCase):
         )
 
     @pytest.mark.integration
-    @mock_client
-    def test_simple_extractor(self, client):
+    @mock
+    def test_simple_extractor(self, client, fake_data_plane):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
@@ -191,8 +191,8 @@ class TestSimpleExtractor(unittest.TestCase):
 
 class TestExtractorDAGResolution(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_dag_resolution2(self, client):
+    @mock
+    def test_dag_resolution2(self, client, fake_data_plane):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
@@ -273,8 +273,8 @@ class UserInfoTransformedFeatures:
 
 class TestExtractorDAGResolutionComplex(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_dag_resolution_complex(self, client):
+    @mock
+    def test_dag_resolution_complex(self, client, fake_data_plane):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[
@@ -401,8 +401,8 @@ class DocumentFeatures:
 
 class TestDocumentDataset(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_document_featureset(self, client):
+    @mock
+    def test_document_featureset(self, client, fake_data_plane):
         client.sync(
             datasets=[DocumentContentDataset], featuresets=[DocumentFeatures]
         )

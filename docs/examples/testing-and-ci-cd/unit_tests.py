@@ -55,12 +55,12 @@ class MovieRating:
 # docsnip datasets_testing
 import unittest
 
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 
 class TestDataset(unittest.TestCase):
-    @mock_client
-    def test_dataset(self, client):
+    @mock
+    def test_dataset(self, client, fake_data_plane):
         # Sync the dataset
         client.sync(
             datasets=[MovieRating, RatingActivity],
@@ -228,8 +228,8 @@ class UserInfoMultipleExtractor:
 
 # this is your test code in some test module
 class TestExtractorDAGResolution(unittest.TestCase):
-    @mock_client
-    def test_dag_resolution(self, client):
+    @mock
+    def test_dag_resolution(self, client, fake_data_plane):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],

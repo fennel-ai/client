@@ -85,8 +85,8 @@ class DomainFeatures:
 
 class TestInvalidSync(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_invalid_sync(self, client):
+    @mock
+    def test_invalid_sync(self, client, fake_data_plane):
         with pytest.raises(ValueError) as e:
             client.sync(featuresets=[DomainFeatures, Query])
 
@@ -120,8 +120,8 @@ class DomainFeatures2:
 
 class TestInvalidExtractorDependsOn(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_missing_features(self, client):
+    @mock
+    def test_missing_features(self, client, fake_data_plane):
         @meta(owner="test@fennel.ai")
         @source(webhook.endpoint("MemberActivityDataset"))
         @dataset
@@ -204,8 +204,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
         )
 
     @pytest.mark.integration
-    @mock_client
-    def test_missing_dataset(self, client):
+    @mock
+    def test_missing_dataset(self, client, fake_data_plane):
         client.sync(
             datasets=[MemberDataset], featuresets=[DomainFeatures2, Query]
         )
@@ -235,8 +235,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
 
     @pytest.mark.integration
-    @mock_client
-    def test_no_access(self, client):
+    @mock
+    def test_no_access(self, client, fake_data_plane):
         with pytest.raises(Exception) as e:
             client.sync(
                 datasets=[MemberDataset, MemberActivityDatasetCopy],
@@ -267,8 +267,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 "'MemberActivityDatasetCopy' is not defined. " == str(e.value)
             )
 
-    @mock_client
-    def test_drop_timestamp_col(self, client):
+    @mock
+    def test_drop_timestamp_col(self, client, fake_data_plane):
         with pytest.raises(Exception) as e:
 
             @meta(owner="test@fennel.ai")

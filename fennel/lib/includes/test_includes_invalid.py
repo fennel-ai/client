@@ -11,7 +11,7 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -73,8 +73,8 @@ def power_4_alt(x: int) -> int:
 
 
 @pytest.mark.integration
-@mock_client
-def test_simple_invalid_extractor(client):
+@mock
+def test_simple_invalid_extractor(client, fake_data_plane):
     client.sync(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoExtractor],
@@ -112,8 +112,8 @@ def test_simple_invalid_extractor(client):
 # This test is only an integration test because it requires a backend
 # to store state in.
 @pytest.mark.integration
-@mock_client
-def test_invalid_code_changes(client):
+@mock
+def test_invalid_code_changes(client, fake_data_plane):
     def sync():
         @meta(owner="test@test.com")
         @featureset

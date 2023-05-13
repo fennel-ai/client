@@ -398,7 +398,9 @@ def _conn_to_source_proto(
         raise ValueError(f"Unknown connector type: {type(connector)}")
 
 
-def _webhook_to_source_proto(connector: sources.Webhook, dataset_name: str):
+def _webhook_to_source_proto(
+    connector: sources.WebhookConnector, dataset_name: str
+):
     data_source = connector.data_source
     ext_db = connector_proto.ExtDatabase(
         name=data_source.name,

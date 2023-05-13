@@ -13,7 +13,7 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -82,8 +82,8 @@ class UserTransactionsAbroad:
 
 
 # Tests to ensure that there are no run time errors in the snippets
-@mock_client
-def test_transaction_aggregation_example(client):
+@mock
+def test_transaction_aggregation_example(client, fake_data_plane):
     client.sync(datasets=[User, Transaction, UserTransactionsAbroad])
     now = datetime.now()
     dob = now - timedelta(days=365 * 30)
@@ -185,8 +185,8 @@ class FraudActivityDataset:
 # /docsnip
 
 
-@mock_client
-def test_fraud(client):
+@mock
+def test_fraud(client, fake_data_plane):
     # # Sync the dataset
     client.sync(datasets=[Activity, FraudActivityDataset])
     now = datetime.now()
@@ -319,8 +319,8 @@ class LoginStats:
 # /docsnip
 
 
-@mock_client
-def test_multiple_pipelines(client):
+@mock
+def test_multiple_pipelines(client, fake_data_plane):
     client.sync(datasets=[AndroidLogins, IOSLogins, LoginStats])
     now = datetime.now()
     data = [

@@ -9,7 +9,7 @@ import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.sources import source, S3
-from fennel.test_lib import mock_client
+from fennel.test_lib import mock
 
 s3 = S3(
     name="ratings_source",
@@ -38,8 +38,8 @@ class MovieInfo103:
 
 class TestMovieInfo103(unittest.TestCase):
     @pytest.mark.integration
-    @mock_client
-    def test_log_to_MovieInfo103(self, client, mock_data_plane):
+    @mock
+    def test_log_to_MovieInfo103(self, client, fake_data_plane):
         """Log some data to the dataset and check if it is logged correctly."""
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
@@ -63,14 +63,16 @@ class TestMovieInfo103(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
 
         if client.is_integration_client():
-            response = client.log(
-                "MovieInfo103", df
-            )
+            response = client.log("MovieInfo103", df)
         else:
-            response = mock_data_plane[s3].bucket(
-                bucket_name="fennel-demo-data",
-                prefix="movielens_sampled/movies_timestamped.csv",
-            ).send(df)
+            response = (
+                fake_data_plane[s3]
+                .bucket(
+                    bucket_name="fennel-demo-data",
+                    prefix="movielens_sampled/movies_timestamped.csv",
+                )
+                .upload(df)
+            )
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups
@@ -105,8 +107,8 @@ class TestMovieInfo103(unittest.TestCase):
         assert found.tolist() == [False, False, True, False]
 
     @pytest.mark.data_integration
-    @mock_client
-    def test_s3_data_integration_source(self, client):
+    @mock
+    def test_s3_data_integration_source(self, client, fake_data_plane):
         """Same test as test_log_to_MovieInfo103 but with an S3 source."""
         # Sync the dataset
         client.sync(datasets=[MovieInfo103])
