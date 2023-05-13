@@ -14,8 +14,8 @@ from fennel.sources import (
     Snowflake,
     BigQuery,
     Kafka,
+    Webhook
 )
-
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
@@ -215,8 +215,49 @@ s3_console = S3.get(
     name="s3_test",
 )
 
+webhook = Webhook(name="fake_webhook")
+
 
 def test_multiple_sources():
+    @meta(owner="test@test.com")
+    @source(webhook.endpoint("endpoint1"))
+    @dataset
+    class UserInfoDatasetWebhook:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetWebhook)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.extdbs) == 1
+
+    # s3 source
+    source_request = sync_request.sources[0]
+    s = {'table': {'endpoint': {
+        'db': {'name': 'fake_webhook', 'webhook': {'name': 'fake_webhook'}},
+        'endpoint': 'endpoint1'}}, 'dataset': 'UserInfoDatasetWebhook',
+         'lateness': '3600s'}
+
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {'name': 'fake_webhook', 'webhook': {'name': 'fake_webhook'}}
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
     @meta(owner="test@test.com")
     @source(
         s3.bucket(

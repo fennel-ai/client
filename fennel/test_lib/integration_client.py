@@ -34,7 +34,7 @@ class FakeResponse(Response):
 
 
 def lookup_wrapper(
-    ds_name: str, ts: pd.Series, fields: List[str], keys: pd.DataFrame
+        ds_name: str, ts: pd.Series, fields: List[str], keys: pd.DataFrame
 ) -> Tuple[pd.DataFrame, pd.Series]:
     # convert to pyarrow datastructures
     ts_pa = pa.Array.from_pandas(ts)
@@ -57,28 +57,17 @@ class IntegrationClient:
             self.sleep_time = 3
         fennel.datasets.datasets.dataset_lookup = lookup_wrapper  # type: ignore
 
-    def is_integration_client(self):
-        return True
-
-    def integration_mode(self):
-        return self.mode
-
-    def sleep(self, seconds: float = 0):
-        if seconds > 0:
-            time.sleep(seconds)
-        else:
-            time.sleep(self.sleep_time)
-
-    def log(self, dataset_name: str, df: pd.DataFrame):
+    def log(self, webhook: str, endpoint: str, df: pd.DataFrame):
         df_json = df.to_json(orient="records")
         try:
-            self._client.log("fennel_webhook", dataset_name, df_json)
+            self._client.log(webhook, endpoint, df_json)
         except Exception as e:
             return FakeResponse(400, str(e))
         return FakeResponse(200, "OK")
 
     def sync(
-        self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
+            self, datasets: List[Dataset] = [],
+            featuresets: List[Featureset] = []
     ):
         self.to_register_objects = []
         self.to_register = set()
@@ -88,18 +77,20 @@ class IntegrationClient:
             self.add(featureset)
 
         sync_request = self._get_sync_request_proto()
+        import sys
+        print(sync_request, file=sys.stderr)
         self._client.sync(sync_request.SerializeToString())
         time.sleep(1.1)
         return FakeResponse(200, "OK")
 
     def extract_features(
-        self,
-        input_feature_list: List[Union[Feature, Featureset]],
-        output_feature_list: List[Union[Feature, Featureset]],
-        input_dataframe: pd.DataFrame,
-        log: bool = False,
-        workflow: str = "default",
-        sampling_rate: float = 1.0,
+            self,
+            input_feature_list: List[Union[Feature, Featureset]],
+            output_feature_list: List[Union[Feature, Featureset]],
+            input_dataframe: pd.DataFrame,
+            log: bool = False,
+            workflow: str = "default",
+            sampling_rate: float = 1.0,
     ) -> pd.DataFrame:
         if input_dataframe.empty:
             return pd.DataFrame()
@@ -156,6 +147,26 @@ class IntegrationClient:
             self.to_register_objects.append(obj)
         else:
             raise NotImplementedError
+
+    def is_integration_client(self):
+        return True
+
+    def integration_mode(self):
+        return self.mode
+
+    def sleep(self, seconds: float = 0):
+        if seconds > 0:
+            time.sleep(seconds)
+        else:
+            time.sleep(self.sleep_time)
+
+    def log_to_dataset(self, dataset_name: str, df: pd.DataFrame):
+        df_json = df.to_json(orient="records")
+        try:
+            self._client.log_to_dataset(dataset_name, df_json)
+        except Exception as e:
+            return FakeResponse(400, str(e))
+        return FakeResponse(200, "OK")
 
     def _get_sync_request_proto(self):
         return to_sync_request_proto(self.to_register_objects)

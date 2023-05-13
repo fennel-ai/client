@@ -132,17 +132,21 @@ class TestDataset(unittest.TestCase):
             [18234, "Monica", 24, "Chile", yesterday],
         ]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "UserInfoDataset", df)
-        assert response.status_code == requests.codes.BAD_REQUEST
+        if client.is_integration_client():
+            response = client.log_to_dataset("UserInfoDataset", df)
+        else:
+            response = client.log("fennel_webhook", "UserInfoDataset", df)
+
+        assert response.status_code == requests.codes.BAD_REQUEST, response.json()
         if client.is_integration_client():
             assert (
-                response.json()["error"]
-                == """error: input parse error: expected Int, but got String("32")"""
+                    response.json()["error"]
+                    == """error: input parse error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                response.json()["error"]
-                == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
+                    response.json()["error"]
+                    == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
             )
         client.sleep(10)
         # Do some lookups
@@ -229,7 +233,10 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "UserInfoDataset", df)
+        if client.is_integration_client():
+            response = client.log_to_dataset("UserInfoDataset", df)
+        else:
+            response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         assert len(response.json()["error"]) > 0
 
@@ -237,7 +244,6 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_deleted_field(self, client, fake_data_plane):
         with self.assertRaises(Exception) as e:
-
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -250,8 +256,8 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-            str(e.exception)
-            == "Dataset currently does not support deleted or deprecated fields."
+                str(e.exception)
+                == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
@@ -1142,7 +1148,7 @@ class ManchesterUnitedPlayerInfo:
     @pipeline()
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
@@ -1184,7 +1190,7 @@ class ManchesterUnitedPlayerInfoBounded:
     @pipeline(version=1)
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54

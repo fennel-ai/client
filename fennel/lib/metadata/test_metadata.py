@@ -118,87 +118,170 @@ def test_complex_dataset_with_fields():
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
     d = {
-        "datasets": [
+        'datasets': [
             {
-                "name": "YextUserInfoDataset",
-                "metadata": {"owner": "daniel@yext.com", "description": "test"},
-                "dsschema": {
-                    "keys": {
-                        "fields": [
-                            {"name": "user_id", "dtype": {"intType": {}}}
+                'name': 'YextUserInfoDataset',
+                'metadata': {
+                    'owner': 'daniel@yext.com',
+                    'description': 'test'
+                },
+                'dsschema': {
+                    'keys': {
+                        'fields': [
+                            {
+                                'name': 'user_id',
+                                'dtype': {
+                                    'intType': {
+
+                                    }
+                                }
+                            }
                         ]
                     },
-                    "values": {
-                        "fields": [
-                            {"name": "name", "dtype": {"stringType": {}}},
-                            {"name": "gender", "dtype": {"stringType": {}}},
-                            {"name": "dob", "dtype": {"stringType": {}}},
-                            {"name": "age", "dtype": {"intType": {}}},
+                    'values': {
+                        'fields': [
                             {
-                                "name": "account_creation_date",
-                                "dtype": {"timestampType": {}},
+                                'name': 'name',
+                                'dtype': {
+                                    'stringType': {
+
+                                    }
+                                }
                             },
                             {
-                                "name": "country",
-                                "dtype": {
-                                    "optionalType": {
-                                        "of": {
-                                            "mapType": {
-                                                "key": {"stringType": {}},
-                                                "value": {
-                                                    "arrayType": {
-                                                        "of": {
-                                                            "mapType": {
-                                                                "key": {
-                                                                    "stringType": {}
+                                'name': 'gender',
+                                'dtype': {
+                                    'stringType': {
+
+                                    }
+                                }
+                            },
+                            {
+                                'name': 'dob',
+                                'dtype': {
+                                    'stringType': {
+
+                                    }
+                                }
+                            },
+                            {
+                                'name': 'age',
+                                'dtype': {
+                                    'intType': {
+
+                                    }
+                                }
+                            },
+                            {
+                                'name': 'account_creation_date',
+                                'dtype': {
+                                    'timestampType': {
+
+                                    }
+                                }
+                            },
+                            {
+                                'name': 'country',
+                                'dtype': {
+                                    'optionalType': {
+                                        'of': {
+                                            'mapType': {
+                                                'key': {
+                                                    'stringType': {
+
+                                                    }
+                                                },
+                                                'value': {
+                                                    'arrayType': {
+                                                        'of': {
+                                                            'mapType': {
+                                                                'key': {
+                                                                    'stringType': {
+
+                                                                    }
                                                                 },
-                                                                "value": {
-                                                                    "doubleType": {}
-                                                                },
+                                                                'value': {
+                                                                    'doubleType': {
+
+                                                                    }
+                                                                }
                                                             }
                                                         }
                                                     }
-                                                },
+                                                }
                                             }
                                         }
                                     }
-                                },
-                            },
+                                }
+                            }
                         ]
                     },
-                    "timestamp": "timestamp",
+                    'timestamp': 'timestamp'
                 },
-                "history": "31536000s",
-                "retention": "31536000s",
-                "fieldMetadata": {
-                    "age": {},
-                    "name": {},
-                    "account_creation_date": {},
-                    "country": {},
-                    "user_id": {
-                        "owner": "jack@yext.com",
-                        "description": "test",
-                    },
-                    "gender": {"description": "sex", "tags": ["senstive"]},
-                    "timestamp": {},
-                    "dob": {"description": "Users date of birth"},
-                },
-                "pycode": {},
-                "isSourceDataset": True,
-            }
-        ],
-        "sources": [
-            {
-                "table": {"endpoint": {"endpoint": "YextUserInfoDataset"}},
-                "dataset": "YextUserInfoDataset",
-                "lateness": "3600s",
-            }
-        ],
-        "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
-        ],
-    }
+                'history': '31536000s',
+                'retention': '31536000s',
+                'fieldMetadata': {
+                    'age': {
 
+                    },
+                    'name': {
+
+                    },
+                    'account_creation_date': {
+
+                    },
+                    'country': {
+
+                    },
+                    'user_id': {
+                        'owner': 'jack@yext.com',
+                        'description': 'test'
+                    },
+                    'gender': {
+                        'description': 'sex',
+                        'tags': [
+                            'senstive'
+                        ]
+                    },
+                    'timestamp': {
+
+                    },
+                    'dob': {
+                        'description': 'Users date of birth'
+                    }
+                },
+                'pycode': {
+
+                },
+                'isSourceDataset': True
+            }
+        ],
+        'sources': [
+            {
+                'table': {
+                    'endpoint': {
+                        'db': {
+                            'name': 'fennel_webhook',
+                            'webhook': {
+                                'name': 'fennel_webhook'
+                            }
+                        },
+                        'endpoint': 'YextUserInfoDataset'
+                    }
+                },
+                'dataset': 'YextUserInfoDataset',
+                'lateness': '3600s'
+            }
+        ],
+        'extdbs': [
+            {
+                'name': 'fennel_webhook',
+                'webhook': {
+                    'name': 'fennel_webhook'
+                }
+            }
+        ]
+    }
     expected_sync_request = ParseDict(d, SyncRequest())
     expected_sync_request.datasets[0].pycode.Clear()
     sync_request.datasets[0].pycode.Clear()

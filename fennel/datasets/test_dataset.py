@@ -40,62 +40,142 @@ def test_simple_dataset():
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
     d = {
-        "datasets": [
+        'datasets': [
             {
-                "name": "UserInfoDataset",
-                "metadata": {"owner": "test@test.com"},
-                "dsschema": {
-                    "keys": {
-                        "fields": [
-                            {"name": "user_id", "dtype": {"intType": {}}}
+                'name': 'UserInfoDataset',
+                'metadata': {
+                    'owner': 'test@test.com'
+                },
+                'dsschema': {
+                    'keys': {
+                        'fields': [
+                            {
+                                'name': 'user_id',
+                                'dtype': {
+                                    'intType': {
+
+                                    }
+                                }
+                            }
                         ]
                     },
-                    "values": {
-                        "fields": [
-                            {"name": "name", "dtype": {"stringType": {}}},
-                            {"name": "gender", "dtype": {"stringType": {}}},
-                            {"name": "dob", "dtype": {"stringType": {}}},
-                            {"name": "age", "dtype": {"intType": {}}},
+                    'values': {
+                        'fields': [
                             {
-                                "name": "account_creation_date",
-                                "dtype": {"timestampType": {}},
+                                'name': 'name',
+                                'dtype': {
+                                    'stringType': {
+
+                                    }
+                                }
                             },
                             {
-                                "name": "country",
-                                "dtype": {
-                                    "optionalType": {"of": {"stringType": {}}}
-                                },
+                                'name': 'gender',
+                                'dtype': {
+                                    'stringType': {
+
+                                    }
+                                }
                             },
+                            {
+                                'name': 'dob',
+                                'dtype': {
+                                    'stringType': {
+
+                                    }
+                                }
+                            },
+                            {
+                                'name': 'age',
+                                'dtype': {
+                                    'intType': {
+
+                                    }
+                                }
+                            },
+                            {
+                                'name': 'account_creation_date',
+                                'dtype': {
+                                    'timestampType': {
+
+                                    }
+                                }
+                            },
+                            {
+                                'name': 'country',
+                                'dtype': {
+                                    'optionalType': {
+                                        'of': {
+                                            'stringType': {
+
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         ]
                     },
-                    "timestamp": "timestamp",
+                    'timestamp': 'timestamp'
                 },
-                "history": "63072000s",
-                "retention": "63072000s",
-                "fieldMetadata": {
-                    "age": {},
-                    "name": {},
-                    "account_creation_date": {},
-                    "country": {},
-                    "user_id": {},
-                    "gender": {},
-                    "timestamp": {},
-                    "dob": {"description": "Users date of birth"},
+                'history': '63072000s',
+                'retention': '63072000s',
+                'fieldMetadata': {
+                    'age': {
+
+                    },
+                    'name': {
+
+                    },
+                    'account_creation_date': {
+
+                    },
+                    'country': {
+
+                    },
+                    'user_id': {
+
+                    },
+                    'gender': {
+
+                    },
+                    'timestamp': {
+
+                    },
+                    'dob': {
+                        'description': 'Users date of birth'
+                    }
                 },
-                "pycode": {},
-                "isSourceDataset": True,
+                'pycode': {
+
+                },
+                'isSourceDataset': True
             }
         ],
-        "sources": [
+        'sources': [
             {
-                "table": {"endpoint": {"endpoint": "UserInfoDataset"}},
-                "dataset": "UserInfoDataset",
-                "lateness": "3600s",
+                'table': {
+                    'endpoint': {
+                        'db': {
+                            'name': 'fennel_webhook',
+                            'webhook': {
+                                'name': 'fennel_webhook'
+                            }
+                        },
+                        'endpoint': 'UserInfoDataset'
+                    }
+                },
+                'dataset': 'UserInfoDataset',
+                'lateness': '3600s'
             }
         ],
-        "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
-        ],
+        'extdbs': [
+            {
+                'name': 'fennel_webhook',
+                'webhook': {
+                    'name': 'fennel_webhook'
+                }
+            }
+        ]
     }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
@@ -122,51 +202,97 @@ def test_dataset_with_retention():
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
     d = {
-        "datasets": [
+        'datasets': [
             {
-                "name": "Activity",
-                "metadata": {"owner": "test@test.com"},
-                "dsschema": {
-                    "keys": {},
-                    "values": {
-                        "fields": [
-                            {"name": "user_id", "dtype": {"intType": {}}},
+                'name': 'Activity',
+                'metadata': {
+                    'owner': 'test@test.com'
+                },
+                'dsschema': {
+                    'keys': {
+
+                    },
+                    'values': {
+                        'fields': [
                             {
-                                "name": "action_type",
-                                "dtype": {"doubleType": {}},
+                                'name': 'user_id',
+                                'dtype': {
+                                    'intType': {
+
+                                    }
+                                }
                             },
                             {
-                                "name": "amount",
-                                "dtype": {
-                                    "optionalType": {"of": {"doubleType": {}}}
-                                },
+                                'name': 'action_type',
+                                'dtype': {
+                                    'doubleType': {
+
+                                    }
+                                }
                             },
+                            {
+                                'name': 'amount',
+                                'dtype': {
+                                    'optionalType': {
+                                        'of': {
+                                            'doubleType': {
+
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         ]
                     },
-                    "timestamp": "timestamp",
+                    'timestamp': 'timestamp'
                 },
-                "history": "10368000s",
-                "retention": "10368000s",
-                "fieldMetadata": {
-                    "action_type": {},
-                    "user_id": {},
-                    "timestamp": {},
-                    "amount": {},
+                'history': '10368000s',
+                'retention': '10368000s',
+                'fieldMetadata': {
+                    'action_type': {
+
+                    },
+                    'user_id': {
+
+                    },
+                    'timestamp': {
+
+                    },
+                    'amount': {
+
+                    }
                 },
-                "pycode": {},
-                "isSourceDataset": True,
+                'pycode': {
+
+                },
+                'isSourceDataset': True
             }
         ],
-        "sources": [
+        'sources': [
             {
-                "table": {"endpoint": {"endpoint": "Activity"}},
-                "dataset": "Activity",
-                "lateness": "3600s",
+                'table': {
+                    'endpoint': {
+                        'db': {
+                            'name': 'fennel_webhook',
+                            'webhook': {
+                                'name': 'fennel_webhook'
+                            }
+                        },
+                        'endpoint': 'Activity'
+                    }
+                },
+                'dataset': 'Activity',
+                'lateness': '3600s'
             }
         ],
-        "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
-        ],
+        'extdbs': [
+            {
+                'name': 'fennel_webhook',
+                'webhook': {
+                    'name': 'fennel_webhook'
+                }
+            }
+        ]
     }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
