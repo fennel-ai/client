@@ -406,18 +406,19 @@ def _webhook_to_source_proto(
         name=data_source.name,
         webhook=connector_proto.Webhook(name=data_source.name),
     )
-    return [
+    return (
         ext_db,
         connector_proto.Source(
             table=connector_proto.ExtTable(
                 endpoint=connector_proto.WebhookEndpoint(
-                    endpoint=connector.endpoint
-                )
+                    endpoint=connector.endpoint,
+                    db=ext_db,
+                ),
             ),
             lateness=to_duration_proto(connector.lateness),
             dataset=dataset_name,
         ),
-    ]
+    )
 
 
 def _kafka_conn_to_source_proto(
