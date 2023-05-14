@@ -31,7 +31,7 @@ by `@extractor` decorator. Each extractor accepts zero or more inputs
 (marked in `inputs` decorator) and produces one or more features (marked in 
 `outputs` decorator). 
 
-In the above example, if the value of feature `durations` is known, `my_extractor 
+In the above example, if the value of feature `durations` is known, `my_extractor`
 can extract the value of `over_2hrs`. When you are interested in getting values of
 some features, Fennel locates the extractors responsible for those features, verifies
 their inputs are available and runs their code to obtain the feature values.
