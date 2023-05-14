@@ -132,7 +132,10 @@ class TestDataset(unittest.TestCase):
             [18234, "Monica", 24, "Chile", yesterday],
         ]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "UserInfoDataset", df)
+        if client.is_integration_client():
+            response = client.log_to_dataset("UserInfoDataset", df)
+        else:
+            response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
@@ -229,7 +232,10 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "UserInfoDataset", df)
+        if client.is_integration_client():
+            response = client.log_to_dataset("UserInfoDataset", df)
+        else:
+            response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         assert len(response.json()["error"]) > 0
 

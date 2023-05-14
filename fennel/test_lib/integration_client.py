@@ -57,22 +57,10 @@ class IntegrationClient:
             self.sleep_time = 3
         fennel.datasets.datasets.dataset_lookup = lookup_wrapper  # type: ignore
 
-    def is_integration_client(self):
-        return True
-
-    def integration_mode(self):
-        return self.mode
-
-    def sleep(self, seconds: float = 0):
-        if seconds > 0:
-            time.sleep(seconds)
-        else:
-            time.sleep(self.sleep_time)
-
-    def log(self, dataset_name: str, df: pd.DataFrame):
+    def log(self, webhook: str, endpoint: str, df: pd.DataFrame):
         df_json = df.to_json(orient="records")
         try:
-            self._client.log("fennel_webhook", dataset_name, df_json)
+            self._client.log(webhook, endpoint, df_json)
         except Exception as e:
             return FakeResponse(400, str(e))
         return FakeResponse(200, "OK")
@@ -156,6 +144,26 @@ class IntegrationClient:
             self.to_register_objects.append(obj)
         else:
             raise NotImplementedError
+
+    def is_integration_client(self):
+        return True
+
+    def integration_mode(self):
+        return self.mode
+
+    def sleep(self, seconds: float = 0):
+        if seconds > 0:
+            time.sleep(seconds)
+        else:
+            time.sleep(self.sleep_time)
+
+    def log_to_dataset(self, dataset_name: str, df: pd.DataFrame):
+        df_json = df.to_json(orient="records")
+        try:
+            self._client.log_to_dataset(dataset_name, df_json)
+        except Exception as e:
+            return FakeResponse(400, str(e))
+        return FakeResponse(200, "OK")
 
     def _get_sync_request_proto(self):
         return to_sync_request_proto(self.to_register_objects)

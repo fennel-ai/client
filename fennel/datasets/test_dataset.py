@@ -88,7 +88,15 @@ def test_simple_dataset():
         ],
         "sources": [
             {
-                "table": {"endpoint": {"endpoint": "UserInfoDataset"}},
+                "table": {
+                    "endpoint": {
+                        "db": {
+                            "name": "fennel_webhook",
+                            "webhook": {"name": "fennel_webhook"},
+                        },
+                        "endpoint": "UserInfoDataset",
+                    }
+                },
                 "dataset": "UserInfoDataset",
                 "lateness": "3600s",
             }
@@ -159,7 +167,15 @@ def test_dataset_with_retention():
         ],
         "sources": [
             {
-                "table": {"endpoint": {"endpoint": "Activity"}},
+                "table": {
+                    "endpoint": {
+                        "db": {
+                            "name": "fennel_webhook",
+                            "webhook": {"name": "fennel_webhook"},
+                        },
+                        "endpoint": "Activity",
+                    }
+                },
                 "dataset": "Activity",
                 "lateness": "3600s",
             }
@@ -168,6 +184,7 @@ def test_dataset_with_retention():
             {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
         ],
     }
+
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
     sync_request.datasets[0].pycode.Clear()

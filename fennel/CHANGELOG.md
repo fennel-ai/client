@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15.2] - 2023-05-13
+- Fixes for Webhook + Integration tests 
+
 ## [0.15.1] - 2023-05-12
 - Support backfilling of pipelines + Webhook support 
 

@@ -189,7 +189,15 @@ def test_complex_dataset_with_fields():
         ],
         "sources": [
             {
-                "table": {"endpoint": {"endpoint": "YextUserInfoDataset"}},
+                "table": {
+                    "endpoint": {
+                        "db": {
+                            "name": "fennel_webhook",
+                            "webhook": {"name": "fennel_webhook"},
+                        },
+                        "endpoint": "YextUserInfoDataset",
+                    }
+                },
                 "dataset": "YextUserInfoDataset",
                 "lateness": "3600s",
             }
