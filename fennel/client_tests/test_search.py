@@ -89,14 +89,8 @@ class Document:
     def notion_pipe(
         cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
     ):
-        new_schema = {
-            "doc_id": int,
-            "body": str,
-            "title": str,
-            "owner": str,
-            "creation_timestamp": datetime,
-            "origin": str,
-        }
+        new_schema = notion_docs.schema()
+        new_schema["origin"] = str
         return (
             notion_docs.transform(
                 lambda df: cls.doc_pipeline_helper(df, "Notion"),

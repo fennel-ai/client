@@ -245,7 +245,7 @@ def get_aggregated_df(
     key_fields: List[str],
 ) -> pd.DataFrame:
     df = input_df.copy()
-    df.loc[:, FENNEL_ROW_TYPE] = 1
+    df[FENNEL_ROW_TYPE] = 1
     if aggregate.window.start != "forever":
         window_secs = duration_to_timedelta(
             aggregate.window.start
