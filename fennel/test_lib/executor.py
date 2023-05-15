@@ -103,6 +103,10 @@ class Executor(Visitor):
                     )
 
         sorted_df = t_df.sort_values(input_ret.timestamp_field)
+        # Cast sorted_df to obj.schema()
+        for col_name, col_type in obj.schema().items():
+            if col_type in [float, int, str, bool]:
+                sorted_df[col_name] = sorted_df[col_name].astype(col_type)
         return NodeRet(
             sorted_df, input_ret.timestamp_field, input_ret.key_fields
         )

@@ -9,10 +9,11 @@ import json
 import sys
 import textwrap
 
-import fennel._vendor.astunparse as astunparse  # type: ignore
-import fennel._vendor.requests as requests  # type: ignore
 from typing import Any
 from typing import cast, Callable, Dict, List, Tuple, Union
+
+import fennel._vendor.astunparse as astunparse  # type: ignore
+import fennel._vendor.requests as requests  # type: ignore
 
 Tags = Union[List[str], Tuple[str, ...], str]
 
@@ -115,10 +116,13 @@ class RemoveOffsetsTransformer(ast.NodeTransformer):
 
 
 def _fhash_callable(obj: Callable) -> str:
-    tree = ast.parse(textwrap.dedent(inspect.getsource(obj)))
-    new_tree = RemoveOffsetsTransformer().visit(tree)
-    ast_text = astunparse.unparse(new_tree)
-    return fhash(ast_text)
+    try:
+        tree = ast.parse(textwrap.dedent(inspect.getsource(obj)))
+        new_tree = RemoveOffsetsTransformer().visit(tree)
+        ast_text = astunparse.unparse(new_tree)
+        return fhash(ast_text)
+    except Exception:
+        return fhash(textwrap.dedent(inspect.getsource(obj)))
 
 
 def _json_default(item: Any):
