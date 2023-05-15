@@ -83,7 +83,7 @@ class Executor(Visitor):
         input_column_names = input_ret.df.columns.values.tolist()
         output_column_names = t_df.columns.values.tolist()
         if not set_match(input_column_names, output_column_names):
-            if obj.schema is None:
+            if obj.new_schema is None:
                 raise ValueError(
                     f"Schema change detected in transform of pipeline "
                     f"{self.cur_pipeline_name}. Input columns: "
@@ -91,7 +91,7 @@ class Executor(Visitor):
                     ". Please provide output schema explicitly."
                 )
             else:
-                output_expected_column_names = obj.schema.keys()
+                output_expected_column_names = obj.new_schema.keys()
                 if not set_match(
                     output_expected_column_names, output_column_names
                 ):

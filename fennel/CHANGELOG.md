@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15.3] - 2023-05-15
+- Provide schema for every node
+
 ## [0.15.2] - 2023-05-13
 - Fixes for Webhook + Integration tests 
 

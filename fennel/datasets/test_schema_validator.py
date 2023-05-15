@@ -139,16 +139,10 @@ def test_aggregation():
                     merchant_info,
                     on=["merchant_id"],
                 )
-                ds = ds.transform(
-                    fillna,
-                    schema={
-                        "merchant_id": int,
-                        "category": str,
-                        "location": str,
-                        "timestamp": datetime,
-                        "transaction_amount": float,
-                    },
-                )
+                new_schema = ds.schema()
+                new_schema.update(merchant_info.schema())
+                new_schema["category"] = str
+                ds = ds.transform(fillna, schema=new_schema)
                 return ds.groupby("category").aggregate(
                     [
                         Sum(

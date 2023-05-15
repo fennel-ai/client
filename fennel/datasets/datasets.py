@@ -227,6 +227,12 @@ class _Node(Generic[T]):
     def isignature(self):
         raise NotImplementedError
 
+    def dsschema(self):
+        raise NotImplementedError
+
+    def schema(self):
+        return self.dsschema().schema()
+
     def num_out_edges(self) -> int:
         return len(self.out_edges)
 
@@ -237,7 +243,7 @@ class Transform(_Node):
         self.func = func
         self.node = node
         self.node.out_edges.append(self)
-        self.schema = schema
+        self.new_schema = schema
         if func.__name__ == "<lambda>":
             num_lines = len(inspect.getsourcelines(func)[0])
             if num_lines > 1:
@@ -251,6 +257,21 @@ class Transform(_Node):
         if isinstance(self.node, Dataset):
             return fhash(self.node._name, self.func)
         return fhash(self.node.signature(), self.func)
+
+    def dsschema(self):
+        if self.new_schema is None:
+            return self.node.dsschema()
+        input_schema = self.node.dsschema()
+        inp_keys = input_schema.keys
+        return DSSchema(
+            keys=inp_keys,
+            values={
+                f: dtype
+                for f, dtype in self.new_schema.items()
+                if f not in inp_keys.keys() and f != input_schema.timestamp
+            },
+            timestamp=input_schema.timestamp,
+        )
 
 
 class Filter(_Node):
@@ -273,6 +294,9 @@ class Filter(_Node):
             return fhash(self.node._name, self.func)
         return fhash(self.node.signature(), self.func)
 
+    def dsschema(self):
+        return self.node.dsschema()
+
 
 class Aggregate(_Node):
     def __init__(
@@ -292,6 +316,33 @@ class Aggregate(_Node):
             return fhash(self.node._name, self.keys, agg_signature)
         return fhash(self.node.signature(), self.keys, agg_signature)
 
+    def dsschema(self):
+        input_schema = self.node.dsschema()
+        keys = {f: input_schema.get_type(f) for f in self.keys}
+        values = {}
+        for agg in self.aggregates:
+            if isinstance(agg, Count):
+                values[agg.into_field] = int
+            elif isinstance(agg, Sum):
+                dtype = input_schema.get_type(agg.of)
+                if dtype not in [int, float]:
+                    raise TypeError(
+                        f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
+                    )
+                values[agg.into_field] = dtype  # type: ignore
+            elif isinstance(agg, Average):
+                values[agg.into_field] = float  # type: ignore
+            elif isinstance(agg, LastK):
+                dtype = input_schema.get_type(agg.of)
+                values[agg.into_field] = List[dtype]  # type: ignore
+            else:
+                raise TypeError(f"Unknown aggregate type {type(agg)}")
+        return DSSchema(
+            keys=keys,
+            values=values,  # type: ignore
+            timestamp=input_schema.timestamp,
+        )
+
 
 class GroupBy:
     def __init__(self, node: _Node, *args):
@@ -309,6 +360,9 @@ class GroupBy:
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
         return Aggregate(self.node, list(self.keys), aggregates)
+
+    def dsschema(self):
+        raise NotImplementedError
 
 
 class Join(_Node):
@@ -363,6 +417,23 @@ class Join(_Node):
             self.within,
         )
 
+    def dsschema(self):
+        def make_types_optional(types: Dict[str, Type]) -> Dict[str, Type]:
+            return {
+                k: Optional[get_dtype(v)]  # type: ignore
+                for k, v in types.items()
+            }
+
+        left_schema = self.node.dsschema()
+        right_schema = self.dataset.dsschema()
+        values = copy.deepcopy(left_schema.values)
+        values.update(make_types_optional(right_schema.values))
+        return DSSchema(
+            keys=copy.deepcopy(left_schema.keys),
+            timestamp=left_schema.timestamp,
+            values=values,
+        )
+
 
 class Union_(_Node):
     def __init__(self, node: _Node, other: _Node):
@@ -373,6 +444,11 @@ class Union_(_Node):
 
     def signature(self):
         return fhash([n.signature() for n in self.nodes])
+
+    def dsschema(self):
+        if len(self.nodes) == 0:
+            raise ValueError("Cannot union empty list of nodes")
+        return self.nodes[0].dsschema()
 
 
 class Rename(_Node):
@@ -385,6 +461,12 @@ class Rename(_Node):
     def signature(self):
         return fhash(self.node.signature(), self.column_mapping)
 
+    def dsschema(self):
+        input_schema = copy.deepcopy(self.node.dsschema())
+        for old, new in self.column_mapping.items():
+            input_schema.rename_column(old, new)
+        return input_schema
+
 
 class Drop(_Node):
     def __init__(self, node: _Node, columns: List[str]):
@@ -395,6 +477,12 @@ class Drop(_Node):
 
     def signature(self):
         return fhash(self.node.signature(), self.columns)
+
+    def dsschema(self):
+        input_schema = copy.deepcopy(self.node.dsschema())
+        for field in self.columns:
+            input_schema.drop_column(field)
+        return input_schema
 
 
 # ---------------------------------------------------------------------
@@ -775,6 +863,18 @@ class Dataset(_Node[T]):
     def signature(self):
         return self._sign
 
+    def dsschema(self):
+        return DSSchema(
+            keys={f.name: f.dtype for f in self._fields if f.key},
+            values={
+                f.name: f.dtype
+                for f in self._fields
+                if not f.key and f.name != self._timestamp_field
+            },
+            timestamp=self._timestamp_field,
+            name=f"'[Dataset:{self._name}]'",
+        )
+
     # ------------------- Private Methods ----------------------------------
     def _add_fields_as_attributes(self):
         for field in self._fields:
@@ -1096,6 +1196,9 @@ class DSSchema:
     timestamp: str
     name: str = ""
 
+    def schema(self) -> Dict[str, Type]:
+        return {**self.keys, **self.values, self.timestamp: datetime.datetime}
+
     def fields(self) -> List[str]:
         return (
             [x for x in self.keys.keys()]
@@ -1224,27 +1327,27 @@ class SchemaValidator(Visitor):
 
     def visitTransform(self, obj) -> DSSchema:
         input_schema = self.visit(obj.node)
-        if obj.schema is None:
+        if obj.new_schema is None:
             return input_schema
         else:
             node_name = f"'[Pipeline:{self.pipeline_name}]->transform node'"
-            if input_schema.timestamp not in obj.schema:
+            if input_schema.timestamp not in obj.new_schema:
                 raise TypeError(
                     f"Timestamp field {input_schema.timestamp} must be "
                     f"present in schema of {node_name}."
                 )
             for name, dtype in input_schema.keys.items():
-                if name not in obj.schema:
+                if name not in obj.new_schema:
                     raise TypeError(
                         f"Key field {name} must be present in schema of "
                         f"{node_name}."
                     )
-                if dtype != obj.schema[name]:
+                if dtype != obj.new_schema[name]:
                     raise TypeError(
                         f"Key field {name} has type {dtype_to_string(dtype)} in "
                         f"input schema "
                         f"of transform but type "
-                        f"{dtype_to_string(obj.schema[name])} in output "
+                        f"{dtype_to_string(obj.new_schema[name])} in output "
                         f"schema of {node_name}."
                     )
             inp_keys = input_schema.keys
@@ -1252,7 +1355,7 @@ class SchemaValidator(Visitor):
                 keys=inp_keys,
                 values={
                     f: dtype
-                    for f, dtype in obj.schema.items()
+                    for f, dtype in obj.new_schema.items()
                     if f not in inp_keys.keys() and f != input_schema.timestamp
                 },
                 timestamp=input_schema.timestamp,

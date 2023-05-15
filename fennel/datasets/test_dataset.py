@@ -1575,3 +1575,65 @@ def test_search_dataset():
     assert operator_req == expected_operator_request, error_message(
         operator_req, expected_operator_request
     )
+
+
+def test_auto_schema_generation():
+    @meta(owner="data-eng-oncall@fennel.ai")
+    @dataset
+    class FraudActivityDataset:
+        timestamp: datetime
+        user_id: int
+        merchant_id: int
+        transaction_amount: float
+
+        @pipeline(version=1)
+        @inputs(Activity)
+        def create_fraud_dataset(cls, activity: Dataset):
+            def extract_info(df: pd.DataFrame) -> pd.DataFrame:
+                df_json = df["metadata"].apply(json.loads).apply(pd.Series)
+                df = pd.concat([df_json, df[["user_id", "timestamp"]]], axis=1)
+                df["transaction_amount"] = df["transaction_amount"] / 100
+                return df[
+                    [
+                        "merchant_id",
+                        "transaction_amount",
+                        "user_id",
+                        "timestamp",
+                    ]
+                ]
+
+            assert activity.schema() == {
+                "action_type": float,
+                "timestamp": datetime,
+                "amount": Optional[float],
+                "user_id": int,
+            }
+
+            filtered_ds = activity.filter(
+                lambda df: df["action_type"] == "report"
+            )
+
+            assert filtered_ds.schema() == {
+                "action_type": float,
+                "amount": Optional[float],
+                "timestamp": datetime,
+                "user_id": int,
+            }
+
+            x = filtered_ds.transform(
+                extract_info,
+                schema={
+                    "transaction_amount": float,
+                    "merchant_id": int,
+                    "user_id": int,
+                    "timestamp": datetime,
+                },
+            )
+
+            assert x.schema() == {
+                "merchant_id": int,
+                "transaction_amount": float,
+                "user_id": int,
+                "timestamp": datetime,
+            }
+            return x

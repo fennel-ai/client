@@ -3,13 +3,13 @@ from __future__ import annotations
 import hashlib
 from textwrap import dedent, indent
 
+import google.protobuf.duration_pb2 as duration_proto
 from typing import Dict, Any, List
 
-import google.protobuf.duration_pb2 as duration_proto
-from fennel.datasets.datasets import _validate_join_bounds  # type: ignore
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
+from fennel.datasets.datasets import _validate_join_bounds  # type: ignore
 from fennel.lib.duration import (
     duration_to_timedelta,
 )
@@ -128,8 +128,8 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
 
     def visitTransform(self, obj):
         schema = (
-            {col: get_datatype(dtype) for col, dtype in obj.schema.items()}
-            if obj.schema is not None
+            {col: get_datatype(dtype) for col, dtype in obj.new_schema.items()}
+            if obj.new_schema is not None
             else None
         )
         transform_func_pycode = to_includes_proto(obj.func)
