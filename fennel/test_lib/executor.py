@@ -43,7 +43,7 @@ class Executor(Visitor):
     def execute(
         self, pipeline: Pipeline, dataset: Dataset
     ) -> Optional[NodeRet]:
-        self.cur_pipeline_name = pipeline.name
+        self.cur_pipeline_name = f"{pipeline.dataset_name}.{pipeline.name}"
         self.serializer = Serializer(pipeline, dataset)
         self.cur_ds_name = dataset._name
         return self.visit(pipeline.terminal_node)
@@ -75,6 +75,7 @@ class Executor(Visitor):
                 f"Error in transform function for pipeline "
                 f"{self.cur_pipeline_name}, {e}"
             )
+        num_rows = t_df.shape[0]
         if t_df is None:
             raise Exception(
                 f"Transform function {obj.func.__name__} returned " f"None"
@@ -101,12 +102,19 @@ class Executor(Visitor):
                         f"{output_column_names}. Expected output columns:"
                         f" {output_expected_column_names}"
                     )
+        if t_df.shape[0] != num_rows:
+            raise ValueError(
+                f"Transform function {obj.func.__name__} in pipeline {self.cur_pipeline_name} "
+                f"changed number of rows from {num_rows} to {t_df.shape[0]}. To "
+                f"change the number of rows, use the filter function."
+            )
 
         sorted_df = t_df.sort_values(input_ret.timestamp_field)
         # Cast sorted_df to obj.schema()
         for col_name, col_type in obj.schema().items():
             if col_type in [float, int, str, bool]:
                 sorted_df[col_name] = sorted_df[col_name].astype(col_type)
+
         return NodeRet(
             sorted_df, input_ret.timestamp_field, input_ret.key_fields
         )

@@ -39,6 +39,14 @@ def get_featureset_core_code(featureset: Featureset) -> str:
     return z
 
 
+def remove_source_decorator(text):
+    # Define the regular expression pattern for the @source decorator block
+    pattern = r"^\s*@source\((?:.|\n)*?\)\s*$"
+    # Remove @source decorator using the regex pattern with re.MULTILINE and re.DOTALL flags
+    result = re.sub(pattern, "", text, flags=re.MULTILINE | re.DOTALL)
+    return result.strip()
+
+
 def get_dataset_core_code(dataset: Dataset) -> str:
     source_code = fennel_get_source(dataset.__fennel_original_cls__)
     for pipeline in dataset._pipelines:
@@ -47,9 +55,8 @@ def get_dataset_core_code(dataset: Dataset) -> str:
         # Delete pipeline code from source_code
         source_code = source_code.replace(pipeline_code, "")
     # Delete decorator @source() from source_code using regex
-    source_code = re.sub(
-        r"^\s*@source\(.*", "", source_code, flags=re.MULTILINE
-    )
+    source_code = remove_source_decorator(source_code)
+
     # If python version 3.8 or below add @dataset decorator
     if sys.version_info < (3, 9):
         source_code = f"@dataset\n{dedent(source_code)}"

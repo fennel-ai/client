@@ -13,6 +13,7 @@ from fennel.lib.to_proto.source_code import (
     get_featureset_core_code,
     get_dataset_core_code,
     lambda_to_python_regular_func,
+    remove_source_decorator,
 )
 from fennel.lib.window import Window
 
@@ -230,4 +231,59 @@ def test_lambda_source_code_gen():
 
     z3 = get_lambda(lambda x: {"a": x, "b": x + 1, "c": len(x)})
     assert expected_source_code == lambda_to_python_regular_func(z3)
+
+
 # fmt: on
+
+
+def test_source_code_removal():
+    example_1 = """
+@source(
+    s3.bucket(bucket_name="fennel-demo-data", prefix="outbrain_1682921988000/documents_meta.csv"),
+    every="1d",
+)
+@meta(owner="xiao@fennel.ai")
+@dataset
+class DocumentsMeta:
+    document_id: int = field(key=True)
+    source_id: int
+    publisher_id: int
+    timestamp: datetime
+"""
+
+    expected_1 = """@meta(owner="xiao@fennel.ai")
+@dataset
+class DocumentsMeta:
+    document_id: int = field(key=True)
+    source_id: int
+    publisher_id: int
+    timestamp: datetime
+"""
+
+    assert expected_1.rstrip() == remove_source_decorator(example_1).rstrip()
+
+    example_2 = """
+@meta(owner="test@test.com")
+@source(webhook.endpoint("UserInfoDataset"))
+@dataset
+class UserInfoDataset:
+    user_id: int = field(key=True)
+    name: str
+    age: between(int, 0, 100)
+    gender: oneof(str, ["male", "female", "non-binary"])
+    timestamp: datetime
+"""
+
+    expected_2 = """
+@meta(owner="test@test.com")
+
+@dataset
+class UserInfoDataset:
+    user_id: int = field(key=True)
+    name: str
+    age: between(int, 0, 100)
+    gender: oneof(str, ["male", "female", "non-binary"])
+    timestamp: datetime
+"""
+
+    assert expected_2.strip() == remove_source_decorator(example_2).strip()

@@ -169,6 +169,11 @@ def extractor(
         extractor_name = extractor_func.__name__
         params = []
         class_method = False
+        if type(depends_on) is not list:
+            raise TypeError(
+                f"depends_on must be a list of Datasets, not a"
+                f" {type(depends_on)}"
+            )
         setattr(extractor_func, DEPENDS_ON_DATASETS_ATTR, list(depends_on))
         if not hasattr(extractor_func, FENNEL_INPUTS):
             inputs = []
@@ -180,10 +185,10 @@ def extractor(
                     f"extractor `{extractor_name}` should have cls as the "
                     f"first parameter since they are class methods"
                 )
-            else:
+            elif not class_method:
                 class_method = True
                 continue
-            if param.name != "ts":
+            if param.name != "ts" and param.name != "_ts":
                 raise TypeError(
                     f"extractor `{extractor_name}` should have ts as the "
                     f"second parameter"
