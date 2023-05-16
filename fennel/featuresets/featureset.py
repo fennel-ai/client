@@ -185,10 +185,10 @@ def extractor(
                     f"extractor `{extractor_name}` should have cls as the "
                     f"first parameter since they are class methods"
                 )
-            else:
+            elif not class_method:
                 class_method = True
                 continue
-            if param.name != "ts":
+            if param.name != "ts" and param.name != "_ts":
                 raise TypeError(
                     f"extractor `{extractor_name}` should have ts as the "
                     f"second parameter"

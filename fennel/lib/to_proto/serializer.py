@@ -85,7 +85,7 @@ def {new_entry_point}(*args, **kwargs):
             new_entry_point = f"{old_entry_point}_filter"
             gen_code += f"""
 def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
-    return df[df.apply({old_entry_point}, axis=1)]
+    return df[{old_entry_point}(df)]
 """
 
         return pycode_proto.PyCode(

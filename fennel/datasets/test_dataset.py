@@ -984,7 +984,7 @@ def test_dataset_with_complex_pipe():
                 ]
 
             filtered_ds = activity.filter(
-                lambda df: df[df["action_type"] == "report_txn"]
+                lambda df: df["action_type"] == "report_txn"
             )
             ds = filtered_ds.left_join(
                 user_info,
@@ -1114,14 +1114,10 @@ def test_dataset_with_complex_pipe():
 
     operator_req = erase_operator_pycode(sync_request.operators[2])
     o = {
-        "id": "227c9aa16517c6c73371a71dfa8aacd2",
-        "is_root": False,
-        "pipeline_name": "create_fraud_dataset",
-        "dataset_name": "FraudReportAggregatedDataset",
-        "filter": {
-            "operandId": "Activity",
-            "pycode": {"source_code": ""},
-        },
+        "id": "101097826c6986ddb25ce924985d9217",
+        "pipelineName": "create_fraud_dataset",
+        "datasetName": "FraudReportAggregatedDataset",
+        "filter": {"operandId": "Activity", "pycode": {}},
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1130,13 +1126,12 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[3]
     o = {
-        "id": "20ff856e7211dfd06c0c48b6d280de76",
-        "is_root": False,
-        "pipeline_name": "create_fraud_dataset",
-        "dataset_name": "FraudReportAggregatedDataset",
+        "id": "6fa56621c7e337b5812e0a0ee238f9e4",
+        "pipelineName": "create_fraud_dataset",
+        "datasetName": "FraudReportAggregatedDataset",
         "join": {
-            "lhs_operand_id": "227c9aa16517c6c73371a71dfa8aacd2",
-            "rhs_dsref_operand_id": "UserInfoDataset",
+            "lhsOperandId": "101097826c6986ddb25ce924985d9217",
+            "rhsDsrefOperandId": "UserInfoDataset",
             "on": {"user_id": "user_id"},
         },
     }
@@ -1147,19 +1142,18 @@ def test_dataset_with_complex_pipe():
 
     operator_req = erase_operator_pycode(sync_request.operators[4])
     o = {
-        "id": "d6077bd9ba3812672a6628146230ab38",
-        "is_root": False,
-        "pipeline_name": "create_fraud_dataset",
-        "dataset_name": "FraudReportAggregatedDataset",
+        "id": "66a626a2829d18bbd4ec329d87829d73",
+        "pipelineName": "create_fraud_dataset",
+        "datasetName": "FraudReportAggregatedDataset",
         "transform": {
-            "operand_id": "20ff856e7211dfd06c0c48b6d280de76",
+            "operandId": "6fa56621c7e337b5812e0a0ee238f9e4",
             "schema": {
-                "user_id": {"int_type": {}},
-                "merchant_id": {"int_type": {}},
-                "timestamp": {"timestamp_type": {}},
-                "transaction_amount": {"double_type": {}},
+                "user_id": {"intType": {}},
+                "merchant_id": {"intType": {}},
+                "timestamp": {"timestampType": {}},
+                "transaction_amount": {"doubleType": {}},
             },
-            "pycode": {"source_code": ""},
+            "pycode": {},
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -1169,12 +1163,12 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[5]
     o = {
-        "id": "ca7789a99ba52babbdc5106d0c97ef43",
-        "is_root": True,
-        "pipeline_name": "create_fraud_dataset",
-        "dataset_name": "FraudReportAggregatedDataset",
+        "id": "4bfb6ebb8ba42632f9e85d95d58c9461",
+        "isRoot": True,
+        "pipelineName": "create_fraud_dataset",
+        "datasetName": "FraudReportAggregatedDataset",
         "aggregate": {
-            "operand_id": "d6077bd9ba3812672a6628146230ab38",
+            "operandId": "66a626a2829d18bbd4ec329d87829d73",
             "keys": ["merchant_id"],
             "specs": [
                 {
