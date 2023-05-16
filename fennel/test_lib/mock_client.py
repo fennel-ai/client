@@ -198,7 +198,10 @@ def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
     code = (
         extractor_proto.pycode.imports + extractor_proto.pycode.generated_code
     )
-    exec(code, mod.__dict__)
+    try:
+        exec(code, mod.__dict__)
+    except Exception as e:
+        raise Exception(f"Error while executing code: {code} : {e}")
     return mod.__dict__[extractor_proto.pycode.entry_point]
 
 

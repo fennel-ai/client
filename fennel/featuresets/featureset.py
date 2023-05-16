@@ -169,6 +169,11 @@ def extractor(
         extractor_name = extractor_func.__name__
         params = []
         class_method = False
+        if type(depends_on) is not list:
+            raise TypeError(
+                f"depends_on must be a list of Datasets, not a"
+                f" {type(depends_on)}"
+            )
         setattr(extractor_func, DEPENDS_ON_DATASETS_ATTR, list(depends_on))
         if not hasattr(extractor_func, FENNEL_INPUTS):
             inputs = []
