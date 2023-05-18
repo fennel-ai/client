@@ -155,7 +155,7 @@ class UserFeatures:
 
 @pytest.mark.slow
 @mock
-def test_social_network(client, fake_data_plane):
+def test_social_network(client):
     client.sync(
         datasets=[
             UserInfo,

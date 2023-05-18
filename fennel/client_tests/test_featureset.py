@@ -151,7 +151,7 @@ class TestSimpleExtractor(unittest.TestCase):
 
     @pytest.mark.integration
     @mock
-    def test_simple_extractor(self, client, fake_data_plane):
+    def test_simple_extractor(self, client):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
@@ -192,7 +192,7 @@ class TestSimpleExtractor(unittest.TestCase):
 class TestExtractorDAGResolution(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_dag_resolution2(self, client, fake_data_plane):
+    def test_dag_resolution2(self, client):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
@@ -274,7 +274,7 @@ class UserInfoTransformedFeatures:
 class TestExtractorDAGResolutionComplex(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_dag_resolution_complex(self, client, fake_data_plane):
+    def test_dag_resolution_complex(self, client):
         client.sync(
             datasets=[UserInfoDataset],
             featuresets=[
@@ -402,7 +402,7 @@ class DocumentFeatures:
 class TestDocumentDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_document_featureset(self, client, fake_data_plane):
+    def test_document_featureset(self, client):
         client.sync(
             datasets=[DocumentContentDataset], featuresets=[DocumentFeatures]
         )

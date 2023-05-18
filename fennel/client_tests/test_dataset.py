@@ -52,7 +52,7 @@ class UserInfoDatasetDerived:
 class TestDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_sync_dataset(self, client, fake_data_plane):
+    def test_sync_dataset(self, client):
         """Sync the dataset and check if it is synced correctly."""
         # Sync the dataset
         response = client.sync(datasets=[UserInfoDataset])
@@ -60,7 +60,7 @@ class TestDataset(unittest.TestCase):
 
     @pytest.mark.integration
     @mock
-    def test_simple_log(self, client, fake_data_plane):
+    def test_simple_log(self, client):
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset])
         now = datetime.now()
@@ -75,7 +75,7 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
     @mock
-    def test_simple_delete_rename(self, client, fake_data_plane):
+    def test_simple_delete_rename(self, client):
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset, UserInfoDatasetDerived])
         now = datetime.now()
@@ -112,7 +112,7 @@ class TestDataset(unittest.TestCase):
 
     @pytest.mark.integration
     @mock
-    def test_log_to_dataset(self, client, fake_data_plane):
+    def test_log_to_dataset(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset])
@@ -132,10 +132,7 @@ class TestDataset(unittest.TestCase):
             [18234, "Monica", 24, "Chile", yesterday],
         ]
         df = pd.DataFrame(data, columns=columns)
-        if client.is_integration_client():
-            response = client.log_to_dataset("UserInfoDataset", df)
-        else:
-            response = client.log("fennel_webhook", "UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
@@ -223,7 +220,7 @@ class TestDataset(unittest.TestCase):
 
     @pytest.mark.integration
     @mock
-    def test_invalid_dataschema(self, client, fake_data_plane):
+    def test_invalid_dataschema(self, client):
         """Check if invalid data raises an error."""
         client.sync(datasets=[UserInfoDataset])
         data = [
@@ -232,16 +229,13 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        if client.is_integration_client():
-            response = client.log_to_dataset("UserInfoDataset", df)
-        else:
-            response = client.log("fennel_webhook", "UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         assert len(response.json()["error"]) > 0
 
     @pytest.mark.integration
     @mock
-    def test_deleted_field(self, client, fake_data_plane):
+    def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
 
             @meta(owner="test@test.com")
@@ -265,7 +259,7 @@ class TestDataset(unittest.TestCase):
 
 # class TestDocumentDataset(unittest.TestCase):
 #     @mock_client
-#     def test_log_to_document_dataset(self, client, fake_data_plane):
+#     def test_log_to_document_dataset(self, client):
 #         """Log some data to the dataset and check if it is logged correctly."""
 #
 #         @meta(owner="aditya@fennel.ai")
@@ -435,7 +429,7 @@ class MovieRatingTransformed:
 class TestBasicTransform(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_basic_transform(self, client, fake_data_plane):
+    def test_basic_transform(self, client):
         # # Sync the dataset
         client.sync(
             datasets=[MovieRating, MovieRatingTransformed, RatingActivity],
@@ -534,7 +528,7 @@ class MovieStats:
 class TestBasicJoin(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_basic_join(self, client, fake_data_plane):
+    def test_basic_join(self, client):
         # # Sync the dataset
         client.sync(
             datasets=[MovieRating, MovieRevenue, MovieStats, RatingActivity],
@@ -591,7 +585,7 @@ class TestBasicJoin(unittest.TestCase):
 class TestBasicAggregate(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_basic_aggregate(self, client, fake_data_plane):
+    def test_basic_aggregate(self, client):
         # # Sync the dataset
         client.sync(
             datasets=[MovieRatingCalculated, RatingActivity],
@@ -673,7 +667,7 @@ class MovieRatingWindowed:
 class TestBasicWindowAggregate(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_basic_window_aggregate(self, client, fake_data_plane):
+    def test_basic_window_aggregate(self, client):
         # # Sync the dataset
         client.sync(
             datasets=[MovieRatingWindowed, RatingActivity],
@@ -761,7 +755,7 @@ class PositiveRatingActivity:
 class TestBasicFilter(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_basic_filter(self, client, fake_data_plane):
+    def test_basic_filter(self, client):
         # # Sync the dataset
         client.sync(
             datasets=[PositiveRatingActivity, RatingActivity],
@@ -907,7 +901,7 @@ class FraudReportAggregatedDataset:
 class TestFraudReportAggregatedDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_fraud(self, client, fake_data_plane):
+    def test_fraud(self, client):
         # # Sync the dataset
         client.sync(
             datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset]
@@ -1064,7 +1058,7 @@ class UserAgeAggregated:
 class TestAggregateTableDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_table_aggregation(self, client, fake_data_plane):
+    def test_table_aggregation(self, client):
         client.sync(datasets=[UserAge, UserAgeNonTable, UserAgeAggregated])
         client.sleep()
         yesterday = datetime.now() - timedelta(days=1)
@@ -1222,7 +1216,7 @@ class ManchesterUnitedPlayerInfoBounded:
 class TestE2eIntegrationTestMUInfo(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_muinfo_e2e_test(self, client, fake_data_plane):
+    def test_muinfo_e2e_test(self, client):
         client.sync(
             datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo],
         )
@@ -1304,7 +1298,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
 class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_muinfo_e2e_bounded(self, client, fake_data_plane):
+    def test_muinfo_e2e_bounded(self, client):
         client.sync(
             datasets=[
                 PlayerInfo,

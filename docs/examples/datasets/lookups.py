@@ -44,7 +44,7 @@ class UserFeature:
 
 
 @mock
-def test_user_dataset_lookup(client, fake_data_plane):
+def test_user_dataset_lookup(client):
     client.sync(datasets=[User], featuresets=[UserFeature])
     now = datetime.now()
 

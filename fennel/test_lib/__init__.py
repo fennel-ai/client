@@ -3,7 +3,6 @@ from fennel.test_lib.local_client import LocalClient
 from fennel.test_lib.mock_client import (
     mock,
     MockClient,
-    FakeDataPlane,
     get_extractor_func,
 )
 from fennel.test_lib.test_client import (

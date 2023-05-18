@@ -157,13 +157,5 @@ class IntegrationClient:
         else:
             time.sleep(self.sleep_time)
 
-    def log_to_dataset(self, dataset_name: str, df: pd.DataFrame):
-        df_json = df.to_json(orient="records")
-        try:
-            self._client.log_to_dataset(dataset_name, df_json)
-        except Exception as e:
-            return FakeResponse(400, str(e))
-        return FakeResponse(200, "OK")
-
     def _get_sync_request_proto(self):
         return to_sync_request_proto(self.to_register_objects)

@@ -4,6 +4,7 @@ import pandas as pd
 
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
+from fennel.sources import Webhook
 from fennel.test_lib import mock
 
 
@@ -117,11 +118,15 @@ class UserFeature:
 
 # /docsnip
 
+webhook = Webhook(name="fennel_webhook")
+
 
 # Tests to ensure that there are no run time errors in the snippets
 @mock
-def test_overview(client, fake_data_plane):
-    client.sync(datasets=[User, Transaction, UserTransactionsAbroad])
+def test_overview(client):
+    fake_User = User.with_source(webhook.endpoint("User"))
+    fake_Transaction = Transaction.with_source(webhook.endpoint("Transaction"))
+    client.sync(datasets=[fake_User, fake_Transaction, UserTransactionsAbroad])
     now = datetime.now()
     dob = now - timedelta(days=365 * 30)
     data = [
@@ -132,7 +137,7 @@ def test_overview(client, fake_data_plane):
 
     df = pd.DataFrame(data, columns=["uid", "dob", "country", "signup_time"])
 
-    response = fake_data_plane[postgres].table("user").upload(df)
+    response = client.log("fennel_webhook", "User", df)
     assert response.status_code == 200, response.json()
 
     data = [
@@ -156,7 +161,7 @@ def test_overview(client, fake_data_plane):
             "timestamp",
         ],
     )
-    res = fake_data_plane[kafka].topic("transactions").upload(df)
+    res = client.log("fennel_webhook", "Transaction", df)
     assert res.status_code == 200, res.json()
 
     # Do a lookup on UserTransactionsAbroad

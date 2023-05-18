@@ -34,7 +34,7 @@ class UserInfoDataset:
 class TestDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_log_with_additional_schema(self, client, fake_data_plane):
+    def test_log_with_additional_schema(self, client):
         # Log correct data
         client.sync(datasets=[UserInfoDataset])
         now = datetime.now()
@@ -67,10 +67,7 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        if client.is_integration_client():
-            response = client.log_to_dataset("UserInfoDataset", df)
-        else:
-            response = client.log("fennel_webhook", "UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD
         if client.is_integration_client():
             assert (
@@ -96,10 +93,7 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        if client.is_integration_client():
-            response = client.log_to_dataset("UserInfoDataset", df)
-        else:
-            response = client.log("fennel_webhook", "UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD
         if client.is_integration_client():
             assert (
@@ -125,10 +119,7 @@ class TestDataset(unittest.TestCase):
             },
         ]
         df = pd.DataFrame(data)
-        if client.is_integration_client():
-            response = client.log_to_dataset("UserInfoDataset", df)
-        else:
-            response = client.log("fennel_webhook", "UserInfoDataset", df)
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD
         if client.is_integration_client():
             assert (

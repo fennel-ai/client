@@ -74,7 +74,7 @@ def power_4_alt(x: int) -> int:
 
 @pytest.mark.integration
 @mock
-def test_simple_invalid_extractor(client, fake_data_plane):
+def test_simple_invalid_extractor(client):
     client.sync(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoExtractor],
@@ -113,7 +113,7 @@ def test_simple_invalid_extractor(client, fake_data_plane):
 # to store state in.
 @pytest.mark.integration
 @mock
-def test_invalid_code_changes(client, fake_data_plane):
+def test_invalid_code_changes(client):
     def sync():
         @meta(owner="test@test.com")
         @featureset

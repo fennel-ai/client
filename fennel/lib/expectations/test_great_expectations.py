@@ -116,9 +116,7 @@ class UserInfoDS:
 class TestExpectationCreation(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_dataset_expectation_creation_integration(
-        self, client, fake_data_plane
-    ):
+    def test_dataset_expectation_creation_integration(self, client):
         response = client.sync(datasets=[UserInfoDS])
         assert response.status_code == requests.codes.OK, response.json()
 

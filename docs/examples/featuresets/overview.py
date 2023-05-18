@@ -205,7 +205,7 @@ class UserLocationFeatures:
 
 @pytest.mark.slow
 @mock
-def test_multiple_features_extracted(client, fake_data_plane):
+def test_multiple_features_extracted(client):
     client.sync(datasets=[UserInfo], featuresets=[UserLocationFeatures])
     now = datetime.now()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
@@ -277,7 +277,7 @@ class UserLocationFeaturesRefactored:
 
 @pytest.mark.slow
 @mock
-def test_extractors_across_featuresets(client, fake_data_plane):
+def test_extractors_across_featuresets(client):
     client.sync(
         datasets=[UserInfo],
         featuresets=[Request, UserLocationFeaturesRefactored],

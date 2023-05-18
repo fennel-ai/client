@@ -42,7 +42,7 @@ class Likes:
 
 
 @mock
-def test_filter(client, fake_data_plane):
+def test_filter(client):
     client.sync(datasets=[Action, Likes])
     data = [
         {"uid": 1, "action_type": "like", "timestamp": datetime(2020, 1, 1)},
@@ -95,7 +95,7 @@ class RatingRescaled:
 
 
 @mock
-def test_transform(client, fake_data_plane):
+def test_transform(client):
     client.sync(datasets=[Rating, RatingRescaled])
     data = [
         {"movie": "movie1", "rating": 3.0, "timestamp": datetime(2020, 1, 1)},
@@ -146,7 +146,7 @@ class UserSellerActivity:
 
 
 @mock
-def test_join(client, fake_data_plane):
+def test_join(client):
     client.sync(datasets=[Product, OrderActivity, UserSellerActivity])
     data = [
         {"pid": 1, "seller_id": 1, "creation": datetime(2020, 1, 1)},
@@ -217,7 +217,7 @@ class UserAdStatsFeatures:
 
 
 @mock
-def test_aggregate(client, fake_data_plane):
+def test_aggregate(client):
     client.sync(
         datasets=[AdClickStream, UserAdStats], featuresets=[UserAdStatsFeatures]
     )

@@ -15,7 +15,7 @@ from fennel.lib.expectations import (
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
-from fennel.sources import source, Postgres, Snowflake, Kafka
+from fennel.sources import source, Postgres, Snowflake, Kafka, Webhook
 
 # /docsnip
 
@@ -120,13 +120,16 @@ class UserSellerFeatures:
 
 
 # docsnip sync
-from fennel.test_lib import MockClient, FakeDataPlane
+from fennel.test_lib import MockClient
+
+webhook = Webhook(name="fennel_webhook")
 
 # client = Client('<FENNEL SERVER URL>') # uncomment this line to use a real Fennel server
 client = MockClient()  # comment this line to use a real Fennel server
-data_plane = FakeDataPlane(client)
+fake_Product = Product.with_source(webhook.endpoint("Product"))
+fake_Order = Order.with_source(webhook.endpoint("Order"))
 client.sync(
-    datasets=[Order, Product, UserSellerOrders],
+    datasets=[fake_Order, fake_Product, UserSellerOrders],
     featuresets=[UserSellerFeatures],
 )
 
@@ -139,13 +142,13 @@ data = [
     [3, 1, 30.0, "product 3", now],
 ]
 df = pd.DataFrame(data, columns=columns)
-response = data_plane[postgres].table("product_info").upload(df)
+response = client.log("fennel_webhook", "Product", df)
 assert response.status_code == requests.codes.OK, response.json()
 
 columns = ["uid", "product_id", "timestamp"]
 data = [[1, 1, now], [1, 2, now], [1, 3, now]]
 df = pd.DataFrame(data, columns=columns)
-response = data_plane[kafka].topic("orders").upload(df)
+response = client.log("fennel_webhook", "Order", df)
 assert response.status_code == requests.codes.OK, response.json()
 # /docsnip
 
