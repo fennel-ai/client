@@ -11,7 +11,7 @@ from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
-from fennel.sources import Postgres, source
+from fennel.sources import Postgres, source, Webhook
 from fennel.test_lib import mock
 
 # /docsnip
@@ -88,11 +88,16 @@ class UserSeller:
 
 # We can write a unit test to verify that the feature is working as expected
 # docsnip test
+
+fake_webhook = Webhook(name="fennel_webhook")
+
+
 class TestUserLivestreamFeatures(unittest.TestCase):
     @mock
-    def test_feature(self, client, fake_data_plane):
+    def test_feature(self, client):
+        fake_Order = Order.with_source(fake_webhook.endpoint("Order"))
         client.sync(
-            datasets=[Order, UserSellerOrders], featuresets=[UserSeller]
+            datasets=[fake_Order, UserSellerOrders], featuresets=[UserSeller]
         )
         columns = ["uid", "product_id", "seller_id", "timestamp"]
         now = datetime.now()
@@ -103,7 +108,7 @@ class TestUserLivestreamFeatures(unittest.TestCase):
             [1, 312, 2, now - timedelta(hours=4)],
         ]
         df = pd.DataFrame(data, columns=columns)
-        response = fake_data_plane[postgres].table("orders").upload(df)
+        response = client.log("fennel_webhook", "Order", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         feature_df = client.extract_features(

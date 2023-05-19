@@ -26,7 +26,7 @@ class Movie:
 
 
 @mock
-def test_featureset_metaflags(client, fake_data_plane):
+def test_featureset_metaflags(client):
     client.sync(featuresets=[Movie])
 
     ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 2)])

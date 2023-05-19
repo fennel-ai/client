@@ -25,7 +25,7 @@ from fennel.test_lib import mock
 
 class TestDataset(unittest.TestCase):
     @mock
-    def test_dataset(self, client, fake_data_plane):
+    def test_dataset(self, client):
         # client talks to the mock server
         # ... do any setup
         # Sync the dataset

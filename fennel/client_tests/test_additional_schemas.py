@@ -34,7 +34,7 @@ class UserInfoDataset:
 class TestDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_log_with_additional_schema(self, client, fake_data_plane):
+    def test_log_with_additional_schema(self, client):
         # Log correct data
         client.sync(datasets=[UserInfoDataset])
         now = datetime.now()

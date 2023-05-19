@@ -8,7 +8,7 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
-from fennel.sources import source, S3
+from fennel.sources import source, S3, Webhook
 from fennel.test_lib import mock
 
 s3 = S3(
@@ -16,6 +16,8 @@ s3 = S3(
     aws_access_key_id="AKIAQOLFGTNXKQAT3UF5",
     aws_secret_access_key="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",
 )
+
+webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="xiao@fennel.ai")
@@ -39,13 +41,17 @@ class MovieInfo103:
 class TestMovieInfo103(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_log_to_MovieInfo103(self, client, fake_data_plane):
+    def test_log_to_MovieInfo103(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
+        mock_MovieInfo103 = MovieInfo103.with_source(
+            webhook.endpoint("MovieInfo103")
+        )
+
         # Sync the dataset
-        client.sync(datasets=[MovieInfo103])
+        client.sync(datasets=[mock_MovieInfo103])
         client.sleep()
         t = datetime.fromtimestamp(1672858163)
         data = [
@@ -62,17 +68,7 @@ class TestMovieInfo103(unittest.TestCase):
         columns = ["movieId", "title", "genres", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
 
-        if client.is_integration_client():
-            response = client.log("MovieInfo103", df)
-        else:
-            response = (
-                fake_data_plane[s3]
-                .bucket(
-                    bucket_name="fennel-demo-data",
-                    prefix="movielens_sampled/movies_timestamped.csv",
-                )
-                .upload(df)
-            )
+        response = client.log("fennel_webhook", "MovieInfo103", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups
@@ -108,7 +104,7 @@ class TestMovieInfo103(unittest.TestCase):
 
     @pytest.mark.data_integration
     @mock
-    def test_s3_data_integration_source(self, client, fake_data_plane):
+    def test_s3_data_integration_source(self, client):
         """Same test as test_log_to_MovieInfo103 but with an S3 source."""
         # Sync the dataset
         client.sync(datasets=[MovieInfo103])

@@ -86,7 +86,7 @@ class DomainFeatures:
 class TestInvalidSync(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_invalid_sync(self, client, fake_data_plane):
+    def test_invalid_sync(self, client):
         with pytest.raises(ValueError) as e:
             client.sync(featuresets=[DomainFeatures, Query])
 
@@ -121,7 +121,7 @@ class DomainFeatures2:
 class TestInvalidExtractorDependsOn(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_missing_features(self, client, fake_data_plane):
+    def test_missing_features(self, client):
         @meta(owner="test@fennel.ai")
         @source(webhook.endpoint("MemberActivityDataset"))
         @dataset
@@ -205,7 +205,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
     @pytest.mark.integration
     @mock
-    def test_missing_dataset(self, client, fake_data_plane):
+    def test_missing_dataset(self, client):
         client.sync(
             datasets=[MemberDataset], featuresets=[DomainFeatures2, Query]
         )
@@ -236,7 +236,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
     @pytest.mark.integration
     @mock
-    def test_no_access(self, client, fake_data_plane):
+    def test_no_access(self, client):
         with pytest.raises(Exception) as e:
             client.sync(
                 datasets=[MemberDataset, MemberActivityDatasetCopy],
@@ -268,7 +268,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
 
     @mock
-    def test_drop_timestamp_col(self, client, fake_data_plane):
+    def test_drop_timestamp_col(self, client):
         with pytest.raises(Exception) as e:
 
             @meta(owner="test@fennel.ai")

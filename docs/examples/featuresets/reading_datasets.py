@@ -41,7 +41,7 @@ class UserFeatures:
 
 
 @mock
-def test_lookup_in_extractor(client, fake_data_plane):
+def test_lookup_in_extractor(client):
     client.sync(datasets=[User], featuresets=[UserFeatures])
     now = datetime.now()
     data = pd.DataFrame(

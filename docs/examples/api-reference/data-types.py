@@ -28,7 +28,7 @@ class UserInfoDataset:
 
 
 @mock
-def test_restrictions(client, fake_data_plane):
+def test_restrictions(client):
     client.sync(datasets=[UserInfoDataset])
     now = datetime.now()
     data = [

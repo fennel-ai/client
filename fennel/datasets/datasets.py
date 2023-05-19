@@ -23,6 +23,7 @@ from typing import (
     overload,
 )
 
+import fennel.sources as sources
 from fennel.lib.aggregate import AggregateType
 from fennel.lib.aggregate.aggregate import Average, Count, LastK, Sum
 from fennel.lib.duration.duration import (
@@ -36,6 +37,7 @@ from fennel.lib.metadata import (
     set_meta_attr,
 )
 from fennel.lib.schema import dtype_to_string, get_dtype, FENNEL_INPUTS
+from fennel.sources.sources import DataConnector, source
 from fennel.utils import (
     fhash,
     parse_annotation_comments,
@@ -862,6 +864,23 @@ class Dataset(_Node[T]):
 
     def signature(self):
         return self._sign
+
+    def with_source(
+        self,
+        conn: DataConnector,
+        every: Optional[Duration] = None,
+        lateness: Optional[Duration] = None,
+    ):
+        if len(self._pipelines) > 0:
+            raise Exception(
+                f"Dataset {self._name} is contains a pipeline. "
+                f"Cannot upsert source for a dataset with pipelines."
+            )
+        ds_copy = copy.deepcopy(self)
+        if hasattr(ds_copy, sources.SOURCE_FIELD):
+            delattr(ds_copy, sources.SOURCE_FIELD)
+        src_fn = source(conn, every, lateness)
+        return src_fn(ds_copy)
 
     def dsschema(self):
         return DSSchema(

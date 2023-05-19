@@ -48,7 +48,7 @@ class Request:
 
 
 @mock
-def test_e2e_extraction(client, fake_data_plane):
+def test_e2e_extraction(client):
     client.sync(featuresets=[User, UserPost, Request])
     # docsnip e2e_extraction
     feature_df = client.extract_features(

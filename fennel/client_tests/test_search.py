@@ -35,6 +35,8 @@ s3 = sources.S3(
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
 )
 
+webhook = sources.Webhook(name="fennel_webhook")
+
 
 ################################################################################
 #                           Datasets
@@ -343,7 +345,7 @@ class DocumentContentFeatures:
 
 
 class TestSearchExample(unittest.TestCase):
-    def log_document_data(self, client, fake_data_plane):
+    def log_document_data(self, client):
         now = datetime.utcnow()
         data = [
             [141234, "This is a random document", "Random Title", "Sagar", now],
@@ -371,17 +373,7 @@ class TestSearchExample(unittest.TestCase):
         ]
         columns = ["doc_id", "body", "title", "owner", "creation_timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        if client.is_integration_client():
-            response = client.log("fennel_webhook", "NotionDocs", df)
-        else:
-            response = (
-                fake_data_plane[s3]
-                .bucket(
-                    bucket_name="engagement",
-                    prefix="notion",
-                )
-                .upload(df)
-            )
+        response = client.log("fennel_webhook", "NotionDocs", df)
 
         assert response.status_code == requests.codes.OK, response.json()
 
@@ -418,21 +410,11 @@ class TestSearchExample(unittest.TestCase):
         ]
         columns = ["doc_id", "body", "title", "owner", "creation_timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        if client.is_integration_client():
-            response = client.log("fennel_webhook", "CodaDocs", df)
-        else:
-            response = (
-                fake_data_plane[s3]
-                .bucket(
-                    bucket_name="engagement",
-                    prefix="coda",
-                )
-                .upload(df)
-            )
+        response = client.log("fennel_webhook", "CodaDocs", df)
 
         assert response.status_code == requests.codes.OK, response.json()
 
-    def log_engagement_data(self, client, fake_data_plane):
+    def log_engagement_data(self, client):
         now = datetime.utcnow()
         data = [
             [123, 31234, "view", 5, now],
@@ -444,24 +426,23 @@ class TestSearchExample(unittest.TestCase):
         ]
         columns = ["user_id", "doc_id", "action_type", "view_time", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        if client.is_integration_client():
-            response = client.log("fennel_webhook", "UserActivity", df)
-        else:
-            response = (
-                fake_data_plane[biq_query]
-                .table("user_activity", cursor="timestamp")
-                .upload(df)
-            )
+        response = client.log("fennel_webhook", "UserActivity", df)
         assert response.status_code == requests.codes.OK, response.json()
 
     @pytest.mark.integration
     @mock
-    def test_search_datasets1(self, client, fake_data_plane):
+    def test_search_datasets1(self, client):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
-        client.sync(datasets=[NotionDocs, CodaDocs, GoogleDocs, Document])
-        self.log_document_data(client, fake_data_plane)
+        mock_NotionDocs = NotionDocs.with_source(webhook.endpoint("NotionDocs"))
+        mock_CodaDocs = CodaDocs.with_source(webhook.endpoint("CodaDocs"))
+        mock_GoogleDocs = GoogleDocs.with_source(webhook.endpoint("GoogleDocs"))
+
+        client.sync(
+            datasets=[mock_NotionDocs, mock_CodaDocs, mock_GoogleDocs, Document]
+        )
+        self.log_document_data(client)
         client.sleep()
         now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
@@ -480,19 +461,23 @@ class TestSearchExample(unittest.TestCase):
 
     @pytest.mark.integration
     @mock
-    def test_search_datasets2(self, client, fake_data_plane):
+    def test_search_datasets2(self, client):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
+        mock_UserActivity = UserActivity.with_source(
+            webhook.endpoint("UserActivity")
+        )
+
         client.sync(
             datasets=[
-                UserActivity,
+                mock_UserActivity,
                 UserEngagementDataset,
                 DocumentEngagementDataset,
             ]
         )
 
-        self.log_engagement_data(client, fake_data_plane)
+        self.log_engagement_data(client)
         client.sleep()
         now = datetime.utcnow()
         ts = pd.Series([now, now])
@@ -509,17 +494,24 @@ class TestSearchExample(unittest.TestCase):
 
     @pytest.mark.integration
     @mock
-    def test_search_e2e(self, client, fake_data_plane):
+    def test_search_e2e(self, client):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
+        mock_NotionDocs = NotionDocs.with_source(webhook.endpoint("NotionDocs"))
+        mock_CodaDocs = CodaDocs.with_source(webhook.endpoint("CodaDocs"))
+        mock_GoogleDocs = GoogleDocs.with_source(webhook.endpoint("GoogleDocs"))
+        mock_UserActivity = UserActivity.with_source(
+            webhook.endpoint("UserActivity")
+        )
+
         client.sync(
             datasets=[
-                NotionDocs,
-                CodaDocs,
-                GoogleDocs,
+                mock_NotionDocs,
+                mock_CodaDocs,
+                mock_GoogleDocs,
                 Document,
-                UserActivity,
+                mock_UserActivity,
                 DocumentContentDataset,
                 UserEngagementDataset,
                 DocumentEngagementDataset,
@@ -532,9 +524,9 @@ class TestSearchExample(unittest.TestCase):
             ],
         )
 
-        self.log_document_data(client, fake_data_plane)
+        self.log_document_data(client)
         client.sleep()
-        self.log_engagement_data(client, fake_data_plane)
+        self.log_engagement_data(client)
         client.sleep(30)
         # set pd display all columns
         pd.set_option("display.max_columns", None)

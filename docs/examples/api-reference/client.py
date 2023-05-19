@@ -83,7 +83,7 @@ class UserFeatures:
 # this is your test code in some test module
 class TestExtractorDAGResolution(unittest.TestCase):
     @mock
-    def test_dag_resolution(self, client, fake_data_plane):
+    def test_dag_resolution(self, client):
         # docsnip sync_api
         client.sync(
             datasets=[UserInfoDataset],

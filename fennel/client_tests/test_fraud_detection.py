@@ -105,7 +105,7 @@ class UserTransactionSumsFeatures:
 
 
 @mock
-def test_fraud_detection_pipeline(client, fake_data_plane):
+def test_fraud_detection_pipeline(client):
     states_to_regions = {
         "WA": "West",
         "OR": "West",

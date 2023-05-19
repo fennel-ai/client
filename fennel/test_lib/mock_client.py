@@ -38,7 +38,6 @@ from fennel.lib.to_proto import (
     featureset_to_proto,
 )
 from fennel.test_lib.executor import Executor
-from fennel.test_lib.fake_data_plane import FakeDataPlane
 from fennel.test_lib.integration_client import IntegrationClient
 
 TEST_PORT = 50051
@@ -214,7 +213,7 @@ class _DatasetInfo:
 
 
 class MockClient(Client):
-    def __init__(self, data_plane: FakeDataPlane = None):
+    def __init__(self):
         self.dataset_requests: Dict[str, CoreDataset] = {}
         self.featureset_requests: Dict[str, CoreFeatureset] = {}
         self.features_for_fs: Dict[str, List[ProtoFeature]]
@@ -235,9 +234,7 @@ class MockClient(Client):
             None,
             None,
         )
-        self.data_plane = data_plane
         self.webhook_to_dataset_map: Dict[str, List[str]] = defaultdict(list)
-        self.dataplane_to_dataset_map: Dict[str, List[str]] = defaultdict(list)
         self.extractors: List[Extractor] = []
 
     # ----------------- Public methods -----------------------------------------
@@ -426,20 +423,6 @@ class MockClient(Client):
     def is_integration_client(self) -> bool:
         return False
 
-    def process_data_plane_records(self, data_plane_id: str, df: pd.DataFrame):
-        if data_plane_id not in self.dataplane_to_dataset_map:
-            raise Exception(
-                f"Data plane {data_plane_id} not found in mock client"
-            )
-        for dataset_name in self.dataplane_to_dataset_map[data_plane_id]:
-            response = self._internal_log(dataset_name, df)
-            if response.status_code != 200:
-                raise Exception(
-                    f"Error logging data to dataset {dataset_name}: "
-                    f"{response.text}"
-                )
-        return FakeResponse(200, "OK")
-
     # ----------------- Private methods --------------------------------------
 
     def _process_data_connector(self, dataset: Dataset):
@@ -448,10 +431,6 @@ class MockClient(Client):
             src = connector.data_source
             webhook_endpoint = f"{src.name}:{connector.endpoint}"
             self.webhook_to_dataset_map[webhook_endpoint].append(dataset._name)
-        else:
-            self.dataplane_to_dataset_map[connector.identifier()].append(
-                dataset._name
-            )
 
     def _internal_log(self, dataset_name: str, df: pd.DataFrame):
         if df.shape[0] == 0:
@@ -699,10 +678,7 @@ def mock(test_func):
         f = True
         if "data_integration" not in test_func.__name__:
             client = MockClient()
-            data_plane = FakeDataPlane(client)
-            f = test_func(
-                *args, **kwargs, client=client, fake_data_plane=data_plane
-            )
+            f = test_func(*args, **kwargs, client=client)
         if (
             "USE_INT_CLIENT" in os.environ
             and int(os.environ.get("USE_INT_CLIENT")) == 1
@@ -710,7 +686,7 @@ def mock(test_func):
             mode = os.environ.get("FENNEL_TEST_MODE", "inmemory")
             print("Running rust client tests in mode:", mode)
             client = IntegrationClient(mode)
-            f = test_func(*args, **kwargs, client=client, fake_data_plane=None)
+            f = test_func(*args, **kwargs, client=client)
         return f
 
     return wrapper
