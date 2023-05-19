@@ -9,6 +9,10 @@ from typing import Optional
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
+from fennel.lib.expectations import (
+    expectations,
+    expect_column_values_to_be_between,
+)
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, outputs
@@ -31,6 +35,14 @@ class UserInfoDataset:
     age: Optional[int]
     timestamp: datetime = field(timestamp=True)
     country: str
+
+    @expectations
+    def get_expectations(cls):
+        return [
+            expect_column_values_to_be_between(
+                column="age", min_value=1, max_value=100, mostly=0.95
+            )
+        ]
 
 
 @meta(owner="test@test.com")
