@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15.7] - 2023-05-19
+- Increase client timeout for sync to 300s. 
+
 ## [0.15.5] - 2023-05-18
 - Provide an option to override the source for a dataset.
 

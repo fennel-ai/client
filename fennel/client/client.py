@@ -1,9 +1,9 @@
 import functools
 import gzip
 import json
+import math
 from urllib.parse import urljoin
 
-import math
 import pandas as pd
 from typing import Dict, Optional, Any, Set, List, Union
 
@@ -87,7 +87,10 @@ class Client:
                 self.add(featureset)
         sync_request = self._get_sync_request_proto()
         response = self._post_bytes(
-            "{}/sync".format(V1_API), sync_request.SerializeToString()
+            "{}/sync".format(V1_API),
+            sync_request.SerializeToString(),
+            False,
+            300,
         )
         check_response(response)
 
@@ -134,11 +137,17 @@ class Client:
         }
         return self._post(path, payload, headers, compress)
 
-    def _post_bytes(self, path: str, req: bytes, compress: bool = False):
+    def _post_bytes(
+        self,
+        path: str,
+        req: bytes,
+        compress: bool = False,
+        timeout: float = _DEFAULT_TIMEOUT,
+    ):
         headers = {
             "Content-Type": "application/octet-stream",
         }
-        return self._post(path, req, headers, compress)
+        return self._post(path, req, headers, compress, timeout)
 
     def _post(
         self,
@@ -146,6 +155,7 @@ class Client:
         data: Any,
         headers: Dict[str, str],
         compress: bool = False,
+        timeout: float = _DEFAULT_TIMEOUT,
     ):
         if compress:
             data = gzip.compress(data)
