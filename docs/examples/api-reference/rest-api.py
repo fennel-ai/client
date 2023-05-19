@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 import requests
 
-
 SERVER = "http://localhost:8000/"
 
 
@@ -37,7 +36,11 @@ class TestRestAPI(unittest.TestCase):
                 "timestamp": "2020-01-01",
             },
         ]
-        req = {"dataset": "UserInfo", "rows": data}
+        req = {
+            "webhook": "fennel_webhook",
+            "endpoint": "UserInfo",
+            "rows": data,
+        }
         response = requests.post(url, headers=headers, data=req)
         assert response.status_code == requests.codes.OK, response.json()
         # /docsnip

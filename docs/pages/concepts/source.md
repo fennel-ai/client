@@ -6,6 +6,10 @@ status: 'published'
 
 # Source
 
+Source is the ONLY way to get data into Fennel. There are two ways to source data into Fennel:
+
+You can either log data into Fennel using a Webhook source or you can source data from your external datastores.
+
 Fennel ships with data connectors to all [common datastores](/api-reference/sources) so that you can 
 'source' your Fennel datasets from your external datasets. Let's see an example:
 
@@ -37,7 +41,7 @@ Most sources take a few additional parameters as described below:
 
 ### Every 
 The frequency with which Fennel checks the external data source for new data. 
-Needed for all sources except Kafka which is ingested continuously.
+Needed for all sources except Kafka and Webhooks which are ingested continuously.
 
 ### Cursor
 Fennel uses a cursor to do incremental ingestion of data. It does so 
@@ -46,7 +50,7 @@ and issuing a query of the form `SELECT * FROM user WHERE update_time > {last_up
 Clearly, this works only when the cursor field is monotonically increasing with 
 row updates - which Fennel expects you to ensure. It is also advised to have 
 an index of the cursor column so that this query is efficient. All data sources 
-except Kafka & S3 require a cursor.
+except Kafka, Webhooks & S3 require a cursor.
 
 ### Lateness
 Fennel, like many other streaming systems, is designed to robustly handle out

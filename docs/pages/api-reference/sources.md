@@ -1,12 +1,29 @@
 ---
 title: Sources
 order: 6
-status: wip
+status: 'published'
 ---
 
 # Sources
 
 Here is the description of all the external sources supported by Fennel and how to use them:
+
+### Webhook
+
+The Webhook source operates on a push-based mechanism, making it convenient for sending data to Fennel. 
+There are two options for pushing data into Fennel: utilizing the Fennel Python SDK or employing the REST API.
+
+The following fields need to be specified:
+
+1. **`name`** - A name to identify the source. The name should be unique across all sources.
+
+And the following fields need to be defined on the webhook:
+
+1. **`endpoint`** - The endpoint for the given webhook to which the data will be sent.
+
+<pre snippet="api-reference/source#webhook_source" />
+
+To use the REST api check the [REST API](/api-reference/rest-api) documentation.
 
 ### **MySQL**
 
@@ -26,7 +43,6 @@ The following fields need to be specified:
 If you see a `Cannot create a PoolableConnectionFactory`error, try setting `jdbc_params` to `enabledTLSProtocols=TLSv1.2`&#x20;
 :::
 
-TODO
 
 ### Postgres
 
@@ -62,7 +78,17 @@ Fennel uses  `file_last_modified` property exported by S3 to track what data has
 
 ### BigQuery
 
-**Obtaining the credentials**
+The following fields need to be specified:
+
+1. **`name`** - A name to identify the source. The name should be unique across all sources.
+2. **`project_id`** - The project ID of the Google Cloud project containing the BigQuery dataset.
+3. **`dataset_id`** - The ID of the BigQuery dataset containing the table(s) to replicate.
+4. **`credentials_json`** - The JSON string containing the credentials for the Service Account to use to access BigQuery. See below for instructions on how to obtain this.
+
+
+<details>
+
+<summary>How to obtain credentials? </summary>
 
 Interfacing with BigQuery requires credentials for a [Service Account](https://cloud.google.com/iam/docs/service-accounts) with the "BigQuery User" and "BigQuery Data Editor" roles, which grants permissions to run BigQuery jobs, write to BigQuery Datasets, and read table metadata. It is highly recommended that this Service Account is exclusive to Fennel for ease of permissions and auditing. However, you can also use a pre-existing Service Account if you already have one with the correct permissions.
 
@@ -73,6 +99,8 @@ Then, add the service account as a Member of your Google Cloud Project with the 
 At this point, you should have a service account with the "BigQuery User" project-level permission.
 
 For Service Account Key JSON, enter the Google Cloud [Service Account Key in JSON format](https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+
+</details>
 
 
 ### Snowflake
