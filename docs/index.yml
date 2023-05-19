@@ -61,6 +61,7 @@ sidebar:
       - "api-reference/operators"
       - "api-reference/aggregations"
       - "api-reference/sources"
+      - "api-reference/expectations"
 
   - 
     slug: "misc"
