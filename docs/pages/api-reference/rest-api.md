@@ -12,7 +12,8 @@ All DDL operations (i.e. definitions of datasets/featuresets) can only be done v
 
 Used to log data to a dataset. It's post call with the following properties:
 
-* `dataset_name`: the name of the dataset to which data needs to be logged (as json string)
+* `webhook`: the name of the webhook to which the data should be logged
+* `endpoint`: the endpoint of the webhook to which the data should be logged
 * `rows`: a list of rows (as json) that must be logged to the datasets
 
 **Example**

@@ -1,9 +1,12 @@
 from datetime import datetime
 
+import pandas as pd
+
 from fennel import sources
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.sources import source
+from fennel.test_lib import MockClient
 
 # docsnip mysql_source
 mysql = sources.MySQL(
@@ -81,4 +84,31 @@ sf_src = sources.Snowflake(
     username="<username>",
     password="<password>",
 )
+# /docsnip
+
+
+client = MockClient()
+df = pd.DataFrame(
+    {
+        "uid": [1, 2, 3],
+        "email": ["a@gmail.com", "b@gmail.com", "c@gmail.com"],
+        "timestamp": [datetime.now(), datetime.now(), datetime.now()],
+    }
+)
+
+# docsnip webhook_source
+webhook = sources.Webhook(name="fennel_webhook")
+
+
+@source(webhook.endpoint("UserDataset"))
+@meta(owner="abc@email.com")
+@dataset
+class UserDataset:
+    uid: int = field(key=True)
+    email: str
+    timestamp: datetime
+    ...
+
+
+client.log("fennel_webhook", "UserDataset", df)
 # /docsnip
