@@ -182,11 +182,14 @@ def get_all_imports() -> str:
     ]
 
     fennel_imports = [
-        "from fennel.lib.metadata import meta",
-        "from fennel.lib.includes import includes",
+        "from fennel.sources.sources import *",
         "from fennel.datasets import *",
         "from fennel.featuresets import *",
+        "from fennel.lib.expectations import *",
         "from fennel.lib.schema import *",
+        "from fennel.lib.includes import includes",
+        "from fennel.lib.aggregate.aggregate import *",
+        "from fennel.lib.metadata import meta",
         "from fennel.datasets.datasets import dataset_lookup",
     ]
 
