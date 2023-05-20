@@ -231,7 +231,7 @@ def _pipeline_to_proto(
         signature=pipeline.name,
         metadata=get_metadata_proto(pipeline.func),
         input_dataset_names=[dataset._name for dataset in pipeline.inputs],
-        idx=pipeline.version,
+        version=pipeline.version,
         active=pipeline.active,
     )
 

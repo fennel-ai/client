@@ -192,6 +192,10 @@ class Executor(Visitor):
 
         left_df = input_ret.df
         right_df = copy.deepcopy(right_ret.df)
+
+        if left_df.shape[0] == 0 or right_df.shape[0] == 0:
+            return None
+
         right_timestamp_field = right_ret.timestamp_field
         left_timestamp_field = input_ret.timestamp_field
         ts_query_field = "_@@_query_ts"
