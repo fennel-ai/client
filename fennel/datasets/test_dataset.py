@@ -358,7 +358,7 @@ def test_dataset_with_pipes():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "idx": 1,
+        "version": 1,
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -521,7 +521,7 @@ def test_dataset_with_pipes_bounds():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "idx": 1,
+        "version": 1,
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -613,7 +613,7 @@ def test_dataset_with_pipes_bounds():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "idx": 1,
+        "version": 1,
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -705,7 +705,7 @@ def test_dataset_with_pipes_bounds():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "idx": 1,
+        "version": 1,
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -798,7 +798,7 @@ def test_dataset_with_pipes_bounds():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "idx": 1,
+        "version": 1,
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -891,7 +891,7 @@ def test_dataset_with_pipes_bounds():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "idx": 1,
+        "version": 1,
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -1072,7 +1072,7 @@ def test_dataset_with_complex_pipe():
         "signature": "create_fraud_dataset",
         "metadata": {},
         "input_dataset_names": ["Activity", "UserInfoDataset"],
-        "idx": 1,
+        "version": 1,
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -1280,7 +1280,7 @@ def test_union_datasets():
         "dataset_name": "ABCDataset",
         "signature": "pipeline2_diamond",
         "metadata": {},
-        "idx": 1,
+        "version": 1,
         "input_dataset_names": ["A"],
         "active": True,
     }
@@ -1515,7 +1515,7 @@ def test_search_dataset():
         "dataset_name": "DocumentContentDataset",
         "signature": "content_features",
         "metadata": {},
-        "idx": 1,
+        "version": 1,
         "input_dataset_names": ["Document"],
         "active": True,
     }

@@ -167,6 +167,7 @@ class Client:
             self._url(path),
             data=data,
             headers=headers,
+            timeout=timeout,
         )
         check_response(response)
         return response
