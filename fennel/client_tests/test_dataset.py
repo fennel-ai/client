@@ -139,13 +139,13 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                    response.json()["error"]
-                    == """error: input parse error: expected Int, but got String("32")"""
+                response.json()["error"]
+                == """error: input parse error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                    response.json()["error"]
-                    == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
+                response.json()["error"]
+                == "[ValueError('Field `age` is of type int, but the column in the dataframe is of type `object`.')]"
             )
         client.sleep(10)
         # Do some lookups
@@ -243,6 +243,7 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
+
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -255,8 +256,8 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-                str(e.exception)
-                == "Dataset currently does not support deleted or deprecated fields."
+            str(e.exception)
+            == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
@@ -1005,6 +1006,31 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
             248,
         ]
 
+        if client.is_integration_client():
+            return
+
+        df = client.get_dataset_df("FraudReportAggregatedDataset")
+        assert df.shape == (4, 5)
+        assert df["category"].tolist() == [
+            "entertainment",
+            "grocery",
+            "entertainment",
+            "grocery",
+        ]
+        assert df["num_categ_fraudulent_transactions"].tolist() == [2, 4, 2, 4]
+        assert df["num_categ_fraudulent_transactions_7d"].tolist() == [
+            2,
+            4,
+            0,
+            0,
+        ]
+        assert df["sum_categ_fraudulent_transactions_7d"].tolist() == [
+            248,
+            1296,
+            0,
+            0,
+        ]
+
 
 @meta(owner="me@fennel.ai")
 @source(webhook.endpoint("UserAge"))
@@ -1147,7 +1173,7 @@ class ManchesterUnitedPlayerInfo:
     @pipeline()
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
@@ -1185,7 +1211,7 @@ class ManchesterUnitedPlayerInfoBounded:
     @pipeline(version=1)
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54

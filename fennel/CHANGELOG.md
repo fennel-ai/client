@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15.10] - 2023-05-23
+- Add debug api to the client 
+
 ## [0.15.7] - 2023-05-19
 - Increase client timeout for sync to 300s. 
 

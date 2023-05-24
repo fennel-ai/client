@@ -97,8 +97,8 @@ class UserPageViewFeatures:
     @inputs(Request.uuid)
     @outputs(page_views, page_views_1d, page_views_3d, page_views_9d)
     def extract(cls, ts: pd.Series, uuids: pd.Series):
-        page_views, found = PageViewsByUser.lookup(
-            ts, uuid=uuids  # type: ignore
+        page_views, found = PageViewsByUser.lookup(  # type: ignore
+            ts, uuid=uuids
         )
         ret = page_views[
             ["page_views", "page_views_1d", "page_views_3d", "page_views_9d"]
@@ -111,6 +111,7 @@ class UserPageViewFeatures:
         return ret
 
 
+@pytest.mark.slow
 @pytest.mark.integration
 @mock
 def test_outbrain(client):
@@ -125,7 +126,7 @@ def test_outbrain(client):
             UserPageViewFeatures,
         ],
     )
-    df = pd.read_csv("fennel/client_tests/data/page_views.csv")
+    df = pd.read_csv("fennel/client_tests/data/page_views_sample.csv")
     # Current time 10 days from today in ms
     cur_time_ms = datetime.now().timestamp() * 1000
     ten_days_ago = cur_time_ms - 10 * 24 * 60 * 60 * 1000
@@ -133,13 +134,14 @@ def test_outbrain(client):
     # Add a current row timestamp in the dataframe
 
     # Current time in ms
-    pd.set_option("display.max_columns", None)
-    new_row = {'uuid': '100016de3e1e8c1',
-               'document_id': 20330891,
-               'timestamp': cur_time_ms,
-               'platform': 2,
-               'geo_location': 'US>CA>808',
-               'traffic_source': 1}
+    new_row = {
+        "uuid": "100016de3e1e8c1",
+        "document_id": 20330891,
+        "timestamp": cur_time_ms,
+        "platform": 2,
+        "geo_location": "US>CA>808",
+        "traffic_source": 1,
+    }
 
     # create a DataFrame with the new row data
     df_new = pd.DataFrame([new_row])
@@ -149,7 +151,7 @@ def test_outbrain(client):
 
     client.log("outbrain_webhook", "PageViews", df)
     if client.is_integration_client():
-        client.sleep(7)
+        client.sleep(120)
 
     df = df.iloc[:-1, :]
     input_df = df.copy()
@@ -170,17 +172,8 @@ def test_outbrain(client):
         input_feature_list=[Request],
         input_dataframe=input_df,
     )
-    # import sys
-    # print(feature_df, file=sys.stderr)
-    assert feature_df.shape[0] == 10
-    # Print all columns of the feature dataframe
-    assert feature_df["UserPageViewFeatures.page_views"].tolist() == [
-        2, 2, 3, 3, 3, 4, 4, 4, 4, 1]
-
-    assert feature_df["UserPageViewFeatures.page_views_1d"].sum() == 2
-
-    assert feature_df["UserPageViewFeatures.page_views_3d"].sum() == 4
-
-    assert feature_df["UserPageViewFeatures.page_views_9d"].tolist() == [
-        2, 2, 3, 3, 3, 2, 2, 2, 2, 1
-    ]
+    assert feature_df.shape[0] == 399
+    assert feature_df["UserPageViewFeatures.page_views"].sum() == 12971
+    assert feature_df["UserPageViewFeatures.page_views_1d"].sum() == 943
+    assert feature_df["UserPageViewFeatures.page_views_3d"].sum() == 4065
+    assert feature_df["UserPageViewFeatures.page_views_9d"].sum() == 10083

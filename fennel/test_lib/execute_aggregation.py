@@ -262,7 +262,7 @@ def get_aggregated_df(
         df = df.sort_values(
             [ts_field, FENNEL_ROW_TYPE], ascending=[True, False]
         )
-        # Reset the index
+    # Reset the index
     df = df.reset_index(drop=True)
     if isinstance(aggregate, Count):
         df[FENNEL_FAKE_OF_FIELD] = 1
@@ -318,4 +318,7 @@ def get_aggregated_df(
     # Drop the fennel_row_type column
     df.drop(FENNEL_ROW_TYPE, inplace=True, axis=1)
     df.fillna(0, inplace=True)
+    subset = key_fields + [ts_field]
+    df = df.drop_duplicates(subset=subset, keep="last")
+    df = df.reset_index(drop=True)
     return df

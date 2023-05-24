@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import os
 import types
@@ -121,8 +122,6 @@ def dataset_lookup_impl(
         data_dict = aggregated_datasets[cls_name]
         # Gather all the columns that are needed from data_dict to create a df.
         result_dfs = []
-        # Print all the columns in the data_dict
-        pd.set_option("display.max_columns", None)
         for col, right_df in data_dict.items():
             right_df[FENNEL_LOOKUP] = True
             right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
@@ -236,6 +235,46 @@ class MockClient(Client):
         )
         self.webhook_to_dataset_map: Dict[str, List[str]] = defaultdict(list)
         self.extractors: List[Extractor] = []
+
+    # ----------------- Debug methods -----------------------------------------
+
+    def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
+        if dataset_name in self.data:
+            return copy.deepcopy(self.data[dataset_name])
+
+        if dataset_name not in self.aggregated_datasets:
+            raise ValueError(f"Dataset {dataset_name} not found")
+
+        key_fields = self.dataset_info[dataset_name].key_fields
+        required_fields = key_fields + [FENNEL_TIMESTAMP]
+        column_wise_df = self.aggregated_datasets[dataset_name]
+        key_dfs = pd.DataFrame()
+        # Collect all timestamps across all columns
+        for data in column_wise_df.values():
+            subset_df = data[required_fields]
+            key_dfs = pd.concat([key_dfs, subset_df], ignore_index=True)
+            key_dfs.drop_duplicates(inplace=True)
+
+        # Find the values for all columns as of the timestamp in key_dfs
+        extrapolated_dfs = []
+        for col, data in column_wise_df.items():
+            df = pd.merge_asof(
+                left=key_dfs,
+                right=data,
+                on=FENNEL_TIMESTAMP,
+                by=key_fields,
+                direction="backward",
+                suffixes=("", "_right"),
+            )
+            extrapolated_dfs.append(df)
+        # Merge all the extrapolated dfs, column wise and drop duplicate columns
+        df = pd.concat(extrapolated_dfs, axis=1)
+        df = df.loc[:, ~df.columns.duplicated()]
+        if FENNEL_LOOKUP in df.columns:
+            df.drop(columns=[FENNEL_LOOKUP], inplace=True)
+        if FENNEL_TIMESTAMP in df.columns:
+            df.drop(columns=[FENNEL_TIMESTAMP], inplace=True)
+        return df
 
     # ----------------- Public methods -----------------------------------------
 
