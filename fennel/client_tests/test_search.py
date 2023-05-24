@@ -528,8 +528,6 @@ class TestSearchExample(unittest.TestCase):
         client.sleep()
         self.log_engagement_data(client)
         client.sleep(30)
-        # set pd display all columns
-        pd.set_option("display.max_columns", None)
         input_df = pd.DataFrame(
             {
                 "Query.user_id": [123, 342],
@@ -604,3 +602,9 @@ class TestSearchExample(unittest.TestCase):
                 "with",
                 "words",
             ]
+
+        if client.is_integration_client():
+            return
+
+        df = client.get_dataset_df("DocumentContentDataset")
+        assert df.shape == (16, 8)

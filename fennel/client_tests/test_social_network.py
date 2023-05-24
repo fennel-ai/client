@@ -211,3 +211,9 @@ def test_social_network(client):
         0.0,
         0.25,
     ]
+
+    if client.is_integration_client():
+        return
+
+    df = client.get_dataset_df("UserCategoryDataset")
+    assert df.shape == (1998, 4)

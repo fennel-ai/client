@@ -1006,6 +1006,31 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
             248,
         ]
 
+        if client.is_integration_client():
+            return
+
+        df = client.get_dataset_df("FraudReportAggregatedDataset")
+        assert df.shape == (4, 5)
+        assert df["category"].tolist() == [
+            "entertainment",
+            "grocery",
+            "entertainment",
+            "grocery",
+        ]
+        assert df["num_categ_fraudulent_transactions"].tolist() == [2, 4, 2, 4]
+        assert df["num_categ_fraudulent_transactions_7d"].tolist() == [
+            2,
+            4,
+            0,
+            0,
+        ]
+        assert df["sum_categ_fraudulent_transactions_7d"].tolist() == [
+            248,
+            1296,
+            0,
+            0,
+        ]
+
 
 @meta(owner="me@fennel.ai")
 @source(webhook.endpoint("UserAge"))
