@@ -329,3 +329,40 @@ def test_protected_fields():
         "name `timestamp_field` is reserved. Please use a different "
         "name in dataset `Activity`.')]"
     )
+
+
+def test_join():
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            v: int
+            t: datetime
+
+        @dataset
+        class B:
+            b1: int = field(key=True)
+            v: int
+            t: datetime
+
+        @dataset
+        class ABCDataset:
+            a1: int = field(key=True)
+            v: Optional[int]
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(A, B)
+            def pipeline1(cls, a: Dataset, b: Dataset):
+                x = a.left_join(
+                    b,
+                    left_on=["a1"],
+                    right_on=["b1"],
+                )  # type: ignore
+                return x
+
+    assert (
+        "Values of left and right schemas are not disjoint during join with `B`. Left values: ['v'], right values: ['v']."
+        in str(e.value)
+    )

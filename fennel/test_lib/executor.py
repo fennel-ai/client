@@ -265,6 +265,8 @@ class Executor(Visitor):
                 left_by=obj.left_on,
                 right_by=obj.right_on,
             )
+            # Drop the obj.right_on columns from the merged dataframe
+            merged_df = merged_df.drop(columns=obj.right_on)
 
         # Filter out rows that are outside the bounds of the join query
         def filter_bounded_row(row):
@@ -346,6 +348,16 @@ class Executor(Visitor):
         if input_ret is None:
             return None
         df = input_ret.df
+        # Check that the columns to be renamed are present in the dataframe
+        if not is_subset(obj.column_mapping.keys(), df.columns):
+            raise Exception(
+                f"Columns to be renamed {obj.column_mapping.keys()} not present in dataframe"
+            )
+        # Check that the columns post renaming are not present in the dataframe
+        if is_subset(obj.column_mapping.values(), df.columns):
+            raise Exception(
+                f"Columns after renaming {obj.column_mapping.values()} already present in dataframe"
+            )
         df = df.rename(columns=obj.column_mapping)
         for old_col, new_col in obj.column_mapping.items():
             if old_col in input_ret.key_fields:

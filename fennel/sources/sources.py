@@ -451,11 +451,19 @@ class S3Connector(DataConnector):
 
     def _validate(self) -> List[Exception]:
         exceptions: List[Exception] = []
-        if self.format not in ["csv", "json", "parquet"]:
-            exceptions.append(TypeError("format must be csv"))
-        if self.delimiter not in [",", "\t", "|"]:
+        if self.format not in ["csv", "json", "parquet", "hudi"]:
+            exceptions.append(
+                TypeError("format must be either csv, json, parquet, or hudi")
+            )
+        if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
             exceptions.append(
                 Exception("delimiter must be one of [',', '\t', '|']")
+            )
+        if self.format == "hudi" and self.cursor is not None:
+            exceptions.append(
+                Exception(
+                    "cursor must be None for hudi format, since it uses the commit timestamp."
+                )
             )
         return exceptions
 

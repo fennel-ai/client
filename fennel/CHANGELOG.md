@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15.11] - 2023-05-26
+- Fix join semantics for left and right joins. 
+
 ## [0.15.10] - 2023-05-23
 - Add debug api to the client 
 

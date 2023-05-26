@@ -217,13 +217,17 @@ def get_datatype(type_: Any) -> schema_proto.DataType:
 
 # TODO(Aditya): Add support for nested schema checks for arrays and maps
 def _validate_field_in_df(
-    field: schema_proto.Field, df: pd.DataFrame, is_nullable: bool = False
+    field: schema_proto.Field,
+    df: pd.DataFrame,
+    entity_name: str,
+    is_nullable: bool = False,
 ):
     name = field.name
     dtype = field.dtype
     if name not in df.columns:
         raise ValueError(
-            f"Field `{name}` not found in dataframe. "
+            f"Field `{name}` not found in dataframe during checking schema for "
+            f"`{entity_name}`. "
             f"Please ensure the dataframe has the correct schema."
         )
 
@@ -232,13 +236,15 @@ def _validate_field_in_df(
         return _validate_field_in_df(
             field=schema_proto.Field(name=name, dtype=dtype.optional_type.of),
             df=df,
+            entity_name=entity_name,
             is_nullable=True,
         )
 
     if not is_nullable and df[name].isnull().any():
         raise ValueError(
             f"Field `{name}` is not nullable, but the "
-            f"column in the dataframe has null values."
+            f"column in the dataframe has null values. Error found during"
+            f"checking schema for `{entity_name}`."
         )
 
     if dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
@@ -253,14 +259,16 @@ def _validate_field_in_df(
                 raise ValueError(
                     f"Field `{name}` is of type int, but the "
                     f"column in the dataframe is of type "
-                    f"`{df[name].dtype}`."
+                    f"`{df[name].dtype}`. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
         else:
             if df[name].dtype != np.int64 and df[name].dtype != pd.Int64Dtype():
                 raise ValueError(
                     f"Field `{name}` is of type int, but the "
                     f"column in the dataframe is of type "
-                    f"`{df[name].dtype}`."
+                    f"`{df[name].dtype}`. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
     elif dtype == schema_proto.DataType(double_type=schema_proto.DoubleType()):
         if (
@@ -272,7 +280,8 @@ def _validate_field_in_df(
             raise ValueError(
                 f"Field `{name}` is of type float, but the "
                 f"column in the dataframe is of type "
-                f"`{df[name].dtype}`."
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
             )
     elif dtype == schema_proto.DataType(string_type=schema_proto.StringType()):
         if (
@@ -283,7 +292,8 @@ def _validate_field_in_df(
             raise ValueError(
                 f"Field `{name}` is of type str, but the "
                 f"column in the dataframe is of type "
-                f"`{df[name].dtype}`."
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
             )
     elif dtype == schema_proto.DataType(
         timestamp_type=schema_proto.TimestampType()
@@ -292,61 +302,70 @@ def _validate_field_in_df(
             raise ValueError(
                 f"Field `{name}` is of type timestamp, but the "
                 f"column in the dataframe is of type "
-                f"`{df[name].dtype}`."
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
             )
     elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
         if df[name].dtype != np.bool_:
             raise ValueError(
                 f"Field `{name}` is of type bool, but the "
                 f"column in the dataframe is of type "
-                f"`{df[name].dtype}`."
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
             )
     elif dtype.embedding_type.embedding_size > 0:
         if df[name].dtype != object:
             raise ValueError(
                 f"Field `{name}` is of type embedding, but the "
                 f"column in the dataframe is of type "
-                f"`{df[name].dtype}`."
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
             )
         # Check that the embedding is a list of floats of size embedding_size
         for i, row in df[name].items():
             if not isinstance(row, np.ndarray) and not isinstance(row, list):
                 raise ValueError(
                     f"Field `{name}` is of type embedding, but the "
-                    f"column in the dataframe is not a list."
+                    f"column in the dataframe is not a list. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
             if len(row) != dtype.embedding_type.embedding_size:
                 raise ValueError(
                     f"Field `{name}` is of type embedding, of size "
                     f"`{dtype.embedding_type.embedding_size}`, but the "
                     "column in the dataframe has a list of size "
-                    f"`{len(row)}`."
+                    f"`{len(row)}`. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
     elif dtype.array_type.of != schema_proto.DataType():
         if df[name].dtype != object:
             raise ValueError(
                 f"Field `{name}` is of type array, but the "
                 f"column in the dataframe is of type "
-                f"`{df[name].dtype}`."
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
             if not isinstance(row, np.ndarray) and not isinstance(row, list):
                 raise ValueError(
                     f"Field `{name}` is of type array, but the "
-                    f"column in the dataframe is not a list."
+                    f"column in the dataframe is not a list. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
     elif dtype.map_type.key != schema_proto.DataType():
         if df[name].dtype != object:
             raise ValueError(
                 f"Field `{name}` is of type map, but the "
                 f"column in the dataframe is of type "
-                f"`{df[name].dtype}`."
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
             if not isinstance(row, dict):
                 raise ValueError(
                     f"Field `{name}` is of type map, but the "
-                    f"column in the dataframe is not a dict."
+                    f"column in the dataframe is not a dict. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
     elif dtype.between_type != schema_proto.Between():
         bw_type = dtype.between_type
@@ -357,7 +376,8 @@ def _validate_field_in_df(
                 raise ValueError(
                     f"Field `{name}` is of type int, but the "
                     f"column in the dataframe is of type "
-                    f"`{df[name].dtype}`."
+                    f"`{df[name].dtype}`. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
             min_bound = bw_type.min.int
             max_bound = bw_type.max.int
@@ -373,7 +393,8 @@ def _validate_field_in_df(
                 raise ValueError(
                     f"Field `{name}` is of type float, but the "
                     f"column in the dataframe is of type "
-                    f"`{df[name].dtype}`."
+                    f"`{df[name].dtype}`. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
             min_bound = bw_type.min.float  # type: ignore
             max_bound = bw_type.max.float  # type: ignore
@@ -388,7 +409,8 @@ def _validate_field_in_df(
             ):
                 raise ValueError(
                     f"Field `{name}` is of type between, but the "
-                    f"value `{row}` is out of bounds."
+                    f"value `{row}` is out of bounds. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
     elif dtype.one_of_type != schema_proto.OneOf():
         of_type = dtype.one_of_type
@@ -397,7 +419,8 @@ def _validate_field_in_df(
                 raise ValueError(
                     f"Field `{name}` is of type int, but the "
                     f"column in the dataframe is of type "
-                    f"`{df[name].dtype}`."
+                    f"`{df[name].dtype}`. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
             options = set(int(x.int) for x in of_type.options)
         elif of_type.of == schema_proto.DataType(
@@ -411,7 +434,8 @@ def _validate_field_in_df(
                 raise ValueError(
                     f"Field `{name}` is of type str, but the "
                     f"column in the dataframe is of type "
-                    f"`{df[name].dtype}`."
+                    f"`{df[name].dtype}`. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
             options = set(
                 str(x.string) for x in of_type.options  # type: ignore
@@ -425,7 +449,8 @@ def _validate_field_in_df(
                 raise ValueError(
                     f"Field '{name}' is of type oneof, but the "
                     f"value '{row}' is not found in the set of options "
-                    f"{sorted_options}."
+                    f"{sorted_options}. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
 
     elif dtype.regex_type != "":
@@ -437,7 +462,8 @@ def _validate_field_in_df(
             raise ValueError(
                 f"Field `{name}` is of type str, but the "
                 f"column in the dataframe is of type "
-                f"`{df[name].dtype}`."
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
             )
         regex = dtype.regex_type.pattern
         for i, row in df[name].items():
@@ -446,14 +472,15 @@ def _validate_field_in_df(
                 raise ValueError(
                     f"Field `{name}` is of type regex, but the "
                     f"value `{row}` does not match the regex "
-                    f"`{regex}`."
+                    f"`{regex}`. Error found during "
+                    f"checking schema for `{entity_name}`."
                 )
     else:
         raise ValueError(f"Field `{name}` has unknown data type `{dtype}`.")
 
 
 def data_schema_check(
-    schema: schema_proto.DSSchema, df: pd.DataFrame
+    schema: schema_proto.DSSchema, df: pd.DataFrame, dataset_name=""
 ) -> List[ValueError]:
     exceptions = []
     fields = []
@@ -476,7 +503,7 @@ def data_schema_check(
     # Check schema of fields with the dataframe
     for field in fields:
         try:
-            _validate_field_in_df(field, df)
+            _validate_field_in_df(field, df, dataset_name)
         except ValueError as e:
             exceptions.append(e)
         except Exception as e:
