@@ -509,9 +509,13 @@ class MockClient(Client):
         # this code not enforcing type casting at the Transform layer, the resulting DF will have a float
         # column. Future lookups on this DF will fail as well since Lookup impl uses `merge_asof`
         # and requires the merge columns to have the same type.
-        exceptions = data_schema_check(schema, df)
+        exceptions = data_schema_check(schema, df, dataset_name)
         if len(exceptions) > 0:
-            return FakeResponse(400, str(exceptions))
+            return FakeResponse(
+                400,
+                f"Schema validation failed during data insertion to `{dataset_name}`"
+                f" {str(exceptions)}",
+            )
         self._merge_df(df, dataset_name)
         for pipeline in self.listeners[dataset_name]:
             executor = Executor(self.data, self.agg_state)
@@ -633,7 +637,7 @@ class MockClient(Client):
                     f"invalid type `{type(output)}`, expected a pandas series or dataframe"
                 )
             output_df = pd.DataFrame(output)
-            exceptions = data_schema_check(dsschema, output_df)
+            exceptions = data_schema_check(dsschema, output_df, extractor.name)
             if len(exceptions) > 0:
                 raise Exception(
                     f"Extractor `{extractor.name}` returned "

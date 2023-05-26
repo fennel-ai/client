@@ -252,7 +252,7 @@ class Transform(_Node):
                 raise ValueError(
                     "Complex lambda functions using "
                     "multiple lines are not supported for "
-                    "transforms."
+                    f"transforms. Found: {inspect.getsourcelines(func)}"
                 )
 
     def signature(self):
@@ -429,6 +429,18 @@ class Join(_Node):
         left_schema = self.node.dsschema()
         right_schema = self.dataset.dsschema()
         values = copy.deepcopy(left_schema.values)
+
+        left_values = left_schema.values.keys()
+        right_values = right_schema.values.keys()
+
+        if len(set(left_values) & set(right_values)) > 0:
+            common_values = set(left_values) & set(right_values)
+            raise ValueError(
+                "Join values must be disjoint across datasets. Found common values: {}".format(
+                    common_values
+                )
+            )
+
         values.update(make_types_optional(right_schema.values))
         return DSSchema(
             keys=copy.deepcopy(left_schema.keys),
@@ -1471,6 +1483,17 @@ class SchemaValidator(Visitor):
                         f"{dtype_to_string(right_schema.get_type(rkey))} in "
                         f"right schema."
                     )
+        # Check that left values and right values are disjoint
+        if set(left_schema.values.keys()).intersection(
+            set(right_schema.values.keys())
+        ):
+            raise ValueError(
+                f"Values of left and right schemas are not disjoint during "
+                f"join with `{obj.dataset._name}`. "
+                f"Left values: {list(left_schema.values.keys())}, "
+                f"right values: {list(right_schema.values.keys())}."
+            )
+
         values = copy.deepcopy(left_schema.values)
         values.update(make_types_optional(right_schema.values))
         return DSSchema(
@@ -1523,7 +1546,7 @@ class SchemaValidator(Visitor):
             if field not in input_schema.fields():
                 raise ValueError(
                     f"Field {field} does not exist in schema of "
-                    f"drop node {obj.name}."
+                    f"drop node {input_schema.name}."
                 )
             input_schema.drop_column(field)
         return input_schema
