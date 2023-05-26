@@ -430,11 +430,15 @@ class Join(_Node):
         right_schema = self.dataset.dsschema()
         values = copy.deepcopy(left_schema.values)
 
-        left_values = left_schema.values.keys()
+        left_columns = (
+            list(left_schema.values.keys())
+            + list(left_schema.keys.keys())
+            + [left_schema.timestamp]
+        )
         right_values = right_schema.values.keys()
 
-        if len(set(left_values) & set(right_values)) > 0:
-            common_values = set(left_values) & set(right_values)
+        if len(set(left_columns) & set(right_values)) > 0:
+            common_values = set(left_columns) & set(right_values)
             raise ValueError(
                 "Join values must be disjoint across datasets. Found common values: {}".format(
                     common_values
@@ -1483,14 +1487,19 @@ class SchemaValidator(Visitor):
                         f"{dtype_to_string(right_schema.get_type(rkey))} in "
                         f"right schema."
                     )
+
+        left_columns = (
+            list(left_schema.values.keys())
+            + list(left_schema.keys.keys())
+            + [left_schema.timestamp]
+        )
+
         # Check that left values and right values are disjoint
-        if set(left_schema.values.keys()).intersection(
-            set(right_schema.values.keys())
-        ):
+        if set(left_columns).intersection(set(right_schema.values.keys())):
             raise ValueError(
-                f"Values of left and right schemas are not disjoint during "
+                f"Left schema and right values are not disjoint during "
                 f"join with `{obj.dataset._name}`. "
-                f"Left values: {list(left_schema.values.keys())}, "
+                f"Left columns: {list(left_columns)}, "
                 f"right values: {list(right_schema.values.keys())}."
             )
 
