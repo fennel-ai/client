@@ -363,6 +363,6 @@ def test_join():
                 return x
 
     assert (
-        "Values of left and right schemas are not disjoint during join with `B`. Left values: ['v'], right values: ['v']."
+        "Left schema and right values are not disjoint during join with `B`."
         in str(e.value)
     )

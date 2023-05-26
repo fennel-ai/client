@@ -246,7 +246,8 @@ class MockClient(Client):
             raise ValueError(f"Dataset {dataset_name} not found")
 
         key_fields = self.dataset_info[dataset_name].key_fields
-        required_fields = key_fields + [FENNEL_TIMESTAMP]
+        ts_field = self.dataset_info[dataset_name].timestamp_field
+        required_fields = key_fields + [ts_field]
         column_wise_df = self.aggregated_datasets[dataset_name]
         key_dfs = pd.DataFrame()
         # Collect all timestamps across all columns
@@ -261,7 +262,7 @@ class MockClient(Client):
             df = pd.merge_asof(
                 left=key_dfs,
                 right=data,
-                on=FENNEL_TIMESTAMP,
+                on=ts_field,
                 by=key_fields,
                 direction="backward",
                 suffixes=("", "_right"),
