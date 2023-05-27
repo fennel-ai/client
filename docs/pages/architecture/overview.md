@@ -7,7 +7,7 @@ status: 'published'
 # Overview
 
 Here are some of the key ideas & principles behind Fennel's architecture that 
-allow it to meet its [design goals](/getting-started/welcome-to-fennel):
+allow it to meet its [design goals](/):
 
 ## Read Write Separation
 

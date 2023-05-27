@@ -12,7 +12,7 @@ Fennel has two main concepts -- datasets and featuresets. Let's look at both one
 
 Dataset refers to a "table" of data with typed columns. Duh! Here is how a dataset is defined.&#x20;
 
-<pre snippet="overview/concepts#user_dataset" />
+<pre snippet="overview/concepts#user_dataset"></pre>
 
 This dataset has four columns -- `uid` (of type int), `dob` (of type datetime),`country` (of type string), and `signup_time` (of type datetime). For now, ignore the `field(...)` descriptors - they'd be explained soon.&#x20;
 
@@ -29,22 +29,22 @@ kafka = Kafka(...<credentials>..)
 
 Then we define the datasets that will hydrate themselves from these sources:
 
-<pre snippet="overview/concepts#external_data_sources" />
+<pre snippet="overview/concepts#external_data_sources"></pre>
 
-The first dataset will poll postgres table for new updates every minute and hydrate itself with new data. The second dataset hydrates itself from a kafka topic. Fennel supports connectors with all main sources - check [here](/datasets/sources) for details.&#x20;
+The first dataset will poll postgres table for new updates every minute and hydrate itself with new data. The second dataset hydrates itself from a kafka topic. Fennel supports connectors with all main sources - check [here](/concepts/source) for details.
 
 Hydrating datasets this way from external sources already looks somewhat cool because it allows you to bring data from multiple places in the same abstraction layer. But what to do with these datasets?
 
 Fennel lets you derive new datasets from existing datasets by writing simple declarative Python code - it's unimaginatively called a pipeline. Let's look at one such pipeline:
 
-<pre snippet="overview/concepts#pipeline" />
+<pre snippet="overview/concepts#pipeline"></pre>
 
 
 This is a dataset that will keep rolling stats about transactions made by a user abroad and we want to derive it from `User` dataset and `Transaction` dataset. Line 8-17 define this pipeline. You'd note that this pipeline is written using native Python and Pandas so you can unleash the full power of Python. But more importantly, this pipeline is operating on two datasets, one of which is streaming (i.e. `Transaction` ) and comes from Kafka and the other is static-ish dataset (i.e. `User`) coming from Postgres. And you can do joins and aggregations across them both. Wow! Now this is beginning to look powerful. What else can you do with the datasets?
 
 It's also possible to do low latency lookups on these datasets using dataset keys. Earlier you were asked to ignore the field descriptors -- it's time to revisit those. If you look carefully, line 3 above defines `uid` to be a key (dataset can have multi-column keys too). If we know the uid of a user, we can ask this dataset for the value of the rest of the columns. Something (but not exactly) like this:
 
-<pre snippet="overview/concepts#dataset_lookup" />
+<pre snippet="overview/concepts#dataset_lookup"></pre>
 
 Here "found" is a boolean series denoting whether there was any row in the dataset with that key. If data isn't found, a row of Nones is returned. What's even cooler is that this method can be used to lookup the value as of any arbitrary time -- Fennel datasets track time evolution of data as the data evolves and can go back in time to do a lookup. This movement of data is tagged with whatever field is tagged with `field(timestamp=True)`. In fact, this ability to track time evolution enables Fennel to use the same code to generate both online and offline features.&#x20;
 
@@ -56,7 +56,7 @@ A featureset, as the name implies, is just a collection of features, each with s
 
 Here is how a really simple featureset looks:
 
-<pre snippet="overview/concepts#featureset" />
+<pre snippet="overview/concepts#featureset"></pre>
 
 This is a featureset with 3 features --- `uid`, `country`, and `age`. Lines 7-11 describe an extractor that given the value of the feature `uid`, knows how to define the feature `age` (this input/output information is encoded in the typing signature, not function names). Inside the extractor function, you are welcome to do arbitrary Python computation. Similarly, lines 13-16 define another extractor function, this time which knows how to compute `country` given the input `uid`.&#x20;
 
@@ -70,7 +70,7 @@ Here is a diagram of how the concepts fit together:
 
 ![Diagram](/assets/readwritepath.png)
 
-This provides a relatively simplified bird's eye view of the main concepts. But there is more to both datasets and featuresets and how they come together. You can read in more detail about [datasets here](/datasets/overview) and about [featuresets here](/featuresets/overview).
+This provides a relatively simplified bird's eye view of the main concepts. But there is more to both datasets and featuresets and how they come together. You can read in more detail about [datasets here](/concepts/dataset) and about [featuresets here](/concepts/featureset).
 
 ## Syncing Datasets and Features with Fennel
 
@@ -90,7 +90,7 @@ Line 4 here makes a POST request to Fennel and syncs the dataset on the server. 
 
 Overtime, you'd have many more datasets and featuresets - you'd send all of them in a sync call. And with that, the validation can become lot more complex e.g schema compatibility validation across the whole graph of datasets/featuresets
 
-Assuming the call succeeds, any datasets/featuresets that don't yet exist will be created, any datasets/featuresets that exist but are not provided in the sync call are deleted and rest are left unchanged. See the [section on CI/CD](/testing-and-ci-cd/ci-cd-workflows) to learn how the end to end deployment could work in a production environment
+Assuming the call succeeds, any datasets/featuresets that don't yet exist will be created, any datasets/featuresets that exist but are not provided in the sync call are deleted and rest are left unchanged. See the [section on CI/CD](/development/ci-cd-workflows) to learn how the end to end deployment could work in a production environment
 
 
 ### Learn more
