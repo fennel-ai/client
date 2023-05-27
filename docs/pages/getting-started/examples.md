@@ -13,5 +13,5 @@ well as a video tutorial that explains everything.
 
 | Example                 | Dataset               | Notebook          |
 | ----------------------- | --------------------- | ----------------- |
-| Product Recommendations | Instacart Orders Data | [Link](fennel.ai) |
-| Fraud Detection         | Kaggle Fraud dataset  | [Link](fennel.ai) |
+| Product Recommendations | Instacart Orders Data | [Link](https://fennel.ai) |
+| Fraud Detection         | Kaggle Fraud dataset  | [Link](https://fennel.ai) |

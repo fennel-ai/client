@@ -27,8 +27,6 @@ One must either provide the `on` parameter or both the `left_on` & `right_on` pa
 The `on` or `right_on` fields specified should be keys in the RHS Dataset.
 :::
 
-More details and examples on the join operator can be found in the [join section](/datasets/operators#Join).
-
 ### Filter
 
 Fennel allows you to filter a dataset using the `filter` operator. The filter function is expected to return an series of booleans which are used to filter the dataset.
@@ -37,8 +35,6 @@ The `filter` operator has the following parameters:
 
 1. `func: Callable[pd.DataFrame, pd.Series[bool]]` - positional argument, that specifies the filter function which is expected to return a series of booleans.;
 
-More details and examples on the filter operator can be found in the [filter section](/datasets/operators#Filter).
-
 ### Transform
 
 Fennel allows you to transform a dataset using the `transform` operator. 
@@ -46,8 +42,6 @@ The `transform` operator has the following parameters:
 
 1. `func: Callable[pd.DataFrame, pd.DataFrame]` - positional argument, that specifies the transform function. It could be defined inline or could be a reference to a function defined elsewhere. The transform function should take a pandas dataframe as input and return a pandas dataframe as output. 
 2. `schema: Dict[str, Type]` - optional kwarg that specifies the schema of the output dataset. If not specified, the schema of the input dataset is used. 
-
-More details and examples on the transform operator can be found in the [transform section](/datasets/operators#Tranform).
 
 ### Groupby / Aggregate
 
@@ -61,5 +55,3 @@ The `groupby` operator takes the following parameters:
 
 The `aggregate` operator has the following parameters:
 1. `aggregates: List[Aggregation]` - positional argument, that specifies the list of aggregations to apply on the grouped dataset.
-
-More details and examples on the groupby / aggregate operator can be found in the [aggregate section](/datasets/operators#Aggregate).
