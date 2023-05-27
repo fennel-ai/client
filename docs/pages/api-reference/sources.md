@@ -21,7 +21,7 @@ And the following fields need to be defined on the webhook:
 
 1. **`endpoint`** - The endpoint for the given webhook to which the data will be sent.
 
-<pre snippet="api-reference/source#webhook_source" />
+<pre snippet="api-reference/source#webhook_source"></pre>
 
 To use the REST api check the [REST API](/api-reference/rest-api) documentation.
 
@@ -37,7 +37,7 @@ The following fields need to be specified:
 6. **`password`** - The password associated with the username.
 7. **`jdbc_params`** - Additional properties to pass to the JDBC URL string when connecting to the database formatted as `key=value` pairs separated by the symbol `&`. (example: `key1=value1&key2=value2&key3=value3`).
 
-<pre snippet="api-reference/source#mysql_source" />
+<pre snippet="api-reference/source#mysql_source"></pre>
 
 :::warning
 If you see a `Cannot create a PoolableConnectionFactory`error, try setting `jdbc_params` to `enabledTLSProtocols=TLSv1.2`&#x20;
@@ -46,7 +46,7 @@ If you see a `Cannot create a PoolableConnectionFactory`error, try setting `jdbc
 
 ### Postgres
 
-<pre snippet="api-reference/source#postgres_source" />
+<pre snippet="api-reference/source#postgres_source"></pre>
 
 :::warning
 If you see a `Cannot create a PoolableConnectionFactory`error, try setting **`jdbc_params` ** to **** `enabledTLSProtocols=TLSv1.2`&#x20;
@@ -69,7 +69,7 @@ And the following fields need to be defined on the bucket:
 3. **`format` ** (optional) **-** The format of the files you'd like to replicate. You can choose between CSV (default), Avro, and Parquet.&#x20;
 4. **`delimiter`** (optional) - the character delimiting individual cells in the CSV data. The default value is `","` and if overridden, this can only be a 1-character string. For example, to use tab-delimited data enter `"\t"`.
 
-<pre snippet="api-reference/source#s3_source" />
+<pre snippet="api-reference/source#s3_source"></pre>
 
 
 Fennel uses  `file_last_modified` property exported by S3 to track what data has been seen so far and hence a cursor field doesn't need to be specified.
@@ -116,7 +116,7 @@ The following fields need to be defined:
 7. **`username`**  - The username that should be used to access Snowflake. Please note that the username should have the required permissions to assume the role provided.
 8. **`password` ** **-** The password associated with the username.
 
-<pre snippet="api-reference/source#snowflake_source" />
+<pre snippet="api-reference/source#snowflake_source"></pre>
 
 
 :::info

@@ -18,7 +18,7 @@ Used to log data to a dataset. It's post call with the following properties:
 
 **Example**
 
-<pre snippet="api-reference/rest-api#rest_log_api" />
+<pre snippet="api-reference/rest-api#rest_log_api"></pre>
 
 ### /api/v1/extract\_features
 
@@ -34,5 +34,5 @@ Used to extract a set of output features given known values of some input featur
 
 **Example**
 
-<pre snippet="api-reference/rest-api#rest_extract_features_api" />
+<pre snippet="api-reference/rest-api#rest_extract_features_api"></pre>
 
