@@ -13,14 +13,14 @@ be derived from one or more existing datasets. Let's look at an example:
 
 Imagine we have the following datasets defined in the system:
 
-<pre snippet="datasets/pipelines#data_sets" />
+<pre snippet="datasets/pipelines#data_sets"></pre>
 
 
 And we want to create a dataset which represents some stats about the 
 transactions made by a user in a country different from their home country. 
 We'd write that dataset as follows:
 
-<pre snippet="datasets/pipelines#pipeline" />
+<pre snippet="datasets/pipelines#pipeline"></pre>
 
 There is a lot happening here so let's break it down line by line:
 
@@ -51,13 +51,13 @@ ideas.
 
 Fennel pipelines are built out of a few general purpose operators like `filter`,
 `transform`, `join` etc which can be composed together to write any pipeline. 
-You can read about all the operators [here](/datasets/pipelines#operators). Further,
+You can read about all the operators [here](/concepts/pipeline#operators). Further,
 a few operators (e.g. `transform`, `filter`) take free-form Python using which 
 arbitrary computation can be done (including making calls into external services 
 if needed). For all such operators, input/outputs variables are Pandas Dataframes
 or Pandas Series. Here is an example with `transform` operator demonstrating this:
 
-<pre snippet="datasets/pipelines#transform_pipeline" />
+<pre snippet="datasets/pipelines#transform_pipeline"></pre>
 
 
 The ONLY constraint on the pipeline topology is that `aggregate` has to be the 

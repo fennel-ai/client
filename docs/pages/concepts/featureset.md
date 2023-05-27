@@ -13,7 +13,7 @@ will typically have many featuresets. Let's see an example:
 
 ### Example
 
-<pre snippet="featuresets/overview#featureset" />
+<pre snippet="featuresets/overview#featureset"></pre>
 
 
 Above example defines a featureset called `Movie` with two features - `duration`, 
@@ -70,21 +70,21 @@ depending on the number of output features, of the same length as the input feat
 With this, let's look at a few valid and invalid examples:
 
 Valid - featureset can have zero extractors
-<pre snippet="featuresets/overview#featureset_zero_extractors" />
+<pre snippet="featuresets/overview#featureset_zero_extractors"></pre>
 
 Valid - featureset can have multiple extractors provided they are all valid
 
-<pre snippet="featuresets/overview#featureset_many_extractors" />
+<pre snippet="featuresets/overview#featureset_many_extractors"></pre>
 
 Invalid - multiple extractors extracting the same feature. `over_3hrs` is 
 extracted both by e1 and e2:
-<pre snippet="featuresets/overview#featureset_extractors_of_same_feature" />
+<pre snippet="featuresets/overview#featureset_extractors_of_same_feature"></pre>
 
 Valid - input feature of extractor coming from another featureset.
-<pre snippet="featuresets/overview#remote_feature_as_input" />
+<pre snippet="featuresets/overview#remote_feature_as_input"></pre>
 
 Invalid - output feature of extractor from another featureset
-<pre snippet="featuresets/overview#remote_feature_as_output" />
+<pre snippet="featuresets/overview#remote_feature_as_output"></pre>
 
 
 ### Dataset Lookups
@@ -93,7 +93,7 @@ A large fraction of real world ML features are built on top of stored data.
 However, featuresets don't have any storage of their own and are completely 
 stateless. Instead, they are able to do random lookups on datasets and use
 that for the feature computation. Let's see an example:
-<pre snippet="featuresets/reading_datasets#featuresets_reading_datasets" />
+<pre snippet="featuresets/reading_datasets#featuresets_reading_datasets"></pre>
 
 In this example, the extractor is just looking up the value of `name` given the
 `uid` from the `User` dataset and returning that as feature value. Note a couple

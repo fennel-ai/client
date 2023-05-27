@@ -32,7 +32,7 @@ userid: int = feature(id=1)
 ... 6 more features
 ```
 
-<pre snippet="api-reference/client#extract_features_api" />
+<pre snippet="api-reference/client#extract_features_api"></pre>
 
 
 ****
@@ -49,7 +49,7 @@ This method will create the resources required for the datasets and featuresets 
 
 **Example**
 
-<pre snippet="api-reference/client#sync_api" />
+<pre snippet="api-reference/client#sync_api"></pre>
 
 ****
 
@@ -67,5 +67,5 @@ This method throws an error if the schema of the dataframe (i.e. column names an
 
 **Example**
 
-<pre snippet="api-reference/client#log_api" />
+<pre snippet="api-reference/client#log_api"></pre>
 
