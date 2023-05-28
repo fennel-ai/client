@@ -15,7 +15,7 @@ Here is a (non-exhaustive) list of core technologies leverage by Fennel:
  heavy reliance on Tokio's async runtime
 * Postgres as central metadata store (but doesn't store any customer data)
 * Kafka for all in-flow data. All streaming jobs read from and write to Kafka
-* RocksDB for all most at-rest data storage (with small parts offloaded to 
+* RocksDB for most at-rest data storage (with small parts offloaded to 
  Redis)
 * Pulumi for provisioning of infrastructure as code
 * Kubernetes for maintaining the lifecycle of all running services
