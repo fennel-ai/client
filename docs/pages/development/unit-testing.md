@@ -47,19 +47,19 @@ Since external data integration doesn't work in mock server, the only way to bri
 
 For testing Datasets, you can use the `client.log` to add some local data to a dataset and then query this or other downstream datasets using the `.lookup` API. Here is an end to end example. Suppose our regular non-test code looks like this:
 
-<pre snippet="testing-and-ci-cd/unit_tests#datasets" />
+<pre snippet="testing-and-ci-cd/unit_tests#datasets"></pre>
 
 And you want to test that data reaching `RatingActivity` dataset correctly propagates to `MovieRating` dataset via the pipeline. You could write the following unit test to do so:
 
-<pre snippet="testing-and-ci-cd/unit_tests#datasets_testing" />
+<pre snippet="testing-and-ci-cd/unit_tests#datasets_testing"></pre>
 
 ### Testing Featuresets
 
 Extractors are simple Python functions and, hence, can be unit tested directly.
 
-<pre snippet="testing-and-ci-cd/unit_tests#featuresets_testing" />
+<pre snippet="testing-and-ci-cd/unit_tests#featuresets_testing"></pre>
 
 
 For extractors that depend on dataset lookups, the setup looks similar to that of testing datasets as shown above - create a mock client, sync some datasets/featuresets, log data to a dataset, and finally use client to extract features. Here is an example:
 
-<pre snippet="testing-and-ci-cd/unit_tests#featuresets_testing_with_dataset" />
+<pre snippet="testing-and-ci-cd/unit_tests#featuresets_testing_with_dataset"></pre>

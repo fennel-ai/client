@@ -17,7 +17,7 @@ In more technical terms, Fennel is built on top of [Kappa architecture](https://
 
 ### Schema Propagation Via Pipelines
 
-Whenever a new pipeline is first synced with the server, Fennel inspects schemas of all the datasets and verifies that they are mutually compatible all the way from input datasets to the destination datasets (with the exception of transform operator body - see [here](/datasets/pipelines#operators) for details). As a result, Fennel is able to catch any schema mismatch errors at sync time itself.
+Whenever a new pipeline is first synced with the server, Fennel inspects schemas of all the datasets and verifies that they are mutually compatible all the way from input datasets to the destination datasets (with the exception of transform operator body - see [here](/api-reference/operators#transform) for details). As a result, Fennel is able to catch any schema mismatch errors at sync time itself.
 
 ### **Nested Pipelines**
 
