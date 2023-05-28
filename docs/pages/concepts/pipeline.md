@@ -62,7 +62,7 @@ or Pandas Series. Here is an example with `transform` operator demonstrating thi
 
 The ONLY constraint on the pipeline topology is that `aggregate` has to be the 
 terminal node i.e. it's not allowed to compose any other operator on the output
-of `aggregate` operator. This very limited constraint allows Fennel to 
+of `aggregate` operator. This constraint allows Fennel to 
 significantly reduce costs/perf of pipelines. And it's possible that even this
 constraint will be removed in the future.
 

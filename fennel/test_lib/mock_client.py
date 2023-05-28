@@ -290,7 +290,7 @@ class MockClient(Client):
             print(f"Skipping log of empty dataframe for webhook {webhook}")
             return
 
-        if df.shape[0] > _batch_size * 10:
+        if df.shape[0] > _batch_size * 100:
             print(
                 "Warning: Dataframe is too large, consider using a small dataframe"
             )
