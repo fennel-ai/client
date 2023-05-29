@@ -57,8 +57,7 @@ else:
     class Embedding:
         def __init__(self, dim: int):
             raise TypeError(
-                "Embedding is a type only and is meant to be used as "
-                "a type hint, for example: Embedding[32]"
+                "Embedding is a type only and is meant to be used as " "a type hint, for example: Embedding[32]"
             )
 
         def __class_getitem__(cls, dimensions: int):
@@ -79,13 +78,9 @@ class between:
         if self.dtype is int:
             dtype = schema_proto.DataType(int_type=schema_proto.IntType())
             if type(self.min) is float:
-                raise TypeError(
-                    "Dtype of between is int and min param is " "float"
-                )
+                raise TypeError("Dtype of between is int and min param is " "float")
             if type(self.max) is float:
-                raise TypeError(
-                    "Dtype of between is int and max param is " "float"
-                )
+                raise TypeError("Dtype of between is int and max param is " "float")
 
             min = schema_proto.Value(int=int(self.min))
             max = schema_proto.Value(int=int(self.max))
@@ -126,9 +121,7 @@ class oneof:
             options = []
             for option in self.options:
                 if type(option) is not int:
-                    raise TypeError(
-                        "Dtype of oneof is int and option is " "not int"
-                    )
+                    raise TypeError("Dtype of oneof is int and option is " "not int")
                 options.append(schema_proto.Value(int=option))
             return schema_proto.DataType(
                 one_of_type=schema_proto.OneOf(
@@ -142,9 +135,7 @@ class oneof:
             options = []
             for option in self.options:
                 if type(option) is not str:
-                    raise TypeError(
-                        "Dtype of oneof is str and option is " "not str"
-                    )
+                    raise TypeError("Dtype of oneof is str and option is " "not str")
                 options.append(schema_proto.Value(string=option))
             return schema_proto.DataType(
                 one_of_type=schema_proto.OneOf(
@@ -163,18 +154,14 @@ class regex:
     def to_proto(self):
         if type(self.regex) is not str:
             raise TypeError("'regex' type only accepts str types")
-        return schema_proto.DataType(
-            regex_type=schema_proto.RegexType(pattern=self.regex)
-        )
+        return schema_proto.DataType(regex_type=schema_proto.RegexType(pattern=self.regex))
 
 
 def get_datatype(type_: Any) -> schema_proto.DataType:
     # typing.Optional[x] is an alias for typing.Union[x, None]
     if _get_origin(type_) is Union and type(None) == _get_args(type_)[1]:
         dtype = get_datatype(_get_args(type_)[0])
-        return schema_proto.DataType(
-            optional_type=schema_proto.OptionalType(of=dtype)
-        )
+        return schema_proto.DataType(optional_type=schema_proto.OptionalType(of=dtype))
     elif type_ is int:
         return schema_proto.DataType(int_type=schema_proto.IntType())
     elif type_ is float:
@@ -182,17 +169,11 @@ def get_datatype(type_: Any) -> schema_proto.DataType:
     elif type_ is str:
         return schema_proto.DataType(string_type=schema_proto.StringType())
     elif type_ is datetime:
-        return schema_proto.DataType(
-            timestamp_type=schema_proto.TimestampType()
-        )
+        return schema_proto.DataType(timestamp_type=schema_proto.TimestampType())
     elif type_ is bool:
         return schema_proto.DataType(bool_type=schema_proto.BoolType())
     elif _get_origin(type_) is list:
-        return schema_proto.DataType(
-            array_type=schema_proto.ArrayType(
-                of=get_datatype(_get_args(type_)[0])
-            )
-        )
+        return schema_proto.DataType(array_type=schema_proto.ArrayType(of=get_datatype(_get_args(type_)[0])))
     elif _get_origin(type_) is dict:
         if _get_args(type_)[0] is not str:
             raise ValueError("Dict keys must be strings.")
@@ -203,14 +184,8 @@ def get_datatype(type_: Any) -> schema_proto.DataType:
             )
         )
     elif isinstance(type_, _Embedding):
-        return schema_proto.DataType(
-            embedding_type=schema_proto.EmbeddingType(embedding_size=type_.dim)
-        )
-    elif (
-        isinstance(type_, between)
-        or isinstance(type_, oneof)
-        or isinstance(type_, regex)
-    ):
+        return schema_proto.DataType(embedding_type=schema_proto.EmbeddingType(embedding_size=type_.dim))
+    elif isinstance(type_, between) or isinstance(type_, oneof) or isinstance(type_, regex):
         return type_.to_proto()
     raise ValueError(f"Cannot serialize type {type_}.")
 
@@ -284,20 +259,14 @@ def _validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
     elif dtype == schema_proto.DataType(string_type=schema_proto.StringType()):
-        if (
-            df[name].dtype != object
-            and df[name].dtype != np.str_
-            and df[name].dtype != pd.StringDtype()
-        ):
+        if df[name].dtype != object and df[name].dtype != np.str_ and df[name].dtype != pd.StringDtype():
             raise ValueError(
                 f"Field `{name}` is of type str, but the "
                 f"column in the dataframe is of type "
                 f"`{df[name].dtype}`. Error found during "
                 f"checking schema for `{entity_name}`."
             )
-    elif dtype == schema_proto.DataType(
-        timestamp_type=schema_proto.TimestampType()
-    ):
+    elif dtype == schema_proto.DataType(timestamp_type=schema_proto.TimestampType()):
         if df[name].dtype != "datetime64[ns]":
             raise ValueError(
                 f"Field `{name}` is of type timestamp, but the "
@@ -369,9 +338,7 @@ def _validate_field_in_df(
                 )
     elif dtype.between_type != schema_proto.Between():
         bw_type = dtype.between_type
-        if bw_type.dtype == schema_proto.DataType(
-            int_type=schema_proto.IntType()
-        ):
+        if bw_type.dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
             if df[name].dtype != np.int64 and df[name].dtype != pd.Int64Dtype():
                 raise ValueError(
                     f"Field `{name}` is of type int, but the "
@@ -381,9 +348,7 @@ def _validate_field_in_df(
                 )
             min_bound = bw_type.min.int
             max_bound = bw_type.max.int
-        elif bw_type.dtype == schema_proto.DataType(
-            double_type=schema_proto.DoubleType()
-        ):
+        elif bw_type.dtype == schema_proto.DataType(double_type=schema_proto.DoubleType()):
             if (
                 df[name].dtype != np.float64
                 and df[name].dtype != np.int64
@@ -423,23 +388,15 @@ def _validate_field_in_df(
                     f"checking schema for `{entity_name}`."
                 )
             options = set(int(x.int) for x in of_type.options)
-        elif of_type.of == schema_proto.DataType(
-            string_type=schema_proto.StringType()
-        ):
-            if (
-                df[name].dtype != object
-                and df[name].dtype != np.str_
-                and df[name].dtype != pd.StringDtype()
-            ):
+        elif of_type.of == schema_proto.DataType(string_type=schema_proto.StringType()):
+            if df[name].dtype != object and df[name].dtype != np.str_ and df[name].dtype != pd.StringDtype():
                 raise ValueError(
                     f"Field `{name}` is of type str, but the "
                     f"column in the dataframe is of type "
                     f"`{df[name].dtype}`. Error found during "
                     f"checking schema for `{entity_name}`."
                 )
-            options = set(
-                str(x.string) for x in of_type.options  # type: ignore
-            )
+            options = set(str(x.string) for x in of_type.options)  # type: ignore
         else:
             raise TypeError("oneof type only accepts int or str types")
 
@@ -454,11 +411,7 @@ def _validate_field_in_df(
                 )
 
     elif dtype.regex_type != "":
-        if (
-            df[name].dtype != object
-            and df[name].dtype != np.str_
-            and df[name].dtype != pd.StringDtype()
-        ):
+        if df[name].dtype != object and df[name].dtype != np.str_ and df[name].dtype != pd.StringDtype():
             raise ValueError(
                 f"Field `{name}` is of type str, but the "
                 f"column in the dataframe is of type "
@@ -479,9 +432,7 @@ def _validate_field_in_df(
         raise ValueError(f"Field `{name}` has unknown data type `{dtype}`.")
 
 
-def data_schema_check(
-    schema: schema_proto.DSSchema, df: pd.DataFrame, dataset_name=""
-) -> List[ValueError]:
+def data_schema_check(schema: schema_proto.DSSchema, df: pd.DataFrame, dataset_name="") -> List[ValueError]:
     exceptions = []
     fields = []
     for key in schema.keys.fields:
@@ -494,9 +445,7 @@ def data_schema_check(
         fields.append(
             schema_proto.Field(
                 name=schema.timestamp,
-                dtype=schema_proto.DataType(
-                    timestamp_type=schema_proto.TimestampType()
-                ),
+                dtype=schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
             )
         )
 

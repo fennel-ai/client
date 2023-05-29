@@ -14,10 +14,7 @@ def _get_features(feature: Union[Feature, Featureset]) -> set:
     elif type(feature) is tuple:
         return {f.fqn() for f in feature}
     else:
-        raise ValueError(
-            f"Unknown type for feature/featureset {feature} of"
-            f"type {type(feature)}"
-        )
+        raise ValueError(f"Unknown type for feature/featureset {feature} of" f"type {type(feature)}")
 
 
 def _topological_sort_util(
@@ -77,9 +74,7 @@ def get_vertices_and_eges(
             caps_only = "".join([c for c in featureset if c.isupper()])
             return f"F({caps_only}.{f.name})"
         elif isinstance(f, Featureset):
-            raise ValueError(
-                "Featureset is not supported as an input to an extractor"
-            )
+            raise ValueError("Featureset is not supported as an input to an extractor")
         elif type(f) is tuple:
             return "DF(" + ",".join([get_feature_vertex(f) for f in f]) + ")"
         elif isinstance(f, str):
@@ -95,14 +90,10 @@ def get_vertices_and_eges(
         vertices.add(get_extractor_vertex(extractor))
         for inp in extractor.inputs:
             vertices.add(get_feature_vertex(inp))
-            edges.add(
-                (get_extractor_vertex(extractor), get_feature_vertex(inp))
-            )
+            edges.add((get_extractor_vertex(extractor), get_feature_vertex(inp)))
         for output in extractor.fqn_output_features():
             vertices.add(get_feature_vertex(output))
-            edges.add(
-                (get_feature_vertex(output), get_extractor_vertex(extractor))
-            )
+            edges.add((get_feature_vertex(output), get_extractor_vertex(extractor)))
     if len(vertices) == 0:
         raise ValueError("No extractors found.")
 

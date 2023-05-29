@@ -112,9 +112,7 @@ def test_aggregation():
 
             @pipeline(version=1)
             @inputs(Activity, MerchantInfo)
-            def create_fraud_dataset(
-                cls, activity: Dataset, merchant_info: Dataset
-            ):
+            def create_fraud_dataset(cls, activity: Dataset, merchant_info: Dataset):
                 def extract_info(df: pd.DataFrame) -> pd.DataFrame:
                     df_json = df["metadata"].apply(json.loads).apply(pd.Series)
                     df_timestamp = pd.concat([df_json, df["timestamp"]], axis=1)
@@ -124,9 +122,7 @@ def test_aggregation():
                     df["category"].fillna("unknown", inplace=True)
                     return df
 
-                filtered_ds = activity.filter(
-                    lambda df: df[df["action_type"] == "report"]
-                )
+                filtered_ds = activity.filter(lambda df: df[df["action_type"] == "report"])
                 ds = filtered_ds.transform(
                     extract_info,
                     schema={
@@ -148,9 +144,7 @@ def test_aggregation():
                         Sum(
                             window=Window("1w"),
                             of="transaction_amount",
-                            into_field=str(
-                                cls.sum_categ_fraudulent_transactions_7d
-                            ),
+                            into_field=str(cls.sum_categ_fraudulent_transactions_7d),
                         ),
                     ]
                 )
@@ -243,10 +237,7 @@ def test_transform():
                     },
                 )
 
-    assert (
-        str(e.value)
-        == """Key field a1 must be present in schema of '[Pipeline:transform]->transform node'."""
-    )
+    assert str(e.value) == """Key field a1 must be present in schema of '[Pipeline:transform]->transform node'."""
 
     with pytest.raises(Exception) as e:
 
@@ -269,10 +260,7 @@ def test_transform():
                     },
                 )
 
-    assert (
-        str(e.value)
-        == """Timestamp field t must be present in schema of '[Pipeline:transform]->transform node'."""
-    )
+    assert str(e.value) == """Timestamp field t must be present in schema of '[Pipeline:transform]->transform node'."""
 
 
 @meta(owner="test@test.com")
@@ -299,10 +287,7 @@ def test_join_schema_validation_value():
             def pipeline_join(cls, a: Dataset, b: Dataset):
                 return a.left_join(b, left_on=["a1"], right_on=["b1", "b2"])
 
-    assert (
-        str(e.value)
-        == """right_on field ['b1', 'b2'] are not the key fields of the right dataset B."""
-    )
+    assert str(e.value) == """right_on field ['b1', 'b2'] are not the key fields of the right dataset B."""
 
 
 @meta(owner="test@test.com")
@@ -341,8 +326,7 @@ def test_join_schema_validation_type():
                 return a.left_join(c, left_on=["a1"], right_on=["b1"])
 
     assert (
-        str(e.value)
-        == """Key field a1 has type str in left schema but, key field b1 has type int in right schema."""
+        str(e.value) == """Key field a1 has type str in left schema but, key field b1 has type int in right schema."""
     )
 
     with pytest.raises(TypeError) as e:
@@ -361,7 +345,4 @@ def test_join_schema_validation_type():
             def pipeline_join(cls, a: Dataset, e: Dataset):
                 return a.left_join(e, on=["a1"])
 
-    assert (
-        str(e.value)
-        == """Key field a1 has type str in left schema but type int in right schema."""
-    )
+    assert str(e.value) == """Key field a1 has type str in left schema but type int in right schema."""

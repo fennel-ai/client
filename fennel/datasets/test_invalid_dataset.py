@@ -24,10 +24,7 @@ def test_multiple_date_time():
             timestamp: datetime
 
     _ = InternalTestClient()
-    assert (
-        str(e.value) == "Multiple timestamp fields are not supported in "
-        "dataset `UserInfoDataset`."
-    )
+    assert str(e.value) == "Multiple timestamp fields are not supported in " "dataset `UserInfoDataset`."
 
 
 def test_invalid_retention_window():
@@ -40,10 +37,7 @@ def test_invalid_retention_window():
             amount: Optional[float]
             timestamp: datetime
 
-    assert (
-        str(e.value) == "duration 324 must be a specified as a string for eg. "
-        "1d/2m/3y."
-    )
+    assert str(e.value) == "duration 324 must be a specified as a string for eg. " "1d/2m/3y."
 
 
 def test_dataset_with_pipes():
@@ -66,9 +60,7 @@ def test_dataset_with_pipes():
             def create_pipeline(cls, a: Dataset):
                 return a
 
-    assert (
-        str(e.value) == "pipeline `create_pipeline` must be called with an id."
-    )
+    assert str(e.value) == "pipeline `create_pipeline` must be called with an id."
 
     with pytest.raises(Exception) as e:
 
@@ -98,11 +90,7 @@ def test_dataset_with_pipes():
             def create_pipeline(cls, a: Dataset):
                 return a
 
-    assert (
-        str(e.value)
-        == "pipeline `create_pipeline` must have Datasets as @input "
-        "parameters."
-    )
+    assert str(e.value) == "pipeline `create_pipeline` must have Datasets as @input " "parameters."
 
     with pytest.raises(TypeError) as e:
 
@@ -119,8 +107,7 @@ def test_dataset_with_pipes():
                 return a
 
     assert (
-        str(e.value)
-        == "pipeline functions are classmethods and must have cls as the "
+        str(e.value) == "pipeline functions are classmethods and must have cls as the "
         "first parameter, found `a` for pipeline `create_pipeline`."
     )
 
@@ -320,8 +307,7 @@ def test_protected_fields():
             timestamp_field: datetime
 
     assert (
-        str(e.value)
-        == "[Exception('Field name `fields` is reserved. Please use a "
+        str(e.value) == "[Exception('Field name `fields` is reserved. Please use a "
         "different name in dataset `Activity`.'), Exception('Field "
         "name `key_fields` is reserved. Please use a different name in dataset `Activity`"
         ".'), Exception('Field name `on_demand` is reserved. Please "
@@ -362,7 +348,4 @@ def test_join():
                 )  # type: ignore
                 return x
 
-    assert (
-        "Left schema and right values are not disjoint during join with `B`."
-        in str(e.value)
-    )
+    assert "Left schema and right values are not disjoint during join with `B`." in str(e.value)

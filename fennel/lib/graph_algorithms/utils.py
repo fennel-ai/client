@@ -36,8 +36,6 @@ def extractor_graph(
                     if extractor.fqn() not in graph[extractor_producer.fqn()]:
                         graph[extractor_producer.fqn()].append(extractor.fqn())
             elif isinstance(inp, Featureset):
-                raise ValueError(
-                    "Featureset is not supported as an input to an extractor"
-                )
+                raise ValueError("Featureset is not supported as an input to an extractor")
 
     return graph, feature_to_extractor_map

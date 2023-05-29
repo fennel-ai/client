@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fennel-ai"
-version = "0.15.12"
+version = "0.15.13"
 description = "The modern realtime feature engineering platform"
 authors = ["Fennel AI <developers@fennel.ai>"]
 packages = [
@@ -110,7 +110,9 @@ module = "google.protobuf.*"
 ignore_missing_imports = true
 
 [tool.black]
-line-length = 80
+line-length = 120
+multi-line = 3
+include-trailing-comma = false
 extend-exclude = '''
 (
     .*_pb2.py

@@ -73,8 +73,7 @@ class Client:
             for dataset in datasets:
                 if not isinstance(dataset, Dataset):
                     raise TypeError(
-                        f"Expected a list of datasets, got `{dataset.__name__}`"
-                        f" of type `{type(dataset)}` instead."
+                        f"Expected a list of datasets, got `{dataset.__name__}`" f" of type `{type(dataset)}` instead."
                     )
                 self.add(dataset)
         if featuresets is not None:
@@ -128,9 +127,7 @@ class Client:
             response = self._post_json("{}/log".format(V1_API), req)
         return response
 
-    def _post_json(
-        self, path: str, req: Dict[str, Any], compress: bool = False
-    ):
+    def _post_json(self, path: str, req: Dict[str, Any], compress: bool = False):
         payload = json.dumps(req).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
@@ -198,9 +195,7 @@ class Client:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn())
             elif isinstance(input_feature, Featureset):
-                input_feature_names.extend(
-                    [f.fqn() for f in input_feature.features]
-                )
+                input_feature_names.extend([f.fqn() for f in input_feature.features])
 
         # Check if the input dataframe has all the required features
         if not set(input_feature_names).issubset(set(input_dataframe.columns)):
@@ -215,9 +210,7 @@ class Client:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, Featureset):
-                output_feature_names.extend(
-                    [f.fqn() for f in output_feature.features]
-                )
+                output_feature_names.extend([f.fqn() for f in output_feature.features])
 
         req = {
             "input_features": input_feature_names,
@@ -232,9 +225,7 @@ class Client:
 
         response = self._post_json("{}/extract_features".format(V1_API), req)
         check_response(response)
-        if len(output_feature_list) > 1 or isinstance(
-            output_feature_list[0], Featureset
-        ):
+        if len(output_feature_list) > 1 or isinstance(output_feature_list[0], Featureset):
             return pd.DataFrame(response.json())
         else:
             return pd.Series(response.json())
@@ -261,9 +252,7 @@ class Client:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn())
             elif isinstance(input_feature, Featureset):
-                input_feature_names.extend(
-                    [f.fqn() for f in input_feature.features]
-                )
+                input_feature_names.extend([f.fqn() for f in input_feature.features])
 
         if input_dataframe.empty:
             raise Exception("Input dataframe is empty")
@@ -280,9 +269,7 @@ class Client:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, Featureset):
-                output_feature_names.extend(
-                    [f.fqn() for f in output_feature.features]
-                )
+                output_feature_names.extend([f.fqn() for f in output_feature.features])
 
         req = {
             "input_features": input_feature_names,
@@ -291,12 +278,8 @@ class Client:
             "timestamps": timestamps.to_json(orient="records"),
         }
 
-        response = self._post_json(
-            "{}/extract_historical_features".format(V1_API), req
-        )
-        if len(output_feature_list) > 1 or isinstance(
-            output_feature_list[0], Featureset
-        ):
+        response = self._post_json("{}/extract_historical_features".format(V1_API), req)
+        if len(output_feature_list) > 1 or isinstance(output_feature_list[0], Featureset):
             return pd.DataFrame(response.json())
         else:
             return pd.Series(response.json())

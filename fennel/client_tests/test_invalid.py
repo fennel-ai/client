@@ -77,9 +77,7 @@ class DomainFeatures:
     @inputs(Query.domain)
     @outputs(domain, DOMAIN_USED_COUNT)
     def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
-        df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
-            ts, domain=domain
-        )
+        df, found = MemberActivityDatasetCopy.lookup(ts, domain=domain)  # type: ignore
         return df
 
 
@@ -96,10 +94,7 @@ class TestInvalidSync(unittest.TestCase):
                 'to (Extractor, "DomainFeatures.get_domain_feature"): from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
             )
         else:
-            assert (
-                str(e.value) == "Dataset MemberActivityDatasetCopy "
-                "not found in sync call"
-            )
+            assert str(e.value) == "Dataset MemberActivityDatasetCopy " "not found in sync call"
 
 
 @meta(owner="test@fennel.ai")
@@ -112,9 +107,7 @@ class DomainFeatures2:
     @inputs(Query.domain)
     @outputs(domain, DOMAIN_USED_COUNT)
     def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
-        df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
-            ts, domain=domain
-        )
+        df, found = MemberActivityDatasetCopy.lookup(ts, domain=domain)  # type: ignore
         return df[[str(cls.domain), str(cls.DOMAIN_USED_COUNT)]]
 
 
@@ -173,9 +166,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             @inputs(Query.domain)
             @outputs(domain, DOMAIN_USED_COUNT)
             def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
-                df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
-                    ts, domain=domain
-                )
+                df, found = MemberActivityDatasetCopy.lookup(ts, domain=domain)  # type: ignore
                 return df
 
         with pytest.raises(Exception) as e:
@@ -198,17 +189,12 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                     }
                 ),
             )
-        assert (
-            "Input dataframe does not contain all the required features"
-            in str(e.value)
-        )
+        assert "Input dataframe does not contain all the required features" in str(e.value)
 
     @pytest.mark.integration
     @mock
     def test_missing_dataset(self, client):
-        client.sync(
-            datasets=[MemberDataset], featuresets=[DomainFeatures2, Query]
-        )
+        client.sync(datasets=[MemberDataset], featuresets=[DomainFeatures2, Query])
         with pytest.raises(Exception) as e:
             client.extract_features(
                 output_feature_list=[DomainFeatures2],
@@ -224,14 +210,11 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
 
         if client.is_integration_client():
-            assert "name 'MemberActivityDatasetCopy' is not defined" in str(
-                e.value
-            )
+            assert "name 'MemberActivityDatasetCopy' is not defined" in str(e.value)
         else:
             assert (
                 "Extractor `get_domain_feature` in `DomainFeatures2` "
-                "failed to run with error: name 'MemberActivityDatasetCopy' is not defined. "
-                == str(e.value)
+                "failed to run with error: name 'MemberActivityDatasetCopy' is not defined. " == str(e.value)
             )
 
     @pytest.mark.integration
@@ -286,6 +269,4 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 def del_timestamp(cls, d: Dataset):
                     return d.drop(columns=["createdAt"])
 
-        assert (
-            "cannot drop timestamp field createdAt from '[Pipeline:del_timestamp]->drop node'"
-        ) == str(e.value)
+        assert ("cannot drop timestamp field createdAt from '[Pipeline:del_timestamp]->drop node'") == str(e.value)

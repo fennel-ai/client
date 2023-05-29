@@ -43,9 +43,7 @@ def _cleanup_dict(d) -> Dict[str, Any]:
     return {k: v for k, v in d.items() if v is not None}
 
 
-def _expectations_to_proto(
-    exp: Any, entity_name: str, entity_type: str
-) -> List[exp_proto.Expectations]:
+def _expectations_to_proto(exp: Any, entity_name: str, entity_type: str) -> List[exp_proto.Expectations]:
     if exp is None:
         return []
     exp_protos = []
@@ -221,9 +219,7 @@ def pipelines_from_ds(ds: Dataset) -> List[ds_proto.Pipeline]:
     return pipelines
 
 
-def _pipeline_to_proto(
-    pipeline: Pipeline, dataset_name: str
-) -> ds_proto.Pipeline:
+def _pipeline_to_proto(pipeline: Pipeline, dataset_name: str) -> ds_proto.Pipeline:
     return ds_proto.Pipeline(
         name=pipeline.name,
         dataset_name=dataset_name,
@@ -252,9 +248,7 @@ def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
     return _expectations_to_proto(ds.expectations, ds._name, "dataset")
 
 
-def sources_from_ds(
-    ds: Dataset, source_field
-) -> Optional[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
+def sources_from_ds(ds: Dataset, source_field) -> Optional[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
     if hasattr(ds, source_field):
         source: sources.DataConnector = getattr(ds, source_field)
         return _conn_to_source_proto(source, ds._name)
@@ -314,9 +308,7 @@ def _feature_to_proto(f: Feature) -> fs_proto.Feature:
     )
 
 
-def extractors_from_fs(
-    fs: Featureset, fs_obj_map: Dict[str, Featureset]
-) -> List[fs_proto.Extractor]:
+def extractors_from_fs(fs: Featureset, fs_obj_map: Dict[str, Featureset]) -> List[fs_proto.Extractor]:
     extractors = []
     for extractor in fs._extractors:
         extractors.append(_extractor_to_proto(extractor, fs, fs_obj_map))
@@ -334,9 +326,7 @@ def feature_to_proto_as_input(f: Feature) -> fs_proto.Input:
 
 
 # Extractor
-def _extractor_to_proto(
-    extractor: Extractor, fs: Featureset, fs_obj_map: Dict[str, Featureset]
-) -> fs_proto.Extractor:
+def _extractor_to_proto(extractor: Extractor, fs: Featureset, fs_obj_map: Dict[str, Featureset]) -> fs_proto.Extractor:
     inputs = []
     for input in extractor.inputs:
         if isinstance(input, Feature):
@@ -345,20 +335,14 @@ def _extractor_to_proto(
             for f in input:
                 inputs.append(feature_to_proto_as_input(f))
         elif isinstance(input, Featureset):
-            raise TypeError(
-                f"Extractor input {input} is a Featureset, please use a"
-                f"a DataFrame of features"
-            )
+            raise TypeError(f"Extractor input {input} is a Featureset, please use a" f"a DataFrame of features")
         else:
             raise TypeError(
-                f"Extractor input {input} is not a Feature or "
-                f"a DataFrame of features, but a {type(input)}"
+                f"Extractor input {input} is not a Feature or " f"a DataFrame of features, but a {type(input)}"
             )
     return fs_proto.Extractor(
         name=extractor.name,
-        datasets=[
-            dataset._name for dataset in extractor.get_dataset_dependencies()
-        ],
+        datasets=[dataset._name for dataset in extractor.get_dataset_dependencies()],
         inputs=inputs,
         features=extractor.output_features,
         metadata=get_metadata_proto(extractor.func),
@@ -398,9 +382,7 @@ def _conn_to_source_proto(
         raise ValueError(f"Unknown connector type: {type(connector)}")
 
 
-def _webhook_to_source_proto(
-    connector: sources.WebhookConnector, dataset_name: str
-):
+def _webhook_to_source_proto(connector: sources.WebhookConnector, dataset_name: str):
     data_source = connector.data_source
     ext_db = connector_proto.ExtDatabase(
         name=data_source.name,
@@ -508,9 +490,7 @@ def _s3_conn_to_source_proto(
     return (ext_db, source)
 
 
-def _s3_to_ext_db_proto(
-    name: str, aws_access_key_id: str, aws_secret_access_key: str
-) -> connector_proto.ExtDatabase:
+def _s3_to_ext_db_proto(name: str, aws_access_key_id: str, aws_secret_access_key: str) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
         s3=connector_proto.S3(
@@ -547,13 +527,9 @@ def _table_conn_to_source_proto(
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if isinstance(data_source, sources.BigQuery):
-        return _bigquery_conn_to_source_proto(
-            connector, data_source, dataset_name
-        )
+        return _bigquery_conn_to_source_proto(connector, data_source, dataset_name)
     elif isinstance(data_source, sources.Snowflake):
-        return _snowflake_conn_to_source_proto(
-            connector, data_source, dataset_name
-        )
+        return _snowflake_conn_to_source_proto(connector, data_source, dataset_name)
     elif isinstance(data_source, sources.MySQL):
         return _mysql_conn_to_source_proto(connector, data_source, dataset_name)
     elif isinstance(data_source, sources.Postgres):
@@ -602,9 +578,7 @@ def _bigquery_to_ext_db_proto(
     )
 
 
-def _bigquery_to_ext_table_proto(
-    db: connector_proto.ExtDatabase, table_name: str
-) -> connector_proto.ExtTable:
+def _bigquery_to_ext_table_proto(db: connector_proto.ExtDatabase, table_name: str) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         bigquery_table=connector_proto.BigqueryTable(
             db=db,
@@ -629,9 +603,7 @@ def _snowflake_conn_to_source_proto(
         database=data_source.db_name,
         jbdc_params=data_source.jdbc_params,
     )
-    ext_table = _snowflake_to_ext_table_proto(
-        db=ext_db, table_name=connector.table_name
-    )
+    ext_table = _snowflake_to_ext_table_proto(db=ext_db, table_name=connector.table_name)
     return (
         ext_db,
         connector_proto.Source(
@@ -673,9 +645,7 @@ def _snowflake_to_ext_db_proto(
     )
 
 
-def _snowflake_to_ext_table_proto(
-    db: connector_proto.ExtDatabase, table_name: str
-) -> connector_proto.ExtTable:
+def _snowflake_to_ext_table_proto(db: connector_proto.ExtDatabase, table_name: str) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         snowflake_table=connector_proto.SnowflakeTable(
             db=db,
@@ -701,9 +671,7 @@ def _mysql_conn_to_source_proto(
             database=data_source.db_name,
             jdbc_params=data_source.jdbc_params,
         )
-    ext_table = _mysql_to_ext_table_proto(
-        db=ext_db, table_name=connector.table_name
-    )
+    ext_table = _mysql_to_ext_table_proto(db=ext_db, table_name=connector.table_name)
     return (
         ext_db,
         connector_proto.Source(
@@ -740,9 +708,7 @@ def _mysql_to_ext_db_proto(
     )
 
 
-def _mysql_to_ext_table_proto(
-    db: connector_proto.ExtDatabase, table_name: str
-) -> connector_proto.ExtTable:
+def _mysql_to_ext_table_proto(db: connector_proto.ExtDatabase, table_name: str) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         mysql_table=connector_proto.MySQLTable(
             db=db,
@@ -754,9 +720,7 @@ def _mysql_to_ext_table_proto(
 def _mysql_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
-        reference=connector_proto.Reference(
-            dbtype=connector_proto.Reference.MYSQL
-        ),
+        reference=connector_proto.Reference(dbtype=connector_proto.Reference.MYSQL),
     )
 
 
@@ -777,9 +741,7 @@ def _pg_conn_to_source_proto(
             database=data_source.db_name,
             jdbc_params=data_source.jdbc_params,
         )
-    ext_table = _pg_to_ext_table_proto(
-        db=ext_db, table_name=connector.table_name
-    )
+    ext_table = _pg_to_ext_table_proto(db=ext_db, table_name=connector.table_name)
     return (
         ext_db,
         connector_proto.Source(
@@ -817,9 +779,7 @@ def _pg_to_ext_db_proto(
     )
 
 
-def _pg_to_ext_table_proto(
-    db: connector_proto.ExtDatabase, table_name: str
-) -> connector_proto.ExtTable:
+def _pg_to_ext_table_proto(db: connector_proto.ExtDatabase, table_name: str) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         pg_table=connector_proto.PostgresTable(
             db=db,
@@ -831,9 +791,7 @@ def _pg_to_ext_table_proto(
 def _pg_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
-        reference=connector_proto.Reference(
-            dbtype=connector_proto.Reference.POSTGRES
-        ),
+        reference=connector_proto.Reference(dbtype=connector_proto.Reference.POSTGRES),
     )
 
 
@@ -873,10 +831,7 @@ def to_extractor_pycode(
     input_fs_added = set()
     for input in extractor.inputs:
         if not isinstance(input, Feature):
-            raise ValueError(
-                f"Extractor {extractor.name} must have inputs "
-                f"of type Feature, but got {type(input)}"
-            )
+            raise ValueError(f"Extractor {extractor.name} must have inputs " f"of type Feature, but got {type(input)}")
         # Dont add the featureset of the extractor itself
         if input.featureset_name == featureset._name:
             continue
@@ -888,11 +843,7 @@ def to_extractor_pycode(
                     f"feature {input.name} from featureset "
                     f"{input.featureset_name} which is not synced"
                 )
-            gen_code = (
-                gen_code
-                + get_featureset_core_code(fs_obj_map[input.featureset_name])
-                + "\n"
-            )
+            gen_code = gen_code + get_featureset_core_code(fs_obj_map[input.featureset_name]) + "\n"
 
     extractor_src_code = dedent(inspect.getsource(extractor.func))
     indented_code = indent(extractor_src_code, " " * 4)

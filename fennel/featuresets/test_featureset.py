@@ -50,9 +50,7 @@ def test_simple_featureset():
 
         @extractor(depends_on=[UserInfoDataset], version=2)
         @inputs(User.id, User.age)
-        def get_user_info(
-            cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
-        ):
+        def get_user_info(cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series):
             return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
 
     view = InternalTestClient()
@@ -73,9 +71,7 @@ def test_simple_featureset():
     # Clear the pycode field in featureset_request as it is not deterministic
     featureset_request.pycode.Clear()
 
-    assert featureset_request == expected_fs_request, error_message(
-        featureset_request, expected_fs_request
-    )
+    assert featureset_request == expected_fs_request, error_message(featureset_request, expected_fs_request)
 
     # features
     actual_feature = sync_request.features[0]
@@ -87,9 +83,7 @@ def test_simple_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(
-        actual_feature, expected_feature
-    )
+    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
     actual_feature = sync_request.features[1]
     f = {
         "id": 2,
@@ -99,23 +93,17 @@ def test_simple_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(
-        actual_feature, expected_feature
-    )
+    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
     actual_feature = sync_request.features[2]
     f = {
         "id": 3,
         "name": "gender",
         "dtype": {"string_type": {}},
-        "metadata": {
-            "description": "The users gender among male/female/non-binary"
-        },
+        "metadata": {"description": "The users gender among male/female/non-binary"},
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(
-        actual_feature, expected_feature
-    )
+    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
     actual_feature = sync_request.features[3]
     f = {
         "id": 4,
@@ -125,9 +113,7 @@ def test_simple_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(
-        actual_feature, expected_feature
-    )
+    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
     actual_feature = sync_request.features[4]
     f = {
         "id": 5,
@@ -137,9 +123,7 @@ def test_simple_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(
-        actual_feature, expected_feature
-    )
+    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
 
     # extractors
     actual_extractor = erase_extractor_pycode(sync_request.extractors[0])
@@ -165,9 +149,7 @@ def test_simple_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_extractor = ParseDict(e, fs_proto.Extractor())
-    assert actual_extractor == expected_extractor, error_message(
-        actual_extractor, expected_extractor
-    )
+    assert actual_extractor == expected_extractor, error_message(actual_extractor, expected_extractor)
 
 
 def test_complex_featureset():
@@ -215,9 +197,7 @@ def test_complex_featureset():
     featureset_request = sync_request.feature_sets[0]
     featureset_request.pycode.Clear()
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
-    assert featureset_request == expected_fs_request, error_message(
-        featureset_request, expected_fs_request
-    )
+    assert featureset_request == expected_fs_request, error_message(featureset_request, expected_fs_request)
 
     # features
     actual_feature = sync_request.features[0]
@@ -229,9 +209,7 @@ def test_complex_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(
-        actual_feature, expected_feature
-    )
+    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
     actual_feature = sync_request.features[1]
     f = {
         "id": 2,
@@ -241,23 +219,17 @@ def test_complex_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(
-        actual_feature, expected_feature
-    )
+    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
     actual_feature = sync_request.features[2]
     f = {
         "id": 3,
         "name": "gender",
         "dtype": {"string_type": {}},
-        "metadata": {
-            "description": "The users gender among male/female/non-binary"
-        },
+        "metadata": {"description": "The users gender among male/female/non-binary"},
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(
-        actual_feature, expected_feature
-    )
+    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
     actual_feature = sync_request.features[3]
     f = {
         "id": 4,
@@ -267,9 +239,7 @@ def test_complex_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(
-        actual_feature, expected_feature
-    )
+    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
     actual_feature = sync_request.features[4]
     f = {
         "id": 5,
@@ -279,9 +249,7 @@ def test_complex_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(
-        actual_feature, expected_feature
-    )
+    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
 
     # extractors
     actual_extractor = erase_extractor_pycode(sync_request.extractors[0])
@@ -298,9 +266,7 @@ def test_complex_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_extractor = ParseDict(e, fs_proto.Extractor())
-    assert actual_extractor == expected_extractor, error_message(
-        actual_extractor, expected_extractor
-    )
+    assert actual_extractor == expected_extractor, error_message(actual_extractor, expected_extractor)
 
     actual_extractor = erase_extractor_pycode(sync_request.extractors[1])
     e = {
@@ -316,9 +282,7 @@ def test_complex_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_extractor = ParseDict(e, fs_proto.Extractor())
-    assert actual_extractor == expected_extractor, error_message(
-        actual_extractor, expected_extractor
-    )
+    assert actual_extractor == expected_extractor, error_message(actual_extractor, expected_extractor)
 
     actual_extractor = erase_extractor_pycode(sync_request.extractors[2])
     e = {
@@ -334,6 +298,4 @@ def test_complex_featureset():
         "feature_set_name": "UserInfo",
     }
     expected_extractor = ParseDict(e, fs_proto.Extractor())
-    assert actual_extractor == expected_extractor, error_message(
-        actual_extractor, expected_extractor
-    )
+    assert actual_extractor == expected_extractor, error_message(actual_extractor, expected_extractor)

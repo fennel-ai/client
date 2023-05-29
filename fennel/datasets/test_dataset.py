@@ -45,11 +45,7 @@ def test_simple_dataset():
                 "name": "UserInfoDataset",
                 "metadata": {"owner": "test@test.com"},
                 "dsschema": {
-                    "keys": {
-                        "fields": [
-                            {"name": "user_id", "dtype": {"intType": {}}}
-                        ]
-                    },
+                    "keys": {"fields": [{"name": "user_id", "dtype": {"intType": {}}}]},
                     "values": {
                         "fields": [
                             {"name": "name", "dtype": {"stringType": {}}},
@@ -62,9 +58,7 @@ def test_simple_dataset():
                             },
                             {
                                 "name": "country",
-                                "dtype": {
-                                    "optionalType": {"of": {"stringType": {}}}
-                                },
+                                "dtype": {"optionalType": {"of": {"stringType": {}}}},
                             },
                         ]
                     },
@@ -101,16 +95,12 @@ def test_simple_dataset():
                 "lateness": "3600s",
             }
         ],
-        "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
-        ],
+        "extdbs": [{"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}],
     }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
     sync_request.datasets[0].pycode.Clear()
-    assert sync_request == expected_sync_request, error_message(
-        sync_request, expected_sync_request
-    )
+    assert sync_request == expected_sync_request, error_message(sync_request, expected_sync_request)
 
 
 @source(webhook.endpoint("Activity"))
@@ -145,9 +135,7 @@ def test_dataset_with_retention():
                             },
                             {
                                 "name": "amount",
-                                "dtype": {
-                                    "optionalType": {"of": {"doubleType": {}}}
-                                },
+                                "dtype": {"optionalType": {"of": {"doubleType": {}}}},
                             },
                         ]
                     },
@@ -180,17 +168,13 @@ def test_dataset_with_retention():
                 "lateness": "3600s",
             }
         ],
-        "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
-        ],
+        "extdbs": [{"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}],
     }
 
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
     sync_request.datasets[0].pycode.Clear()
-    assert sync_request == expected_sync_request, error_message(
-        sync_request, expected_sync_request
-    )
+    assert sync_request == expected_sync_request, error_message(sync_request, expected_sync_request)
 
 
 # TODO(mohit): Uncomment once support for ondemand funcs is added on protos
@@ -345,9 +329,7 @@ def test_dataset_with_pipes():
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
-    )
+    assert dataset_req == expected_dataset_request, error_message(dataset_req, expected_dataset_request)
 
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
@@ -362,9 +344,7 @@ def test_dataset_with_pipes():
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
-    )
+    assert pipeline_req == expected_pipeline_request, error_message(pipeline_req, expected_pipeline_request)
 
     # There are 3 operators
     assert len(sync_request.operators) == 3
@@ -379,9 +359,7 @@ def test_dataset_with_pipes():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[1]
     o = {
         "id": "A",
@@ -393,9 +371,7 @@ def test_dataset_with_pipes():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[2]
     o = {
         "id": "7e89417507044ac2c4fddfdf04df414e",
@@ -409,9 +385,7 @@ def test_dataset_with_pipes():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
 
 def test_dataset_with_pipes_bounds():
@@ -508,9 +482,7 @@ def test_dataset_with_pipes_bounds():
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
-    )
+    assert dataset_req == expected_dataset_request, error_message(dataset_req, expected_dataset_request)
 
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
@@ -525,9 +497,7 @@ def test_dataset_with_pipes_bounds():
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
-    )
+    assert pipeline_req == expected_pipeline_request, error_message(pipeline_req, expected_pipeline_request)
 
     # There are 3 operators
     assert len(sync_request.operators) == 3
@@ -542,9 +512,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[1]
     o = {
         "id": "A",
@@ -556,9 +524,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[2]
     o = {
         "id": "7e89417507044ac2c4fddfdf04df414e",
@@ -572,9 +538,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     # ----- ABCDatasetDefault -----
 
@@ -600,9 +564,7 @@ def test_dataset_with_pipes_bounds():
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
-    )
+    assert dataset_req == expected_dataset_request, error_message(dataset_req, expected_dataset_request)
 
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
@@ -617,9 +579,7 @@ def test_dataset_with_pipes_bounds():
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
-    )
+    assert pipeline_req == expected_pipeline_request, error_message(pipeline_req, expected_pipeline_request)
 
     # There are 3 operators
     assert len(sync_request.operators) == 3
@@ -634,9 +594,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[1]
     o = {
         "id": "A",
@@ -648,9 +606,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[2]
     o = {
         "id": "7e89417507044ac2c4fddfdf04df414e",
@@ -664,9 +620,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     # ----- ABDatasetLow -----
 
@@ -692,9 +646,7 @@ def test_dataset_with_pipes_bounds():
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
-    )
+    assert dataset_req == expected_dataset_request, error_message(dataset_req, expected_dataset_request)
 
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
@@ -709,9 +661,7 @@ def test_dataset_with_pipes_bounds():
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
-    )
+    assert pipeline_req == expected_pipeline_request, error_message(pipeline_req, expected_pipeline_request)
 
     # There are 3 operators
     assert len(sync_request.operators) == 3
@@ -726,9 +676,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[1]
     o = {
         "id": "A",
@@ -740,9 +688,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[2]
     o = {
         "id": "5e0f878ae07c4059f5d15a167aebff46",
@@ -757,9 +703,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     # ----- ABDatasetHigh -----
 
@@ -785,9 +729,7 @@ def test_dataset_with_pipes_bounds():
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
-    )
+    assert dataset_req == expected_dataset_request, error_message(dataset_req, expected_dataset_request)
 
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
@@ -802,9 +744,7 @@ def test_dataset_with_pipes_bounds():
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
-    )
+    assert pipeline_req == expected_pipeline_request, error_message(pipeline_req, expected_pipeline_request)
 
     # There are 3 operators
     assert len(sync_request.operators) == 3
@@ -819,9 +759,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[1]
     o = {
         "id": "A",
@@ -833,9 +771,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[2]
     o = {
         "id": "a421bb327a667672ac419772711d7ff0",
@@ -850,9 +786,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     # ----- ABDataset -----
 
@@ -878,9 +812,7 @@ def test_dataset_with_pipes_bounds():
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
-    )
+    assert dataset_req == expected_dataset_request, error_message(dataset_req, expected_dataset_request)
 
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
@@ -895,9 +827,7 @@ def test_dataset_with_pipes_bounds():
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
-    )
+    assert pipeline_req == expected_pipeline_request, error_message(pipeline_req, expected_pipeline_request)
 
     # There are 3 operators
     assert len(sync_request.operators) == 3
@@ -912,9 +842,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[1]
     o = {
         "id": "A",
@@ -926,9 +854,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
     operator_req = sync_request.operators[2]
     o = {
         "id": "ab3159d192c521972821225b2f67e80d",
@@ -944,9 +870,7 @@ def test_dataset_with_pipes_bounds():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
 
 def test_dataset_with_complex_pipe():
@@ -962,18 +886,10 @@ def test_dataset_with_complex_pipe():
         @inputs(Activity, UserInfoDataset)
         def create_fraud_dataset(cls, activity: Dataset, user_info: Dataset):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
-                df["metadata_dict"] = (
-                    df["metadata"].apply(json.loads).apply(pd.Series)
-                )
-                df["transaction_amount"] = df["metadata_dict"].apply(
-                    lambda x: x["transaction_amt"]
-                )
-                df["timestamp"] = df["metadata_dict"].apply(
-                    lambda x: x["transaction_amt"]
-                )
-                df["merchant_id"] = df["metadata_dict"].apply(
-                    lambda x: x["merchant_id"]
-                )
+                df["metadata_dict"] = df["metadata"].apply(json.loads).apply(pd.Series)
+                df["transaction_amount"] = df["metadata_dict"].apply(lambda x: x["transaction_amt"])
+                df["timestamp"] = df["metadata_dict"].apply(lambda x: x["transaction_amt"])
+                df["merchant_id"] = df["metadata_dict"].apply(lambda x: x["merchant_id"])
                 return df[
                     [
                         "merchant_id",
@@ -983,9 +899,7 @@ def test_dataset_with_complex_pipe():
                     ]
                 ]
 
-            filtered_ds = activity.filter(
-                lambda df: df["action_type"] == "report_txn"
-            )
+            filtered_ds = activity.filter(lambda df: df["action_type"] == "report_txn")
             ds = filtered_ds.left_join(
                 user_info,
                 on=["user_id"],
@@ -1003,15 +917,11 @@ def test_dataset_with_complex_pipe():
                 [
                     Count(
                         window=Window("forever"),
-                        into_field=str(
-                            cls.num_merchant_fraudulent_transactions
-                        ),
+                        into_field=str(cls.num_merchant_fraudulent_transactions),
                     ),
                     Count(
                         window=Window("1w"),
-                        into_field=str(
-                            cls.num_merchant_fraudulent_transactions_7d
-                        ),
+                        into_field=str(cls.num_merchant_fraudulent_transactions_7d),
                     ),
                 ]
             )
@@ -1059,9 +969,7 @@ def test_dataset_with_complex_pipe():
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
-    )
+    assert dataset_req == expected_dataset_request, error_message(dataset_req, expected_dataset_request)
 
     # Only one pipeline
     assert len(sync_request.pipelines) == 1
@@ -1076,9 +984,7 @@ def test_dataset_with_complex_pipe():
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
-    )
+    assert pipeline_req == expected_pipeline_request, error_message(pipeline_req, expected_pipeline_request)
 
     # 6 operators
     assert len(sync_request.operators) == 6
@@ -1093,9 +999,7 @@ def test_dataset_with_complex_pipe():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = sync_request.operators[1]
     o = {
@@ -1108,9 +1012,7 @@ def test_dataset_with_complex_pipe():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = erase_operator_pycode(sync_request.operators[2])
     o = {
@@ -1120,9 +1022,7 @@ def test_dataset_with_complex_pipe():
         "filter": {"operandId": "Activity", "pycode": {}},
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = sync_request.operators[3]
     o = {
@@ -1136,9 +1036,7 @@ def test_dataset_with_complex_pipe():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = erase_operator_pycode(sync_request.operators[4])
     o = {
@@ -1157,9 +1055,7 @@ def test_dataset_with_complex_pipe():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = sync_request.operators[5]
     o = {
@@ -1187,9 +1083,7 @@ def test_dataset_with_complex_pipe():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
 
 def test_delete_and_rename_column():
@@ -1269,9 +1163,7 @@ def test_union_datasets():
     dataset_req = sync_request.datasets[0]
     dataset_req.pycode.Clear()
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
-    )
+    assert dataset_req == expected_dataset_request, error_message(dataset_req, expected_dataset_request)
 
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
@@ -1285,9 +1177,7 @@ def test_union_datasets():
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
-    )
+    assert pipeline_req == expected_pipeline_request, error_message(pipeline_req, expected_pipeline_request)
 
     assert len(sync_request.operators) == 7
     operator_req = sync_request.operators[0]
@@ -1301,9 +1191,7 @@ def test_union_datasets():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = erase_operator_pycode(sync_request.operators[1])
     o = {
@@ -1314,9 +1202,7 @@ def test_union_datasets():
         "transform": {"operand_id": "A", "schema": {}, "pycode": {}},
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = erase_operator_pycode(sync_request.operators[2])
     o = {
@@ -1327,9 +1213,7 @@ def test_union_datasets():
         "transform": {"operand_id": "A", "schema": {}, "pycode": {}},
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = sync_request.operators[3]
     o = {
@@ -1345,9 +1229,7 @@ def test_union_datasets():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = erase_operator_pycode(sync_request.operators[4])
     o = {
@@ -1362,9 +1244,7 @@ def test_union_datasets():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = erase_operator_pycode(sync_request.operators[5])
     o = {
@@ -1379,9 +1259,7 @@ def test_union_datasets():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = sync_request.operators[6]
     o = {
@@ -1397,9 +1275,7 @@ def test_union_datasets():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
 
 @meta(owner="e2@company.com")
@@ -1503,9 +1379,7 @@ def test_search_dataset():
     }
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
     dataset_req.pycode.Clear()
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
-    )
+    assert dataset_req == expected_dataset_request, error_message(dataset_req, expected_dataset_request)
 
     # pipelines
     assert len(sync_request.pipelines) == 1
@@ -1520,9 +1394,7 @@ def test_search_dataset():
         "active": True,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
-    )
+    assert pipeline_req == expected_pipeline_request, error_message(pipeline_req, expected_pipeline_request)
 
     # operators
     assert len(sync_request.operators) == 2
@@ -1537,9 +1409,7 @@ def test_search_dataset():
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
     operator_req = erase_operator_pycode(sync_request.operators[1])
     o = {
@@ -1553,22 +1423,16 @@ def test_search_dataset():
                 "num_words": {"int_type": {}},
                 "num_stop_words": {"int_type": {}},
                 "creation_timestamp": {"timestamp_type": {}},
-                "fast_text_embedding": {
-                    "embedding_type": {"embedding_size": 256}
-                },
+                "fast_text_embedding": {"embedding_type": {"embedding_size": 256}},
                 "bert_embedding": {"embedding_type": {"embedding_size": 128}},
                 "doc_id": {"int_type": {}},
-                "top_10_unique_words": {
-                    "array_type": {"of": {"string_type": {}}}
-                },
+                "top_10_unique_words": {"array_type": {"of": {"string_type": {}}}},
             },
             "pycode": {},
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
+    assert operator_req == expected_operator_request, error_message(operator_req, expected_operator_request)
 
 
 def test_auto_schema_generation():
@@ -1603,9 +1467,7 @@ def test_auto_schema_generation():
                 "user_id": int,
             }
 
-            filtered_ds = activity.filter(
-                lambda df: df["action_type"] == "report"
-            )
+            filtered_ds = activity.filter(lambda df: df["action_type"] == "report")
 
             assert filtered_ds.schema() == {
                 "action_type": float,

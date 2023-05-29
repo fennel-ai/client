@@ -61,9 +61,7 @@ class CityInfo:
     @pipeline(version=1)
     @inputs(UserInfo)
     def count_city_gender(cls, user_info: Dataset):
-        return user_info.groupby(["city", "gender"]).aggregate(
-            [Count(window=Window("1y 5s"), into_field="count")]
-        )
+        return user_info.groupby(["city", "gender"]).aggregate([Count(window=Window("1y 5s"), into_field="count")])
 
 
 @dataset
@@ -76,9 +74,7 @@ class UserViewsDataset:
     @pipeline(1)
     @inputs(ViewData)
     def count_user_views(cls, view_data: Dataset):
-        return view_data.groupby("user_id").aggregate(
-            [Count(window=Window("5y 8s"), into_field="num_views")]
-        )
+        return view_data.groupby("user_id").aggregate([Count(window=Window("5y 8s"), into_field="num_views")])
 
 
 @dataset
@@ -137,9 +133,7 @@ class UserFeatures:
         user_ids: pd.Series,
         categories: pd.Series,
     ):
-        category_views, _ = UserCategoryDataset.lookup(  # type: ignore
-            ts, user_id=user_ids, category=categories
-        )
+        category_views, _ = UserCategoryDataset.lookup(ts, user_id=user_ids, category=categories)  # type: ignore
         views, _ = UserViewsDataset.lookup(ts, user_id=user_ids)  # type: ignore
         category_views = category_views.fillna(0)
         views = views.fillna(0.001)
@@ -173,9 +167,7 @@ def test_social_network(client):
     ts = datetime(2018, 1, 1, 0, 0, 0)
     user_data_df["timestamp"] = ts
     post_data_df["timestamp"] = ts
-    view_data_df["time_stamp"] = view_data_df["time_stamp"].apply(
-        lambda x: datetime.strptime(x, "%m/%d/%Y %H:%M %p")
-    )
+    view_data_df["time_stamp"] = view_data_df["time_stamp"].apply(lambda x: datetime.strptime(x, "%m/%d/%Y %H:%M %p"))
     res = client.log("fennel_webhook", "UserInfo", user_data_df)
     assert res.status_code == requests.codes.OK, res.json()
 

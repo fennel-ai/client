@@ -117,9 +117,7 @@ def test_simple_source():
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
     expected_dataset_request.pycode.Clear()
     dataset_request.pycode.Clear()
-    assert dataset_request == expected_dataset_request, error_message(
-        dataset_request, expected_dataset_request
-    )
+    assert dataset_request == expected_dataset_request, error_message(dataset_request, expected_dataset_request)
 
     assert len(sync_request.sources) == 1
     source_request = sync_request.sources[0]
@@ -145,9 +143,7 @@ def test_simple_source():
         "cursor": "added_on",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
-    assert source_request == expected_source_request, error_message(
-        source_request, expected_source_request
-    )
+    assert source_request == expected_source_request, error_message(source_request, expected_source_request)
 
     # External DBs
     assert len(sync_request.extdbs) == 1
@@ -163,9 +159,7 @@ def test_simple_source():
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
-    )
+    assert extdb_request == expected_extdb_request, error_message(extdb_request, expected_extdb_request)
 
 
 s3 = S3(
@@ -268,9 +262,7 @@ def test_multiple_sources():
         "lateness": "172800s",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
-    assert source_request == expected_source_request, error_message(
-        source_request, expected_source_request
-    )
+    assert source_request == expected_source_request, error_message(source_request, expected_source_request)
     extdb_request = sync_request.extdbs[0]
     e = {
         "name": "ratings_source",
@@ -280,9 +272,7 @@ def test_multiple_sources():
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
-    )
+    assert extdb_request == expected_extdb_request, error_message(extdb_request, expected_extdb_request)
 
     @meta(owner="test@test.com")
     @source(snowflake.table("users_Sf", cursor="added_on"), every="1h")
@@ -327,9 +317,7 @@ def test_multiple_sources():
         "cursor": "added_on",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
-    assert source_request == expected_source_request, error_message(
-        source_request, expected_source_request
-    )
+    assert source_request == expected_source_request, error_message(source_request, expected_source_request)
     extdb_request = sync_request.extdbs[0]
     e = {
         "name": "snowflake_src",
@@ -344,14 +332,10 @@ def test_multiple_sources():
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
-    )
+    assert extdb_request == expected_extdb_request, error_message(extdb_request, expected_extdb_request)
 
     @meta(owner="test@test.com")
-    @source(
-        bigquery.table("users_bq", cursor="added_on"), every="1h", lateness="2h"
-    )
+    @source(bigquery.table("users_bq", cursor="added_on"), every="1h", lateness="2h")
     @dataset
     class UserInfoDatasetBigQuery:
         user_id: int = field(key=True)
@@ -389,9 +373,7 @@ def test_multiple_sources():
         "cursor": "added_on",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
-    assert source_request == expected_source_request, error_message(
-        source_request, expected_source_request
-    )
+    assert source_request == expected_source_request, error_message(source_request, expected_source_request)
     extdb_request = sync_request.extdbs[0]
     e = {
         "name": "bq_movie_tags",
@@ -402,9 +384,7 @@ def test_multiple_sources():
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
-    )
+    assert extdb_request == expected_extdb_request, error_message(extdb_request, expected_extdb_request)
 
     @meta(owner="test@test.com")
     @source(mysql.table("users_mysql", cursor="added_on"), every="1h")
@@ -447,9 +427,7 @@ def test_multiple_sources():
         "cursor": "added_on",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
-    assert source_request == expected_source_request, error_message(
-        source_request, expected_source_request
-    )
+    assert source_request == expected_source_request, error_message(source_request, expected_source_request)
     extdb_request = sync_request.extdbs[0]
     e = {
         "name": "mysql",
@@ -462,9 +440,7 @@ def test_multiple_sources():
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
-    )
+    assert extdb_request == expected_extdb_request, error_message(extdb_request, expected_extdb_request)
 
     @meta(owner="test@test.com")
     @source(kafka.topic("test_topic"))
@@ -495,9 +471,7 @@ def test_multiple_sources():
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
-    )
+    assert extdb_request == expected_extdb_request, error_message(extdb_request, expected_extdb_request)
 
 
 def test_console_source():
@@ -538,12 +512,8 @@ def test_console_source():
         "lateness": "3600s",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
-    assert source_request == expected_source_request, error_message(
-        source_request, expected_source_request
-    )
+    assert source_request == expected_source_request, error_message(source_request, expected_source_request)
     extdb_request = sync_request.extdbs[0]
     e = {"s3": {}, "name": "s3_test"}
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
-    )
+    assert extdb_request == expected_extdb_request, error_message(extdb_request, expected_extdb_request)

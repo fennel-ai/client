@@ -35,9 +35,7 @@ class UserFeature:
     @outputs(in_home_city)
     def func(cls, ts: pd.Series, uid: pd.Series):
         df, _found = User.lookup(ts, uid=uid)
-        return pd.Series(
-            name="in_home_city", data=df["home_city"] == df["cur_city"]
-        )
+        return pd.Series(name="in_home_city", data=df["home_city"] == df["cur_city"])
 
 
 # /docsnip
@@ -54,9 +52,7 @@ def test_user_dataset_lookup(client):
         [3, "Chicago", "San Francisco", now - timedelta(days=1)],
     ]
 
-    df = pd.DataFrame(
-        data, columns=["uid", "home_city", "cur_city", "timestamp"]
-    )
+    df = pd.DataFrame(data, columns=["uid", "home_city", "cur_city", "timestamp"])
 
     res = client.log("fennel_webhook", "User", df)
     assert res.status_code == 200, res.json()

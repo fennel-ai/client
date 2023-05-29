@@ -16,10 +16,7 @@ Duration = str
 
 def duration_to_timedelta(duration_string: Duration) -> timedelta:
     if type(duration_string) != str:
-        raise TypeError(
-            f"duration {duration_string} must be a specified as a string for "
-            f"eg. 1d/2m/3y."
-        )
+        raise TypeError(f"duration {duration_string} must be a specified as a string for " f"eg. 1d/2m/3y.")
 
     total_seconds = Decimal("0")
     prev_num: List[str] = []
@@ -40,23 +37,14 @@ def duration_to_timedelta(duration_string: Duration) -> timedelta:
                 elif character == "s":
                     total_seconds += num
                 else:
-                    raise ValueError(
-                        f"Invalid character `{character}` in duration "
-                        f"`{duration_string}`"
-                    )
+                    raise ValueError(f"Invalid character `{character}` in duration " f"`{duration_string}`")
                 prev_num = []
             elif character != " ":
-                raise ValueError(
-                    f"Invalid character `{character}` in duration "
-                    f"`{duration_string}`"
-                )
+                raise ValueError(f"Invalid character `{character}` in duration " f"`{duration_string}`")
         elif character.isnumeric() or character == ".":
             prev_num.append(character)
         elif character != " ":
-            raise ValueError(
-                f"Invalid character `{character}` in duration "
-                f"`{duration_string}`"
-            )
+            raise ValueError(f"Invalid character `{character}` in duration " f"`{duration_string}`")
     return timedelta(seconds=float(total_seconds))
 
 

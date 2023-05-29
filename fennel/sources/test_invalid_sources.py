@@ -63,9 +63,7 @@ def test_simple_source():
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-    assert str(e.value).endswith(
-        "table() missing 1 required positional argument: 'cursor'"
-    )
+    assert str(e.value).endswith("table() missing 1 required positional argument: 'cursor'")
 
     with pytest.raises(TypeError) as e:
 
@@ -82,9 +80,7 @@ def test_simple_source():
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-    assert (
-        str(e.value) == "mysql does not specify required fields table, cursor."
-    )
+    assert str(e.value) == "mysql does not specify required fields table, cursor."
 
     with pytest.raises(TypeError) as e:
 
@@ -101,9 +97,7 @@ def test_simple_source():
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-    assert str(e.value).endswith(
-        "table() missing 1 required positional argument: 'table_name'"
-    )
+    assert str(e.value).endswith("table() missing 1 required positional argument: 'table_name'")
 
 
 s3 = S3(
@@ -170,7 +164,4 @@ def test_multiple_sources():
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-    assert (
-        str(e.value)
-        == "Multiple sources are not supported in dataset `UserInfoDataset`."
-    )
+    assert str(e.value) == "Multiple sources are not supported in dataset `UserInfoDataset`."

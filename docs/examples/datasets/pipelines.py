@@ -59,9 +59,7 @@ class UserTransactionsAbroad:
     @inputs(User, Transaction)
     def first_pipeline(cls, user: Dataset, transaction: Dataset):
         joined = transaction.left_join(user, on=["uid"])
-        abroad = joined.filter(
-            lambda df: df["country"] != df["payment_country"]
-        )
+        abroad = joined.filter(lambda df: df["country"] != df["payment_country"])
         return abroad.groupby("uid").aggregate(
             [
                 Count(window=Window("forever"), into_field="count"),
@@ -166,9 +164,7 @@ class FraudActivityDataset:
             df_json = df["metadata"].apply(json.loads).apply(pd.Series)
             df = pd.concat([df_json, df[["user_id", "timestamp"]]], axis=1)
             df["transaction_amount"] = df["transaction_amount"] / 100
-            return df[
-                ["merchant_id", "transaction_amount", "user_id", "timestamp"]
-            ]
+            return df[["merchant_id", "transaction_amount", "user_id", "timestamp"]]
 
         filtered_ds = activity.filter(lambda df: df["action_type"] == "report")
         return filtered_ds.transform(

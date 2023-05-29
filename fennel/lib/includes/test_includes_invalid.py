@@ -95,14 +95,10 @@ def test_simple_invalid_extractor(client):
         client.extract_features(
             output_feature_list=[UserInfoExtractor],
             input_feature_list=[UserInfoExtractor.userid],
-            input_dataframe=pd.DataFrame(
-                {"UserInfoExtractor.userid": [18232, 18234]}
-            ),
+            input_dataframe=pd.DataFrame({"UserInfoExtractor.userid": [18232, 18234]}),
         )
     if client.is_integration_client():
-        assert "Extractor UserInfoExtractor.get_user_info failed:" in str(
-            e.value
-        )
+        assert "Extractor UserInfoExtractor.get_user_info failed:" in str(e.value)
         assert "Value: name 'power_4' is not defined" in str(e.value)
     else:
         str(e.value) == "Extractor `get_user_info` in `UserInfoExtractor` "
@@ -119,9 +115,7 @@ def test_invalid_code_changes(client):
         @featureset
         class UserInfoExtractorInvalid:
             userid: int = feature(id=1)
-            age: int = feature(id=4).meta(
-                owner="aditya@fennel.ai"
-            )  # type: ignore
+            age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
             age_power_four: int = feature(id=5)
             age_cubed: int = feature(id=6)
             is_name_common: bool = feature(id=7)
@@ -131,15 +125,11 @@ def test_invalid_code_changes(client):
             @inputs(userid)
             @outputs(age, age_power_four, age_cubed, is_name_common)
             def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
-                df, _ = UserInfoDataset.lookup(  # type: ignore
-                    ts, user_id=user_id
-                )
+                df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
                 df[str(cls.userid)] = user_id
                 df[str(cls.age_power_four)] = power_4(df["age"])
                 df[str(cls.age_cubed)] = cube(df["age"])
-                df[str(cls.is_name_common)] = df["name"].isin(
-                    ["John", "Mary", "Bob"]
-                )
+                df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])
                 return df[
                     [
                         str(cls.age),
@@ -159,9 +149,7 @@ def test_invalid_code_changes(client):
         @featureset
         class UserInfoExtractorInvalid:
             userid: int = feature(id=1)
-            age: int = feature(id=4).meta(
-                owner="aditya@fennel.ai"
-            )  # type: ignore
+            age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
             age_power_four: int = feature(id=5)
             age_cubed: int = feature(id=6)
             is_name_common: bool = feature(id=7)
@@ -171,15 +159,11 @@ def test_invalid_code_changes(client):
             @inputs(userid)
             @outputs(age, age_power_four, age_cubed, is_name_common)
             def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
-                df, _ = UserInfoDataset.lookup(  # type: ignore
-                    ts, user_id=user_id
-                )
+                df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
                 df[str(cls.userid)] = user_id
                 df[str(cls.age_power_four)] = power_4_alt(df["age"])
                 df[str(cls.age_cubed)] = cube(df["age"])
-                df[str(cls.is_name_common)] = df["name"].isin(
-                    ["John", "Mary", "Bob"]
-                )
+                df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])
                 return df[
                     [
                         str(cls.age),
@@ -194,19 +178,14 @@ def test_invalid_code_changes(client):
                 datasets=[UserInfoDataset],
                 featuresets=[UserInfoExtractorInvalid],
             )
-        assert (
-            "cannot update code of extractor UserInfoExtractorInvalid.get_user_info"
-            in str(e.value)
-        )
+        assert "cannot update code of extractor UserInfoExtractorInvalid.get_user_info" in str(e.value)
 
     def successful_sync_with_new_feature():
         @meta(owner="test@test.com")
         @featureset
         class UserInfoExtractorInvalid:
             userid: int = feature(id=1)
-            age: int = feature(id=4).meta(
-                owner="aditya@fennel.ai"
-            )  # type: ignore
+            age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
             age_power_four: int = feature(id=5)
             age_cubed: int = feature(id=6)
             is_name_common: bool = feature(id=7)
@@ -217,15 +196,11 @@ def test_invalid_code_changes(client):
             @inputs(userid)
             @outputs(age, age_power_four, age_cubed, is_name_common)
             def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
-                df, _ = UserInfoDataset.lookup(  # type: ignore
-                    ts, user_id=user_id
-                )
+                df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
                 df[str(cls.userid)] = user_id
                 df[str(cls.age_power_four)] = power_4(df["age"])
                 df[str(cls.age_cubed)] = cube(df["age"])
-                df[str(cls.is_name_common)] = df["name"].isin(
-                    ["John", "Mary", "Bob"]
-                )
+                df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])
                 return df[
                     [
                         str(cls.age),

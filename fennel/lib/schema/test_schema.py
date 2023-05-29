@@ -18,25 +18,17 @@ from fennel.lib.schema.schema import (
 def test_get_data_type():
     assert get_datatype(int) == proto.DataType(int_type=proto.IntType())
     assert get_datatype(Optional[int]) == proto.DataType(
-        optional_type=proto.OptionalType(
-            of=proto.DataType(int_type=proto.IntType())
-        )
+        optional_type=proto.OptionalType(of=proto.DataType(int_type=proto.IntType()))
     )
     x: float = 1.0
-    assert get_datatype(type(x)) == proto.DataType(
-        double_type=proto.DoubleType()
-    )
+    assert get_datatype(type(x)) == proto.DataType(double_type=proto.DoubleType())
     x: bool = True
     assert get_datatype(type(x)) == proto.DataType(bool_type=proto.BoolType())
     x: str = "hello"
-    assert get_datatype(type(x)) == proto.DataType(
-        string_type=proto.StringType()
-    )
+    assert get_datatype(type(x)) == proto.DataType(string_type=proto.StringType())
     x: datetime = datetime.now()
 
-    assert get_datatype(type(x)) == proto.DataType(
-        timestamp_type=proto.TimestampType()
-    )
+    assert get_datatype(type(x)) == proto.DataType(timestamp_type=proto.TimestampType())
     assert get_datatype(List[int]) == proto.DataType(
         array_type=proto.ArrayType(of=proto.DataType(int_type=proto.IntType()))
     )
@@ -52,11 +44,7 @@ def test_get_data_type():
             value=proto.DataType(
                 map_type=proto.MapType(
                     key=proto.DataType(string_type=proto.StringType()),
-                    value=proto.DataType(
-                        array_type=proto.ArrayType(
-                            of=proto.DataType(double_type=proto.DoubleType())
-                        )
-                    ),
+                    value=proto.DataType(array_type=proto.ArrayType(of=proto.DataType(double_type=proto.DoubleType()))),
                 )
             ),
         )
@@ -76,11 +64,7 @@ def test_get_data_type():
             of=proto.DataType(
                 map_type=proto.MapType(
                     key=proto.DataType(string_type=proto.StringType()),
-                    value=proto.DataType(
-                        array_type=proto.ArrayType(
-                            of=proto.DataType(double_type=proto.DoubleType())
-                        )
-                    ),
+                    value=proto.DataType(array_type=proto.ArrayType(of=proto.DataType(double_type=proto.DoubleType()))),
                 )
             )
         )
@@ -133,9 +117,7 @@ def test_additional_dtypes():
             ],
         )
     )
-    assert get_datatype(regex("[a-z]+")) == proto.DataType(
-        regex_type=proto.RegexType(pattern="[a-z]+")
-    )
+    assert get_datatype(regex("[a-z]+")) == proto.DataType(regex_type=proto.RegexType(pattern="[a-z]+"))
 
 
 def test_additional_dtypes_invalid():
@@ -150,16 +132,10 @@ def test_additional_dtypes_invalid():
     assert str(e.value) == "'oneof' type only accepts int or str types"
     with pytest.raises(TypeError) as e:
         get_datatype(oneof(int, [1.2, 2.3, 3]))
-    assert (
-        str(e.value) == "'oneof' options should match the type of dtype, "
-        "found 'float' expected 'int'."
-    )
+    assert str(e.value) == "'oneof' options should match the type of dtype, " "found 'float' expected 'int'."
     with pytest.raises(TypeError) as e:
         get_datatype(oneof(str, [1, 2, 3]))
-    assert (
-        str(e.value) == "'oneof' options should match the type of dtype, "
-        "found 'int' expected 'str'."
-    )
+    assert str(e.value) == "'oneof' options should match the type of dtype, " "found 'int' expected 'str'."
 
     with pytest.raises(TypeError) as e:
         get_datatype(regex(1))
@@ -193,11 +169,7 @@ def test_valid_schema():
                 ),
                 proto.Field(
                     name="age",
-                    dtype=proto.DataType(
-                        optional_type=proto.OptionalType(
-                            of=proto.DataType(int_type=proto.IntType())
-                        )
-                    ),
+                    dtype=proto.DataType(optional_type=proto.OptionalType(of=proto.DataType(int_type=proto.IntType()))),
                 ),
                 proto.Field(
                     name="country",
@@ -250,15 +222,11 @@ def test_valid_schema():
             fields=[
                 proto.Field(
                     name="bert_embedding",
-                    dtype=proto.DataType(
-                        embedding_type=proto.EmbeddingType(embedding_size=4)
-                    ),
+                    dtype=proto.DataType(embedding_type=proto.EmbeddingType(embedding_size=4)),
                 ),
                 proto.Field(
                     name="fast_text_embedding",
-                    dtype=proto.DataType(
-                        embedding_type=proto.EmbeddingType(embedding_size=3)
-                    ),
+                    dtype=proto.DataType(embedding_type=proto.EmbeddingType(embedding_size=3)),
                 ),
                 proto.Field(
                     name="num_words",
@@ -368,15 +336,11 @@ def test_invalid_schema():
             fields=[
                 proto.Field(
                     name="bert_embedding",
-                    dtype=proto.DataType(
-                        embedding_type=proto.EmbeddingType(embedding_size=4)
-                    ),
+                    dtype=proto.DataType(embedding_type=proto.EmbeddingType(embedding_size=4)),
                 ),
                 proto.Field(
                     name="fast_text_embedding",
-                    dtype=proto.DataType(
-                        embedding_type=proto.EmbeddingType(embedding_size=3)
-                    ),
+                    dtype=proto.DataType(embedding_type=proto.EmbeddingType(embedding_size=3)),
                 ),
                 proto.Field(
                     name="num_words",
@@ -403,19 +367,11 @@ def test_invalid_schema():
             fields=[
                 proto.Field(
                     name="bert_embedding",
-                    dtype=proto.DataType(
-                        array_type=proto.ArrayType(
-                            of=proto.DataType(double_type=proto.DoubleType())
-                        )
-                    ),
+                    dtype=proto.DataType(array_type=proto.ArrayType(of=proto.DataType(double_type=proto.DoubleType()))),
                 ),
                 proto.Field(
                     name="fast_text_embedding",
-                    dtype=proto.DataType(
-                        array_type=proto.ArrayType(
-                            of=proto.DataType(double_type=proto.DoubleType())
-                        )
-                    ),
+                    dtype=proto.DataType(array_type=proto.ArrayType(of=proto.DataType(double_type=proto.DoubleType()))),
                 ),
                 proto.Field(
                     name="num_words",

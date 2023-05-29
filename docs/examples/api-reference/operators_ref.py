@@ -44,17 +44,13 @@ class FraudActivityDataset:
 
     @pipeline(version=1)
     @inputs(Activity, MerchantCategory)
-    def create_fraud_dataset(
-        cls, activity: Dataset, merchant_category: Dataset
-    ):
+    def create_fraud_dataset(cls, activity: Dataset, merchant_category: Dataset):
         # docsnip transform
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
             df_json = df["metadata"].apply(json.loads).apply(pd.Series)
             df = pd.concat([df_json, df[["user_id", "timestamp"]]], axis=1)
             df["transaction_amount"] = df["transaction_amount"] / 100
-            return df[
-                ["merchant_id", "transaction_amount", "user_id", "timestamp"]
-            ]
+            return df[["merchant_id", "transaction_amount", "user_id", "timestamp"]]
 
         transformed_ds = activity.transform(
             extract_info,
@@ -81,17 +77,13 @@ class FraudActivityDataset:
         # /docsnip
 
         # docsnip join
-        joined_ds = dropped_ds.left_join(
-            merchant_category, on=["merchant"], within=("forever", "60s")
-        )
+        joined_ds = dropped_ds.left_join(merchant_category, on=["merchant"], within=("forever", "60s"))
         # /docsnip
 
         joined_ds = joined_ds.rename({"category": "merchant_category"})
 
         # docsnip filter
-        joined_ds = joined_ds.filter(
-            lambda df: df["merchant_category"] is not None
-        )
+        joined_ds = joined_ds.filter(lambda df: df["merchant_category"] is not None)
         # /docsnip
 
         cur_schema = joined_ds.schema()

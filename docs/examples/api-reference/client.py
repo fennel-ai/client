@@ -58,9 +58,7 @@ class UserFeatures:
     @extractor
     @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
-    def get_age_and_name_features(
-        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
-    ):
+    def get_age_and_name_features(cls, ts: pd.Series, user_age: pd.Series, name: pd.Series):
         is_name_common = name.isin(["John", "Mary", "Bob"])
         df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
@@ -108,9 +106,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 UserFeatures,
             ],
             input_feature_list=[UserFeatures.userid],
-            input_dataframe=pd.DataFrame(
-                {"UserFeatures.userid": [18232, 18234]}
-            ),
+            input_dataframe=pd.DataFrame({"UserFeatures.userid": [18232, 18234]}),
         )
         self.assertEqual(feature_df.shape, (2, 7))
         # /docsnip

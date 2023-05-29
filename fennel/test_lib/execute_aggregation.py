@@ -247,21 +247,15 @@ def get_aggregated_df(
     df = input_df.copy()
     df[FENNEL_ROW_TYPE] = 1
     if aggregate.window.start != "forever":
-        window_secs = duration_to_timedelta(
-            aggregate.window.start
-        ).total_seconds()
-        expire_secs = pd.Timedelta(seconds=window_secs) + pd.Timedelta(
-            seconds=1
-        )
+        window_secs = duration_to_timedelta(aggregate.window.start).total_seconds()
+        expire_secs = pd.Timedelta(seconds=window_secs) + pd.Timedelta(seconds=1)
         # For every row find the time it will expire and add it to the dataframe
         # as a delete row
         del_df = df.copy()
         del_df[ts_field] = del_df[ts_field] + expire_secs
         del_df[FENNEL_ROW_TYPE] = -1
         df = pd.concat([df, del_df], ignore_index=True)
-        df = df.sort_values(
-            [ts_field, FENNEL_ROW_TYPE], ascending=[True, False]
-        )
+        df = df.sort_values([ts_field, FENNEL_ROW_TYPE], ascending=[True, False])
     # Reset the index
     df = df.reset_index(drop=True)
     if isinstance(aggregate, Count):
@@ -307,9 +301,7 @@ def get_aggregated_df(
                     else:
                         state[key] = MaxState()
                 else:
-                    raise Exception(
-                        f"Unsupported aggregate function {aggregate}"
-                    )
+                    raise Exception(f"Unsupported aggregate function {aggregate}")
             result_vals.append(state[key].add_val_to_state(val))
 
     df[aggregate.into_field] = result_vals

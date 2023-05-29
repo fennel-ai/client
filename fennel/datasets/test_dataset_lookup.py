@@ -27,9 +27,7 @@ class UserInfoDataset:
     timestamp: datetime
 
 
-def fake_func(
-    cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame
-):
+def fake_func(cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame):
     now = datetime.fromtimestamp(1668368655)
     if len(fields) > 0:
         assert ts.equals(pd.Series([now, now, now]))
@@ -66,9 +64,7 @@ def test_dataset_lookup():
         @inputs(userid, name)
         @outputs(age_sq, gender)
         @no_type_check
-        def user_age_sq(
-            cls, ts: pd.Series, user_id: pd.Series, names: pd.Series
-        ):
+        def user_age_sq(cls, ts: pd.Series, user_id: pd.Series, names: pd.Series):
             user_id_plus_one = user_id * 5
             df, _ = UserInfoDataset.lookup(
                 ts,

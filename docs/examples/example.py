@@ -22,9 +22,7 @@ webhook = Webhook(name="fennel_webhook")
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
     name: str = field().meta(description="User name")  # type: ignore
-    age: between(int, 0, 100) = field().meta(  # type: ignore
-        description="User age"
-    )
+    age: between(int, 0, 100) = field().meta(description="User age")  # type: ignore
     gender: oneof(str, ["male", "female"])  # type: ignore # noqa
     country_code: oneof(int, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])  # type: ignore
     email: regex(EMAIL_REGEX)  # type: ignore
@@ -79,8 +77,7 @@ class TestDataset(unittest.TestCase):
             )
         else:
             assert (
-                response.json()["error"]
-                == "Schema validation failed during data insertion to "
+                response.json()["error"] == "Schema validation failed during data insertion to "
                 "`UserInfoDataset` [ValueError('Field `age` is of type between, but the value `123` is out of bounds. Error found during checking schema for `UserInfoDataset`.')]"
             )
 

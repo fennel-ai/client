@@ -88,9 +88,7 @@ class Document:
 
     @pipeline()
     @inputs(NotionDocs, CodaDocs, GoogleDocs)
-    def notion_pipe(
-        cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
-    ):
+    def notion_pipe(cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset):
         new_schema = notion_docs.schema()
         new_schema["origin"] = str
         return (
@@ -134,16 +132,10 @@ def get_top_10_unique_words(text: str):
 @includes(get_bert_embedding, get_fasttext_embedding, get_top_10_unique_words)
 def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
     df["bert_embedding"] = df["body"].apply(lambda x: get_bert_embedding(x))
-    df["fast_text_embedding"] = df["body"].apply(
-        lambda x: get_fasttext_embedding(x)
-    )
+    df["fast_text_embedding"] = df["body"].apply(lambda x: get_fasttext_embedding(x))
     df["num_words"] = df["body"].apply(lambda x: len(x.split(" ")))
-    df["num_stop_words"] = df["body"].apply(
-        lambda x: len([x for x in x.split(" ") if x in ["the", "is", "of"]])
-    )
-    df["top_10_unique_words"] = df["body"].apply(
-        lambda x: get_top_10_unique_words(x)
-    )
+    df["num_stop_words"] = df["body"].apply(lambda x: len([x for x in x.split(" ") if x in ["the", "is", "of"]]))
+    df["top_10_unique_words"] = df["body"].apply(lambda x: get_top_10_unique_words(x))
     return df[
         [
             "doc_id",
@@ -287,9 +279,7 @@ class Query:
 @featureset
 class UserBehaviorFeatures:
     user_id: int = feature(id=1)
-    num_views: int = feature(id=2).meta(  # type: ignore
-        owner="aditya@fennel.ai"
-    )
+    num_views: int = feature(id=2).meta(owner="aditya@fennel.ai")  # type: ignore
     num_short_views_7d: int = feature(id=3)
     num_long_views: int = feature(id=4)
 
@@ -439,9 +429,7 @@ class TestSearchExample(unittest.TestCase):
         mock_CodaDocs = CodaDocs.with_source(webhook.endpoint("CodaDocs"))
         mock_GoogleDocs = GoogleDocs.with_source(webhook.endpoint("GoogleDocs"))
 
-        client.sync(
-            datasets=[mock_NotionDocs, mock_CodaDocs, mock_GoogleDocs, Document]
-        )
+        client.sync(datasets=[mock_NotionDocs, mock_CodaDocs, mock_GoogleDocs, Document])
         self.log_document_data(client)
         client.sleep()
         now = datetime.utcnow()
@@ -465,9 +453,7 @@ class TestSearchExample(unittest.TestCase):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
-        mock_UserActivity = UserActivity.with_source(
-            webhook.endpoint("UserActivity")
-        )
+        mock_UserActivity = UserActivity.with_source(webhook.endpoint("UserActivity"))
 
         client.sync(
             datasets=[
@@ -501,9 +487,7 @@ class TestSearchExample(unittest.TestCase):
         mock_NotionDocs = NotionDocs.with_source(webhook.endpoint("NotionDocs"))
         mock_CodaDocs = CodaDocs.with_source(webhook.endpoint("CodaDocs"))
         mock_GoogleDocs = GoogleDocs.with_source(webhook.endpoint("GoogleDocs"))
-        mock_UserActivity = UserActivity.with_source(
-            webhook.endpoint("UserActivity")
-        )
+        mock_UserActivity = UserActivity.with_source(webhook.endpoint("UserActivity"))
 
         client.sync(
             datasets=[
@@ -566,14 +550,17 @@ class TestSearchExample(unittest.TestCase):
         assert df["DocumentFeatures.num_views_28d"].tolist() == [1, 2]
 
         if client.is_integration_client():
-            result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                0
-            ] == ["This", "is", "a", "random", "Coda", "document"]
+            result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[0] == [
+                "This",
+                "is",
+                "a",
+                "random",
+                "Coda",
+                "document",
+            ]
             assert result.all()
 
-            result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                1
-            ] == [
+            result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[1] == [
                 "This",
                 "is",
                 "a",
@@ -586,12 +573,15 @@ class TestSearchExample(unittest.TestCase):
             ]
             assert result.all()
         else:
-            assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                0
-            ] == ["This", "is", "a", "random", "Coda", "document"]
-            assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                1
-            ] == [
+            assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[0] == [
+                "This",
+                "is",
+                "a",
+                "random",
+                "Coda",
+                "document",
+            ]
+            assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[1] == [
                 "This",
                 "is",
                 "a",

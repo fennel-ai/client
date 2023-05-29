@@ -96,9 +96,7 @@ class UserFeature:
     @inputs(uid)
     @outputs(country)
     def get_country(cls, ts: pd.Series, uids: pd.Series):
-        countries, _ = User.lookup(  # type: ignore
-            ts=ts, uid=uids, fields=["country"]
-        )
+        countries, _ = User.lookup(ts=ts, uid=uids, fields=["country"])  # type: ignore
         return countries
 
 

@@ -38,20 +38,14 @@ def test_dataset_expectation_creation():
         @expectations
         def dataset_expectations(cls):
             return [
-                expect_column_values_to_be_between(
-                    column=str(cls.age), min_value=0, max_value=100
-                ),
+                expect_column_values_to_be_between(column=str(cls.age), min_value=0, max_value=100),
                 expect_column_values_to_be_in_set(
                     column=str(cls.gender),
                     value_set=["male", "female"],
                     mostly=0.9,
                 ),
-                expect_column_values_to_not_be_null(
-                    column=str(cls.country), mostly=0.9
-                ),
-                expect_column_pair_values_A_to_be_greater_than_B(
-                    column_A=str(cls.age), column_B=str(cls.user_id)
-                ),
+                expect_column_values_to_not_be_null(column=str(cls.country), mostly=0.9),
+                expect_column_pair_values_A_to_be_greater_than_B(column_A=str(cls.age), column_B=str(cls.user_id)),
             ]
 
     view = InternalTestClient()
@@ -82,9 +76,7 @@ def test_dataset_expectation_creation():
     }
     expected_exp_request = ParseDict(d, exp_proto.Expectations())
     act_config = sync_request.expectations[0]
-    assert act_config == expected_exp_request, error_message(
-        act_config, expected_exp_request
-    )
+    assert act_config == expected_exp_request, error_message(act_config, expected_exp_request)
 
 
 @meta(owner="test@test.com")
@@ -101,15 +93,9 @@ class UserInfoDS:
     @expectations
     def dataset_expectations(cls):
         return [
-            expect_column_values_to_be_between(
-                column=str(cls.age), min_value=0, max_value=100
-            ),
-            expect_column_values_to_be_in_set(
-                column=str(cls.gender), value_set=["male", "female"], mostly=0.9
-            ),
-            expect_column_values_to_not_be_null(
-                column=str(cls.country), mostly=0.9
-            ),
+            expect_column_values_to_be_between(column=str(cls.age), min_value=0, max_value=100),
+            expect_column_values_to_be_in_set(column=str(cls.gender), value_set=["male", "female"], mostly=0.9),
+            expect_column_values_to_not_be_null(column=str(cls.country), mostly=0.9),
         ]
 
 
@@ -137,23 +123,16 @@ def test_dataset_invalid_expectation_creation():
             @expectations
             def dataset_expectations(cls):
                 return [
-                    expect_column_values_to_be_between_random(
-                        column=str(cls.age), min_value=0, max_value=100
-                    ),
+                    expect_column_values_to_be_between_random(column=str(cls.age), min_value=0, max_value=100),
                     expect_column_values_to_be_in_set(
                         column=str(cls.gender),
                         value_set=["male", "female"],
                         mostly=0.9,
                     ),
-                    expect_column_values_to_not_be_null(
-                        column=str(cls.country), mostly=0.9
-                    ),
+                    expect_column_values_to_not_be_null(column=str(cls.country), mostly=0.9),
                 ]
 
-    assert (
-        str(e.value)
-        == "name 'expect_column_values_to_be_between_random' is not defined"
-    )
+    assert str(e.value) == "name 'expect_column_values_to_be_between_random' is not defined"
 
     with pytest.raises(Exception) as e:
 
@@ -170,23 +149,16 @@ def test_dataset_invalid_expectation_creation():
             @expectations
             def dataset_expectations(cls):
                 return [
-                    expect_column_values_to_be_between(
-                        column=str(cls.age), minimum_value=0, max_value=100
-                    ),
+                    expect_column_values_to_be_between(column=str(cls.age), minimum_value=0, max_value=100),
                     expect_column_values_to_be_in_set(
                         column=str(cls.gender),
                         value_set=["male", "female"],
                         mostly=0.9,
                     ),
-                    expect_column_values_to_not_be_null(
-                        column=str(cls.country), mostly=0.9
-                    ),
+                    expect_column_values_to_not_be_null(column=str(cls.country), mostly=0.9),
                 ]
 
-    assert (
-        str(e.value)
-        == "expect_column_values_to_be_between() got an unexpected keyword argument 'minimum_value'"
-    )
+    assert str(e.value) == "expect_column_values_to_be_between() got an unexpected keyword argument 'minimum_value'"
 
     with pytest.raises(Exception) as e:
 
@@ -203,17 +175,13 @@ def test_dataset_invalid_expectation_creation():
             @expectations(version=1)
             def dataset_expectations(cls):
                 return [
-                    expect_column_values_to_be_between(
-                        column=str(cls.age), minimum_value=0, max_value=100
-                    ),
+                    expect_column_values_to_be_between(column=str(cls.age), minimum_value=0, max_value=100),
                     expect_column_values_to_be_in_set(
                         column=str(cls.gender),
                         value_set=["male", "female"],
                         mostly=0.9,
                     ),
-                    expect_column_values_to_not_be_null(
-                        column=str(cls.country), mostly=0.9
-                    ),
+                    expect_column_values_to_not_be_null(column=str(cls.country), mostly=0.9),
                 ]
 
     assert str(e.value) == "Versioning is not yet supported for expectations."
@@ -234,17 +202,13 @@ def test_dataset_invalid_expectation_creation():
             @expectations
             def dataset_expectations(cls):
                 return [
-                    expect_column_values_to_be_between(
-                        column=str(cls.age), min_value=0, max_value=100
-                    ),
+                    expect_column_values_to_be_between(column=str(cls.age), min_value=0, max_value=100),
                     expect_column_values_to_be_in_set(
                         column=str(cls.gender),
                         value_set=["male", "female"],
                         mostly=0.9,
                     ),
-                    expect_column_values_to_not_be_null(
-                        column=str(cls.country), mostly=0.9
-                    ),
+                    expect_column_values_to_not_be_null(column=str(cls.country), mostly=0.9),
                 ]
 
     assert str(e.value) == "Expectations cannot have metadata."

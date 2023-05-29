@@ -89,10 +89,7 @@ class Field:
     def meta(self, **kwargs: Any) -> T:  # type: ignore
         f = cast(T, meta(**kwargs)(self))
         if get_meta_attr(f, "deleted") or get_meta_attr(f, "deprecated"):
-            raise ValueError(
-                "Dataset currently does not support deleted or "
-                "deprecated fields."
-            )
+            raise ValueError("Dataset currently does not support deleted or " "deprecated fields.")
         return f
 
     def is_optional(self) -> bool:
@@ -102,10 +99,7 @@ class Field:
         def _get_args(type_: Any) -> Any:
             return getattr(type_, "__args__", None)
 
-        if (
-            _get_origin(self.dtype) is Union
-            and type(None) == _get_args(self.dtype)[1]
-        ):
+        if _get_origin(self.dtype) is Union and type(None) == _get_args(self.dtype)[1]:
             return True
 
         return False
@@ -121,9 +115,7 @@ def get_field(
     field2comment_map: Dict[str, str],
 ) -> Field:
     if "." in annotation_name:
-        raise ValueError(
-            f"Field name {annotation_name} cannot contain a period."
-        )
+        raise ValueError(f"Field name {annotation_name} cannot contain a period.")
     field = getattr(cls, annotation_name, None)
     if isinstance(field, Field):
         field.name = annotation_name
@@ -142,10 +134,7 @@ def get_field(
         set_meta_attr(field, "description", description)
 
     if field.key and field.is_optional():
-        raise ValueError(
-            f"Key {annotation_name} in dataset {cls.__name__} cannot be "  # type: ignore
-            f"Optional."
-        )
+        raise ValueError(f"Key {annotation_name} in dataset {cls.__name__} cannot be " f"Optional.")  # type: ignore
     return field
 
 
@@ -171,20 +160,12 @@ def field(
 
 def _validate_join_bounds(within: Tuple[Duration, Duration]):
     if len(within) != 2:
-        raise ValueError(
-            f"Invalid within clause: {within}. "
-            "Should be a tuple of 2 values. e.g. ('forever', '0s')"
-        )
+        raise ValueError(f"Invalid within clause: {within}. " "Should be a tuple of 2 values. e.g. ('forever', '0s')")
     # Neither of them can be None
     if within[0] is None or within[1] is None:
-        raise ValueError(
-            f"Invalid within clause: {within}. " "Neither bounds can be None"
-        )
+        raise ValueError(f"Invalid within clause: {within}. " "Neither bounds can be None")
     if within[1] == "forever":
-        raise ValueError(
-            f"Invalid within clause: {within}. "
-            "Upper bound cannot be `forever`"
-        )
+        raise ValueError(f"Invalid within clause: {within}. " "Upper bound cannot be `forever`")
 
 
 class _Node(Generic[T]):
@@ -284,11 +265,7 @@ class Filter(_Node):
         if func.__name__ == "<lambda>":
             num_lines = len(inspect.getsourcelines(func)[0])
             if num_lines > 1:
-                raise ValueError(
-                    "Complex lambda functions using "
-                    "multiple lines are not supported for "
-                    "filters."
-                )
+                raise ValueError("Complex lambda functions using " "multiple lines are not supported for " "filters.")
         self.func = func  # noqa: E731
 
     def signature(self):
@@ -301,9 +278,7 @@ class Filter(_Node):
 
 
 class Aggregate(_Node):
-    def __init__(
-        self, node: _Node, keys: List[str], aggregates: List[AggregateType]
-    ):
+    def __init__(self, node: _Node, keys: List[str], aggregates: List[AggregateType]):
         super().__init__()
         if len(keys) == 0:
             raise ValueError("Must specify at least one key")
@@ -328,9 +303,7 @@ class Aggregate(_Node):
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
                 if dtype not in [int, float]:
-                    raise TypeError(
-                        f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
-                    )
+                    raise TypeError(f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}")
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Average):
                 values[agg.into_field] = float  # type: ignore
@@ -355,10 +328,7 @@ class GroupBy:
 
     def aggregate(self, aggregates: List[AggregateType], *args) -> _Node:
         if len(args) > 0 or not isinstance(aggregates, list):
-            raise TypeError(
-                "aggregate operator, takes a list of aggregates "
-                "found: {}".format(type(aggregates))
-            )
+            raise TypeError("aggregate operator, takes a list of aggregates " "found: {}".format(type(aggregates)))
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
         return Aggregate(self.node, list(self.keys), aggregates)
@@ -394,9 +364,7 @@ class Join(_Node):
 
         if on is None:
             if not isinstance(left_on, list) or not isinstance(right_on, list):
-                raise ValueError(
-                    "Must specify left_on and right_on as a list of keys"
-                )
+                raise ValueError("Must specify left_on and right_on as a list of keys")
             if left_on is None or right_on is None:
                 raise ValueError("Must specify on or left_on/right_on")
 
@@ -421,28 +389,19 @@ class Join(_Node):
 
     def dsschema(self):
         def make_types_optional(types: Dict[str, Type]) -> Dict[str, Type]:
-            return {
-                k: Optional[get_dtype(v)]  # type: ignore
-                for k, v in types.items()
-            }
+            return {k: Optional[get_dtype(v)] for k, v in types.items()}  # type: ignore
 
         left_schema = self.node.dsschema()
         right_schema = self.dataset.dsschema()
         values = copy.deepcopy(left_schema.values)
 
-        left_columns = (
-            list(left_schema.values.keys())
-            + list(left_schema.keys.keys())
-            + [left_schema.timestamp]
-        )
+        left_columns = list(left_schema.values.keys()) + list(left_schema.keys.keys()) + [left_schema.timestamp]
         right_values = right_schema.values.keys()
 
         if len(set(left_columns) & set(right_values)) > 0:
             common_values = set(left_columns) & set(right_values)
             raise ValueError(
-                "Join values must be disjoint across datasets. Found common values: {}".format(
-                    common_values
-                )
+                "Join values must be disjoint across datasets. Found common values: {}".format(common_values)
             )
 
         values.update(make_types_optional(right_schema.values))
@@ -546,19 +505,14 @@ def dataset(
     except Exception:
         file_name = ""
 
-    def _create_lookup_function(
-        cls_name: str, key_fields: List[str]
-    ) -> Optional[Callable]:
+    def _create_lookup_function(cls_name: str, key_fields: List[str]) -> Optional[Callable]:
         if len(key_fields) == 0:
             return None
 
-        def lookup(
-            ts: pd.Series, *args, **kwargs
-        ) -> Tuple[pd.DataFrame, pd.Series]:
+        def lookup(ts: pd.Series, *args, **kwargs) -> Tuple[pd.DataFrame, pd.Series]:
             if len(args) > 0:
                 raise ValueError(
-                    f"lookup expects key value arguments and can "
-                    f"optionally include fields, found {args}"
+                    f"lookup expects key value arguments and can " f"optionally include fields, found {args}"
                 )
             if len(kwargs) < len(key_fields):
                 raise ValueError(
@@ -567,27 +521,19 @@ def dataset(
                 )
             # Check that ts is a series of datetime64[ns]
             if not isinstance(ts, pd.Series):
-                raise ValueError(
-                    f"lookup expects a series of timestamps, found {type(ts)}"
-                )
+                raise ValueError(f"lookup expects a series of timestamps, found {type(ts)}")
             if not np.issubdtype(ts.dtype, np.datetime64):
-                raise ValueError(
-                    f"lookup expects a series of timestamps, found {ts.dtype}"
-                )
+                raise ValueError(f"lookup expects a series of timestamps, found {ts.dtype}")
             # extract keys and fields from kwargs
             arr = []
             for key in key_fields:
                 if key == "fields":
                     continue
                 if key not in kwargs:
-                    raise ValueError(
-                        f"Missing key {key} in the lookup call "
-                        f"for dataset `{cls_name}`"
-                    )
+                    raise ValueError(f"Missing key {key} in the lookup call " f"for dataset `{cls_name}`")
                 if not isinstance(kwargs[key], pd.Series):
                     raise ValueError(
-                        f"Param `{key}` is not a pandas Series "
-                        f"in the lookup call for dataset `{cls_name}`"
+                        f"Param `{key}` is not a pandas Series " f"in the lookup call for dataset `{cls_name}`"
                     )
                 arr.append(kwargs[key])
 
@@ -610,10 +556,7 @@ def dataset(
         args = {k: pd.Series for k in key_fields}
         args["fields"] = List[str]
         params = [
-            inspect.Parameter(
-                param, inspect.Parameter.KEYWORD_ONLY, annotation=type_
-            )
-            for param, type_ in args.items()
+            inspect.Parameter(param, inspect.Parameter.KEYWORD_ONLY, annotation=type_) for param, type_ in args.items()
         ]
         args["ts"] = pd.Series
         params = [
@@ -664,23 +607,15 @@ def dataset(
     return wrap(cls)
 
 
-def pipeline(
-    version: int = 1, active: bool = False
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    if isinstance(version, Callable) or isinstance(  # type: ignore
-        version, Dataset
-    ):
+def pipeline(version: int = 1, active: bool = False) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    if isinstance(version, Callable) or isinstance(version, Dataset):  # type: ignore
         if hasattr(version, "__name__"):
             callable_name = version.__name__  # type: ignore
         else:
             callable_name = str(version)
-        raise ValueError(
-            f"pipeline `{callable_name}` must be called with an id."
-        )
+        raise ValueError(f"pipeline `{callable_name}` must be called with an id.")
     if type(version) != int:
-        raise ValueError(
-            "pipeline id must be an integer, found %s" % type(version)
-        )
+        raise ValueError("pipeline id must be an integer, found %s" % type(version))
 
     def wrapper(pipeline_func: Callable) -> Callable:
         if not callable(pipeline_func):
@@ -697,32 +632,21 @@ def pipeline(
                 )
             break
         if not hasattr(pipeline_func, FENNEL_INPUTS):
-            raise TypeError(
-                f"pipeline `{pipeline_name}` must have "
-                f"Datasets as @input parameters."
-            )
+            raise TypeError(f"pipeline `{pipeline_name}` must have " f"Datasets as @input parameters.")
         inputs = getattr(pipeline_func, FENNEL_INPUTS)
         for inp in inputs:
             if not isinstance(inp, Dataset):
                 if issubclass(inp, Dataset):
-                    raise TypeError(
-                        f"pipeline `{pipeline_name}` must have "
-                        f"Dataset[<Dataset Name>] as parameters."
-                    )
+                    raise TypeError(f"pipeline `{pipeline_name}` must have " f"Dataset[<Dataset Name>] as parameters.")
                 if hasattr(inp, "_name"):
                     name = inp._name
                 elif hasattr(inp, "__name__"):
                     name = inp.__name__
                 else:
                     name = str(inp)
-                raise TypeError(
-                    f"Parameter {name} is not a Dataset in {pipeline_name}"
-                )
+                raise TypeError(f"Parameter {name} is not a Dataset in {pipeline_name}")
             if inp.is_terminal:
-                raise TypeError(
-                    f"pipeline `{pipeline_name}` cannot have terminal "
-                    f"dataset `{inp._name}` as input."
-                )
+                raise TypeError(f"pipeline `{pipeline_name}` cannot have terminal " f"dataset `{inp._name}` as input.")
             params.append(inp)
 
         setattr(
@@ -751,10 +675,7 @@ class OnDemand:
 
 def on_demand(expires_after: Duration):
     if not isinstance(expires_after, Duration):
-        raise TypeError(
-            "on_demand must be defined with a parameter "
-            "expires_after of type Duration for eg: 30d."
-        )
+        raise TypeError("on_demand must be defined with a parameter " "expires_after of type Duration for eg: 30d.")
 
     def decorator(func):
         setattr(func, ON_DEMAND_ATTR, OnDemand(func, func, b"", expires_after))
@@ -889,8 +810,7 @@ class Dataset(_Node[T]):
     ):
         if len(self._pipelines) > 0:
             raise Exception(
-                f"Dataset {self._name} is contains a pipeline. "
-                f"Cannot upsert source for a dataset with pipelines."
+                f"Dataset {self._name} is contains a pipeline. " f"Cannot upsert source for a dataset with pipelines."
             )
         ds_copy = copy.deepcopy(self)
         if hasattr(ds_copy, sources.SOURCE_FIELD):
@@ -901,11 +821,7 @@ class Dataset(_Node[T]):
     def dsschema(self):
         return DSSchema(
             keys={f.name: f.dtype for f in self._fields if f.key},
-            values={
-                f.name: f.dtype
-                for f in self._fields
-                if not f.key and f.name != self._timestamp_field
-            },
+            values={f.name: f.dtype for f in self._fields if not f.key and f.name != self._timestamp_field},
             timestamp=self._timestamp_field,
             name=f"'[Dataset:{self._name}]'",
         )
@@ -920,16 +836,12 @@ class Dataset(_Node[T]):
         exceptions = []
         for f in fields:
             if f.name in names:
-                raise Exception(
-                    f"Duplicate field name `{f.name}` found in "
-                    f"dataset `{self._name}`."
-                )
+                raise Exception(f"Duplicate field name `{f.name}` found in " f"dataset `{self._name}`.")
             names.add(f.name)
             if f.name in RESERVED_FIELD_NAMES:
                 exceptions.append(
                     Exception(
-                        f"Field name `{f.name}` is reserved. "
-                        f"Please use a different name in dataset `{self._name}`."
+                        f"Field name `{f.name}` is reserved. " f"Please use a different name in dataset `{self._name}`."
                     )
                 )
         if exceptions:
@@ -955,10 +867,7 @@ class Dataset(_Node[T]):
             if field.timestamp:
                 self._timestamp_field = field.name
                 if timestamp_field_set:
-                    raise ValueError(
-                        f"Multiple timestamp fields are not supported in "
-                        f"dataset `{self._name}`."
-                    )
+                    raise ValueError(f"Multiple timestamp fields are not supported in " f"dataset `{self._name}`.")
                 timestamp_field_set = True
 
         if timestamp_field_set:
@@ -974,14 +883,9 @@ class Dataset(_Node[T]):
                 timestamp_field_set = True
                 self._timestamp_field = field.name
             else:
-                raise ValueError(
-                    f"Multiple timestamp fields are not "
-                    f"supported in dataset `{self._name}`."
-                )
+                raise ValueError(f"Multiple timestamp fields are not " f"supported in dataset `{self._name}`.")
         if not timestamp_field_set:
-            raise ValueError(
-                f"No timestamp field found in dataset `{self._name}`."
-            )
+            raise ValueError(f"No timestamp field found in dataset `{self._name}`.")
 
     def _set_key_fields(self):
         key_fields = []
@@ -1001,17 +905,12 @@ class Dataset(_Node[T]):
             if not hasattr(method, ON_DEMAND_ATTR):
                 continue
             if on_demand is not None:
-                raise ValueError(
-                    f"Multiple on_demand methods are not supported for "
-                    f"dataset {self._name}."
-                )
+                raise ValueError(f"Multiple on_demand methods are not supported for " f"dataset {self._name}.")
             on_demand = getattr(method, ON_DEMAND_ATTR)
         # Validate on_demand function signature.
         if on_demand is not None:
             if not inspect.isfunction(on_demand.func):
-                raise ValueError(
-                    f"on_demand method {on_demand.func} is not a function."
-                )
+                raise ValueError(f"on_demand method {on_demand.func} is not a function.")
             sig = inspect.signature(on_demand.func)
             if len(sig.parameters) <= 1:
                 raise ValueError(
@@ -1066,18 +965,12 @@ class Dataset(_Node[T]):
             pipeline = getattr(method, PIPELINE_ATTR)
 
             if pipeline.version in versions:
-                raise ValueError(
-                    f"Duplicate pipeline id {pipeline.version} for dataset {dataset_name}."
-                )
+                raise ValueError(f"Duplicate pipeline id {pipeline.version} for dataset {dataset_name}.")
             versions.add(pipeline.version)
             if pipeline.name in names:
-                raise ValueError(
-                    f"Duplicate pipeline name {pipeline.name} for dataset {dataset_name}."
-                )
+                raise ValueError(f"Duplicate pipeline name {pipeline.name} for dataset {dataset_name}.")
             names.add(pipeline.name)
-            is_terminal = pipeline.set_terminal_node(
-                pipeline.func(self, *pipeline.inputs)
-            )
+            is_terminal = pipeline.set_terminal_node(pipeline.func(self, *pipeline.inputs))
             if is_terminal:
                 self.is_terminal = is_terminal
             pipelines.append(pipeline)
@@ -1094,11 +987,7 @@ class Dataset(_Node[T]):
         exceptions = []
         ds_schema = DSSchema(
             keys={f.name: f.dtype for f in self.fields if f.key},
-            values={
-                f.name: f.dtype
-                for f in self.fields
-                if not f.key and f.name != self._timestamp_field
-            },
+            values={f.name: f.dtype for f in self.fields if not f.key and f.name != self._timestamp_field},
             timestamp=self.timestamp_field,
         )
 
@@ -1106,20 +995,14 @@ class Dataset(_Node[T]):
         for pipeline in pipelines:
             pipeline_schema = pipeline.get_terminal_schema()
             if pipeline.active and found_active:
-                raise ValueError(
-                    f"Multiple active pipelines are not supported for dataset {self._name}."
-                )
+                raise ValueError(f"Multiple active pipelines are not supported for dataset {self._name}.")
             if pipeline.active:
                 found_active = True
-            err = pipeline_schema.matches(
-                ds_schema, f"pipeline {pipeline.name} output", self._name
-            )
+            err = pipeline_schema.matches(ds_schema, f"pipeline {pipeline.name} output", self._name)
             if len(err) > 0:
                 exceptions.extend(err)
         if not found_active and len(pipelines) > 1:
-            raise ValueError(
-                f"No active pipeline found for dataset {self._name}."
-            )
+            raise ValueError(f"No active pipeline found for dataset {self._name}.")
 
         if exceptions:
             raise TypeError(exceptions)
@@ -1132,19 +1015,14 @@ class Dataset(_Node[T]):
             if not hasattr(method, GE_ATTR_FUNC):
                 continue
             if expectation is not None:
-                raise ValueError(
-                    f"Multiple expectations are not supported for dataset {self._name}."
-                )
+                raise ValueError(f"Multiple expectations are not supported for dataset {self._name}.")
             expectation = getattr(method, GE_ATTR_FUNC)
         if expectation is None:
             return None
         # Check that the expectation function only takes 1 parameter: cls.
         sig = inspect.signature(expectation.func)
         if len(sig.parameters) != 1:
-            raise ValueError(
-                f"Expectation function {expectation.func} must take only "
-                f"cls as a parameter."
-            )
+            raise ValueError(f"Expectation function {expectation.func} must take only " f"cls as a parameter.")
         expectation.suite = f"dataset_{self._name}_expectations"
         expectation.expectations = expectation.func(self)
         if hasattr(expectation.func, "__fennel_metadata__"):
@@ -1235,11 +1113,7 @@ class DSSchema:
         return {**self.keys, **self.values, self.timestamp: datetime.datetime}
 
     def fields(self) -> List[str]:
-        return (
-            [x for x in self.keys.keys()]
-            + [x for x in self.values.keys()]
-            + [self.timestamp]
-        )
+        return [x for x in self.keys.keys()] + [x for x in self.values.keys()] + [self.timestamp]
 
     def get_type(self, field) -> Type:
         if field in self.keys:
@@ -1259,9 +1133,7 @@ class DSSchema:
         elif old_name == self.timestamp:
             self.timestamp = new_name
         else:
-            raise Exception(
-                f"field {old_name} not found in schema of {self.name}"
-            )
+            raise Exception(f"field {old_name} not found in schema of {self.name}")
 
     def drop_column(self, name: str):
         if name in self.keys:
@@ -1269,15 +1141,11 @@ class DSSchema:
         elif name in self.values:
             self.values.pop(name)
         elif name == self.timestamp:
-            raise Exception(
-                f"cannot drop timestamp field {name} from {self.name}"
-            )
+            raise Exception(f"cannot drop timestamp field {name} from {self.name}")
         else:
             raise Exception(f"field {name} not found in schema of {self.name}")
 
-    def matches(
-        self, other_schema: DSSchema, this_name: str, other_name: str
-    ) -> List[TypeError]:
+    def matches(self, other_schema: DSSchema, this_name: str, other_name: str) -> List[TypeError]:
         def check_fields_one_way(
             this_schema: Dict[str, Type],
             other_schema: Dict[str, Type],
@@ -1320,18 +1188,10 @@ class DSSchema:
                     f"`{other_schema.timestamp}` in `{this_name}` and `{other_name}`"
                 )
             )
-        exceptions.append(
-            check_fields_one_way(self.keys, other_schema.keys, "key")
-        )
-        exceptions.append(
-            check_field_other_way(other_schema.keys, self.keys, "key")
-        )
-        exceptions.append(
-            check_fields_one_way(self.values, other_schema.values, "value")
-        )
-        exceptions.append(
-            check_field_other_way(other_schema.values, self.values, "value")
-        )
+        exceptions.append(check_fields_one_way(self.keys, other_schema.keys, "key"))
+        exceptions.append(check_field_other_way(other_schema.keys, self.keys, "key"))
+        exceptions.append(check_fields_one_way(self.values, other_schema.values, "value"))
+        exceptions.append(check_field_other_way(other_schema.values, self.values, "value"))
         exceptions = [x for x in exceptions if x is not None]
         return exceptions
 
@@ -1351,11 +1211,7 @@ class SchemaValidator(Visitor):
     def visitDataset(self, obj) -> DSSchema:
         return DSSchema(
             keys={f.name: f.dtype for f in obj.fields if f.key},
-            values={
-                f.name: f.dtype
-                for f in obj.fields
-                if not f.key and f.name != obj.timestamp_field
-            },
+            values={f.name: f.dtype for f in obj.fields if not f.key and f.name != obj.timestamp_field},
             timestamp=obj.timestamp_field,
             name=f"'[Dataset:{obj._name}]'",
         )
@@ -1368,15 +1224,11 @@ class SchemaValidator(Visitor):
             node_name = f"'[Pipeline:{self.pipeline_name}]->transform node'"
             if input_schema.timestamp not in obj.new_schema:
                 raise TypeError(
-                    f"Timestamp field {input_schema.timestamp} must be "
-                    f"present in schema of {node_name}."
+                    f"Timestamp field {input_schema.timestamp} must be " f"present in schema of {node_name}."
                 )
             for name, dtype in input_schema.keys.items():
                 if name not in obj.new_schema:
-                    raise TypeError(
-                        f"Key field {name} must be present in schema of "
-                        f"{node_name}."
-                    )
+                    raise TypeError(f"Key field {name} must be present in schema of " f"{node_name}.")
                 if dtype != obj.new_schema[name]:
                     raise TypeError(
                         f"Key field {name} has type {dtype_to_string(dtype)} in "
@@ -1412,9 +1264,7 @@ class SchemaValidator(Visitor):
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
                 if dtype not in [int, float]:
-                    raise TypeError(
-                        f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
-                    )
+                    raise TypeError(f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}")
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Average):
                 values[agg.into_field] = float  # type: ignore
@@ -1441,10 +1291,7 @@ class SchemaValidator(Visitor):
             return set(subset).issubset(set(superset))
 
         def make_types_optional(types: Dict[str, Type]) -> Dict[str, Type]:
-            return {
-                k: Optional[get_dtype(v)]  # type: ignore
-                for k, v in types.items()
-            }
+            return {k: Optional[get_dtype(v)] for k, v in types.items()}  # type: ignore
 
         left_schema = self.visit(obj.node)
         right_schema = self.visit(obj.dataset)
@@ -1453,8 +1300,7 @@ class SchemaValidator(Visitor):
             # obj.on should be the key of the right dataset
             if set(obj.on) != set(right_schema.keys.keys()):
                 raise ValueError(
-                    f"on field {obj.on} are not the key fields of the right "
-                    f"dataset {obj.dataset._name}."
+                    f"on field {obj.on} are not the key fields of the right " f"dataset {obj.dataset._name}."
                 )
             # Check the schemas of the keys
             for key in obj.on:
@@ -1488,11 +1334,7 @@ class SchemaValidator(Visitor):
                         f"right schema."
                     )
 
-        left_columns = (
-            list(left_schema.values.keys())
-            + list(left_schema.keys.keys())
-            + [left_schema.timestamp]
-        )
+        left_columns = list(left_schema.values.keys()) + list(left_schema.keys.keys()) + [left_schema.timestamp]
 
         # Check that left values and right values are disjoint
         if set(left_columns).intersection(set(right_schema.values.keys())):
@@ -1536,15 +1378,9 @@ class SchemaValidator(Visitor):
         input_schema.name = f"'[Pipeline:{self.pipeline_name}]->rename node'"
         for old, new in obj.column_mapping.items():
             if old not in input_schema.fields():
-                raise ValueError(
-                    f"Field {old} does not exist in schema of "
-                    f"rename node {input_schema.name}."
-                )
+                raise ValueError(f"Field {old} does not exist in schema of " f"rename node {input_schema.name}.")
             if new in input_schema.fields():
-                raise ValueError(
-                    f"Field {new} already exists in schema of "
-                    f"rename node {input_schema.name}."
-                )
+                raise ValueError(f"Field {new} already exists in schema of " f"rename node {input_schema.name}.")
             input_schema.rename_column(old, new)
         return input_schema
 
@@ -1553,9 +1389,6 @@ class SchemaValidator(Visitor):
         input_schema.name = f"'[Pipeline:{self.pipeline_name}]->drop node'"
         for field in obj.columns:
             if field not in input_schema.fields():
-                raise ValueError(
-                    f"Field {field} does not exist in schema of "
-                    f"drop node {input_schema.name}."
-                )
+                raise ValueError(f"Field {field} does not exist in schema of " f"drop node {input_schema.name}.")
             input_schema.drop_column(field)
         return input_schema

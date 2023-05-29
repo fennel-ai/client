@@ -17,9 +17,7 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    config.addinivalue_line(
-        "markers", "di: mark test that needs setup to " "run"
-    )
+    config.addinivalue_line("markers", "di: mark test that needs setup to " "run")
     config.addinivalue_line("markers", "slow: mark test as slow to run")
 
 

@@ -76,9 +76,7 @@ def lambda_to_python_regular_func(lambda_func):
         # Fix the case when first line ends with a backslash by concatenating
         # the second line
         if source_lines[0].strip().endswith("\\"):
-            source_lines[0] = (
-                source_lines[0].rstrip()[:-1] + source_lines[1].strip()
-            )
+            source_lines[0] = source_lines[0].rstrip()[:-1] + source_lines[1].strip()
         else:
             source_lines[0] = source_lines[0].strip() + source_lines[1].strip()
         source_lines = source_lines[:1]
@@ -208,17 +206,12 @@ def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
     if func.__name__ == "<lambda>":
         num_lines = len(inspect.getsourcelines(func)[0])
         if num_lines > 1:
-            raise ValueError(
-                "Lambda functions with more than 1 line are not supported."
-            )
+            raise ValueError("Lambda functions with more than 1 line are not supported.")
         # generate a random name for the lambda function
         entry_point = "<lambda>"
         code = lambda_to_python_regular_func(func)
         if code is None:
-            raise ValueError(
-                "Lambda function parsing failed, please use regular python "
-                "function instead."
-            )
+            raise ValueError("Lambda function parsing failed, please use regular python " "function instead.")
         code = dedent(code)
     else:
         code = fennel_get_source(func)
