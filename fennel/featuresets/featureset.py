@@ -85,7 +85,9 @@ def get_feature(
 
     feature.featureset_name = cls.__name__
     if "." in annotation_name:
-        raise ValueError(f"Feature name {annotation_name} cannot contain a " f"period")
+        raise ValueError(
+            f"Feature name {annotation_name} cannot contain a " f"period"
+        )
     feature.name = annotation_name
     feature.fqn_ = f"{feature.featureset_name}.{annotation_name}"
     description = get_meta_attr(feature, "description")
@@ -152,7 +154,9 @@ def extractor():
     ...
 
 
-def extractor(func: Optional[Callable] = None, depends_on: List = [], version: int = 0):
+def extractor(
+    func: Optional[Callable] = None, depends_on: List = [], version: int = 0
+):
     """
     extractor is a decorator for a function that extracts a feature from a
     featureset.
@@ -166,7 +170,10 @@ def extractor(func: Optional[Callable] = None, depends_on: List = [], version: i
         params = []
         class_method = False
         if type(depends_on) is not list:
-            raise TypeError(f"depends_on must be a list of Datasets, not a" f" {type(depends_on)}")
+            raise TypeError(
+                f"depends_on must be a list of Datasets, not a"
+                f" {type(depends_on)}"
+            )
         setattr(extractor_func, DEPENDS_ON_DATASETS_ATTR, list(depends_on))
         if not hasattr(extractor_func, FENNEL_INPUTS):
             inputs = []
@@ -182,7 +189,10 @@ def extractor(func: Optional[Callable] = None, depends_on: List = [], version: i
                 class_method = True
                 continue
             if param.name != "ts" and param.name != "_ts":
-                raise TypeError(f"extractor `{extractor_name}` should have ts as the " f"second parameter")
+                raise TypeError(
+                    f"extractor `{extractor_name}` should have ts as the "
+                    f"second parameter"
+                )
             break
         for inp in inputs:
             if not isinstance(inp, Feature):
@@ -207,7 +217,10 @@ def extractor(func: Optional[Callable] = None, depends_on: List = [], version: i
             if isinstance(return_annotation, Feature):
                 # If feature name is set, it means that the feature is from another
                 # featureset.
-                if "." in str(return_annotation.fqn()) and len(return_annotation.fqn()) > 0:
+                if (
+                    "." in str(return_annotation.fqn())
+                    and len(return_annotation.fqn()) > 0
+                ):
                     raise TypeError(
                         "Extractors can only extract a feature defined "
                         f"in the same featureset, found "
@@ -371,10 +384,18 @@ class Featureset:
             if not hasattr(method, EXTRACTOR_ATTR):
                 continue
             extractor = getattr(method, EXTRACTOR_ATTR)
-            if extractor.output_feature_ids is None or len(extractor.output_feature_ids) == 0:
-                extractor.output_feature_ids = [feature.id for feature in self._features]
+            if (
+                extractor.output_feature_ids is None
+                or len(extractor.output_feature_ids) == 0
+            ):
+                extractor.output_feature_ids = [
+                    feature.id for feature in self._features
+                ]
             # Set name of the features which the extractor sets values for.
-            extractor.output_features = [f"{self._id_to_feature[fid].name}" for fid in extractor.output_feature_ids]
+            extractor.output_features = [
+                f"{self._id_to_feature[fid].name}"
+                for fid in extractor.output_feature_ids
+            ]
             extractor.featureset = self._name
             extractors.append(extractor)
         return extractors
@@ -386,11 +407,13 @@ class Featureset:
             # Check features dont have protected names.
             if feature.name in RESERVED_FEATURE_NAMES:
                 raise ValueError(
-                    f"Feature `{feature.name}` in `{self._name}` has a " f"reserved name `{feature.name}`."
+                    f"Feature `{feature.name}` in `{self._name}` has a "
+                    f"reserved name `{feature.name}`."
                 )
             if feature.id in feature_id_set:
                 raise ValueError(
-                    f"Feature `{feature.name}` has a duplicate id `" f"{feature.id}` in featureset `{self._name}`."
+                    f"Feature `{feature.name}` has a duplicate id `"
+                    f"{feature.id}` in featureset `{self._name}`."
                 )
             feature_id_set.add(feature.id)
 
@@ -400,7 +423,8 @@ class Featureset:
             for feature_id in extractor.output_feature_ids:
                 if feature_id in extracted_features:
                     raise TypeError(
-                        f"Feature `{self._id_to_feature[feature_id].name}` is " f"extracted by multiple extractors."
+                        f"Feature `{self._id_to_feature[feature_id].name}` is "
+                        f"extracted by multiple extractors."
                     )
                 extracted_features.add(feature_id)
 
@@ -417,13 +441,18 @@ class Featureset:
             if not hasattr(method, GE_ATTR_FUNC):
                 continue
             if expectation is not None:
-                raise ValueError(f"Multiple expectations are not supported for featureset" f" {self._name}.")
+                raise ValueError(
+                    f"Multiple expectations are not supported for featureset"
+                    f" {self._name}."
+                )
             expectation = getattr(method, GE_ATTR_FUNC)
 
         if expectation is None:
             return None
 
-        raise NotImplementedError("Expectations are not yet supported for featuresets.")
+        raise NotImplementedError(
+            "Expectations are not yet supported for featuresets."
+        )
 
     @property
     def extractors(self):
@@ -470,7 +499,9 @@ class Extractor:
 
     def fqn_output_features(self) -> List[str]:
         """Fully qualified name of the output features of this extractor."""
-        return [f"{self.featureset}.{feature}" for feature in self.output_features]
+        return [
+            f"{self.featureset}.{feature}" for feature in self.output_features
+        ]
 
     def get_dataset_dependencies(self) -> List[Dataset]:
         depended_datasets = []

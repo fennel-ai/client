@@ -23,5 +23,9 @@ def test_invalid_email():
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-    expected_err = "1 validation error for Metadata\n" "owner\n" "  Invalid email 'test' (type=value_error)"
+    expected_err = (
+        "1 validation error for Metadata\n"
+        "owner\n"
+        "  Invalid email 'test' (type=value_error)"
+    )
     assert str(e.value) == expected_err

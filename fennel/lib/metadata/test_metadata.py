@@ -90,7 +90,9 @@ def test_simple_dataset():
     expected_sync_request = ParseDict(d, CoreDataset())
     sync_request.datasets[0].pycode.Clear()
     expected_sync_request.pycode.Clear()
-    assert sync_request.datasets[0] == expected_sync_request, error_message(sync_request, expected_sync_request)
+    assert sync_request.datasets[0] == expected_sync_request, error_message(
+        sync_request, expected_sync_request
+    )
 
 
 def test_complex_dataset_with_fields():
@@ -98,7 +100,9 @@ def test_complex_dataset_with_fields():
     @source(webhook.endpoint("YextUserInfoDataset"))
     @meta(owner="daniel@yext.com", description="test")
     class YextUserInfoDataset:
-        user_id: int = field(key=True).meta(description="test", owner="jack@yext.com")
+        user_id: int = field(key=True).meta(
+            description="test", owner="jack@yext.com"
+        )
         name: str
         gender: str = field().meta(description="sex", tags=["senstive"])
         # Users date of birth
@@ -119,7 +123,11 @@ def test_complex_dataset_with_fields():
                 "name": "YextUserInfoDataset",
                 "metadata": {"owner": "daniel@yext.com", "description": "test"},
                 "dsschema": {
-                    "keys": {"fields": [{"name": "user_id", "dtype": {"intType": {}}}]},
+                    "keys": {
+                        "fields": [
+                            {"name": "user_id", "dtype": {"intType": {}}}
+                        ]
+                    },
                     "values": {
                         "fields": [
                             {"name": "name", "dtype": {"stringType": {}}},
@@ -141,8 +149,12 @@ def test_complex_dataset_with_fields():
                                                     "arrayType": {
                                                         "of": {
                                                             "mapType": {
-                                                                "key": {"stringType": {}},
-                                                                "value": {"doubleType": {}},
+                                                                "key": {
+                                                                    "stringType": {}
+                                                                },
+                                                                "value": {
+                                                                    "doubleType": {}
+                                                                },
                                                             }
                                                         }
                                                     }
@@ -190,13 +202,17 @@ def test_complex_dataset_with_fields():
                 "lateness": "3600s",
             }
         ],
-        "extdbs": [{"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}],
+        "extdbs": [
+            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
+        ],
     }
 
     expected_sync_request = ParseDict(d, SyncRequest())
     expected_sync_request.datasets[0].pycode.Clear()
     sync_request.datasets[0].pycode.Clear()
-    assert sync_request == expected_sync_request, error_message(sync_request, expected_sync_request)
+    assert sync_request == expected_sync_request, error_message(
+        sync_request, expected_sync_request
+    )
 
 
 def test_simple_featureset():
@@ -227,7 +243,9 @@ def test_simple_featureset():
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
     expected_fs_request.ClearField("pycode")
     featureset_request.ClearField("pycode")
-    assert featureset_request == expected_fs_request, error_message(featureset_request, expected_fs_request)
+    assert featureset_request == expected_fs_request, error_message(
+        featureset_request, expected_fs_request
+    )
 
     assert len(sync_request.features) == 5
     actual_feature = sync_request.features[0]
@@ -239,7 +257,9 @@ def test_simple_featureset():
         "feature_set_name": "UserInfoSimple",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
     actual_feature = sync_request.features[1]
     f = {
         "id": 2,
@@ -249,7 +269,9 @@ def test_simple_featureset():
         "feature_set_name": "UserInfoSimple",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
     actual_feature = sync_request.features[2]
     f = {
         "id": 3,
@@ -259,7 +281,9 @@ def test_simple_featureset():
         "feature_set_name": "UserInfoSimple",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
     actual_feature = sync_request.features[3]
     f = {
         "id": 4,
@@ -269,7 +293,9 @@ def test_simple_featureset():
         "feature_set_name": "UserInfoSimple",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
     actual_feature = sync_request.features[4]
     f = {
         "id": 5,
@@ -279,7 +305,9 @@ def test_simple_featureset():
         "feature_set_name": "UserInfoSimple",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())
-    assert actual_feature == expected_feature, error_message(actual_feature, expected_feature)
+    assert actual_feature == expected_feature, error_message(
+        actual_feature, expected_feature
+    )
 
 
 def test_featureset_with_extractors():
@@ -335,7 +363,9 @@ def test_featureset_with_extractors():
     expected_fs_request = ParseDict(f, fs_proto.CoreFeatureset())
     expected_fs_request.ClearField("pycode")
     featureset_request.ClearField("pycode")
-    assert featureset_request == expected_fs_request, error_message(featureset_request, expected_fs_request)
+    assert featureset_request == expected_fs_request, error_message(
+        featureset_request, expected_fs_request
+    )
 
     assert len(sync_request.features) == 7
     # we will skip asserting the features, done above
@@ -360,7 +390,9 @@ def test_featureset_with_extractors():
     expected_extractor = ParseDict(e, fs_proto.Extractor())
     expected_extractor.pycode.Clear()
     actual_extractor.pycode.Clear()
-    assert actual_extractor == expected_extractor, error_message(actual_extractor, expected_extractor)
+    assert actual_extractor == expected_extractor, error_message(
+        actual_extractor, expected_extractor
+    )
 
     actual_extractor = erase_extractor_pycode(sync_request.extractors[1])
     e = {
@@ -379,7 +411,9 @@ def test_featureset_with_extractors():
         "feature_set_name": "UserInfo",
     }
     expected_extractor = ParseDict(e, fs_proto.Extractor())
-    assert actual_extractor == expected_extractor, error_message(actual_extractor, expected_extractor)
+    assert actual_extractor == expected_extractor, error_message(
+        actual_extractor, expected_extractor
+    )
 
     actual_extractor = erase_extractor_pycode(sync_request.extractors[2])
     e = {
@@ -398,4 +432,6 @@ def test_featureset_with_extractors():
         "feature_set_name": "UserInfo",
     }
     expected_extractor = ParseDict(e, fs_proto.Extractor())
-    assert actual_extractor == expected_extractor, error_message(actual_extractor, expected_extractor)
+    assert actual_extractor == expected_extractor, error_message(
+        actual_extractor, expected_extractor
+    )

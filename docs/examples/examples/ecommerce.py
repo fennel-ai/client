@@ -96,7 +96,9 @@ class TestUserLivestreamFeatures(unittest.TestCase):
     @mock
     def test_feature(self, client):
         fake_Order = Order.with_source(fake_webhook.endpoint("Order"))
-        client.sync(datasets=[fake_Order, UserSellerOrders], featuresets=[UserSeller])
+        client.sync(
+            datasets=[fake_Order, UserSellerOrders], featuresets=[UserSeller]
+        )
         columns = ["uid", "product_id", "seller_id", "timestamp"]
         now = datetime.now()
         data = [
@@ -131,8 +133,12 @@ class TestUserLivestreamFeatures(unittest.TestCase):
             feature_df.columns.tolist(),
             ["UserSeller.num_orders_1d", "UserSeller.num_orders_1w"],
         )
-        self.assertEqual(feature_df["UserSeller.num_orders_1d"].tolist(), [1, 1, 0])
-        self.assertEqual(feature_df["UserSeller.num_orders_1w"].tolist(), [2, 1, 0])
+        self.assertEqual(
+            feature_df["UserSeller.num_orders_1d"].tolist(), [1, 1, 0]
+        )
+        self.assertEqual(
+            feature_df["UserSeller.num_orders_1w"].tolist(), [2, 1, 0]
+        )
 
 
 # /docsnip

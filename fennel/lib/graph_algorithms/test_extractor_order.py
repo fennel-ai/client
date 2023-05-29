@@ -42,7 +42,9 @@ def test_simple_extractor_path():
 
     # If A.a1 & A.a2 is part of input we should only run B.b1_b2
     extractors = A.extractors + B.extractors
-    extractors = get_extractor_order([A.root, A.a1, A.a2], [B.b1, B.b2], extractors)
+    extractors = get_extractor_order(
+        [A.root, A.a1, A.a2], [B.b1, B.b2], extractors
+    )
     extractors_to_run = [e.name for e in extractors]
     assert extractors_to_run == ["b1_b2"]
 
@@ -80,7 +82,9 @@ def test_complex_extractor_path():
     ]
 
     extractors = A.extractors + B.extractors + C.extractors
-    extractors = get_extractor_order([A.root, C.c1], [B.b1, B.b2, C.c2], extractors)
+    extractors = get_extractor_order(
+        [A.root, C.c1], [B.b1, B.b2, C.c2], extractors
+    )
     extractors_to_run = [e.name for e in extractors]
     assert len(extractors_to_run) == 3
     assert extractors_to_run == ["a1_a2", "from_c1", "b1_b2"]
@@ -106,7 +110,9 @@ class UserInfo:
     @extractor
     @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
-    def get_age_and_name_features(cls, ts: pd.Series, user_age: pd.Series, name: pd.Series):
+    def get_age_and_name_features(
+        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
+    ):
         pass
 
     @extractor
@@ -117,10 +123,14 @@ class UserInfo:
 
 
 def test_age_feature_extraction():
-    extractors = get_extractor_order([UserInfo.userid], [UserInfo], UserInfo.extractors)
+    extractors = get_extractor_order(
+        [UserInfo.userid], [UserInfo], UserInfo.extractors
+    )
     extractors_to_run = [e.name for e in extractors]
     assert len(extractors_to_run) == 3
-    assert set(extractors_to_run[0:2]) == set({"get_user_age_and_name", "get_country_geoid"})
+    assert set(extractors_to_run[0:2]) == set(
+        {"get_user_age_and_name", "get_country_geoid"}
+    )
     assert extractors_to_run[2] == "get_age_and_name_features"
 
 
@@ -131,7 +141,9 @@ class UserInfoTransformedFeatures:
 
     @extractor
     @inputs(UserInfo.age, UserInfo.is_name_common)
-    def get_user_transformed_features(cls, ts: pd.Series, age: pd.Series, is_name_common: pd.Series):
+    def get_user_transformed_features(
+        cls, ts: pd.Series, age: pd.Series, is_name_common: pd.Series
+    ):
         age_power_four = age**4
         return pd.DataFrame(
             {

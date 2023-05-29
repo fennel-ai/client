@@ -86,7 +86,9 @@ def test_multiple_extractors_of_same_feature():
             def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.DataFrame:
                 two_hrs = durations > 2 * 3600
                 three_hrs = durations > 3 * 3600
-                return pd.DataFrame({"over_2hrs": two_hrs, "over_3hrs": three_hrs})
+                return pd.DataFrame(
+                    {"over_2hrs": two_hrs, "over_3hrs": three_hrs}
+                )
 
             @extractor
             @inputs(duration)
@@ -133,7 +135,9 @@ def test_remote_feature_as_output():
 
             @extractor
             @inputs(limit_secs, duration)
-            @outputs(Request.too_long)  # can not output feature of another featureset
+            @outputs(
+                Request.too_long
+            )  # can not output feature of another featureset
             def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
                 return pd.Series(name="movie_too_long", data=durations > limits)
 
@@ -184,7 +188,11 @@ class UserLocationFeatures:
         # If the service is down, use some dummy coordinates as fallback.
         try:
             geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
-            coordinates = df["city"].apply(geolocator.geocode).apply(lambda x: (x.latitude, x.longitude))
+            coordinates = (
+                df["city"]
+                .apply(geolocator.geocode)
+                .apply(lambda x: (x.latitude, x.longitude))
+            )
         except Exception:
             coordinates = pd.Series([(41, -74), (52, -0), (49, 2)])
         df["latitude"] = coordinates.apply(lambda x: round(x[0], 1))
@@ -251,7 +259,11 @@ class UserLocationFeaturesRefactored:
         # If the service is down, use some dummy coordinates as fallback.
         try:
             geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
-            coordinates = df["city"].apply(geolocator.geocode).apply(lambda x: (x.latitude, x.longitude))
+            coordinates = (
+                df["city"]
+                .apply(geolocator.geocode)
+                .apply(lambda x: (x.latitude, x.longitude))
+            )
         except Exception:
             coordinates = pd.Series([(41, -74), (52, -0), (49, 2)])
         df["uid"] = uid

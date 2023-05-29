@@ -44,7 +44,9 @@ class Serializer(Visitor):
         return self.operators
 
     def wrap_function(self, op_pycode, is_filter=False) -> pycode_proto.PyCode:
-        gen_func_name = hashlib.sha256(op_pycode.core_code.encode()).hexdigest()[:10]
+        gen_func_name = hashlib.sha256(
+            op_pycode.core_code.encode()
+        ).hexdigest()[:10]
 
         gen_function_name = f"wrapper_{gen_func_name}"
         if op_pycode.entry_point == "<lambda>":
@@ -62,7 +64,13 @@ def {gen_function_name}(cls, *args, **kwargs):
     return {op_pycode.entry_point}(*args, **kwargs)
 """
         wrapper_function = indent(dedent(wrapper_function), "    ")
-        gen_code = dedent(self.lib_generated_code) + "\n" + self.dataset_code + "\n" + wrapper_function
+        gen_code = (
+            dedent(self.lib_generated_code)
+            + "\n"
+            + self.dataset_code
+            + "\n"
+            + wrapper_function
+        )
 
         new_entry_point = f"{self.dataset_name}_{gen_function_name}"
         ret_code = f"""
@@ -120,7 +128,9 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
 
     def visitTransform(self, obj):
         schema = (
-            {col: get_datatype(dtype) for col, dtype in obj.new_schema.items()} if obj.new_schema is not None else None
+            {col: get_datatype(dtype) for col, dtype in obj.new_schema.items()}
+            if obj.new_schema is not None
+            else None
         )
         transform_func_pycode = to_includes_proto(obj.func)
         gen_pycode = self.wrap_function(transform_func_pycode)
@@ -205,5 +215,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
-            union=proto.Union(operand_ids=[self.visit(node) for node in obj.nodes]),
+            union=proto.Union(
+                operand_ids=[self.visit(node) for node in obj.nodes]
+            ),
         )

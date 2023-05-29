@@ -81,7 +81,9 @@ def test_complex_featureset():
             def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
-    assert str(e.value) == "Feature `gender` is extracted by multiple extractors."
+    assert (
+        str(e.value) == "Feature `gender` is extracted by multiple extractors."
+    )
 
 
 def test_extract_anoather_featureset():
@@ -102,7 +104,10 @@ def test_extract_anoather_featureset():
             def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
-    assert str(e.value) == "Extractors can only extract a feature defined in " "the same featureset, found (User.age,)."
+    assert (
+        str(e.value) == "Extractors can only extract a feature defined in "
+        "the same featureset, found (User.age,)."
+    )
 
     with pytest.raises(TypeError) as e:
 
@@ -175,7 +180,9 @@ def test_missing_id():
             userid: int = feature()
             home_geoid: int = feature(id=2)
 
-    assert str(e.value) == "feature() missing 1 required positional argument: 'id'"
+    assert (
+        str(e.value) == "feature() missing 1 required positional argument: 'id'"
+    )
 
 
 def test_duplicate_id():
@@ -187,7 +194,10 @@ def test_duplicate_id():
             home_geoid: int = feature(id=2)
             age: int = feature(id=1)
 
-    assert str(e.value) == "Feature `age` has a duplicate id `1` in featureset `UserInfo`."
+    assert (
+        str(e.value)
+        == "Feature `age` has a duplicate id `1` in featureset `UserInfo`."
+    )
 
 
 def test_deprecated_id():
@@ -200,7 +210,10 @@ def test_deprecated_id():
             age: int = feature(id=3).meta(deprecated=True)
             credit_score: int = feature(id=3)
 
-    assert str(e.value) == "Feature `credit_score` has a duplicate id `3` in " "featureset `UserInfo`."
+    assert (
+        str(e.value) == "Feature `credit_score` has a duplicate id `3` in "
+        "featureset `UserInfo`."
+    )
 
 
 def test_invalid_featureset():
@@ -213,4 +226,7 @@ def test_invalid_featureset():
             age: int = feature(id=3).meta(deprecated=True)
             credit_score: int = feature(id=3)
 
-    assert str(e.value) == "Feature `extractors` in `UserInfo` has a reserved name `extractors`."
+    assert (
+        str(e.value)
+        == "Feature `extractors` in `UserInfo` has a reserved name `extractors`."
+    )

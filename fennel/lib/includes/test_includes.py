@@ -93,7 +93,10 @@ def test_includes_proto_conversion():
     assert includes[index_of_power_4].includes[0].entry_point == "square"
 
     assert len(includes[index_of_power_4].includes[0].includes) == 1
-    assert includes[index_of_power_4].includes[0].includes[0].entry_point == "const"
+    assert (
+        includes[index_of_power_4].includes[0].includes[0].entry_point
+        == "const"
+    )
 
 
 @pytest.mark.integration
@@ -117,7 +120,9 @@ def test_simple_extractor(client):
     feature_df = client.extract_features(
         output_feature_list=[UserInfoSingleExtractor],
         input_feature_list=[UserInfoSingleExtractor.userid],
-        input_dataframe=pd.DataFrame({"UserInfoSingleExtractor.userid": [18232, 18234]}),
+        input_dataframe=pd.DataFrame(
+            {"UserInfoSingleExtractor.userid": [18232, 18234]}
+        ),
     )
     assert feature_df.shape == (2, 5)
     assert feature_df["UserInfoSingleExtractor.age"].tolist() == [32, 24]

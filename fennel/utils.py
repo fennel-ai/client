@@ -33,10 +33,18 @@ def new_getfile(object, _old_getfile=inspect.getfile):
             return object_.__file__
 
     for name, member in inspect.getmembers(object):
-        if inspect.isfunction(member) and object.__qualname__ + "." + member.__name__ == member.__qualname__:
+        if (
+            inspect.isfunction(member)
+            and object.__qualname__ + "." + member.__name__
+            == member.__qualname__
+        ):
             return inspect.getfile(member)
 
-    class_methods = [method for method in dir(object) if inspect.ismethod(getattr(object, method))]
+    class_methods = [
+        method
+        for method in dir(object)
+        if inspect.ismethod(getattr(object, method))
+    ]
     for method in class_methods:
         func = getattr(object, method)
         file_name = inspect.getfile(func)
@@ -169,16 +177,22 @@ def parse_annotation_comments(cls: Any) -> Dict[str, str]:
         class_def = tree.body[0]
         if isinstance(class_def, ast.ClassDef):
             for stmt in class_def.body:
-                if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+                if isinstance(stmt, ast.AnnAssign) and isinstance(
+                    stmt.target, ast.Name
+                ):
                     line = stmt.lineno - 2
                     comments: List[str] = []
-                    while line >= 0 and source_lines[line].strip().startswith("#"):
+                    while line >= 0 and source_lines[line].strip().startswith(
+                        "#"
+                    ):
                         comment = source_lines[line].strip().strip("#").strip()
                         comments.insert(0, comment)
                         line -= 1
 
                     if len(comments) > 0:
-                        comments_for_annotations[stmt.target.id] = textwrap.dedent("\n".join(comments))
+                        comments_for_annotations[
+                            stmt.target.id
+                        ] = textwrap.dedent("\n".join(comments))
 
         return comments_for_annotations
     except Exception:

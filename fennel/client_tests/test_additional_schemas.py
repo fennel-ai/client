@@ -77,7 +77,8 @@ class TestDataset(unittest.TestCase):
             )
         else:
             assert (
-                response.json()["error"] == "Schema validation failed during data insertion to "
+                response.json()["error"]
+                == "Schema validation failed during data insertion to "
                 "`UserInfoDataset` [ValueError('Field `age` is of type "
                 "between, but the value `123` is out of bounds. Error found during checking schema for `UserInfoDataset`.')]"
             )

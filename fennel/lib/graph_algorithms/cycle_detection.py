@@ -35,7 +35,10 @@ def is_cyclic(graph: Dict[str, List[str]]) -> bool:
     for vertex in vertices:
         if not visited[vertex]:
             if is_cyclic_util(vertex, visited, rec_stack, graph):
-                raise ValueError(f"Cycle detected in extractor graph with extractor" f" {vertex}")
+                raise ValueError(
+                    f"Cycle detected in extractor graph with extractor"
+                    f" {vertex}"
+                )
     return False
 
 

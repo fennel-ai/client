@@ -44,7 +44,9 @@ class TestMovieInfo103(unittest.TestCase):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
-        mock_MovieInfo103 = MovieInfo103.with_source(webhook.endpoint("MovieInfo103"))
+        mock_MovieInfo103 = MovieInfo103.with_source(
+            webhook.endpoint("MovieInfo103")
+        )
 
         # Sync the dataset
         client.sync(datasets=[mock_MovieInfo103])

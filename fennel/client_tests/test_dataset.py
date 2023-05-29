@@ -138,10 +138,14 @@ class TestDataset(unittest.TestCase):
             response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
-            assert response.json()["error"] == """error: input parse error: expected Int, but got String("32")"""
+            assert (
+                response.json()["error"]
+                == """error: input parse error: expected Int, but got String("32")"""
+            )
         else:
             assert (
-                response.json()["error"] == "Schema validation failed during data insertion to "
+                response.json()["error"]
+                == "Schema validation failed during data insertion to "
                 "`UserInfoDataset` [ValueError('Field `age` is of type int, but the column "
                 "in the dataframe is of type `object`. Error found during checking schema for `UserInfoDataset`.')]"
             )
@@ -161,7 +165,9 @@ class TestDataset(unittest.TestCase):
         if not client.is_integration_client():
             assert df["timestamp"].tolist() == [now, yesterday, None]
         else:
-            df["timestamp"] = df["timestamp"].apply(lambda x: x.replace(second=0, microsecond=0))
+            df["timestamp"] = df["timestamp"].apply(
+                lambda x: x.replace(second=0, microsecond=0)
+            )
             now_rounded = now.replace(second=0, microsecond=0)
             yday_rounded = yesterday.replace(second=0, microsecond=0)
             assert df["timestamp"].tolist()[:2] == [
@@ -172,7 +178,9 @@ class TestDataset(unittest.TestCase):
         user_ids = pd.Series([18232, 18234])
         six_hours_ago = now - pd.Timedelta(hours=6)
         ts = pd.Series([six_hours_ago, six_hours_ago])
-        df, found = UserInfoDataset.lookup(ts, user_id=user_ids, fields=["name", "age", "country"])
+        df, found = UserInfoDataset.lookup(
+            ts, user_id=user_ids, fields=["name", "age", "country"]
+        )
         assert found.tolist() == [False, True]
         assert df["name"].tolist() == [None, "Monica"]
         assert df["age"].tolist() == [None, 24]
@@ -194,7 +202,9 @@ class TestDataset(unittest.TestCase):
         one_day_from_now = now + pd.Timedelta(days=1)
         three_days_from_now = now + pd.Timedelta(days=3)
         ts = pd.Series([three_days_from_now, one_day_from_now])
-        df, found = UserInfoDataset.lookup(ts, user_id=user_ids, fields=["name", "age", "country"])
+        df, found = UserInfoDataset.lookup(
+            ts, user_id=user_ids, fields=["name", "age", "country"]
+        )
         assert found.tolist() == [True, True]
         assert df.shape == (2, 3)
         assert df["age"].tolist() == [33, 24]
@@ -247,7 +257,10 @@ class TestDataset(unittest.TestCase):
 
             client.sync(datasets=[UserInfoDataset])
 
-        assert str(e.exception) == "Dataset currently does not support deleted or deprecated fields."
+        assert (
+            str(e.exception)
+            == "Dataset currently does not support deleted or deprecated fields."
+        )
 
 
 # On demand datasets are not supported for now.
@@ -354,7 +367,9 @@ class MovieRatingCalculated:
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
             [
-                Count(window=Window("forever"), into_field=str(cls.num_ratings)),
+                Count(
+                    window=Window("forever"), into_field=str(cls.num_ratings)
+                ),
                 Sum(
                     window=Window("forever"),
                     of="rating",
@@ -397,7 +412,9 @@ class MovieRatingTransformed:
             df["rating_sq"] = df["rating"] * df["rating"]
             df["rating_cube"] = df["rating_sq"] * df["rating"]
             df["rating_into_5"] = df["rating"] * 5
-            return df[["movie", "t", "rating_sq", "rating_cube", "rating_into_5"]]
+            return df[
+                ["movie", "t", "rating_sq", "rating_cube", "rating_into_5"]
+            ]
 
         return m.transform(
             t,
@@ -636,7 +653,9 @@ class MovieRatingWindowed:
                     of="rating",
                     into_field=str(cls.avg_rating_6h),
                 ),
-                Count(window=Window("forever"), into_field=str(cls.total_ratings)),
+                Count(
+                    window=Window("forever"), into_field=str(cls.total_ratings)
+                ),
             ]
         )
 
@@ -686,8 +705,12 @@ class TestBasicWindowAggregate(unittest.TestCase):
         five_days = now + timedelta(days=5)
         one_day = now + timedelta(days=1)
         # Do some lookups to verify pipeline_aggregate is working as expected
-        ts = pd.Series([eight_days, eight_days, five_days, five_days, one_day, one_day])
-        names = pd.Series(["Jumanji", "Titanic", "Jumanji", "Titanic", "Jumanji", "Titanic"])
+        ts = pd.Series(
+            [eight_days, eight_days, five_days, five_days, one_day, one_day]
+        )
+        names = pd.Series(
+            ["Jumanji", "Titanic", "Jumanji", "Titanic", "Jumanji", "Titanic"]
+        )
         df, _ = MovieRatingWindowed.lookup(
             ts,
             movie=names,
@@ -874,7 +897,9 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
     @mock
     def test_fraud(self, client):
         # # Sync the dataset
-        client.sync(datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset])
+        client.sync(
+            datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset]
+        )
         now = datetime.now()
         minute_ago = now - timedelta(minutes=1)
         data = [
@@ -1135,7 +1160,9 @@ class ManchesterUnitedPlayerInfo:
 
     @pipeline()
     @inputs(PlayerInfo, ClubSalary, WAG)
-    def create_player_detailed_info(cls, player_info: Dataset, club_salary: Dataset, wag: Dataset):
+    def create_player_detailed_info(
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+    ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
             df["weight"] = df["weight"] * 0.453592
@@ -1171,7 +1198,9 @@ class ManchesterUnitedPlayerInfoBounded:
 
     @pipeline(version=1)
     @inputs(PlayerInfo, ClubSalary, WAG)
-    def create_player_detailed_info(cls, player_info: Dataset, club_salary: Dataset, wag: Dataset):
+    def create_player_detailed_info(
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+    ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
             df["weight"] = df["weight"] * 0.453592
@@ -1188,9 +1217,15 @@ class ManchesterUnitedPlayerInfoBounded:
                 "timestamp": datetime,
             },
         )
-        player_info_with_salary = metric_stats.left_join(club_salary, on=["club"], within=("60s", "0s"))
-        manchester_players = player_info_with_salary.filter(lambda df: df["club"] == "Manchester United")
-        return manchester_players.left_join(wag, on=["name"], within=("forever", "60s"))
+        player_info_with_salary = metric_stats.left_join(
+            club_salary, on=["club"], within=("60s", "0s")
+        )
+        manchester_players = player_info_with_salary.filter(
+            lambda df: df["club"] == "Manchester United"
+        )
+        return manchester_players.left_join(
+            wag, on=["name"], within=("forever", "60s")
+        )
 
 
 class TestE2eIntegrationTestMUInfo(unittest.TestCase):
@@ -1387,7 +1422,9 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
 def test_join(client):
     def test_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         assert df.shape == (3, 4), "Shape is not correct {}".format(df.shape)
-        assert "b1" not in df.columns, "b1 column should not be present, " "{}".format(df.columns)
+        assert (
+            "b1" not in df.columns
+        ), "b1 column should not be present, " "{}".format(df.columns)
         return df
 
     @source(webhook.endpoint("A"))

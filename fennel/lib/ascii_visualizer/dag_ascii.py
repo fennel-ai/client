@@ -16,7 +16,9 @@ from fennel._vendor.grandalf.routing import route_with_lines
 logger = logging.getLogger(__name__)
 
 DEFAULT_PAGER = "less"
-DEFAULT_PAGER_FORMATTED = "{} --chop-long-lines --clear-screen".format(DEFAULT_PAGER)
+DEFAULT_PAGER_FORMATTED = "{} --chop-long-lines --clear-screen".format(
+    DEFAULT_PAGER
+)
 
 
 def make_pager(cmd):
@@ -300,6 +302,8 @@ def draw_graph(vertexes, edges):
             vertex.view.h,
         )
 
-        canvas.text(int(round(x - minx)) + 1, int(round(y - miny)) + 1, vertex.data)
+        canvas.text(
+            int(round(x - minx)) + 1, int(round(y - miny)) + 1, vertex.data
+        )
 
     canvas.draw()

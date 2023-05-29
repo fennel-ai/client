@@ -42,7 +42,11 @@ class Product:
     # Powerful primitives like data expectations for data hygiene
     @expectations
     def get_expectations(cls):
-        return [expect_column_values_to_be_between(column="price", min_value=1, max_value=1e4, mostly=0.95)]
+        return [
+            expect_column_values_to_be_between(
+                column="price", min_value=1, max_value=1e4, mostly=0.95
+            )
+        ]
 
 
 # ingesting realtime data from Kafka works exactly the same way
@@ -189,7 +193,9 @@ feature_df = client.extract_historical_features(
             "UserSellerFeatures.seller_id": [1, 2, 1, 2],
         }
     ),
-    timestamps=pd.Series([now, now, now - timedelta(days=1), now - timedelta(days=1)]),
+    timestamps=pd.Series(
+        [now, now, now - timedelta(days=1), now - timedelta(days=1)]
+    ),
 )
 assert feature_df.columns.tolist() == [
     "UserSellerFeatures.num_orders_1d",

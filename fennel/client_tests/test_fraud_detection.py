@@ -19,7 +19,9 @@ webhook = Webhook(name="fennel_webhook")
 @dataset
 class CreditCardTransactions:
     trans_num: str = field(key=True)  # Id
-    trans_date_trans_time: datetime = field(timestamp=True)  # Temporal aspect of our data
+    trans_date_trans_time: datetime = field(
+        timestamp=True
+    )  # Temporal aspect of our data
     cc_num: int
     merchant: str
     category: str
@@ -54,7 +56,9 @@ class Regions:
 @meta(owner="henry@fennel.ai")
 @dataset
 class UserTransactionSums:
-    cc_num: int = field(key=True)  # Because this is what we are grouping by it needs to be our Key
+    cc_num: int = field(
+        key=True
+    )  # Because this is what we are grouping by it needs to be our Key
     trans_date_trans_time: datetime = field(
         timestamp=True
     )  # Temporal aspect of our data, factored into how we do windowing
@@ -87,7 +91,9 @@ class UserTransactionSumsFeatures:
     @extractor(depends_on=[UserTransactionSums])
     @inputs(cc_num)
     @outputs(sum_amt_1d, sum_amt_7d)
-    def my_extractor(cls, ts: pd.Series, cc_nums: pd.Series):  # cls is a class method of actual feature set.
+    def my_extractor(
+        cls, ts: pd.Series, cc_nums: pd.Series
+    ):  # cls is a class method of actual feature set.
         df, found = UserTransactionSums.lookup(ts, cc_num=cc_nums)  # type: ignore
 
         # Fill any Na values with 0 as this means there were no transactions and the sum was 0
@@ -154,20 +160,30 @@ def test_fraud_detection_pipeline(client):
 
     region_to_state = pd.DataFrame.from_dict(states_to_regions, orient="index")
     region_to_state["state"] = region_to_state.index
-    region_to_state = region_to_state.rename(columns={0: "region"}).reset_index(drop=True)
+    region_to_state = region_to_state.rename(columns={0: "region"}).reset_index(
+        drop=True
+    )
     region_to_state.insert(0, "created_at", datetime.now())
     # Upload transaction_data dataframe to the Transactions dataset on the mock client
-    transaction_data_sample = pd.read_csv("fennel/client_tests/data/fraud_sample.csv")
+    transaction_data_sample = pd.read_csv(
+        "fennel/client_tests/data/fraud_sample.csv"
+    )
 
     # Convert our transaction times to datetimes from objects
-    transaction_data_sample["trans_date_trans_time"] = pd.to_datetime(transaction_data_sample["trans_date_trans_time"])
-    transaction_data_sample["cc_num"] = transaction_data_sample["cc_num"].astype(int)
+    transaction_data_sample["trans_date_trans_time"] = pd.to_datetime(
+        transaction_data_sample["trans_date_trans_time"]
+    )
+    transaction_data_sample["cc_num"] = transaction_data_sample[
+        "cc_num"
+    ].astype(int)
     client.sync(
         datasets=[CreditCardTransactions, Regions, UserTransactionSums],
         featuresets=[UserTransactionSumsFeatures],
     )
 
-    response = client.log("fennel_webhook", "CreditCardTransactions", transaction_data_sample)
+    response = client.log(
+        "fennel_webhook", "CreditCardTransactions", transaction_data_sample
+    )
     assert response.status_code == 200
     # Upload region_to_state dataframe to the Regions dataset on the mock client
     response = client.log("fennel_webhook", "Regions", region_to_state)
@@ -178,7 +194,9 @@ def test_fraud_detection_pipeline(client):
         columns={"cc_num": "UserTransactionSumsFeatures.cc_num"}
     )
     # Add a random row to the lookup dataframe to test that it is ignored
-    lookup_dataframe.loc[lookup_dataframe.shape[0]] = {"UserTransactionSumsFeatures.cc_num": 99}
+    lookup_dataframe.loc[lookup_dataframe.shape[0]] = {
+        "UserTransactionSumsFeatures.cc_num": 99
+    }
 
     df = client.extract_features(
         input_feature_list=[UserTransactionSumsFeatures.cc_num],

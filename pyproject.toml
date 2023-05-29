@@ -110,7 +110,7 @@ module = "google.protobuf.*"
 ignore_missing_imports = true
 
 [tool.black]
-line-length = 120
+line-length = 80
 multi-line = 3
 include-trailing-comma = false
 extend-exclude = '''

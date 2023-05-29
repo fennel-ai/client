@@ -41,7 +41,9 @@ class MovieRating:
         return activity.groupby("movie").aggregate(
             [
                 Count(window=Window("7d"), into_field="num_ratings"),
-                Sum(window=Window("28d"), of="rating", into_field="sum_ratings"),
+                Sum(
+                    window=Window("28d"), of="rating", into_field="sum_ratings"
+                ),
                 Average(window=Window("12h"), of="rating", into_field="rating"),
             ]
         )
@@ -121,7 +123,9 @@ class UserInfoFeatures:
     @extractor
     @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
-    def get_age_and_name_features(cls, ts: pd.Series, user_age: pd.Series, name: pd.Series):
+    def get_age_and_name_features(
+        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
+    ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
         df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
@@ -138,10 +142,16 @@ class TestSimpleExtractor(unittest.TestCase):
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
-        df = UserInfoFeatures.get_age_and_name_features(UserInfoFeatures, ts, age, name)
+        df = UserInfoFeatures.get_age_and_name_features(
+            UserInfoFeatures, ts, age, name
+        )
         self.assertEqual(df.shape, (2, 3))
-        self.assertEqual(df["UserInfoFeatures.age_squared"].tolist(), [1024, 576])
-        self.assertEqual(df["UserInfoFeatures.age_cubed"].tolist(), [32768, 13824])
+        self.assertEqual(
+            df["UserInfoFeatures.age_squared"].tolist(), [1024, 576]
+        )
+        self.assertEqual(
+            df["UserInfoFeatures.age_cubed"].tolist(), [32768, 13824]
+        )
         self.assertEqual(
             df["UserInfoFeatures.is_name_common"].tolist(),
             [True, False],
@@ -194,7 +204,9 @@ class UserInfoMultipleExtractor:
     @extractor
     @inputs(age, name)
     @outputs(age_squared, age_cubed, is_name_common)
-    def get_age_and_name_features(cls, ts: pd.Series, user_age: pd.Series, name: pd.Series):
+    def get_age_and_name_features(
+        cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
+    ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
         df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
@@ -237,7 +249,9 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 UserInfoMultipleExtractor,
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
-            input_dataframe=pd.DataFrame({"UserInfoMultipleExtractor.userid": [18232, 18234]}),
+            input_dataframe=pd.DataFrame(
+                {"UserInfoMultipleExtractor.userid": [18232, 18234]}
+            ),
         )
         self.assertEqual(feature_df.shape, (2, 7))
 

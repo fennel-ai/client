@@ -46,7 +46,9 @@ class Window(BaseModel):
 
         duration = duration_proto.Duration()
         duration.FromTimedelta(self.sliding_window_duration())
-        return window_proto.Window(sliding=window_proto.Sliding(duration=duration))
+        return window_proto.Window(
+            sliding=window_proto.Sliding(duration=duration)
+        )
 
     def signature(self) -> str:
         if self.start == "forever":

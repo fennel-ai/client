@@ -28,7 +28,9 @@ class FakeResponse(Response):
             self._ok = True
             self._content = json.dumps({}).encode("utf-8")
             return
-        self._content = json.dumps({"error": f"{content}"}, indent=2).encode("utf-8")
+        self._content = json.dumps({"error": f"{content}"}, indent=2).encode(
+            "utf-8"
+        )
 
 
 def lookup_wrapper(
@@ -63,7 +65,9 @@ class IntegrationClient:
             return FakeResponse(400, str(e))
         return FakeResponse(200, "OK")
 
-    def sync(self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []):
+    def sync(
+        self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
+    ):
         self.to_register_objects = []
         self.to_register = set()
         for dataset in datasets:
@@ -93,7 +97,9 @@ class IntegrationClient:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn_)
             elif isinstance(input_feature, Featureset):
-                input_feature_names.extend([f.fqn_ for f in input_feature.features])
+                input_feature_names.extend(
+                    [f.fqn_ for f in input_feature.features]
+                )
 
         # Check if the input dataframe has all the required features
         if not set(input_feature_names).issubset(set(input_dataframe.columns)):
@@ -107,7 +113,9 @@ class IntegrationClient:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn_)
             elif isinstance(output_feature, Featureset):
-                output_feature_names.extend([f.fqn_ for f in output_feature.features])
+                output_feature_names.extend(
+                    [f.fqn_ for f in output_feature.features]
+                )
             elif type(output_feature) is tuple:
                 output_feature_names.extend([f.fqn_ for f in output_feature])
 

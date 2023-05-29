@@ -218,7 +218,9 @@ class UserAdStatsFeatures:
 
 @mock
 def test_aggregate(client):
-    client.sync(datasets=[AdClickStream, UserAdStats], featuresets=[UserAdStatsFeatures])
+    client.sync(
+        datasets=[AdClickStream, UserAdStats], featuresets=[UserAdStatsFeatures]
+    )
     data = [
         {"uid": 1, "adid": 1, "at": datetime(2020, 1, 1)},
         {"uid": 1, "adid": 2, "at": datetime(2020, 1, 1)},

@@ -71,7 +71,11 @@ class PageViewsByUser:
 
     @expectations
     def get_expectations(cls):
-        return [expect_column_values_to_be_between(column="page_views", min_value=1, max_value=100, mostly=0.95)]
+        return [
+            expect_column_values_to_be_between(
+                column="page_views", min_value=1, max_value=100, mostly=0.95
+            )
+        ]
 
 
 @meta(owner="aditya@fennel.ai")
@@ -94,7 +98,9 @@ class UserPageViewFeatures:
     @outputs(page_views, page_views_1d, page_views_3d, page_views_9d)
     def extract(cls, ts: pd.Series, uuids: pd.Series):
         page_views, found = PageViewsByUser.lookup(ts, uuid=uuids)  # type: ignore
-        ret = page_views[["page_views", "page_views_1d", "page_views_3d", "page_views_9d"]]
+        ret = page_views[
+            ["page_views", "page_views_1d", "page_views_3d", "page_views_9d"]
+        ]
         ret = ret.fillna(0)
         ret["page_views"] = ret["page_views"].astype(int)
         ret["page_views_1d"] = ret["page_views_1d"].astype(int)

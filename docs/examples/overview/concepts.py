@@ -72,7 +72,9 @@ class UserTransactionsAbroad:
     @inputs(User, Transaction)
     def first_pipeline(cls, user: Dataset, transaction: Dataset):
         joined = transaction.left_join(user, on=["uid"])
-        abroad = joined.filter(lambda df: df["country"] != df["payment_country"])
+        abroad = joined.filter(
+            lambda df: df["country"] != df["payment_country"]
+        )
         return abroad.groupby("uid").aggregate(
             [
                 Count(window=Window("forever"), into_field="count"),

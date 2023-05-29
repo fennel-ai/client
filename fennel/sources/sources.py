@@ -29,7 +29,10 @@ def source(
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
             raise TypeError("Expected a DataSource, found %s" % type(conn))
-        raise TypeError(f"{conn.name} does not specify required fields " f"{', '.join(conn.required_fields())}.")
+        raise TypeError(
+            f"{conn.name} does not specify required fields "
+            f"{', '.join(conn.required_fields())}."
+        )
 
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY
@@ -45,7 +48,9 @@ def source(
     return decorator
 
 
-def sink(conn: DataConnector, every: Optional[Duration] = None) -> Callable[[T], Any]:
+def sink(
+    conn: DataConnector, every: Optional[Duration] = None
+) -> Callable[[T], Any]:
     def decorator(dataset_cls: T):
         if every is not None:
             conn.every = every
@@ -120,7 +125,9 @@ class SQLSource(DataSource):
             exceptions.append(TypeError("username must be a string"))
         if not isinstance(self.password, str):
             exceptions.append(TypeError("password must be a string"))
-        if self.jdbc_params is not None and not isinstance(self.jdbc_params, str):
+        if self.jdbc_params is not None and not isinstance(
+            self.jdbc_params, str
+        ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
 
@@ -216,7 +223,12 @@ class Kafka(DataSource):
             "SASL PLAINTEXT",
             "SASL SSL",
         ]:
-            exceptions.append(ValueError("sasl_mechanism must be one of " "PLAIN TEXT, SASL PLAINTEXT, SASL SSL"))
+            exceptions.append(
+                ValueError(
+                    "sasl_mechanism must be one of "
+                    "PLAIN TEXT, SASL PLAINTEXT, SASL SSL"
+                )
+            )
         return exceptions
 
     def required_fields(self) -> List[str]:
@@ -313,7 +325,9 @@ class Snowflake(DataSource):
             exceptions.append(TypeError("src_schema must be a string"))
         if not isinstance(self.role, str):
             exceptions.append(TypeError("role must be a string"))
-        if self.jdbc_params is not None and not isinstance(self.jdbc_params, str):
+        if self.jdbc_params is not None and not isinstance(
+            self.jdbc_params, str
+        ):
             exceptions.append(TypeError("jdbc_params must be a string"))
         return exceptions
 
@@ -437,12 +451,23 @@ class S3Connector(DataConnector):
     def _validate(self) -> List[Exception]:
         exceptions: List[Exception] = []
         if self.format not in ["csv", "json", "parquet", "hudi"]:
-            exceptions.append(TypeError("format must be either csv, json, parquet, or hudi"))
+            exceptions.append(
+                TypeError("format must be either csv, json, parquet, or hudi")
+            )
         if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
-            exceptions.append(Exception("delimiter must be one of [',', '\t', '|']"))
+            exceptions.append(
+                Exception("delimiter must be one of [',', '\t', '|']")
+            )
         if self.format == "hudi" and self.cursor is not None:
-            exceptions.append(Exception("cursor must be None for hudi format, since it uses the commit timestamp."))
+            exceptions.append(
+                Exception(
+                    "cursor must be None for hudi format, since it uses the commit timestamp."
+                )
+            )
         return exceptions
 
     def identifier(self) -> str:
-        return f"{self.data_source.identifier()}(bucket={self.bucket_name}" f",prefix={self.path_prefix})"
+        return (
+            f"{self.data_source.identifier()}(bucket={self.bucket_name}"
+            f",prefix={self.path_prefix})"
+        )
