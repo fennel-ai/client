@@ -56,16 +56,10 @@ class Regions:
 @meta(owner="henry@fennel.ai")
 @dataset
 class UserTransactionSums:
-    cc_num: int = field(
-        key=True
-    )  # Because this is what we are grouping by it needs to be our Key
-    trans_date_trans_time: datetime = field(
-        timestamp=True
-    )  # Temporal aspect of our data, factored into how we do windowing
+    cc_num: int = field(key=True)  # needs to be key for groubpby
+    trans_date_trans_time: datetime = field(timestamp=True)
     sum_amt_1d: float
     sum_amt_7d: float
-
-    # sum_amt_30d: float
 
     @pipeline(version=1)
     @inputs(CreditCardTransactions)
@@ -73,9 +67,7 @@ class UserTransactionSums:
         return transactions.groupby("cc_num").aggregate(
             [
                 Sum(of="amt", window=Window("1d"), into_field="sum_amt_1d"),
-                # transaction_data.set_index('trans_date_trans_time').groupby('cc_num')['amt'].rolling('1d').sum().reset_index() would expect to work like this but doesnt
                 Sum(of="amt", window=Window("7d"), into_field="sum_amt_7d"),
-                # Sum(of="amt", window=Window("30d"), into_field="sum_amt_30d")
             ]
         )
 
@@ -91,12 +83,8 @@ class UserTransactionSumsFeatures:
     @extractor(depends_on=[UserTransactionSums])
     @inputs(cc_num)
     @outputs(sum_amt_1d, sum_amt_7d)
-    def my_extractor(
-        cls, ts: pd.Series, cc_nums: pd.Series
-    ):  # cls is a class method of actual feature set.
-        df, found = UserTransactionSums.lookup(  # type: ignore
-            ts, cc_num=cc_nums
-        )
+    def my_extractor(cls, ts: pd.Series, cc_nums: pd.Series):
+        df, found = UserTransactionSums.lookup(ts, cc_num=cc_nums)
 
         # Fill any Na values with 0 as this means there were no transactions and the sum was 0
         df["sum_amt_1d"] = df["sum_amt_1d"].fillna(0).astype(float)

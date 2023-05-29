@@ -30,10 +30,7 @@ MIN_TIMESTAMP = 1683220303091
 
 
 @source(
-    s3.bucket(
-        "fennel-demo-data",
-        prefix="outbrain/page_views_filter.csv",
-    ),
+    s3.bucket("fennel-demo-data", prefix="outbrain/page_views_filter.csv"),
     every="1d",
 )
 @meta(owner="xiao@fennel.ai")
