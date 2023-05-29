@@ -74,8 +74,9 @@ class TestDataset(unittest.TestCase):
         response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
+    @pytest.mark.integration
     @mock
-    def test_simple_delete_rename(self, client):
+    def test_simple_drop_rename(self, client):
         # Sync the dataset
         client.sync(datasets=[UserInfoDataset, UserInfoDatasetDerived])
         now = datetime.now()
@@ -90,6 +91,8 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do lookup on UserInfoDataset
+        if client.is_integration_client():
+            client.sleep()
         ts = pd.Series([now, now])
         user_id_keys = pd.Series([18232, 18234])
         df, found = UserInfoDataset.lookup(ts, user_id=user_id_keys)
