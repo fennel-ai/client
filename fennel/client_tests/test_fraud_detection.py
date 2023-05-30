@@ -84,7 +84,7 @@ class UserTransactionSumsFeatures:
     @inputs(cc_num)
     @outputs(sum_amt_1d, sum_amt_7d)
     def my_extractor(cls, ts: pd.Series, cc_nums: pd.Series):
-        df, found = UserTransactionSums.lookup(ts, cc_num=cc_nums)
+        df, found = UserTransactionSums.lookup(ts, cc_num=cc_nums)  # type: ignore
 
         # Fill any Na values with 0 as this means there were no transactions and the sum was 0
         df["sum_amt_1d"] = df["sum_amt_1d"].fillna(0).astype(float)

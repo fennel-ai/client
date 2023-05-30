@@ -1,4 +1,7 @@
 # Changelog
+## [0.15.15] - 2023-05-26
+- Improve error handling of drop/rename operators
+- Require `default` for min/max aggregates
 
 ## [0.15.14] - 2023-05-30
 - Add support for kinesis source. 

@@ -50,6 +50,144 @@ def test_join_schema_validation():
     )
 
 
+def test_drop_schema_validation_drop_keys():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abc@xyx.com")
+        @dataset
+        class A:
+            x: int = field(key=True)
+            y: int
+            t: datetime
+
+        @meta(owner="abc@xyz.ai")
+        @dataset
+        class B:
+            y: int
+            t: datetime
+
+            @pipeline()
+            @inputs(A)
+            def my_pipeline(cls, a: Dataset):
+                return a.drop(["x", "t"])
+
+    assert (
+        str(e.value)
+        == """Field `x` is not a non-key non-timestamp field in schema of drop node '[Pipeline:my_pipeline]->drop node'. Value fields are: `['y']`"""
+    )
+
+
+def test_drop_schema_validation_drop_timestamp():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abc@xyx.com")
+        @dataset
+        class A:
+            x: int = field(key=True)
+            y: int
+            t: datetime
+
+        @meta(owner="abc@xyz.ai")
+        @dataset
+        class B:
+            x: int = field(key=True)
+            t: datetime
+
+            @pipeline()
+            @inputs(A)
+            def my_pipeline(cls, a: Dataset):
+                return a.drop(["t"])
+
+    assert (
+        str(e.value)
+        == """Field `t` is not a non-key non-timestamp field in schema of drop node '[Pipeline:my_pipeline]->drop node'. Value fields are: `['y']`"""
+    )
+
+
+def test_drop_schema_validation_drop_empty():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abc@xyx.com")
+        @dataset
+        class A:
+            x: int = field(key=True)
+            y: int
+            t: datetime
+
+        @meta(owner="abc@xyz.ai")
+        @dataset
+        class B:
+            x: int = field(key=True)
+            y: int
+            t: datetime
+
+            @pipeline()
+            @inputs(A)
+            def my_pipeline(cls, a: Dataset):
+                return a.drop([])
+
+    assert (
+        str(e.value)
+        == """invalid drop '[Pipeline:my_pipeline]->drop node': must have at least one column to drop"""
+    )
+
+
+def test_rename_duplicate_names_one():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abc@xyx.com")
+        @dataset
+        class A:
+            x: int = field(key=True)
+            y: int
+            t: datetime
+
+        @meta(owner="abc@xyz.ai")
+        @dataset
+        class B:
+            a: int = field(key=True)
+            b: int = field(key=True)
+            t: datetime
+
+            @pipeline()
+            @inputs(A)
+            def my_pipeline(cls, a: Dataset):
+                return a.rename({"x": "a", "y": "a"})
+
+    assert (
+        str(e.value)
+        == """Field `a` already exists in schema of rename node '[Pipeline:my_pipeline]->rename node'."""
+    )
+
+
+def test_rename_duplicate_names_two():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abc@xyx.com")
+        @dataset
+        class A:
+            x: int = field(key=True)
+            y: int
+            t: datetime
+
+        @meta(owner="abc@xyz.ai")
+        @dataset
+        class B:
+            x: int = field(key=True)
+            y: int = field(key=True)
+            t: datetime
+
+            @pipeline()
+            @inputs(A)
+            def my_pipeline(cls, a: Dataset):
+                return a.rename({"x": "y"})
+
+    assert (
+        str(e.value)
+        == """Field `y` already exists in schema of rename node '[Pipeline:my_pipeline]->rename node'."""
+    )
+
+
 @meta(owner="test@test.com")
 @dataset
 class RatingActivity:
