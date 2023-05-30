@@ -2,6 +2,7 @@ from fennel._vendor.pydantic import BaseModel, Extra  # type: ignore
 from typing import List, Union
 
 import fennel.gen.spec_pb2 as spec_proto
+import fennel.gen.schema_pb2 as schema_proto
 from fennel.lib.window import Window
 
 ItemType = Union[str, List[str]]
@@ -83,7 +84,23 @@ class Max(AggregateType):
     default: int | float
 
     def to_proto(self):
-        raise NotImplementedError("Max not implemented yet")
+        if isinstance(self.default, int):
+            default = schema_proto.Value(int=self.default)
+        elif isinstance(self.default, float):
+            default = schema_proto.Value(float=self.default)
+        else:
+            raise TypeError(
+                f"Default value for max must be int or float, got {self.default}"
+            )
+
+        return spec_proto.PreSpec(
+            max=spec_proto.Max(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+                default=default,
+            )
+        )
 
     def signature(self):
         return f"max_{self.of}_{self.window.signature()}"
@@ -97,7 +114,23 @@ class Min(AggregateType):
     default: int | float
 
     def to_proto(self):
-        raise NotImplementedError("Min not implemented yet")
+        if isinstance(self.default, int):
+            default = schema_proto.Value(int=self.default)
+        elif isinstance(self.default, float):
+            default = schema_proto.Value(float=self.default)
+        else:
+            raise TypeError(
+                f"Default value for max must be int or float, got {self.default}"
+            )
+
+        return spec_proto.PreSpec(
+            min=spec_proto.Min(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+                default=default,
+            )
+        )
 
     def signature(self):
         return f"min_{self.of}_{self.window.signature()}"
