@@ -5,6 +5,7 @@ isort:skip_file
 import builtins
 import google.protobuf.descriptor
 import google.protobuf.message
+import schema_pb2
 import sys
 import window_pb2
 
@@ -23,6 +24,8 @@ class PreSpec(google.protobuf.message.Message):
     AVERAGE_FIELD_NUMBER: builtins.int
     COUNT_FIELD_NUMBER: builtins.int
     LAST_K_FIELD_NUMBER: builtins.int
+    MIN_FIELD_NUMBER: builtins.int
+    MAX_FIELD_NUMBER: builtins.int
     @property
     def sum(self) -> global___Sum: ...
     @property
@@ -31,6 +34,10 @@ class PreSpec(google.protobuf.message.Message):
     def count(self) -> global___Count: ...
     @property
     def last_k(self) -> global___LastK: ...
+    @property
+    def min(self) -> global___Min: ...
+    @property
+    def max(self) -> global___Max: ...
     def __init__(
         self,
         *,
@@ -38,10 +45,12 @@ class PreSpec(google.protobuf.message.Message):
         average: global___Average | None = ...,
         count: global___Count | None = ...,
         last_k: global___LastK | None = ...,
+        min: global___Min | None = ...,
+        max: global___Max | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "last_k", b"last_k", "sum", b"sum", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "last_k", b"last_k", "sum", b"sum", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sum", "average", "count", "last_k"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "last_k", b"last_k", "max", b"max", "min", b"min", "sum", b"sum", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "last_k", b"last_k", "max", b"max", "min", b"min", "sum", b"sum", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sum", "average", "count", "last_k", "min", "max"] | None: ...
 
 global___PreSpec = PreSpec
 
@@ -142,3 +151,57 @@ class LastK(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["dedup", b"dedup", "limit", b"limit", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___LastK = LastK
+
+@typing_extensions.final
+class Min(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    OF_FIELD_NUMBER: builtins.int
+    NAME_FIELD_NUMBER: builtins.int
+    WINDOW_FIELD_NUMBER: builtins.int
+    DEFAULT_FIELD_NUMBER: builtins.int
+    of: builtins.str
+    name: builtins.str
+    @property
+    def window(self) -> window_pb2.Window: ...
+    @property
+    def default(self) -> schema_pb2.Value: ...
+    def __init__(
+        self,
+        *,
+        of: builtins.str = ...,
+        name: builtins.str = ...,
+        window: window_pb2.Window | None = ...,
+        default: schema_pb2.Value | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["default", b"default", "window", b"window"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["default", b"default", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
+
+global___Min = Min
+
+@typing_extensions.final
+class Max(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    OF_FIELD_NUMBER: builtins.int
+    NAME_FIELD_NUMBER: builtins.int
+    WINDOW_FIELD_NUMBER: builtins.int
+    DEFAULT_FIELD_NUMBER: builtins.int
+    of: builtins.str
+    name: builtins.str
+    @property
+    def window(self) -> window_pb2.Window: ...
+    @property
+    def default(self) -> schema_pb2.Value: ...
+    def __init__(
+        self,
+        *,
+        of: builtins.str = ...,
+        name: builtins.str = ...,
+        window: window_pb2.Window | None = ...,
+        default: schema_pb2.Value | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["default", b"default", "window", b"window"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["default", b"default", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
+
+global___Max = Max
