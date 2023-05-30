@@ -72,7 +72,8 @@ def test_lastk_state_dedup():
 
 
 def test_min_state():
-    state = MinState()
+    state = MinState(default=3.0)
+    assert state.get_val() == 3.0
     assert state.add_val_to_state(1) == 1
     assert state.add_val_to_state(2) == 1
     assert state.add_val_to_state(3) == 1
@@ -86,7 +87,8 @@ def test_min_state():
 
 
 def test_max_state():
-    state = MaxState()
+    state = MaxState(default=3.0)
+    assert state.get_val() == 3.0
     assert state.add_val_to_state(1) == 1
     assert state.add_val_to_state(2) == 2
     assert state.add_val_to_state(3) == 3
@@ -100,7 +102,8 @@ def test_max_state():
 
 
 def test_min_forever_state():
-    state = MinForeverState()
+    state = MinForeverState(default=3.0)
+    assert state.get_val() == 3.0
     assert state.add_val_to_state(4) == 4
     assert state.add_val_to_state(1) == 1
     assert state.add_val_to_state(2) == 1
@@ -108,7 +111,8 @@ def test_min_forever_state():
 
 
 def test_max_forever_state():
-    state = MaxForeverState()
+    state = MaxForeverState(default=3.0)
+    assert state.get_val() == 3.0
     assert state.add_val_to_state(4) == 4
     assert state.add_val_to_state(1) == 4
     assert state.add_val_to_state(2) == 4

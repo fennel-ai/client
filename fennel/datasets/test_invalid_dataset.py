@@ -67,7 +67,8 @@ def test_dataset_with_pipes():
                 return a
 
     assert (
-        str(e.value) == "pipeline `create_pipeline` must be called with an id."
+        str(e.value)
+        == "pipeline decorator on `create_pipeline` must have a parenthesis"
     )
 
     with pytest.raises(Exception) as e:
@@ -83,7 +84,7 @@ def test_dataset_with_pipes():
             def create_pipeline(cls, a: Dataset):
                 return a
 
-    assert str(e.value) == "pipeline `XYZ` must be called with an id."
+    assert str(e.value) == "pipeline decorator on `XYZ` must have a parenthesis"
 
     with pytest.raises(Exception) as e:
 
@@ -100,8 +101,7 @@ def test_dataset_with_pipes():
 
     assert (
         str(e.value)
-        == "pipeline `create_pipeline` must have Datasets as @input "
-        "parameters."
+        == "pipeline `create_pipeline` must have Datasets as @input parameters."
     )
 
     with pytest.raises(TypeError) as e:

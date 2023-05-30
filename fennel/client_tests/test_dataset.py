@@ -9,7 +9,7 @@ from typing import Optional
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import Sum, Average, Count
+from fennel.lib.aggregate import Sum, Average, Count, Min, Max
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof, inputs
 from fennel.lib.window import Window
@@ -365,6 +365,8 @@ class MovieRatingCalculated:
     rating: float
     num_ratings: int
     sum_ratings: float
+    min_ratings: float
+    max_ratings: float
     t: datetime
 
     @pipeline(version=1)
@@ -384,6 +386,18 @@ class MovieRatingCalculated:
                     window=Window("forever"),
                     of="rating",
                     into_field=str(cls.rating),
+                ),
+                Min(
+                    window=Window("forever"),
+                    of="rating",
+                    into_field=str(cls.min_ratings),
+                    default=5.0,
+                ),
+                Max(
+                    window=Window("forever"),
+                    of="rating",
+                    into_field=str(cls.max_ratings),
+                    default=0.0,
                 ),
             ]
         )
@@ -633,11 +647,13 @@ class TestBasicAggregate(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (2, 5)
+        assert df.shape == (2, 7)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
         assert df["num_ratings"].tolist() == [4, 5]
         assert df["sum_ratings"].tolist() == [12, 20]
+        assert df["min_ratings"].tolist() == [2, 3]
+        assert df["max_ratings"].tolist() == [5, 5]
 
 
 @meta(owner="test@test.com")

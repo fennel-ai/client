@@ -80,6 +80,7 @@ class Average(AggregateType):
 
 class Max(AggregateType):
     of: str
+    default: int | float
 
     def to_proto(self):
         raise NotImplementedError("Max not implemented yet")
@@ -93,6 +94,7 @@ class Max(AggregateType):
 
 class Min(AggregateType):
     of: str
+    default: int | float
 
     def to_proto(self):
         raise NotImplementedError("Min not implemented yet")

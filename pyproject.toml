@@ -1,11 +1,9 @@
 [tool.poetry]
 name = "fennel-ai"
-version = "0.15.14"
+version = "0.15.15"
 description = "The modern realtime feature engineering platform"
 authors = ["Fennel AI <developers@fennel.ai>"]
-packages = [
-    { include = "fennel" }
-]
+packages = [{ include = "fennel" }]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -81,7 +79,7 @@ exclude = [
     'pb2\.py$',
     '.*_pb2.pyi',
     'docs/examples',
-    'fennel/_vendor'  # ignore vendored packages
+    'fennel/_vendor', # ignore vendored packages
 ]
 
 [[tool.mypy.overrides]]

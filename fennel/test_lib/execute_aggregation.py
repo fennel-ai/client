@@ -121,8 +121,9 @@ class LastKState(AggState):
 
 
 class MinForeverState(AggState):
-    def __init__(self):
+    def __init__(self, default: int | float):
         self.min = None
+        self.default = default
 
     def add_val_to_state(self, val):
         if self.min is None:
@@ -135,12 +136,15 @@ class MinForeverState(AggState):
         raise Exception("MinForeverState cannot be deleted from")
 
     def get_val(self):
+        if self.min is None:
+            return self.default
         return self.min
 
 
 class MaxForeverState(AggState):
-    def __init__(self):
+    def __init__(self, default: int | float):
         self.max = None
+        self.default = default
 
     def add_val_to_state(self, val):
         if self.max is None:
@@ -153,6 +157,8 @@ class MaxForeverState(AggState):
         raise Exception("MaxForeverState cannot be deleted from")
 
     def get_val(self):
+        if self.max is None:
+            return self.default
         return self.max
 
 
@@ -188,9 +194,10 @@ class Heap:
 
 
 class MinState(AggState):
-    def __init__(self):
-        self.counter = Counter()
+    def __init__(self, default: int | float):
+        self.counter = Counter()  # type: ignore
         self.min_heap = Heap(heap_type="min")
+        self.default = default
 
     def add_val_to_state(self, val):
         if val not in self.counter:
@@ -209,13 +216,16 @@ class MinState(AggState):
         return self.min_heap.top()
 
     def get_val(self):
+        if len(self.min_heap) == 0:
+            return self.default
         return self.min_heap.top()
 
 
 class MaxState(AggState):
-    def __init__(self):
-        self.counter = Counter()
+    def __init__(self, default: int | float):
+        self.counter = Counter()  # type: ignore
         self.max_heap = Heap(heap_type="max")
+        self.default = default
 
     def add_val_to_state(self, val):
         if val not in self.counter:
@@ -235,6 +245,8 @@ class MaxState(AggState):
         return self.max_heap.top()
 
     def get_val(self):
+        if len(self.max_heap) == 0:
+            return self.default
         return self.max_heap.top()
 
 
@@ -298,14 +310,14 @@ def get_aggregated_df(
                     state[key] = LastKState(aggregate.limit, aggregate.dedup)
                 elif isinstance(aggregate, Min):
                     if aggregate.window.start == "forever":
-                        state[key] = MinForeverState()
+                        state[key] = MinForeverState(aggregate.default)
                     else:
-                        state[key] = MinState()
+                        state[key] = MinState(aggregate.default)
                 elif isinstance(aggregate, Max):
                     if aggregate.window.start == "forever":
-                        state[key] = MaxForeverState()
+                        state[key] = MaxForeverState(aggregate.default)
                     else:
-                        state[key] = MaxState()
+                        state[key] = MaxState(aggregate.default)
                 else:
                     raise Exception(
                         f"Unsupported aggregate function {aggregate}"

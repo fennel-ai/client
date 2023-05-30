@@ -675,11 +675,11 @@ def pipeline(
         else:
             callable_name = str(version)
         raise ValueError(
-            f"pipeline `{callable_name}` must be called with an id."
+            f"pipeline decorator on `{callable_name}` must have a parenthesis"
         )
     if type(version) != int:
         raise ValueError(
-            "pipeline id must be an integer, found %s" % type(version)
+            "pipeline version must be an integer, found %s" % type(version)
         )
 
     def wrapper(pipeline_func: Callable) -> Callable:
@@ -1534,28 +1534,37 @@ class SchemaValidator(Visitor):
     def visitRename(self, obj) -> DSSchema:
         input_schema = copy.deepcopy(self.visit(obj.node))
         input_schema.name = f"'[Pipeline:{self.pipeline_name}]->rename node'"
+        if obj.column_mapping is None or len(obj.column_mapping) == 0:
+            raise ValueError(
+                f"invalid rename {input_schema.name}: must have at least one column to rename"
+            )
         for old, new in obj.column_mapping.items():
             if old not in input_schema.fields():
                 raise ValueError(
-                    f"Field {old} does not exist in schema of "
+                    f"Field `{old}` does not exist in schema of "
                     f"rename node {input_schema.name}."
                 )
             if new in input_schema.fields():
                 raise ValueError(
-                    f"Field {new} already exists in schema of "
+                    f"Field `{new}` already exists in schema of "
                     f"rename node {input_schema.name}."
                 )
             input_schema.rename_column(old, new)
         return input_schema
 
-    def visitDrop(self, obj):
+    def visitDrop(self, obj) -> DSSchema:
         input_schema = copy.deepcopy(self.visit(obj.node))
         input_schema.name = f"'[Pipeline:{self.pipeline_name}]->drop node'"
+        if obj.columns is None or len(obj.columns) == 0:
+            raise ValueError(
+                f"invalid drop {input_schema.name}: must have at least one column to drop"
+            )
+        val_fields = input_schema.values.keys()
         for field in obj.columns:
-            if field not in input_schema.fields():
+            if field not in val_fields:
                 raise ValueError(
-                    f"Field {field} does not exist in schema of "
-                    f"drop node {input_schema.name}."
+                    f"Field `{field}` is not a non-key non-timestamp field in schema of "
+                    f"drop node {input_schema.name}. Value fields are: `{list(val_fields)}`"
                 )
             input_schema.drop_column(field)
         return input_schema

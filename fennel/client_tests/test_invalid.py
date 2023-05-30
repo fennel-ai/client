@@ -287,5 +287,5 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                     return d.drop(columns=["createdAt"])
 
         assert (
-            "cannot drop timestamp field createdAt from '[Pipeline:del_timestamp]->drop node'"
+            "Field `createdAt` is not a non-key non-timestamp field in schema of drop node '[Pipeline:del_timestamp]->drop node'. Value fields are: `['pk', 'sk', 'email', 'displayName']`"
         ) == str(e.value)
