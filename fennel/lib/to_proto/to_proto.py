@@ -56,6 +56,12 @@ def _expectations_to_proto(
                 expectation_kwargs=json.dumps(_cleanup_dict(e[1])),
             )
         )
+    e_type = exp_proto.Expectations.EntityType.Dataset
+    if entity_type == "pipeline":
+        e_type = exp_proto.Expectations.EntityType.Pipeline
+    elif entity_type == "featureset":
+        e_type = exp_proto.Expectations.EntityType.Featureset
+
     return [
         exp_proto.Expectations(
             suite=exp.suite,
@@ -63,9 +69,7 @@ def _expectations_to_proto(
             version=exp.version,
             metadata=None,
             entity_name=entity_name,
-            e_type=exp_proto.Expectations.EntityType.Dataset
-            if entity_type == "dataset"
-            else exp_proto.Expectations.EntityType.Featureset,
+            e_type=e_type,
         )
     ]
 
@@ -249,7 +253,17 @@ def _operators_from_pipeline(pipeline: Pipeline, ds: Dataset):
 
 
 def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
-    return _expectations_to_proto(ds.expectations, ds._name, "dataset")
+    # Mirror dataset
+    if hasattr(ds, sources.SOURCE_FIELD):
+        return _expectations_to_proto(ds.expectations, ds._name, "dataset")
+
+    # Derived dataset
+    expectations = []
+    for pipeline in ds._pipelines:
+        expectations.extend(
+            _expectations_to_proto(ds.expectations, pipeline.name, "pipeline")
+        )
+    return expectations
 
 
 def sources_from_ds(
