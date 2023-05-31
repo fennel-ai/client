@@ -224,22 +224,30 @@ def _field_to_proto(field: Field) -> schema_proto.Field:
 def pipelines_from_ds(ds: Dataset) -> List[ds_proto.Pipeline]:
     pipelines = []
     for pipeline in ds._pipelines:
-        pipelines.append(_pipeline_to_proto(pipeline, ds.__name__))
+        pipelines.append(_pipeline_to_proto(pipeline, ds))
     return pipelines
 
 
-def _pipeline_to_proto(
-    pipeline: Pipeline, dataset_name: str
-) -> ds_proto.Pipeline:
+def _pipeline_to_proto(pipeline: Pipeline, ds: Dataset) -> ds_proto.Pipeline:
+    pipeline_code = fennel_get_source(pipeline.func)
     return ds_proto.Pipeline(
         name=pipeline.name,
-        dataset_name=dataset_name,
+        dataset_name=ds._name,
         # TODO(mohit): Deprecate this field
         signature=pipeline.name,
         metadata=get_metadata_proto(pipeline.func),
         input_dataset_names=[dataset._name for dataset in pipeline.inputs],
         version=pipeline.version,
         active=pipeline.active,
+        pycode=pycode_proto.PyCode(
+            source_code=pipeline_code,
+            core_code=pipeline_code,
+            generated_code=pipeline_code,
+            entry_point=pipeline.name,
+            includes=[],
+            ref_includes={},
+            imports=get_all_imports(),
+        ),
     )
 
 
