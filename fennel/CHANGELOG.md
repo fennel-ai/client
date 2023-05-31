@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15.13] - 2023-05-30
+- Change ownership of expectations based on pipelines for derived datasets. 
+
 ## [0.15.11] - 2023-05-26
 - Fix join semantics for left and right joins. 
 

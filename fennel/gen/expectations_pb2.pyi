@@ -31,10 +31,12 @@ class Expectations(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
         Dataset: Expectations._EntityType.ValueType  # 0
         Featureset: Expectations._EntityType.ValueType  # 1
+        Pipeline: Expectations._EntityType.ValueType  # 2
 
     class EntityType(_EntityType, metaclass=_EntityTypeEnumTypeWrapper): ...
     Dataset: Expectations.EntityType.ValueType  # 0
     Featureset: Expectations.EntityType.ValueType  # 1
+    Pipeline: Expectations.EntityType.ValueType  # 2
 
     ENTITY_NAME_FIELD_NUMBER: builtins.int
     SUITE_FIELD_NUMBER: builtins.int
