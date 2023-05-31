@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
+from enum import Enum
 
 from typing import Any, Callable, List, Optional, TypeVar
 
@@ -353,6 +355,42 @@ class Snowflake(DataSource):
         return f"[Snowflake: {self.name}]"
 
 
+class Kinesis(DataSource):
+    role_arn: str
+    _get: bool = False
+
+    def _validate(self) -> List[Exception]:
+        exceptions: List[Exception] = []
+        if not isinstance(self.role_arn, str):
+            exceptions.append(TypeError("role_arn must be a string"))
+        return exceptions
+
+    def stream(
+        self,
+        stream_arn: str,
+        init_position: InitPosition,
+        init_timestamp: Optional[datetime] = None,
+        format: str = "json",
+    ) -> KinesisConnector:
+        return KinesisConnector(
+            self, stream_arn, init_position, init_timestamp, format
+        )
+
+    @staticmethod
+    def get(name: str) -> Kinesis:
+        return Kinesis(
+            name=name,
+            _get=True,
+            role_arn="",
+        )
+
+    def identifier(self) -> str:
+        return f"[Kinesis: {self.name}]"
+
+    def required_fields(self) -> List[str]:
+        return ["role_arn"]
+
+
 # ------------------------------------------------------------------------------
 # DataConnector
 # ------------------------------------------------------------------------------
@@ -472,3 +510,56 @@ class S3Connector(DataConnector):
             f"{self.data_source.identifier()}(bucket={self.bucket_name}"
             f",prefix={self.path_prefix})"
         )
+
+
+class InitPosition(Enum):
+    LATEST = "LATEST"
+    TRIM_HORIZON = "TRIM_HORIZON"
+    AT_TIMESTAMP = "AT_TIMESTAMP"
+
+
+class KinesisConnector(DataConnector):
+    def __init__(
+        self,
+        data_source,
+        stream_arn: str,
+        init_position: InitPosition,
+        init_timestamp: Optional[datetime],
+        format: str,
+    ):
+        self.data_source = data_source
+        self.init_position = init_position
+        if (
+            init_position == InitPosition.AT_TIMESTAMP
+            and init_timestamp is None
+        ):
+            raise AttributeError(
+                "init_timestamp must be specified for AT_TIMESTAMP init_position"
+            )
+        elif (
+            init_position != InitPosition.AT_TIMESTAMP
+            and init_timestamp is not None
+        ):
+            raise AttributeError(
+                "init_timestamp must not be specified for LATEST or TRIM_HORIZON init_position"
+            )
+        elif (
+            init_position == InitPosition.AT_TIMESTAMP
+            and init_timestamp is not None
+        ):
+            # Check if init_timestamp is in the past and is of type datetime
+            if not isinstance(init_timestamp, datetime):
+                raise AttributeError("init_timestamp must be of type datetime")
+            if init_timestamp > datetime.now():
+                raise AttributeError("init_timestamp must be in the past")
+
+        self.init_timestamp = init_timestamp
+        if format not in ["json"]:
+            raise AttributeError("Kinesis format must be json")
+        self.format = format
+        self.stream_arn = stream_arn
+
+    stream_arn: str
+    init_position: InitPosition
+    init_timestamp: Optional[datetime]
+    format: str = "json"

@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15.14] - 2023-05-30
+- Add support for kinesis source. 
+
 ## [0.15.13] - 2023-05-30
 - Change ownership of expectations based on pipelines for derived datasets. 
 
