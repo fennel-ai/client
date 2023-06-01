@@ -304,20 +304,20 @@ def test_aggregation_min_max():
 
         @meta(owner="nikhil@fennel.ai")
         @dataset
-        class A:
+        class A1:
             a: str = field(key=True)
             b: int
             t: datetime
 
         @meta(owner="nikhil@fennel.ai")
         @dataset
-        class B:
+        class B1:
             a: str = field(key=True)
             b_min: int
             t: datetime
 
             @pipeline(version=1)
-            @inputs(A)
+            @inputs(A1)
             def pipeline(cls, a: Dataset):
                 return a.groupby("a").aggregate(
                     [
@@ -338,20 +338,20 @@ def test_aggregation_min_max():
 
         @meta(owner="nikhil@fennel.ai")
         @dataset
-        class A:
+        class A2:
             a: str = field(key=True)
             b: int
             t: datetime
 
         @meta(owner="nikhil@fennel.ai")
         @dataset
-        class B:
+        class B2:
             a: str = field(key=True)
             b_max: int
             t: datetime
 
             @pipeline(version=1)
-            @inputs(A)
+            @inputs(A2)
             def pipeline(cls, a: Dataset):
                 return a.groupby("a").aggregate(
                     [
