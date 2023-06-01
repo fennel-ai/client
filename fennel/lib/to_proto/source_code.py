@@ -92,8 +92,8 @@ def lambda_to_python_regular_func(lambda_func):
     # so we can locate it in the source code
     err = ValueError(
         f"Unable to parse lambda function source code "
-        f"`{source_text}`, please compress the function into "
-        "a single line or use a regular function"
+        f"`{source_text}`, please ensure there are no comments in the lambda "
+        f"or use a regular function"
     )
     try:
         source_ast = ast.parse(source_text)

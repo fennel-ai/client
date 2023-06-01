@@ -1,6 +1,5 @@
 import json
 import re
-import sys
 import time
 import unittest
 from datetime import datetime, timedelta
@@ -1620,7 +1619,9 @@ class LocationLatLong:
 
 
 def del_spaces_tabs_and_newlines(s):
-    return re.sub(r"[\s\n\t]+", "", s)
+    pattern = re.compile(r"^@meta.*$", re.MULTILINE)
+    text = re.sub(pattern, "", s)
+    return re.sub(r"[\s\n\t]+", "", text)
 
 
 @mock
@@ -1666,7 +1667,6 @@ def extract_payload(
     return df[["timestamp", json_col]]
 
 @dataset
-@meta(owner="aditya@fennel.ai.com", description="Location index features")
 class LocationLatLong:
     latlng2: str = field(key=True)
     timestamp: datetime = field(timestamp=True)
@@ -1694,10 +1694,14 @@ def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
     _fennel_internal = LocationLatLong.__fennel_original_cls__
     return getattr(_fennel_internal, "wrapper_adace968e2")(*args, **kwargs)
 """
-    if sys.version_info >= (3, 9):
-        assert del_spaces_tabs_and_newlines(
+    print(
+        del_spaces_tabs_and_newlines(
             sync_request.operators[2].transform.pycode.generated_code
-        ) == del_spaces_tabs_and_newlines(expected_code)
+        )
+    )
+    assert del_spaces_tabs_and_newlines(
+        sync_request.operators[2].transform.pycode.generated_code
+    ) == del_spaces_tabs_and_newlines(expected_code)
 
     # Test running of code
     client.sync(datasets=[CommonEvent, LocationLatLong])
