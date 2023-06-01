@@ -1,4 +1,4 @@
-from fennel._vendor.pydantic import BaseModel, Extra  # type: ignore
+from fennel._vendor.pydantic import BaseModel, Extra, validator  # type: ignore
 from typing import List, Union
 
 import fennel.gen.spec_pb2 as spec_proto
@@ -81,24 +81,15 @@ class Average(AggregateType):
 
 class Max(AggregateType):
     of: str
-    default: int | float
+    default: float
 
     def to_proto(self):
-        if isinstance(self.default, int):
-            default = schema_proto.Value(int=self.default)
-        elif isinstance(self.default, float):
-            default = schema_proto.Value(float=self.default)
-        else:
-            raise TypeError(
-                f"Default value for max must be int or float, got {self.default}"
-            )
-
         return spec_proto.PreSpec(
             max=spec_proto.Max(
                 window=self.window.to_proto(),
                 name=self.into_field,
                 of=self.of,
-                default=default,
+                default=self.default,
             )
         )
 
@@ -111,24 +102,15 @@ class Max(AggregateType):
 
 class Min(AggregateType):
     of: str
-    default: int | float
+    default: float
 
     def to_proto(self):
-        if isinstance(self.default, int):
-            default = schema_proto.Value(int=self.default)
-        elif isinstance(self.default, float):
-            default = schema_proto.Value(float=self.default)
-        else:
-            raise TypeError(
-                f"Default value for max must be int or float, got {self.default}"
-            )
-
         return spec_proto.PreSpec(
             min=spec_proto.Min(
                 window=self.window.to_proto(),
                 name=self.into_field,
                 of=self.of,
-                default=default,
+                default=self.default,
             )
         )
 
