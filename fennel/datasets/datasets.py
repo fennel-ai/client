@@ -1423,9 +1423,25 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = List[dtype]  # type: ignore
             elif isinstance(agg, Min):
                 dtype = input_schema.get_type(agg.of)
+                if dtype not in [int, float]:
+                    raise TypeError(
+                        f"invalid min: type of field `{agg.of}` is not int or float"
+                    )
+                if dtype == int and (int(agg.default) != agg.default):
+                    raise TypeError(
+                        f"invalid min: default value `{agg.default}` not of type `int`"
+                    )
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
+                if dtype not in [int, float]:
+                    raise TypeError(
+                        f"invalid max: type of field `{agg.of}` is not int or float"
+                    )
+                if dtype == int and (int(agg.default) != agg.default):
+                    raise TypeError(
+                        f"invalid max: default value `{agg.default}` not of type `int`"
+                    )
                 values[agg.into_field] = dtype  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")

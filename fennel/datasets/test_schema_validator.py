@@ -6,7 +6,7 @@ import pytest
 from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import Sum
+from fennel.lib.aggregate import Sum, Min, Max
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
 from fennel.lib.window import Window
@@ -238,7 +238,7 @@ class MerchantInfo:
     timestamp: datetime
 
 
-def test_aggregation():
+def test_aggregation_sum():
     with pytest.raises(Exception) as e:
 
         @meta(owner="me@fennel.ai")
@@ -296,6 +296,110 @@ def test_aggregation():
     assert (
         str(e.value)
         == """[TypeError('Field `sum_categ_fraudulent_transactions_7d` has type `float` in `pipeline create_fraud_dataset output value` schema but type `int` in `FraudReportAggregatedDataset value` schema.')]"""
+    )
+
+
+def test_aggregation_min_max():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="nikhil@fennel.ai")
+        @dataset
+        class A:
+            a: str = field(key=True)
+            b: int
+            t: datetime
+
+        @meta(owner="nikhil@fennel.ai")
+        @dataset
+        class B:
+            a: str = field(key=True)
+            b_min: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(A)
+            def pipeline(cls, a: Dataset):
+                return a.groupby("a").aggregate(
+                    [
+                        Min(
+                            of="b",
+                            into_field="b_min",
+                            window=Window("1d"),
+                            default=0.91,
+                        ),
+                    ]
+                )
+
+    assert (
+        str(e.value)
+        == """invalid min: default value `0.91` not of type `int`"""
+    )
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="nikhil@fennel.ai")
+        @dataset
+        class A:
+            a: str = field(key=True)
+            b: int
+            t: datetime
+
+        @meta(owner="nikhil@fennel.ai")
+        @dataset
+        class B:
+            a: str = field(key=True)
+            b_max: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(A)
+            def pipeline(cls, a: Dataset):
+                return a.groupby("a").aggregate(
+                    [
+                        Max(
+                            of="b",
+                            into_field="b_max",
+                            window=Window("1d"),
+                            default=1.91,
+                        ),
+                    ]
+                )
+
+    assert (
+        str(e.value)
+        == """invalid max: default value `1.91` not of type `int`"""
+    )
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="nikhil@fennel.ai")
+        @dataset
+        class A3:
+            a: str = field(key=True)
+            b: str
+            t: datetime
+
+        @meta(owner="nikhil@fennel.ai")
+        @dataset
+        class B3:
+            a: str = field(key=True)
+            b_max: str
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(A3)
+            def pipeline(cls, a: Dataset):
+                return a.groupby("a").aggregate(
+                    [
+                        Max(
+                            of="b",
+                            into_field="b_max",
+                            window=Window("1d"),
+                            default=2.91,
+                        ),
+                    ]
+                )
+
+    assert (
+        str(e.value) == """invalid max: type of field `b` is not int or float"""
     )
 
 
