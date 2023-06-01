@@ -13,13 +13,13 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rkinesis.proto\x12\x07kinesis*>\n\x0cInitPosition\x12\n\n\x06LATEST\x10\x00\x12\x10\n\x0cTRIM_HORIZON\x10\x01\x12\x10\n\x0c\x41T_TIMESTAMP\x10\x02\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rkinesis.proto\x12\x14\x66\x65nnel.proto.kinesis*>\n\x0cInitPosition\x12\n\n\x06LATEST\x10\x00\x12\x10\n\x0cTRIM_HORIZON\x10\x01\x12\x10\n\x0c\x41T_TIMESTAMP\x10\x02\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'kinesis_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _INITPOSITION._serialized_start=26
-  _INITPOSITION._serialized_end=88
+  _INITPOSITION._serialized_start=39
+  _INITPOSITION._serialized_end=101
 # @@protoc_insertion_point(module_scope)
