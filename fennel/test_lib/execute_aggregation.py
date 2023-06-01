@@ -121,7 +121,7 @@ class LastKState(AggState):
 
 
 class MinForeverState(AggState):
-    def __init__(self, default: int | float):
+    def __init__(self, default: float):
         self.min = None
         self.default = default
 
@@ -142,7 +142,7 @@ class MinForeverState(AggState):
 
 
 class MaxForeverState(AggState):
-    def __init__(self, default: int | float):
+    def __init__(self, default: float):
         self.max = None
         self.default = default
 
@@ -194,7 +194,7 @@ class Heap:
 
 
 class MinState(AggState):
-    def __init__(self, default: int | float):
+    def __init__(self, default: float):
         self.counter = Counter()  # type: ignore
         self.min_heap = Heap(heap_type="min")
         self.default = default
@@ -222,7 +222,7 @@ class MinState(AggState):
 
 
 class MaxState(AggState):
-    def __init__(self, default: int | float):
+    def __init__(self, default: float):
         self.counter = Counter()  # type: ignore
         self.max_heap = Heap(heap_type="max")
         self.default = default
