@@ -1,20 +1,23 @@
 import json
+import re
 import time
 import unittest
 from datetime import datetime, timedelta
 
 import pandas as pd
 import pytest
-from typing import Optional
+from typing import Optional, List, Dict
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import Sum, Average, Count, Min, Max
+from fennel.lib.aggregate import Min, Max
+from fennel.lib.aggregate import Sum, Average, Count
+from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof, inputs
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock
+from fennel.test_lib import mock, InternalTestClient
 
 ################################################################################
 #                           Dataset Unit Tests
@@ -1515,3 +1518,219 @@ def test_join(client):
     )
     client.log("fennel_webhook", "A", df1)
     client.log("fennel_webhook", "B", df2)
+
+
+def extract_payload(
+    df: pd.DataFrame,
+    payload_col: str = "payload",
+    json_col: str = "json_payload",
+) -> pd.DataFrame:
+    df[json_col] = df[payload_col].apply(lambda x: json.loads(x))
+    return df[["timestamp", json_col]]
+
+
+def extract_keys(
+    df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
+) -> pd.DataFrame:
+    for key in keys:
+        df[key] = df[json_col].apply(lambda x: x[key])
+
+    return df.drop(json_col, axis=1)
+
+
+def extract_location_index(
+    df: pd.DataFrame,
+    index_col: str,
+    latitude_col: str = "latitude",
+    longitude_col: str = "longitude",
+    resolution: int = 2,
+) -> pd.DataFrame:
+    df[index_col] = df.apply(
+        lambda x: str(x[latitude_col])[0 : 3 + resolution]  # noqa
+        + "-"  # noqa
+        + str(x[longitude_col])[0 : 3 + resolution],  # noqa
+        axis=1,
+    )
+    return df
+
+
+@dataset
+@source(webhook.endpoint("CommonEvent"))
+@meta(owner="aditya@fennel.ai")
+class CommonEvent:
+    name: str
+    timestamp: datetime = field(timestamp=True)
+    payload: str
+
+
+@dataset
+@meta(owner="aditya@fennel.ai.com", description="Location index features")
+class LocationLatLong:
+    latlng2: str = field(key=True)
+    timestamp: datetime = field(timestamp=True)
+    onb_velocity_l1_2: int
+    onb_velocity_l7_2: int
+    onb_velocity_l30_2: int
+    onb_velocity_l90_2: int
+    onb_total_2: int
+
+    @pipeline(version=1)
+    @includes(extract_payload, extract_keys, extract_location_index)
+    @inputs(CommonEvent)
+    def get_payload(cls, common_event: Dataset):
+        event = common_event.filter(lambda x: x["name"] == "LocationLatLong")
+        new_schema = {
+            "user_id": str,
+            "timestamp": datetime,
+            "latitude": float,
+            "longitude": float,
+            "token": str,
+        }
+        data = event.transform(
+            extract_payload,
+            schema={"json_payload": Dict[str, str], "timestamp": datetime},
+        ).transform(
+            lambda x: extract_keys(
+                x,
+                json_col="json_payload",
+                keys=["user_id", "latitude", "longitude", "token"],
+            ),
+            schema=new_schema,
+        )
+
+        new_schema2 = new_schema.copy()
+        new_schema2.update({"latlng2": str})
+        data = data.transform(
+            lambda x: extract_location_index(
+                x, index_col="latlng2", resolution=2
+            ),
+            schema=new_schema2,
+        )
+
+        return data.groupby("latlng2").aggregate(
+            [
+                Count(window=Window("1d"), into_field="onb_velocity_l1_2"),
+                Count(window=Window("7d"), into_field="onb_velocity_l7_2"),
+                Count(window=Window("30d"), into_field="onb_velocity_l30_2"),
+                Count(window=Window("90d"), into_field="onb_velocity_l90_2"),
+                Count(window=Window("forever"), into_field="onb_total_2"),
+            ]
+        )
+
+
+def del_spaces_tabs_and_newlines(s):
+    pattern = re.compile(r"^@meta.*$", re.MULTILINE)
+    text = re.sub(pattern, "", s)
+    return re.sub(r"[\s\n\t]+", "", text)
+
+
+@mock
+def test_complex_lambda(client):
+    # Test for code generation
+    view = InternalTestClient()
+    view.add(CommonEvent)
+    view.add(LocationLatLong)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 2
+    assert len(sync_request.operators) == 6
+
+    expected_code = """
+def extract_location_index(
+    df: pd.DataFrame,
+    index_col: str,
+    latitude_col: str = "latitude",
+    longitude_col: str = "longitude",
+    resolution: int = 2,
+) -> pd.DataFrame:
+    df[index_col] = df.apply(
+        lambda x: str(x[latitude_col])[0 : 3 + resolution]  # noqa
+        + "-"  # noqa
+        + str(x[longitude_col])[0 : 3 + resolution],  # noqa
+        axis=1,
+    )
+    return df
+
+def extract_keys(
+    df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
+) -> pd.DataFrame:
+    for key in keys:
+        df[key] = df[json_col].apply(lambda x: x[key])
+
+    return df.drop(json_col, axis=1)
+
+def extract_payload(
+    df: pd.DataFrame,
+    payload_col: str = "payload",
+    json_col: str = "json_payload",
+) -> pd.DataFrame:
+    df[json_col] = df[payload_col].apply(lambda x: json.loads(x))
+    return df[["timestamp", json_col]]
+
+@dataset
+class LocationLatLong:
+    latlng2: str = field(key=True)
+    timestamp: datetime = field(timestamp=True)
+    onb_velocity_l1_2: int
+    onb_velocity_l7_2: int
+    onb_velocity_l30_2: int
+    onb_velocity_l90_2: int
+    onb_total_2: int
+
+    @classmethod
+    def wrapper_adace968e2(cls, *args, **kwargs):
+
+        def extract_payload(
+                df: pd.DataFrame,
+                payload_col: str = "payload",
+                json_col: str = "json_payload",
+        ) -> pd.DataFrame:
+            df[json_col] = df[payload_col].apply(lambda x: json.loads(x))
+            return df[["timestamp", json_col]]
+
+
+        return extract_payload(*args, **kwargs)
+
+def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
+    _fennel_internal = LocationLatLong.__fennel_original_cls__
+    return getattr(_fennel_internal, "wrapper_adace968e2")(*args, **kwargs)
+"""
+    print(
+        del_spaces_tabs_and_newlines(
+            sync_request.operators[2].transform.pycode.generated_code
+        )
+    )
+    assert del_spaces_tabs_and_newlines(
+        sync_request.operators[2].transform.pycode.generated_code
+    ) == del_spaces_tabs_and_newlines(expected_code)
+
+    # Test running of code
+    client.sync(datasets=[CommonEvent, LocationLatLong])
+    data = [
+        {
+            "name": "LocationLatLong",
+            "timestamp": datetime.now(),
+            "payload": '{"user_id": "246", "latitude": 12.3, "longitude": 12.3, '
+            '"token": "abc"}',
+        },
+        {
+            "name": "LocationLatLong",
+            "timestamp": datetime.now(),
+            "payload": '{"user_id": "246", "latitude": 12.3, "longitude": 12.4, '
+            '"token": "abc"}',
+        },
+        {
+            "name": "LocationLatLong",
+            "timestamp": datetime.now(),
+            "payload": '{"user_id": "246", "latitude": 12.3, "longitude": 12.3, "token": "abc"}',
+        },
+    ]
+    res = client.log("fennel_webhook", "CommonEvent", pd.DataFrame(data))
+    assert res.status_code == 200, res.json()
+    now = datetime.now()
+    timestamps = pd.Series([now, now])
+    res, found = LocationLatLong.lookup(
+        ts=timestamps, latlng2=pd.Series(["12.3-12.4", "12.3-12.3"])
+    )
+    assert found.tolist() == [True, True]
+    assert res.shape == (2, 7)
+    assert res["onb_velocity_l1_2"].tolist() == [1, 2]

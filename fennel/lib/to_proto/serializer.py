@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from textwrap import dedent, indent
 
 import google.protobuf.duration_pb2 as duration_proto
@@ -21,6 +22,10 @@ from fennel.lib.to_proto.source_code import (
 )
 
 
+def _del_spaces_tabs_and_newlines(s):
+    return re.sub(r"[\s\n\t]+", "", s)
+
+
 class Serializer(Visitor):
     def __init__(self, pipeline: Pipeline, dataset: Dataset):
         super(Serializer, self).__init__()
@@ -34,7 +39,7 @@ class Serializer(Visitor):
         if hasattr(pipeline.func, FENNEL_INCLUDED_MOD):
             for f in getattr(pipeline.func, FENNEL_INCLUDED_MOD):
                 dep = to_includes_proto(f)
-            gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
+                gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
         self.lib_generated_code = gen_code
         self.dataset_code = get_dataset_core_code(dataset)
         self.dataset_name = dataset._name
@@ -45,7 +50,7 @@ class Serializer(Visitor):
 
     def wrap_function(self, op_pycode, is_filter=False) -> pycode_proto.PyCode:
         gen_func_name = hashlib.sha256(
-            op_pycode.core_code.encode()
+            _del_spaces_tabs_and_newlines(op_pycode.core_code).encode()
         ).hexdigest()[:10]
 
         gen_function_name = f"wrapper_{gen_func_name}"
@@ -53,8 +58,8 @@ class Serializer(Visitor):
             wrapper_function = f"""
 @classmethod
 def {gen_function_name}(cls, *args, **kwargs):
-    x = {op_pycode.generated_code.strip()}
-    return x(*args, **kwargs)
+    _fennel_internal = {op_pycode.generated_code.strip()}
+    return _fennel_internal(*args, **kwargs)
 """
         else:
             wrapper_function = f"""
@@ -75,8 +80,8 @@ def {gen_function_name}(cls, *args, **kwargs):
         new_entry_point = f"{self.dataset_name}_{gen_function_name}"
         ret_code = f"""
 def {new_entry_point}(*args, **kwargs):
-    x = {self.dataset_name}.__fennel_original_cls__
-    return getattr(x, "{gen_function_name}")(*args, **kwargs)
+    _fennel_internal = {self.dataset_name}.__fennel_original_cls__
+    return getattr(_fennel_internal, "{gen_function_name}")(*args, **kwargs)
 """
         gen_code = gen_code + "\n" + dedent(ret_code)
 

@@ -1,4 +1,8 @@
 # Changelog
+
+## [0.15.16] - 2023-06-01
+- Add support for longer complex lambda functions.
+
 ## [0.15.15] - 2023-05-26
 - Improve error handling of drop/rename operators
 - Require `default` for min/max aggregates
