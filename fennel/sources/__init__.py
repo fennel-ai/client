@@ -16,4 +16,7 @@ from fennel.sources.sources import (
     KafkaConnector,
     TableConnector,
     WebhookConnector,
+    Kinesis,
+    InitPosition,
+    KinesisConnector,
 )

@@ -11,6 +11,8 @@ from fennel.sources import (
     S3,
     Snowflake,
     Kafka,
+    Kinesis,
+    InitPosition,
 )
 
 # noinspection PyUnresolvedReferences
@@ -44,6 +46,11 @@ kafka = Kafka(
     sasl_mechanism="PLAIN",
     sasl_plain_username="test",
     sasl_plain_password="test",
+)
+
+kinesis = Kinesis(
+    name="kinesis_src",
+    role_arn="arn:aws:iam::123456789012:role/test-role",
 )
 
 
@@ -141,6 +148,86 @@ def test_invalid_s3_source():
         assert len(dataset_request.sources) == 3
 
     assert str(e.value) == "'S3' object has no attribute 'table'"
+
+
+def test_invalid_kinesis_source():
+    with pytest.raises(AttributeError) as e:
+
+        @meta(owner="test@test.com")
+        @source(kinesis.stream("test_stream", InitPosition.AT_TIMESTAMP))
+        @dataset
+        class UserInfoDatasetKinesis1:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            timestamp: datetime = field(timestamp=True)
+
+    assert (
+        str(e.value)
+        == "init_timestamp must be specified for AT_TIMESTAMP init_position"
+    )
+
+    with pytest.raises(AttributeError) as e:
+
+        @meta(owner="test@test.com")
+        @source(
+            kinesis.stream(
+                "test_stream",
+                InitPosition.AT_TIMESTAMP,
+                init_timestamp="2020-01-01T00:00:00Z",
+            )
+        )
+        @dataset
+        class UserInfoDatasetKinesis2:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            timestamp: datetime = field(timestamp=True)
+
+    assert str(e.value) == "init_timestamp must be of type datetime"
+
+    with pytest.raises(AttributeError) as e:
+
+        @meta(owner="test@test.com")
+        @source(
+            kinesis.stream(
+                "test_stream",
+                InitPosition.AT_TIMESTAMP,
+                init_timestamp=datetime.now(),
+                format="csv",
+            )
+        )
+        @dataset
+        class UserInfoDatasetKinesis3:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            timestamp: datetime = field(timestamp=True)
+
+    assert str(e.value) == "Kinesis format must be json"
+
+    with pytest.raises(AttributeError) as e:
+
+        @meta(owner="test@test.com")
+        @source(
+            kinesis.stream(
+                "test_stream",
+                InitPosition.LATEST,
+                init_timestamp=datetime.now(),
+                format="csv",
+            )
+        )
+        @dataset
+        class UserInfoDatasetKinesis:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            timestamp: datetime = field(timestamp=True)
+
+    assert (
+        str(e.value)
+        == "init_timestamp must not be specified for LATEST or TRIM_HORIZON init_position"
+    )
 
 
 def test_multiple_sources():

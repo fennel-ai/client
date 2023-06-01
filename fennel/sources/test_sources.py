@@ -14,6 +14,8 @@ from fennel.sources import (
     Snowflake,
     BigQuery,
     Kafka,
+    Kinesis,
+    InitPosition,
 )
 
 # noinspection PyUnresolvedReferences
@@ -213,6 +215,11 @@ kafka = Kafka(
 
 s3_console = S3.get(
     name="s3_test",
+)
+
+kinesis = Kinesis(
+    name="kinesis_src",
+    role_arn="arn:aws:iam::123456789012:role/test-role",
 )
 
 
@@ -497,6 +504,89 @@ def test_multiple_sources():
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
     assert extdb_request == expected_extdb_request, error_message(
         extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(kinesis.stream("test_stream", InitPosition.LATEST))
+    @dataset
+    class UserInfoDatasetKinesis:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetKinesis)
+    sync_request = view._get_sync_request_proto()
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "kinesis_src",
+        "kinesis": {"roleArn": "arn:aws:iam::123456789012:role/test-role"},
+    }
+
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        kinesis.stream(
+            "test_stream",
+            InitPosition.AT_TIMESTAMP,
+            init_timestamp=datetime(2023, 5, 31, 15, 30),
+            format="json",
+        )
+    )
+    @dataset
+    class UserInfoDatasetKinesis:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetKinesis)
+    sync_request = view._get_sync_request_proto()
+
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "kinesis_src",
+        "kinesis": {"roleArn": "arn:aws:iam::123456789012:role/test-role"},
+    }
+
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    source_req = sync_request.sources[0]
+    e = {
+        "table": {
+            "kinesisStream": {
+                "streamArn": "test_stream",
+                "initPosition": "AT_TIMESTAMP",
+                "initTimestamp": "2023-05-31T15:30:00Z",
+                "format": "json",
+                "db": {
+                    "name": "kinesis_src",
+                    "kinesis": {
+                        "roleArn": "arn:aws:iam::123456789012:role/test-role"
+                    },
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetKinesis",
+        "lateness": "3600s",
+    }
+    expected_source = ParseDict(e, connector_proto.Source())
+    assert source_req == expected_source, error_message(
+        source_req, expected_source
     )
 
 

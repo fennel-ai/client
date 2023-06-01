@@ -2,15 +2,18 @@ from __future__ import annotations
 
 import inspect
 import json
+from datetime import datetime
 from textwrap import dedent, indent
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
+from google.protobuf.timestamp_pb2 import Timestamp
 from typing import Any, Dict, List, Optional, Tuple
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.expectations_pb2 as exp_proto
 import fennel.gen.featureset_pb2 as fs_proto
+import fennel.gen.kinesis_pb2 as kinesis_proto
 import fennel.gen.metadata_pb2 as metadata_proto
 import fennel.gen.pycode_pb2 as pycode_proto
 import fennel.gen.schema_pb2 as schema_proto
@@ -408,6 +411,8 @@ def _conn_to_source_proto(
         return _kafka_conn_to_source_proto(connector, dataset_name)
     elif isinstance(connector, sources.WebhookConnector):
         return _webhook_to_source_proto(connector, dataset_name)
+    elif isinstance(connector, sources.KinesisConnector):
+        return _kinesis_conn_to_source_proto(connector, dataset_name)
     else:
         raise ValueError(f"Unknown connector type: {type(connector)}")
 
@@ -847,6 +852,88 @@ def _pg_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
         name=name,
         reference=connector_proto.Reference(
             dbtype=connector_proto.Reference.POSTGRES
+        ),
+    )
+
+
+def _kinesis_conn_to_source_proto(
+    connector: sources.KinesisConnector,
+    dataset_name: str,
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    data_source = connector.data_source
+    if data_source._get:
+        ext_db = _kinesis_ref_to_ext_db_proto(name=data_source.name)
+    else:
+        ext_db = _kinesis_to_ext_db_proto(
+            name=data_source.name,
+            role_arn=data_source.role_arn,
+        )
+    ext_table = _kinesis_to_ext_table_proto(
+        db=ext_db,
+        stream_arn=connector.stream_arn,
+        init_position=connector.init_position,
+        init_timestamp=connector.init_timestamp,
+        format=connector.format,
+    )
+    return (
+        ext_db,
+        connector_proto.Source(
+            table=ext_table,
+            dataset=dataset_name,
+            lateness=to_duration_proto(connector.lateness),
+        ),
+    )
+
+
+def _kinesis_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
+    return connector_proto.ExtDatabase(
+        name=name,
+        reference=connector_proto.Reference(
+            dbtype=connector_proto.Reference.KINESIS
+        ),
+    )
+
+
+def _kinesis_to_ext_db_proto(
+    name: str, role_arn: str
+) -> connector_proto.ExtDatabase:
+    return connector_proto.ExtDatabase(
+        name=name,
+        kinesis=connector_proto.Kinesis(
+            role_arn=role_arn,
+        ),
+    )
+
+
+def _kinesis_to_ext_table_proto(
+    db: connector_proto.ExtDatabase,
+    stream_arn: str,
+    init_position: sources.InitPosition,
+    init_timestamp: Optional[datetime] = None,
+    format: str = "json",
+) -> connector_proto.ExtTable:
+    if init_position == sources.InitPosition.TRIM_HORIZON:
+        ip = kinesis_proto.InitPosition.TRIM_HORIZON
+    elif init_position == sources.InitPosition.LATEST:
+        ip = kinesis_proto.InitPosition.LATEST
+    elif init_position == sources.InitPosition.AT_TIMESTAMP:
+        ip = kinesis_proto.InitPosition.AT_TIMESTAMP
+    else:
+        raise ValueError(f"Unknown init position: {init_position}")
+
+    # Convert init_timestamp to timestamp proto
+    if init_timestamp is not None:
+        timestamp = Timestamp()
+        timestamp.FromDatetime(init_timestamp)
+    else:
+        timestamp = None
+    return connector_proto.ExtTable(
+        kinesis_stream=connector_proto.KinesisStream(
+            db=db,
+            stream_arn=stream_arn,
+            init_position=ip,
+            init_timestamp=timestamp,
+            format=format,
         ),
     )
 
