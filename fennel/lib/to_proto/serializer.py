@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from textwrap import dedent, indent
 
 import google.protobuf.duration_pb2 as duration_proto
@@ -19,6 +20,10 @@ from fennel.lib.to_proto.source_code import (
     to_includes_proto,
     get_dataset_core_code,
 )
+
+
+def _del_spaces_tabs_and_newlines(s):
+    return re.sub(r"[\s\n\t]+", "", s)
 
 
 class Serializer(Visitor):
@@ -45,7 +50,7 @@ class Serializer(Visitor):
 
     def wrap_function(self, op_pycode, is_filter=False) -> pycode_proto.PyCode:
         gen_func_name = hashlib.sha256(
-            op_pycode.core_code.encode()
+            _del_spaces_tabs_and_newlines(op_pycode.core_code).encode()
         ).hexdigest()[:10]
 
         gen_function_name = f"wrapper_{gen_func_name}"

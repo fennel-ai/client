@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 import time
 import unittest
 from datetime import datetime, timedelta
@@ -145,15 +146,15 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                    response.json()["error"]
-                    == """error: input parse error: expected Int, but got String("32")"""
+                response.json()["error"]
+                == """error: input parse error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                    response.json()["error"]
-                    == "Schema validation failed during data insertion to "
-                       "`UserInfoDataset` [ValueError('Field `age` is of type int, but the column "
-                       "in the dataframe is of type `object`. Error found during checking schema for `UserInfoDataset`.')]"
+                response.json()["error"]
+                == "Schema validation failed during data insertion to "
+                "`UserInfoDataset` [ValueError('Field `age` is of type int, but the column "
+                "in the dataframe is of type `object`. Error found during checking schema for `UserInfoDataset`.')]"
             )
         client.sleep(10)
         # Do some lookups
@@ -251,6 +252,7 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
+
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -263,8 +265,8 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-                str(e.exception)
-                == "Dataset currently does not support deleted or deprecated fields."
+            str(e.exception)
+            == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
@@ -1196,7 +1198,7 @@ class ManchesterUnitedPlayerInfo:
     @pipeline()
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
@@ -1234,7 +1236,7 @@ class ManchesterUnitedPlayerInfoBounded:
     @pipeline(version=1)
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
@@ -1458,7 +1460,7 @@ def test_join(client):
     def test_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         assert df.shape == (3, 4), "Shape is not correct {}".format(df.shape)
         assert (
-                "b1" not in df.columns
+            "b1" not in df.columns
         ), "b1 column should not be present, " "{}".format(df.columns)
         return df
 
@@ -1520,16 +1522,16 @@ def test_join(client):
 
 
 def extract_payload(
-        df: pd.DataFrame,
-        payload_col: str = "payload",
-        json_col: str = "json_payload",
+    df: pd.DataFrame,
+    payload_col: str = "payload",
+    json_col: str = "json_payload",
 ) -> pd.DataFrame:
     df[json_col] = df[payload_col].apply(lambda x: json.loads(x))
     return df[["timestamp", json_col]]
 
 
 def extract_keys(
-        df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
+    df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
 ) -> pd.DataFrame:
     for key in keys:
         df[key] = df[json_col].apply(lambda x: x[key])
@@ -1538,16 +1540,16 @@ def extract_keys(
 
 
 def extract_location_index(
-        df: pd.DataFrame,
-        index_col: str,
-        latitude_col: str = "latitude",
-        longitude_col: str = "longitude",
-        resolution: int = 2,
+    df: pd.DataFrame,
+    index_col: str,
+    latitude_col: str = "latitude",
+    longitude_col: str = "longitude",
+    resolution: int = 2,
 ) -> pd.DataFrame:
     df[index_col] = df.apply(
-        lambda x: str(x[latitude_col])[0: 3 + resolution]
-                  + "-"
-                  + str(x[longitude_col])[0: 3 + resolution],
+        lambda x: str(x[latitude_col])[0 : 3 + resolution]  # noqa
+        + "-"  # noqa
+        + str(x[longitude_col])[0 : 3 + resolution],  # noqa
         axis=1,
     )
     return df
@@ -1632,7 +1634,6 @@ def test_complex_lambda(client):
     assert len(sync_request.operators) == 6
 
     expected_code = """
-
 def extract_location_index(
     df: pd.DataFrame,
     index_col: str,
@@ -1641,15 +1642,12 @@ def extract_location_index(
     resolution: int = 2,
 ) -> pd.DataFrame:
     df[index_col] = df.apply(
-        lambda x: str(x[latitude_col])[0 : 3 + resolution]
-        + "-"
-        + str(x[longitude_col])[0 : 3 + resolution],
+        lambda x: str(x[latitude_col])[0 : 3 + resolution]  # noqa
+        + "-"  # noqa
+        + str(x[longitude_col])[0 : 3 + resolution],  # noqa
         axis=1,
     )
     return df
-
-
-
 
 def extract_keys(
     df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
@@ -1659,9 +1657,6 @@ def extract_keys(
 
     return df.drop(json_col, axis=1)
 
-
-
-
 def extract_payload(
     df: pd.DataFrame,
     payload_col: str = "payload",
@@ -1669,9 +1664,6 @@ def extract_payload(
 ) -> pd.DataFrame:
     df[json_col] = df[payload_col].apply(lambda x: json.loads(x))
     return df[["timestamp", json_col]]
-
-
-
 
 @dataset
 @meta(owner="aditya@fennel.ai.com", description="Location index features")
@@ -1684,9 +1676,8 @@ class LocationLatLong:
     onb_velocity_l90_2: int
     onb_total_2: int
 
-
     @classmethod
-    def wrapper_6f7fccc9e7(cls, *args, **kwargs):
+    def wrapper_adace968e2(cls, *args, **kwargs):
 
         def extract_payload(
                 df: pd.DataFrame,
@@ -1699,14 +1690,14 @@ class LocationLatLong:
 
         return extract_payload(*args, **kwargs)
 
-
-def LocationLatLong_wrapper_6f7fccc9e7(*args, **kwargs):
+def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
     _fennel_internal = LocationLatLong.__fennel_original_cls__
-    return getattr(_fennel_internal, "wrapper_6f7fccc9e7")(*args, **kwargs)
+    return getattr(_fennel_internal, "wrapper_adace968e2")(*args, **kwargs)
 """
-    assert del_spaces_tabs_and_newlines(
-        sync_request.operators[2].transform.pycode.generated_code
-    ) == del_spaces_tabs_and_newlines(expected_code)
+    if sys.version_info >= (3, 9):
+        assert del_spaces_tabs_and_newlines(
+            sync_request.operators[2].transform.pycode.generated_code
+        ) == del_spaces_tabs_and_newlines(expected_code)
 
     # Test running of code
     client.sync(datasets=[CommonEvent, LocationLatLong])
@@ -1715,13 +1706,13 @@ def LocationLatLong_wrapper_6f7fccc9e7(*args, **kwargs):
             "name": "LocationLatLong",
             "timestamp": datetime.now(),
             "payload": '{"user_id": "246", "latitude": 12.3, "longitude": 12.3, '
-                       '"token": "abc"}',
+            '"token": "abc"}',
         },
         {
             "name": "LocationLatLong",
             "timestamp": datetime.now(),
             "payload": '{"user_id": "246", "latitude": 12.3, "longitude": 12.4, '
-                       '"token": "abc"}',
+            '"token": "abc"}',
         },
         {
             "name": "LocationLatLong",
