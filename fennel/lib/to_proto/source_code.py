@@ -72,25 +72,21 @@ def lambda_to_python_regular_func(lambda_func):
     except (IOError, TypeError):
         return None
 
-    if len(source_lines) == 2:
-        # Fix the case when first line ends with a backslash by concatenating
-        # the second line
-        if source_lines[0].strip().endswith("\\"):
-            source_lines[0] = (
-                source_lines[0].rstrip()[:-1] + source_lines[1].strip()
-            )
-        else:
-            source_lines[0] = source_lines[0].strip() + source_lines[1].strip()
-        source_lines = source_lines[:1]
+    source_lines = [line.strip() for line in source_lines]
 
-    # skip `def`-ed functions and long lambdas
-    if len(source_lines) != 1:
-        raise ValueError(
-            f"Lambda function `{source_lines}` is too long, please compress "
-            "the function into a single line or use a regular function"
-        )
+    i = 0
+    while i < len(source_lines) - 1:
+        if source_lines[i].endswith("\\"):
+            source_lines[i] = source_lines[i][:-1] + source_lines[i + 1]
+            del source_lines[i + 1]
+        else:
+            i += 1
 
     source_text = os.linesep.join(source_lines).strip()
+
+    # In case source_text is across multiple lines join them
+    source_text = source_text.replace("\n", " ")
+    source_text = source_text.replace("\r", " ")
 
     # find the AST node of a lambda definition
     # so we can locate it in the source code
@@ -204,13 +200,9 @@ def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
             dep = to_includes_proto(f)
             gen_code = dedent(dep.generated_code) + "\n" + gen_code
             dependencies.append(dep)
+
     entry_point = func.__name__
     if func.__name__ == "<lambda>":
-        num_lines = len(inspect.getsourcelines(func)[0])
-        if num_lines > 1:
-            raise ValueError(
-                "Lambda functions with more than 1 line are not supported."
-            )
         # generate a random name for the lambda function
         entry_point = "<lambda>"
         code = lambda_to_python_regular_func(func)

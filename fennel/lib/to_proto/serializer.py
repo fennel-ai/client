@@ -34,7 +34,7 @@ class Serializer(Visitor):
         if hasattr(pipeline.func, FENNEL_INCLUDED_MOD):
             for f in getattr(pipeline.func, FENNEL_INCLUDED_MOD):
                 dep = to_includes_proto(f)
-            gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
+                gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
         self.lib_generated_code = gen_code
         self.dataset_code = get_dataset_core_code(dataset)
         self.dataset_name = dataset._name
@@ -53,8 +53,8 @@ class Serializer(Visitor):
             wrapper_function = f"""
 @classmethod
 def {gen_function_name}(cls, *args, **kwargs):
-    x = {op_pycode.generated_code.strip()}
-    return x(*args, **kwargs)
+    _fennel_internal = {op_pycode.generated_code.strip()}
+    return _fennel_internal(*args, **kwargs)
 """
         else:
             wrapper_function = f"""
@@ -75,8 +75,8 @@ def {gen_function_name}(cls, *args, **kwargs):
         new_entry_point = f"{self.dataset_name}_{gen_function_name}"
         ret_code = f"""
 def {new_entry_point}(*args, **kwargs):
-    x = {self.dataset_name}.__fennel_original_cls__
-    return getattr(x, "{gen_function_name}")(*args, **kwargs)
+    _fennel_internal = {self.dataset_name}.__fennel_original_cls__
+    return getattr(_fennel_internal, "{gen_function_name}")(*args, **kwargs)
 """
         gen_code = gen_code + "\n" + dedent(ret_code)
 

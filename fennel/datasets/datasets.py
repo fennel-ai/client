@@ -246,14 +246,6 @@ class Transform(_Node):
         self.node = node
         self.node.out_edges.append(self)
         self.new_schema = schema
-        if func.__name__ == "<lambda>":
-            num_lines = len(inspect.getsourcelines(func)[0])
-            if num_lines > 1:
-                raise ValueError(
-                    "Complex lambda functions using "
-                    "multiple lines are not supported for "
-                    f"transforms. Found: {inspect.getsourcelines(func)}"
-                )
 
     def signature(self):
         if isinstance(self.node, Dataset):

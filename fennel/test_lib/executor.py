@@ -72,13 +72,13 @@ class Executor(Visitor):
             t_df = func(copy.deepcopy(input_ret.df))
         except Exception as e:
             raise Exception(
-                f"Error in transform function for pipeline "
-                f"{self.cur_pipeline_name}, {e}"
+                f"Error in transform function `{obj.func.__name__}` for pipeline "
+                f"`{self.cur_pipeline_name}`, {e}"
             )
         num_rows = t_df.shape[0]
         if t_df is None:
             raise Exception(
-                f"Transform function {obj.func.__name__} returned " f"None"
+                f"Transform function `{obj.func.__name__}` returned " f"None"
             )
         # Check if input_ret.df and t_df have the exactly same columns.
         input_column_names = input_ret.df.columns.values.tolist()
@@ -87,8 +87,8 @@ class Executor(Visitor):
             if obj.new_schema is None:
                 raise ValueError(
                     f"Schema change detected in transform of pipeline "
-                    f"{self.cur_pipeline_name}. Input columns: "
-                    f"{input_column_names}, output columns: {output_column_names}"
+                    f"`{self.cur_pipeline_name}`. Input columns: "
+                    f"`{input_column_names}`, output columns: `{output_column_names}`"
                     ". Please provide output schema explicitly."
                 )
             else:
@@ -97,15 +97,16 @@ class Executor(Visitor):
                     output_expected_column_names, output_column_names
                 ):
                     raise ValueError(
-                        "Output schema doesnt match in transform of pipeline "
+                        "Output schema doesnt match in transform function "
+                        f"`{obj.func.__name__}` of pipeline "
                         f"{self.cur_pipeline_name}. Got output columns: "
                         f"{output_column_names}. Expected output columns:"
                         f" {output_expected_column_names}"
                     )
         if t_df.shape[0] != num_rows:
             raise ValueError(
-                f"Transform function {obj.func.__name__} in pipeline {self.cur_pipeline_name} "
-                f"changed number of rows from {num_rows} to {t_df.shape[0]}. To "
+                f"Transform function `{obj.func.__name__}` in pipeline `{self.cur_pipeline_name}` "
+                f"changed number of rows from `{num_rows}` to `{t_df.shape[0]}`. To "
                 f"change the number of rows, use the filter function."
             )
 
