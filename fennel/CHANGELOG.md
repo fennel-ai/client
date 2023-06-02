@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15.17] - 2023-06-01
+- Create schema copy for every node. 
+
 ## [0.15.16] - 2023-06-01
 - Add support for longer complex lambda functions.
 
