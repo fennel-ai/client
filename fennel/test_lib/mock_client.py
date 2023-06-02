@@ -288,7 +288,7 @@ class MockClient(Client):
     ):
         if df.shape[0] == 0:
             print(f"Skipping log of empty dataframe for webhook {webhook}")
-            return
+            return FakeResponse(200, "OK")
 
         if df.shape[0] > _batch_size * 100:
             print(
@@ -475,7 +475,7 @@ class MockClient(Client):
     def _internal_log(self, dataset_name: str, df: pd.DataFrame):
         if df.shape[0] == 0:
             print(f"Skipping log of empty dataframe for webhook {dataset_name}")
-            return
+            return FakeResponse(200, "OK")
 
         if dataset_name not in self.dataset_requests:
             return FakeResponse(404, f"Dataset {dataset_name} not found")

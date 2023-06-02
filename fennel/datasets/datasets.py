@@ -194,7 +194,7 @@ class _Node(Generic[T]):
     def transform(self, func: Callable, schema: Dict = {}) -> _Node:
         if schema == {}:
             return Transform(self, func, None)
-        return Transform(self, func, schema)
+        return Transform(self, func, copy.deepcopy(schema))
 
     def filter(self, func: Callable) -> _Node:
         return Filter(self, func)
@@ -233,7 +233,7 @@ class _Node(Generic[T]):
         raise NotImplementedError
 
     def schema(self):
-        return self.dsschema().schema()
+        return copy.deepcopy(self.dsschema().schema())
 
     def num_out_edges(self) -> int:
         return len(self.out_edges)
@@ -273,14 +273,6 @@ class Filter(_Node):
         super().__init__()
         self.node = node
         self.node.out_edges.append(self)
-        if func.__name__ == "<lambda>":
-            num_lines = len(inspect.getsourcelines(func)[0])
-            if num_lines > 1:
-                raise ValueError(
-                    "Complex lambda functions using "
-                    "multiple lines are not supported for "
-                    "filters."
-                )
         self.func = func  # noqa: E731
 
     def signature(self):
