@@ -777,7 +777,10 @@ class PositiveRatingActivity:
     @inputs(RatingActivity)
     def filter_positive_ratings(cls, rating: Dataset):
         filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
-        return filtered_ds.groupby("movie").aggregate(
+        filter2 = filtered_ds.filter(
+            lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
+        )
+        return filter2.groupby("movie").aggregate(
             [Count(window=Window("forever"), into_field=str(cls.cnt_rating))],
         )
 
@@ -1636,37 +1639,41 @@ def test_complex_lambda(client):
 
     expected_code = """
 def extract_location_index(
-    df: pd.DataFrame,
-    index_col: str,
-    latitude_col: str = "latitude",
-    longitude_col: str = "longitude",
-    resolution: int = 2,
+        df: pd.DataFrame,
+        index_col: str,
+        latitude_col: str = "latitude",
+        longitude_col: str = "longitude",
+        resolution: int = 2,
 ) -> pd.DataFrame:
     df[index_col] = df.apply(
-        lambda x: str(x[latitude_col])[0 : 3 + resolution]  # noqa
-        + "-"  # noqa
-        + str(x[longitude_col])[0 : 3 + resolution],  # noqa
+        lambda x: str(x[latitude_col])[0: 3 + resolution]  # noqa
+                  + "-"  # noqa
+                  + str(x[longitude_col])[0: 3 + resolution],  # noqa
         axis=1,
     )
+    df[index_col] = df[index_col].astype(str)
     return df
 
 def extract_keys(
-    df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
+        df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
 ) -> pd.DataFrame:
     for key in keys:
         df[key] = df[json_col].apply(lambda x: x[key])
-
+        if key == "latitude" or key == "longitude":
+            df[key] = df[key].astype(float)
     return df.drop(json_col, axis=1)
 
+
 def extract_payload(
-    df: pd.DataFrame,
-    payload_col: str = "payload",
-    json_col: str = "json_payload",
+        df: pd.DataFrame,
+        payload_col: str = "payload",
+        json_col: str = "json_payload",
 ) -> pd.DataFrame:
     df[json_col] = df[payload_col].apply(lambda x: json.loads(x))
     return df[["timestamp", json_col]]
 
 @dataset
+@meta(owner="aditya@fennel.ai.com", description="Location index features")
 class LocationLatLong:
     latlng2: str = field(key=True)
     timestamp: datetime = field(timestamp=True)
@@ -1690,14 +1697,16 @@ class LocationLatLong:
 
         return extract_payload(*args, **kwargs)
 
+
 def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
     _fennel_internal = LocationLatLong.__fennel_original_cls__
     return getattr(_fennel_internal, "wrapper_adace968e2")(*args, **kwargs)
+
 """
 
-    # assert del_spaces_tabs_and_newlines(
-    #     sync_request.operators[2].transform.pycode.generated_code
-    # ) == del_spaces_tabs_and_newlines(expected_code)
+    assert del_spaces_tabs_and_newlines(
+        sync_request.operators[2].transform.pycode.generated_code
+    ) == del_spaces_tabs_and_newlines(expected_code)
 
     # Test running of code
     client.sync(datasets=[CommonEvent, LocationLatLong])
@@ -1733,3 +1742,113 @@ def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
     assert found.tolist() == [True, True]
     assert res.shape == (2, 7)
     assert res["onb_velocity_l1_2"].tolist() == [1, 2]
+
+
+@dataset
+@source(Webhook(name="fennel_webhook").endpoint("common"))
+@meta(owner="nitin@epifi.com", tags=["common"])
+class TransactionsCredit:
+    updated_at: datetime = field(timestamp=True)
+    to_account_id: str
+    to_account_type: str
+    payment_protocol: str
+    provenance: str
+    computed_amount: float
+
+
+@dataset
+@meta(owner="nitin@epifi.com", tags=["common"])
+class TransactionsCreditInternetBanking:
+    account_id: str = field(key=True)
+    updated_at: datetime = field(timestamp=True)
+    sum_credit_internet_banking: float
+    min_credit_internet_banking: float
+    max_credit_internet_banking: float
+    mean_credit_internet_banking: float
+    number_credit_internet_banking: int
+
+    @pipeline(version=1)
+    @inputs(TransactionsCredit)
+    def get_payload(cls, event: Dataset):
+        event = (
+            event.rename({"to_account_id": "account_id"})  # type: ignore
+            .filter(lambda x: x["provenance"] == "EXTERNAL")
+            .filter(lambda x: x["payment_protocol"].isin(["RTGS", "IMPS"]))
+            .groupby("account_id")
+            .aggregate(
+                [
+                    Sum(
+                        of="computed_amount",
+                        window=Window("forever"),
+                        into_field="sum_credit_internet_banking",
+                    ),
+                    Min(
+                        of="computed_amount",
+                        window=Window("forever"),
+                        into_field="min_credit_internet_banking",
+                        default=float("inf"),
+                    ),
+                    Max(
+                        of="computed_amount",
+                        window=Window("forever"),
+                        into_field="max_credit_internet_banking",
+                        default=float("-inf"),
+                    ),
+                    Average(
+                        of="computed_amount",
+                        window=Window("forever"),
+                        into_field="mean_credit_internet_banking",
+                    ),
+                    Count(
+                        window=Window("forever"),
+                        into_field="number_credit_internet_banking",
+                    ),
+                ]
+            )
+        )
+        return event
+
+
+@mock
+def test_chained_lambda(client):
+    client.sync(
+        datasets=[TransactionsCredit, TransactionsCreditInternetBanking]
+    )
+    view = InternalTestClient()
+    view.add(TransactionsCredit)
+    view.add(TransactionsCreditInternetBanking)
+    sync_request = view._get_sync_request_proto()
+
+    assert len(sync_request.pipelines) == 1
+    assert len(sync_request.operators) == 5
+
+    expected_code = """
+@dataset
+@meta(owner="nitin@epifi.com", tags=["common"])
+class TransactionsCreditInternetBanking:
+    account_id: str = field(key=True)
+    updated_at: datetime = field(timestamp=True)
+    sum_credit_internet_banking: float
+    min_credit_internet_banking: float
+    max_credit_internet_banking: float
+    mean_credit_internet_banking: float
+    number_credit_internet_banking: int
+
+
+    @classmethod
+    def wrapper_4d45b34b11(cls, *args, **kwargs):
+        _fennel_internal = lambda x: x["payment_protocol"].isin(["RTGS", "IMPS"])
+        return _fennel_internal(*args, **kwargs)
+
+
+def TransactionsCreditInternetBanking_wrapper_4d45b34b11(*args, **kwargs):
+    _fennel_internal = TransactionsCreditInternetBanking.__fennel_original_cls__
+    return getattr(_fennel_internal, "wrapper_4d45b34b11")(*args, **kwargs)
+
+def TransactionsCreditInternetBanking_wrapper_4d45b34b11_filter(df: pd.DataFrame) -> pd.DataFrame:
+    return df[TransactionsCreditInternetBanking_wrapper_4d45b34b11(df)]
+    """
+
+    assert del_spaces_tabs_and_newlines(
+        sync_request.operators[3].filter.pycode.generated_code
+    ) == del_spaces_tabs_and_newlines(expected_code)

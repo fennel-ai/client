@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.15.18] - 2023-06-01
+- Support chaining of operators for lambda functions. 
+
 ## [0.15.17] - 2023-06-01
 - Create schema copy for every node. 
 

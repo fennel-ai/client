@@ -63,6 +63,38 @@ def get_dataset_core_code(dataset: Dataset) -> str:
     return _remove_empty_lines(source_code)
 
 
+def fix_lambda_text(source_text, lambda_func, line_num):
+    # Try to fix the syntax error by removing any junk in the start
+    if source_text.startswith("."):
+        source_text = source_text[1:]
+
+    err = ValueError(
+        f"Unable to parse lambda function source code "
+        f"`{source_text}`, please ensure there are no comments in the lambda "
+        f"or use a regular function"
+    )
+    try:
+        source_ast = ast.parse(source_text)
+        return source_ast, source_text
+    except SyntaxError:
+        pass
+
+    # Try to fix the syntax error by combining the lines
+    # Find source code in line_num - 1 from the file
+    with open(lambda_func.__code__.co_filename, "r") as f:
+        lines = f.readlines()
+        if line_num - 2 >= len(lines):
+            raise err
+        line_above = lines[line_num - 2]
+    # Put source_text at end of line_above
+    source_text = line_above.strip() + source_text.strip()
+    try:
+        source_ast = ast.parse(source_text)
+        return source_ast, source_text
+    except SyntaxError:
+        raise err
+
+
 def lambda_to_python_regular_func(lambda_func):
     """Return the source of a (short) lambda function.
     If it's impossible to obtain, returns None.
@@ -90,27 +122,15 @@ def lambda_to_python_regular_func(lambda_func):
 
     # find the AST node of a lambda definition
     # so we can locate it in the source code
-    err = ValueError(
-        f"Unable to parse lambda function source code "
-        f"`{source_text}`, please ensure there are no comments in the lambda "
-        f"or use a regular function"
-    )
     try:
         source_ast = ast.parse(source_text)
     except SyntaxError:
-        # Try to fix the syntax error by combining the lines
-        # Find source code in line_num - 1 from the file
-        with open(lambda_func.__code__.co_filename, "r") as f:
-            lines = f.readlines()
-            if line_num - 2 >= len(lines):
-                raise err
-            line_above = lines[line_num - 2]
-        # Put source_text at end of line_above
-        source_text = line_above.strip() + source_text.strip()
         try:
-            source_ast = ast.parse(source_text)
-        except SyntaxError:
-            raise err
+            source_ast, source_text = fix_lambda_text(
+                source_text, lambda_func, line_num
+            )
+        except Exception as e:
+            raise e
 
     lambda_node = next(
         (node for node in ast.walk(source_ast) if isinstance(node, ast.Lambda)),
@@ -126,8 +146,10 @@ def lambda_to_python_regular_func(lambda_func):
     # Unfortunately, AST nodes only keep their _starting_ offsets
     # from the original source, so we have to determine the end ourselves.
     # We do that by gradually shaving extra junk from after the definition.
-    lambda_text = source_text[lambda_node.col_offset :]  # noqa
-    lambda_body_text = source_text[lambda_node.body.col_offset :]  # noqa
+    lambda_text = dedent(source_text[lambda_node.col_offset :])  # noqa
+    lambda_body_text = dedent(
+        source_text[lambda_node.body.col_offset :]
+    )  # noqa
     min_length = len("lambda:_")  # shortest possible lambda expression
     backup_code = ""
     while len(lambda_text) > min_length:
