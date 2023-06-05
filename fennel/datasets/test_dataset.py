@@ -15,6 +15,8 @@ from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
+from fennel.lib.includes import includes
+
 webhook = Webhook(name="fennel_webhook")
 
 
@@ -312,6 +314,9 @@ def test_dataset_with_pipes():
     class C:
         t: datetime
 
+    def add_one(x: int):
+        return x + 1
+
     @meta(owner="aditya@fennel.ai")
     @dataset
     class ABCDataset:
@@ -319,6 +324,7 @@ def test_dataset_with_pipes():
         t: datetime
 
         @pipeline(version=1)
+        @includes(add_one)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.left_join(b, left_on=["a1"], right_on=["b1"])
@@ -352,7 +358,26 @@ def test_dataset_with_pipes():
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
-    pipeline_req.pycode.Clear()
+    expected_gen_code = """
+
+def add_one(x: int):
+    return x + 1
+
+
+@pipeline(version=1)
+@includes(add_one)
+@inputs(A, B)
+def pipeline1(cls, a: Dataset, b: Dataset):
+    return a.left_join(b, left_on=["a1"], right_on=["b1"])
+"""
+    assert expected_gen_code == pipeline_req.pycode.generated_code
+    expected_source_code = """@pipeline(version=1)
+@includes(add_one)
+@inputs(A, B)
+def pipeline1(cls, a: Dataset, b: Dataset):
+    return a.left_join(b, left_on=["a1"], right_on=["b1"])
+"""
+    assert expected_source_code == pipeline_req.pycode.source_code
     p = {
         "name": "pipeline1",
         "dataset_name": "ABCDataset",
@@ -363,6 +388,7 @@ def test_dataset_with_pipes():
         "active": True,
         "pycode": {},
     }
+    pipeline_req.pycode.Clear()
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
         pipeline_req, expected_pipeline_request
