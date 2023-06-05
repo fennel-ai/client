@@ -15,6 +15,8 @@ from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
+from fennel.lib.includes import includes
+
 webhook = Webhook(name="fennel_webhook")
 
 
@@ -312,6 +314,9 @@ def test_dataset_with_pipes():
     class C:
         t: datetime
 
+    def add_one(x: int):
+        return x + 1
+
     @meta(owner="aditya@fennel.ai")
     @dataset
     class ABCDataset:
@@ -319,6 +324,7 @@ def test_dataset_with_pipes():
         t: datetime
 
         @pipeline(version=1)
+        @includes(add_one)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.left_join(b, left_on=["a1"], right_on=["b1"])
@@ -352,6 +358,26 @@ def test_dataset_with_pipes():
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
+    expected_gen_code = """
+
+def add_one(x: int):
+    return x + 1
+
+
+@pipeline(version=1)
+@includes(add_one)
+@inputs(A, B)
+def pipeline1(cls, a: Dataset, b: Dataset):
+    return a.left_join(b, left_on=["a1"], right_on=["b1"])
+"""
+    assert expected_gen_code == pipeline_req.pycode.generated_code
+    expected_source_code = """@pipeline(version=1)
+@includes(add_one)
+@inputs(A, B)
+def pipeline1(cls, a: Dataset, b: Dataset):
+    return a.left_join(b, left_on=["a1"], right_on=["b1"])
+"""
+    assert expected_source_code == pipeline_req.pycode.source_code
     p = {
         "name": "pipeline1",
         "dataset_name": "ABCDataset",
@@ -360,7 +386,9 @@ def test_dataset_with_pipes():
         "input_dataset_names": ["A", "B"],
         "version": 1,
         "active": True,
+        "pycode": {},
     }
+    pipeline_req.pycode.Clear()
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
         pipeline_req, expected_pipeline_request
@@ -515,6 +543,7 @@ def test_dataset_with_pipes_bounds():
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
     p = {
         "name": "pipeline1",
         "dataset_name": "ABCDatasetDefault",
@@ -523,6 +552,7 @@ def test_dataset_with_pipes_bounds():
         "input_dataset_names": ["A", "B"],
         "version": 1,
         "active": True,
+        "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -607,6 +637,7 @@ def test_dataset_with_pipes_bounds():
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
     p = {
         "name": "pipeline1",
         "dataset_name": "ABCDatasetDefault",
@@ -615,6 +646,7 @@ def test_dataset_with_pipes_bounds():
         "input_dataset_names": ["A", "B"],
         "version": 1,
         "active": True,
+        "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -699,6 +731,7 @@ def test_dataset_with_pipes_bounds():
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
     p = {
         "name": "pipeline1",
         "dataset_name": "ABDatasetLow",
@@ -707,6 +740,7 @@ def test_dataset_with_pipes_bounds():
         "input_dataset_names": ["A", "B"],
         "version": 1,
         "active": True,
+        "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -792,6 +826,7 @@ def test_dataset_with_pipes_bounds():
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
     p = {
         "name": "pipeline1",
         "dataset_name": "ABDatasetHigh",
@@ -800,6 +835,7 @@ def test_dataset_with_pipes_bounds():
         "input_dataset_names": ["A", "B"],
         "version": 1,
         "active": True,
+        "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -885,6 +921,7 @@ def test_dataset_with_pipes_bounds():
     # There is one pipeline
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
     p = {
         "name": "pipeline1",
         "dataset_name": "ABDataset",
@@ -893,6 +930,7 @@ def test_dataset_with_pipes_bounds():
         "input_dataset_names": ["A", "B"],
         "version": 1,
         "active": True,
+        "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1066,6 +1104,7 @@ def test_dataset_with_complex_pipe():
     # Only one pipeline
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
     p = {
         "name": "create_fraud_dataset",
         "dataset_name": "FraudReportAggregatedDataset",
@@ -1074,6 +1113,7 @@ def test_dataset_with_complex_pipe():
         "input_dataset_names": ["Activity", "UserInfoDataset"],
         "version": 1,
         "active": True,
+        "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1275,6 +1315,7 @@ def test_union_datasets():
 
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
     p = {
         "name": "pipeline2_diamond",
         "dataset_name": "ABCDataset",
@@ -1283,6 +1324,7 @@ def test_union_datasets():
         "version": 1,
         "input_dataset_names": ["A"],
         "active": True,
+        "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1510,6 +1552,7 @@ def test_search_dataset():
     # pipelines
     assert len(sync_request.pipelines) == 1
     pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
     p = {
         "name": "content_features",
         "dataset_name": "DocumentContentDataset",
@@ -1518,6 +1561,7 @@ def test_search_dataset():
         "version": 1,
         "input_dataset_names": ["Document"],
         "active": True,
+        "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(

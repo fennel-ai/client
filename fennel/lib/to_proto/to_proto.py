@@ -224,22 +224,40 @@ def _field_to_proto(field: Field) -> schema_proto.Field:
 def pipelines_from_ds(ds: Dataset) -> List[ds_proto.Pipeline]:
     pipelines = []
     for pipeline in ds._pipelines:
-        pipelines.append(_pipeline_to_proto(pipeline, ds.__name__))
+        pipelines.append(_pipeline_to_proto(pipeline, ds))
     return pipelines
 
 
-def _pipeline_to_proto(
-    pipeline: Pipeline, dataset_name: str
-) -> ds_proto.Pipeline:
+def _pipeline_to_proto(pipeline: Pipeline, ds: Dataset) -> ds_proto.Pipeline:
+    dependencies = []
+    gen_code = ""
+    if hasattr(pipeline.func, FENNEL_INCLUDED_MOD):
+        for f in getattr(pipeline.func, FENNEL_INCLUDED_MOD):
+            dep = to_includes_proto(f)
+            gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
+            dependencies.append(dep)
+
+    pipeline_code = fennel_get_source(pipeline.func)
+    gen_code += pipeline_code
+
     return ds_proto.Pipeline(
         name=pipeline.name,
-        dataset_name=dataset_name,
+        dataset_name=ds._name,
         # TODO(mohit): Deprecate this field
         signature=pipeline.name,
         metadata=get_metadata_proto(pipeline.func),
         input_dataset_names=[dataset._name for dataset in pipeline.inputs],
         version=pipeline.version,
         active=pipeline.active,
+        pycode=pycode_proto.PyCode(
+            source_code=pipeline_code,
+            core_code=pipeline_code,
+            generated_code=gen_code,
+            entry_point=pipeline.name,
+            includes=dependencies,
+            ref_includes={},
+            imports=get_all_imports(),
+        ),
     )
 
 

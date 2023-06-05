@@ -1,4 +1,7 @@
 # Changelog
+## [0.15.19] - 2023-06-04
+- Send pipeline source code during sync.
+
 
 ## [0.15.18] - 2023-06-01
 - Support chaining of operators for lambda functions. 

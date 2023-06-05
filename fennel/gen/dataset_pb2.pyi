@@ -135,6 +135,7 @@ class Pipeline(google.protobuf.message.Message):
     VERSION_FIELD_NUMBER: builtins.int
     ACTIVE_FIELD_NUMBER: builtins.int
     LINEAGES_FIELD_NUMBER: builtins.int
+    PYCODE_FIELD_NUMBER: builtins.int
     name: builtins.str
     dataset_name: builtins.str
     signature: builtins.str
@@ -146,9 +147,11 @@ class Pipeline(google.protobuf.message.Message):
     active: builtins.bool
     @property
     def lineages(self) -> global___PipelineLineages:
-        """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
+        """NOTE: PIPELINE LINEAGE PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
         THE CLIENT
         """
+    @property
+    def pycode(self) -> pycode_pb2.PyCode: ...
     def __init__(
         self,
         *,
@@ -160,9 +163,10 @@ class Pipeline(google.protobuf.message.Message):
         version: builtins.int = ...,
         active: builtins.bool = ...,
         lineages: global___PipelineLineages | None = ...,
+        pycode: pycode_pb2.PyCode | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["lineages", b"lineages", "metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["active", b"active", "dataset_name", b"dataset_name", "input_dataset_names", b"input_dataset_names", "lineages", b"lineages", "metadata", b"metadata", "name", b"name", "signature", b"signature", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["lineages", b"lineages", "metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["active", b"active", "dataset_name", b"dataset_name", "input_dataset_names", b"input_dataset_names", "lineages", b"lineages", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "signature", b"signature", "version", b"version"]) -> None: ...
 
 global___Pipeline = Pipeline
 
