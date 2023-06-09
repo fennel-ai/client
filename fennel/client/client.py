@@ -128,6 +128,84 @@ class Client:
             response = self._post_json("{}/log".format(V1_API), req)
         return response
 
+    def list_datasets(self):
+        return self._get("{}/definitions/datasets".format(V1_API)).json()
+
+    def dataset_definition(self, dataset_name: str):
+        return self._get(
+            "{}/definitions/datasets/{}".format(V1_API, dataset_name)
+        ).json()
+
+    def list_pipelines(self, dataset_name: str):
+        return self._get(
+            "{}/definitions/datasets/{}/pipelines".format(V1_API, dataset_name)
+        ).json()
+
+    def pipeline_definition(self, dataset_name: str, pipeline_name: str):
+        return self._get(
+            "{}/definitions/datasets/{}/pipelines/{}".format(
+                V1_API, dataset_name, pipeline_name
+            )
+        ).json()
+
+    def list_featuresets(self):
+        return self._get("{}/definitions/featuresets".format(V1_API)).json()
+
+    def featureset_definition(self, featureset_name: str):
+        return self._get(
+            "{}/definitions/featuresets/{}".format(V1_API, featureset_name)
+        ).json()
+
+    def list_extractors(self, featureset_name: str):
+        return self._get(
+            "{}/definitions/featuresets/{}/extractors".format(
+                V1_API, featureset_name
+            )
+        ).json()
+
+    def extractor_definition(self, featureset_name: str, extractor_name: str):
+        return self._get(
+            "{}/definitions/featuresets/{}/extractors/{}".format(
+                V1_API, featureset_name, extractor_name
+            )
+        ).json()
+
+    def list_features(self, featureset_name: str):
+        return self._get(
+            "{}/definitions/featuresets/{}/features".format(
+                V1_API, featureset_name
+            )
+        ).json()
+
+    def feature_definition(self, featureset_name: str, feature_name: str):
+        return self._get(
+            "{}/definitions/featuresets/{}/features/{}".format(
+                V1_API, featureset_name, feature_name
+            )
+        ).json()
+
+    def list_sources(self):
+        return self._get("{}/definitions/sources".format(V1_API)).json()
+
+    def source_definition(self, source_uuid: str):
+        return self._get(
+            "{}/definitions/sources/{}".format(V1_API, source_uuid)
+        ).json()
+
+    def _get(self, path: str):
+        headers = None
+        if self.token:
+            headers = {}
+            headers["Authorization"] = "Bearer " + self.token
+        response = self.http.request(
+            "GET",
+            self._url(path),
+            headers=headers,
+            timeout=_DEFAULT_TIMEOUT,
+        )
+        check_response(response)
+        return response
+
     def _post_json(
         self, path: str, req: Dict[str, Any], compress: bool = False
     ):
