@@ -112,3 +112,24 @@ class UserDataset:
 
 client.log("fennel_webhook", "UserDataset", df)
 # /docsnip
+
+
+# docsnip s3_hudi_source
+s3 = sources.S3(
+    name="ratings_source",
+    aws_access_key_id="<SOME_ACCESS_KEY>",
+    aws_secret_access_key="<SOME_SECRET_ACCESS_KEY>",
+)
+
+
+@source(s3.bucket("engagement", prefix="notion", format="hudi"), every="30m")
+@meta(owner="abc@email.com")
+@dataset
+class UserHudiSourcedDataset:
+    uid: int = field(key=True)
+    email: str
+    timestamp: datetime
+    ...
+
+
+# /docsnip
