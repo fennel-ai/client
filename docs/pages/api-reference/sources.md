@@ -58,15 +58,14 @@ If you see a `Cannot create a PoolableConnectionFactory`error, try setting **`jd
 The following fields need to be defined on the source:
 
 1. **`name`** - A name to identify the source. The name should be unique across all sources.
-2. that you don't need to replicate.
-3. **`aws_access_key_id`** - In order to access private Buckets stored on AWS S3, this connector requires credentials with the proper permissions. If accessing publicly available data, this field is not required.
-4. **`aws_secret_access_key` **_**-**_ In order to access private S3 Buckets, this connector requires credentials with the proper permissions. If accessing publicly available data, this field is not required.
+2. **`aws_access_key_id`** - In order to access private Buckets stored on AWS S3, this connector requires credentials with the proper permissions. If accessing publicly available data, this field is not required.
+3. **`aws_secret_access_key`** - In order to access private S3 Buckets, this connector requires credentials with the proper permissions. If accessing publicly available data, this field is not required.
 
 And the following fields need to be defined on the bucket:
 
 1. **`bucket`** - Name of the S3 bucket where the file(s) exist.
-2. **`path_prefix`** (optional)- By providing a path-like prefix (e.g., `myFolder/thisTable/`) under which all the relevant files sit, we can optimize finding these in S3. This is optional but recommended if your bucket contains many folders/files&#x20;
-3. **`format` ** (optional) **-** The format of the files you'd like to replicate. You can choose between CSV (default), Avro, and Parquet.&#x20;
+2. **`path_prefix`** (optional) - By providing a path-like prefix (e.g., `myFolder/thisTable/`) under which all the relevant files sit, we can optimize finding these in S3. This is optional but recommended if your bucket contains many folders/files&#x20;
+3. **`format`** (optional) - The format of the files you'd like to replicate. You can choose between CSV (default), Avro, Hudi and Parquet.&#x20;
 4. **`delimiter`** (optional) - the character delimiting individual cells in the CSV data. The default value is `","` and if overridden, this can only be a 1-character string. For example, to use tab-delimited data enter `"\t"`.
 
 <pre snippet="api-reference/source#s3_source"></pre>
@@ -111,10 +110,10 @@ The following fields need to be defined:
 2. **`host`** - The host domain of the Snowflake instance (must include the account, region and cloud environment, and end with snowflakecomputing.com). Example: `accountname.us-east-2.aws.snowflakecomputing.com`.
 3. **`role`** - The role that Fennel should use to access Snowflake.
 4. **`warehouse`** - The warehouse that Fennel should use to access Snowflake
-5. **`db_name` **_**-**_ The database where the required data resides.
+5. **`db_name`** - The database where the required data resides.
 6. **`schema`** - The default schema used as the target schema for all statements issued from the connection that do not explicitly specify a schema name.
 7. **`username`**  - The username that should be used to access Snowflake. Please note that the username should have the required permissions to assume the role provided.
-8. **`password` ** **-** The password associated with the username.
+8. **`password`** - The password associated with the username.
 
 <pre snippet="api-reference/source#snowflake_source"></pre>
 
@@ -122,4 +121,26 @@ The following fields need to be defined:
 :::info
 Currently, Fennel only supports OAuth 1 (username and password) authentication. We are happy to prioritize support for OAuth 2.0 if needed - if so, please talk to us!
 :::
+
+### HUDI
+
+The HUDI source is very similar to the S3 source, since HUDI is built on top of S3. The only additional field that needs to be specified is the `format` field, which should be set to "hudi". 
+
+The following fields need to be defined:
+
+1. **`name`** - A name to identify the source. The name should be unique across all sources.
+2. **`aws_access_key_id`** - In order to access private Buckets stored on AWS S3, this connector requires credentials with the proper permissions. If accessing publicly available data, this field is not required.
+3. **`aws_secret_access_key`**- In order to access private S3 Buckets, this connector requires credentials with the proper permissions. If accessing publicly available data, this field is not required.
+
+And the following fields need to be defined on the bucket:
+
+1. **`bucket`** - Name of the S3 bucket where the file(s) exist.
+2. **`path_prefix`** (optional) - By providing a path-like prefix (e.g., `myFolder/thisTable/`) under which all the relevant files sit, we can optimize finding these in S3. This is optional but recommended if your bucket contains many folders/files&#x20;
+3. **`format`** - Should be set to "hudi". 
+
+<pre snippet="api-reference/source#s3_hudi_source"></pre>
+
+
+Fennel uses  `file_last_modified` property exported by S3 to track what data has been seen so far and hence a cursor field doesn't need to be specified.
+
 
