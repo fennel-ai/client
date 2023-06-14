@@ -1,4 +1,7 @@
 # Changelog
+## [0.15.20] - 2023-06-13
+- Pass timestamp sorting column to the source. 
+
 ## [0.15.19] - 2023-06-04
 - Send pipeline source code during sync.
 

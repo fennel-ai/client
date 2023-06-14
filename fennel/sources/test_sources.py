@@ -145,6 +145,7 @@ def test_simple_source():
         "every": "3600s",
         "lateness": "72000s",
         "cursor": "added_on",
+        "timestamp_field": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -273,6 +274,7 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetS3",
         "every": "3600s",
         "lateness": "172800s",
+        "timestamp_field": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -332,6 +334,7 @@ def test_multiple_sources():
         "every": "3600s",
         "lateness": "3600s",
         "cursor": "added_on",
+        "timestampField": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -394,6 +397,7 @@ def test_multiple_sources():
         "every": "3600s",
         "lateness": "7200s",
         "cursor": "added_on",
+        "timestampField": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -452,6 +456,7 @@ def test_multiple_sources():
         "every": "3600s",
         "lateness": "3600s",
         "cursor": "added_on",
+        "timestampField": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -626,6 +631,7 @@ def test_console_source():
         "dataset": "UserInfoDataset",
         "every": "3600s",
         "lateness": "3600s",
+        "timestampField": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
