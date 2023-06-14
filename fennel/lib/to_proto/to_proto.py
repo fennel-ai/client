@@ -112,7 +112,9 @@ def to_sync_request_proto(
             pipelines.extend(pipelines_from_ds(obj))
             operators.extend(operators_from_ds(obj))
             expectations.extend(expectations_from_ds(obj))
-            res = sources_from_ds(obj, sources.SOURCE_FIELD)
+            res = sources_from_ds(
+                obj, sources.SOURCE_FIELD, obj.timestamp_field
+            )
             if res is None:
                 continue
             (ext_db, s) = res
@@ -288,11 +290,19 @@ def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
 
 
 def sources_from_ds(
-    ds: Dataset, source_field
+    ds: Dataset, source_field, timestamp_field: str
 ) -> Optional[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
+    """
+    Returns the source proto for a dataset if it exists
+
+    :param ds: The dataset to get the source proto for.
+    :param source_field: The attr for the source field.
+    :param timestamp_field: An optional column that can be used to sort the
+    data from the source.
+    """
     if hasattr(ds, source_field):
         source: sources.DataConnector = getattr(ds, source_field)
-        return _conn_to_source_proto(source, ds._name)
+        return _conn_to_source_proto(source, ds._name, timestamp_field)
     return None  # type: ignore
 
 
@@ -418,13 +428,16 @@ def _check_owner_exists(obj):
 # Connector
 # ------------------------------------------------------------------------------
 def _conn_to_source_proto(
-    connector: sources.DataConnector,
-    dataset_name: str,
+    connector: sources.DataConnector, dataset_name: str, timestamp_field: str
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if isinstance(connector, sources.S3Connector):
-        return _s3_conn_to_source_proto(connector, dataset_name)
+        return _s3_conn_to_source_proto(
+            connector, dataset_name, timestamp_field
+        )
     elif isinstance(connector, sources.TableConnector):
-        return _table_conn_to_source_proto(connector, dataset_name)
+        return _table_conn_to_source_proto(
+            connector, dataset_name, timestamp_field
+        )
     elif isinstance(connector, sources.KafkaConnector):
         return _kafka_conn_to_source_proto(connector, dataset_name)
     elif isinstance(connector, sources.WebhookConnector):
@@ -518,7 +531,7 @@ def _kafka_to_ext_db_proto(
 
 
 def _s3_conn_to_source_proto(
-    connector: sources.S3Connector, dataset_name: str
+    connector: sources.S3Connector, dataset_name: str, timestamp_field: str
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if not isinstance(data_source, sources.S3):
@@ -541,6 +554,7 @@ def _s3_conn_to_source_proto(
         every=to_duration_proto(connector.every),
         lateness=to_duration_proto(connector.lateness),
         cursor=connector.cursor,
+        timestamp_field=timestamp_field,
     )
     return (ext_db, source)
 
@@ -568,6 +582,7 @@ def _s3_to_ext_table_proto(
         raise ValueError("bucket must be specified")
     if path_prefix is None:
         raise ValueError("path_prefix must be specified")
+
     return connector_proto.ExtTable(
         s3_table=connector_proto.S3Table(
             db=db,
@@ -580,21 +595,25 @@ def _s3_to_ext_table_proto(
 
 
 def _table_conn_to_source_proto(
-    connector: sources.TableConnector, dataset_name: str
+    connector: sources.TableConnector, dataset_name: str, timestamp_field: str
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if isinstance(data_source, sources.BigQuery):
         return _bigquery_conn_to_source_proto(
-            connector, data_source, dataset_name
+            connector, data_source, dataset_name, timestamp_field
         )
     elif isinstance(data_source, sources.Snowflake):
         return _snowflake_conn_to_source_proto(
-            connector, data_source, dataset_name
+            connector, data_source, dataset_name, timestamp_field
         )
     elif isinstance(data_source, sources.MySQL):
-        return _mysql_conn_to_source_proto(connector, data_source, dataset_name)
+        return _mysql_conn_to_source_proto(
+            connector, data_source, dataset_name, timestamp_field
+        )
     elif isinstance(data_source, sources.Postgres):
-        return _pg_conn_to_source_proto(connector, data_source, dataset_name)
+        return _pg_conn_to_source_proto(
+            connector, data_source, dataset_name, timestamp_field
+        )
     else:
         raise ValueError(f"Unknown data source type: {type(data_source)}")
 
@@ -603,6 +622,7 @@ def _bigquery_conn_to_source_proto(
     connector: sources.TableConnector,
     data_source: sources.BigQuery,
     dataset_name: str,
+    timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _bigquery_to_ext_db_proto(
         data_source.name,
@@ -622,12 +642,16 @@ def _bigquery_conn_to_source_proto(
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
+            timestamp_field=timestamp_field,
         ),
     )
 
 
 def _bigquery_to_ext_db_proto(
-    name: str, project_id: str, dataset_id: str, credentials_json: str
+    name: str,
+    project_id: str,
+    dataset_id: str,
+    credentials_json: str,
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -654,6 +678,7 @@ def _snowflake_conn_to_source_proto(
     connector: sources.TableConnector,
     data_source: sources.Snowflake,
     dataset_name: str,
+    timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _snowflake_to_ext_db_proto(
         name=data_source.name,
@@ -677,6 +702,7 @@ def _snowflake_conn_to_source_proto(
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
+            timestamp_field=timestamp_field,
         ),
     )
 
@@ -725,6 +751,7 @@ def _mysql_conn_to_source_proto(
     connector: sources.TableConnector,
     data_source: sources.MySQL,
     dataset_name: str,
+    timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if data_source._get:
         ext_db = _mysql_ref_to_ext_db_proto(name=data_source.name)
@@ -749,6 +776,7 @@ def _mysql_conn_to_source_proto(
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
+            timestamp_field=timestamp_field,
         ),
     )
 
@@ -801,6 +829,7 @@ def _pg_conn_to_source_proto(
     connector: sources.TableConnector,
     data_source: sources.Postgres,
     dataset_name: str,
+    timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if data_source._get:
         ext_db = _pg_ref_to_ext_db_proto(name=data_source.name)
@@ -825,6 +854,7 @@ def _pg_conn_to_source_proto(
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
+            timestamp_field=timestamp_field,
         ),
     )
 
