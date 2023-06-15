@@ -2,10 +2,10 @@ import copy
 import types
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Optional, Dict, List
 
 import numpy as np
 import pandas as pd
-from typing import Any, Optional, Dict, List
 
 from fennel.datasets import Pipeline, Visitor, Dataset
 from fennel.lib.aggregate import Count
@@ -41,7 +41,7 @@ class Executor(Visitor):
         self.agg_state = agg_state
 
     def execute(
-        self, pipeline: Pipeline, dataset: Dataset
+            self, pipeline: Pipeline, dataset: Dataset
     ) -> Optional[NodeRet]:
         self.cur_pipeline_name = f"{pipeline.dataset_name}.{pipeline.name}"
         self.serializer = Serializer(pipeline, dataset)
@@ -94,7 +94,7 @@ class Executor(Visitor):
             else:
                 output_expected_column_names = obj.new_schema.keys()
                 if not set_match(
-                    output_expected_column_names, output_column_names
+                        output_expected_column_names, output_column_names
                 ):
                     raise ValueError(
                         "Output schema doesnt match in transform function "
@@ -140,7 +140,7 @@ class Executor(Visitor):
         )
 
     def _merge_df(
-        self, df1: pd.DataFrame, df2: pd.DataFrame, ts: str
+            self, df1: pd.DataFrame, df2: pd.DataFrame, ts: str
     ) -> pd.DataFrame:
         merged_df = pd.concat([df1, df2])
         return merged_df.sort_values(ts)
@@ -296,8 +296,8 @@ class Executor(Visitor):
         transformed_dtypes = merged_df.dtypes
         for index, dtype in zip(original_dtypes.index, original_dtypes.values):
             if (
-                index in right_df.columns.values
-                and index not in left_df.columns.values
+                    index in right_df.columns.values
+                    and index not in left_df.columns.values
             ):
                 if dtype == np.int64 and transformed_dtypes[index] == object:
                     original_dtypes[index] = np.dtype(np.float64)
@@ -378,4 +378,20 @@ class Executor(Visitor):
             if col in input_ret.key_fields:
                 input_ret.key_fields.remove(col)
 
+        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+
+    def visitDedup(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        df = input_ret.df
+        df = df.drop_duplicates(subset=obj.by)
+        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+
+    def visitExplode(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        df = input_ret.df
+        df = df.explode(obj.columns)
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)

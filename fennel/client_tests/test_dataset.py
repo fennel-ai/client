@@ -3,10 +3,10 @@ import re
 import time
 import unittest
 from datetime import datetime, timedelta
+from typing import Optional, List, Dict
 
 import pandas as pd
 import pytest
-from typing import Optional, List, Dict
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -145,15 +145,15 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                response.json()["error"]
-                == """error: input parse error: expected Int, but got String("32")"""
+                    response.json()["error"]
+                    == """error: input parse error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                response.json()["error"]
-                == "Schema validation failed during data insertion to "
-                "`UserInfoDataset` [ValueError('Field `age` is of type int, but the column "
-                "in the dataframe is of type `object`. Error found during checking schema for `UserInfoDataset`.')]"
+                    response.json()["error"]
+                    == "Schema validation failed during data insertion to "
+                       "`UserInfoDataset` [ValueError('Field `age` is of type int, but the column "
+                       "in the dataframe is of type `object`. Error found during checking schema for `UserInfoDataset`.')]"
             )
         client.sleep(10)
         # Do some lookups
@@ -251,7 +251,6 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
-
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -264,8 +263,8 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-            str(e.exception)
-            == "Dataset currently does not support deleted or deprecated fields."
+                str(e.exception)
+                == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
@@ -540,7 +539,7 @@ class MovieStats:
                 ]
             ]
 
-        c = rating.left_join(revenue, on=[str(cls.movie)])
+        c = rating.join(revenue, on=[str(cls.movie)])
         # Transform provides additional columns which will be filtered out.
         return c.transform(
             to_millions,
@@ -898,7 +897,7 @@ class FraudReportAggregatedDataset:
                 "timestamp": datetime,
             },
         )
-        ds = ds.left_join(
+        ds = ds.join(
             merchant_info,
             on=["merchant_id"],
         )
@@ -1200,7 +1199,7 @@ class ManchesterUnitedPlayerInfo:
     @pipeline()
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
@@ -1218,9 +1217,9 @@ class ManchesterUnitedPlayerInfo:
                 "timestamp": datetime,
             },
         )
-        ms = metric_stats.left_join(club_salary, on=["club"])
+        ms = metric_stats.join(club_salary, on=["club"])
         man_players = ms.filter(lambda df: df["club"] == "Manchester United")
-        return man_players.left_join(wag, on=["name"])
+        return man_players.join(wag, on=["name"])
 
 
 @meta(owner="gianni@fifa.com")
@@ -1238,7 +1237,7 @@ class ManchesterUnitedPlayerInfoBounded:
     @pipeline(version=1)
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
@@ -1256,13 +1255,13 @@ class ManchesterUnitedPlayerInfoBounded:
                 "timestamp": datetime,
             },
         )
-        player_info_with_salary = metric_stats.left_join(
+        player_info_with_salary = metric_stats.join(
             club_salary, on=["club"], within=("60s", "0s")
         )
         manchester_players = player_info_with_salary.filter(
             lambda df: df["club"] == "Manchester United"
         )
-        return manchester_players.left_join(
+        return manchester_players.join(
             wag, on=["name"], within=("forever", "60s")
         )
 
@@ -1462,7 +1461,7 @@ def test_join(client):
     def test_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         assert df.shape == (3, 4), "Shape is not correct {}".format(df.shape)
         assert (
-            "b1" not in df.columns
+                "b1" not in df.columns
         ), "b1 column should not be present, " "{}".format(df.columns)
         return df
 
@@ -1493,7 +1492,7 @@ def test_join(client):
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            x = a.left_join(
+            x = a.join(
                 b,
                 left_on=["a1"],
                 right_on=["b1"],
@@ -1524,16 +1523,16 @@ def test_join(client):
 
 
 def extract_payload(
-    df: pd.DataFrame,
-    payload_col: str = "payload",
-    json_col: str = "json_payload",
+        df: pd.DataFrame,
+        payload_col: str = "payload",
+        json_col: str = "json_payload",
 ) -> pd.DataFrame:
     df[json_col] = df[payload_col].apply(lambda x: json.loads(x))
     return df[["timestamp", json_col]]
 
 
 def extract_keys(
-    df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
+        df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
 ) -> pd.DataFrame:
     for key in keys:
         df[key] = df[json_col].apply(lambda x: x[key])
@@ -1543,16 +1542,16 @@ def extract_keys(
 
 
 def extract_location_index(
-    df: pd.DataFrame,
-    index_col: str,
-    latitude_col: str = "latitude",
-    longitude_col: str = "longitude",
-    resolution: int = 2,
+        df: pd.DataFrame,
+        index_col: str,
+        latitude_col: str = "latitude",
+        longitude_col: str = "longitude",
+        resolution: int = 2,
 ) -> pd.DataFrame:
     df[index_col] = df.apply(
-        lambda x: str(x[latitude_col])[0 : 3 + resolution]  # noqa
-        + "-"  # noqa
-        + str(x[longitude_col])[0 : 3 + resolution],  # noqa
+        lambda x: str(x[latitude_col])[0: 3 + resolution]  # noqa
+                  + "-"  # noqa
+                  + str(x[longitude_col])[0: 3 + resolution],  # noqa
         axis=1,
     )
     df[index_col] = df[index_col].astype(str)

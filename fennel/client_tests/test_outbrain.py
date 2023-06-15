@@ -57,7 +57,7 @@ class PageViewsByUser:
     @pipeline(version=1)
     @inputs(PageViews)
     def group_by_user(cls, page_views: Dataset):
-        return page_views.groupby("uuid").aggregate(
+        return page_views.dedup(by=['uuid', 'document_id']).groupby("uuid").aggregate(
             [
                 Count(window=Window("28d"), into_field="page_views"),
                 Count(window=Window("1d"), into_field="page_views_1d"),
@@ -170,7 +170,7 @@ def test_outbrain(client):
         input_dataframe=input_df,
     )
     assert feature_df.shape[0] == 399
-    assert feature_df["UserPageViewFeatures.page_views"].sum() == 12971
-    assert feature_df["UserPageViewFeatures.page_views_1d"].sum() == 943
-    assert feature_df["UserPageViewFeatures.page_views_3d"].sum() == 4065
-    assert feature_df["UserPageViewFeatures.page_views_9d"].sum() == 10083
+    assert feature_df["UserPageViewFeatures.page_views"].sum() == 11705
+    assert feature_df["UserPageViewFeatures.page_views_1d"].sum() == 826
+    assert feature_df["UserPageViewFeatures.page_views_3d"].sum() == 3359
+    assert feature_df["UserPageViewFeatures.page_views_9d"].sum() == 8953

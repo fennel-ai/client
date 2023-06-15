@@ -1,21 +1,20 @@
 import json
 from datetime import datetime, timedelta
+from typing import Optional, List
 
 import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
-from typing import Optional, List
 
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
+from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
-
-from fennel.lib.includes import includes
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -327,7 +326,7 @@ def test_dataset_with_pipes():
         @includes(add_one)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.left_join(b, left_on=["a1"], right_on=["b1"])
+            return a.join(b, left_on=["a1"], right_on=["b1"])
 
     view = InternalTestClient()
     view.add(ABCDataset)
@@ -368,14 +367,14 @@ def add_one(x: int):
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.left_join(b, left_on=["a1"], right_on=["b1"])
+    return a.join(b, left_on=["a1"], right_on=["b1"])
 """
     assert expected_gen_code == pipeline_req.pycode.generated_code
     expected_source_code = """@pipeline(version=1)
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.left_join(b, left_on=["a1"], right_on=["b1"])
+    return a.join(b, left_on=["a1"], right_on=["b1"])
 """
     assert expected_source_code == pipeline_req.pycode.source_code
     p = {
@@ -426,7 +425,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "7e89417507044ac2c4fddfdf04df414e",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABCDataset",
@@ -464,7 +463,7 @@ def test_dataset_with_pipes_bounds():
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.left_join(b, left_on=["a1"], right_on=["b1"])
+            return a.join(b, left_on=["a1"], right_on=["b1"])
 
     @meta(owner="aditya@fennel.ai")
     @dataset
@@ -475,7 +474,7 @@ def test_dataset_with_pipes_bounds():
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.left_join(
+            return a.join(
                 b,
                 left_on=["a1"],
                 right_on=["b1"],
@@ -491,7 +490,7 @@ def test_dataset_with_pipes_bounds():
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.left_join(
+            return a.join(
                 b,
                 left_on=["a1"],
                 right_on=["b1"],
@@ -507,7 +506,7 @@ def test_dataset_with_pipes_bounds():
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.left_join(
+            return a.join(
                 b,
                 left_on=["a1"],
                 right_on=["b1"],
@@ -591,7 +590,7 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "7e89417507044ac2c4fddfdf04df414e",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABCDatasetDefault",
@@ -685,7 +684,7 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "7e89417507044ac2c4fddfdf04df414e",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABCDatasetDefault",
@@ -779,7 +778,7 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "5e0f878ae07c4059f5d15a167aebff46",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABDatasetLow",
@@ -874,7 +873,7 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "a421bb327a667672ac419772711d7ff0",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABDatasetHigh",
@@ -969,7 +968,7 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "ab3159d192c521972821225b2f67e80d",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABDataset",
@@ -1024,7 +1023,7 @@ def test_dataset_with_complex_pipe():
             filtered_ds = activity.filter(
                 lambda df: df["action_type"] == "report_txn"
             )
-            ds = filtered_ds.left_join(
+            ds = filtered_ds.join(
                 user_info,
                 on=["user_id"],
             )
@@ -1166,7 +1165,7 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[3]
     o = {
-        "id": "6fa56621c7e337b5812e0a0ee238f9e4",
+        "id": "4202e94cf2e47bf5bcc94fd57aee8d0f",
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "join": {
@@ -1182,11 +1181,11 @@ def test_dataset_with_complex_pipe():
 
     operator_req = erase_operator_pycode(sync_request.operators[4])
     o = {
-        "id": "66a626a2829d18bbd4ec329d87829d73",
+        "id": "bfa10d216f843625785d24e6b9d890fb",
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "transform": {
-            "operandId": "6fa56621c7e337b5812e0a0ee238f9e4",
+            "operandId": "4202e94cf2e47bf5bcc94fd57aee8d0f",
             "schema": {
                 "user_id": {"intType": {}},
                 "merchant_id": {"intType": {}},
@@ -1203,12 +1202,12 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[5]
     o = {
-        "id": "4bfb6ebb8ba42632f9e85d95d58c9461",
+        "id": "97d7791f0296e4c48319cd17622895b2",
         "isRoot": True,
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "aggregate": {
-            "operandId": "66a626a2829d18bbd4ec329d87829d73",
+            "operandId": "bfa10d216f843625785d24e6b9d890fb",
             "keys": ["merchant_id"],
             "specs": [
                 {

@@ -92,7 +92,7 @@ class UserCategoryDataset:
     @pipeline(1)
     @inputs(ViewData, PostInfo)
     def count_user_views(cls, view_data: Dataset, post_info: Dataset):
-        post_info_enriched = view_data.left_join(post_info, on=["post_id"])
+        post_info_enriched = view_data.join(post_info, on=["post_id"])
         post_info_enriched_t = post_info_enriched.transform(
             lambda df: df.fillna("unknown"),
             schema={"user_id": str, "category": str, "time_stamp": datetime},
@@ -132,10 +132,10 @@ class UserFeatures:
     @inputs(Request.user_id, Request.category)
     @outputs(category_view_ratio, num_category_views)
     def extractor_category_view(
-        cls,
-        ts: pd.Series,
-        user_ids: pd.Series,
-        categories: pd.Series,
+            cls,
+            ts: pd.Series,
+            user_ids: pd.Series,
+            categories: pd.Series,
     ):
         category_views, _ = UserCategoryDataset.lookup(  # type: ignore
             ts, user_id=user_ids, category=categories

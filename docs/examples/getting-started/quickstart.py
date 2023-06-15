@@ -1,9 +1,9 @@
 # docsnip imports
 from datetime import datetime, timedelta
+from typing import Optional
 
 import pandas as pd
 import requests
-from typing import Optional
 
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import feature, featureset, extractor
@@ -75,7 +75,7 @@ class UserSellerOrders:
     @pipeline(version=1)
     @inputs(Order, Product)
     def my_pipeline(cls, orders: Dataset, products: Dataset):
-        orders = orders.left_join(products, on=["product_id"])
+        orders = orders.join(products, on=["product_id"])
         orders = orders.transform(
             lambda df: df[["uid", "seller_id", "timestamp"]].fillna(0),
             schema={

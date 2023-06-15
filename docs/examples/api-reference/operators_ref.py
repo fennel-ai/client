@@ -1,8 +1,8 @@
 import json
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
-from typing import Optional
 
 from fennel.datasets import dataset, field
 from fennel.datasets import pipeline, Dataset
@@ -45,7 +45,7 @@ class FraudActivityDataset:
     @pipeline(version=1)
     @inputs(Activity, MerchantCategory)
     def create_fraud_dataset(
-        cls, activity: Dataset, merchant_category: Dataset
+            cls, activity: Dataset, merchant_category: Dataset
     ):
         # docsnip transform
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -81,7 +81,7 @@ class FraudActivityDataset:
         # /docsnip
 
         # docsnip join
-        joined_ds = dropped_ds.left_join(
+        joined_ds = dropped_ds.join(
             merchant_category, on=["merchant"], within=("forever", "60s")
         )
         # /docsnip

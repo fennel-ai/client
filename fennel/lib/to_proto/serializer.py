@@ -3,14 +3,13 @@ from __future__ import annotations
 import hashlib
 import re
 from textwrap import dedent, indent
+from typing import Dict, Any, List
 
 import google.protobuf.duration_pb2 as duration_proto
-from typing import Dict, Any, List
 
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
-from fennel.datasets.datasets import _validate_join_bounds  # type: ignore
 from fennel.lib.duration import (
     duration_to_timedelta,
 )
@@ -70,11 +69,11 @@ def {gen_function_name}(cls, *args, **kwargs):
 """
         wrapper_function = indent(dedent(wrapper_function), "    ")
         gen_code = (
-            dedent(self.lib_generated_code)
-            + "\n"
-            + self.dataset_code
-            + "\n"
-            + wrapper_function
+                dedent(self.lib_generated_code)
+                + "\n"
+                + self.dataset_code
+                + "\n"
+                + wrapper_function
         )
 
         new_entry_point = f"{self.dataset_name}_{gen_function_name}"
@@ -189,7 +188,6 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             ret = self.visitDataset(obj.dataset)
             self.proto_by_operator_id[rhs_operator_id] = ret
             self.operators.append(ret)
-        _validate_join_bounds(obj.within)
         # "forever" is a special value that means no lower bound.
         within_low, within_high = None, None
         if obj.within[0] != "forever":
@@ -246,5 +244,29 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             dataset_name=self.dataset_name,
             union=proto.Union(
                 operand_ids=[self.visit(node) for node in obj.nodes]
+            ),
+        )
+
+    def visitDedup(self, obj):
+        return proto.Operator(
+            id=obj.signature(),
+            is_root=obj == self.terminal_node,
+            pipeline_name=self.pipeline_name,
+            dataset_name=self.dataset_name,
+            dedup=proto.Dedup(
+                operand_id=self.visit(obj.node),
+                columns=obj.columns,
+            ),
+        )
+
+    def visitExplode(self, obj):
+        return proto.Operator(
+            id=obj.signature(),
+            is_root=obj == self.terminal_node,
+            pipeline_name=self.pipeline_name,
+            dataset_name=self.dataset_name,
+            explode=proto.Explode(
+                operand_id=self.visit(obj.node),
+                columns=obj.columns,
             ),
         )
