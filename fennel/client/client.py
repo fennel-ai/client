@@ -505,6 +505,22 @@ class Client:
         else:
             return pd.Series(response.json())
 
+    def lookup(
+        self, dataset_name: str, keys: List[Dict[str, Any]], fields: List[str]
+    ) -> tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
+        req = {
+            "keys": keys,
+            "fields": fields,
+        }
+        response = self._post_json(
+            "{}/inspect/datasets/{}/lookup".format(V1_API, dataset_name), req
+        )
+        resp_json = response.json()
+        found = pd.Series(resp_json["found"])
+        if len(fields) > 1:
+            return pd.DataFrame(resp_json["data"]), found
+        return pd.Series(resp_json["data"]), found
+
     # ----------------------- Private methods -----------------------
 
     def _url(self, path):
