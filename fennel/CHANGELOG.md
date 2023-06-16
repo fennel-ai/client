@@ -1,4 +1,7 @@
 # Changelog
+## [0.15.21] - 2023-06-16
+- Add definition APIs to the client.
+
 ## [0.15.20] - 2023-06-13
 - Pass timestamp sorting column to the source. 
 
