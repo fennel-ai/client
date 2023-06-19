@@ -385,7 +385,7 @@ class Executor(Visitor):
         if input_ret is None:
             return None
         df = input_ret.df
-        df = df.drop_duplicates(subset=obj.by)
+        df = df.drop_duplicates(subset=obj.by + [input_ret.timestamp_field], keep='last')
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
 
     def visitExplode(self, obj):

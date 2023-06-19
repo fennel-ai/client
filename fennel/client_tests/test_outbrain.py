@@ -170,7 +170,7 @@ def test_outbrain(client):
         input_dataframe=input_df,
     )
     assert feature_df.shape[0] == 399
-    assert feature_df["UserPageViewFeatures.page_views"].sum() == 11705
-    assert feature_df["UserPageViewFeatures.page_views_1d"].sum() == 826
-    assert feature_df["UserPageViewFeatures.page_views_3d"].sum() == 3359
-    assert feature_df["UserPageViewFeatures.page_views_9d"].sum() == 8953
+    assert feature_df["UserPageViewFeatures.page_views"].sum() == 12161
+    assert feature_df["UserPageViewFeatures.page_views_1d"].sum() == 855
+    assert feature_df["UserPageViewFeatures.page_views_3d"].sum() == 3487
+    assert feature_df["UserPageViewFeatures.page_views_9d"].sum() == 9273
