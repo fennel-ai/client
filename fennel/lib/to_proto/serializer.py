@@ -255,7 +255,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             dataset_name=self.dataset_name,
             dedup=proto.Dedup(
                 operand_id=self.visit(obj.node),
-                columns=obj.columns,
+                columns=obj.by,
             ),
         )
 
