@@ -481,7 +481,7 @@ class Join(_Node):
         for (col, dtype) in right_value_schema.items():
             if col in left_schema:
                 raise ValueError(
-                    "Column name collision. '{}' already exists in schema of left input".format(
+                    "Column name collision. '{}' already exists in schema of left input '{}'".format(
                         col, left_dsschema.name
                     )
                 )
@@ -1657,7 +1657,7 @@ class SchemaValidator(Visitor):
             )
         if len(obj.by) == 0:
             raise ValueError(
-                f"invalid dedup: must have at least one column to deduplicate by"
+                "invalid dedup: must have at least one column to deduplicate by"
             )
         for f in obj.by:
             if f not in input_schema.fields():
