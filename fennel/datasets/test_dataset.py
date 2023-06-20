@@ -326,7 +326,7 @@ def test_dataset_with_pipes():
         @includes(add_one)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.join(b, left_on=["a1"], right_on=["b1"])
+            return a.join(b, how='left', left_on=["a1"], right_on=["b1"])
 
     view = InternalTestClient()
     view.add(ABCDataset)
@@ -367,14 +367,14 @@ def add_one(x: int):
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.join(b, left_on=["a1"], right_on=["b1"])
+    return a.join(b, how='left', left_on=["a1"], right_on=["b1"])
 """
     assert expected_gen_code == pipeline_req.pycode.generated_code
     expected_source_code = """@pipeline(version=1)
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.join(b, left_on=["a1"], right_on=["b1"])
+    return a.join(b, how='left', left_on=["a1"], right_on=["b1"])
 """
     assert expected_source_code == pipeline_req.pycode.source_code
     p = {
@@ -433,6 +433,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
+            "how": "left",
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -463,7 +464,7 @@ def test_dataset_with_pipes_bounds():
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.join(b, left_on=["a1"], right_on=["b1"])
+            return a.join(b, how='left', left_on=["a1"], right_on=["b1"])
 
     @meta(owner="aditya@fennel.ai")
     @dataset
@@ -476,6 +477,7 @@ def test_dataset_with_pipes_bounds():
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(
                 b,
+                how='left',
                 left_on=["a1"],
                 right_on=["b1"],
                 within=("1h", "0s"),
@@ -492,6 +494,7 @@ def test_dataset_with_pipes_bounds():
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(
                 b,
+                how='left',
                 left_on=["a1"],
                 right_on=["b1"],
                 within=("forever", "1d"),
@@ -508,6 +511,7 @@ def test_dataset_with_pipes_bounds():
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(
                 b,
+                how='left',
                 left_on=["a1"],
                 right_on=["b1"],
                 within=("3d", "1y"),
@@ -598,6 +602,7 @@ def test_dataset_with_pipes_bounds():
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
+            'how': 'left',
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -692,6 +697,7 @@ def test_dataset_with_pipes_bounds():
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
+            'how': 'left',
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -787,6 +793,7 @@ def test_dataset_with_pipes_bounds():
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
             "within_low": "3600s",
+            'how': 'left',
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -878,6 +885,7 @@ def test_dataset_with_pipes_bounds():
         "pipeline_name": "pipeline1",
         "dataset_name": "ABDatasetHigh",
         "join": {
+            'how': 'left',
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
@@ -973,6 +981,7 @@ def test_dataset_with_pipes_bounds():
         "pipeline_name": "pipeline1",
         "dataset_name": "ABDataset",
         "join": {
+            'how': 'left',
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
@@ -1025,6 +1034,7 @@ def test_dataset_with_complex_pipe():
             )
             ds = filtered_ds.join(
                 user_info,
+                how='left',
                 on=["user_id"],
             )
             ds_transform = ds.transform(
@@ -1172,6 +1182,7 @@ def test_dataset_with_complex_pipe():
             "lhsOperandId": "101097826c6986ddb25ce924985d9217",
             "rhsDsrefOperandId": "UserInfoDataset",
             "on": {"user_id": "user_id"},
+            'how': 'left',
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())

@@ -82,7 +82,7 @@ class FraudActivityDataset:
 
         # docsnip join
         joined_ds = dropped_ds.join(
-            merchant_category, on=["merchant"], within=("forever", "60s")
+            merchant_category, how='left', on=["merchant"], within=("forever", "60s")
         )
         # /docsnip
 

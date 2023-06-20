@@ -188,17 +188,17 @@ class _Node(Generic[T]):
     def join(
             self,
             other: Dataset,
+            how: str,
             on: Optional[List[str]] = None,
             left_on: Optional[List[str]] = None,
             right_on: Optional[List[str]] = None,
             within: Tuple[Duration, Duration] = ("forever", "0s"),
-            how: str = "left",
     ) -> Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError("Cannot join with an intermediate dataset")
         if not isinstance(other, _Node):
             raise TypeError("Cannot join with a non-dataset object")
-        return Join(self, other, within, on, left_on, right_on, how)
+        return Join(self, other, within, how, on, left_on, right_on)
 
     def __add__(self, other):
         return Union_(self, other)
@@ -386,10 +386,10 @@ class Join(_Node):
             node: _Node,
             dataset: Dataset,
             within: Tuple[Duration, Duration],
+            how: str,
             on: Optional[List[str]] = None,
             left_on: Optional[List[str]] = None,
             right_on: Optional[List[str]] = None,
-            how: str = "left",
             lsuffix: str = '',
             rsuffix: str = '',
     ):

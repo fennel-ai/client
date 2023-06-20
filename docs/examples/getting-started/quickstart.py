@@ -75,7 +75,7 @@ class UserSellerOrders:
     @pipeline(version=1)
     @inputs(Order, Product)
     def my_pipeline(cls, orders: Dataset, products: Dataset):
-        orders = orders.join(products, on=["product_id"])
+        orders = orders.join(products, how='left', on=["product_id"])
         orders = orders.transform(
             lambda df: df[["uid", "seller_id", "timestamp"]].fillna(0),
             schema={

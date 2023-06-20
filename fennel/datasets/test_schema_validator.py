@@ -41,7 +41,7 @@ def test_join_schema_validation():
             @pipeline(version=1)
             @inputs(MovieRating, MovieRevenue)
             def pipeline_join(cls, rating: Dataset, revenue: Dataset):
-                return rating.join(revenue, on=[str(cls.movie)])
+                return rating.join(revenue, how='left', on=[str(cls.movie)])
 
     assert (
             str(e.value)
@@ -267,6 +267,7 @@ def test_aggregation_sum():
                 )
                 ds = ds.join(
                     merchant_info,
+                    how='left',
                     on=["merchant_id"],
                 )
                 new_schema = ds.schema()
@@ -523,7 +524,7 @@ def test_join_schema_validation_value():
             @pipeline(version=1)
             @inputs(A, B)
             def pipeline_join(cls, a: Dataset, b: Dataset):
-                return a.join(b, left_on=["a1"], right_on=["b1", "b2"])
+                return a.join(b, how='left', left_on=["a1"], right_on=["b1", "b2"])
 
     assert (
             str(e.value)
@@ -563,7 +564,7 @@ def test_join_schema_validation_type():
             @pipeline(version=1)
             @inputs(A, C)
             def pipeline_join(cls, a: Dataset, c: Dataset):
-                return a.join(c, left_on=["a1"], right_on=["b1"])
+                return a.join(c, how='left', left_on=["a1"], right_on=["b1"])
 
     assert (
             str(e.value)
@@ -583,7 +584,7 @@ def test_join_schema_validation_type():
             @pipeline(version=1)
             @inputs(A, E)
             def pipeline_join(cls, a: Dataset, e: Dataset):
-                return a.join(e, on=["a1"])
+                return a.join(e, how='left', on=["a1"])
 
     assert (
             str(e.value)

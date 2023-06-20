@@ -539,7 +539,7 @@ class MovieStats:
                 ]
             ]
 
-        c = rating.join(revenue, on=[str(cls.movie)])
+        c = rating.join(revenue, how='left', on=[str(cls.movie)])
         # Transform provides additional columns which will be filtered out.
         return c.transform(
             to_millions,
@@ -899,6 +899,7 @@ class FraudReportAggregatedDataset:
         )
         ds = ds.join(
             merchant_info,
+            how='left',
             on=["merchant_id"],
         )
         ds = ds.transform(
@@ -1217,9 +1218,9 @@ class ManchesterUnitedPlayerInfo:
                 "timestamp": datetime,
             },
         )
-        ms = metric_stats.join(club_salary, on=["club"])
+        ms = metric_stats.join(club_salary, how='left', on=["club"])
         man_players = ms.filter(lambda df: df["club"] == "Manchester United")
-        return man_players.join(wag, on=["name"])
+        return man_players.join(wag, how='left', on=["name"])
 
 
 @meta(owner="gianni@fifa.com")
@@ -1256,13 +1257,13 @@ class ManchesterUnitedPlayerInfoBounded:
             },
         )
         player_info_with_salary = metric_stats.join(
-            club_salary, on=["club"], within=("60s", "0s")
+            club_salary, how='left', on=["club"], within=("60s", "0s")
         )
         manchester_players = player_info_with_salary.filter(
             lambda df: df["club"] == "Manchester United"
         )
         return manchester_players.join(
-            wag, on=["name"], within=("forever", "60s")
+            wag, how='left', on=["name"], within=("forever", "60s")
         )
 
 
@@ -1494,6 +1495,7 @@ def test_join(client):
         def pipeline1(cls, a: Dataset, b: Dataset):
             x = a.join(
                 b,
+                how='left',
                 left_on=["a1"],
                 right_on=["b1"],
             )  # type: ignore

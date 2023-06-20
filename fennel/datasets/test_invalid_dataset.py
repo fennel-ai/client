@@ -138,7 +138,7 @@ def test_dataset_incorrect_join():
             @inputs(XYZ)
             def create_pipeline(cls, a: Dataset):
                 b = a.transform(lambda x: x)
-                return a.join(b, on=["user_id"])  # type: ignore
+                return a.join(b, how='left', on=["user_id"])  # type: ignore
 
     assert str(e.value) == "Cannot join with an intermediate dataset"
 
@@ -165,6 +165,7 @@ def test_dataset_incorrect_join_bounds():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
                     b,
+                    how='left',
                     left_on=["a1"],
                     right_on=["b1"],
                     within=("0s",),  # type: ignore
@@ -193,6 +194,7 @@ def test_dataset_incorrect_join_bounds():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
                     b,
+                    how='left',
                     left_on=["a1"],
                     right_on=["b1"],
                     within=(None, "0s"),  # type: ignore
@@ -221,6 +223,7 @@ def test_dataset_incorrect_join_bounds():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
                     b,
+                    how='left',
                     left_on=["a1"],
                     right_on=["b1"],
                     within=("forever", None),  # type: ignore
@@ -249,6 +252,7 @@ def test_dataset_incorrect_join_bounds():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
                     b,
+                    how='left',
                     left_on=["a1"],
                     right_on=["b1"],
                     within=(None, None),  # type: ignore
@@ -277,6 +281,7 @@ def test_dataset_incorrect_join_bounds():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
                     b,
+                    how='left',
                     left_on=["a1"],
                     right_on=["b1"],
                     within=("forever", "forever"),
@@ -342,6 +347,7 @@ def test_join():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 x = a.join(
                     b,
+                    how='left',
                     left_on=["a1"],
                     right_on=["b1"],
                 )  # type: ignore
