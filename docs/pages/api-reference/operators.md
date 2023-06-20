@@ -46,7 +46,8 @@ The `on` or `right_on` fields specified should be keys in the RHS Dataset.
 :::
 
 :::info
-Fennel converts the schema of the RHS dataset to become optional during the join operation. This is because the join
+For left joins, Fennel converts the schema of the RHS dataset to become optional during the join operation. This is
+because the join
 operation could result in null values for the RHS dataset.
 :::
 
@@ -131,8 +132,9 @@ already present in the dataset.
 
 ### Dedup
 
-Fennel allows you to discard duplicate entries from a dataset by using the `dedup` operator. A subset of columns can be
-used for identifying duplicates by specifying the `by` parameter.
+Fennel allows you to discard duplicate entries from a dataset by using the `dedup` operator. A subset of columns,
+specified by the 'by' parameter, can be used for identifying duplicates. Two entries are considered duplicates if and
+only if they have the same values for the timestamp field and the `by` columns.
 
 The `dedup` operator has the following parameters:
 
@@ -146,6 +148,8 @@ The `dedup` operator can only be applied on datasets without keys
 ### Explode
 
 Fennel allows you to explode `List` type columns into separate rows by using the `explode` operator.
+The behavior of this operator is similar
+to the `explode`function in [Pandas](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.explode.html).
 
 The `explode` operator has the following parameters:
 
