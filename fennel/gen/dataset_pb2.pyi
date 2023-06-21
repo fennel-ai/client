@@ -7,6 +7,7 @@ import collections.abc
 import google.protobuf.descriptor
 import google.protobuf.duration_pb2
 import google.protobuf.internal.containers
+import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import metadata_pb2
 import pycode_pb2
@@ -15,7 +16,7 @@ import spec_pb2
 import sys
 import typing
 
-if sys.version_info >= (3, 8):
+if sys.version_info >= (3, 10):
     import typing as typing_extensions
 else:
     import typing_extensions
@@ -285,6 +286,19 @@ global___Aggregate = Aggregate
 class Join(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    class _How:
+        ValueType = typing.NewType("ValueType", builtins.int)
+        V: typing_extensions.TypeAlias = ValueType
+
+    class _HowEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Join._How.ValueType], builtins.type):  # noqa: F821
+        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+        Left: Join._How.ValueType  # 0
+        Inner: Join._How.ValueType  # 1
+
+    class How(_How, metaclass=_HowEnumTypeWrapper): ...
+    Left: Join.How.ValueType  # 0
+    Inner: Join.How.ValueType  # 1
+
     @typing_extensions.final
     class OnEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -308,6 +322,7 @@ class Join(google.protobuf.message.Message):
     WITHIN_HIGH_FIELD_NUMBER: builtins.int
     LHS_OPERAND_NAME_FIELD_NUMBER: builtins.int
     RHS_DSREF_OPERAND_NAME_FIELD_NUMBER: builtins.int
+    HOW_FIELD_NUMBER: builtins.int
     lhs_operand_id: builtins.str
     rhs_dsref_operand_id: builtins.str
     """RHS of a JOIN can only be a dataset, here it refers to the DSRef operator"""
@@ -323,6 +338,7 @@ class Join(google.protobuf.message.Message):
     THE CLIENT
     """
     rhs_dsref_operand_name: builtins.str
+    how: global___Join.How.ValueType
     def __init__(
         self,
         *,
@@ -333,9 +349,10 @@ class Join(google.protobuf.message.Message):
         within_high: google.protobuf.duration_pb2.Duration | None = ...,
         lhs_operand_name: builtins.str = ...,
         rhs_dsref_operand_name: builtins.str = ...,
+        how: global___Join.How.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_within_high", b"_within_high", "_within_low", b"_within_low", "within_high", b"within_high", "within_low", b"within_low"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_within_high", b"_within_high", "_within_low", b"_within_low", "lhs_operand_id", b"lhs_operand_id", "lhs_operand_name", b"lhs_operand_name", "on", b"on", "rhs_dsref_operand_id", b"rhs_dsref_operand_id", "rhs_dsref_operand_name", b"rhs_dsref_operand_name", "within_high", b"within_high", "within_low", b"within_low"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_within_high", b"_within_high", "_within_low", b"_within_low", "how", b"how", "lhs_operand_id", b"lhs_operand_id", "lhs_operand_name", b"lhs_operand_name", "on", b"on", "rhs_dsref_operand_id", b"rhs_dsref_operand_id", "rhs_dsref_operand_name", b"rhs_dsref_operand_name", "within_high", b"within_high", "within_low", b"within_low"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_within_high", b"_within_high"]) -> typing_extensions.Literal["within_high"] | None: ...
     @typing.overload
