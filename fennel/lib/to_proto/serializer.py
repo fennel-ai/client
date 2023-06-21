@@ -207,6 +207,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 lhs_operand_id=self.visit(obj.node),
                 rhs_dsref_operand_id=rhs_operator_id,
                 on=on,
+                how=proto.Join.How.Left if obj.how == "left" else proto.Join.How.Inner,
                 within_low=within_low,
                 within_high=within_high,
             ),
