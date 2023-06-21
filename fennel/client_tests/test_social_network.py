@@ -92,12 +92,8 @@ class UserCategoryDataset:
     @pipeline(1)
     @inputs(ViewData, PostInfo)
     def count_user_views(cls, view_data: Dataset, post_info: Dataset):
-        post_info_enriched = view_data.join(post_info, how='left', on=["post_id"])
-        post_info_enriched_t = post_info_enriched.transform(
-            lambda df: df.fillna("unknown"),
-            schema={"user_id": str, "category": str, "time_stamp": datetime},
-        )
-        return post_info_enriched_t.groupby("user_id", "category").aggregate(
+        post_info_enriched = view_data.join(post_info, how='inner', on=["post_id"])
+        return post_info_enriched.groupby("user_id", "category").aggregate(
             [Count(window=Window("5y 8s"), into_field="num_views")]
         )
 
