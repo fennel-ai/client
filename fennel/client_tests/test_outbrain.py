@@ -55,13 +55,17 @@ class PageViewsByUser:
     @pipeline(version=1)
     @inputs(PageViews)
     def group_by_user(cls, page_views: Dataset):
-        return page_views.dedup(by=['uuid', 'document_id']).groupby("uuid").aggregate(
-            [
-                Count(window=Window("28d"), into_field="page_views"),
-                Count(window=Window("1d"), into_field="page_views_1d"),
-                Count(window=Window("3d"), into_field="page_views_3d"),
-                Count(window=Window("9d"), into_field="page_views_9d"),
-            ]
+        return (
+            page_views.dedup(by=["uuid", "document_id"])
+            .groupby("uuid")
+            .aggregate(
+                [
+                    Count(window=Window("28d"), into_field="page_views"),
+                    Count(window=Window("1d"), into_field="page_views_1d"),
+                    Count(window=Window("3d"), into_field="page_views_3d"),
+                    Count(window=Window("9d"), into_field="page_views_9d"),
+                ]
+            )
         )
 
     @expectations
@@ -158,12 +162,16 @@ def test_outbrain(client):
     # Backend aggregations are approximate and can overcount by a bit. Account for that in expectations.
     # Note that it doesn't overcount when all the data is within the aggregation window (in this case, the 28d window).
     if client.is_integration_client():
-        assert (feature_df["UserPageViewFeatures.page_views"].sum()
-                , feature_df["UserPageViewFeatures.page_views_1d"].sum()
-                , feature_df["UserPageViewFeatures.page_views_3d"].sum()
-                , feature_df["UserPageViewFeatures.page_views_9d"].sum()) == (11975, 1228, 3897, 9676)
+        assert (
+            feature_df["UserPageViewFeatures.page_views"].sum(),
+            feature_df["UserPageViewFeatures.page_views_1d"].sum(),
+            feature_df["UserPageViewFeatures.page_views_3d"].sum(),
+            feature_df["UserPageViewFeatures.page_views_9d"].sum(),
+        ) == (11975, 1228, 3897, 9676)
     else:
-        assert (feature_df["UserPageViewFeatures.page_views"].sum()
-                , feature_df["UserPageViewFeatures.page_views_1d"].sum()
-                , feature_df["UserPageViewFeatures.page_views_3d"].sum()
-                , feature_df["UserPageViewFeatures.page_views_9d"].sum()) == (11975, 1140, 3840, 9544)
+        assert (
+            feature_df["UserPageViewFeatures.page_views"].sum(),
+            feature_df["UserPageViewFeatures.page_views_1d"].sum(),
+            feature_df["UserPageViewFeatures.page_views_3d"].sum(),
+            feature_df["UserPageViewFeatures.page_views_9d"].sum(),
+        ) == (11975, 1140, 3840, 9544)

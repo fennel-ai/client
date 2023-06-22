@@ -45,7 +45,7 @@ class FraudActivityDataset:
     @pipeline(version=1)
     @inputs(Activity, MerchantCategory)
     def create_fraud_dataset(
-            cls, activity: Dataset, merchant_category: Dataset
+        cls, activity: Dataset, merchant_category: Dataset
     ):
         # docsnip transform
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -82,7 +82,10 @@ class FraudActivityDataset:
 
         # docsnip join
         joined_ds = dropped_ds.join(
-            merchant_category, how='left', on=["merchant"], within=("forever", "60s")
+            merchant_category,
+            how="left",
+            on=["merchant"],
+            within=("forever", "60s"),
         )
         # /docsnip
 

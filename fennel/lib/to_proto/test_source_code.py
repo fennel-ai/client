@@ -1,7 +1,7 @@
 from datetime import datetime
+from typing import Optional, List
 
 import pandas as pd
-from typing import Optional, List
 
 from fennel.datasets import dataset, field, Dataset, pipeline
 from fennel.featuresets import featureset, feature, extractor
@@ -195,15 +195,14 @@ def test_lambda_source_code_gen():
     expected_source_code = """lambda x: x + 1  # type: ignore # noqa: E731"""
     assert expected_source_code == lambda_to_python_regular_func(a1)
 
-    a2 = lambda x, y: x + \
-                      y  # type: ignore # noqa: E731
+    a2 = lambda x, y: x + y  # type: ignore # noqa: E731
     expected_source_code = """lambda x, y: x + y  # type: ignore # noqa: E731"""
     assert expected_source_code == lambda_to_python_regular_func(a2)
 
     y1 = get_lambda(lambda x: x * (x + 2) + x + 4)
 
     y2 = get_lambda(get_lambda(get_lambda(get_lambda(get_lambda(lambda x:
-    x * x + 1 + 2 * 3 + 4)))))
+                                                                x * x + 1 + 2 * 3 + 4)))))
     expected_source_code = """lambda x: x * x + 1 + 2 * 3 + 4"""
     assert expected_source_code == lambda_to_python_regular_func(y2)
 
@@ -256,8 +255,8 @@ def extract_location_index(df: pd.DataFrame, index_col: str,
 def test_longer_lambda_source_code_gen():
     lambda_func = get_lambda(
         lambda x: extract_keys(x, json_col='json_payload',
-            keys=['user_id', 'latitude', 'longitude', 'token'],
-            values=["a", "b", "c", "d"]),
+                               keys=['user_id', 'latitude', 'longitude', 'token'],
+                               values=["a", "b", "c", "d"]),
     )
     expected_source_code = """lambda x: extract_keys(x, json_col='json_payload', keys=['user_id', 'latitude', 'longitude', 'token'], values=["a", "b", "c", "d"])"""
     assert expected_source_code == lambda_to_python_regular_func(lambda_func)
@@ -265,16 +264,16 @@ def test_longer_lambda_source_code_gen():
     # More complex multi-line lambda
     lambda_func = get_lambda(
         get_lambda(lambda x: extract_keys(x, json_col='json_payload',
-            keys=['user_id', 'latitude', 'longitude', 'token'],
-            values=["a", "b", "c", "d"])))
+                                          keys=['user_id', 'latitude', 'longitude', 'token'],
+                                          values=["a", "b", "c", "d"])))
     expected_source_code = """lambda x: extract_keys(x, json_col='json_payload', keys=['user_id', 'latitude', 'longitude', 'token'], values=["a", "b", "c", "d"])"""
     assert expected_source_code == lambda_to_python_regular_func(lambda_func)
 
     # Create a complex lambda with a lambda inside
     lambda_func = get_lambda(
         lambda x: extract_location_index(x, index_col='location_index',
-            latitude_col='latitude', longitude_col='longitude',
-            resolution=lambda x: x + 1)
+                                         latitude_col='latitude', longitude_col='longitude',
+                                         resolution=lambda x: x + 1)
     )
     expected_source_code = """lambda x: extract_location_index(x, index_col='location_index', latitude_col='latitude', longitude_col='longitude', resolution=lambda x: x + 1)"""
     assert expected_source_code == lambda_to_python_regular_func(lambda_func)

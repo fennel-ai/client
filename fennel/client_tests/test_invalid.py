@@ -92,13 +92,13 @@ class TestInvalidSync(unittest.TestCase):
 
         if client.is_integration_client():
             assert (
-                    str(e.value) == "Failed to sync: error: can not add edge "
-                                    'to (Extractor, "DomainFeatures.get_domain_feature"): from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
+                str(e.value) == "Failed to sync: error: can not add edge "
+                'to (Extractor, "DomainFeatures.get_domain_feature"): from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
             )
         else:
             assert (
-                    str(e.value) == "Dataset MemberActivityDatasetCopy "
-                                    "not found in sync call"
+                str(e.value) == "Dataset MemberActivityDatasetCopy "
+                "not found in sync call"
             )
 
 
@@ -199,8 +199,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 ),
             )
         assert (
-                "Input dataframe does not contain all the required features"
-                in str(e.value)
+            "Input dataframe does not contain all the required features"
+            in str(e.value)
         )
 
     @pytest.mark.integration
@@ -229,9 +229,9 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         else:
             assert (
-                    "Extractor `get_domain_feature` in `DomainFeatures2` "
-                    "failed to run with error: name 'MemberActivityDatasetCopy' is not defined. "
-                    == str(e.value)
+                "Extractor `get_domain_feature` in `DomainFeatures2` "
+                "failed to run with error: name 'MemberActivityDatasetCopy' is not defined. "
+                == str(e.value)
             )
 
     @pytest.mark.integration
@@ -256,20 +256,21 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         if client.is_integration_client():
             assert (
-                    "Failed to sync: error: can not add edge to (Pipeline, "
-                    '"MemberActivityDatasetCopy-copy"): from vertex (Dataset, "MemberActivityDataset") not in graph'
-                    == str(e.value)
+                "Failed to sync: error: can not add edge to (Pipeline, "
+                '"MemberActivityDatasetCopy-copy"): from vertex (Dataset, "MemberActivityDataset") not in graph'
+                == str(e.value)
             )
         else:
             assert (
-                    "Extractor `get_domain_feature` in `DomainFeatures2` "
-                    "failed to run with error: name "
-                    "'MemberActivityDatasetCopy' is not defined. " == str(e.value)
+                "Extractor `get_domain_feature` in `DomainFeatures2` "
+                "failed to run with error: name "
+                "'MemberActivityDatasetCopy' is not defined. " == str(e.value)
             )
 
     @mock
     def test_drop_timestamp_col(self, client):
         with pytest.raises(Exception) as e:
+
             @meta(owner="test@fennel.ai")
             @dataset
             class MemberDatasetDerived:
@@ -286,5 +287,5 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                     return d.drop(columns=["createdAt"])
 
         assert (
-                   "Field `createdAt` is not a non-key non-timestamp field in schema of drop node input '[Dataset:MemberDataset]'. Value fields are: `['pk', 'sk', 'email', 'displayName']`"
-               ) == str(e.value)
+            "Field `createdAt` is not a non-key non-timestamp field in schema of drop node input '[Dataset:MemberDataset]'. Value fields are: `['pk', 'sk', 'email', 'displayName']`"
+        ) == str(e.value)

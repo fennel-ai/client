@@ -10,6 +10,7 @@ from fennel.test_lib import *
 
 def test_multiple_date_time():
     with pytest.raises(ValueError) as e:
+
         @dataset
         class UserInfoDataset:
             user_id: int = field(key=True)
@@ -24,13 +25,14 @@ def test_multiple_date_time():
 
     _ = InternalTestClient()
     assert (
-            str(e.value) == "Multiple timestamp fields are not supported in "
-                            "dataset `UserInfoDataset`."
+        str(e.value) == "Multiple timestamp fields are not supported in "
+        "dataset `UserInfoDataset`."
     )
 
 
 def test_invalid_retention_window():
     with pytest.raises(TypeError) as e:
+
         @dataset(history=324)
         class Activity:
             user_id: int
@@ -39,8 +41,8 @@ def test_invalid_retention_window():
             timestamp: datetime
 
     assert (
-            str(e.value) == "duration 324 must be a specified as a string for eg. "
-                            "1d/2m/3y."
+        str(e.value) == "duration 324 must be a specified as a string for eg. "
+        "1d/2m/3y."
     )
 
 
@@ -52,6 +54,7 @@ def test_dataset_with_pipes():
         timestamp: datetime
 
     with pytest.raises(Exception) as e:
+
         @dataset
         class ABCDataset:
             a: int = field(key=True)
@@ -64,11 +67,12 @@ def test_dataset_with_pipes():
                 return a
 
     assert (
-            str(e.value)
-            == "pipeline decorator on `create_pipeline` must have a parenthesis"
+        str(e.value)
+        == "pipeline decorator on `create_pipeline` must have a parenthesis"
     )
 
     with pytest.raises(Exception) as e:
+
         @dataset
         class ABCDataset1:
             a: int = field(key=True)
@@ -83,6 +87,7 @@ def test_dataset_with_pipes():
     assert str(e.value) == "pipeline decorator on `XYZ` must have a parenthesis"
 
     with pytest.raises(Exception) as e:
+
         @dataset
         class ABCDataset2:
             a: int = field(key=True)
@@ -95,11 +100,12 @@ def test_dataset_with_pipes():
                 return a
 
     assert (
-            str(e.value)
-            == "pipeline `create_pipeline` must have Datasets as @input parameters."
+        str(e.value)
+        == "pipeline `create_pipeline` must have Datasets as @input parameters."
     )
 
     with pytest.raises(TypeError) as e:
+
         @dataset
         class ABCDataset3:
             a: int = field(key=True)
@@ -113,14 +119,15 @@ def test_dataset_with_pipes():
                 return a
 
     assert (
-            str(e.value)
-            == "pipeline functions are classmethods and must have cls as the "
-               "first parameter, found `a` for pipeline `create_pipeline`."
+        str(e.value)
+        == "pipeline functions are classmethods and must have cls as the "
+        "first parameter, found `a` for pipeline `create_pipeline`."
     )
 
 
 def test_dataset_incorrect_join():
     with pytest.raises(ValueError) as e:
+
         @dataset
         class XYZ:
             user_id: int
@@ -138,13 +145,14 @@ def test_dataset_incorrect_join():
             @inputs(XYZ)
             def create_pipeline(cls, a: Dataset):
                 b = a.transform(lambda x: x)
-                return a.join(b, how='left', on=["user_id"])  # type: ignore
+                return a.join(b, how="left", on=["user_id"])  # type: ignore
 
     assert str(e.value) == "Cannot join with an intermediate dataset"
 
 
 def test_dataset_incorrect_join_bounds():
     with pytest.raises(ValueError) as e:
+
         @dataset
         class A:
             a1: int = field(key=True)
@@ -165,7 +173,7 @@ def test_dataset_incorrect_join_bounds():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
                     b,
-                    how='left',
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                     within=("0s",),  # type: ignore
@@ -174,6 +182,7 @@ def test_dataset_incorrect_join_bounds():
     assert "Should be a tuple of 2 values" in str(e.value)
 
     with pytest.raises(ValueError) as e:
+
         @dataset
         class A:
             a1: int = field(key=True)
@@ -194,7 +203,7 @@ def test_dataset_incorrect_join_bounds():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
                     b,
-                    how='left',
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                     within=(None, "0s"),  # type: ignore
@@ -203,6 +212,7 @@ def test_dataset_incorrect_join_bounds():
     assert "Neither bounds can be None" in str(e.value)
 
     with pytest.raises(ValueError) as e:
+
         @dataset
         class A:
             a1: int = field(key=True)
@@ -223,7 +233,7 @@ def test_dataset_incorrect_join_bounds():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
                     b,
-                    how='left',
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                     within=("forever", None),  # type: ignore
@@ -232,6 +242,7 @@ def test_dataset_incorrect_join_bounds():
     assert "Neither bounds can be None" in str(e.value)
 
     with pytest.raises(ValueError) as e:
+
         @dataset
         class A:
             a1: int = field(key=True)
@@ -252,7 +263,7 @@ def test_dataset_incorrect_join_bounds():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
                     b,
-                    how='left',
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                     within=(None, None),  # type: ignore
@@ -261,6 +272,7 @@ def test_dataset_incorrect_join_bounds():
     assert "Neither bounds can be None" in str(e.value)
 
     with pytest.raises(ValueError) as e:
+
         @dataset
         class A:
             a1: int = field(key=True)
@@ -281,7 +293,7 @@ def test_dataset_incorrect_join_bounds():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
                     b,
-                    how='left',
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                     within=("forever", "forever"),
@@ -292,6 +304,7 @@ def test_dataset_incorrect_join_bounds():
 
 def test_dataset_optional_key():
     with pytest.raises(ValueError) as e:
+
         @dataset
         class XYZ:
             user_id: int
@@ -303,6 +316,7 @@ def test_dataset_optional_key():
 
 def test_protected_fields():
     with pytest.raises(Exception) as e:
+
         @dataset(history="324d")
         class Activity:
             fields: List[int]
@@ -311,19 +325,20 @@ def test_protected_fields():
             timestamp_field: datetime
 
     assert (
-            str(e.value)
-            == "[Exception('Field name `fields` is reserved. Please use a "
-               "different name in dataset `Activity`.'), Exception('Field "
-               "name `key_fields` is reserved. Please use a different name in dataset `Activity`"
-               ".'), Exception('Field name `on_demand` is reserved. Please "
-               "use a different name in dataset `Activity`.'), Exception('Field "
-               "name `timestamp_field` is reserved. Please use a different "
-               "name in dataset `Activity`.')]"
+        str(e.value)
+        == "[Exception('Field name `fields` is reserved. Please use a "
+        "different name in dataset `Activity`.'), Exception('Field "
+        "name `key_fields` is reserved. Please use a different name in dataset `Activity`"
+        ".'), Exception('Field name `on_demand` is reserved. Please "
+        "use a different name in dataset `Activity`.'), Exception('Field "
+        "name `timestamp_field` is reserved. Please use a different "
+        "name in dataset `Activity`.')]"
     )
 
 
 def test_join():
     with pytest.raises(ValueError) as e:
+
         @dataset
         class A:
             a1: int = field(key=True)
@@ -347,13 +362,13 @@ def test_join():
             def pipeline1(cls, a: Dataset, b: Dataset):
                 x = a.join(
                     b,
-                    how='left',
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                 )  # type: ignore
                 return x
 
     assert (
-            "Column name collision. 'v' already exists in schema of left input"
-            in str(e.value)
+        "Column name collision. 'v' already exists in schema of left input"
+        in str(e.value)
     )

@@ -14,6 +14,8 @@ from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import to_includes_proto
 from fennel.test_lib.execute_aggregation import get_aggregated_df
 
+pd.set_option("display.max_columns", None)
+
 
 @dataclass
 class NodeRet:
@@ -247,9 +249,13 @@ class Executor(Visitor):
                 raise Exception(
                     f"Join on fields {obj.on} not present in right dataframe"
                 )
-            merged_df = pd.merge_asof(
-                left=left_df, right=right_df, on=ts_query_field, by=obj.on
+            # Rename the "on" columns on RHS by prefixing them with "__@@__"
+            # This is to avoid conflicts with the "on" columns on LHS
+            right_df = right_df.rename(
+                columns={col: f"__@@__foo__{col}" for col in obj.on}
             )
+            right_by = [f"__@@__foo__{col}" for col in obj.on]
+            left_by = copy.deepcopy(obj.on)
         else:
             if not is_subset(obj.left_on, left_df.columns):
                 raise Exception(
@@ -257,17 +263,23 @@ class Executor(Visitor):
                 )
             if not is_subset(obj.right_on, right_df.columns):
                 raise Exception(
-                    f"Join keys {obj.right_on} not present in right dataframe"
+                    f"Join keys {obj.right_on} foo not present in right dataframe"
                 )
-            merged_df = pd.merge_asof(
-                left=left_df,
-                right=right_df,
-                on=ts_query_field,
-                left_by=obj.left_on,
-                right_by=obj.right_on,
-            )
-            # Drop the obj.right_on columns from the merged dataframe
-            merged_df = merged_df.drop(columns=obj.right_on)
+            left_by = copy.deepcopy(obj.left_on)
+            right_by = copy.deepcopy(obj.right_on)
+
+        merged_df = pd.merge_asof(
+            left=left_df,
+            right=right_df,
+            on=ts_query_field,
+            left_by=left_by,
+            right_by=right_by,
+        )
+        if obj.how == "inner":
+            # Drop rows which have null values in any of the RHS key columns
+            merged_df = merged_df.dropna(subset=right_by)
+        # Drop the RHS key columns from the merged dataframe
+        merged_df = merged_df.drop(columns=right_by)
 
         # Filter out rows that are outside the bounds of the join query
         def filter_bounded_row(row):
@@ -385,7 +397,9 @@ class Executor(Visitor):
         if input_ret is None:
             return None
         df = input_ret.df
-        df = df.drop_duplicates(subset=obj.by + [input_ret.timestamp_field], keep='last')
+        df = df.drop_duplicates(
+            subset=obj.by + [input_ret.timestamp_field], keep="last"
+        )
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
 
     def visitExplode(self, obj):

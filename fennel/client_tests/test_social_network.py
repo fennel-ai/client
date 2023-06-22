@@ -92,7 +92,9 @@ class UserCategoryDataset:
     @pipeline(1)
     @inputs(ViewData, PostInfo)
     def count_user_views(cls, view_data: Dataset, post_info: Dataset):
-        post_info_enriched = view_data.join(post_info, how='inner', on=["post_id"])
+        post_info_enriched = view_data.join(
+            post_info, how="inner", on=["post_id"]
+        )
         return post_info_enriched.groupby("user_id", "category").aggregate(
             [Count(window=Window("5y 8s"), into_field="num_views")]
         )
@@ -128,10 +130,10 @@ class UserFeatures:
     @inputs(Request.user_id, Request.category)
     @outputs(category_view_ratio, num_category_views)
     def extractor_category_view(
-            cls,
-            ts: pd.Series,
-            user_ids: pd.Series,
-            categories: pd.Series,
+        cls,
+        ts: pd.Series,
+        user_ids: pd.Series,
+        categories: pd.Series,
     ):
         category_views, _ = UserCategoryDataset.lookup(  # type: ignore
             ts, user_id=user_ids, category=categories
@@ -181,6 +183,8 @@ def test_social_network(client):
     assert res.status_code == requests.codes.OK, res.json()
     now = datetime.now()
     ts = pd.Series([now, now, now])
+    if client.is_integration_client():
+        client.sleep(300)
     df, found = CityInfo.lookup(
         ts=ts,
         city=pd.Series(["Wufeng", "Coyaima", "San Angelo"]),

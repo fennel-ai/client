@@ -58,7 +58,7 @@ class UserTransactionsAbroad:
     @pipeline(version=1)
     @inputs(User, Transaction)
     def first_pipeline(cls, user: Dataset, transaction: Dataset):
-        joined = transaction.join(user, how='left', on=["uid"])
+        joined = transaction.join(user, how="left", on=["uid"])
         abroad = joined.filter(
             lambda df: df["country"] != df["payment_country"]
         )

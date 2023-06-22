@@ -104,8 +104,8 @@ class Field:
             return getattr(type_, "__args__", None)
 
         if (
-                _get_origin(self.dtype) is Union
-                and type(None) == _get_args(self.dtype)[1]
+            _get_origin(self.dtype) is Union
+            and type(None) == _get_args(self.dtype)[1]
         ):
             return True
 
@@ -116,10 +116,10 @@ class Field:
 
 
 def get_field(
-        cls: T,
-        annotation_name: str,
-        dtype: Type,
-        field2comment_map: Dict[str, str],
+    cls: T,
+    annotation_name: str,
+    dtype: Type,
+    field2comment_map: Dict[str, str],
 ) -> Field:
     if "." in annotation_name:
         raise ValueError(
@@ -151,8 +151,8 @@ def get_field(
 
 
 def field(
-        key: bool = False,
-        timestamp: bool = False,
+    key: bool = False,
+    timestamp: bool = False,
 ) -> T:  # type: ignore
     return cast(
         T,
@@ -186,13 +186,13 @@ class _Node(Generic[T]):
         return GroupBy(self, *args)
 
     def join(
-            self,
-            other: Dataset,
-            how: str,
-            on: Optional[List[str]] = None,
-            left_on: Optional[List[str]] = None,
-            right_on: Optional[List[str]] = None,
-            within: Tuple[Duration, Duration] = ("forever", "0s"),
+        self,
+        other: Dataset,
+        how: str,
+        on: Optional[List[str]] = None,
+        left_on: Optional[List[str]] = None,
+        right_on: Optional[List[str]] = None,
+        within: Tuple[Duration, Duration] = ("forever", "0s"),
     ) -> Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError("Cannot join with an intermediate dataset")
@@ -279,7 +279,7 @@ class Filter(_Node):
 
 class Aggregate(_Node):
     def __init__(
-            self, node: _Node, keys: List[str], aggregates: List[AggregateType]
+        self, node: _Node, keys: List[str], aggregates: List[AggregateType]
     ):
         super().__init__()
         if len(keys) == 0:
@@ -382,16 +382,16 @@ class Explode(_Node):
 
 class Join(_Node):
     def __init__(
-            self,
-            node: _Node,
-            dataset: Dataset,
-            within: Tuple[Duration, Duration],
-            how: str,
-            on: Optional[List[str]] = None,
-            left_on: Optional[List[str]] = None,
-            right_on: Optional[List[str]] = None,
-            lsuffix: str = '',
-            rsuffix: str = '',
+        self,
+        node: _Node,
+        dataset: Dataset,
+        within: Tuple[Duration, Duration],
+        how: str,
+        on: Optional[List[str]] = None,
+        left_on: Optional[List[str]] = None,
+        right_on: Optional[List[str]] = None,
+        lsuffix: str = "",
+        rsuffix: str = "",
     ):
         if on is not None:
 
@@ -451,18 +451,23 @@ class Join(_Node):
 
         left_dsschema: DSSchema = copy.deepcopy(self.node.dsschema())
         left_schema: Dict[str, Type] = left_dsschema.schema()
-        right_value_schema: Dict[str, Type] = copy.deepcopy(self.dataset.dsschema().values)
+        right_value_schema: Dict[str, Type] = copy.deepcopy(
+            self.dataset.dsschema().values
+        )
 
         common_cols = set(left_schema.keys()) & set(right_value_schema.keys())
         # for common values, suffix column name in left_schema with lsuffix and right_schema with rsuffix
         for col in common_cols:
-            if self.lsuffix != '' and (col + self.lsuffix) in left_schema:
+            if self.lsuffix != "" and (col + self.lsuffix) in left_schema:
                 raise ValueError(
                     "Column name collision. '{}' already exists in schema of left input {}".format(
                         col + self.lsuffix, left_dsschema.name
                     )
                 )
-            if self.rsuffix != '' and (col + self.rsuffix) in right_value_schema:
+            if (
+                self.rsuffix != ""
+                and (col + self.rsuffix) in right_value_schema
+            ):
                 raise ValueError(
                     "Column name collision. '{}' already exists in schema of right input {}".format(
                         col + self.rsuffix, self.dataset.dsschema().name
@@ -547,8 +552,8 @@ class Drop(_Node):
 
 @overload
 def dataset(
-        *,
-        history: Optional[Duration] = DEFAULT_RETENTION,
+    *,
+    history: Optional[Duration] = DEFAULT_RETENTION,
 ) -> Callable[[Type[T]], Dataset]:
     ...
 
@@ -559,8 +564,8 @@ def dataset(cls: Type[T]) -> Dataset:
 
 
 def dataset(
-        cls: Optional[Type[T]] = None,
-        history: Optional[Duration] = DEFAULT_RETENTION,
+    cls: Optional[Type[T]] = None,
+    history: Optional[Duration] = DEFAULT_RETENTION,
 ) -> Union[Callable[[Type[T]], Dataset], Dataset]:
     """
     dataset is a decorator that creates a Dataset class.
@@ -584,13 +589,13 @@ def dataset(
         file_name = ""
 
     def _create_lookup_function(
-            cls_name: str, key_fields: List[str]
+        cls_name: str, key_fields: List[str]
     ) -> Optional[Callable]:
         if len(key_fields) == 0:
             return None
 
         def lookup(
-                ts: pd.Series, *args, **kwargs
+            ts: pd.Series, *args, **kwargs
         ) -> Tuple[pd.DataFrame, pd.Series]:
             if len(args) > 0:
                 raise ValueError(
@@ -654,19 +659,19 @@ def dataset(
         ]
         args["ts"] = pd.Series
         params = [
-                     inspect.Parameter(
-                         "ts",
-                         inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                         annotation=pd.Series,
-                     )
-                 ] + params
+            inspect.Parameter(
+                "ts",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=pd.Series,
+            )
+        ] + params
         setattr(lookup, "__signature__", inspect.Signature(params))
         setattr(lookup, "__annotations__", args)
         return lookup
 
     def _create_dataset(
-            dataset_cls: Type[T],
-            history: Duration,
+        dataset_cls: Type[T],
+        history: Duration,
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
         fields = [
@@ -702,10 +707,10 @@ def dataset(
 
 
 def pipeline(
-        version: int = 1, active: bool = False
+    version: int = 1, active: bool = False
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     if isinstance(version, Callable) or isinstance(  # type: ignore
-            version, Dataset
+        version, Dataset
     ):
         if hasattr(version, "__name__"):
             callable_name = version.__name__  # type: ignore
@@ -801,10 +806,10 @@ def on_demand(expires_after: Duration):
 
 
 def dataset_lookup(
-        cls_name: str,
-        ts: pd.Series,
-        fields: List[str],
-        keys: pd.DataFrame,
+    cls_name: str,
+    ts: pd.Series,
+    fields: List[str],
+    keys: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     raise NotImplementedError("dataset_lookup should not be called directly.")
 
@@ -828,11 +833,11 @@ class Pipeline:
     active: bool
 
     def __init__(
-            self,
-            inputs: List[Dataset],
-            func: Callable,
-            version: int,
-            active: bool = False,
+        self,
+        inputs: List[Dataset],
+        func: Callable,
+        version: int,
+        active: bool = False,
     ):
         self.inputs = inputs
         self.func = func  # type: ignore
@@ -884,11 +889,11 @@ class Dataset(_Node[T]):
     is_terminal: bool
 
     def __init__(
-            self,
-            cls: T,
-            fields: List[Field],
-            history: datetime.timedelta,
-            lookup_fn: Optional[Callable] = None,
+        self,
+        cls: T,
+        fields: List[Field],
+        history: datetime.timedelta,
+        lookup_fn: Optional[Callable] = None,
     ):
         super().__init__()
         self._name = cls.__name__  # type: ignore
@@ -919,10 +924,10 @@ class Dataset(_Node[T]):
         return self._sign
 
     def with_source(
-            self,
-            conn: DataConnector,
-            every: Optional[Duration] = None,
-            lateness: Optional[Duration] = None,
+        self,
+        conn: DataConnector,
+        every: Optional[Duration] = None,
+        lateness: Optional[Duration] = None,
     ):
         if len(self._pipelines) > 0:
             raise Exception(
@@ -1283,9 +1288,9 @@ class DSSchema:
 
     def fields(self) -> List[str]:
         return (
-                [x for x in self.keys.keys()]
-                + [x for x in self.values.keys()]
-                + [self.timestamp]
+            [x for x in self.keys.keys()]
+            + [x for x in self.values.keys()]
+            + [self.timestamp]
         )
 
     def get_type(self, field) -> Type:
@@ -1339,12 +1344,12 @@ class DSSchema:
             raise Exception(f"field {name} not found in schema of {self.name}")
 
     def matches(
-            self, other_schema: DSSchema, this_name: str, other_name: str
+        self, other_schema: DSSchema, this_name: str, other_name: str
     ) -> List[TypeError]:
         def check_fields_one_way(
-                this_schema: Dict[str, Type],
-                other_schema: Dict[str, Type],
-                check_type: str,
+            this_schema: Dict[str, Type],
+            other_schema: Dict[str, Type],
+            check_type: str,
         ):
             for name, dtype in this_schema.items():
                 if name not in other_schema:
@@ -1363,9 +1368,9 @@ class DSSchema:
                     )
 
         def check_field_other_way(
-                other_schema: Dict[str, Type],
-                this_schema: Dict[str, Type],
-                check_type: str,
+            other_schema: Dict[str, Type],
+            this_schema: Dict[str, Type],
+            check_type: str,
         ):
             for name, dtype in other_schema.items():
                 if name not in this_schema:
@@ -1518,7 +1523,7 @@ class SchemaValidator(Visitor):
     def visitJoin(self, obj) -> DSSchema:
         left_schema = self.visit(obj.node)
         right_schema = self.visit(obj.dataset)
-        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->join node'",
+        output_schema_name = (f"'[Pipeline:{self.pipeline_name}]->join node'",)
 
         def validate_join_bounds(within: Tuple[Duration, Duration]):
             if len(within) != 2:
@@ -1583,7 +1588,9 @@ class SchemaValidator(Visitor):
                     )
 
         if obj.how not in ["inner", "left"]:
-            raise ValueError(f'"how" in {output_schema_name} must be either "inner" or "left"')
+            raise ValueError(
+                f'"how" in {output_schema_name} must be either "inner" or "left"'
+            )
 
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
@@ -1649,7 +1656,9 @@ class SchemaValidator(Visitor):
 
     def visitDedup(self, obj) -> DSSchema:
         input_schema = self.visit(obj.node)
-        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->drop_duplicates node'"
+        output_schema_name = (
+            f"'[Pipeline:{self.pipeline_name}]->drop_duplicates node'"
+        )
         # Input schema should not have key columns.
         if len(input_schema.keys) > 0:
             raise ValueError(
@@ -1687,7 +1696,8 @@ class SchemaValidator(Visitor):
             # 'field' must be present in input schema.
             if field not in input_schema.fields():
                 raise ValueError(
-                    f"Column {field} in explode not present in input {input_schema.name}: {input_schema.fields()}")
+                    f"Column {field} in explode not present in input {input_schema.name}: {input_schema.fields()}"
+                )
             # 'field' must be a value column.
             if field not in val_fields:
                 raise ValueError(
@@ -1696,7 +1706,9 @@ class SchemaValidator(Visitor):
                 )
             # Type of 'c' must be List.
             if not issubclass(schema[field], List):
-                raise ValueError(f"Column {field} in explode is not of type List")
+                raise ValueError(
+                    f"Column {field} in explode is not of type List"
+                )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
         return output_schema

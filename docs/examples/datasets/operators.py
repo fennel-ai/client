@@ -139,7 +139,7 @@ class UserSellerActivity:
     @pipeline(version=1)
     @inputs(Product, OrderActivity)
     def join_orders(cls, products: Dataset, orders: Dataset) -> Dataset:
-        return orders.join(products, how='left', on=["pid"])
+        return orders.join(products, how="left", on=["pid"])
 
 
 # /docsnip
