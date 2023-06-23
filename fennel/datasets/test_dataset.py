@@ -1527,7 +1527,11 @@ def test_search_dataset():
         @pipeline(version=1)
         @inputs(DocumentContentDataset)
         def unique_words(cls, ds: Dataset):
-            return ds.explode(columns=["top_10_unique_words"])
+            schema = ds.schema()
+            schema["top_10_unique_words"] = str
+            return ds.explode(columns=["top_10_unique_words"]).transform(
+                lambda df: df, schema
+            )
 
     view = InternalTestClient()
     view.add(DocumentContentDataset)  # type: ignore
@@ -1689,7 +1693,7 @@ def test_search_dataset():
     )
 
     # operators
-    assert len(sync_request.operators) == 4
+    assert len(sync_request.operators) == 5
     operator_req = sync_request.operators[0]
     o = {
         "id": "Document",
@@ -1752,12 +1756,39 @@ def test_search_dataset():
     operator_req = sync_request.operators[3]
     o = {
         "id": "961d4107a251ef6ef344d2b09f1a03f3",
-        "is_root": True,
+        "is_root": False,
         "pipeline_name": "unique_words",
         "dataset_name": "DocumentWordDataset",
         "explode": {
             "operand_id": "DocumentContentDataset",
             "columns": ["top_10_unique_words"],
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = erase_operator_pycode(sync_request.operators[4])
+    o = {
+        "id": "197b05deae8b6acd0b86b8153f636634",
+        "is_root": True,
+        "pipeline_name": "unique_words",
+        "dataset_name": "DocumentWordDataset",
+        "transform": {
+            "operand_id": "961d4107a251ef6ef344d2b09f1a03f3",
+            "schema": {
+                "num_words": {"int_type": {}},
+                "num_stop_words": {"int_type": {}},
+                "creation_timestamp": {"timestamp_type": {}},
+                "fast_text_embedding": {
+                    "embedding_type": {"embedding_size": 256}
+                },
+                "bert_embedding": {"embedding_type": {"embedding_size": 128}},
+                "doc_id": {"int_type": {}},
+                "top_10_unique_words": {"string_type": {}},
+            },
+            "pycode": {},
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())

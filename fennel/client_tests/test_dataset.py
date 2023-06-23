@@ -3,10 +3,10 @@ import re
 import time
 import unittest
 from datetime import datetime, timedelta
+from typing import Optional, List, Dict
 
 import pandas as pd
 import pytest
-from typing import Optional, List, Dict
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -642,20 +642,22 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             @inputs(MovieInfo, TicketSale)
             def pipeline_join(cls, info: Dataset, sale: Dataset):
                 uniq = sale.dedup(by=["ticket_id"])
-                c = uniq.join(info, how="inner", on=["title"])
-                return (
-                    c.explode(columns=["actors"])
+                c = (
+                    uniq.join(info, how="inner", on=["title"])
+                    .explode(columns=["actors"])
                     .rename(columns={"actors": "name"})
-                    .groupby("name")
-                    .aggregate(
-                        [
-                            Sum(
-                                window=Window("forever"),
-                                of="price",
-                                into_field="revenue",
-                            ),
-                        ]
-                    )
+                )
+                schema = c.schema()
+                schema["name"] = str
+                c = c.transform(lambda x: x, schema)
+                return c.groupby("name").aggregate(
+                    [
+                        Sum(
+                            window=Window("forever"),
+                            of="price",
+                            into_field="revenue",
+                        ),
+                    ]
                 )
 
         # # Sync the dataset

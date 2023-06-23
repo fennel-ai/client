@@ -662,6 +662,8 @@ class TestSearchExample(unittest.TestCase):
                 "words",
             ]
 
+        if client.is_integration_client():
+            client.sleep(120)
         input_df = pd.DataFrame(
             {
                 "TopWordsFeatures.word": ["This", "Coda"],
