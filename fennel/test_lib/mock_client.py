@@ -8,10 +8,10 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
+from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import numpy as np
 import pandas as pd
-from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import fennel.datasets.datasets
 import fennel.sources as sources
@@ -518,7 +518,6 @@ class MockClient(Client):
             )
         self._merge_df(df, dataset_name)
         for pipeline in self.listeners[dataset_name]:
-            print("Executing pipeline", pipeline.name)
             executor = Executor(self.data)
             ret = executor.execute(
                 pipeline, self.datasets[pipeline._dataset_name]
