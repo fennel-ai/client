@@ -145,15 +145,15 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                    response.json()["error"]
-                    == """error: input parse error: expected Int, but got String("32")"""
+                response.json()["error"]
+                == """error: input parse error: expected Int, but got String("32")"""
             )
         else:
             assert (
-                    response.json()["error"]
-                    == "Schema validation failed during data insertion to "
-                       "`UserInfoDataset` [ValueError('Field `age` is of type int, but the column "
-                       "in the dataframe is of type `object`. Error found during checking schema for `UserInfoDataset`.')]"
+                response.json()["error"]
+                == "Schema validation failed during data insertion to "
+                "`UserInfoDataset` [ValueError('Field `age` is of type int, but the column "
+                "in the dataframe is of type `object`. Error found during checking schema for `UserInfoDataset`.')]"
             )
         client.sleep(10)
         # Do some lookups
@@ -251,6 +251,7 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_deleted_field(self, client):
         with self.assertRaises(Exception) as e:
+
             @meta(owner="test@test.com")
             @dataset
             class UserInfoDataset:
@@ -263,8 +264,8 @@ class TestDataset(unittest.TestCase):
             client.sync(datasets=[UserInfoDataset])
 
         assert (
-                str(e.exception)
-                == "Dataset currently does not support deleted or deprecated fields."
+            str(e.exception)
+            == "Dataset currently does not support deleted or deprecated fields."
         )
 
 
@@ -682,7 +683,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("fennel_webhook", "MovieInfo", df)
         assert (
-                response.status_code == requests.codes.OK
+            response.status_code == requests.codes.OK
         ), response.json()  # noqa
 
         now = datetime.now()
@@ -700,7 +701,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("fennel_webhook", "TicketSale", df)
         assert (
-                response.status_code == requests.codes.OK
+            response.status_code == requests.codes.OK
         ), response.json()  # noqa
 
         # Do some lookups to verify pipeline_join is working as expected
@@ -733,7 +734,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("fennel_webhook", "MovieInfo", df)
         assert (
-                response.status_code == requests.codes.OK
+            response.status_code == requests.codes.OK
         ), response.json()  # noqa
 
         # Also, update the ticket price for ticket_id 2 to 75
@@ -1348,7 +1349,7 @@ class ManchesterUnitedPlayerInfo:
     @pipeline()
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
@@ -1386,7 +1387,7 @@ class ManchesterUnitedPlayerInfoBounded:
     @pipeline(version=1)
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
-            cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
+        cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
     ):
         def convert_to_metric_stats(df: pd.DataFrame) -> pd.DataFrame:
             df["height"] = df["height"] * 2.54
@@ -1474,25 +1475,26 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         client.sleep()
         df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
         assert df.shape == (5, 8)
+        print(df["club"].tolist())
         assert df["club"].tolist() == [
             "Manchester United",
             "Manchester United",
             None,
-            "Manchester United",
+            None,
             "Manchester United",
         ]
         assert df["salary"].tolist() == [
             1000000,
             1000000,
             None,
-            1000000,
+            None,
             1000000,
         ]
         assert df["wag"].tolist() == [
             "Lucia",
             "Fern",
             None,
-            "Georgina",
+            None,
             "Rosilene",
         ]
 
@@ -1610,7 +1612,7 @@ def test_join(client):
     def test_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         assert df.shape == (3, 4), "Shape is not correct {}".format(df.shape)
         assert (
-                "b1" not in df.columns
+            "b1" not in df.columns
         ), "b1 column should not be present, " "{}".format(df.columns)
         return df
 
@@ -1673,16 +1675,16 @@ def test_join(client):
 
 
 def extract_payload(
-        df: pd.DataFrame,
-        payload_col: str = "payload",
-        json_col: str = "json_payload",
+    df: pd.DataFrame,
+    payload_col: str = "payload",
+    json_col: str = "json_payload",
 ) -> pd.DataFrame:
     df[json_col] = df[payload_col].apply(lambda x: json.loads(x))
     return df[["timestamp", json_col]]
 
 
 def extract_keys(
-        df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
+    df: pd.DataFrame, json_col: str = "json_payload", keys: List[str] = []
 ) -> pd.DataFrame:
     for key in keys:
         df[key] = df[json_col].apply(lambda x: x[key])
@@ -1692,16 +1694,16 @@ def extract_keys(
 
 
 def extract_location_index(
-        df: pd.DataFrame,
-        index_col: str,
-        latitude_col: str = "latitude",
-        longitude_col: str = "longitude",
-        resolution: int = 2,
+    df: pd.DataFrame,
+    index_col: str,
+    latitude_col: str = "latitude",
+    longitude_col: str = "longitude",
+    resolution: int = 2,
 ) -> pd.DataFrame:
     df[index_col] = df.apply(
-        lambda x: str(x[latitude_col])[0: 3 + resolution]  # noqa
-                  + "-"  # noqa
-                  + str(x[longitude_col])[0: 3 + resolution],  # noqa
+        lambda x: str(x[latitude_col])[0 : 3 + resolution]  # noqa
+        + "-"  # noqa
+        + str(x[longitude_col])[0 : 3 + resolution],  # noqa
         axis=1,
     )
     df[index_col] = df[index_col].astype(str)

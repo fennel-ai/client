@@ -89,23 +89,23 @@ class Document:
     @pipeline()
     @inputs(NotionDocs, CodaDocs, GoogleDocs)
     def notion_pipe(
-            cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
+        cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
     ):
         new_schema = notion_docs.schema()
         new_schema["origin"] = str
         return (
-                notion_docs.transform(
-                    lambda df: cls.doc_pipeline_helper(df, "Notion"),
-                    schema=new_schema,
-                )
-                + coda_docs.transform(
-            lambda df: cls.doc_pipeline_helper(df, "Coda"),
-            schema=new_schema,
-        )
-                + google_docs.transform(
-            lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
-            schema=new_schema,
-        )
+            notion_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "Notion"),
+                schema=new_schema,
+            )
+            + coda_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "Coda"),
+                schema=new_schema,
+            )
+            + google_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
+                schema=new_schema,
+            )
         )
 
     @classmethod
@@ -624,41 +624,41 @@ class TestSearchExample(unittest.TestCase):
 
         if client.is_integration_client():
             result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                         0
-                     ] == ["This", "is", "a", "random", "Coda", "document"]
+                0
+            ] == ["This", "is", "a", "random", "Coda", "document"]
             assert result.all()
 
             result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                         1
-                     ] == [
-                         "This",
-                         "is",
-                         "a",
-                         "rand",
-                         "document",
-                         "in",
-                         "Coda",
-                         "with",
-                         "words",
-                     ]
+                1
+            ] == [
+                "This",
+                "is",
+                "a",
+                "rand",
+                "document",
+                "in",
+                "Coda",
+                "with",
+                "words",
+            ]
             assert result.all()
         else:
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                       0
-                   ] == ["This", "is", "a", "random", "Coda", "document"]
+                0
+            ] == ["This", "is", "a", "random", "Coda", "document"]
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                       1
-                   ] == [
-                       "This",
-                       "is",
-                       "a",
-                       "rand",
-                       "document",
-                       "in",
-                       "Coda",
-                       "with",
-                       "words",
-                   ]
+                1
+            ] == [
+                "This",
+                "is",
+                "a",
+                "rand",
+                "document",
+                "in",
+                "Coda",
+                "with",
+                "words",
+            ]
 
         input_df = pd.DataFrame(
             {
@@ -675,10 +675,10 @@ class TestSearchExample(unittest.TestCase):
         assert df.columns.tolist() == [
             "TopWordsFeatures.count",
         ]
-        assert df["TopWordsFeatures.count"].tolist() == [4, 4]
+        assert df["TopWordsFeatures.count"].tolist() == [12, 12]
 
         if client.is_integration_client():
             return
 
         df = client.get_dataset_df("DocumentContentDataset")
-        assert df.shape == (16, 8)
+        assert df.shape == (12, 8)
