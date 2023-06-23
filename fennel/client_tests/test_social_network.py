@@ -184,7 +184,7 @@ def test_social_network(client):
     now = datetime.now()
     ts = pd.Series([now, now, now])
     if client.is_integration_client():
-        client.sleep(300)
+        client.sleep(120)
     df, found = CityInfo.lookup(
         ts=ts,
         city=pd.Series(["Wufeng", "Coyaima", "San Angelo"]),
@@ -205,12 +205,11 @@ def test_social_network(client):
             }
         ),
     )
-    assert feature_df["UserFeatures.num_views"].to_list() == [2, 4]
-    assert feature_df["UserFeatures.num_category_views"].to_list() == [0, 1]
-    assert feature_df["UserFeatures.category_view_ratio"].to_list() == [
-        0.0,
-        0.25,
-    ]
+    assert (
+        feature_df["UserFeatures.num_views"].to_list(),
+        feature_df["UserFeatures.num_category_views"].to_list(),
+        feature_df["UserFeatures.category_view_ratio"].to_list(),
+    ) == ([2, 4], [0, 1], [0.0, 0.25])
 
     if client.is_integration_client():
         return

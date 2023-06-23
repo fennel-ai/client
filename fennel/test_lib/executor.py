@@ -252,9 +252,9 @@ class Executor(Visitor):
             # Rename the "on" columns on RHS by prefixing them with "__@@__"
             # This is to avoid conflicts with the "on" columns on LHS
             right_df = right_df.rename(
-                columns={col: f"__@@__foo__{col}" for col in obj.on}
+                columns={col: f"__@@__{col}" for col in obj.on}
             )
-            right_by = [f"__@@__foo__{col}" for col in obj.on]
+            right_by = [f"__@@__{col}" for col in obj.on]
             left_by = copy.deepcopy(obj.on)
         else:
             if not is_subset(obj.left_on, left_df.columns):
@@ -263,7 +263,7 @@ class Executor(Visitor):
                 )
             if not is_subset(obj.right_on, right_df.columns):
                 raise Exception(
-                    f"Join keys {obj.right_on} foo not present in right dataframe"
+                    f"Join keys {obj.right_on} not present in right dataframe"
                 )
             left_by = copy.deepcopy(obj.left_on)
             right_by = copy.deepcopy(obj.right_on)

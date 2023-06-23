@@ -209,7 +209,7 @@ class _Node(Generic[T]):
     def drop(self, columns: List[str]) -> _Node:
         return Drop(self, columns)
 
-    def dedup(self, by: List[str] = None) -> _Node:
+    def dedup(self, by: Optional[List[str]] = None) -> _Node:
         # If 'by' is not provided, dedup by all value fields.
         # Note: we don't use key fields because dedup cannot be applied on keyed datasets.
         if by is None:
@@ -460,7 +460,7 @@ class Join(_Node):
         for col in common_cols:
             if self.lsuffix != "" and (col + self.lsuffix) in left_schema:
                 raise ValueError(
-                    "Column name collision. '{}' already exists in schema of left input {}".format(
+                    "Column name collision. `{}` already exists in schema of left input {}".format(
                         col + self.lsuffix, left_dsschema.name
                     )
                 )
@@ -469,7 +469,7 @@ class Join(_Node):
                 and (col + self.rsuffix) in right_value_schema
             ):
                 raise ValueError(
-                    "Column name collision. '{}' already exists in schema of right input {}".format(
+                    "Column name collision. `{}` already exists in schema of right input {}".format(
                         col + self.rsuffix, self.dataset.dsschema().name
                     )
                 )
@@ -486,7 +486,7 @@ class Join(_Node):
         for (col, dtype) in right_value_schema.items():
             if col in left_schema:
                 raise ValueError(
-                    "Column name collision. '{}' already exists in schema of left input '{}'".format(
+                    "Column name collision. `{}` already exists in schema of left input {}".format(
                         col, left_dsschema.name
                     )
                 )
@@ -1648,7 +1648,7 @@ class SchemaValidator(Visitor):
             if field not in val_fields:
                 raise ValueError(
                     f"Field `{field}` is not a non-key non-timestamp field in schema of "
-                    f"drop node input {input_schema.name}. Value fields are: `{list(val_fields)}`"
+                    f"drop node input {input_schema.name}. Value fields are: {list(val_fields)}"
                 )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
@@ -1671,11 +1671,11 @@ class SchemaValidator(Visitor):
         for f in obj.by:
             if f not in input_schema.fields():
                 raise ValueError(
-                    f"invalid dedup: field '{f}' not present in input schema {input_schema.name}"
+                    f"invalid dedup: field `{f}` not present in input schema {input_schema.name}"
                 )
         if input_schema.timestamp in obj.by:
             raise ValueError(
-                f"invalid dedup: cannot dedup on timestamp field '{obj.by}' of input schema {input_schema.name}"
+                f"invalid dedup: cannot dedup on timestamp field `{obj.by}` of input schema {input_schema.name}"
             )
 
         output_schema = obj.dsschema()
@@ -1696,18 +1696,19 @@ class SchemaValidator(Visitor):
             # 'field' must be present in input schema.
             if field not in input_schema.fields():
                 raise ValueError(
-                    f"Column {field} in explode not present in input {input_schema.name}: {input_schema.fields()}"
+                    f"Column `{field}` in explode not present in input {input_schema.name}: {input_schema.fields()}"
                 )
             # 'field' must be a value column.
             if field not in val_fields:
                 raise ValueError(
                     f"Field `{field}` is not a non-key non-timestamp field in schema of "
-                    f"explode node input {input_schema.name}. Value fields are: `{list(val_fields)}`"
+                    f"explode node input {input_schema.name}. Value fields are: {list(val_fields)}"
                 )
             # Type of 'c' must be List.
-            if not issubclass(schema[field], List):
+            raw_type = getattr(schema[field], "__origin__", schema[field])
+            if raw_type != list:
                 raise ValueError(
-                    f"Column {field} in explode is not of type List"
+                    f"Column `{field}` in explode is not of type List"
                 )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name

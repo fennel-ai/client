@@ -367,14 +367,14 @@ def add_one(x: int):
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.join(b, how='left', left_on=["a1"], right_on=["b1"])
+    return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
 """
     assert expected_gen_code == pipeline_req.pycode.generated_code
     expected_source_code = """@pipeline(version=1)
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.join(b, how='left', left_on=["a1"], right_on=["b1"])
+    return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
 """
     assert expected_source_code == pipeline_req.pycode.source_code
     p = {
@@ -1046,7 +1046,8 @@ def test_dataset_with_complex_pipe():
                     "user_id": int,
                 },
             )
-            return ds_transform.groupby("merchant_id").aggregate(
+            ds_deduped = ds_transform.dedup(by=["user_id", "merchant_id"])
+            return ds_deduped.groupby("merchant_id").aggregate(
                 [
                     Count(
                         window=Window("forever"),
@@ -1129,8 +1130,8 @@ def test_dataset_with_complex_pipe():
         pipeline_req, expected_pipeline_request
     )
 
-    # 6 operators
-    assert len(sync_request.operators) == 6
+    # 7 operators
+    assert len(sync_request.operators) == 7
     operator_req = sync_request.operators[0]
     o = {
         "id": "UserInfoDataset",
@@ -1213,12 +1214,27 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[5]
     o = {
-        "id": "97d7791f0296e4c48319cd17622895b2",
+        "id": "acd519ba5789e767383099d0561e07c8",
+        "pipelineName": "create_fraud_dataset",
+        "datasetName": "FraudReportAggregatedDataset",
+        "dedup": {
+            "operandId": "bfa10d216f843625785d24e6b9d890fb",
+            "columns": ["user_id", "merchant_id"],
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = sync_request.operators[6]
+    o = {
+        "id": "d7d235e0397bf22f09131d7a2650343e",
         "isRoot": True,
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "aggregate": {
-            "operandId": "bfa10d216f843625785d24e6b9d890fb",
+            "operandId": "acd519ba5789e767383099d0561e07c8",
             "keys": ["merchant_id"],
             "specs": [
                 {
@@ -1497,11 +1513,29 @@ def test_search_dataset():
                 },
             )
 
+    @meta(owner="abhay@fennel.ai")
+    @dataset
+    class DocumentWordDataset:
+        doc_id: int = field(key=True)
+        bert_embedding: Embedding[128]
+        fast_text_embedding: Embedding[256]
+        num_words: int
+        num_stop_words: int
+        top_10_unique_words: str
+        creation_timestamp: datetime
+
+        @pipeline(version=1)
+        @inputs(DocumentContentDataset)
+        def unique_words(cls, ds: Dataset):
+            return ds.explode(columns=["top_10_unique_words"])
+
     view = InternalTestClient()
-    view.add(DocumentContentDataset)
+    view.add(DocumentContentDataset)  # type: ignore
+    view.add(DocumentWordDataset)  # type: ignore
     sync_request = view._get_sync_request_proto()
-    assert len(sync_request.datasets) == 1
-    dataset_req = sync_request.datasets[0]
+    assert len(sync_request.datasets) == 2
+
+    content_dataset_req = sync_request.datasets[0]
     d = {
         "name": "DocumentContentDataset",
         "dsschema": {
@@ -1554,15 +1588,74 @@ def test_search_dataset():
         "pycode": {},
     }
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    dataset_req.pycode.Clear()
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
+    content_dataset_req.pycode.Clear()
+    assert content_dataset_req == expected_dataset_request, error_message(
+        content_dataset_req, expected_dataset_request
+    )
+
+    word_dataset_req = sync_request.datasets[1]
+    d = {
+        "name": "DocumentWordDataset",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "doc_id",
+                        "dtype": {"int_type": {}},
+                    }
+                ]
+            },
+            "values": {
+                "fields": [
+                    {
+                        "name": "bert_embedding",
+                        "dtype": {"embedding_type": {"embedding_size": 128}},
+                    },
+                    {
+                        "name": "fast_text_embedding",
+                        "dtype": {"embedding_type": {"embedding_size": 256}},
+                    },
+                    {
+                        "name": "num_words",
+                        "dtype": {"int_type": {}},
+                    },
+                    {
+                        "name": "num_stop_words",
+                        "dtype": {"int_type": {}},
+                    },
+                    {
+                        "name": "top_10_unique_words",
+                        "dtype": {"string_type": {}},
+                    },
+                ]
+            },
+            "timestamp": "creation_timestamp",
+        },
+        "metadata": {"owner": "abhay@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "doc_id": {},
+            "bert_embedding": {},
+            "fast_text_embedding": {},
+            "num_words": {},
+            "num_stop_words": {},
+            "top_10_unique_words": {},
+            "creation_timestamp": {},
+        },
+        "pycode": {},
+    }
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    word_dataset_req.pycode.Clear()
+    assert word_dataset_req == expected_dataset_request, error_message(
+        word_dataset_req, expected_dataset_request
     )
 
     # pipelines
-    assert len(sync_request.pipelines) == 1
-    pipeline_req = sync_request.pipelines[0]
-    pipeline_req.pycode.Clear()
+    assert len(sync_request.pipelines) == 2
+
+    content_pipeline_req = sync_request.pipelines[0]
+    content_pipeline_req.pycode.Clear()
     p = {
         "name": "content_features",
         "dataset_name": "DocumentContentDataset",
@@ -1574,12 +1667,29 @@ def test_search_dataset():
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
+    assert content_pipeline_req == expected_pipeline_request, error_message(
+        content_pipeline_req, expected_pipeline_request
+    )
+
+    word_pipeline_req = sync_request.pipelines[1]
+    word_pipeline_req.pycode.Clear()
+    p = {
+        "name": "unique_words",
+        "dataset_name": "DocumentWordDataset",
+        "signature": "unique_words",
+        "metadata": {},
+        "version": 1,
+        "input_dataset_names": ["DocumentContentDataset"],
+        "active": True,
+        "pycode": {},
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert word_pipeline_req == expected_pipeline_request, error_message(
+        word_pipeline_req, expected_pipeline_request
     )
 
     # operators
-    assert len(sync_request.operators) == 2
+    assert len(sync_request.operators) == 4
     operator_req = sync_request.operators[0]
     o = {
         "id": "Document",
@@ -1617,6 +1727,37 @@ def test_search_dataset():
                 },
             },
             "pycode": {},
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = sync_request.operators[2]
+    o = {
+        "id": "DocumentContentDataset",
+        "is_root": False,
+        "pipeline_name": "unique_words",
+        "dataset_name": "DocumentWordDataset",
+        "dataset_ref": {
+            "referring_dataset_name": "DocumentContentDataset",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = sync_request.operators[3]
+    o = {
+        "id": "961d4107a251ef6ef344d2b09f1a03f3",
+        "is_root": True,
+        "pipeline_name": "unique_words",
+        "dataset_name": "DocumentWordDataset",
+        "explode": {
+            "operand_id": "DocumentContentDataset",
+            "columns": ["top_10_unique_words"],
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())

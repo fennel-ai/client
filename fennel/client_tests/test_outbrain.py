@@ -133,7 +133,8 @@ def test_outbrain(client):
     df["timestamp"] = df["timestamp"] + cur_time_ms - max_ts
     # Filter out data that is more than 12 days old.
     # TODO: Remove this once watermarks are correctly implemented
-    df = df[df["timestamp"] > cur_time_ms - 12 * 24 * 60 * 60 * 1000]
+    twelve_days = 12 * 24 * 60 * 60 * 1000
+    df = df[df["timestamp"] > cur_time_ms - twelve_days]
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
     client.log("outbrain_webhook", "PageViews", df)

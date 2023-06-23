@@ -73,7 +73,7 @@ def test_drop_schema_validation_drop_keys():
 
     assert (
         str(e.value)
-        == """Field `x` is not a non-key non-timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: `['y']`"""
+        == """Field `x` is not a non-key non-timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
     )
 
 
@@ -100,7 +100,7 @@ def test_drop_schema_validation_drop_timestamp():
 
     assert (
         str(e.value)
-        == """Field `t` is not a non-key non-timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: `['y']`"""
+        == """Field `t` is not a non-key non-timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
     )
 
 
@@ -692,7 +692,7 @@ def test_dedup_on_missing_field():
 
     assert (
         str(e.value)
-        == """invalid dedup: field 'director' not present in input schema '[Dataset:RatingActivity]'"""
+        == """invalid dedup: field `director` not present in input schema '[Dataset:RatingActivity]'"""
     )
 
 
@@ -722,7 +722,7 @@ def test_explode_fails_on_keyed_column():
 
     assert (
         str(e.value)
-        == """Field `director` is not a non-key non-timestamp field in schema of explode node input '[Dataset:SingleHits]'. Value fields are: `['movie', 'revenue']`"""
+        == """Field `director` is not a non-key non-timestamp field in schema of explode node input '[Dataset:SingleHits]'. Value fields are: ['movie', 'revenue']"""
     )
 
 
@@ -752,7 +752,7 @@ def test_explode_fails_on_missing_column():
 
     assert (
         str(e.value)
-        == """Column actor in explode not present in input '[Dataset:SingleHits]': ['director', 'movie', 'revenue', 't']"""
+        == """Column `actor` in explode not present in input '[Dataset:SingleHits]': ['director', 'movie', 'revenue', 't']"""
     )
 
 
@@ -780,4 +780,4 @@ def test_explode_fails_on_primitive_column():
             def pipeline_exploded(cls, hits: Dataset):
                 return hits.explode(columns=["movie"])
 
-    assert str(e.value) == """Column movie in explode is not of type List"""
+    assert str(e.value) == """Column `movie` in explode is not of type List"""
