@@ -19,10 +19,12 @@ against another dataset which has keys defined. The join operation is performed 
 The `join` operator has the following parameters:
 
 1. `dataset: Dataset` - positional argument, that specifies the RHS Dataset.&#x20;
-2. `on: List[str]` - kwarg that specifies the list of fields to join on.
-3. `left_on: List[str]` - optional kwarg specifying the list of fields to join on for the LHS dataset.&#x20;
-4. `right_on: List[str]` - optional kwarg specifying the list of fields to join on for the RHS dataset.&#x20;
-5. `within: Tuple[Duration, Duration]` - optional kwarg specifying the time window within which the join should be
+2. `how: str` - required kwarg indicating whether the join should be an inner join (`how='inner'`) or a left-outer
+   join (`how='left'`).
+3. `on: List[str]` - optional kwarg that specifies the list of fields to join on.
+4. `left_on: List[str]` - optional kwarg specifying the list of fields to join on for the LHS dataset.&#x20;
+5. `right_on: List[str]` - optional kwarg specifying the list of fields to join on for the RHS dataset.&#x20;
+6. `within: Tuple[Duration, Duration]` - optional kwarg specifying the time window within which the join should be
    performed.&#x20;
     1. The first value in the tuple represents how far back in time we can go, to perform a join. The term "forever"
        means that we can go infinitely back in time when searching for an event to join from the left-hand side (LHS)
@@ -32,9 +34,6 @@ The `join` operator has the following parameters:
        The default value for this parameter is `("forever", "0s")` which means that we can go infinitely back in time
        and
        the RHS data should be available for the event time of the LHS data.&#x20;
-
-6. `how: str` - optional kwarg indicating whether the join should be an inner join (`how='inner'`) or a left-outer
-   join (`how='left'`). The default value is `'left'`.
 
 :::info
 One must either provide the `on` parameter or both the `left_on` & `right_on` parameters. If providing `left_on`
@@ -138,7 +137,8 @@ only if they have the same values for the timestamp field and the `by` columns.
 
 The `dedup` operator has the following parameters:
 
-1. `by: List[str]` - optional kwarg that specifies the list of fields to use for identifying duplicates. If not
+1. `by: Optional[List[str]]` - optional kwarg that specifies the list of fields to use for identifying duplicates. If
+   not
    specified, all the columns (except the timestamp column) are used for identifying duplicates.
 
 ::info
