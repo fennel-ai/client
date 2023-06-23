@@ -394,7 +394,6 @@ class Join(_Node):
         rsuffix: str = "",
     ):
         if on is not None:
-
             if left_on is not None or right_on is not None:
                 raise ValueError("Cannot specify on and left_on/right_on")
             if not isinstance(on, list):
@@ -483,7 +482,7 @@ class Join(_Node):
 
         # Add right value columns to left schema. Check for column name collisions
         joined_dsschema = copy.deepcopy(left_dsschema)
-        for (col, dtype) in right_value_schema.items():
+        for col, dtype in right_value_schema.items():
             if col in left_schema:
                 raise ValueError(
                     "Column name collision. `{}` already exists in schema of left input {}".format(
