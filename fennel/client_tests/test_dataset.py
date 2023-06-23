@@ -610,6 +610,175 @@ class TestBasicJoin(unittest.TestCase):
         assert df["revenue_in_millions"].tolist() == [None, 2, None, 50]
 
 
+class TestInnerJoinExplodeDedup(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_inner_join_with_explode_dedup(self, client):
+        @meta(owner="abhay@fennel.ai")
+        @source(webhook.endpoint("MovieInfo"))
+        @dataset
+        class MovieInfo:
+            title: str = field(key=True)
+            actors: List[str]
+            release: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @source(webhook.endpoint("TicketSale"))
+        @dataset
+        class TicketSale:
+            ticket_id: str
+            title: str
+            price: int
+            at: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class ActorStats:
+            name: str = field(key=True)
+            revenue: int
+            at: datetime
+
+            @pipeline(version=1)
+            @inputs(MovieInfo, TicketSale)
+            def pipeline_join(cls, info: Dataset, sale: Dataset):
+                uniq = sale.dedup(by=["ticket_id"])
+                c = uniq.join(info, how="inner", on=["title"])
+                return (
+                    c.explode(columns=["actors"])
+                    .rename(columns={"actors": "name"})
+                    .groupby("name")
+                    .aggregate(
+                        [
+                            Sum(
+                                window=Window("forever"),
+                                of="price",
+                                into_field="revenue",
+                            ),
+                        ]
+                    )
+                )
+
+        # # Sync the dataset
+        client.sync(
+            datasets=[MovieInfo, TicketSale, ActorStats],
+        )
+        data = [
+            [
+                "Titanic",
+                ["Leonardo DiCaprio", "Kate Winslet"],
+                datetime.strptime("1997-12-19", "%Y-%m-%d"),
+            ],
+            [
+                "Jumanji",
+                ["Robin Williams", "Kirsten Dunst"],
+                datetime.strptime("1995-12-15", "%Y-%m-%d"),
+            ],
+            [
+                "Great Gatbsy",
+                ["Leonardo DiCaprio", "Carey Mulligan"],
+                datetime.strptime("2013-05-10", "%Y-%m-%d"),
+            ],
+        ]
+        columns = ["title", "actors", "release"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "MovieInfo", df)
+        assert (
+            response.status_code == requests.codes.OK
+        ), response.json()  # noqa
+
+        now = datetime.now()
+        one_hour_ago = now - timedelta(hours=1)
+        one_day_ago = now - timedelta(days=1)
+        two_hours_ago = now - timedelta(hours=2)
+        columns = ["ticket_id", "title", "price", "at"]
+        data = [
+            ["1", "Titanic", 50, one_hour_ago],
+            ["2", "Titanic", 100, one_day_ago],
+            ["3", "Jumanji", 25, one_hour_ago],
+            ["4", "The Matrix", 50, two_hours_ago],  # no match
+            ["5", "Great Gatbsy", 49, one_hour_ago],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "TicketSale", df)
+        assert (
+            response.status_code == requests.codes.OK
+        ), response.json()  # noqa
+
+        # Do some lookups to verify pipeline_join is working as expected
+        ts = pd.Series([now, now, now])
+        names = pd.Series(
+            ["Leonardo DiCaprio", "Robin Williams", "Keanu Reeves"]
+        )
+        client.sleep()
+        df, _ = ActorStats.lookup(
+            ts,
+            name=names,
+        )
+        assert df.shape == (3, 3)
+        assert df["name"].tolist() == [
+            "Leonardo DiCaprio",
+            "Robin Williams",
+            "Keanu Reeves",
+        ]
+        assert df["revenue"].tolist() == [199, 25, None]
+
+        # Now, send the movie info for The Matrix
+        columns = ["title", "actors", "release"]
+        data = [
+            [
+                "The Matrix",
+                ["Keanu Reeves", "Laurence Fishburne"],
+                datetime.strptime("1999-03-31", "%Y-%m-%d"),
+            ],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "MovieInfo", df)
+        assert (
+            response.status_code == requests.codes.OK
+        ), response.json()  # noqa
+
+        # Also, update the ticket price for ticket_id 2 to 75
+        columns = ["ticket_id", "title", "price", "at"]
+        data = [
+            ["2", "Titanic", 75, one_day_ago],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "TicketSale", df)
+
+        # Now do the lookup again
+        client.sleep()
+        df, _ = ActorStats.lookup(
+            ts,
+            name=names,
+        )
+        assert df.shape == (3, 3)
+        assert df["name"].tolist() == [
+            "Leonardo DiCaprio",
+            "Robin Williams",
+            "Keanu Reeves",
+        ]
+        assert df["revenue"].tolist() == [174, 25, 50]
+
+        # Do some lookup at various timestamps in the past
+        three_hours_ago = now - timedelta(hours=3)
+        ts = pd.Series([three_hours_ago, three_hours_ago, three_hours_ago])
+        df, _ = ActorStats.lookup(
+            ts,
+            name=names,
+        )
+        assert df.shape == (3, 3)
+        assert df["name"].tolist() == [
+            "Leonardo DiCaprio",
+            "Robin Williams",
+            "Keanu Reeves",
+        ]
+        assert df["revenue"].tolist() == [
+            75,
+            None,
+            None,
+        ]
+
+
 class TestBasicAggregate(unittest.TestCase):
     @pytest.mark.integration
     @mock
@@ -900,18 +1069,8 @@ class FraudReportAggregatedDataset:
         )
         ds = ds.join(
             merchant_info,
-            how="left",
+            how="inner",
             on=["merchant_id"],
-        )
-        ds = ds.transform(
-            fillna,
-            schema={
-                "merchant_id": int,
-                "category": str,
-                "location": str,
-                "timestamp": datetime,
-                "transaction_amount": float,
-            },
         )
         return ds.groupby("category").aggregate(
             [

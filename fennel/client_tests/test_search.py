@@ -1,11 +1,11 @@
 import unittest
 from collections import defaultdict
 from datetime import datetime
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 import pytest
-from typing import Dict, List
 
 import fennel._vendor.requests as requests
 from fennel import sources
@@ -15,7 +15,7 @@ from fennel.lib.aggregate import Count, Sum
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding
-from fennel.lib.schema import inputs
+from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 from fennel.sources import source
 from fennel.test_lib import mock
@@ -185,6 +185,30 @@ class DocumentContentDataset:
         )
 
 
+@meta(owner="abhay@fennel.ai")
+@dataset
+class TopWordsCount:
+    word: str = field(key=True)
+    count: int
+    timestamp: datetime
+
+    @pipeline(version=1)
+    @inputs(DocumentContentDataset)
+    def top_words_count(cls, ds: Dataset):
+        ds = ds.explode(columns=["top_10_unique_words"]).rename(
+            columns={
+                "top_10_unique_words": "word",
+                "creation_timestamp": "timestamp",
+            }
+        )  # type: ignore
+        ds = ds.groupby(["word"]).aggregate(
+            [
+                Count(window=Window("forever"), into_field="count"),
+            ]
+        )  # type: ignore
+        return ds
+
+
 @meta(owner="aditya@fennel.ai")
 @source(biq_query.table("user_activity", cursor="timestamp"), every="1h")
 @dataset
@@ -215,7 +239,9 @@ class UserEngagementDataset:
             df["is_long_click"].astype(int)
             return df
 
-        click_type = ds.transform(
+        click_type = ds.dedup(
+            by=["user_id", "doc_id", "action_type"]
+        ).transform(
             create_short_click,
             schema={
                 "user_id": int,
@@ -257,17 +283,27 @@ class DocumentEngagementDataset:
     @pipeline(version=1)
     @inputs(UserActivity)
     def doc_engagement_pipeline(cls, ds: Dataset):
-        return ds.groupby("doc_id").aggregate(
-            [
-                Count(window=Window("forever"), into_field=str(cls.num_views)),
-                Count(window=Window("7d"), into_field=str(cls.num_views_7d)),
-                Count(window=Window("28d"), into_field=str(cls.num_views_28d)),
-                Sum(
-                    window=Window("forever"),
-                    of="view_time",
-                    into_field=str(cls.total_timespent),
-                ),
-            ]
+        return (
+            ds.dedup(by=["user_id", "doc_id"])
+            .groupby("doc_id")
+            .aggregate(
+                [
+                    Count(
+                        window=Window("forever"), into_field=str(cls.num_views)
+                    ),
+                    Count(
+                        window=Window("7d"), into_field=str(cls.num_views_7d)
+                    ),
+                    Count(
+                        window=Window("28d"), into_field=str(cls.num_views_28d)
+                    ),
+                    Sum(
+                        window=Window("forever"),
+                        of="view_time",
+                        into_field=str(cls.total_timespent),
+                    ),
+                ]
+            )
         )
 
 
@@ -341,6 +377,23 @@ class DocumentContentFeatures:
             ts, doc_id=doc_id  # type: ignore
         )
         df.drop("creation_timestamp", axis=1, inplace=True)
+        return df
+
+
+@meta(owner="abhay@fennel.ai")
+@featureset
+class TopWordsFeatures:
+    word: str = feature(id=1)
+    count: int = feature(id=2)
+
+    @extractor(depends_on=[TopWordsCount])
+    @inputs(word)
+    @outputs(count)
+    def get_features(cls, ts: pd.Series, word: pd.Series):
+        df, found = TopWordsCount.lookup(  # type: ignore
+            ts, word=word  # type: ignore
+        )
+        df.fillna(0, inplace=True)
         return df
 
 
@@ -421,7 +474,9 @@ class TestSearchExample(unittest.TestCase):
             [123, 143354, "view", 1, now],
             [123, 33234, "view", 2, now],
             [342, 141234, "view", 5, now],
+            [342, 141234, "view", 5, now],  # duplicate entry
             [342, 33234, "view", 7, now],
+            [342, 33234, "view", 7, now],  # duplicate entry
             [342, 141234, "view", 9, now],
         ]
         columns = ["user_id", "doc_id", "action_type", "view_time", "timestamp"]
@@ -513,6 +568,7 @@ class TestSearchExample(unittest.TestCase):
                 Document,
                 mock_UserActivity,
                 DocumentContentDataset,
+                TopWordsCount,
                 UserEngagementDataset,
                 DocumentEngagementDataset,
             ],
@@ -521,13 +577,14 @@ class TestSearchExample(unittest.TestCase):
                 UserBehaviorFeatures,
                 DocumentFeatures,
                 DocumentContentFeatures,
+                TopWordsFeatures,
             ],
         )
 
         self.log_document_data(client)
         client.sleep()
         self.log_engagement_data(client)
-        client.sleep(30)
+        client.sleep(60)
         input_df = pd.DataFrame(
             {
                 "Query.user_id": [123, 342],
@@ -602,6 +659,22 @@ class TestSearchExample(unittest.TestCase):
                 "with",
                 "words",
             ]
+
+        input_df = pd.DataFrame(
+            {
+                "TopWordsFeatures.word": ["This", "is"],
+            }
+        )
+        df = client.extract_features(
+            output_feature_list=[TopWordsFeatures.count],
+            input_feature_list=[TopWordsFeatures.word],
+            input_dataframe=input_df,
+        )
+        assert df.shape == (2, 1)
+        assert df.columns.tolist() == [
+            "TopWordsFeatures.count",
+        ]
+        assert df["TopWordsFeatures.count"].tolist() == [4, 4]
 
         if client.is_integration_client():
             return
