@@ -92,12 +92,10 @@ class UserCategoryDataset:
     @pipeline(1)
     @inputs(ViewData, PostInfo)
     def count_user_views(cls, view_data: Dataset, post_info: Dataset):
-        post_info_enriched = view_data.left_join(post_info, on=["post_id"])
-        post_info_enriched_t = post_info_enriched.transform(
-            lambda df: df.fillna("unknown"),
-            schema={"user_id": str, "category": str, "time_stamp": datetime},
+        post_info_enriched = view_data.join(
+            post_info, how="inner", on=["post_id"]
         )
-        return post_info_enriched_t.groupby("user_id", "category").aggregate(
+        return post_info_enriched.groupby("user_id", "category").aggregate(
             [Count(window=Window("5y 8s"), into_field="num_views")]
         )
 
@@ -185,6 +183,8 @@ def test_social_network(client):
     assert res.status_code == requests.codes.OK, res.json()
     now = datetime.now()
     ts = pd.Series([now, now, now])
+    if client.is_integration_client():
+        client.sleep(120)
     df, found = CityInfo.lookup(
         ts=ts,
         city=pd.Series(["Wufeng", "Coyaima", "San Angelo"]),
@@ -205,12 +205,11 @@ def test_social_network(client):
             }
         ),
     )
-    assert feature_df["UserFeatures.num_views"].to_list() == [2, 4]
-    assert feature_df["UserFeatures.num_category_views"].to_list() == [0, 1]
-    assert feature_df["UserFeatures.category_view_ratio"].to_list() == [
-        0.0,
-        0.25,
-    ]
+    assert (
+        feature_df["UserFeatures.num_views"].to_list(),
+        feature_df["UserFeatures.num_category_views"].to_list(),
+        feature_df["UserFeatures.category_view_ratio"].to_list(),
+    ) == ([2, 4], [0, 1], [0.0, 0.25])
 
     if client.is_integration_client():
         return

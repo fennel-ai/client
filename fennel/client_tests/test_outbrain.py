@@ -26,8 +26,6 @@ s3 = S3(
 
 webhook = Webhook(name="outbrain_webhook")
 
-MIN_TIMESTAMP = 1683220303091
-
 
 @source(
     s3.bucket("fennel-demo-data", prefix="outbrain/page_views_filter.csv"),
@@ -57,13 +55,17 @@ class PageViewsByUser:
     @pipeline(version=1)
     @inputs(PageViews)
     def group_by_user(cls, page_views: Dataset):
-        return page_views.groupby("uuid").aggregate(
-            [
-                Count(window=Window("28d"), into_field="page_views"),
-                Count(window=Window("1d"), into_field="page_views_1d"),
-                Count(window=Window("3d"), into_field="page_views_3d"),
-                Count(window=Window("9d"), into_field="page_views_9d"),
-            ]
+        return (
+            page_views.dedup(by=["uuid", "document_id"])
+            .groupby("uuid")
+            .aggregate(
+                [
+                    Count(window=Window("28d"), into_field="page_views"),
+                    Count(window=Window("1d"), into_field="page_views_1d"),
+                    Count(window=Window("3d"), into_field="page_views_3d"),
+                    Count(window=Window("9d"), into_field="page_views_9d"),
+                ]
+            )
         )
 
     @expectations
@@ -124,33 +126,21 @@ def test_outbrain(client):
         ],
     )
     df = pd.read_csv("fennel/client_tests/data/page_views_sample.csv")
-    # Current time 10 days from today in ms
-    cur_time_ms = datetime.now().timestamp() * 1000
-    ten_days_ago = cur_time_ms - 10 * 24 * 60 * 60 * 1000
-    df["timestamp"] = df["timestamp"] - MIN_TIMESTAMP + ten_days_ago
-    # Add a current row timestamp in the dataframe
-
     # Current time in ms
-    new_row = {
-        "uuid": "100016de3e1e8c1",
-        "document_id": 20330891,
-        "timestamp": cur_time_ms,
-        "platform": 2,
-        "geo_location": "US>CA>808",
-        "traffic_source": 1,
-    }
-
-    # create a DataFrame with the new row data
-    df_new = pd.DataFrame([new_row])
-    df = pd.concat([df, df_new], ignore_index=True)
-
+    cur_time_ms = datetime.now().timestamp() * 1000
+    max_ts = max(df["timestamp"].tolist())
+    # Shift all the data such that the most recent data point has timestamp = cur_time_ms
+    df["timestamp"] = df["timestamp"] + cur_time_ms - max_ts
+    # Filter out data that is more than 12 days old.
+    # TODO: Remove this once watermarks are correctly implemented
+    twelve_days = 12 * 24 * 60 * 60 * 1000
+    df = df[df["timestamp"] > cur_time_ms - twelve_days]
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
     client.log("outbrain_webhook", "PageViews", df)
     if client.is_integration_client():
         client.sleep(120)
 
-    df = df.iloc[:-1, :]
     input_df = df.copy()
     input_df = input_df[["uuid", "document_id"]]
     input_df.rename(
@@ -169,8 +159,20 @@ def test_outbrain(client):
         input_feature_list=[Request],
         input_dataframe=input_df,
     )
-    assert feature_df.shape[0] == 399
-    assert feature_df["UserPageViewFeatures.page_views"].sum() == 12971
-    assert feature_df["UserPageViewFeatures.page_views_1d"].sum() == 943
-    assert feature_df["UserPageViewFeatures.page_views_3d"].sum() == 4065
-    assert feature_df["UserPageViewFeatures.page_views_9d"].sum() == 10083
+    assert feature_df.shape[0] == 347
+    # Backend aggregations are approximate and can overcount by a bit. Account for that in expectations.
+    # Note that it doesn't overcount when all the data is within the aggregation window (in this case, the 28d window).
+    if client.is_integration_client():
+        assert (
+            feature_df["UserPageViewFeatures.page_views"].sum(),
+            feature_df["UserPageViewFeatures.page_views_1d"].sum(),
+            feature_df["UserPageViewFeatures.page_views_3d"].sum(),
+            feature_df["UserPageViewFeatures.page_views_9d"].sum(),
+        ) == (11975, 1228, 3897, 9676)
+    else:
+        assert (
+            feature_df["UserPageViewFeatures.page_views"].sum(),
+            feature_df["UserPageViewFeatures.page_views_1d"].sum(),
+            feature_df["UserPageViewFeatures.page_views_3d"].sum(),
+            feature_df["UserPageViewFeatures.page_views_9d"].sum(),
+        ) == (11975, 1140, 3840, 9544)

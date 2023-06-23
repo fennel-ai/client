@@ -1,7 +1,7 @@
 from datetime import datetime
+from typing import Optional, List
 
 import pytest
-from typing import Optional, List
 
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.lib.schema import inputs
@@ -145,7 +145,7 @@ def test_dataset_incorrect_join():
             @inputs(XYZ)
             def create_pipeline(cls, a: Dataset):
                 b = a.transform(lambda x: x)
-                return a.left_join(b, on=["user_id"])  # type: ignore
+                return a.join(b, how="left", on=["user_id"])  # type: ignore
 
     assert str(e.value) == "Cannot join with an intermediate dataset"
 
@@ -171,8 +171,9 @@ def test_dataset_incorrect_join_bounds():
             @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                return a.left_join(
+                return a.join(
                     b,
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                     within=("0s",),  # type: ignore
@@ -200,8 +201,9 @@ def test_dataset_incorrect_join_bounds():
             @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                return a.left_join(
+                return a.join(
                     b,
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                     within=(None, "0s"),  # type: ignore
@@ -229,8 +231,9 @@ def test_dataset_incorrect_join_bounds():
             @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                return a.left_join(
+                return a.join(
                     b,
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                     within=("forever", None),  # type: ignore
@@ -258,8 +261,9 @@ def test_dataset_incorrect_join_bounds():
             @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                return a.left_join(
+                return a.join(
                     b,
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                     within=(None, None),  # type: ignore
@@ -287,8 +291,9 @@ def test_dataset_incorrect_join_bounds():
             @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                return a.left_join(
+                return a.join(
                     b,
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                     within=("forever", "forever"),
@@ -355,14 +360,15 @@ def test_join():
             @pipeline(version=1)
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
-                x = a.left_join(
+                x = a.join(
                     b,
+                    how="left",
                     left_on=["a1"],
                     right_on=["b1"],
                 )  # type: ignore
                 return x
 
     assert (
-        "Left schema and right values are not disjoint during join with `B`."
+        "Column name collision. `v` already exists in schema of left input"
         in str(e.value)
     )

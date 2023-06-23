@@ -1,19 +1,24 @@
 # Changelog
+
+## [0.16.0] - 2023-06-19
+- New `explode` and `dedup` operators
+- Support for inner joins
+
 ## [0.15.21] - 2023-06-16
 - Add definition APIs to the client.
 
 ## [0.15.20] - 2023-06-13
-- Pass timestamp sorting column to the source. 
+- Pass timestamp sorting column to the source.
 
 ## [0.15.19] - 2023-06-04
 - Send pipeline source code during sync.
 
 
 ## [0.15.18] - 2023-06-01
-- Support chaining of operators for lambda functions. 
+- Support chaining of operators for lambda functions.
 
 ## [0.15.17] - 2023-06-01
-- Create schema copy for every node. 
+- Create schema copy for every node.
 
 ## [0.15.16] - 2023-06-01
 - Add support for longer complex lambda functions.
@@ -23,19 +28,19 @@
 - Require `default` for min/max aggregates
 
 ## [0.15.14] - 2023-05-30
-- Add support for kinesis source. 
+- Add support for kinesis source.
 
 ## [0.15.13] - 2023-05-30
-- Change ownership of expectations based on pipelines for derived datasets. 
+- Change ownership of expectations based on pipelines for derived datasets.
 
 ## [0.15.11] - 2023-05-26
-- Fix join semantics for left and right joins. 
+- Fix join semantics for left and right joins.
 
 ## [0.15.10] - 2023-05-23
-- Add debug api to the client 
+- Add debug api to the client
 
 ## [0.15.7] - 2023-05-19
-- Increase client timeout for sync to 300s. 
+- Increase client timeout for sync to 300s.
 
 ## [0.15.5] - 2023-05-18
 - Provide an option to override the source for a dataset.
@@ -44,10 +49,10 @@
 - Provide schema for every node
 
 ## [0.15.2] - 2023-05-13
-- Fixes for Webhook + Integration tests 
+- Fixes for Webhook + Integration tests
 
 ## [0.15.1] - 2023-05-12
-- Support backfilling of pipelines + Webhook support 
+- Support backfilling of pipelines + Webhook support
 
 ## [0.15] - 2023-05-11
 - Vendor in dependencies of the client
@@ -56,16 +61,16 @@
 - Add support for intervals in Join Operator
 
 ## [0.11] - 2023-04-05
-- Use new lambda based execution. 
+- Use new lambda based execution.
 
 ## [0.9.1] - 2023-04-03
-- Use source code based execution. 
+- Use source code based execution.
 
 ## [0.8.7] - 2023-03-29
-- Change from type to decorator based input and output specification for pipelines and extractors 
+- Change from type to decorator based input and output specification for pipelines and extractors
 
 ## [0.8.6] - 2023-03-21
-- Add rename and drop operators to the client. 
+- Add rename and drop operators to the client.
 
 ## [0.8.5] - 2023-03-21
 - Improve client error reporting.
@@ -77,13 +82,13 @@
 - Some minor bug fixes
 
 ## [0.8.2] - 2023-03-17
-- Kafka source support. 
+- Kafka source support.
 
 ## [0.8.1] - 2023-03-15
 - Add back support for great expectations
 
 ## [0.8.0] - 2023-03-12
-- Large rewrite of protobufs and the interfaces and a bunch of backward incompatible changes. 
+- Large rewrite of protobufs and the interfaces and a bunch of backward incompatible changes.
 
 ## [0.7.1] - 2023-02-22
 - Disallow featuresets as inputs to extractors
@@ -101,19 +106,19 @@
 - Client side schema check on feature extraction.
 
 ## [0.5.0] - 2023-02-01
-- Make Sync call a REST call instead of gRPC 
+- Make Sync call a REST call instead of gRPC
 
 ## [0.4.2] - 2023-01-18
-- Fix timestamps returned during a lookup. 
+- Fix timestamps returned during a lookup.
 
 ## [0.4.1] - 2023-01-18
-- Log features to Kafka. 
+- Log features to Kafka.
 
 ## [0.4.0] - 2023-01-18
 - Pipelines have ids and extractors have versions.
 
 ## [0.3.7] - 2023-01-17
-- Several updates to the api's and keeping them in sync with the documentation. 
+- Several updates to the api's and keeping them in sync with the documentation.
 
 ## [0.3.4] - 2023-01-15
 - log splits the input dataframe into smaller batches to avoid potential payload size limit or timeouts.
@@ -125,34 +130,34 @@
 - log splits the input dataframe into smaller batches to avoid potential payload size limit or timeouts.
 
 ## [0.3.1] - 2023-01-15
-- Pickle function module by value. 
+- Pickle function module by value.
 
 ## [0.3.0] - 2023-01-14
-- Fix aggregate execution. 
+- Fix aggregate execution.
 
 ## [0.2.9] - 2023-01-12
-- Pipeline schema validation. 
+- Pipeline schema validation.
 
 ## [0.2.8] - 2023-01-11
-- Dynamic import to support integration client 
+- Dynamic import to support integration client
 
 ## [0.2.6] - 2023-01-10
-- Pickle by reference and make extractors bounded functions. 
+- Pickle by reference and make extractors bounded functions.
 
 ## [0.2.5] - 2023-01-10
-- Provide string representation of fields and features. 
+- Provide string representation of fields and features.
 
 ## [0.2.3] - 2023-01-02
-- Use dataset field names rather than strings in pipelines. 
+- Use dataset field names rather than strings in pipelines.
 
 ## [0.2.2] - 2023-01-02
-- Added error checks covering cases when extractor depends on incorrect dataset. 
+- Added error checks covering cases when extractor depends on incorrect dataset.
 
 ## [0.2.1] - 2022-12-29
-- Enable featuresets as inputs to an extractor 
+- Enable featuresets as inputs to an extractor
 
 ## [0.2.0] - 2022-12-27
-- Preserve ordering of key lookup 
+- Preserve ordering of key lookup
 
 ## [0.1.9] - 2022-12-23
 - Schema must be specified if transform changes it.

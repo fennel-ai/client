@@ -1,9 +1,9 @@
 import json
 from datetime import datetime
+from typing import Optional, List
 
 import pandas as pd
 import pytest
-from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Sum, Min, Max
@@ -42,7 +42,7 @@ def test_join_schema_validation():
             @pipeline(version=1)
             @inputs(MovieRating, MovieRevenue)
             def pipeline_join(cls, rating: Dataset, revenue: Dataset):
-                return rating.left_join(revenue, on=[str(cls.movie)])
+                return rating.join(revenue, how="left", on=[str(cls.movie)])
 
     assert (
         str(e.value)
@@ -73,7 +73,7 @@ def test_drop_schema_validation_drop_keys():
 
     assert (
         str(e.value)
-        == """Field `x` is not a non-key non-timestamp field in schema of drop node '[Pipeline:my_pipeline]->drop node'. Value fields are: `['y']`"""
+        == """Field `x` is not a non-key non-timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
     )
 
 
@@ -100,7 +100,7 @@ def test_drop_schema_validation_drop_timestamp():
 
     assert (
         str(e.value)
-        == """Field `t` is not a non-key non-timestamp field in schema of drop node '[Pipeline:my_pipeline]->drop node'. Value fields are: `['y']`"""
+        == """Field `t` is not a non-key non-timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
     )
 
 
@@ -128,7 +128,7 @@ def test_drop_schema_validation_drop_empty():
 
     assert (
         str(e.value)
-        == """invalid drop '[Pipeline:my_pipeline]->drop node': must have at least one column to drop"""
+        == """invalid drop - '[Pipeline:my_pipeline]->drop node' must have at least one column to drop"""
     )
 
 
@@ -273,8 +273,9 @@ def test_aggregation_sum():
                         "timestamp": datetime,
                     },
                 )
-                ds = ds.left_join(
+                ds = ds.join(
                     merchant_info,
+                    how="left",
                     on=["merchant_id"],
                 )
                 new_schema = ds.schema()
@@ -539,7 +540,9 @@ def test_join_schema_validation_value():
             @pipeline(version=1)
             @inputs(A, B)
             def pipeline_join(cls, a: Dataset, b: Dataset):
-                return a.left_join(b, left_on=["a1"], right_on=["b1", "b2"])
+                return a.join(
+                    b, how="left", left_on=["a1"], right_on=["b1", "b2"]
+                )
 
     assert (
         str(e.value)
@@ -580,7 +583,7 @@ def test_join_schema_validation_type():
             @pipeline(version=1)
             @inputs(A, C)
             def pipeline_join(cls, a: Dataset, c: Dataset):
-                return a.left_join(c, left_on=["a1"], right_on=["b1"])
+                return a.join(c, how="left", left_on=["a1"], right_on=["b1"])
 
     assert (
         str(e.value)
@@ -601,9 +604,180 @@ def test_join_schema_validation_type():
             @pipeline(version=1)
             @inputs(A, E)
             def pipeline_join(cls, a: Dataset, e: Dataset):
-                return a.left_join(e, on=["a1"])
+                return a.join(e, how="left", on=["a1"])
 
     assert (
         str(e.value)
         == """Key field a1 has type str in left schema but type int in right schema."""
     )
+
+
+# dedup is not supported on keyed datasets
+def test_dedup_ds_with_key_fails():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class MovieStats:
+            movie: str = field(key=True)
+            rating: float
+            revenue: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(MovieRating)
+            def pipeline_dedup(cls, rating: Dataset):
+                return rating.dedup(by=[MovieRating.movie])
+
+    assert (
+        str(e.value)
+        == """invalid dedup: input schema '[Dataset:MovieRating]' has key columns"""
+    )
+
+
+# Schema of deduped dataset should match source dataset
+def test_dedup_schema_different_fails():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class RatingActivity:
+            user: str
+            movie: str
+            rating: float
+            t: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class DedupedRatingActivity:
+            movie: str
+            rating: float
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(RatingActivity)
+            def pipeline_dedup(cls, rating: Dataset):
+                return rating.dedup()
+
+    assert (
+        str(e.value)
+        == """[TypeError('Field `user` is present in `pipeline pipeline_dedup output` `value` schema but not present in `DedupedRatingActivity value` schema.')]"""
+    )
+
+
+# Schema of deduped dataset should by on a field present in the original dataset
+def test_dedup_on_missing_field():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class RatingActivity:
+            user: str
+            movie: str
+            rating: float
+            t: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class DedupedRatingActivity:
+            user: str
+            movie: str
+            rating: float
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(RatingActivity)
+            def pipeline_dedup(cls, rating: Dataset):
+                return rating.dedup(by=["director"])
+
+    assert (
+        str(e.value)
+        == """invalid dedup: field `director` not present in input schema '[Dataset:RatingActivity]'"""
+    )
+
+
+def test_explode_fails_on_keyed_column():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class SingleHits:
+            director: List[str] = field(key=True)
+            movie: str
+            revenue: int
+            t: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class ExplodedHits:
+            director: str = field(key=True)
+            movie: str
+            revenue: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(SingleHits)
+            def pipeline_exploded(cls, hits: Dataset):
+                return hits.explode(columns=["director"])
+
+    assert (
+        str(e.value)
+        == """Field `director` is not a non-key non-timestamp field in schema of explode node input '[Dataset:SingleHits]'. Value fields are: ['movie', 'revenue']"""
+    )
+
+
+def test_explode_fails_on_missing_column():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class SingleHits:
+            director: List[str] = field(key=True)
+            movie: str
+            revenue: int
+            t: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class ExplodedHits:
+            director: str = field(key=True)
+            movie: str
+            revenue: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(SingleHits)
+            def pipeline_exploded(cls, hits: Dataset):
+                return hits.explode(columns=["actor"])
+
+    assert (
+        str(e.value)
+        == """Column `actor` in explode not present in input '[Dataset:SingleHits]': ['director', 'movie', 'revenue', 't']"""
+    )
+
+
+def test_explode_fails_on_primitive_column():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class SingleHits:
+            director: List[str]
+            movie: str
+            revenue: int
+            t: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class ExplodedHits:
+            director: List[str]
+            movie: str
+            revenue: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(SingleHits)
+            def pipeline_exploded(cls, hits: Dataset):
+                return hits.explode(columns=["movie"])
+
+    assert str(e.value) == """Column `movie` in explode is not of type List"""

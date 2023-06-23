@@ -5,9 +5,6 @@ import datetime
 import functools
 import inspect
 from dataclasses import dataclass
-
-import numpy as np
-import pandas as pd
 from typing import (
     cast,
     Any,
@@ -21,7 +18,11 @@ from typing import (
     TypeVar,
     Union,
     overload,
+    get_args,
 )
+
+import numpy as np
+import pandas as pd
 
 import fennel.sources as sources
 from fennel.lib.aggregate import AggregateType
@@ -169,24 +170,6 @@ def field(
 # ---------------------------------------------------------------------
 
 
-def _validate_join_bounds(within: Tuple[Duration, Duration]):
-    if len(within) != 2:
-        raise ValueError(
-            f"Invalid within clause: {within}. "
-            "Should be a tuple of 2 values. e.g. ('forever', '0s')"
-        )
-    # Neither of them can be None
-    if within[0] is None or within[1] is None:
-        raise ValueError(
-            f"Invalid within clause: {within}. " "Neither bounds can be None"
-        )
-    if within[1] == "forever":
-        raise ValueError(
-            f"Invalid within clause: {within}. "
-            "Upper bound cannot be `forever`"
-        )
-
-
 class _Node(Generic[T]):
     def __init__(self):
         self.out_edges = []
@@ -202,9 +185,10 @@ class _Node(Generic[T]):
     def groupby(self, *args) -> GroupBy:
         return GroupBy(self, *args)
 
-    def left_join(
+    def join(
         self,
         other: Dataset,
+        how: str,
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
@@ -214,8 +198,7 @@ class _Node(Generic[T]):
             raise ValueError("Cannot join with an intermediate dataset")
         if not isinstance(other, _Node):
             raise TypeError("Cannot join with a non-dataset object")
-        _validate_join_bounds(within)
-        return Join(self, other, within, on, left_on, right_on)
+        return Join(self, other, within, how, on, left_on, right_on)
 
     def __add__(self, other):
         return Union_(self, other)
@@ -225,6 +208,16 @@ class _Node(Generic[T]):
 
     def drop(self, columns: List[str]) -> _Node:
         return Drop(self, columns)
+
+    def dedup(self, by: Optional[List[str]] = None) -> _Node:
+        # If 'by' is not provided, dedup by all value fields.
+        # Note: we don't use key fields because dedup cannot be applied on keyed datasets.
+        if by is None:
+            by = self.dsschema().values.keys()
+        return Dedup(self, by)
+
+    def explode(self, columns: List[str]) -> _Node:
+        return Explode(self, columns)
 
     def isignature(self):
         raise NotImplementedError
@@ -351,16 +344,67 @@ class GroupBy:
         raise NotImplementedError
 
 
+class Dedup(_Node):
+    def __init__(self, node: _Node, by: List[str]):
+        super().__init__()
+        self.node = node
+        self.by = by
+        self.node.out_edges.append(self)
+
+    def signature(self):
+        if isinstance(self.node, Dataset):
+            return fhash(self.node._name, self.by)
+        return fhash(self.node.signature(), self.by)
+
+    def dsschema(self):
+        return self.node.dsschema()
+
+
+class Explode(_Node):
+    def __init__(self, node: _Node, columns: List[str]):
+        super().__init__()
+        self.node = node
+        self.columns = columns
+        self.node.out_edges.append(self)
+
+    def signature(self):
+        if isinstance(self.node, Dataset):
+            return fhash(self.node._name, self.columns)
+        return fhash(self.node.signature(), self.columns)
+
+    def dsschema(self):
+        dsschema = copy.deepcopy(self.node.dsschema())
+        for c in self.columns:
+            # extract type T from List[t]
+            dsschema.values[c] = Optional[get_args(dsschema.values[c])[0]]
+        return dsschema
+
+
 class Join(_Node):
     def __init__(
         self,
         node: _Node,
         dataset: Dataset,
         within: Tuple[Duration, Duration],
+        how: str,
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
+        lsuffix: str = "",
+        rsuffix: str = "",
     ):
+        if on is not None:
+            if left_on is not None or right_on is not None:
+                raise ValueError("Cannot specify on and left_on/right_on")
+            if not isinstance(on, list):
+                raise ValueError("on must be a list of keys")
+        else:
+            if left_on is None or right_on is None:
+                raise ValueError("Must specify on or left_on/right_on")
+            if not isinstance(left_on, list) or not isinstance(right_on, list):
+                raise ValueError(
+                    "Must specify left_on and right_on as a list of keys"
+                )
         super().__init__()
         self.node = node
         self.dataset = dataset
@@ -368,21 +412,10 @@ class Join(_Node):
         self.left_on = left_on
         self.right_on = right_on
         self.within = within
+        self.how = how
+        self.lsuffix = lsuffix
+        self.rsuffix = rsuffix
         self.node.out_edges.append(self)
-        _validate_join_bounds(within)
-        if on is not None:
-            if left_on is not None or right_on is not None:
-                raise ValueError("Cannot specify on and left_on/right_on")
-            if not isinstance(on, list):
-                raise ValueError("on must be a list of keys")
-
-        if on is None:
-            if not isinstance(left_on, list) or not isinstance(right_on, list):
-                raise ValueError(
-                    "Must specify left_on and right_on as a list of keys"
-                )
-            if left_on is None or right_on is None:
-                raise ValueError("Must specify on or left_on/right_on")
 
     def signature(self):
         if isinstance(self.node, Dataset):
@@ -392,7 +425,9 @@ class Join(_Node):
                 self.on,
                 self.left_on,
                 self.right_on,
-                self.within,
+                self.how,
+                self.lsuffix,
+                self.rsuffix,
             )
         return fhash(
             self.node.signature(),
@@ -401,6 +436,9 @@ class Join(_Node):
             self.left_on,
             self.right_on,
             self.within,
+            self.how,
+            self.lsuffix,
+            self.rsuffix,
         )
 
     def dsschema(self):
@@ -410,31 +448,50 @@ class Join(_Node):
                 for k, v in types.items()
             }
 
-        left_schema = self.node.dsschema()
-        right_schema = self.dataset.dsschema()
-        values = copy.deepcopy(left_schema.values)
-
-        left_columns = (
-            list(left_schema.values.keys())
-            + list(left_schema.keys.keys())
-            + [left_schema.timestamp]
+        left_dsschema: DSSchema = copy.deepcopy(self.node.dsschema())
+        left_schema: Dict[str, Type] = left_dsschema.schema()
+        right_value_schema: Dict[str, Type] = copy.deepcopy(
+            self.dataset.dsschema().values
         )
-        right_values = right_schema.values.keys()
 
-        if len(set(left_columns) & set(right_values)) > 0:
-            common_values = set(left_columns) & set(right_values)
-            raise ValueError(
-                "Join values must be disjoint across datasets. Found common values: {}".format(
-                    common_values
+        common_cols = set(left_schema.keys()) & set(right_value_schema.keys())
+        # for common values, suffix column name in left_schema with lsuffix and right_schema with rsuffix
+        for col in common_cols:
+            if self.lsuffix != "" and (col + self.lsuffix) in left_schema:
+                raise ValueError(
+                    "Column name collision. `{}` already exists in schema of left input {}".format(
+                        col + self.lsuffix, left_dsschema.name
+                    )
                 )
-            )
+            if (
+                self.rsuffix != ""
+                and (col + self.rsuffix) in right_value_schema
+            ):
+                raise ValueError(
+                    "Column name collision. `{}` already exists in schema of right input {}".format(
+                        col + self.rsuffix, self.dataset.dsschema().name
+                    )
+                )
+            left_dsschema.rename_column(col, col + self.lsuffix)
+            left_schema[col + self.lsuffix] = left_schema.pop(col)
+            right_value_schema[col + self.rsuffix] = right_value_schema.pop(col)
 
-        values.update(make_types_optional(right_schema.values))
-        return DSSchema(
-            keys=copy.deepcopy(left_schema.keys),
-            timestamp=left_schema.timestamp,
-            values=values,
-        )
+        # If "how" is "left", make fields of right schema optional
+        if self.how == "left":
+            right_value_schema = make_types_optional(right_value_schema)
+
+        # Add right value columns to left schema. Check for column name collisions
+        joined_dsschema = copy.deepcopy(left_dsschema)
+        for col, dtype in right_value_schema.items():
+            if col in left_schema:
+                raise ValueError(
+                    "Column name collision. `{}` already exists in schema of left input {}".format(
+                        col, left_dsschema.name
+                    )
+                )
+            joined_dsschema.append_value_column(col, dtype)
+
+        return joined_dsschema
 
 
 class Union_(_Node):
@@ -1177,6 +1234,10 @@ class Visitor:
             return self.visitRename(obj)
         elif isinstance(obj, Drop):
             return self.visitDrop(obj)
+        elif isinstance(obj, Dedup):
+            return self.visitDedup(obj)
+        elif isinstance(obj, Explode):
+            return self.visitExplode(obj)
         else:
             raise Exception("invalid node type: %s" % obj)
 
@@ -1205,6 +1266,12 @@ class Visitor:
         raise NotImplementedError()
 
     def visitDrop(self, obj):
+        raise NotImplementedError()
+
+    def visitDedup(self, obj):
+        raise NotImplementedError()
+
+    def visitExplode(self, obj):
         raise NotImplementedError()
 
 
@@ -1246,6 +1313,22 @@ class DSSchema:
             raise Exception(
                 f"field {old_name} not found in schema of {self.name}"
             )
+
+    def append_value_column(self, name: str, type_: Type):
+        if name in self.keys:
+            raise Exception(
+                f"field {name} already exists in schema of {self.name}"
+            )
+        elif name in self.values:
+            raise Exception(
+                f"field {name} already exists in schema of {self.name}"
+            )
+        elif name == self.timestamp:
+            raise Exception(
+                f"cannot append timestamp field {name} to {self.name}"
+            )
+        else:
+            self.values[name] = type_
 
     def drop_column(self, name: str):
         if name in self.keys:
@@ -1437,17 +1520,32 @@ class SchemaValidator(Visitor):
         )
 
     def visitJoin(self, obj) -> DSSchema:
+        left_schema = self.visit(obj.node)
+        right_schema = self.visit(obj.dataset)
+        output_schema_name = (f"'[Pipeline:{self.pipeline_name}]->join node'",)
+
+        def validate_join_bounds(within: Tuple[Duration, Duration]):
+            if len(within) != 2:
+                raise ValueError(
+                    f"Invalid within clause: {within} in {output_schema_name}. "
+                    "Should be a tuple of 2 values. e.g. ('forever', '0s')"
+                )
+            # Neither of them can be None
+            if within[0] is None or within[1] is None:
+                raise ValueError(
+                    f"Invalid within clause: {within} in {output_schema_name}."
+                    "Neither bounds can be None"
+                )
+            if within[1] == "forever":
+                raise ValueError(
+                    f"Invalid within clause: {within} in {output_schema_name}"
+                    "Upper bound cannot be `forever`"
+                )
+
         def is_subset(subset: List[str], superset: List[str]) -> bool:
             return set(subset).issubset(set(superset))
 
-        def make_types_optional(types: Dict[str, Type]) -> Dict[str, Type]:
-            return {
-                k: Optional[get_dtype(v)]  # type: ignore
-                for k, v in types.items()
-            }
-
-        left_schema = self.visit(obj.node)
-        right_schema = self.visit(obj.dataset)
+        validate_join_bounds(obj.within)
 
         if obj.on is not None and len(obj.on) > 0:
             # obj.on should be the key of the right dataset
@@ -1488,29 +1586,14 @@ class SchemaValidator(Visitor):
                         f"right schema."
                     )
 
-        left_columns = (
-            list(left_schema.values.keys())
-            + list(left_schema.keys.keys())
-            + [left_schema.timestamp]
-        )
-
-        # Check that left values and right values are disjoint
-        if set(left_columns).intersection(set(right_schema.values.keys())):
+        if obj.how not in ["inner", "left"]:
             raise ValueError(
-                f"Left schema and right values are not disjoint during "
-                f"join with `{obj.dataset._name}`. "
-                f"Left columns: {list(left_columns)}, "
-                f"right values: {list(right_schema.values.keys())}."
+                f'"how" in {output_schema_name} must be either "inner" or "left"'
             )
 
-        values = copy.deepcopy(left_schema.values)
-        values.update(make_types_optional(right_schema.values))
-        return DSSchema(
-            keys=copy.deepcopy(left_schema.keys),
-            timestamp=left_schema.timestamp,
-            values=values,
-            name=f"'[Pipeline:{self.pipeline_name}]->join node'",
-        )
+        output_schema = obj.dsschema()
+        output_schema.name = output_schema_name
+        return output_schema
 
     def visitUnion(self, obj) -> DSSchema:
         if len(obj.nodes) == 0:
@@ -1554,17 +1637,78 @@ class SchemaValidator(Visitor):
 
     def visitDrop(self, obj) -> DSSchema:
         input_schema = copy.deepcopy(self.visit(obj.node))
-        input_schema.name = f"'[Pipeline:{self.pipeline_name}]->drop node'"
+        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->drop node'"
         if obj.columns is None or len(obj.columns) == 0:
             raise ValueError(
-                f"invalid drop {input_schema.name}: must have at least one column to drop"
+                f"invalid drop - {output_schema_name} must have at least one column to drop"
             )
         val_fields = input_schema.values.keys()
         for field in obj.columns:
             if field not in val_fields:
                 raise ValueError(
                     f"Field `{field}` is not a non-key non-timestamp field in schema of "
-                    f"drop node {input_schema.name}. Value fields are: `{list(val_fields)}`"
+                    f"drop node input {input_schema.name}. Value fields are: {list(val_fields)}"
                 )
-            input_schema.drop_column(field)
-        return input_schema
+        output_schema = obj.dsschema()
+        output_schema.name = output_schema_name
+        return output_schema
+
+    def visitDedup(self, obj) -> DSSchema:
+        input_schema = self.visit(obj.node)
+        output_schema_name = (
+            f"'[Pipeline:{self.pipeline_name}]->drop_duplicates node'"
+        )
+        # Input schema should not have key columns.
+        if len(input_schema.keys) > 0:
+            raise ValueError(
+                f"invalid dedup: input schema {input_schema.name} has key columns"
+            )
+        if len(obj.by) == 0:
+            raise ValueError(
+                "invalid dedup: must have at least one column to deduplicate by"
+            )
+        for f in obj.by:
+            if f not in input_schema.fields():
+                raise ValueError(
+                    f"invalid dedup: field `{f}` not present in input schema {input_schema.name}"
+                )
+        if input_schema.timestamp in obj.by:
+            raise ValueError(
+                f"invalid dedup: cannot dedup on timestamp field `{obj.by}` of input schema {input_schema.name}"
+            )
+
+        output_schema = obj.dsschema()
+        output_schema.name = output_schema_name
+        return output_schema
+
+    def visitExplode(self, obj) -> DSSchema:
+        input_schema = copy.deepcopy(self.visit(obj.node))
+        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->explode node'"
+        if obj.columns is None or len(obj.columns) == 0:
+            raise ValueError(
+                f"invalid explode {output_schema_name}: must have at least one column to explode"
+            )
+        # Can only explode value columns
+        schema = input_schema.schema()
+        val_fields = input_schema.values.keys()
+        for field in obj.columns:
+            # 'field' must be present in input schema.
+            if field not in input_schema.fields():
+                raise ValueError(
+                    f"Column `{field}` in explode not present in input {input_schema.name}: {input_schema.fields()}"
+                )
+            # 'field' must be a value column.
+            if field not in val_fields:
+                raise ValueError(
+                    f"Field `{field}` is not a non-key non-timestamp field in schema of "
+                    f"explode node input {input_schema.name}. Value fields are: {list(val_fields)}"
+                )
+            # Type of 'c' must be List.
+            raw_type = getattr(schema[field], "__origin__", schema[field])
+            if raw_type != list:
+                raise ValueError(
+                    f"Column `{field}` in explode is not of type List"
+                )
+        output_schema = obj.dsschema()
+        output_schema.name = output_schema_name
+        return output_schema
