@@ -369,6 +369,6 @@ def test_join():
                 return x
 
     assert (
-        "Column name collision. 'v' already exists in schema of left input"
+        "Column name collision. `v` already exists in schema of left input"
         in str(e.value)
     )
