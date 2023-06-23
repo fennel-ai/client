@@ -1,11 +1,11 @@
 import unittest
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 import pytest
+from typing import Dict, List
 
 import fennel._vendor.requests as requests
 from fennel import sources
@@ -89,23 +89,23 @@ class Document:
     @pipeline()
     @inputs(NotionDocs, CodaDocs, GoogleDocs)
     def notion_pipe(
-        cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
+            cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
     ):
         new_schema = notion_docs.schema()
         new_schema["origin"] = str
         return (
-            notion_docs.transform(
-                lambda df: cls.doc_pipeline_helper(df, "Notion"),
-                schema=new_schema,
-            )
-            + coda_docs.transform(
-                lambda df: cls.doc_pipeline_helper(df, "Coda"),
-                schema=new_schema,
-            )
-            + google_docs.transform(
-                lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
-                schema=new_schema,
-            )
+                notion_docs.transform(
+                    lambda df: cls.doc_pipeline_helper(df, "Notion"),
+                    schema=new_schema,
+                )
+                + coda_docs.transform(
+            lambda df: cls.doc_pipeline_helper(df, "Coda"),
+            schema=new_schema,
+        )
+                + google_docs.transform(
+            lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
+            schema=new_schema,
+        )
         )
 
     @classmethod
@@ -201,12 +201,11 @@ class TopWordsCount:
                 "creation_timestamp": "timestamp",
             }
         )  # type: ignore
-        ds = ds.groupby(["word"]).aggregate(
+        return ds.groupby(["word"]).aggregate(
             [
                 Count(window=Window("forever"), into_field="count"),
             ]
         )  # type: ignore
-        return ds
 
 
 @meta(owner="aditya@fennel.ai")
@@ -584,6 +583,7 @@ class TestSearchExample(unittest.TestCase):
         self.log_document_data(client)
         client.sleep()
         self.log_engagement_data(client)
+
         client.sleep(60)
         input_df = pd.DataFrame(
             {
@@ -624,47 +624,48 @@ class TestSearchExample(unittest.TestCase):
 
         if client.is_integration_client():
             result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                0
-            ] == ["This", "is", "a", "random", "Coda", "document"]
+                         0
+                     ] == ["This", "is", "a", "random", "Coda", "document"]
             assert result.all()
 
             result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                1
-            ] == [
-                "This",
-                "is",
-                "a",
-                "rand",
-                "document",
-                "in",
-                "Coda",
-                "with",
-                "words",
-            ]
+                         1
+                     ] == [
+                         "This",
+                         "is",
+                         "a",
+                         "rand",
+                         "document",
+                         "in",
+                         "Coda",
+                         "with",
+                         "words",
+                     ]
             assert result.all()
         else:
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                0
-            ] == ["This", "is", "a", "random", "Coda", "document"]
+                       0
+                   ] == ["This", "is", "a", "random", "Coda", "document"]
             assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                1
-            ] == [
-                "This",
-                "is",
-                "a",
-                "rand",
-                "document",
-                "in",
-                "Coda",
-                "with",
-                "words",
-            ]
+                       1
+                   ] == [
+                       "This",
+                       "is",
+                       "a",
+                       "rand",
+                       "document",
+                       "in",
+                       "Coda",
+                       "with",
+                       "words",
+                   ]
 
         input_df = pd.DataFrame(
             {
                 "TopWordsFeatures.word": ["This", "is"],
             }
         )
+        print(client.get_dataset_df("TopWordsCount"))
         df = client.extract_features(
             output_feature_list=[TopWordsFeatures.count],
             input_feature_list=[TopWordsFeatures.word],

@@ -2,10 +2,10 @@ import copy
 import types
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional, Dict, List
 
 import numpy as np
 import pandas as pd
+from typing import Any, Optional, Dict, List
 
 from fennel.datasets import Pipeline, Visitor, Dataset
 from fennel.lib.aggregate import Count
@@ -35,15 +35,14 @@ def set_match(a: List[str], b: List[str]) -> bool:
 
 
 class Executor(Visitor):
-    def __init__(self, data, agg_state):
+    def __init__(self, data):
         super(Executor, self).__init__()
         self.dependencies = []
         self.lib_generated_code = ""
         self.data = data
-        self.agg_state = agg_state
 
     def execute(
-        self, pipeline: Pipeline, dataset: Dataset
+            self, pipeline: Pipeline, dataset: Dataset
     ) -> Optional[NodeRet]:
         self.cur_pipeline_name = f"{pipeline.dataset_name}.{pipeline.name}"
         self.serializer = Serializer(pipeline, dataset)
@@ -96,7 +95,7 @@ class Executor(Visitor):
             else:
                 output_expected_column_names = obj.new_schema.keys()
                 if not set_match(
-                    output_expected_column_names, output_column_names
+                        output_expected_column_names, output_column_names
                 ):
                     raise ValueError(
                         "Output schema doesnt match in transform function "
@@ -142,7 +141,7 @@ class Executor(Visitor):
         )
 
     def _merge_df(
-        self, df1: pd.DataFrame, df2: pd.DataFrame, ts: str
+            self, df1: pd.DataFrame, df2: pd.DataFrame, ts: str
     ) -> pd.DataFrame:
         merged_df = pd.concat([df1, df2])
         return merged_df.sort_values(ts)
@@ -160,14 +159,6 @@ class Executor(Visitor):
             )
             df = df.reset_index(drop=True)
         df = df.sort_values(input_ret.timestamp_field)
-        if self.cur_ds_name in self.agg_state:
-            # Merge the current dataframe with the previous state
-            df = self._merge_df(
-                self.agg_state[self.cur_ds_name], df, input_ret.timestamp_field
-            )
-            self.agg_state[self.cur_ds_name] = df
-        else:
-            self.agg_state[self.cur_ds_name] = df
         # For aggregates the result is not a dataframe but a dictionary
         # of fields to the dataframe that contains the aggregate values
         # for each timestamp for that field.
@@ -280,6 +271,7 @@ class Executor(Visitor):
             merged_df = merged_df.dropna(subset=right_by)
         # Drop the RHS key columns from the merged dataframe
         merged_df = merged_df.drop(columns=right_by)
+        right_df = right_df.drop(columns=right_by)
 
         # Filter out rows that are outside the bounds of the join query
         def filter_bounded_row(row):
@@ -308,8 +300,8 @@ class Executor(Visitor):
         transformed_dtypes = merged_df.dtypes
         for index, dtype in zip(original_dtypes.index, original_dtypes.values):
             if (
-                index in right_df.columns.values
-                and index not in left_df.columns.values
+                    index in right_df.columns.values
+                    and index not in left_df.columns.values
             ):
                 if dtype == np.int64 and transformed_dtypes[index] == object:
                     original_dtypes[index] = np.dtype(np.float64)
