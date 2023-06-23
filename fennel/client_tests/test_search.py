@@ -1,11 +1,11 @@
 import unittest
 from collections import defaultdict
 from datetime import datetime
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 import pytest
-from typing import Dict, List
 
 import fennel._vendor.requests as requests
 from fennel import sources
@@ -201,6 +201,9 @@ class TopWordsCount:
                 "creation_timestamp": "timestamp",
             }
         )  # type: ignore
+        schema = ds.schema()
+        schema["word"] = str
+        ds = ds.transform(lambda df: df, schema)  # type: ignore
         return ds.groupby(["word"]).aggregate(
             [
                 Count(window=Window("forever"), into_field="count"),
@@ -388,12 +391,11 @@ class TopWordsFeatures:
     @extractor(depends_on=[TopWordsCount])
     @inputs(word)
     @outputs(count)
-    def get_features(cls, ts: pd.Series, word: pd.Series):
-        df, found = TopWordsCount.lookup(  # type: ignore
-            ts, word=word  # type: ignore
-        )
-        df.fillna(0, inplace=True)
-        return df
+    def get_counts(cls, ts: pd.Series, word: pd.Series):
+        df, _ = TopWordsCount.lookup(ts, word=word)  # type: ignore
+        df = df.fillna(0)
+        df["count"] = df["count"].astype(int)
+        return df["count"]
 
 
 class TestSearchExample(unittest.TestCase):
@@ -532,7 +534,7 @@ class TestSearchExample(unittest.TestCase):
         )
 
         self.log_engagement_data(client)
-        client.sleep()
+        client.sleep(20)
         now = datetime.utcnow()
         ts = pd.Series([now, now])
         user_ids = pd.Series([123, 342])
@@ -662,10 +664,9 @@ class TestSearchExample(unittest.TestCase):
 
         input_df = pd.DataFrame(
             {
-                "TopWordsFeatures.word": ["This", "is"],
+                "TopWordsFeatures.word": ["This", "Coda"],
             }
         )
-        print(client.get_dataset_df("TopWordsCount"))
         df = client.extract_features(
             output_feature_list=[TopWordsFeatures.count],
             input_feature_list=[TopWordsFeatures.word],
@@ -675,7 +676,7 @@ class TestSearchExample(unittest.TestCase):
         assert df.columns.tolist() == [
             "TopWordsFeatures.count",
         ]
-        assert df["TopWordsFeatures.count"].tolist() == [12, 12]
+        assert df["TopWordsFeatures.count"].tolist() == [12, 4]
 
         if client.is_integration_client():
             return

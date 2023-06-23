@@ -376,7 +376,7 @@ class Explode(_Node):
         dsschema = copy.deepcopy(self.node.dsschema())
         for c in self.columns:
             # extract type T from List[t]
-            dsschema.values[c] = get_args(dsschema.values[c])[0]
+            dsschema.values[c] = Optional[get_args(dsschema.values[c])[0]]
         return dsschema
 
 
