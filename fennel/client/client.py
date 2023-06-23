@@ -5,7 +5,7 @@ import math
 from urllib.parse import urljoin
 
 import pandas as pd
-from typing import Dict, Optional, Any, Set, List, Union
+from typing import Dict, Optional, Any, Set, List, Union, Tuple
 
 import fennel._vendor.requests as requests  # type: ignore
 from fennel.datasets import Dataset
@@ -507,7 +507,7 @@ class Client:
 
     def lookup(
         self, dataset_name: str, keys: List[Dict[str, Any]], fields: List[str]
-    ) -> tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
+    ) -> Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
         """
         Look up values of fields in a dataset given keys.
 
@@ -517,7 +517,7 @@ class Client:
         fields: A subset of fields of the dataset.
 
         Returns:
-        tuple[Union[pd.DataFrame, pd.Series], pd.Series]: A pair. The first is a Pandas dataframe or series containing values; the second is a series indicating whether the corresponding key(s) is found in the dataset.
+        Tuple[Union[pd.DataFrame, pd.Series], pd.Series]: A pair. The first is a Pandas dataframe or series containing values; the second is a series indicating whether the corresponding key(s) is found in the dataset.
         """
         req = {
             "keys": keys,
