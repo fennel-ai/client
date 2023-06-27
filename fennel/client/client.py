@@ -508,6 +508,17 @@ class Client:
     def lookup(
         self, dataset_name: str, keys: List[Dict[str, Any]], fields: List[str]
     ) -> tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
+        """
+        Look up values of fields in a dataset given keys.
+
+        Parameters:
+        dataset_name (str): The name of the dataset.
+        keys (List[Dict[str, Any]]): A list of keys, key(s), and its value, is a represented in a dictionary.
+        fields: A subset of fields of the dataset.
+
+        Returns:
+        tuple[Union[pd.DataFrame, pd.Series], pd.Series]: A pair. The first is a Pandas dataframe or series containing values; the second is a series indicating whether the corresponding key(s) is found in the dataset.
+        """
         req = {
             "keys": keys,
             "fields": fields,
