@@ -284,7 +284,7 @@ def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
     expectations = []
     for pipeline in ds._pipelines:
         expectations.extend(
-            _expectations_to_proto(ds.expectations, pipeline.name, "pipeline")
+            _expectations_to_proto(ds.expectations, pipeline.fqn, "pipeline")
         )
     return expectations
 

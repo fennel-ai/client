@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.16.2] - 2023-06-27
+- Enable versioning for expectations.
+
 ## [0.16.1] - 2023-06-27
 - Add inspect APIs to the client.
 

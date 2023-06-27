@@ -5,6 +5,9 @@ import datetime
 import functools
 import inspect
 from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
 from typing import (
     cast,
     Any,
@@ -20,9 +23,6 @@ from typing import (
     overload,
     get_args,
 )
-
-import numpy as np
-import pandas as pd
 
 import fennel.sources as sources
 from fennel.lib.aggregate import AggregateType
@@ -62,6 +62,7 @@ RESERVED_FIELD_NAMES = [
     "key_fields",
     "on_demand",
     "timestamp_field",
+    "fqn",
 ]
 
 
@@ -868,6 +869,10 @@ class Pipeline:
     @property
     def dataset_name(self):
         return self._dataset_name
+
+    @property
+    def fqn(self):
+        return f"{self._dataset_name}-{self.name}"
 
 
 class Dataset(_Node[T]):

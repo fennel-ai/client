@@ -37,7 +37,7 @@ def expectations(func: Optional[Callable] = None, version: int = 0):
             raise TypeError("version must be specified as an integer.")
         if not isinstance(version, int):
             raise TypeError("version for expectations must be an int.")
-        raise TypeError("Versioning is not yet supported for expectations.")
+        return wrap
 
     func = cast(Callable, func)
     # @expectations decorator was used without arguments
