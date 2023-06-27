@@ -532,6 +532,23 @@ class Client:
             return pd.DataFrame(resp_json["data"]), found
         return pd.Series(resp_json["data"]), found
 
+    def inspect_lastn(
+        self, dataset_name: str, n: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Inspect the last n rows of a dataset.
+
+        Parameters:
+        dataset_name (str): The dataset name.
+        n (int): The number of rows, default is 10.
+
+        Returns:
+        List[Dict[str, Any]]: A list of dataset rows.
+        """
+        return self._get(
+            "{}/inspect/datasets/{}/lastn?n={}".format(V1_API, dataset_name, n)
+        ).json()
+
     # ----------------------- Private methods -----------------------
 
     def _url(self, path):

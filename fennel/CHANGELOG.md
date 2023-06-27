@@ -1,7 +1,7 @@
 # Changelog
 
 ## [0.16.1] - 2023-06-27
-- Add lookup API to the client.
+- Add inspect APIs to the client.
 
 ## [0.16.0] - 2023-06-19
 - New `explode` and `dedup` operators
