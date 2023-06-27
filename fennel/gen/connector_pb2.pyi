@@ -571,6 +571,7 @@ class Source(google.protobuf.message.Message):
     EVERY_FIELD_NUMBER: builtins.int
     CURSOR_FIELD_NUMBER: builtins.int
     LATENESS_FIELD_NUMBER: builtins.int
+    TIMESTAMP_FIELD_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
@@ -579,6 +580,7 @@ class Source(google.protobuf.message.Message):
     cursor: builtins.str
     @property
     def lateness(self) -> google.protobuf.duration_pb2.Duration: ...
+    timestamp_field: builtins.str
     def __init__(
         self,
         *,
@@ -587,9 +589,10 @@ class Source(google.protobuf.message.Message):
         every: google.protobuf.duration_pb2.Duration | None = ...,
         cursor: builtins.str | None = ...,
         lateness: google.protobuf.duration_pb2.Duration | None = ...,
+        timestamp_field: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "every", b"every", "lateness", b"lateness", "table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "table", b"table"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
 
 global___Source = Source

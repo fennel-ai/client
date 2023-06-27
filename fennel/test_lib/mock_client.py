@@ -8,10 +8,10 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
+from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import numpy as np
 import pandas as pd
-from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import fennel.datasets.datasets
 import fennel.sources as sources
@@ -221,7 +221,6 @@ class MockClient(Client):
         self.datasets: Dict[str, Dataset] = {}
         # Map of dataset name to the dataframe
         self.data: Dict[str, pd.DataFrame] = {}
-        self.agg_state = {}  # type: ignore
         # Map of datasets to pipelines it is an input to
         self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
         self.aggregated_datasets: Dict = {}
@@ -519,7 +518,7 @@ class MockClient(Client):
             )
         self._merge_df(df, dataset_name)
         for pipeline in self.listeners[dataset_name]:
-            executor = Executor(self.data, self.agg_state)
+            executor = Executor(self.data)
             ret = executor.execute(
                 pipeline, self.datasets[pipeline._dataset_name]
             )
@@ -686,15 +685,22 @@ class MockClient(Client):
                 f"Input columns {input_columns}"
             )
         df = df[columns]
-        if dataset_name not in self.data:
-            self.data[dataset_name] = df
-        else:
-            self.data[dataset_name] = pd.concat([self.data[dataset_name], df])
+
+        if len(self.dataset_info[dataset_name].key_fields) > 0:
+            # Pick the latest value for each key
+            df = df.groupby(self.dataset_info[dataset_name].key_fields).apply(
+                lambda x: x.sort_values(
+                    self.dataset_info[dataset_name].timestamp_field
+                ).iloc[-1]
+            )
+            df = df.reset_index(drop=True)
+
+        if dataset_name in self.data:
+            df = pd.concat([self.data[dataset_name], df])
+
         # Sort by timestamp
         timestamp_field = self.dataset_info[dataset_name].timestamp_field
-        self.data[dataset_name] = self.data[dataset_name].sort_values(
-            timestamp_field
-        )
+        self.data[dataset_name] = df.sort_values(timestamp_field)
 
     def _reset(self):
         self.dataset_requests: Dict[str, CoreDataset] = {}
@@ -714,7 +720,6 @@ class MockClient(Client):
             None,
         )
         self.extractors: List[Extractor] = []
-        self.agg_state = {}
 
 
 def mock(test_func):

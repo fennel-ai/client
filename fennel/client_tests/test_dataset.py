@@ -3,10 +3,10 @@ import re
 import time
 import unittest
 from datetime import datetime, timedelta
+from typing import Optional, List, Dict
 
 import pandas as pd
 import pytest
-from typing import Optional, List, Dict
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -540,7 +540,7 @@ class MovieStats:
                 ]
             ]
 
-        c = rating.left_join(revenue, on=[str(cls.movie)])
+        c = rating.join(revenue, how="left", on=[str(cls.movie)])
         # Transform provides additional columns which will be filtered out.
         return c.transform(
             to_millions,
@@ -608,6 +608,178 @@ class TestBasicJoin(unittest.TestCase):
         ]
         assert df["rating"].tolist() == [None, 4, None, 5]
         assert df["revenue_in_millions"].tolist() == [None, 2, None, 50]
+
+
+class TestInnerJoinExplodeDedup(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_inner_join_with_explode_dedup(self, client):
+        @meta(owner="abhay@fennel.ai")
+        @source(webhook.endpoint("MovieInfo"))
+        @dataset
+        class MovieInfo:
+            title: str = field(key=True)
+            actors: List[str]
+            release: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @source(webhook.endpoint("TicketSale"))
+        @dataset
+        class TicketSale:
+            ticket_id: str
+            title: str
+            price: int
+            at: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class ActorStats:
+            name: str = field(key=True)
+            revenue: int
+            at: datetime
+
+            @pipeline(version=1)
+            @inputs(MovieInfo, TicketSale)
+            def pipeline_join(cls, info: Dataset, sale: Dataset):
+                uniq = sale.dedup(by=["ticket_id"])
+                c = (
+                    uniq.join(info, how="inner", on=["title"])
+                    .explode(columns=["actors"])
+                    .rename(columns={"actors": "name"})
+                )
+                schema = c.schema()
+                schema["name"] = str
+                c = c.transform(lambda x: x, schema)
+                return c.groupby("name").aggregate(
+                    [
+                        Sum(
+                            window=Window("forever"),
+                            of="price",
+                            into_field="revenue",
+                        ),
+                    ]
+                )
+
+        # # Sync the dataset
+        client.sync(
+            datasets=[MovieInfo, TicketSale, ActorStats],
+        )
+        data = [
+            [
+                "Titanic",
+                ["Leonardo DiCaprio", "Kate Winslet"],
+                datetime.strptime("1997-12-19", "%Y-%m-%d"),
+            ],
+            [
+                "Jumanji",
+                ["Robin Williams", "Kirsten Dunst"],
+                datetime.strptime("1995-12-15", "%Y-%m-%d"),
+            ],
+            [
+                "Great Gatbsy",
+                ["Leonardo DiCaprio", "Carey Mulligan"],
+                datetime.strptime("2013-05-10", "%Y-%m-%d"),
+            ],
+        ]
+        columns = ["title", "actors", "release"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "MovieInfo", df)
+        assert (
+            response.status_code == requests.codes.OK
+        ), response.json()  # noqa
+
+        now = datetime.now()
+        one_hour_ago = now - timedelta(hours=1)
+        one_day_ago = now - timedelta(days=1)
+        two_hours_ago = now - timedelta(hours=2)
+        columns = ["ticket_id", "title", "price", "at"]
+        data = [
+            ["1", "Titanic", 50, one_hour_ago],
+            ["2", "Titanic", 100, one_day_ago],
+            ["3", "Jumanji", 25, one_hour_ago],
+            ["4", "The Matrix", 50, two_hours_ago],  # no match
+            ["5", "Great Gatbsy", 49, one_hour_ago],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "TicketSale", df)
+        assert (
+            response.status_code == requests.codes.OK
+        ), response.json()  # noqa
+
+        # Do some lookups to verify pipeline_join is working as expected
+        ts = pd.Series([now, now, now])
+        names = pd.Series(
+            ["Leonardo DiCaprio", "Robin Williams", "Keanu Reeves"]
+        )
+        client.sleep()
+        df, _ = ActorStats.lookup(
+            ts,
+            name=names,
+        )
+        assert df.shape == (3, 3)
+        assert df["name"].tolist() == [
+            "Leonardo DiCaprio",
+            "Robin Williams",
+            "Keanu Reeves",
+        ]
+        assert df["revenue"].tolist() == [199, 25, None]
+
+        # Now, send the movie info for The Matrix
+        columns = ["title", "actors", "release"]
+        data = [
+            [
+                "The Matrix",
+                ["Keanu Reeves", "Laurence Fishburne"],
+                datetime.strptime("1999-03-31", "%Y-%m-%d"),
+            ],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "MovieInfo", df)
+        assert (
+            response.status_code == requests.codes.OK
+        ), response.json()  # noqa
+
+        # Also, update the ticket price for ticket_id 2 to 75
+        columns = ["ticket_id", "title", "price", "at"]
+        data = [
+            ["2", "Titanic", 75, one_day_ago],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "TicketSale", df)
+        assert response.status_code == requests.codes.OK
+
+        # Now do the lookup again
+        client.sleep()
+        df, _ = ActorStats.lookup(
+            ts,
+            name=names,
+        )
+        assert df.shape == (3, 3)
+        assert df["name"].tolist() == [
+            "Leonardo DiCaprio",
+            "Robin Williams",
+            "Keanu Reeves",
+        ]
+        assert df["revenue"].tolist() == [174, 25, 50]
+
+        # Do some lookup at various timestamps in the past
+        three_hours_ago = now - timedelta(hours=3)
+        ts = pd.Series([three_hours_ago, three_hours_ago, three_hours_ago])
+        df, _ = ActorStats.lookup(
+            ts,
+            name=names,
+        )
+        assert df.shape == (3, 3)
+        assert df["name"].tolist() == [
+            "Leonardo DiCaprio",
+            "Robin Williams",
+            "Keanu Reeves",
+        ]
+        assert df["revenue"].tolist() == [
+            75,
+            None,
+            None,
+        ]
 
 
 class TestBasicAggregate(unittest.TestCase):
@@ -898,19 +1070,10 @@ class FraudReportAggregatedDataset:
                 "timestamp": datetime,
             },
         )
-        ds = ds.left_join(
+        ds = ds.join(
             merchant_info,
+            how="inner",
             on=["merchant_id"],
-        )
-        ds = ds.transform(
-            fillna,
-            schema={
-                "merchant_id": int,
-                "category": str,
-                "location": str,
-                "timestamp": datetime,
-                "transaction_amount": float,
-            },
         )
         return ds.groupby("category").aggregate(
             [
@@ -1063,7 +1226,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
 @source(webhook.endpoint("UserAge"))
 @dataset
 class UserAge:
-    name: str = field(key=True)
+    name: str
     age: int
     city: str
     timestamp: datetime
@@ -1072,7 +1235,7 @@ class UserAge:
 @meta(owner="me@fennel.ai")
 @source(webhook.endpoint("UserAgeNonTable"))
 @dataset
-class UserAgeNonTable:
+class UserAge2:
     name: str
     age: int
     city: str
@@ -1087,22 +1250,10 @@ class UserAgeAggregated:
     sum_age: int
 
     @pipeline(version=1, active=True)
-    @inputs(UserAge)
-    def create_user_age_aggregated(cls, user_age: Dataset):
-        return user_age.groupby("city").aggregate(
-            [
-                Sum(
-                    window=Window("1w"),
-                    of="age",
-                    into_field="sum_age",
-                )
-            ]
-        )
-
-    @pipeline(version=2)
-    @inputs(UserAgeNonTable)
-    def create_user_age_aggregated2(cls, user_age: Dataset):
-        return user_age.groupby("city").aggregate(
+    @inputs(UserAge, UserAge2)
+    def create_user_age_aggregated(cls, user_age: Dataset, user_age2: Dataset):
+        union = user_age + user_age2
+        return union.groupby("city").aggregate(
             [
                 Sum(
                     window=Window("1w"),
@@ -1117,7 +1268,7 @@ class TestAggregateTableDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_table_aggregation(self, client):
-        client.sync(datasets=[UserAge, UserAgeNonTable, UserAgeAggregated])
+        client.sync(datasets=[UserAge, UserAge2, UserAgeAggregated])
         client.sleep()
         yesterday = datetime.now() - timedelta(days=1)
         now = datetime.now()
@@ -1218,9 +1369,9 @@ class ManchesterUnitedPlayerInfo:
                 "timestamp": datetime,
             },
         )
-        ms = metric_stats.left_join(club_salary, on=["club"])
+        ms = metric_stats.join(club_salary, how="left", on=["club"])
         man_players = ms.filter(lambda df: df["club"] == "Manchester United")
-        return man_players.left_join(wag, on=["name"])
+        return man_players.join(wag, how="left", on=["name"])
 
 
 @meta(owner="gianni@fifa.com")
@@ -1256,14 +1407,14 @@ class ManchesterUnitedPlayerInfoBounded:
                 "timestamp": datetime,
             },
         )
-        player_info_with_salary = metric_stats.left_join(
-            club_salary, on=["club"], within=("60s", "0s")
+        player_info_with_salary = metric_stats.join(
+            club_salary, how="left", on=["club"], within=("60s", "0s")
         )
         manchester_players = player_info_with_salary.filter(
             lambda df: df["club"] == "Manchester United"
         )
-        return manchester_players.left_join(
-            wag, on=["name"], within=("forever", "60s")
+        return manchester_players.join(
+            wag, how="left", on=["name"], within=("forever", "60s")
         )
 
 
@@ -1326,25 +1477,26 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         client.sleep()
         df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
         assert df.shape == (5, 8)
+        print(df["club"].tolist())
         assert df["club"].tolist() == [
             "Manchester United",
             "Manchester United",
             None,
-            "Manchester United",
+            None,
             "Manchester United",
         ]
         assert df["salary"].tolist() == [
             1000000,
             1000000,
             None,
-            1000000,
+            None,
             1000000,
         ]
         assert df["wag"].tolist() == [
             "Lucia",
             "Fern",
             None,
-            "Georgina",
+            None,
             "Rosilene",
         ]
 
@@ -1493,8 +1645,9 @@ def test_join(client):
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            x = a.left_join(
+            x = a.join(
                 b,
+                how="left",
                 left_on=["a1"],
                 right_on=["b1"],
             )  # type: ignore

@@ -1,21 +1,20 @@
 import json
 from datetime import datetime, timedelta
+from typing import Optional, List
 
 import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
-from typing import Optional, List
 
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
+from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
-
-from fennel.lib.includes import includes
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -327,7 +326,7 @@ def test_dataset_with_pipes():
         @includes(add_one)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.left_join(b, left_on=["a1"], right_on=["b1"])
+            return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
 
     view = InternalTestClient()
     view.add(ABCDataset)
@@ -368,14 +367,14 @@ def add_one(x: int):
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.left_join(b, left_on=["a1"], right_on=["b1"])
+    return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
 """
     assert expected_gen_code == pipeline_req.pycode.generated_code
     expected_source_code = """@pipeline(version=1)
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.left_join(b, left_on=["a1"], right_on=["b1"])
+    return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
 """
     assert expected_source_code == pipeline_req.pycode.source_code
     p = {
@@ -426,7 +425,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "7e89417507044ac2c4fddfdf04df414e",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABCDataset",
@@ -434,6 +433,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
+            "how": 0,
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -464,7 +464,7 @@ def test_dataset_with_pipes_bounds():
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.left_join(b, left_on=["a1"], right_on=["b1"])
+            return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
 
     @meta(owner="aditya@fennel.ai")
     @dataset
@@ -475,8 +475,9 @@ def test_dataset_with_pipes_bounds():
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.left_join(
+            return a.join(
                 b,
+                how="left",
                 left_on=["a1"],
                 right_on=["b1"],
                 within=("1h", "0s"),
@@ -491,8 +492,9 @@ def test_dataset_with_pipes_bounds():
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.left_join(
+            return a.join(
                 b,
+                how="left",
                 left_on=["a1"],
                 right_on=["b1"],
                 within=("forever", "1d"),
@@ -507,8 +509,9 @@ def test_dataset_with_pipes_bounds():
         @pipeline(version=1)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.left_join(
+            return a.join(
                 b,
+                how="left",
                 left_on=["a1"],
                 right_on=["b1"],
                 within=("3d", "1y"),
@@ -591,7 +594,7 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "7e89417507044ac2c4fddfdf04df414e",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABCDatasetDefault",
@@ -599,6 +602,7 @@ def test_dataset_with_pipes_bounds():
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
+            "how": 0,
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -685,7 +689,7 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "7e89417507044ac2c4fddfdf04df414e",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABCDatasetDefault",
@@ -693,6 +697,7 @@ def test_dataset_with_pipes_bounds():
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
+            "how": 0,
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -779,7 +784,7 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "5e0f878ae07c4059f5d15a167aebff46",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABDatasetLow",
@@ -788,6 +793,7 @@ def test_dataset_with_pipes_bounds():
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
             "within_low": "3600s",
+            "how": 0,
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -874,7 +880,7 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "a421bb327a667672ac419772711d7ff0",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABDatasetHigh",
@@ -882,6 +888,7 @@ def test_dataset_with_pipes_bounds():
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
+            "how": 0,
             "within_high": "86400s",
         },
     }
@@ -969,7 +976,7 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "ab3159d192c521972821225b2f67e80d",
+        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
         "is_root": True,
         "pipeline_name": "pipeline1",
         "dataset_name": "ABDataset",
@@ -977,6 +984,7 @@ def test_dataset_with_pipes_bounds():
             "lhs_operand_id": "A",
             "rhs_dsref_operand_id": "B",
             "on": {"a1": "b1"},
+            "how": 0,
             "within_low": "259200s",
             "within_high": "31536000s",
         },
@@ -1024,8 +1032,9 @@ def test_dataset_with_complex_pipe():
             filtered_ds = activity.filter(
                 lambda df: df["action_type"] == "report_txn"
             )
-            ds = filtered_ds.left_join(
+            ds = filtered_ds.join(
                 user_info,
+                how="left",
                 on=["user_id"],
             )
             ds_transform = ds.transform(
@@ -1037,7 +1046,8 @@ def test_dataset_with_complex_pipe():
                     "user_id": int,
                 },
             )
-            return ds_transform.groupby("merchant_id").aggregate(
+            ds_deduped = ds_transform.dedup(by=["user_id", "merchant_id"])
+            return ds_deduped.groupby("merchant_id").aggregate(
                 [
                     Count(
                         window=Window("forever"),
@@ -1120,8 +1130,8 @@ def test_dataset_with_complex_pipe():
         pipeline_req, expected_pipeline_request
     )
 
-    # 6 operators
-    assert len(sync_request.operators) == 6
+    # 7 operators
+    assert len(sync_request.operators) == 7
     operator_req = sync_request.operators[0]
     o = {
         "id": "UserInfoDataset",
@@ -1166,13 +1176,14 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[3]
     o = {
-        "id": "6fa56621c7e337b5812e0a0ee238f9e4",
+        "id": "4202e94cf2e47bf5bcc94fd57aee8d0f",
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "join": {
             "lhsOperandId": "101097826c6986ddb25ce924985d9217",
             "rhsDsrefOperandId": "UserInfoDataset",
             "on": {"user_id": "user_id"},
+            "how": 0,
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -1182,11 +1193,11 @@ def test_dataset_with_complex_pipe():
 
     operator_req = erase_operator_pycode(sync_request.operators[4])
     o = {
-        "id": "66a626a2829d18bbd4ec329d87829d73",
+        "id": "bfa10d216f843625785d24e6b9d890fb",
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "transform": {
-            "operandId": "6fa56621c7e337b5812e0a0ee238f9e4",
+            "operandId": "4202e94cf2e47bf5bcc94fd57aee8d0f",
             "schema": {
                 "user_id": {"intType": {}},
                 "merchant_id": {"intType": {}},
@@ -1203,12 +1214,27 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[5]
     o = {
-        "id": "4bfb6ebb8ba42632f9e85d95d58c9461",
+        "id": "acd519ba5789e767383099d0561e07c8",
+        "pipelineName": "create_fraud_dataset",
+        "datasetName": "FraudReportAggregatedDataset",
+        "dedup": {
+            "operandId": "bfa10d216f843625785d24e6b9d890fb",
+            "columns": ["user_id", "merchant_id"],
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = sync_request.operators[6]
+    o = {
+        "id": "d7d235e0397bf22f09131d7a2650343e",
         "isRoot": True,
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "aggregate": {
-            "operandId": "66a626a2829d18bbd4ec329d87829d73",
+            "operandId": "acd519ba5789e767383099d0561e07c8",
             "keys": ["merchant_id"],
             "specs": [
                 {
@@ -1487,11 +1513,33 @@ def test_search_dataset():
                 },
             )
 
+    @meta(owner="abhay@fennel.ai")
+    @dataset
+    class DocumentWordDataset:
+        doc_id: int = field(key=True)
+        bert_embedding: Embedding[128]
+        fast_text_embedding: Embedding[256]
+        num_words: int
+        num_stop_words: int
+        top_10_unique_words: str
+        creation_timestamp: datetime
+
+        @pipeline(version=1)
+        @inputs(DocumentContentDataset)
+        def unique_words(cls, ds: Dataset):
+            schema = ds.schema()
+            schema["top_10_unique_words"] = str
+            return ds.explode(columns=["top_10_unique_words"]).transform(
+                lambda df: df, schema
+            )
+
     view = InternalTestClient()
-    view.add(DocumentContentDataset)
+    view.add(DocumentContentDataset)  # type: ignore
+    view.add(DocumentWordDataset)  # type: ignore
     sync_request = view._get_sync_request_proto()
-    assert len(sync_request.datasets) == 1
-    dataset_req = sync_request.datasets[0]
+    assert len(sync_request.datasets) == 2
+
+    content_dataset_req = sync_request.datasets[0]
     d = {
         "name": "DocumentContentDataset",
         "dsschema": {
@@ -1544,15 +1592,74 @@ def test_search_dataset():
         "pycode": {},
     }
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    dataset_req.pycode.Clear()
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
+    content_dataset_req.pycode.Clear()
+    assert content_dataset_req == expected_dataset_request, error_message(
+        content_dataset_req, expected_dataset_request
+    )
+
+    word_dataset_req = sync_request.datasets[1]
+    d = {
+        "name": "DocumentWordDataset",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "doc_id",
+                        "dtype": {"int_type": {}},
+                    }
+                ]
+            },
+            "values": {
+                "fields": [
+                    {
+                        "name": "bert_embedding",
+                        "dtype": {"embedding_type": {"embedding_size": 128}},
+                    },
+                    {
+                        "name": "fast_text_embedding",
+                        "dtype": {"embedding_type": {"embedding_size": 256}},
+                    },
+                    {
+                        "name": "num_words",
+                        "dtype": {"int_type": {}},
+                    },
+                    {
+                        "name": "num_stop_words",
+                        "dtype": {"int_type": {}},
+                    },
+                    {
+                        "name": "top_10_unique_words",
+                        "dtype": {"string_type": {}},
+                    },
+                ]
+            },
+            "timestamp": "creation_timestamp",
+        },
+        "metadata": {"owner": "abhay@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "doc_id": {},
+            "bert_embedding": {},
+            "fast_text_embedding": {},
+            "num_words": {},
+            "num_stop_words": {},
+            "top_10_unique_words": {},
+            "creation_timestamp": {},
+        },
+        "pycode": {},
+    }
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    word_dataset_req.pycode.Clear()
+    assert word_dataset_req == expected_dataset_request, error_message(
+        word_dataset_req, expected_dataset_request
     )
 
     # pipelines
-    assert len(sync_request.pipelines) == 1
-    pipeline_req = sync_request.pipelines[0]
-    pipeline_req.pycode.Clear()
+    assert len(sync_request.pipelines) == 2
+
+    content_pipeline_req = sync_request.pipelines[0]
+    content_pipeline_req.pycode.Clear()
     p = {
         "name": "content_features",
         "dataset_name": "DocumentContentDataset",
@@ -1564,12 +1671,29 @@ def test_search_dataset():
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
+    assert content_pipeline_req == expected_pipeline_request, error_message(
+        content_pipeline_req, expected_pipeline_request
+    )
+
+    word_pipeline_req = sync_request.pipelines[1]
+    word_pipeline_req.pycode.Clear()
+    p = {
+        "name": "unique_words",
+        "dataset_name": "DocumentWordDataset",
+        "signature": "unique_words",
+        "metadata": {},
+        "version": 1,
+        "input_dataset_names": ["DocumentContentDataset"],
+        "active": True,
+        "pycode": {},
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert word_pipeline_req == expected_pipeline_request, error_message(
+        word_pipeline_req, expected_pipeline_request
     )
 
     # operators
-    assert len(sync_request.operators) == 2
+    assert len(sync_request.operators) == 5
     operator_req = sync_request.operators[0]
     o = {
         "id": "Document",
@@ -1605,6 +1729,64 @@ def test_search_dataset():
                 "top_10_unique_words": {
                     "array_type": {"of": {"string_type": {}}}
                 },
+            },
+            "pycode": {},
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = sync_request.operators[2]
+    o = {
+        "id": "DocumentContentDataset",
+        "is_root": False,
+        "pipeline_name": "unique_words",
+        "dataset_name": "DocumentWordDataset",
+        "dataset_ref": {
+            "referring_dataset_name": "DocumentContentDataset",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = sync_request.operators[3]
+    o = {
+        "id": "961d4107a251ef6ef344d2b09f1a03f3",
+        "is_root": False,
+        "pipeline_name": "unique_words",
+        "dataset_name": "DocumentWordDataset",
+        "explode": {
+            "operand_id": "DocumentContentDataset",
+            "columns": ["top_10_unique_words"],
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = erase_operator_pycode(sync_request.operators[4])
+    o = {
+        "id": "197b05deae8b6acd0b86b8153f636634",
+        "is_root": True,
+        "pipeline_name": "unique_words",
+        "dataset_name": "DocumentWordDataset",
+        "transform": {
+            "operand_id": "961d4107a251ef6ef344d2b09f1a03f3",
+            "schema": {
+                "num_words": {"int_type": {}},
+                "num_stop_words": {"int_type": {}},
+                "creation_timestamp": {"timestamp_type": {}},
+                "fast_text_embedding": {
+                    "embedding_type": {"embedding_size": 256}
+                },
+                "bert_embedding": {"embedding_type": {"embedding_size": 128}},
+                "doc_id": {"int_type": {}},
+                "top_10_unique_words": {"string_type": {}},
             },
             "pycode": {},
         },

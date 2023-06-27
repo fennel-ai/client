@@ -1,8 +1,8 @@
 from datetime import datetime
 from datetime import timedelta
+from typing import Optional
 
 import pandas as pd
-from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count
@@ -139,7 +139,7 @@ class UserSellerActivity:
     @pipeline(version=1)
     @inputs(Product, OrderActivity)
     def join_orders(cls, products: Dataset, orders: Dataset) -> Dataset:
-        return orders.left_join(products, on=["pid"])
+        return orders.join(products, how="left", on=["pid"])
 
 
 # /docsnip

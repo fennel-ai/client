@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fennel-ai"
-version = "0.15.19"
+version = "0.16.0"
 description = "The modern realtime feature engineering platform"
 authors = ["Fennel AI <developers@fennel.ai>"]
 packages = [{ include = "fennel" }]

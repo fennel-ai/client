@@ -36,8 +36,11 @@ class Client:
         Add a dataset or featureset to the client. This will not register the
         dataset or featureset with the server until the sync method is called.
 
-        :param obj: Dataset or Featureset to add to the client.
-        :return: None
+        Parameters:
+        obj (Union[Dataset, Featureset]): Dataset or Featureset to add to the client.
+
+        Returns:
+        None
         """
         if isinstance(obj, Dataset):
             if obj._name in self.to_register:
@@ -61,9 +64,12 @@ class Client:
         Sync the client with the server. This will register any datasets or
         featuresets that have been added to the client or passed in as arguments.
 
-        :param datasets: List of datasets to register with the server.
-        :param featuresets:  List of featuresets to register with the server.
-        :return: Response from the server.
+        Parameters:
+        datasets (Optional[List[Dataset]]): List of datasets to register with the server.
+        featuresets (Optional[List[Featureset]]):  List of featuresets to register with the server.
+
+        Returns:
+        None
         """
         # Reset state.
         self.to_register_objects = []
@@ -104,11 +110,14 @@ class Client:
         """
         Log data to a webhook.
 
-        :param webhook: Name of the webhook to log data to.
-        :param endpoint: Endpoint within the webhook to log data to.
-        :param dataframe: Dataframe to log to the dataset.
-        :param batch_size: Batch size to use when logging data.
-        :return:
+        Parameters:
+        webhook (str): Name of the webhook to log data to.
+        endpoint (str): Endpoint within the webhook to log data to.
+        dataframe (pd.DataFrame): Dataframe to log to the dataset.
+        batch_size (int): Batch size to use when logging data.
+
+        Returns:
+        Dict: response from the server
         """
         num_rows = dataframe.shape[0]
         if num_rows == 0:
@@ -126,6 +135,192 @@ class Client:
                 "rows": payload,
             }
             response = self._post_json("{}/log".format(V1_API), req)
+        return response
+
+    def list_datasets(self) -> List[Dict]:
+        """
+        List definitions of all the datasets.
+
+        Returns:
+        List[Dict]: A list of dataset definitions.
+        """
+        return self._get("{}/definitions/datasets".format(V1_API)).json()
+
+    def dataset_definition(self, dataset_name: str) -> Dict:
+        """
+        Returns a single dataset definition.
+
+        Parameters:
+        dataset_name (str):  Name of the dataset.
+
+        Returns:
+        Dict: The dataset definition.
+        """
+        return self._get(
+            "{}/definitions/datasets/{}".format(V1_API, dataset_name)
+        ).json()
+
+    def list_pipelines(self, dataset_name: str) -> List[Dict]:
+        """
+        List definitions of pipelines of a dataset.
+
+        Parameters:
+        dataset_name (str):  Name of the dataset.
+
+        Returns:
+        List[Dict]: A list of dataset definitions.
+        """
+        return self._get(
+            "{}/definitions/datasets/{}/pipelines".format(V1_API, dataset_name)
+        ).json()
+
+    def pipeline_definition(
+        self, dataset_name: str, pipeline_name: str
+    ) -> Dict:
+        """
+        Returns the definition of a single pipeline in the dataset.
+
+        Parameters:
+        dataset_name (str):  Name of the dataset.
+        pipeline_name (str): Name of the pipeline.
+
+        Returns:
+        Dict: The pipeline definition.
+        """
+        return self._get(
+            "{}/definitions/datasets/{}/pipelines/{}".format(
+                V1_API, dataset_name, pipeline_name
+            )
+        ).json()
+
+    def list_featuresets(self) -> List[Dict]:
+        """
+        List definitions of all the featuresets.
+
+        Returns:
+        List[Dict]: A list of featureset definitions.
+        """
+        return self._get("{}/definitions/featuresets".format(V1_API)).json()
+
+    def featureset_definition(self, featureset_name: str) -> Dict:
+        """
+        Returns the definition of a featureset.
+
+        Parameters:
+        featureset_name (str): Name of the featureset.
+
+        Returns:
+        Dict: The featureset definition.
+        """
+        return self._get(
+            "{}/definitions/featuresets/{}".format(V1_API, featureset_name)
+        ).json()
+
+    def list_extractors(self, featureset_name: str) -> List[Dict]:
+        """
+        List definitions of extractors of a featureset.
+
+        Parameters:
+        featureset_name (str): Name of the featureset.
+
+        Returns:
+        List[Dict]: A list of extractor definitions.
+        """
+        return self._get(
+            "{}/definitions/featuresets/{}/extractors".format(
+                V1_API, featureset_name
+            )
+        ).json()
+
+    def extractor_definition(
+        self, featureset_name: str, extractor_name: str
+    ) -> Dict:
+        """
+        Returns the definition of a extractor in the featureset.
+
+        Parameters:
+        featureset_name (str): Name of the featureset.
+        extractor_name (str): Name of the extractor.
+
+        Returns:
+        Dict: The extractor definition.
+        """
+        return self._get(
+            "{}/definitions/featuresets/{}/extractors/{}".format(
+                V1_API, featureset_name, extractor_name
+            )
+        ).json()
+
+    def list_features(self, featureset_name: str) -> List[Dict]:
+        """
+        List definitions of features of a featureset.
+
+        Parameters:
+        featureset_name (str): Name of the featureset.
+
+        Returns:
+        List[Dict]: A list of feature definitions.
+        """
+        return self._get(
+            "{}/definitions/featuresets/{}/features".format(
+                V1_API, featureset_name
+            )
+        ).json()
+
+    def feature_definition(
+        self, featureset_name: str, feature_name: str
+    ) -> Dict:
+        """
+        Returns the definition of a feature in the featureset.
+
+        Parameters:
+        featureset_name (str): Name of the featureset.
+        feature_name (str): Name of the feature.
+
+        Returns:
+        Dict: The feature definition.
+        """
+        return self._get(
+            "{}/definitions/featuresets/{}/features/{}".format(
+                V1_API, featureset_name, feature_name
+            )
+        ).json()
+
+    def list_sources(self) -> List[Dict]:
+        """
+        List definitions of sources.
+
+        Returns:
+        List[Dict]: A list of source definitions.
+        """
+        return self._get("{}/definitions/sources".format(V1_API)).json()
+
+    def source_definition(self, source_uuid: str) -> Dict:
+        """
+        Returns the definition of a source.
+
+        Parameters:
+        source_uuid (str): The uuid of the source.
+
+        Returns:
+        Dict: The source definition.
+        """
+        return self._get(
+            "{}/definitions/sources/{}".format(V1_API, source_uuid)
+        ).json()
+
+    def _get(self, path: str):
+        headers = None
+        if self.token:
+            headers = {}
+            headers["Authorization"] = "Bearer " + self.token
+        response = self.http.request(
+            "GET",
+            self._url(path),
+            headers=headers,
+            timeout=_DEFAULT_TIMEOUT,
+        )
+        check_response(response)
         return response
 
     def _post_json(
@@ -185,10 +380,16 @@ class Client:
         Extract features for a given output feature list from an input
         feature list. The features are computed for the current time.
 
-        :param input_feature_list: List of features or featuresets to use as input.
-        :param output_feature_list: List of features or featuresets to compute.
-        :param input_dataframe: Dataframe containing the input features.
-        :return: Pandas dataframe or series containing the output features.
+        Parameters:
+        input_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to use as input.
+        output_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
+        input_dataframe (pd.DataFrame): Dataframe containing the input features.
+        log (bool): Boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False.
+        workflow (Optional[str]): The name of the workflow associated with the feature extraction. Only relevant when log is set to True.
+        sampling_rate (float): The rate at which feature data should be sampled before logging. Only relevant when log is set to True. The default value is 1.0.
+
+        Returns
+        Union[pd.DataFrame, pd.Series]: Pandas dataframe or series containing the output features.
         """
         if input_dataframe.empty or len(output_feature_list) == 0:
             return pd.DataFrame()
@@ -250,11 +451,14 @@ class Client:
         Extract point in time correct features from a dataframe, where the
         timestamps are provided by the timestamps parameter.
 
-        :param input_feature_list: List of features or featuresets to use as input.
-        :param output_feature_list: List of features or featuresets to compute.
-        :param input_dataframe: Dataframe containing the input features.
-        :param timestamps: Timestamps for each row in the input dataframe.
-        :return: Pandas dataframe or series containing the output features.
+        Parameters:
+        input_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to use as input.
+        output_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
+        input_dataframe (pd.DataFrame): Dataframe containing the input features.
+        timestamps (pd.Series): Timestamps for each row in the input dataframe.
+
+        Returns:
+        Union[pd.DataFrame, pd.Series]: Pandas dataframe or series containing the output features.
         """
         input_feature_names = []
         for input_feature in input_feature_list:

@@ -14,6 +14,8 @@ from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import to_includes_proto
 from fennel.test_lib.execute_aggregation import get_aggregated_df
 
+pd.set_option("display.max_columns", None)
+
 
 @dataclass
 class NodeRet:
@@ -33,12 +35,11 @@ def set_match(a: List[str], b: List[str]) -> bool:
 
 
 class Executor(Visitor):
-    def __init__(self, data, agg_state):
+    def __init__(self, data):
         super(Executor, self).__init__()
         self.dependencies = []
         self.lib_generated_code = ""
         self.data = data
-        self.agg_state = agg_state
 
     def execute(
         self, pipeline: Pipeline, dataset: Dataset
@@ -150,22 +151,7 @@ class Executor(Visitor):
         if input_ret is None:
             return None
         df = copy.deepcopy(input_ret.df)
-
-        if len(input_ret.key_fields) > 0:
-            # Pick the latest value for each key
-            df = df.groupby(input_ret.key_fields).apply(
-                lambda x: x.sort_values(input_ret.timestamp_field).iloc[-1]
-            )
-            df = df.reset_index(drop=True)
         df = df.sort_values(input_ret.timestamp_field)
-        if self.cur_ds_name in self.agg_state:
-            # Merge the current dataframe with the previous state
-            df = self._merge_df(
-                self.agg_state[self.cur_ds_name], df, input_ret.timestamp_field
-            )
-            self.agg_state[self.cur_ds_name] = df
-        else:
-            self.agg_state[self.cur_ds_name] = df
         # For aggregates the result is not a dataframe but a dictionary
         # of fields to the dataframe that contains the aggregate values
         # for each timestamp for that field.
@@ -247,9 +233,13 @@ class Executor(Visitor):
                 raise Exception(
                     f"Join on fields {obj.on} not present in right dataframe"
                 )
-            merged_df = pd.merge_asof(
-                left=left_df, right=right_df, on=ts_query_field, by=obj.on
+            # Rename the "on" columns on RHS by prefixing them with "__@@__"
+            # This is to avoid conflicts with the "on" columns on LHS
+            right_df = right_df.rename(
+                columns={col: f"__@@__{col}" for col in obj.on}
             )
+            right_by = [f"__@@__{col}" for col in obj.on]
+            left_by = copy.deepcopy(obj.on)
         else:
             if not is_subset(obj.left_on, left_df.columns):
                 raise Exception(
@@ -259,15 +249,22 @@ class Executor(Visitor):
                 raise Exception(
                     f"Join keys {obj.right_on} not present in right dataframe"
                 )
-            merged_df = pd.merge_asof(
-                left=left_df,
-                right=right_df,
-                on=ts_query_field,
-                left_by=obj.left_on,
-                right_by=obj.right_on,
-            )
-            # Drop the obj.right_on columns from the merged dataframe
-            merged_df = merged_df.drop(columns=obj.right_on)
+            left_by = copy.deepcopy(obj.left_on)
+            right_by = copy.deepcopy(obj.right_on)
+
+        merged_df = pd.merge_asof(
+            left=left_df,
+            right=right_df,
+            on=ts_query_field,
+            left_by=left_by,
+            right_by=right_by,
+        )
+        if obj.how == "inner":
+            # Drop rows which have null values in any of the RHS key columns
+            merged_df = merged_df.dropna(subset=right_by)
+        # Drop the RHS key columns from the merged dataframe
+        merged_df = merged_df.drop(columns=right_by)
+        right_df = right_df.drop(columns=right_by)
 
         # Filter out rows that are outside the bounds of the join query
         def filter_bounded_row(row):
@@ -378,4 +375,22 @@ class Executor(Visitor):
             if col in input_ret.key_fields:
                 input_ret.key_fields.remove(col)
 
+        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+
+    def visitDedup(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        df = input_ret.df
+        df = df.drop_duplicates(
+            subset=obj.by + [input_ret.timestamp_field], keep="last"
+        )
+        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+
+    def visitExplode(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        df = input_ret.df
+        df = df.explode(obj.columns)
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)

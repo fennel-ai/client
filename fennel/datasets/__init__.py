@@ -14,4 +14,6 @@ from fennel.datasets.datasets import (
     Join,
     Union_,
     Visitor,
+    Dedup,
+    Explode,
 )
