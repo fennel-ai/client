@@ -110,7 +110,6 @@ class UserPageViewFeatures:
         return ret
 
 
-@pytest.mark.slow
 @pytest.mark.integration
 @mock
 def test_outbrain(client):

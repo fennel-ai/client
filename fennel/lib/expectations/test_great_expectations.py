@@ -35,7 +35,7 @@ def test_dataset_expectation_creation():
         gender: oneof(str, ["male", "female"])  # type: ignore
         timestamp: datetime = field(timestamp=True)
 
-        @expectations
+        @expectations(version=34)
         def dataset_expectations(cls):
             return [
                 expect_column_values_to_be_between(
@@ -61,6 +61,7 @@ def test_dataset_expectation_creation():
     d = {
         "entityName": "UserInfoDS",
         "suite": "dataset_UserInfoDS_expectations",
+        "version": 34,
         "expectations": [
             {
                 "expectationType": "expect_column_values_to_be_between",
@@ -187,36 +188,6 @@ def test_dataset_invalid_expectation_creation():
         str(e.value)
         == "expect_column_values_to_be_between() got an unexpected keyword argument 'minimum_value'"
     )
-
-    with pytest.raises(Exception) as e:
-
-        @meta(owner="test@test.com")
-        @dataset
-        class UserInfoDSInvalid3:
-            user_id: int = field(key=True)
-            name: str = field()
-            age: Optional[int]
-            country: Optional[str]
-            gender: oneof(str, ["male", "female"])
-            timestamp: datetime = field(timestamp=True)
-
-            @expectations(version=1)
-            def dataset_expectations(cls):
-                return [
-                    expect_column_values_to_be_between(
-                        column=str(cls.age), minimum_value=0, max_value=100
-                    ),
-                    expect_column_values_to_be_in_set(
-                        column=str(cls.gender),
-                        value_set=["male", "female"],
-                        mostly=0.9,
-                    ),
-                    expect_column_values_to_not_be_null(
-                        column=str(cls.country), mostly=0.9
-                    ),
-                ]
-
-    assert str(e.value) == "Versioning is not yet supported for expectations."
 
     with pytest.raises(Exception) as e:
 
