@@ -5,7 +5,7 @@ import math
 from urllib.parse import urljoin
 
 import pandas as pd
-from typing import Dict, Optional, Any, Set, List, Union
+from typing import Dict, Optional, Any, Set, List, Union, Tuple
 
 import fennel._vendor.requests as requests  # type: ignore
 from fennel.datasets import Dataset
@@ -504,6 +504,50 @@ class Client:
             return pd.DataFrame(response.json())
         else:
             return pd.Series(response.json())
+
+    def lookup(
+        self, dataset_name: str, keys: List[Dict[str, Any]], fields: List[str]
+    ) -> Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
+        """
+        Look up values of fields in a dataset given keys.
+
+        Parameters:
+        dataset_name (str): The name of the dataset.
+        keys (List[Dict[str, Any]]): A list of keys, key(s), and its value, is a represented in a dictionary.
+        fields: A subset of fields of the dataset.
+
+        Returns:
+        Tuple[Union[pd.DataFrame, pd.Series], pd.Series]: A pair. The first is a Pandas dataframe or series containing values; the second is a series indicating whether the corresponding key(s) is found in the dataset.
+        """
+        req = {
+            "keys": keys,
+            "fields": fields,
+        }
+        response = self._post_json(
+            "{}/inspect/datasets/{}/lookup".format(V1_API, dataset_name), req
+        )
+        resp_json = response.json()
+        found = pd.Series(resp_json["found"])
+        if len(fields) > 1:
+            return pd.DataFrame(resp_json["data"]), found
+        return pd.Series(resp_json["data"]), found
+
+    def inspect_lastn(
+        self, dataset_name: str, n: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Inspect the last n rows of a dataset.
+
+        Parameters:
+        dataset_name (str): The dataset name.
+        n (int): The number of rows, default is 10.
+
+        Returns:
+        List[Dict[str, Any]]: A list of dataset rows.
+        """
+        return self._get(
+            "{}/inspect/datasets/{}/lastn?n={}".format(V1_API, dataset_name, n)
+        ).json()
 
     # ----------------------- Private methods -----------------------
 
