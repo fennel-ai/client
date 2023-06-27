@@ -72,6 +72,6 @@ jobs:
       # Publish to Vercel
       #----------------------------------------------
       - name: Notify Vercel of new content
-        uses: sozo-design/curl@v1.0.1
+        uses: wei/curl@v1
         with:
           args: -X POST ${{ secrets.BUILD_TRIGGER_URL }}
