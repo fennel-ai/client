@@ -399,13 +399,13 @@ class Client:
         output_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
         timestamp_column (str): The name of the column containing the timestamps.
         format (str): The format of the input data. Can be either "pandas",
-        "csv", "json" or "parquet". Default is "pandas".
+            "csv", "json" or "parquet". Default is "pandas".
         input (Dict[str, Any]): A dictionary containing the input data. If
-        the input format is "pandas", the dictionary should contain a key
-        called "input_dataframe" with a pandas dataframe as value. If the
-        input format is "csv", "json" or "parquet", the dictionary should
-        contain two keys: "input_bucket" and "input_prefix" which specify
-        the S3 path to the input data.
+            the input format is "pandas", the dictionary should contain a key
+            called "input_dataframe" with a pandas dataframe as value. If the
+            input format is "csv", "json" or "parquet", the dictionary should
+            contain two keys: "input_bucket" and "input_prefix" which specify
+            the S3 path to the input data.
 
 
         Returns:

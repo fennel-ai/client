@@ -70,11 +70,16 @@ jobs:
           poetry run pytest . --run_slow
           poetry run python -m unittest discover fennel
 
+
       #----------------------------------------------
-      # publish to packagr - this is run only if the previous steps are successful
+      # publish to pypi - this is run only if the previous steps are successful
       #----------------------------------------------
-      - name: Publish to Packagr
+      - name: Publish to Pypi
         run: |
-          poetry config repositories.packagr ${{ secrets.PACKAGR_URL }}
-          # Build and publish the package
-          poetry publish --build -r packagr -u __token__ -p ${{ secrets.PACKAGR_ACCESS_TOKEN }}
+          rm -rf dist/*
+          poetry build
+          twine upload --repository pypi dist/* --verbose -u __token__ -p ${{ secrets.PYPI_PACKAGR_ACCESS_TOKEN }}
+          
+       
+         
+      

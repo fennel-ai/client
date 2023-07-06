@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.16.3] - 2023-07-06
+- Client API's for extract historical
+
 ## [0.16.2] - 2023-06-27
 - Enable versioning for expectations.
 
