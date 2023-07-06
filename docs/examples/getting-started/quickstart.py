@@ -1,9 +1,9 @@
 # docsnip imports
 from datetime import datetime, timedelta
-from typing import Optional
 
 import pandas as pd
 import requests
+from typing import Optional
 
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import feature, featureset, extractor
@@ -187,15 +187,22 @@ feature_df = client.extract_historical_features(
         UserSellerFeatures.uid,
         UserSellerFeatures.seller_id,
     ],
-    input_dataframe=pd.DataFrame(
-        {
-            "UserSellerFeatures.uid": [1, 1, 1, 1],
-            "UserSellerFeatures.seller_id": [1, 2, 1, 2],
-        }
-    ),
-    timestamps=pd.Series(
-        [now, now, now - timedelta(days=1), now - timedelta(days=1)]
-    ),
+    timestamp_column="timestamps",
+    format="pandas",
+    input={
+        "input_dataframe": pd.DataFrame(
+            {
+                "UserSellerFeatures.uid": [1, 1, 1, 1],
+                "UserSellerFeatures.seller_id": [1, 2, 1, 2],
+                "timestamps": [
+                    now,
+                    now,
+                    now - timedelta(days=1),
+                    now - timedelta(days=1),
+                ],
+            }
+        )
+    },
 )
 assert feature_df.columns.tolist() == [
     "UserSellerFeatures.num_orders_1d",
