@@ -309,64 +309,6 @@ class Client:
             "{}/definitions/sources/{}".format(V1_API, source_uuid)
         ).json()
 
-    def _get(self, path: str):
-        headers = None
-        if self.token:
-            headers = {}
-            headers["Authorization"] = "Bearer " + self.token
-        response = self.http.request(
-            "GET",
-            self._url(path),
-            headers=headers,
-            timeout=_DEFAULT_TIMEOUT,
-        )
-        check_response(response)
-        return response
-
-    def _post_json(
-        self, path: str, req: Dict[str, Any], compress: bool = False
-    ):
-        payload = json.dumps(req).encode("utf-8")
-        headers = {
-            "Content-Type": "application/json",
-        }
-        return self._post(path, payload, headers, compress)
-
-    def _post_bytes(
-        self,
-        path: str,
-        req: bytes,
-        compress: bool = False,
-        timeout: float = _DEFAULT_TIMEOUT,
-    ):
-        headers = {
-            "Content-Type": "application/octet-stream",
-        }
-        return self._post(path, req, headers, compress, timeout)
-
-    def _post(
-        self,
-        path: str,
-        data: Any,
-        headers: Dict[str, str],
-        compress: bool = False,
-        timeout: float = _DEFAULT_TIMEOUT,
-    ):
-        if compress:
-            data = gzip.compress(data)
-            headers["Content-Encoding"] = "gzip"
-        if self.token:
-            headers["Authorization"] = "Bearer " + self.token
-        response = self.http.request(
-            "POST",
-            self._url(path),
-            data=data,
-            headers=headers,
-            timeout=timeout,
-        )
-        check_response(response)
-        return response
-
     def extract_features(
         self,
         input_feature_list: List[Union[Feature, Featureset]],
@@ -444,9 +386,10 @@ class Client:
         self,
         input_feature_list: List[Union[Feature, Featureset]],
         output_feature_list: List[Union[Feature, Featureset]],
-        input_dataframe: pd.DataFrame,
-        timestamps: pd.Series,
-    ) -> Union[pd.DataFrame, pd.Series]:
+        timestamp_column: str,
+        format: str = "pandas",
+        input: Dict[str, Any] = {},
+    ) -> Dict[str, Any]:
         """
         Extract point in time correct features from a dataframe, where the
         timestamps are provided by the timestamps parameter.
@@ -454,12 +397,28 @@ class Client:
         Parameters:
         input_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to use as input.
         output_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
-        input_dataframe (pd.DataFrame): Dataframe containing the input features.
-        timestamps (pd.Series): Timestamps for each row in the input dataframe.
+        timestamp_column (str): The name of the column containing the timestamps.
+        format (str): The format of the input data. Can be either "pandas",
+            "csv", "json" or "parquet". Default is "pandas".
+        input (Dict[str, Any]): A dictionary containing the input data. If
+            the input format is "pandas", the dictionary should contain a key
+            called "input_dataframe" with a pandas dataframe as value. If the
+            input format is "csv", "json" or "parquet", the dictionary should
+            contain two keys: "input_bucket" and "input_prefix" which specify
+            the S3 path to the input data.
+
 
         Returns:
-        Union[pd.DataFrame, pd.Series]: Pandas dataframe or series containing the output features.
+        Dict[str, Any]: A dictionary containing S3 path and request id.
         """
+
+        if format not in ["pandas", "csv", "json", "parquet"]:
+            raise Exception(
+                "Invalid input format. "
+                "Please provide one of the following formats: "
+                "'pandas', 'csv', 'json' or 'parquet'."
+            )
+
         input_feature_names = []
         for input_feature in input_feature_list:
             if isinstance(input_feature, Feature):
@@ -469,15 +428,56 @@ class Client:
                     [f.fqn() for f in input_feature.features]
                 )
 
-        if input_dataframe.empty:
-            raise Exception("Input dataframe is empty")
-            # Check if the input dataframe has all the required features
-        if not set(input_feature_names).issubset(set(input_dataframe.columns)):
-            raise Exception(
-                f"Input dataframe does not contain all the required features. "
-                f"Required features: {input_feature_names}. "
-                f"Input dataframe columns: {input_dataframe.columns}"
+        input_info = {}
+        extract_historical_input = {}
+        if format == "pandas":
+            if "input_dataframe" not in input:
+                raise Exception(
+                    "Input dataframe not found in input dictionary. "
+                    "Please provide a dataframe as value for the key 'input_dataframe'."
+                )
+            input_dataframe = input["input_dataframe"]
+            if not isinstance(input_dataframe, pd.DataFrame):
+                raise Exception(
+                    "Input dataframe is not of type pandas.DataFrame, "
+                    f"found {type(input_dataframe)}. "
+                    "Please provide a dataframe as value for the key 'input_dataframe'."
+                )
+            if input_dataframe.empty:
+                raise Exception(
+                    "Input dataframe is empty. Please provide a non-empty dataframe."
+                )
+            if not set(input_feature_names).issubset(
+                set(input_dataframe.columns)
+            ):
+                raise Exception(
+                    f"Input dataframe does not contain all the required features. "
+                    f"Required features: {input_feature_names}. "
+                    f"Input dataframe columns: {input_dataframe.columns}"
+                )
+            if timestamp_column not in input_dataframe.columns:
+                raise Exception(
+                    f"Timestamp column {timestamp_column} not found in input dataframe."
+                )
+            extract_historical_input["Pandas"] = input_dataframe.to_dict(
+                orient="records"
             )
+        else:
+            if "input_bucket" not in input:
+                raise Exception(
+                    "Input bucket not found in input dictionary. "
+                    "Please provide a bucket name as value for the key 'input_bucket'."
+                )
+            if "input_prefix" not in input:
+                raise Exception(
+                    "Input prefix not found in input dictionary. "
+                    "Please provide a prefix as value for the key 'input_prefix'."
+                )
+            input_info["input_bucket"] = input["bucket"]
+            input_info["input_prefix"] = input["key"]
+            input_info["format"] = format.upper()
+            input_info["compression"] = "None"
+            extract_historical_input["S3"] = input_info
 
         output_feature_names = []
         for output_feature in output_feature_list:
@@ -491,19 +491,19 @@ class Client:
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
-            "data": input_dataframe.to_json(orient="records"),
-            "timestamps": timestamps.to_json(orient="records"),
+            "input": extract_historical_input,
+            "timestamp_column": timestamp_column,
         }
 
-        response = self._post_json(
+        return self._post_json(
             "{}/extract_historical_features".format(V1_API), req
         )
-        if len(output_feature_list) > 1 or isinstance(
-            output_feature_list[0], Featureset
-        ):
-            return pd.DataFrame(response.json())
-        else:
-            return pd.Series(response.json())
+
+    def extract_historical_features_progress(self, request_id):
+        req = {"request_id": request_id}
+        return self._post_json(
+            "{}/extract_historical_progress".format(V1_API), req
+        )
 
     def lookup(
         self, dataset_name: str, keys: List[Dict[str, Any]], fields: List[str]
@@ -565,3 +565,62 @@ class Client:
 
     def _get_sync_request_proto(self):
         return to_sync_request_proto(self.to_register_objects)
+
+    def _get(self, path: str):
+        headers = None
+
+        if self.token:
+            headers = {}
+            headers["Authorization"] = "Bearer " + self.token
+        response = self.http.request(
+            "GET",
+            self._url(path),
+            headers=headers,
+            timeout=_DEFAULT_TIMEOUT,
+        )
+        check_response(response)
+        return response
+
+    def _post_json(
+        self, path: str, req: Dict[str, Any], compress: bool = False
+    ):
+        payload = json.dumps(req).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+        }
+        return self._post(path, payload, headers, compress)
+
+    def _post_bytes(
+        self,
+        path: str,
+        req: bytes,
+        compress: bool = False,
+        timeout: float = _DEFAULT_TIMEOUT,
+    ):
+        headers = {
+            "Content-Type": "application/octet-stream",
+        }
+        return self._post(path, req, headers, compress, timeout)
+
+    def _post(
+        self,
+        path: str,
+        data: Any,
+        headers: Dict[str, str],
+        compress: bool = False,
+        timeout: float = _DEFAULT_TIMEOUT,
+    ):
+        if compress:
+            data = gzip.compress(data)
+            headers["Content-Encoding"] = "gzip"
+        if self.token:
+            headers["Authorization"] = "Bearer " + self.token
+        response = self.http.request(
+            "POST",
+            self._url(path),
+            data=data,
+            headers=headers,
+            timeout=timeout,
+        )
+        check_response(response)
+        return response

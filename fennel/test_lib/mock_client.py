@@ -8,10 +8,10 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import numpy as np
 import pandas as pd
+from typing import Any, Callable, Dict, List, Tuple, Optional, Union
 
 import fennel.datasets.datasets
 import fennel.sources as sources
@@ -424,11 +424,22 @@ class MockClient(Client):
         self,
         input_feature_list: List[Union[Feature, Featureset]],
         output_feature_list: List[Union[Feature, Featureset]],
-        input_dataframe: pd.DataFrame,
-        timestamps: pd.Series,
+        timestamp_column: str,
+        format: str = "pandas",
+        input: Dict[str, Any] = {},
     ) -> Union[pd.DataFrame, pd.Series]:
+        if format != "pandas":
+            raise NotImplementedError(
+                "Only pandas format is supported in MockClient"
+            )
+        if "input_dataframe" not in input:
+            raise ValueError(
+                "input must contain a key 'input_dataframe' with the input dataframe"
+            )
+        input_dataframe = input["input_dataframe"]
         if input_dataframe.empty:
             return pd.DataFrame()
+        timestamps = input_dataframe[timestamp_column]
         input_feature_names = []
         for input_feature in input_feature_list:
             if isinstance(input_feature, Feature):

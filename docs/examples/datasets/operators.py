@@ -1,8 +1,8 @@
 from datetime import datetime
 from datetime import timedelta
-from typing import Optional
 
 import pandas as pd
+from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count
@@ -240,8 +240,12 @@ def test_aggregate(client):
     df = client.extract_historical_features(
         input_feature_list=[UserAdStatsFeatures.uid],
         output_feature_list=[UserAdStatsFeatures],
-        input_dataframe=pd.DataFrame({"UserAdStatsFeatures.uid": uids}),
-        timestamps=ts_series,
+        input={
+            "input_dataframe": pd.DataFrame(
+                {"UserAdStatsFeatures.uid": uids, "timestamps": ts_series}
+            )
+        },
+        timestamp_column="timestamps",
     )
     assert df["UserAdStatsFeatures.num_clicks"].tolist() == [4, 4, 3, 2, 2]
     assert df["UserAdStatsFeatures.num_clicks_1w"].tolist() == [2, 2, 2, 1, 1]
