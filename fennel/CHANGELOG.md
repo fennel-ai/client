@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.16.5] - 2023-07-07
+- Fix get_dataset_df in mock client to correctly handle empty datasets
+
 ## [0.16.4] - 2023-07-06
 - Mock client fix to handle empty data in aggegations
 
