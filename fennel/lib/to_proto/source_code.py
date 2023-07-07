@@ -105,7 +105,6 @@ def lambda_to_python_regular_func(lambda_func):
         return None
 
     source_lines = [line.strip() for line in source_lines]
-
     i = 0
     while i < len(source_lines) - 1:
         if source_lines[i].endswith("\\"):
@@ -115,7 +114,6 @@ def lambda_to_python_regular_func(lambda_func):
             i += 1
 
     source_text = os.linesep.join(source_lines).strip()
-
     # In case source_text is across multiple lines join them
     source_text = source_text.replace("\n", " ")
     source_text = source_text.replace("\r", " ")
@@ -139,47 +137,10 @@ def lambda_to_python_regular_func(lambda_func):
     if lambda_node is None:  # could be a single line `def fn(x): ...`
         return None
 
-    # HACK: Since we can (and most likely will) get source lines
-    # where lambdas are just a part of bigger expressions, they will have
-    # some trailing junk after their definition.
-    #
-    # Unfortunately, AST nodes only keep their _starting_ offsets
-    # from the original source, so we have to determine the end ourselves.
-    # We do that by gradually shaving extra junk from after the definition.
-    lambda_text = dedent(source_text[lambda_node.col_offset :])  # noqa
-    lambda_body_text = dedent(
-        source_text[lambda_node.body.col_offset :]
-    )  # noqa
-    min_length = len("lambda:_")  # shortest possible lambda expression
-    backup_code = ""
-    while len(lambda_text) > min_length:
-        # Ensure code compiles
-        try:
-            code = compile(lambda_body_text, "<unused filename>", "eval")
-            if backup_code == "":
-                backup_code = lambda_text
-
-            # Byte code matching.
-            if len(code.co_code) == len(lambda_func.__code__.co_code):
-                if lambda_text[-1] == ",":
-                    lambda_text = lambda_text[:-1]
-                return lambda_text
-        except SyntaxError:
-            pass
-        lambda_text = lambda_text[:-1]
-        lambda_body_text = lambda_body_text[:-1]
-
-    # TODO: This is a hack for python 3.11 and should be removed when
-    # we have a better solution.
-    # We try to return the longest compilable code, but if we can't, we return
-    # None.
-    if sys.version_info >= (3, 11):
-        if len(backup_code) > 0:
-            if backup_code[-1] == ",":
-                backup_code = backup_code[:-1]
-            return backup_code
-
-    return None
+    lambda_text = dedent(
+        source_text[lambda_node.col_offset : lambda_node.end_col_offset]
+    )
+    return lambda_text
 
 
 def get_all_imports() -> str:
