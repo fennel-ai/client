@@ -241,7 +241,6 @@ class MockClient(Client):
     # ----------------- Debug methods -----------------------------------------
 
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
-
         if dataset_name not in self.dataset_info:
             raise ValueError(f"Dataset {dataset_name} not found")
 
