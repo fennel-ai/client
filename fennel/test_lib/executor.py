@@ -2,11 +2,10 @@ import copy
 import types
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Optional, Dict, List
 
 import numpy as np
 import pandas as pd
-from typing import Any, Optional, Dict, List
-
 from fennel.datasets import Pipeline, Visitor, Dataset
 from fennel.lib.aggregate import Count
 from fennel.lib.duration import duration_to_timedelta
@@ -148,7 +147,7 @@ class Executor(Visitor):
 
     def visitAggregate(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None:
+        if input_ret is None or input_ret.df.shape[0] == 0:
             return None
         df = copy.deepcopy(input_ret.df)
         df = df.sort_values(input_ret.timestamp_field)

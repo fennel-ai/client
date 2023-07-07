@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.16.4] - 2023-07-06
+- Mock client fix to handle empty data in aggegations
+
 ## [0.16.3] - 2023-07-06
 - Client API's for extract historical
 
