@@ -210,6 +210,9 @@ class _DatasetInfo:
     timestamp_field: str
     on_demand: OnDemand
 
+    def empty_df(self):
+        return pd.DataFrame(columns=self.fields)
+
 
 class MockClient(Client):
     def __init__(self):
@@ -238,12 +241,20 @@ class MockClient(Client):
     # ----------------- Debug methods -----------------------------------------
 
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
+        if dataset_name not in self.dataset_info:
+            raise ValueError(f"Dataset {dataset_name} not found")
+
+        # If we haven't seen any values for this dataset, return an empty df with the right schema.
+        if (
+            dataset_name not in self.data
+            and dataset_name not in self.aggregated_datasets
+        ):
+            return self.dataset_info[dataset_name].empty_df()
+
         if dataset_name in self.data:
             return copy.deepcopy(self.data[dataset_name])
 
-        if dataset_name not in self.aggregated_datasets:
-            raise ValueError(f"Dataset {dataset_name} not found")
-
+        # This must be an aggregated dataset
         key_fields = self.dataset_info[dataset_name].key_fields
         ts_field = self.dataset_info[dataset_name].timestamp_field
         required_fields = key_fields + [ts_field]
