@@ -20,12 +20,13 @@ cloud.
    to it
 3. Allow Fennel to assume this role by adding `arn:aws:iam::030813887342:root`
    as a trusted entity for the role created in the previous step
-4. Provide the AWS account id and role name to Fennel. Optionally, also provide a `/16` VPC CIDR
-   block that does not overlap with any VPC on your end that we might want to peer with. Fennel will create a VPC in
-   your account with this CIDR block.
-5. Fennel deploys its Feature Engineering Platform in this account and manages
+4. Provide the AWS account id and role name to Fennel.
+5. If Fennel will be required to ingest data from a private resource (e.g. RDS) in any of your accounts, a VPC
+   peering connection will be required. In this case, provide the VPC id of the VPC in which the production resource is
+   hosted, as well as a `/16` CIDR block that does not overlap with any VPC on your end. Fennel will create a VPC with
+   this CIDR block in the new account.
+6. Sit back as Fennel deploys its Feature Engineering Platform in this account and manages
    it from there. To deploy and perform ongoing maintenance and upgrades,
-   Fennel peers the deployed VPC with a VPC in our account (a.k.a. the control plane)
-6. Connect the Fennnel service to your production/dev account via AWS PrivateLink
-   or VPC peering. The latter may be required for Fennel to ingest data from
-   some data sources in your production account.
+   Fennel peers the deployed VPC with a VPC in Fennel's account (a.k.a. the control plane).
+7. Access the Fennnel service from your production/dev account via AWS PrivateLink
+   or VPC peering if a peering connection was established in step 5.
