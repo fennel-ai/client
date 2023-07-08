@@ -330,7 +330,7 @@ class Client:
         workflow (Optional[str]): The name of the workflow associated with the feature extraction. Only relevant when log is set to True.
         sampling_rate (float): The rate at which feature data should be sampled before logging. Only relevant when log is set to True. The default value is 1.0.
 
-        Returns
+        Returns:
         Union[pd.DataFrame, pd.Series]: Pandas dataframe or series containing the output features.
         """
         if input_dataframe.empty or len(output_feature_list) == 0:
@@ -388,7 +388,9 @@ class Client:
         output_feature_list: List[Union[Feature, Featureset]],
         timestamp_column: str,
         format: str = "pandas",
-        input: Dict[str, Any] = {},
+        input_dataframe: Optional[pd.DataFrame] = None,
+        input_bucket: Optional[str] = None,
+        input_prefix: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Extract point in time correct features from a dataframe, where the
@@ -400,16 +402,15 @@ class Client:
         timestamp_column (str): The name of the column containing the timestamps.
         format (str): The format of the input data. Can be either "pandas",
             "csv", "json" or "parquet". Default is "pandas".
-        input (Dict[str, Any]): A dictionary containing the input data. If
-            the input format is "pandas", the dictionary should contain a key
-            called "input_dataframe" with a pandas dataframe as value. If the
-            input format is "csv", "json" or "parquet", the dictionary should
-            contain two keys: "input_bucket" and "input_prefix" which specify
-            the S3 path to the input data.
+        input_dataframe (Optional[pd.DataFrame]): Dataframe containing the input features. Only relevant when format is "pandas".
+        input_bucket (Optional[str]): The name of the S3 bucket containing the input data. Only relevant when format is "csv", "json" or "parquet".
+        input_prefix (Optional[str]): The prefix of the S3 key containing the input data. Only relevant when format is "csv", "json" or "parquet".
 
 
         Returns:
-        Dict[str, Any]: A dictionary containing S3 path and request id.
+        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
+                        A completion rate of 1.0 indicates that all processing has been completed.
+                        A failure rate of 0.0 indicates that all processing has been completed successfully.
         """
 
         if format not in ["pandas", "csv", "json", "parquet"]:
@@ -431,12 +432,11 @@ class Client:
         input_info = {}
         extract_historical_input = {}
         if format == "pandas":
-            if "input_dataframe" not in input:
+            if input_dataframe is None:
                 raise Exception(
                     "Input dataframe not found in input dictionary. "
                     "Please provide a dataframe as value for the key 'input_dataframe'."
                 )
-            input_dataframe = input["input_dataframe"]
             if not isinstance(input_dataframe, pd.DataFrame):
                 raise Exception(
                     "Input dataframe is not of type pandas.DataFrame, "
@@ -463,18 +463,18 @@ class Client:
                 orient="records"
             )
         else:
-            if "input_bucket" not in input:
+            if input_bucket is None:
                 raise Exception(
                     "Input bucket not found in input dictionary. "
                     "Please provide a bucket name as value for the key 'input_bucket'."
                 )
-            if "input_prefix" not in input:
+            if input_prefix is None:
                 raise Exception(
                     "Input prefix not found in input dictionary. "
                     "Please provide a prefix as value for the key 'input_prefix'."
                 )
-            input_info["input_bucket"] = input["bucket"]
-            input_info["input_prefix"] = input["key"]
+            input_info["input_bucket"] = input_bucket
+            input_info["input_prefix"] = input_prefix
             input_info["format"] = format.upper()
             input_info["compression"] = "None"
             extract_historical_input["S3"] = input_info
@@ -500,6 +500,16 @@ class Client:
         )
 
     def extract_historical_features_progress(self, request_id):
+        """
+        Get progress of extract historical features request.
+
+        :param request_id: The request id returned by extract_historical_features.
+
+        Returns:
+        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
+                        A completion rate of 1.0 indicates that all processing has been completed.
+                        A failure rate of 0.0 indicates that all processing has been completed successfully.
+        """
         req = {"request_id": request_id}
         return self._post_json(
             "{}/extract_historical_progress".format(V1_API), req

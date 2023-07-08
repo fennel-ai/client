@@ -344,14 +344,12 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
                 UserInfoTransformedFeatures.country_geoid_square,
             ],
             input_feature_list=[UserInfoMultipleExtractor.userid],
-            input={
-                "input_dataframe": pd.DataFrame(
-                    {
-                        "UserInfoMultipleExtractor.userid": [18232, 18234],
-                        "timestamps": [now, now],
-                    }
-                )
-            },
+            input_dataframe=pd.DataFrame(
+                {
+                    "UserInfoMultipleExtractor.userid": [18232, 18234],
+                    "timestamps": [now, now],
+                }
+            ),
             timestamp_column="timestamps",
         )
 
@@ -485,14 +483,12 @@ class TestDocumentDataset(unittest.TestCase):
                 DocumentFeatures,
             ],
             input_feature_list=[DocumentFeatures.doc_id],
-            input={
-                "input_dataframe": pd.DataFrame(
-                    {
-                        "DocumentFeatures.doc_id": [18232, 18234],
-                        "timestamps": [yesterday, yesterday],
-                    }
-                )
-            },
+            input_dataframe=pd.DataFrame(
+                {
+                    "DocumentFeatures.doc_id": [18232, 18234],
+                    "timestamps": [yesterday, yesterday],
+                }
+            ),
             timestamp_column="timestamps",
         )
         assert feature_df.shape == (2, 4)

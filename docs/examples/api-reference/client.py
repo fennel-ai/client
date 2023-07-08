@@ -114,3 +114,17 @@ class TestExtractorDAGResolution(unittest.TestCase):
         )
         self.assertEqual(feature_df.shape, (2, 7))
         # /docsnip
+
+        # docsnip extract_historical_features_api
+        response = client.extract_historical_features(
+            output_feature_list=[
+                UserFeatures,
+            ],
+            input_feature_list=[UserFeatures.userid],
+            format="pandas",
+            input_dataframe=pd.DataFrame(
+                {"UserFeatures.userid": [18232, 18234], "timestamp": [now, now]}
+            ),
+            timestamp_column="timestamp",
+        )
+        # /docsnip

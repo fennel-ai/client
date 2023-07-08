@@ -14,9 +14,9 @@ Given some input and output features, extracts the current value of all the outp
 
 **Arguments:**
 
-* `output_feature_list`: list of features (written as fully qualified name of a feature along with the featureset) that should be extracted. Can also take featurset objects as input, in which case all features in the featureset are extracted.
-* `input_feature_list` : list of features/featuresets for which values are known
-* `input_df`: a pandas dataframe object that contains the values of all features in the input feature list. Each row of the dataframe can be thought of as one entity for which features are desired.
+* `output_feature_list: List[Union[Feature, Featureset]]`: list of features (written as fully qualified name of a feature along with the featureset) that should be extracted. Can also take featurset objects as input, in which case all features in the featureset are extracted.
+* `input_feature_list: List[Union[Feature, Featureset]]` : list of features/featuresets for which values are known
+* `input_df: Dataframe`: a pandas dataframe object that contains the values of all features in the input feature list. Each row of the dataframe can be thought of as one entity for which features are desired.
 * `log: bool` - boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False
 * `workflow: str` - the name of the workflow associated with the feature extraction. Only relevant when `log` is set to True
 * `sampling_rate: float` - the rate at which feature data should be sampled before logging. Only relevant when log is set to True. The default value is 1.0
@@ -68,4 +68,64 @@ This method throws an error if the schema of the dataframe (i.e. column names an
 **Example**
 
 <pre snippet="api-reference/client#log_api"></pre>
+
+****
+
+### **extract_historical_features**
+
+For offline training of models, users often need to extract features for a large number of entities. 
+This method allows users to extract features for a large number of entities in a single call while ensuring
+point-in-time correctness of the extracted features.
+
+This api is an asynchronous api that returns a request id and the path to the output folder in S3 containing the extracted features.&#x20; 
+&#x20;
+
+**Arguments:**
+
+
+* `input_feature_list: List[Union[Feature, Featureset]]` - List of features or featuresets to use as input.
+* `output_feature_list: List[Union[Feature, Featureset]]` - List of features or featuresets to compute.
+* `timestamp_column: str` - The name of the column containing the timestamps.
+* `format: str` - The format of the input data. Can be either "pandas", "csv", "json" or "parquet". Default is "pandas".
+* `input_dataframe: Optional[pd.DataFrame]` - Dataframe containing the input features. Only relevant when format is "pandas".
+* `input_bucket: Optional[str]` - The name of the S3 bucket containing the input data. Only relevant when format is "csv", "json" or "parquet".
+* `input_prefix: Optional[str]` - The prefix of the S3 key containing the input data. Only relevant when format is "csv", "json" or "parquet".
+
+
+**Example**
+
+<pre snippet="api-reference/client#extract_historical_features_api"></pre>
+
+****
+
+### **extract_historical_features_progress**
+
+This method allows users to monitor the progress of the extract_historical_features asynchronous operation. 
+It accepts the request ID that was returned by the `extract_historical_features` method and returns the current status of that operation.
+
+The response format of this function and the `extract_historical_features` function are identical.&#x20;
+
+**Arguments:**
+
+
+* `request_id: str` - The request ID returned by the `extract_historical_features` method. This ID uniquely identifies the feature extraction operation
+
+
+**Returns:**
+
+* `Dict[str, Any]` - A dictionary containing the following information:
+  * request_id
+  * output s3 bucket
+  * output s3 path prefix
+  * completion rate. 
+  * failure rate.
+
+A completion rate of 1.0 indicates that all processing has been completed.
+A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing has been completed successfully.
+
+**Example**
+
+```azure
+client.extract_historical_features_progress(request_id='bf5dfe5d-0040-4405-a224-b82c7a5bf085')
+```
 
