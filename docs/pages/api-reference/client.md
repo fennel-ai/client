@@ -91,6 +91,18 @@ This api is an asynchronous api that returns a request id and the path to the ou
 * `input_bucket: Optional[str]` - The name of the S3 bucket containing the input data. Only relevant when format is "csv", "json" or "parquet".
 * `input_prefix: Optional[str]` - The prefix of the S3 key containing the input data. Only relevant when format is "csv", "json" or "parquet".
 
+**Returns:**
+
+* `Dict[str, Any]` - A dictionary containing the following information:
+  * request_id
+  * output s3 bucket
+  * output s3 path prefix
+  * completion rate.
+  * failure rate.
+
+A completion rate of 1.0 indicates that all processing has been completed.
+A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing has been completed successfully.
+
 
 **Example**
 
@@ -125,7 +137,8 @@ A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing
 
 **Example**
 
-```azure
+```
 client.extract_historical_features_progress(request_id='bf5dfe5d-0040-4405-a224-b82c7a5bf085')
+>>> {'request_id': 'bf5dfe5d-0040-4405-a224-b82c7a5bf085', 'output_bucket': <bucket_name>, 'output_prefix': <output_prefix>, 'completion_rate': 0.76, 'failure_rate': 0.0}
 ```
 
