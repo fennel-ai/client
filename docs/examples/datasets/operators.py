@@ -240,11 +240,9 @@ def test_aggregate(client):
     df = client.extract_historical_features(
         input_feature_list=[UserAdStatsFeatures.uid],
         output_feature_list=[UserAdStatsFeatures],
-        input={
-            "input_dataframe": pd.DataFrame(
-                {"UserAdStatsFeatures.uid": uids, "timestamps": ts_series}
-            )
-        },
+        input_dataframe=pd.DataFrame(
+            {"UserAdStatsFeatures.uid": uids, "timestamps": ts_series}
+        ),
         timestamp_column="timestamps",
     )
     assert df["UserAdStatsFeatures.num_clicks"].tolist() == [4, 4, 3, 2, 2]

@@ -11,7 +11,7 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from typing import Any, Callable, Dict, List, Tuple, Optional, Union
+from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import fennel.datasets.datasets
 import fennel.sources as sources
@@ -437,17 +437,18 @@ class MockClient(Client):
         output_feature_list: List[Union[Feature, Featureset]],
         timestamp_column: str,
         format: str = "pandas",
-        input: Dict[str, Any] = {},
+        input_dataframe: Optional[pd.DataFrame] = None,
+        input_bucket: Optional[str] = None,
+        input_prefix: Optional[str] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         if format != "pandas":
             raise NotImplementedError(
                 "Only pandas format is supported in MockClient"
             )
-        if "input_dataframe" not in input:
+        if input_dataframe is None:
             raise ValueError(
                 "input must contain a key 'input_dataframe' with the input dataframe"
             )
-        input_dataframe = input["input_dataframe"]
         if input_dataframe.empty:
             return pd.DataFrame()
         timestamps = input_dataframe[timestamp_column]

@@ -189,20 +189,18 @@ feature_df = client.extract_historical_features(
     ],
     timestamp_column="timestamps",
     format="pandas",
-    input={
-        "input_dataframe": pd.DataFrame(
-            {
-                "UserSellerFeatures.uid": [1, 1, 1, 1],
-                "UserSellerFeatures.seller_id": [1, 2, 1, 2],
-                "timestamps": [
-                    now,
-                    now,
-                    now - timedelta(days=1),
-                    now - timedelta(days=1),
-                ],
-            }
-        )
-    },
+    input_dataframe=pd.DataFrame(
+        {
+            "UserSellerFeatures.uid": [1, 1, 1, 1],
+            "UserSellerFeatures.seller_id": [1, 2, 1, 2],
+            "timestamps": [
+                now,
+                now,
+                now - timedelta(days=1),
+                now - timedelta(days=1),
+            ],
+        }
+    ),
 )
 assert feature_df.columns.tolist() == [
     "UserSellerFeatures.num_orders_1d",
