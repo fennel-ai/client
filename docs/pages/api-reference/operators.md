@@ -141,7 +141,7 @@ The `dedup` operator has the following parameters:
    not
    specified, all the columns (except the timestamp column) are used for identifying duplicates.
 
-::info
+:::info
 The `dedup` operator can only be applied on datasets without keys
 :::
 
@@ -161,7 +161,7 @@ The number of elements in each list should be the same for every row, although t
 across rows.
 :::
 
-::info
+:::info
 The `explode` operator does not support exploding on key columns of datasets>
 :::
 
