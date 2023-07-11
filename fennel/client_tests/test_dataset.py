@@ -3,10 +3,10 @@ import re
 import time
 import unittest
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict
 
 import pandas as pd
 import pytest
+from typing import Optional, List, Dict
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -840,7 +840,9 @@ class MovieRatingWindowed:
     num_ratings_3d: int
     sum_ratings_7d: float
     avg_rating_6h: float
+    unique_ratings_4d: int
     total_ratings: int
+
     t: datetime
 
     @pipeline(version=1)
@@ -861,6 +863,13 @@ class MovieRatingWindowed:
                 ),
                 Count(
                     window=Window("forever"), into_field=str(cls.total_ratings)
+                ),
+                Count(
+                    window=Window("4d"),
+                    into_field="unique_ratings_4d",
+                    of="rating",
+                    unique=True,
+                    approx=True,
                 ),
             ]
         )
@@ -921,7 +930,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (6, 6)
+        assert df.shape == (6, 7)
         assert df["movie"].tolist() == [
             "Jumanji",
             "Titanic",
@@ -931,15 +940,18 @@ class TestBasicWindowAggregate(unittest.TestCase):
             "Titanic",
         ]
         assert df["num_ratings_3d"].tolist() == [2, 2, 1, 1, 3, 1]
+
         assert df["sum_ratings_7d"].tolist() == [13, 19, 12, 17, 7, 4]
         assert df["avg_rating_6h"].tolist() == [0.0, 0.0, 0.0, 0.0, 2.0, 4.0]
         assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
+        assert df["unique_ratings_4d"].tolist() == [1, 1, 1, 2, 2, 1]
 
 
 @meta(owner="test@test.com")
 @dataset
 class PositiveRatingActivity:
     cnt_rating: int
+    unique_ratings: int
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True
     )
@@ -953,7 +965,16 @@ class PositiveRatingActivity:
             lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
         )
         return filter2.groupby("movie").aggregate(
-            [Count(window=Window("forever"), into_field=str(cls.cnt_rating))],
+            [
+                Count(window=Window("forever"), into_field=str(cls.cnt_rating)),
+                Count(
+                    window=Window("forever"),
+                    into_field=str(cls.unique_ratings),
+                    of="rating",
+                    unique=True,
+                    approx=True,
+                ),
+            ],
         )
 
 
@@ -979,7 +1000,7 @@ class TestBasicFilter(unittest.TestCase):
             [18231, 4, "Titanic", three_hours_ago],
             [18231, 3, "Titanic", two_hours_ago],
             [18231, 5, "Titanic", one_hour_ago],
-            [18231, 4.5, "Titanic", minute_ago],
+            [18231, 4, "Titanic", minute_ago],
             [18231, 2, "RaOne", one_hour_ago],
             [18231, 3, "RaOne", minute_ago],
             [18231, 1, "RaOne", two_hours_ago],
@@ -998,18 +1019,20 @@ class TestBasicFilter(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (3, 3)
+        assert df.shape == (3, 4)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
         assert df["cnt_rating"].tolist() == [2, 3, None]
+        assert df["unique_ratings"].tolist() == [2, 2, None]
 
         ts = pd.Series([two_hours_ago, two_hours_ago, two_hours_ago])
         df, _ = PositiveRatingActivity.lookup(
             ts,
             movie=names,
         )
-        assert df.shape == (3, 3)
+        assert df.shape == (3, 4)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
         assert df["cnt_rating"].tolist() == [2, 1, None]
+        assert df["unique_ratings"].tolist() == [2, 1, None]
 
 
 ################################################################################
@@ -1477,7 +1500,6 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         client.sleep()
         df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
         assert df.shape == (5, 8)
-        print(df["club"].tolist())
         assert df["club"].tolist() == [
             "Manchester United",
             "Manchester United",

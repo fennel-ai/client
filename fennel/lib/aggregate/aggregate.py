@@ -1,8 +1,7 @@
-from fennel._vendor.pydantic import BaseModel, Extra, validator  # type: ignore
-from typing import List, Union
+from typing import List, Union, Optional
 
 import fennel.gen.spec_pb2 as spec_proto
-import fennel.gen.schema_pb2 as schema_proto
+from fennel._vendor.pydantic import BaseModel, Extra, validator  # type: ignore
 from fennel.lib.window import Window
 
 ItemType = Union[str, List[str]]
@@ -27,6 +26,10 @@ class AggregateType(BaseModel):
 
 
 class Count(AggregateType):
+    of: Optional[str] = None
+    unique: bool = False
+    approx: bool = False
+
     def to_proto(self):
         if self.window is None:
             raise ValueError("Window must be specified for Count")
@@ -35,11 +38,26 @@ class Count(AggregateType):
             count=spec_proto.Count(
                 window=self.window.to_proto(),
                 name=self.into_field,
+                unique=self.unique,
+                approx=self.approx,
+                of=self.of,
             )
         )
 
     def validate(self):
-        pass
+        if not self.unique:
+            return None
+
+        if not self.approx:
+            return NotImplementedError(
+                "Exact unique counts are not yet supported"
+            )
+
+        if self.of is None:
+            return ValueError(
+                "Count unique requires a field parameter on which unique "
+                "values can be counted"
+            )
 
     def signature(self):
         return f"count_{self.window.signature()}"

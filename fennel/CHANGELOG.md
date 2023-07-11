@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.16.6] - 2023-07-08
+- Support count unique for aggregations
+
 ## [0.16.5] - 2023-07-07
 - Fix get_dataset_df in mock client to correctly handle empty datasets
 
