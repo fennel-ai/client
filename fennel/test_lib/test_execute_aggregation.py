@@ -2,6 +2,7 @@ from fennel.test_lib.execute_aggregation import (
     SumState,
     AvgState,
     CountState,
+    CountUniqueState,
     LastKState,
     MinState,
     MaxState,
@@ -30,6 +31,18 @@ def test_count_state():
     assert state.del_val_from_state(1) == 1
     assert state.add_val_to_state(3) == 2
     assert state.get_val() == 2
+
+
+def test_count_unique_state():
+    state = CountUniqueState()
+    assert state.add_val_to_state(1) == 1
+    assert state.add_val_to_state(1) == 1
+    assert state.add_val_to_state(2) == 2
+    assert state.add_val_to_state(3) == 3
+    assert state.del_val_from_state(2) == 2
+    assert state.del_val_from_state(1) == 2
+    assert state.del_val_from_state(1) == 1
+    assert state.add_val_to_state(3) == 1
 
 
 def test_avg_state():

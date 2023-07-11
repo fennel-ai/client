@@ -2,10 +2,11 @@ import copy
 import types
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional, Dict, List
 
 import numpy as np
 import pandas as pd
+from typing import Any, Optional, Dict, List
+
 from fennel.datasets import Pipeline, Visitor, Dataset
 from fennel.lib.aggregate import Count
 from fennel.lib.duration import duration_to_timedelta
@@ -159,7 +160,7 @@ class Executor(Visitor):
             # Select the columns that are needed for the aggregate
             # and drop the rest
             fields = obj.keys + [input_ret.timestamp_field]
-            if not isinstance(aggregate, Count):
+            if not isinstance(aggregate, Count) or aggregate.unique:
                 fields.append(aggregate.of)
             filtered_df = df[fields]
             result[aggregate.into_field] = get_aggregated_df(

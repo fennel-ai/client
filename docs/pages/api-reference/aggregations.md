@@ -15,7 +15,11 @@ Besides these common arguments, here is the rest of the API reference for all th
 
 ### 1. Count
 
-Count computes a rolling count for each group key across a window. Takes no additional arguments besides `window` and `into_field`. It returns 0 by default. Its output type is always `int`.&#x20;
+Count computes a rolling count for each group key across a window.  It returns 0 by default. Its output type is always `int`.&#x20;
+The count aggregate also takes an optional argument `unique` which is a boolean. If set to true, counts the number of unique values in the given window.&#x20;
+The field over which the count is computed is specified by the `of` parameter of type `str`.&#x20;
+Count also takes `approx` as an argument that when set to true, makes the count an approximate, but allows Fennel to be more efficient with state storage. 
+Currently, Fennel only supports approximate unique counts, hence if `unique` is set to true, `approx` must also be set to true.&#x20;
 
 ### 2. Sum &#x20;
 

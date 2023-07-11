@@ -64,7 +64,7 @@ The following fields need to be defined on the source:
 And the following fields need to be defined on the bucket:
 
 1. **`bucket`** - Name of the S3 bucket where the file(s) exist.
-2. **`path_prefix`** (optional) - By providing a path-like prefix (e.g., `myFolder/thisTable/`) under which all the relevant files sit, we can optimize finding these in S3. This is optional but recommended if your bucket contains many folders/files&#x20;
+2. **`prefix`** (optional) - By providing a path-like prefix (e.g., `myFolder/thisTable/`) under which all the relevant files sit, we can optimize finding these in S3. This is optional but recommended if your bucket contains many folders/files&#x20;
 3. **`format`** (optional) - The format of the files you'd like to replicate. You can choose between CSV (default), Avro, Hudi and Parquet.&#x20;
 4. **`delimiter`** (optional) - the character delimiting individual cells in the CSV data. The default value is `","` and if overridden, this can only be a 1-character string. For example, to use tab-delimited data enter `"\t"`.
 
@@ -135,7 +135,7 @@ The following fields need to be defined:
 And the following fields need to be defined on the bucket:
 
 1. **`bucket`** - Name of the S3 bucket where the file(s) exist.
-2. **`path_prefix`** (optional) - By providing a path-like prefix (e.g., `myFolder/thisTable/`) under which all the relevant files sit, we can optimize finding these in S3. This is optional but recommended if your bucket contains many folders/files&#x20;
+2. **`prefix`** (optional) - By providing a path-like prefix (e.g., `myFolder/thisTable/`) under which all the relevant files sit, we can optimize finding these in S3. This is optional but recommended if your bucket contains many folders/files&#x20;
 3. **`format`** - Should be set to "hudi". 
 
 <pre snippet="api-reference/source#s3_hudi_source"></pre>

@@ -1,10 +1,13 @@
 from datetime import datetime
-from typing import Optional, List
 
 import pytest
+from typing import Optional, List
 
 from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.lib.aggregate import Count
+from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
+from fennel.lib.window import Window
 from fennel.test_lib import *
 
 
@@ -43,6 +46,54 @@ def test_invalid_retention_window():
     assert (
         str(e.value) == "duration 324 must be a specified as a string for eg. "
         "1d/2m/3y."
+    )
+
+
+@meta(owner="test@test.com")
+@dataset
+class RatingActivity:
+    userid: int
+    rating: float
+    movie: str
+    t: datetime
+
+
+def test_incorrect_aggregate():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class PositiveRatingActivity:
+            cnt_rating: int
+            unique_ratings: int
+            movie: str = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(RatingActivity)
+            def filter_positive_ratings(cls, rating: Dataset):
+                filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
+                filter2 = filtered_ds.filter(
+                    lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
+                )
+                return filter2.groupby("movie").aggregate(
+                    [
+                        Count(
+                            window=Window("forever"),
+                            into_field=str(cls.cnt_rating),
+                        ),
+                        Count(
+                            window=Window("forever"),
+                            into_field=str(cls.unique_ratings),
+                            of="rating",
+                            unique=True,
+                        ),
+                    ],
+                )
+
+    assert (
+        str(e.value)
+        == "Invalid aggregate `window=Window(start='forever', end='0s') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported"
     )
 
 

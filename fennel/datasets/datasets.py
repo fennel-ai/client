@@ -1479,6 +1479,10 @@ class SchemaValidator(Visitor):
         keys = {f: input_schema.get_type(f) for f in obj.keys}
         values = {}
         for agg in obj.aggregates:
+            exceptions = agg.validate()
+            if exceptions is not None:
+                raise ValueError(f"Invalid aggregate `{agg}`: {exceptions}")
+
             if isinstance(agg, Count):
                 values[agg.into_field] = int
             elif isinstance(agg, Sum):

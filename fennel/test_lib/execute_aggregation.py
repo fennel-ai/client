@@ -60,6 +60,27 @@ class CountState(AggState):
         return self.count
 
 
+class CountUniqueState(AggState):
+    def __init__(self):
+        self.count = 0
+        self.counter = Counter()
+
+    def add_val_to_state(self, val):
+        self.counter[val] += 1
+        self.count = len(self.counter)
+        return self.count
+
+    def del_val_from_state(self, val):
+        self.counter[val] -= 1
+        if self.counter[val] == 0:
+            del self.counter[val]
+        self.count = len(self.counter)
+        return self.count
+
+    def get_val(self):
+        return self.count
+
+
 class AvgState(AggState):
     def __init__(self):
         self.sum = 0
@@ -276,7 +297,7 @@ def get_aggregated_df(
         )
     # Reset the index
     df = df.reset_index(drop=True)
-    if isinstance(aggregate, Count):
+    if isinstance(aggregate, Count) and not aggregate.unique:
         df[FENNEL_FAKE_OF_FIELD] = 1
         of_field = FENNEL_FAKE_OF_FIELD
     else:
@@ -303,7 +324,10 @@ def get_aggregated_df(
                 if isinstance(aggregate, Sum):
                     state[key] = SumState()
                 elif isinstance(aggregate, Count):
-                    state[key] = CountState()
+                    if aggregate.unique:
+                        state[key] = CountUniqueState()
+                    else:
+                        state[key] = CountState()
                 elif isinstance(aggregate, Average):
                     state[key] = AvgState()
                 elif isinstance(aggregate, LastK):

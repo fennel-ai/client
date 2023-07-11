@@ -5,6 +5,7 @@ isort:skip_file
 import builtins
 import google.protobuf.descriptor
 import google.protobuf.message
+import schema_pb2
 import sys
 import window_pb2
 
@@ -16,7 +17,7 @@ else:
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
 @typing_extensions.final
-class PreSpec(google.protobuf.message.Message):
+class Spec(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     SUM_FIELD_NUMBER: builtins.int
@@ -51,7 +52,7 @@ class PreSpec(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "last_k", b"last_k", "max", b"max", "min", b"min", "sum", b"sum", "variant", b"variant"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sum", "average", "count", "last_k", "min", "max"] | None: ...
 
-global___PreSpec = PreSpec
+global___Spec = Spec
 
 @typing_extensions.final
 class Sum(google.protobuf.message.Message):
@@ -60,18 +61,19 @@ class Sum(google.protobuf.message.Message):
     OF_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
     WINDOW_FIELD_NUMBER: builtins.int
-    of: builtins.str
+    @property
+    def of(self) -> schema_pb2.Field: ...
     name: builtins.str
     @property
     def window(self) -> window_pb2.Window: ...
     def __init__(
         self,
         *,
-        of: builtins.str = ...,
+        of: schema_pb2.Field | None = ...,
         name: builtins.str = ...,
         window: window_pb2.Window | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
+    def HasField(self, field_name: typing_extensions.Literal["of", b"of", "window", b"window"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___Sum = Sum
@@ -84,7 +86,8 @@ class Average(google.protobuf.message.Message):
     NAME_FIELD_NUMBER: builtins.int
     WINDOW_FIELD_NUMBER: builtins.int
     DEFAULT_FIELD_NUMBER: builtins.int
-    of: builtins.str
+    @property
+    def of(self) -> schema_pb2.Field: ...
     name: builtins.str
     @property
     def window(self) -> window_pb2.Window: ...
@@ -92,12 +95,12 @@ class Average(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        of: builtins.str = ...,
+        of: schema_pb2.Field | None = ...,
         name: builtins.str = ...,
         window: window_pb2.Window | None = ...,
         default: builtins.float = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
+    def HasField(self, field_name: typing_extensions.Literal["of", b"of", "window", b"window"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["default", b"default", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___Average = Average
@@ -116,7 +119,8 @@ class Count(google.protobuf.message.Message):
     def window(self) -> window_pb2.Window: ...
     unique: builtins.bool
     approx: builtins.bool
-    of: builtins.str
+    @property
+    def of(self) -> schema_pb2.Field: ...
     def __init__(
         self,
         *,
@@ -124,9 +128,9 @@ class Count(google.protobuf.message.Message):
         window: window_pb2.Window | None = ...,
         unique: builtins.bool = ...,
         approx: builtins.bool = ...,
-        of: builtins.str = ...,
+        of: schema_pb2.Field | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
+    def HasField(self, field_name: typing_extensions.Literal["of", b"of", "window", b"window"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["approx", b"approx", "name", b"name", "of", b"of", "unique", b"unique", "window", b"window"]) -> None: ...
 
 global___Count = Count
@@ -137,25 +141,26 @@ class LastK(google.protobuf.message.Message):
 
     OF_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
+    WINDOW_FIELD_NUMBER: builtins.int
     LIMIT_FIELD_NUMBER: builtins.int
     DEDUP_FIELD_NUMBER: builtins.int
-    WINDOW_FIELD_NUMBER: builtins.int
-    of: builtins.str
+    @property
+    def of(self) -> schema_pb2.Field: ...
     name: builtins.str
-    limit: builtins.int
-    dedup: builtins.bool
     @property
     def window(self) -> window_pb2.Window: ...
+    limit: builtins.int
+    dedup: builtins.bool
     def __init__(
         self,
         *,
-        of: builtins.str = ...,
+        of: schema_pb2.Field | None = ...,
         name: builtins.str = ...,
+        window: window_pb2.Window | None = ...,
         limit: builtins.int = ...,
         dedup: builtins.bool = ...,
-        window: window_pb2.Window | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
+    def HasField(self, field_name: typing_extensions.Literal["of", b"of", "window", b"window"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["dedup", b"dedup", "limit", b"limit", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___LastK = LastK
@@ -168,20 +173,22 @@ class Min(google.protobuf.message.Message):
     NAME_FIELD_NUMBER: builtins.int
     WINDOW_FIELD_NUMBER: builtins.int
     DEFAULT_FIELD_NUMBER: builtins.int
-    of: builtins.str
+    @property
+    def of(self) -> schema_pb2.Field: ...
     name: builtins.str
     @property
     def window(self) -> window_pb2.Window: ...
-    default: builtins.float
+    @property
+    def default(self) -> schema_pb2.Value: ...
     def __init__(
         self,
         *,
-        of: builtins.str = ...,
+        of: schema_pb2.Field | None = ...,
         name: builtins.str = ...,
         window: window_pb2.Window | None = ...,
-        default: builtins.float = ...,
+        default: schema_pb2.Value | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
+    def HasField(self, field_name: typing_extensions.Literal["default", b"default", "of", b"of", "window", b"window"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["default", b"default", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___Min = Min
@@ -194,20 +201,22 @@ class Max(google.protobuf.message.Message):
     NAME_FIELD_NUMBER: builtins.int
     WINDOW_FIELD_NUMBER: builtins.int
     DEFAULT_FIELD_NUMBER: builtins.int
-    of: builtins.str
+    @property
+    def of(self) -> schema_pb2.Field: ...
     name: builtins.str
     @property
     def window(self) -> window_pb2.Window: ...
-    default: builtins.float
+    @property
+    def default(self) -> schema_pb2.Value: ...
     def __init__(
         self,
         *,
-        of: builtins.str = ...,
+        of: schema_pb2.Field | None = ...,
         name: builtins.str = ...,
         window: window_pb2.Window | None = ...,
-        default: builtins.float = ...,
+        default: schema_pb2.Value | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
+    def HasField(self, field_name: typing_extensions.Literal["default", b"default", "of", b"of", "window", b"window"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["default", b"default", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___Max = Max
