@@ -43,6 +43,7 @@ sidebar:
     pages:
       - "development/unit-testing"
       - "development/ci-cd-workflows"
+      - "development/monitoring-alerting"
 
   - slug: "guides"
     title: "Guides"
