@@ -99,11 +99,15 @@ Datasets and Featuresets, despite being very simple abstraction, together pack a
 punch in terms of power. Here are a few topics to read next to learn more:
 
 <Grid>
-	<PageReference href="/concepts/sources/" illustration="/assets/illustrations/sources.svg" title="Sources">
+	<PageReference href="/concepts/source/" illustration="/assets/illustrations/sources.svg" title="Sources">
 		Ingest data from external data sources to populate Fennel datasets.
 	</PageReference>
 
-	<PageReference href="/concepts/pipelines/" illustration="/assets/illustrations/pipelines.svg" title="Pipelines">
+	<PageReference href="/concepts/pipeline/" illustration="/assets/illustrations/pipelines.svg" title="Pipelines">
 		Create pipelines to derive new datasets from existing datasets.
+	</PageReference>
+
+	<PageReference href="/concepts/featureset/" illustration="/assets/illustrations/lookups.svg" title="Featuresets">
+		Define features as featuresets using datasets
 	</PageReference>
 </Grid>
