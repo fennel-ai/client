@@ -1,10 +1,10 @@
 {
 	"index_name": "docsearch_prod",
 	"start_urls": [
-		"https://docs.fennel.ai"
+		"https://fennel.ai/docs"
 	],
 	"sitemap_urls": [
-		"https://docs.fennel.ai/sitemap.xml"
+		"https://fennel.ai/docs/sitemap.xml"
 	],
 	"selectors": {
 		"lvl0": {
