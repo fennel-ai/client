@@ -14,7 +14,7 @@ from fennel.lib.aggregate import Min, Max
 from fennel.lib.aggregate import Sum, Average, Count
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import oneof, inputs
+from fennel.lib.schema import between, oneof, inputs
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock, InternalTestClient
@@ -414,7 +414,7 @@ class MovieRating:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True
     )
-    rating: float
+    rating: between(float, min=0.0, max=5.0)  # type: ignore
     num_ratings: int
     sum_ratings: float
     t: datetime
@@ -840,7 +840,6 @@ class MovieRatingWindowed:
     num_ratings_3d: int
     sum_ratings_7d: float
     avg_rating_6h: float
-    unique_ratings_4d: int
     total_ratings: int
 
     t: datetime
@@ -863,13 +862,6 @@ class MovieRatingWindowed:
                 ),
                 Count(
                     window=Window("forever"), into_field=str(cls.total_ratings)
-                ),
-                Count(
-                    window=Window("4d"),
-                    into_field="unique_ratings_4d",
-                    of="rating",
-                    unique=True,
-                    approx=True,
                 ),
             ]
         )
@@ -930,7 +922,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (6, 7)
+        assert df.shape == (6, 6)
         assert df["movie"].tolist() == [
             "Jumanji",
             "Titanic",
@@ -944,14 +936,12 @@ class TestBasicWindowAggregate(unittest.TestCase):
         assert df["sum_ratings_7d"].tolist() == [13, 19, 12, 17, 7, 4]
         assert df["avg_rating_6h"].tolist() == [0.0, 0.0, 0.0, 0.0, 2.0, 4.0]
         assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
-        assert df["unique_ratings_4d"].tolist() == [1, 1, 1, 2, 2, 1]
 
 
 @meta(owner="test@test.com")
 @dataset
 class PositiveRatingActivity:
     cnt_rating: int
-    unique_ratings: int
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True
     )
@@ -967,13 +957,6 @@ class PositiveRatingActivity:
         return filter2.groupby("movie").aggregate(
             [
                 Count(window=Window("forever"), into_field=str(cls.cnt_rating)),
-                Count(
-                    window=Window("forever"),
-                    into_field=str(cls.unique_ratings),
-                    of="rating",
-                    unique=True,
-                    approx=True,
-                ),
             ],
         )
 
@@ -1019,20 +1002,113 @@ class TestBasicFilter(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (3, 4)
+        assert df.shape == (3, 3)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
         assert df["cnt_rating"].tolist() == [2, 3, None]
-        assert df["unique_ratings"].tolist() == [2, 2, None]
 
         ts = pd.Series([two_hours_ago, two_hours_ago, two_hours_ago])
         df, _ = PositiveRatingActivity.lookup(
             ts,
             movie=names,
         )
-        assert df.shape == (3, 4)
+        assert df.shape == (3, 3)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
         assert df["cnt_rating"].tolist() == [2, 1, None]
-        assert df["unique_ratings"].tolist() == [2, 1, None]
+
+
+@meta(owner="test@test.com")
+@dataset
+class UniqueMoviesSeen:
+    static: str = field(key=True)
+    unique_movies: int
+    unique_movies_2h: int
+    t: datetime
+
+    @pipeline(version=1)
+    @inputs(RatingActivity)
+    def pipeline_unique_movies_seen(cls, rating: Dataset):
+        schema = rating.schema()
+        schema["static"] = str
+        rating_with_static_col = rating.transform(
+            lambda df: df.assign(
+                static="static",
+            ),
+            schema,
+        )
+        return rating_with_static_col.groupby("static").aggregate(
+            [
+                Count(
+                    window=Window("forever"),
+                    into_field=str(cls.unique_movies),
+                    of="movie",
+                    unique=True,
+                    approx=True,
+                ),
+                Count(
+                    window=Window("2h"),
+                    into_field=str(cls.unique_movies_2h),
+                    of="movie",
+                    unique=True,
+                    approx=True,
+                ),
+            ],
+        )
+
+
+class TestBasicCountUnique(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_basic_count_unique(self, client):
+        # # Sync the dataset
+        client.sync(
+            datasets=[UniqueMoviesSeen, RatingActivity],
+        )
+        now = datetime.now()
+        one_hour_ago = now - timedelta(hours=1)
+        two_hours_ago = now - timedelta(hours=2)
+        three_hours_ago = now - timedelta(hours=3)
+        four_hours_ago = now - timedelta(hours=4)
+        five_hours_ago = now - timedelta(hours=5)
+        minute_ago = now - timedelta(minutes=1)
+        data = [
+            [18231, 4.5, "Jumanji", five_hours_ago],
+            [18231, 3, "Jumanji", four_hours_ago],
+            [18231, 3.5, "Jumanji", three_hours_ago],
+            [18231, 4, "Titanic", three_hours_ago],
+            [18231, 3, "Titanic", two_hours_ago],
+            [18231, 5, "Titanic", one_hour_ago],
+            [18231, 4, "Titanic", minute_ago],
+            [18231, 2, "RaOne", one_hour_ago],
+            [18231, 3, "RaOne", minute_ago],
+            [18231, 1, "RaOne", two_hours_ago],
+        ]
+        columns = ["userid", "rating", "movie", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        client.sleep()
+
+        # Do some lookups to verify pipeline_unique_movies_seen is working as expected
+        ts = pd.Series([now])
+        df, _ = UniqueMoviesSeen.lookup(
+            ts,
+            static=pd.Series(["static"]),
+        )
+        assert df.shape == (1, 4)
+        assert df["unique_movies"].tolist() == [3]
+        assert df["unique_movies_2h"].tolist() == [2]
+
+        two_and_half_hours_ago = now - timedelta(hours=2, minutes=30)
+        six_hours_ago = now - timedelta(hours=6)
+        ts = pd.Series([two_and_half_hours_ago, four_hours_ago, six_hours_ago])
+        df, _ = UniqueMoviesSeen.lookup(
+            ts,
+            static=pd.Series(["static", "static", "static"]),
+        )
+        assert df.shape == (3, 4)
+        assert df["unique_movies"].tolist() == [2, 1, None]
+        assert df["unique_movies_2h"].tolist() == [2, 1, None]
 
 
 ################################################################################

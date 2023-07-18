@@ -10,5 +10,6 @@ from fennel.lib.schema.schema import (
     regex,
     inputs,
     outputs,
-    get_dtype,
+    get_primitive_dtype,
+    is_hashable,
 )

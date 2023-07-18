@@ -37,7 +37,12 @@ from fennel.lib.metadata import (
     get_meta_attr,
     set_meta_attr,
 )
-from fennel.lib.schema import dtype_to_string, get_dtype, FENNEL_INPUTS
+from fennel.lib.schema import (
+    dtype_to_string,
+    get_primitive_dtype,
+    FENNEL_INPUTS,
+    is_hashable,
+)
 from fennel.sources.sources import DataConnector, source
 from fennel.utils import (
     fhash,
@@ -445,7 +450,7 @@ class Join(_Node):
     def dsschema(self):
         def make_types_optional(types: Dict[str, Type]) -> Dict[str, Type]:
             return {
-                k: Optional[get_dtype(v)]  # type: ignore
+                k: Optional[get_primitive_dtype(v)]  # type: ignore
                 for k, v in types.items()
             }
 
@@ -1484,10 +1489,20 @@ class SchemaValidator(Visitor):
                 raise ValueError(f"Invalid aggregate `{agg}`: {exceptions}")
 
             if isinstance(agg, Count):
+                if agg.unique:
+                    if agg.of is None:
+                        raise ValueError(
+                            f"Count unique aggregate `{agg}` must have `of` field."
+                        )
+                    if not is_hashable(input_schema.get_type(agg.of)):
+                        raise TypeError(
+                            f"Cannot use count unique for field {agg.of} of "
+                            f"type {dtype_to_string(dtype)}"  # type: ignore
+                        )
                 values[agg.into_field] = int
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
-                if dtype not in [int, float]:
+                if get_primitive_dtype(dtype) not in [int, float]:
                     raise TypeError(
                         f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
                     )
@@ -1499,22 +1514,26 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = List[dtype]  # type: ignore
             elif isinstance(agg, Min):
                 dtype = input_schema.get_type(agg.of)
-                if dtype not in [int, float]:
+                if get_primitive_dtype(dtype) not in [int, float]:
                     raise TypeError(
                         f"invalid min: type of field `{agg.of}` is not int or float"
                     )
-                if dtype == int and (int(agg.default) != agg.default):
+                if get_primitive_dtype(dtype) == int and (
+                    int(agg.default) != agg.default
+                ):
                     raise TypeError(
                         f"invalid min: default value `{agg.default}` not of type `int`"
                     )
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
-                if dtype not in [int, float]:
+                if get_primitive_dtype(dtype) not in [int, float]:
                     raise TypeError(
                         f"invalid max: type of field `{agg.of}` is not int or float"
                     )
-                if dtype == int and (int(agg.default) != agg.default):
+                if get_primitive_dtype(dtype) == int and (
+                    int(agg.default) != agg.default
+                ):
                     raise TypeError(
                         f"invalid max: default value `{agg.default}` not of type `int`"
                     )
