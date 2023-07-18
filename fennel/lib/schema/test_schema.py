@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 import pytest
+from typing import Dict, List, Optional
 
 import fennel.gen.schema_pb2 as proto
 from fennel.lib.schema.schema import (
@@ -12,6 +12,7 @@ from fennel.lib.schema.schema import (
     between,
     oneof,
     regex,
+    is_hashable,
 )
 
 
@@ -516,3 +517,18 @@ def test_invalid_schema_additional_types():
     )
     exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 3
+
+
+def test_is_hashable():
+    assert is_hashable(int) is True
+    assert is_hashable(Optional[int]) is True
+    assert is_hashable(float) is False
+    assert is_hashable(str) is True
+    assert is_hashable(List[float]) is False
+    assert is_hashable(List[int]) is True
+    assert is_hashable(List[str]) is True
+    assert is_hashable(Dict[str, int]) is True
+    assert is_hashable(Dict[str, float]) is False
+    assert is_hashable(Dict[str, List[int]]) is True
+    assert is_hashable(Dict[str, List[float]]) is False
+    assert is_hashable(Optional[Dict[str, List[int]]]) is True

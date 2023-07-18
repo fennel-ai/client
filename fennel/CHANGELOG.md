@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.16.10] - 2023-07-18
+- Bug fixes for the client. 
+
 ## [0.16.6] - 2023-07-08
 - Support count unique for aggregations
 

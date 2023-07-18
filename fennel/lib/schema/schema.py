@@ -36,7 +36,8 @@ def dtype_to_string(type_: Any) -> str:
     return str(type_)
 
 
-def get_dtype(dtype):
+def get_primitive_dtype(dtype):
+    """Get the primitive type of a dtype."""
     if isinstance(dtype, oneof) or isinstance(dtype, between):
         return dtype.dtype
     if isinstance(dtype, regex):
@@ -477,6 +478,31 @@ def _validate_field_in_df(
                 )
     else:
         raise ValueError(f"Field `{name}` has unknown data type `{dtype}`.")
+
+
+def is_hashable(dtype: Any) -> bool:
+    primitive_type = get_primitive_dtype(dtype)
+    # typing.Optional[x] is an alias for typing.Union[x, None]
+    if (
+        _get_origin(primitive_type) is Union
+        and type(None) == _get_args(primitive_type)[1]
+    ):
+        return is_hashable(_get_args(primitive_type)[0])
+    elif primitive_type in [int, str, bool]:
+        return True
+    elif _get_origin(primitive_type) is list:
+        return is_hashable(_get_args(primitive_type)[0])
+    elif _get_origin(primitive_type) is dict:
+        if _get_args(primitive_type)[0] is not str:
+            raise ValueError("Dict keys must be strings.")
+        return is_hashable(_get_args(primitive_type)[1])
+    elif (
+        isinstance(primitive_type, between)
+        or isinstance(primitive_type, oneof)
+        or isinstance(primitive_type, regex)
+    ):
+        return is_hashable(_get_args(primitive_type)[0])
+    return False
 
 
 def data_schema_check(

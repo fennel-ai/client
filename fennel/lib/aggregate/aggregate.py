@@ -50,7 +50,7 @@ class Count(AggregateType):
 
         if not self.approx:
             return NotImplementedError(
-                "Exact unique counts are not yet supported"
+                "Exact unique counts are not yet supported, please set approx=True"
             )
 
         if self.of is None:
@@ -146,7 +146,7 @@ class LastK(AggregateType):
 
     def to_proto(self):
         return spec_proto.PreSpec(
-            lastk=spec_proto.LastK(
+            last_k=spec_proto.LastK(
                 window=self.window.to_proto(),
                 name=self.into_field,
                 of=self.of,
@@ -154,6 +154,9 @@ class LastK(AggregateType):
                 dedup=self.dedup,
             )
         )
+
+    def signature(self):
+        return f"lastk_{self.of}_{self.window.signature()}"
 
 
 class TopK(AggregateType):
