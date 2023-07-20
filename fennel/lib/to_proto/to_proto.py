@@ -560,13 +560,15 @@ def _s3_conn_to_source_proto(
 
 
 def _s3_to_ext_db_proto(
-    name: str, aws_access_key_id: str, aws_secret_access_key: str
+    name: str,
+    aws_access_key_id: Optional[str],
+    aws_secret_access_key: Optional[str],
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
         s3=connector_proto.S3(
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
+            aws_access_key_id=aws_access_key_id or "",
+            aws_secret_access_key=aws_secret_access_key or "",
         ),
     )
 
