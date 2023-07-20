@@ -139,8 +139,8 @@ class SQLSource(DataSource):
 
 
 class S3(DataSource):
-    aws_access_key_id: str
-    aws_secret_access_key: str
+    aws_access_key_id: Optional[str]
+    aws_secret_access_key: Optional[str]
 
     def _validate(self) -> List[Exception]:
         return []
