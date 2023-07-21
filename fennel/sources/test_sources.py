@@ -212,6 +212,7 @@ kafka = Kafka(
     sasl_mechanism="PLAIN",
     sasl_plain_username="test",
     sasl_plain_password="test",
+    enable_ssl_certificate_verification=False,
 )
 
 s3_console = S3.get(
@@ -504,6 +505,7 @@ def test_multiple_sources():
             "sasl_mechanism": "PLAIN",
             "sasl_plain_username": "test",
             "sasl_plain_password": "test",
+            "enable_ssl_certificate_verification": False,
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
