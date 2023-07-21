@@ -482,6 +482,7 @@ def _kafka_conn_to_source_proto(
         data_source.name,
         data_source.bootstrap_servers,
         data_source.security_protocol,
+        data_source.group_id,
         data_source.sasl_mechanism,
         data_source.sasl_plain_username,
         data_source.sasl_plain_password,
@@ -505,6 +506,7 @@ def _kafka_to_ext_db_proto(
     name: str,
     bootstrap_servers: str,
     security_protocol: str,
+    group_id: str,
     sasl_mechanism: Optional[str],
     sasl_plain_username: Optional[str],
     sasl_plain_password: Optional[str],
@@ -530,6 +532,7 @@ def _kafka_to_ext_db_proto(
             sasl_plain_password=sasl_plain_password,
             sasl_jaas_config=sasl_jaas_config,
             enable_ssl_certificate_verification=BoolValue(value=verify_cert),
+            group_id=group_id,
         ),
     )
 

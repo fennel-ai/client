@@ -1,4 +1,7 @@
 # Changelog
+## [0.16.13] - 2023-07-20
+- Fix group_id bug on kafka source
+
 ## [0.16.12] - 2023-07-20
 - Support verify_cert on kafka source
 

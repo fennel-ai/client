@@ -214,6 +214,7 @@ class BigQuery(DataSource):
 class Kafka(DataSource):
     bootstrap_servers: str
     security_protocol: str
+    group_id: str
     sasl_mechanism: Optional[str]
     sasl_plain_username: Optional[str]
     sasl_plain_password: Optional[str]
@@ -253,6 +254,7 @@ class Kafka(DataSource):
             sasl_plain_password="",
             sasl_jaas_config="",
             verify_cert=None,
+            group_id="",
         )
 
     def identifier(self) -> str:
