@@ -529,7 +529,9 @@ def _kafka_to_ext_db_proto(
             sasl_plain_username=sasl_plain_username,
             sasl_plain_password=sasl_plain_password,
             sasl_jaas_config=sasl_jaas_config,
-            enable_ssl_certificate_verification=BoolValue(value=enable_ssl_certificate_verification),
+            enable_ssl_certificate_verification=BoolValue(
+                value=enable_ssl_certificate_verification
+            ),
         ),
     )
 
