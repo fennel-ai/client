@@ -218,7 +218,7 @@ class Kafka(DataSource):
     sasl_plain_username: Optional[str]
     sasl_plain_password: Optional[str]
     sasl_jaas_config: Optional[str]
-    enable_ssl_certificate_verification: Optional[bool]
+    verify_cert: Optional[bool]
 
     def _validate(self) -> List[Exception]:
         exceptions: List[Exception] = []
@@ -252,7 +252,7 @@ class Kafka(DataSource):
             sasl_plain_username="",
             sasl_plain_password="",
             sasl_jaas_config="",
-            enable_ssl_certificate_verification=None,
+            verify_cert=None,
         )
 
     def identifier(self) -> str:

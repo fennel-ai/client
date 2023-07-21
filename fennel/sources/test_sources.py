@@ -212,7 +212,7 @@ kafka = Kafka(
     sasl_mechanism="PLAIN",
     sasl_plain_username="test",
     sasl_plain_password="test",
-    enable_ssl_certificate_verification=False,
+    verify_cert=False,
 )
 
 s3_console = S3.get(

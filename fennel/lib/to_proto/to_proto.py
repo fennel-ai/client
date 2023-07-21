@@ -486,7 +486,7 @@ def _kafka_conn_to_source_proto(
         data_source.sasl_plain_username,
         data_source.sasl_plain_password,
         data_source.sasl_jaas_config,
-        data_source.enable_ssl_certificate_verification,
+        data_source.verify_cert,
     )
     source = connector_proto.Source(
         table=connector_proto.ExtTable(
@@ -509,7 +509,7 @@ def _kafka_to_ext_db_proto(
     sasl_plain_username: Optional[str],
     sasl_plain_password: Optional[str],
     sasl_jaas_config: Optional[str],
-    enable_ssl_certificate_verification: Optional[bool],
+    verify_cert: Optional[bool],
 ) -> connector_proto.ExtDatabase:
     if sasl_mechanism is None:
         sasl_mechanism = ""
@@ -529,9 +529,7 @@ def _kafka_to_ext_db_proto(
             sasl_plain_username=sasl_plain_username,
             sasl_plain_password=sasl_plain_password,
             sasl_jaas_config=sasl_jaas_config,
-            enable_ssl_certificate_verification=BoolValue(
-                value=enable_ssl_certificate_verification
-            ),
+            enable_ssl_certificate_verification=BoolValue(value=verify_cert),
         ),
     )
 
