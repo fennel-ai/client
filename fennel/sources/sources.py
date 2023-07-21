@@ -237,7 +237,7 @@ class Kafka(DataSource):
         return exceptions
 
     def required_fields(self) -> List[str]:
-        return ["topic"]
+        return ["topic", "security_protocol", "group_id", "bootstrap_servers"]
 
     def topic(self, topic_name: str) -> KafkaConnector:
         return KafkaConnector(self, topic_name)
