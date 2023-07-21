@@ -1,4 +1,6 @@
 # Changelog
+## [0.16.12] - 2023-07-20
+- Support verify_cert on kafka source
 
 ## [0.16.11] - 2023-07-20
 - Support role-based access to s3 data

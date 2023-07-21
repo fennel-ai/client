@@ -17,6 +17,7 @@ import google.protobuf.duration_pb2
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import google.protobuf.timestamp_pb2
+import google.protobuf.wrappers_pb2
 import kinesis_pb2
 import sys
 import typing
@@ -290,6 +291,7 @@ class Kafka(google.protobuf.message.Message):
     SASL_PLAIN_USERNAME_FIELD_NUMBER: builtins.int
     SASL_PLAIN_PASSWORD_FIELD_NUMBER: builtins.int
     GROUP_ID_FIELD_NUMBER: builtins.int
+    ENABLE_SSL_CERTIFICATE_VERIFICATION_FIELD_NUMBER: builtins.int
     bootstrap_servers: builtins.str
     security_protocol: builtins.str
     sasl_mechanism: builtins.str
@@ -297,6 +299,8 @@ class Kafka(google.protobuf.message.Message):
     sasl_plain_username: builtins.str
     sasl_plain_password: builtins.str
     group_id: builtins.str
+    @property
+    def enable_ssl_certificate_verification(self) -> google.protobuf.wrappers_pb2.BoolValue: ...
     def __init__(
         self,
         *,
@@ -307,8 +311,10 @@ class Kafka(google.protobuf.message.Message):
         sasl_plain_username: builtins.str = ...,
         sasl_plain_password: builtins.str = ...,
         group_id: builtins.str = ...,
+        enable_ssl_certificate_verification: google.protobuf.wrappers_pb2.BoolValue | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bootstrap_servers", b"bootstrap_servers", "group_id", b"group_id", "sasl_jaas_config", b"sasl_jaas_config", "sasl_mechanism", b"sasl_mechanism", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username", "security_protocol", b"security_protocol"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["enable_ssl_certificate_verification", b"enable_ssl_certificate_verification"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bootstrap_servers", b"bootstrap_servers", "enable_ssl_certificate_verification", b"enable_ssl_certificate_verification", "group_id", b"group_id", "sasl_jaas_config", b"sasl_jaas_config", "sasl_mechanism", b"sasl_mechanism", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username", "security_protocol", b"security_protocol"]) -> None: ...
 
 global___Kafka = Kafka
 
