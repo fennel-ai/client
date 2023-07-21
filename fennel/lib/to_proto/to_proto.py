@@ -8,6 +8,7 @@ from textwrap import dedent, indent
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
 from typing import Any, Dict, List, Optional, Tuple
+from google.protobuf.wrappers_pb2 import BoolValue
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
@@ -485,6 +486,7 @@ def _kafka_conn_to_source_proto(
         data_source.sasl_plain_username,
         data_source.sasl_plain_password,
         data_source.sasl_jaas_config,
+        data_source.verify_cert,
     )
     source = connector_proto.Source(
         table=connector_proto.ExtTable(
@@ -507,6 +509,7 @@ def _kafka_to_ext_db_proto(
     sasl_plain_username: Optional[str],
     sasl_plain_password: Optional[str],
     sasl_jaas_config: Optional[str],
+    verify_cert: Optional[bool],
 ) -> connector_proto.ExtDatabase:
     if sasl_mechanism is None:
         sasl_mechanism = ""
@@ -526,6 +529,7 @@ def _kafka_to_ext_db_proto(
             sasl_plain_username=sasl_plain_username,
             sasl_plain_password=sasl_plain_password,
             sasl_jaas_config=sasl_jaas_config,
+            enable_ssl_certificate_verification=BoolValue(value=verify_cert),
         ),
     )
 
