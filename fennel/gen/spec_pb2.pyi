@@ -108,26 +108,17 @@ class Count(google.protobuf.message.Message):
 
     NAME_FIELD_NUMBER: builtins.int
     WINDOW_FIELD_NUMBER: builtins.int
-    UNIQUE_FIELD_NUMBER: builtins.int
-    APPROX_FIELD_NUMBER: builtins.int
-    OF_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def window(self) -> window_pb2.Window: ...
-    unique: builtins.bool
-    approx: builtins.bool
-    of: builtins.str
     def __init__(
         self,
         *,
         name: builtins.str = ...,
         window: window_pb2.Window | None = ...,
-        unique: builtins.bool = ...,
-        approx: builtins.bool = ...,
-        of: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["approx", b"approx", "name", b"name", "of", b"of", "unique", b"unique", "window", b"window"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "window", b"window"]) -> None: ...
 
 global___Count = Count
 
