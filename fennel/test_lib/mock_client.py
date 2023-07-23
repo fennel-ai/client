@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import sys
 import types
 from collections import defaultdict
 from dataclasses import dataclass
@@ -11,6 +12,7 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
+from frozendict import frozendict
 from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import fennel.datasets.datasets
@@ -196,10 +198,12 @@ def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
     code = (
         extractor_proto.pycode.imports + extractor_proto.pycode.generated_code
     )
+    code = "from datetime import datetime\n" + code
     try:
+        sys.modules[fqn] = mod
         exec(code, mod.__dict__)
     except Exception as e:
-        raise Exception(f"Error while executing code: {code} : {e}")
+        raise Exception(f"Error while executing code: {code} : {str(e)}")
     return mod.__dict__[extractor_proto.pycode.entry_point]
 
 
@@ -355,6 +359,7 @@ class MockClient(Client):
             for pipeline in dataset._pipelines:
                 for input in pipeline.inputs:
                     self.listeners[input._name].append(pipeline)
+
         for featureset in featuresets:
             if not isinstance(featureset, Featureset):
                 raise TypeError(
@@ -392,7 +397,6 @@ class MockClient(Client):
 
         if is_extractor_graph_cyclic(self.extractors):
             raise Exception("Cyclic graph detected in extractors")
-
         return FakeResponse(200, "OK")
 
     def extract_features(
@@ -516,6 +520,10 @@ class MockClient(Client):
                 f"datetime64[ns] but found {df[timestamp_field].dtype} in "
                 f"dataset {dataset_name}",
             )
+        for col in df.columns:
+            # If any of the columns is a dictionary, convert it to a frozen dict
+            if df[col].apply(lambda x: isinstance(x, dict)).any():
+                df[col] = df[col].apply(lambda x: frozendict(x))
         # Check if the dataframe has the same schema as the dataset
         schema = dataset_req.dsschema
         # TODO(mohit, aditya): Instead of validating data schema, we should attempt to cast the
@@ -565,6 +573,14 @@ class MockClient(Client):
         for input in extractor.inputs:
             if isinstance(input, Feature):
                 if input.fqn_ in intermediate_data:
+                    if (
+                        intermediate_data[input.fqn_]
+                        .apply(lambda x: isinstance(x, dict))
+                        .any()
+                    ):
+                        intermediate_data[input.fqn_] = intermediate_data[
+                            input.fqn_
+                        ].apply(lambda x: frozendict(x))
                     args.append(intermediate_data[input.fqn_])
                 else:
                     raise Exception(
@@ -586,6 +602,8 @@ class MockClient(Client):
                             f"Feature {feature.fqn_} couldn't be "
                             f"calculated by any extractor."
                         )
+                if series.apply(lambda x: isinstance(x, dict)).any():
+                    series = series.apply(lambda x: frozendict(x))
                 args.append(pd.concat(series, axis=1))
             else:
                 raise Exception(
@@ -604,6 +622,8 @@ class MockClient(Client):
         # Map of feature name to the pandas series
         intermediate_data: Dict[str, pd.Series] = {}
         for col in input_df.columns:
+            if input_df[col].apply(lambda x: isinstance(x, dict)).any():
+                input_df[col] = input_df[col].apply(lambda x: frozendict(x))
             intermediate_data[col] = input_df[col]
         for extractor in extractors:
             prepare_args = self._prepare_extractor_args(
@@ -667,9 +687,18 @@ class MockClient(Client):
                     f"invalid schema: {exceptions}"
                 )
             if isinstance(output, pd.Series):
+                if output.name in intermediate_data:
+                    continue
+                # If output is a dict, convert it to frozendict
+                if output.apply(lambda x: isinstance(x, dict)).any():
+                    output = frozendict(output)
                 intermediate_data[output.name] = output
             elif isinstance(output, pd.DataFrame):
                 for col in output.columns:
+                    if col in intermediate_data:
+                        continue
+                    if output[col].apply(lambda x: isinstance(x, dict)).any():
+                        output[col] = output[col].apply(frozendict)
                     intermediate_data[col] = output[col]
             else:
                 raise Exception(
@@ -710,12 +739,20 @@ class MockClient(Client):
         df = df[columns]
 
         if len(self.dataset_info[dataset_name].key_fields) > 0:
-            # Pick the latest value for each key
-            df = df.groupby(self.dataset_info[dataset_name].key_fields).apply(
-                lambda x: x.sort_values(
-                    self.dataset_info[dataset_name].timestamp_field
-                ).iloc[-1]
-            )
+            df = df.sort_values(self.dataset_info[dataset_name].timestamp_field)
+            try:
+                df = df.groupby(
+                    self.dataset_info[dataset_name].key_fields, as_index=False
+                ).last()
+            except Exception:
+                # This happens when struct fields are present in the key fields
+                # Convert key fields to string, group by and then drop the key
+                # column
+                df["__fennel__key__"] = df[
+                    self.dataset_info[dataset_name].key_fields
+                ].apply(lambda x: str(dict(x)), axis=1)
+                df = df.groupby("__fennel__key__", as_index=False).last()
+                df = df.drop(columns="__fennel__key__")
             df = df.reset_index(drop=True)
 
         if dataset_name in self.data:

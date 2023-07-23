@@ -15,6 +15,8 @@ from fennel.lib.schema.schema import (
     is_hashable,
     parse_json,
     struct,
+    FENNEL_STRUCT_SRC_CODE,
+    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
 )
 
 
@@ -537,6 +539,69 @@ def test_is_hashable():
 
 
 @struct
+class MyString:
+    value: str
+
+
+@struct
+class Manufacturer2:
+    name: MyString
+    country: str
+
+
+@struct
+class Car2:
+    make: Manufacturer2
+    model: str
+    year: int
+
+
+def test_parse_json_with_car():
+    car_json = {
+        "make": {
+            "name": {"value": "Test Manufacturer"},
+            "country": "Test " "Country",
+        },
+        "model": "Test Model",
+        "year": "2023",
+    }
+    car = parse_json(Car2, car_json)
+    assert isinstance(car, Car2)
+    assert isinstance(car.make, Manufacturer2)
+    assert car.make.name.value == "Test Manufacturer"
+    assert car.make.country == "Test Country"
+    assert car.model == "Test Model"
+    assert car.year == 2023
+
+    assert hasattr(Car2, FENNEL_STRUCT_SRC_CODE)
+    assert hasattr(Manufacturer2, FENNEL_STRUCT_SRC_CODE)
+    car_code = getattr(Car2, FENNEL_STRUCT_SRC_CODE)
+    expected_car_code = """
+@struct
+class Car2:
+    make: Manufacturer2
+    model: str
+    year: int
+"""
+    assert car_code.strip() == expected_car_code.strip()
+
+    expected_dependency_code = """
+@struct
+class MyString:
+    value: str
+
+
+@struct
+class Manufacturer2:
+    name: MyString
+    country: str
+    """
+    assert hasattr(Car2, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE)
+    dependency_code = getattr(Car2, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE)
+    assert dependency_code.strip() == expected_dependency_code.strip()
+
+
+@struct
 class Manufacturer:
     name: str
     country: str
@@ -547,21 +612,6 @@ class Car:
     make: Manufacturer
     model: str
     year: int
-
-
-def test_parse_json_with_car():
-    car_json = {
-        "make": {"name": "Test Manufacturer", "country": "Test Country"},
-        "model": "Test Model",
-        "year": "2023",
-    }
-    car = parse_json(Car, car_json)
-    assert isinstance(car, Car)
-    assert isinstance(car.make, Manufacturer)
-    assert car.make.name == "Test Manufacturer"
-    assert car.make.country == "Test Country"
-    assert car.model == "Test Model"
-    assert car.year == 2023
 
 
 def test_parse_json_with_list_of_cars():

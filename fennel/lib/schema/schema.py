@@ -3,11 +3,14 @@ from __future__ import annotations
 import dataclasses
 import inspect
 import re
+import sys
 from dataclasses import dataclass
 from datetime import datetime
+from textwrap import dedent
 
 import numpy as np
 import pandas as pd
+from frozendict import frozendict
 from typing import (
     Union,
     Any,
@@ -25,6 +28,8 @@ from fennel.lib.metadata.metadata import META_FIELD
 FENNEL_INPUTS = "__fennel_inputs__"
 FENNEL_OUTPUTS = "__fennel_outputs__"
 FENNEL_STRUCT = "__fennel_struct__"
+FENNEL_STRUCT_SRC_CODE = "__fennel_struct_src_code__"
+FENNEL_STRUCT_DEPENDENCIES_SRC_CODE = "__fennel_struct_dependencies_src_code__"
 
 
 def _get_args(type_: Any) -> Any:
@@ -84,6 +89,9 @@ def _contains_user_defined_class(annotation) -> bool:
 
 # Parse a json object into a python object based on the type annotation.
 def parse_json(annotation, json) -> Any:
+    if isinstance(json, frozendict):
+        json = dict(json)
+
     origin = get_origin(annotation)
     if origin is not None:
         args = get_args(annotation)
@@ -109,9 +117,9 @@ def parse_json(annotation, json) -> Any:
         raise TypeError(f"Unsupported type `{origin}`")
     else:
         if _is_user_defined_class(annotation):
+            if not isinstance(json, dict):
+                return json
             fields = {f.name: f.type for f in dataclasses.fields(annotation)}
-            # Sort the fields by name to ensure that the order is deterministic.
-            fields = {k: fields[k] for k in sorted(fields.keys())}
             return annotation(
                 **{f: parse_json(t, json.get(f)) for f, t in fields.items()}
             )
@@ -145,6 +153,7 @@ def get_fennel_struct(annotation) -> Any:
                     )
                 ret = tmp_ret
         return ret
+
     else:
         if hasattr(annotation, FENNEL_STRUCT):
             return annotation
@@ -180,8 +189,33 @@ def struct(cls):
                 f"Struct `{cls.__name__}` contains forward reference `{name}` "
                 f"which is not allowed."
             )
-    setattr(cls, FENNEL_STRUCT, True)
 
+    dependency_code = ""
+    for name, annotation in cls.__annotations__.items():
+        fstruct = get_fennel_struct(annotation)
+        if fstruct is not None:
+            if hasattr(fstruct, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE):
+                dependency_code += "\n\n" + getattr(
+                    fstruct, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE
+                )
+            if not hasattr(fstruct, FENNEL_STRUCT_SRC_CODE):
+                raise TypeError(
+                    f"Struct `{cls.__name__}` contains attribute `{name}` of a "
+                    f"non-struct type, which is not allowed."
+                )
+            dependency_code += "\n\n" + getattr(fstruct, FENNEL_STRUCT_SRC_CODE)
+
+    setattr(cls, FENNEL_STRUCT, True)
+    try:
+        src_code = inspect.getsource(cls)
+        if sys.version_info < (3, 9):
+            src_code = f"@struct\n{dedent(src_code)}"
+        setattr(cls, FENNEL_STRUCT_SRC_CODE, src_code)
+    except TypeError:
+        # In exec mode ( such as extractor code generation ) there is no file
+        # to get the source from, so we let it pass.
+        pass
+    setattr(cls, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE, dependency_code)
     return dataclasses.dataclass(cls)
 
 
@@ -396,7 +430,6 @@ def _validate_field_in_df(
             entity_name=entity_name,
             is_nullable=True,
         )
-
     if not is_nullable and df[name].isnull().any():
         raise ValueError(
             f"Field `{name}` is not nullable, but the "
@@ -609,7 +642,7 @@ def _validate_field_in_df(
                     f"{sorted_options}. Error found during "
                     f"checking schema for `{entity_name}`."
                 )
-    elif dtype.regex_type != "":
+    elif dtype.regex_type.pattern != "":
         if (
             df[name].dtype != object
             and df[name].dtype != np.str_

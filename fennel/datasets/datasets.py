@@ -4,6 +4,7 @@ import copy
 import datetime
 import functools
 import inspect
+import sys
 from dataclasses import dataclass
 
 import numpy as np
@@ -42,8 +43,10 @@ from fennel.lib.schema import (
     get_primitive_dtype,
     FENNEL_INPUTS,
     is_hashable,
-    get_fennel_struct,
     parse_json,
+    get_fennel_struct,
+    FENNEL_STRUCT_SRC_CODE,
+    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
 )
 from fennel.sources.sources import DataConnector, source
 from fennel.utils import (
@@ -596,7 +599,7 @@ def dataset(
         file_name = ""
 
     def _create_lookup_function(
-        cls_name: str, key_fields: List[str], struct_types: Dict[str, Any] = {}
+        cls_name: str, key_fields: List[str], struct_types: Dict[str, Any]
     ) -> Optional[Callable]:
         """
         :param cls_name: The name of the class being decorated
@@ -708,14 +711,30 @@ def dataset(
         key_fields = [f.name for f in fields if f.key]
 
         struct_types = {}
+        struct_code = ""
         for name, annotation in cls_annotations.items():
+            type_hints = f_get_type_hints(dataset_cls)
+            if name in type_hints:
+                annotation = type_hints[name]
             f_struct = get_fennel_struct(annotation)
             if isinstance(f_struct, Exception):
                 raise TypeError(
                     f"Invalid type for field `{name}` in dataset {dataset_cls.__name__}: {f_struct}"
                 )
             if f_struct is not None:
+                if hasattr(f_struct, FENNEL_STRUCT_SRC_CODE):
+                    code = getattr(f_struct, FENNEL_STRUCT_SRC_CODE)
+                    if code not in struct_code:
+                        struct_code = code + "\n\n" + struct_code
+                if hasattr(f_struct, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE):
+                    struct_code = (
+                        getattr(f_struct, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE)
+                        + "\n\n"
+                        + struct_code
+                    )
                 struct_types[name] = annotation
+        if struct_code:
+            setattr(dataset_cls, FENNEL_STRUCT_SRC_CODE, struct_code)
 
         return Dataset(
             dataset_cls,
@@ -735,6 +754,27 @@ def dataset(
     cls = cast(Type[T], cls)
     # @dataset decorator was used without arguments
     return wrap(cls)
+
+
+# Fennel implementation of get_type_hints which does not error on forward
+# references not being types such as Embedding[4].
+def f_get_type_hints(obj):
+    annotations = getattr(obj, "__annotations__", {})
+    type_hints = {}
+
+    for name, annotation in annotations.items():
+        # If the annotation is a string, try to evaluate it in the context of
+        # the object's module
+        if isinstance(annotation, str):
+            module = sys.modules[obj.__module__]
+            try:
+                annotation = eval(annotation, module.__dict__)
+            except Exception:
+                pass
+
+        type_hints[name] = annotation
+
+    return type_hints
 
 
 def pipeline(
