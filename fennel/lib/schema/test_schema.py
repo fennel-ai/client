@@ -13,6 +13,10 @@ from fennel.lib.schema.schema import (
     oneof,
     regex,
     is_hashable,
+    parse_json,
+    struct,
+    FENNEL_STRUCT_SRC_CODE,
+    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
 )
 
 
@@ -532,3 +536,158 @@ def test_is_hashable():
     assert is_hashable(Dict[str, List[int]]) is True
     assert is_hashable(Dict[str, List[float]]) is False
     assert is_hashable(Optional[Dict[str, List[int]]]) is True
+
+
+@struct
+class MyString:
+    value: str
+
+
+@struct
+class Manufacturer2:
+    name: MyString
+    country: str
+
+
+@struct
+class Car2:
+    make: Manufacturer2
+    model: str
+    year: int
+
+
+def test_parse_json_with_car():
+    car_json = {
+        "make": {
+            "name": {"value": "Test Manufacturer"},
+            "country": "Test " "Country",
+        },
+        "model": "Test Model",
+        "year": "2023",
+    }
+    car = parse_json(Car2, car_json)
+    assert isinstance(car, Car2)
+    assert isinstance(car.make, Manufacturer2)
+    assert car.make.name.value == "Test Manufacturer"
+    assert car.make.country == "Test Country"
+    assert car.model == "Test Model"
+    assert car.year == 2023
+
+    assert hasattr(Car2, FENNEL_STRUCT_SRC_CODE)
+    assert hasattr(Manufacturer2, FENNEL_STRUCT_SRC_CODE)
+    car_code = getattr(Car2, FENNEL_STRUCT_SRC_CODE)
+    expected_car_code = """
+@struct
+class Car2:
+    make: Manufacturer2
+    model: str
+    year: int
+"""
+    assert car_code.strip() == expected_car_code.strip()
+
+    expected_dependency_code = """
+@struct
+class MyString:
+    value: str
+
+
+@struct
+class Manufacturer2:
+    name: MyString
+    country: str
+    """
+    assert hasattr(Car2, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE)
+    dependency_code = getattr(Car2, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE)
+    assert dependency_code.strip() == expected_dependency_code.strip()
+
+
+@struct
+class Manufacturer:
+    name: str
+    country: str
+
+
+@struct
+class Car:
+    make: Manufacturer
+    model: str
+    year: int
+
+
+def test_parse_json_with_list_of_cars():
+    cars_json = [
+        {
+            "make": {"name": "Test Manufacturer", "country": "Test Country"},
+            "model": "Test Model",
+            "year": "2023",
+        },
+        {
+            "make": {
+                "name": "Second Manufacturer",
+                "country": "Second Country",
+            },
+            "model": "Second Model",
+            "year": "2024",
+        },
+    ]
+    cars = parse_json(List[Car], cars_json)
+    assert isinstance(cars, list)
+    assert all(isinstance(car, Car) for car in cars)
+    assert cars[0].make.name == "Test Manufacturer"
+    assert cars[0].make.country == "Test Country"
+    assert cars[0].model == "Test Model"
+    assert cars[0].year == 2023
+    assert cars[1].make.name == "Second Manufacturer"
+    assert cars[1].make.country == "Second Country"
+    assert cars[1].model == "Second Model"
+    assert cars[1].year == 2024
+
+
+@struct
+class UserCarMap:
+    map: Dict[str, List[Car]]
+
+
+def test_parse_json_complex():
+    user_car_map_json = {
+        "map": {
+            "user1": [
+                {
+                    "make": {
+                        "name": "Test Manufacturer",
+                        "country": "Test Country",
+                    },
+                    "model": "Test Model",
+                    "year": "2023",
+                },
+                {
+                    "make": {
+                        "name": "Second Manufacturer",
+                        "country": "Second Country",
+                    },
+                    "model": "Second Model",
+                    "year": "2024",
+                },
+            ]
+        }
+    }
+    user_car_map = parse_json(UserCarMap, user_car_map_json)
+    assert isinstance(user_car_map, UserCarMap)
+    assert isinstance(user_car_map.map, dict)
+    assert all(isinstance(k, str) for k in user_car_map.map.keys())
+    assert all(
+        isinstance(v, list) and all(isinstance(car, Car) for car in v)
+        for v in user_car_map.map.values()
+    )
+    car1 = user_car_map.map["user1"][0]
+    assert isinstance(car1.make, Manufacturer)
+    assert car1.make.name == "Test Manufacturer"
+    assert car1.make.country == "Test Country"
+    assert car1.model == "Test Model"
+    assert car1.year == 2023
+    car2 = user_car_map.map["user1"][1]
+    assert isinstance(car2.make, Manufacturer)
+    assert car2.make.name == "Second Manufacturer"
+    assert car2.make.country == "Second Country"
+    assert car2.model == "Second Model"
+    assert car2.year == 2024

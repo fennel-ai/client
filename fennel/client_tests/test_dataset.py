@@ -14,7 +14,7 @@ from fennel.lib.aggregate import Min, Max
 from fennel.lib.aggregate import Sum, Average, Count
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import between, oneof, inputs
+from fennel.lib.schema import between, oneof, inputs, struct
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock, InternalTestClient
@@ -1109,6 +1109,158 @@ class TestBasicCountUnique(unittest.TestCase):
         assert df.shape == (3, 4)
         assert df["unique_movies"].tolist() == [2, 1, None]
         assert df["unique_movies_2h"].tolist() == [2, 1, None]
+
+
+################################################################################
+#                           Dataset Complex Structure Unit Tests
+################################################################################
+
+
+@struct
+class Manufacturer:
+    name: str
+    country: str
+
+
+@struct
+class Car:
+    make: Manufacturer
+    model: str
+    year: int
+
+
+@meta(owner="test@test.com")
+@source(webhook.endpoint("DealerDataset"))
+@dataset
+class Dealer:
+    name: str = field(key=True)
+    address: str
+    cars: List[Car]
+    timestamp: datetime
+
+
+@meta(owner="test@tesst.com")
+@dataset
+class DealerNumCars:
+    name: str = field(key=True)
+    num_cars: int
+    timestamp: datetime
+
+    @pipeline(version=1)
+    @inputs(Dealer)
+    def pipeline_dealer_num_cars(cls, dealer: Dataset):
+        schema = dealer.schema()
+        schema["num_cars"] = int
+        dealer = dealer.transform(  # type: ignore
+            lambda df: df.assign(
+                num_cars=df["cars"].apply(len),
+            ),
+            schema,
+        )
+        schema.pop("address")
+        schema.pop("cars")
+        # Drop columns we don't need
+        return dealer.transform(
+            lambda df: df.drop(columns=["address", "cars"]),
+            schema,
+        )
+
+
+class TestNestedStructType(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_nested_struct_type(self, client):
+        # # Sync the dataset
+        client.sync(
+            datasets=[DealerNumCars, Dealer],
+        )
+        now = datetime.now() - timedelta(hours=1)
+        data = {
+            "name": ["Test Dealer", "Second Dealer", "Third Dealer"],
+            "address": [
+                "123 Test Street",
+                "456 Second Street",
+                "789 Third Street",
+            ],
+            "cars": [
+                [
+                    {
+                        "make": {
+                            "name": "Test Manufacturer",
+                            "country": "Test Country",
+                        },
+                        "model": "Test Model",
+                        "year": 2023,
+                    }
+                ],
+                [
+                    {
+                        "make": {
+                            "name": "Second Manufacturer",
+                            "country": "Second Country",
+                        },
+                        "model": "Second Model",
+                        "year": 2024,
+                    }
+                ],
+                [
+                    {
+                        "make": {
+                            "name": "Third Manufacturer",
+                            "country": "Third Country",
+                        },
+                        "model": "Third Model",
+                        "year": 2025,
+                    },
+                    {
+                        "make": {
+                            "name": "Third Manufacturer 2",
+                            "country": "Third Country",
+                        },
+                        "model": "Third Model",
+                        "year": 2026,
+                    },
+                ],
+            ],
+            "timestamp": [now, now, now],
+        }
+        df = pd.DataFrame(data)
+        # Log the dealer data
+        response = client.log("fennel_webhook", "DealerDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+
+        now = datetime.now()
+        # Verify the data by looking it up
+        df, _ = Dealer.lookup(
+            pd.Series([now, now]),
+            name=pd.Series(["Test " "Dealer", "Third Dealer"]),
+        )
+        assert df.shape == (2, 4)
+        assert df["name"].tolist() == ["Test Dealer", "Third Dealer"]
+        assert df["address"].tolist() == ["123 Test Street", "789 Third Street"]
+        assert len(df["cars"].tolist()) == 2
+
+        manufacturer1 = df["cars"].tolist()[0][0]
+        assert manufacturer1.make.name == "Test Manufacturer"
+        assert manufacturer1.make.country == "Test Country"
+        assert manufacturer1.model == "Test Model"
+        assert manufacturer1.year == 2023
+
+        manufacturer2 = df["cars"].tolist()[1][0]
+        assert manufacturer2.make.name == "Third Manufacturer"
+        assert manufacturer2.make.country == "Third Country"
+        assert manufacturer2.model == "Third Model"
+        assert manufacturer2.year == 2025
+
+        # Lookup the DealerNumCars dataset
+        df, _ = DealerNumCars.lookup(
+            pd.Series([now, now]),
+            name=pd.Series(["Test Dealer", "Third Dealer"]),
+        )
+        assert df.shape == (2, 3)
+        assert df["name"].tolist() == ["Test Dealer", "Third Dealer"]
+        assert df["num_cars"].tolist() == [1, 2]
 
 
 ################################################################################

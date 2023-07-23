@@ -7,8 +7,8 @@ from textwrap import dedent, indent
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
-from typing import Any, Dict, List, Optional, Tuple
 from google.protobuf.wrappers_pb2 import BoolValue
+from typing import Any, Dict, List, Optional, Tuple
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto

@@ -1,12 +1,16 @@
 from datetime import datetime
 
 import pytest
-from typing import Optional, List
+from typing import Optional, List, Union
 
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.lib.aggregate import Count
+from fennel.lib.expectations import (
+    expectations,
+    expect_column_values_to_be_between,
+)
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs
+from fennel.lib.schema import inputs, struct
 from fennel.lib.window import Window
 from fennel.test_lib import *
 
@@ -94,6 +98,156 @@ def test_incorrect_aggregate():
     assert (
         str(e.value)
         == "Invalid aggregate `window=Window(start='forever', end='0s') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported, please set approx=True"
+    )
+
+
+def test_invalid_struct_type():
+    with pytest.raises(TypeError) as e:
+
+        @struct
+        class Car:
+            model: str
+            year: int
+
+            def set_year(self, year: int):
+                self.year = year
+
+    assert (
+        str(e.value)
+        == "Struct `Car` contains method `set_year`, which is not allowed."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @struct
+        class Car2:
+            model: str
+            year: int
+
+            @expectations
+            def get_expectations(cls):
+                return [
+                    expect_column_values_to_be_between(
+                        column="year", min_value=1, max_value=100, mostly=0.95
+                    )
+                ]
+
+    assert (
+        str(e.value)
+        == "Struct `Car2` contains method `get_expectations`, which is not "
+        "allowed."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @struct
+        class Car3:
+            model: str
+            year: int = 1990
+
+    assert (
+        str(e.value)
+        == "Struct `Car3` contains attribute `year` with a default value, "
+        "`1990` which is not allowed."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @struct
+        @meta(owner="test@test.com")
+        class Car4:
+            model: str
+            year: int
+
+    assert (
+        str(e.value)
+        == "Struct `Car4` contains decorator @meta which is not allowed."
+    )
+
+    with pytest.raises(Exception) as e:
+
+        @struct
+        class Car5:
+            model: str
+            sibling_car: Optional["Car"]
+            year: int
+
+    assert (
+        str(e.value)
+        == "Struct `Car5` contains forward reference `sibling_car` which is "
+        "not allowed."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        class Manufacturer:
+            name: str
+            country: str
+            timestamp: datetime
+
+        @struct
+        class Car:
+            model: str
+            manufacturer: Optional[Manufacturer]
+            year: int
+
+    assert (
+        str(e.value) == "Struct `Car` contains attribute `manufacturer` of a "
+        "non-struct type, which is not allowed."
+    )
+
+    with pytest.raises(Exception) as e:
+
+        class Manufacturer:
+            name: str
+            country: str
+            timestamp: datetime
+
+        @struct
+        class Car:
+            model: str
+            manufacturer: List[Manufacturer]
+            year: int
+
+    assert (
+        str(e.value) == "Struct `Car` contains attribute `manufacturer` of a "
+        "non-struct type, which is not allowed."
+    )
+
+    with pytest.raises(Exception) as e:
+
+        @struct
+        class Manufacturer:
+            name: str
+            country: str
+            timestamp: datetime
+
+    assert (
+        str(e.value)
+        == "Struct `Manufacturer` contains attribute `timestamp` of a "
+        "non-struct type, which is not allowed."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @struct
+        class Car:
+            model: str
+            year: int
+
+        @struct
+        class Bike:
+            model: str
+            year: int
+
+        @dataset
+        class Vehicle:
+            vehicle: Union[Car, Bike]
+            timestamp: datetime
+
+    assert (
+        str(e.value)
+        == "Invalid type for field `vehicle` in dataset Vehicle: Multiple fennel structs found `Car, Bike`"
     )
 
 
