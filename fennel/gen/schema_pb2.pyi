@@ -33,6 +33,7 @@ class DataType(google.protobuf.message.Message):
     ONE_OF_TYPE_FIELD_NUMBER: builtins.int
     REGEX_TYPE_FIELD_NUMBER: builtins.int
     OPTIONAL_TYPE_FIELD_NUMBER: builtins.int
+    STRUCT_TYPE_FIELD_NUMBER: builtins.int
     @property
     def int_type(self) -> global___IntType: ...
     @property
@@ -57,6 +58,8 @@ class DataType(google.protobuf.message.Message):
     def regex_type(self) -> global___RegexType: ...
     @property
     def optional_type(self) -> global___OptionalType: ...
+    @property
+    def struct_type(self) -> global___StructType: ...
     def __init__(
         self,
         *,
@@ -72,12 +75,33 @@ class DataType(google.protobuf.message.Message):
         one_of_type: global___OneOf | None = ...,
         regex_type: global___RegexType | None = ...,
         optional_type: global___OptionalType | None = ...,
+        struct_type: global___StructType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "between_type", b"between_type", "bool_type", b"bool_type", "double_type", b"double_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "int_type", b"int_type", "map_type", b"map_type", "one_of_type", b"one_of_type", "optional_type", b"optional_type", "regex_type", b"regex_type", "string_type", b"string_type", "timestamp_type", b"timestamp_type"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "between_type", b"between_type", "bool_type", b"bool_type", "double_type", b"double_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "int_type", b"int_type", "map_type", b"map_type", "one_of_type", b"one_of_type", "optional_type", b"optional_type", "regex_type", b"regex_type", "string_type", b"string_type", "timestamp_type", b"timestamp_type"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["dtype", b"dtype"]) -> typing_extensions.Literal["int_type", "double_type", "string_type", "bool_type", "timestamp_type", "array_type", "map_type", "embedding_type", "between_type", "one_of_type", "regex_type", "optional_type"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "between_type", b"between_type", "bool_type", b"bool_type", "double_type", b"double_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "int_type", b"int_type", "map_type", b"map_type", "one_of_type", b"one_of_type", "optional_type", b"optional_type", "regex_type", b"regex_type", "string_type", b"string_type", "struct_type", b"struct_type", "timestamp_type", b"timestamp_type"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "between_type", b"between_type", "bool_type", b"bool_type", "double_type", b"double_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "int_type", b"int_type", "map_type", b"map_type", "one_of_type", b"one_of_type", "optional_type", b"optional_type", "regex_type", b"regex_type", "string_type", b"string_type", "struct_type", b"struct_type", "timestamp_type", b"timestamp_type"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["dtype", b"dtype"]) -> typing_extensions.Literal["int_type", "double_type", "string_type", "bool_type", "timestamp_type", "array_type", "map_type", "embedding_type", "between_type", "one_of_type", "regex_type", "optional_type", "struct_type"] | None: ...
 
 global___DataType = DataType
+
+@typing_extensions.final
+class Field(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    NAME_FIELD_NUMBER: builtins.int
+    DTYPE_FIELD_NUMBER: builtins.int
+    name: builtins.str
+    @property
+    def dtype(self) -> global___DataType: ...
+    def __init__(
+        self,
+        *,
+        name: builtins.str = ...,
+        dtype: global___DataType | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "name", b"name"]) -> None: ...
+
+global___Field = Field
 
 @typing_extensions.final
 class IntType(google.protobuf.message.Message):
@@ -198,6 +222,25 @@ class MapType(google.protobuf.message.Message):
 global___MapType = MapType
 
 @typing_extensions.final
+class StructType(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    NAME_FIELD_NUMBER: builtins.int
+    FIELDS_FIELD_NUMBER: builtins.int
+    name: builtins.str
+    @property
+    def fields(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Field]: ...
+    def __init__(
+        self,
+        *,
+        name: builtins.str = ...,
+        fields: collections.abc.Iterable[global___Field] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields", "name", b"name"]) -> None: ...
+
+global___StructType = StructType
+
+@typing_extensions.final
 class Between(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -267,26 +310,6 @@ class OptionalType(google.protobuf.message.Message):
 global___OptionalType = OptionalType
 
 @typing_extensions.final
-class Field(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    NAME_FIELD_NUMBER: builtins.int
-    DTYPE_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    @property
-    def dtype(self) -> global___DataType: ...
-    def __init__(
-        self,
-        *,
-        name: builtins.str = ...,
-        dtype: global___DataType | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "name", b"name"]) -> None: ...
-
-global___Field = Field
-
-@typing_extensions.final
 class Schema(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -339,6 +362,7 @@ class Value(google.protobuf.message.Message):
     EMBEDDING_FIELD_NUMBER: builtins.int
     LIST_FIELD_NUMBER: builtins.int
     MAP_FIELD_NUMBER: builtins.int
+    STRUCT_FIELD_NUMBER: builtins.int
     @property
     def none(self) -> global____r_None: ...
     bool: builtins.bool
@@ -353,6 +377,8 @@ class Value(google.protobuf.message.Message):
     def list(self) -> global___List: ...
     @property
     def map(self) -> global___Map: ...
+    @property
+    def struct(self) -> global___StructValue: ...
     def __init__(
         self,
         *,
@@ -365,10 +391,11 @@ class Value(google.protobuf.message.Message):
         embedding: global___Embedding | None = ...,
         list: global___List | None = ...,
         map: global___Map | None = ...,
+        struct: global___StructValue | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bool", b"bool", "embedding", b"embedding", "float", b"float", "int", b"int", "list", b"list", "map", b"map", "none", b"none", "string", b"string", "timestamp", b"timestamp", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bool", b"bool", "embedding", b"embedding", "float", b"float", "int", b"int", "list", b"list", "map", b"map", "none", b"none", "string", b"string", "timestamp", b"timestamp", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["none", "bool", "int", "float", "string", "timestamp", "embedding", "list", "map"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bool", b"bool", "embedding", b"embedding", "float", b"float", "int", b"int", "list", b"list", "map", b"map", "none", b"none", "string", b"string", "struct", b"struct", "timestamp", b"timestamp", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bool", b"bool", "embedding", b"embedding", "float", b"float", "int", b"int", "list", b"list", "map", b"map", "none", b"none", "string", b"string", "struct", b"struct", "timestamp", b"timestamp", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["none", "bool", "int", "float", "string", "timestamp", "embedding", "list", "map", "struct"] | None: ...
 
 global___Value = Value
 
@@ -452,6 +479,40 @@ class Map(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["entries", b"entries", "key_dtype", b"key_dtype", "value_dtype", b"value_dtype"]) -> None: ...
 
 global___Map = Map
+
+@typing_extensions.final
+class StructValue(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    @typing_extensions.final
+    class Entry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        NAME_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        name: builtins.str
+        @property
+        def value(self) -> global___Value: ...
+        def __init__(
+            self,
+            *,
+            name: builtins.str = ...,
+            value: global___Value | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "value", b"value"]) -> None: ...
+
+    FIELDS_FIELD_NUMBER: builtins.int
+    @property
+    def fields(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___StructValue.Entry]: ...
+    def __init__(
+        self,
+        *,
+        fields: collections.abc.Iterable[global___StructValue.Entry] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields"]) -> None: ...
+
+global___StructValue = StructValue
 
 @typing_extensions.final
 class _r_None(google.protobuf.message.Message):

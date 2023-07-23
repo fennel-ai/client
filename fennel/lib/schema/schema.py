@@ -1,17 +1,30 @@
 from __future__ import annotations
 
+import dataclasses
+import inspect
 import re
 from dataclasses import dataclass
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from typing import Union, Any, List, TYPE_CHECKING
+from typing import (
+    Union,
+    Any,
+    List,
+    TYPE_CHECKING,
+    get_type_hints,
+    get_origin,
+    get_args,
+    ForwardRef,
+)
 
 import fennel.gen.schema_pb2 as schema_proto
+from fennel.lib.metadata.metadata import META_FIELD
 
 FENNEL_INPUTS = "__fennel_inputs__"
 FENNEL_OUTPUTS = "__fennel_outputs__"
+FENNEL_STRUCT = "__fennel_struct__"
 
 
 def _get_args(type_: Any) -> Any:
@@ -43,6 +56,133 @@ def get_primitive_dtype(dtype):
     if isinstance(dtype, regex):
         return str
     return dtype
+
+
+def _contains_forward_ref(annotation) -> bool:
+    origin = get_origin(annotation)
+    if origin is not None:
+        args = get_args(annotation)
+        return any(_contains_forward_ref(arg) for arg in args)
+    else:
+        return isinstance(annotation, ForwardRef)
+
+
+def _is_user_defined_class(cls) -> bool:
+    return isinstance(cls, type) and cls.__module__ != "builtins"
+
+
+def _contains_user_defined_class(annotation) -> bool:
+    origin = get_origin(annotation)
+    if origin is not None:
+        args = get_args(annotation)
+        return all(_contains_user_defined_class(arg) for arg in args)
+    else:
+        if _is_user_defined_class(annotation):
+            return hasattr(annotation, FENNEL_STRUCT)
+        return True
+
+
+# Parse a json object into a python object based on the type annotation.
+def parse_json(annotation, json) -> Any:
+    origin = get_origin(annotation)
+    if origin is not None:
+        args = get_args(annotation)
+        if origin is Union:
+            if len(args) != 2 or type(None) not in args:
+                raise TypeError(
+                    f"Union must be of the form `Union[type, None]`, "
+                    f"got `{annotation}`"
+                )
+            if json is None:
+                return None
+            return parse_json(args[0], json)
+        if origin is list:
+            if isinstance(json, np.ndarray):
+                json = json.tolist()
+            if not isinstance(json, list):
+                raise TypeError(f"Expected list, got `{type(json).__name__}`")
+            return [parse_json(args[0], x) for x in json]
+        if origin is dict:
+            if not isinstance(json, dict):
+                raise TypeError(f"Expected dict, got `{type(json).__name__}`")
+            return {k: parse_json(args[1], v) for k, v in json.items()}
+        raise TypeError(f"Unsupported type `{origin}`")
+    else:
+        if _is_user_defined_class(annotation):
+            fields = {f.name: f.type for f in dataclasses.fields(annotation)}
+            # Sort the fields by name to ensure that the order is deterministic.
+            fields = {k: fields[k] for k in sorted(fields.keys())}
+            return annotation(
+                **{f: parse_json(t, json.get(f)) for f, t in fields.items()}
+            )
+        if annotation is datetime:
+            return datetime.fromisoformat(json)
+        if annotation is np.ndarray:
+            return np.array(json)
+        if annotation is pd.DataFrame:
+            return pd.DataFrame(json)
+        if annotation is pd.Series:
+            return pd.Series(json)
+        if annotation is int:
+            return int(json)
+        if annotation is float:
+            return float(json)
+        return json
+
+
+def get_fennel_struct(annotation) -> Any:
+    origin = get_origin(annotation)
+    if origin is not None:
+        args = get_args(annotation)
+        ret = None
+        for arg in args:
+            tmp_ret = get_fennel_struct(arg)
+            if tmp_ret is not None:
+                if ret is not None:
+                    return TypeError(
+                        f"Multiple fennel structs found `{ret.__name__},"
+                        f" {tmp_ret.__name__}`"
+                    )
+                ret = tmp_ret
+        return ret
+    else:
+        if hasattr(annotation, FENNEL_STRUCT):
+            return annotation
+        return None
+
+
+def struct(cls):
+    for name, member in inspect.getmembers(cls):
+        if inspect.isfunction(member) and name in cls.__dict__:
+            raise TypeError(
+                f"Struct `{cls.__name__}` contains method `{member.__name__}`, "
+                f"which is not allowed."
+            )
+        elif name in cls.__dict__ and name in cls.__annotations__:
+            raise ValueError(
+                f"Struct `{cls.__name__}` contains attribute `{name}` with a default value, "
+                f"`{cls.__dict__[name]}` which is not allowed."
+            )
+    if hasattr(cls, META_FIELD):
+        raise ValueError(
+            f"Struct `{cls.__name__}` contains decorator @meta which is not "
+            f"allowed."
+        )
+    for name, annotation in cls.__annotations__.items():
+        if not _contains_user_defined_class(annotation):
+            raise TypeError(
+                f"Struct `{cls.__name__}` contains attribute `{name}` of a "
+                f"non-struct type, which is not allowed."
+            )
+        elif _contains_forward_ref(annotation):
+            # Dont allow forward references
+            raise TypeError(
+                f"Struct `{cls.__name__}` contains forward reference `{name}` "
+                f"which is not allowed."
+            )
+    setattr(cls, FENNEL_STRUCT, True)
+
+    return dataclasses.dataclass(cls)
 
 
 @dataclass
@@ -213,6 +353,22 @@ def get_datatype(type_: Any) -> schema_proto.DataType:
         or isinstance(type_, regex)
     ):
         return type_.to_proto()
+    elif _is_user_defined_class(type_):
+        # Iterate through all the fields in the class and get the schema for
+        # each field
+        fields = []
+        for field_name, field_type in get_type_hints(type_).items():
+            fields.append(
+                schema_proto.Field(
+                    name=field_name,
+                    dtype=get_datatype(field_type),
+                )
+            )
+        return schema_proto.DataType(
+            struct_type=schema_proto.StructType(
+                fields=fields, name=type_.__name__
+            )
+        )
     raise ValueError(f"Cannot serialize type {type_}.")
 
 
@@ -453,7 +609,6 @@ def _validate_field_in_df(
                     f"{sorted_options}. Error found during "
                     f"checking schema for `{entity_name}`."
                 )
-
     elif dtype.regex_type != "":
         if (
             df[name].dtype != object
@@ -476,6 +631,13 @@ def _validate_field_in_df(
                     f"`{regex}`. Error found during "
                     f"checking schema for `{entity_name}`."
                 )
+    elif dtype.struct_type.name != "":
+        if df[name].dtype != object:
+            raise ValueError(
+                f"Field `{name}` is of type struct, but the "
+                f"column in the dataframe is not a dict. Error found during "
+                f"checking schema for `{entity_name}`."
+            )
     else:
         raise ValueError(f"Field `{name}` has unknown data type `{dtype}`.")
 

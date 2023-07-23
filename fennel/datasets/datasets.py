@@ -42,6 +42,8 @@ from fennel.lib.schema import (
     get_primitive_dtype,
     FENNEL_INPUTS,
     is_hashable,
+    get_fennel_struct,
+    parse_json,
 )
 from fennel.sources.sources import DataConnector, source
 from fennel.utils import (
@@ -594,8 +596,14 @@ def dataset(
         file_name = ""
 
     def _create_lookup_function(
-        cls_name: str, key_fields: List[str]
+        cls_name: str, key_fields: List[str], struct_types: Dict[str, Any] = {}
     ) -> Optional[Callable]:
+        """
+        :param cls_name: The name of the class being decorated
+        :param key_fields: The fields that have been marked as keys.
+        :param struct: Map from column names to Struct Classes. We use this to
+        convert any dictionaries back to structs post lookup.
+        """
         if len(key_fields) == 0:
             return None
 
@@ -651,6 +659,12 @@ def dataset(
                 fields,
                 df,
             )
+            # Convert any columns of struct type to objects from their
+            # dictionary form
+            for col, type_annotation in struct_types.items():
+                res[col] = res[col].apply(
+                    lambda x: parse_json(type_annotation, x)
+                )
 
             return res.replace({np.nan: None}), found
 
@@ -693,11 +707,23 @@ def dataset(
 
         key_fields = [f.name for f in fields if f.key]
 
+        struct_types = {}
+        for name, annotation in cls_annotations.items():
+            f_struct = get_fennel_struct(annotation)
+            if isinstance(f_struct, Exception):
+                raise TypeError(
+                    f"Invalid type for field `{name}` in dataset {dataset_cls.__name__}: {f_struct}"
+                )
+            if f_struct is not None:
+                struct_types[name] = annotation
+
         return Dataset(
             dataset_cls,
             fields,
             history=duration_to_timedelta(history),
-            lookup_fn=_create_lookup_function(dataset_cls.__name__, key_fields),
+            lookup_fn=_create_lookup_function(
+                dataset_cls.__name__, key_fields, struct_types
+            ),
         )
 
     def wrap(c: Type[T]) -> Dataset:
