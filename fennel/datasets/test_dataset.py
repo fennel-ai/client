@@ -1,9 +1,9 @@
 import json
 from datetime import datetime, timedelta
-from typing import Optional, List
 
 import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
+from typing import Optional, List
 
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset
@@ -186,6 +186,148 @@ def test_dataset_with_retention():
         ],
     }
 
+    # Ignoring schema validation since they are bytes and not human readable
+    expected_sync_request = ParseDict(d, SyncRequest())
+    sync_request.datasets[0].pycode.Clear()
+    assert sync_request == expected_sync_request, error_message(
+        sync_request, expected_sync_request
+    )
+
+
+class Manufacturer:
+    name: str
+    country: str
+    timestamp: datetime
+
+
+class Car:
+    make: Manufacturer
+    model: str
+    year: int
+    timestamp: datetime
+
+
+@meta(owner="test@test.com")
+@source(webhook.endpoint("DealerDataset"))
+@dataset
+class Dealer:
+    name: str
+    address: str
+    cars: List[Car]
+    timestamp: datetime
+
+
+def test_nested_dataset():
+    view = InternalTestClient()
+    view.add(Dealer)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "datasets": [
+            {
+                "name": "Dealer",
+                "metadata": {"owner": "test@test.com"},
+                "dsschema": {
+                    "keys": {},
+                    "values": {
+                        "fields": [
+                            {"name": "name", "dtype": {"stringType": {}}},
+                            {"name": "address", "dtype": {"stringType": {}}},
+                            {
+                                "name": "cars",
+                                "dtype": {
+                                    "arrayType": {
+                                        "of": {
+                                            "structType": {
+                                                "name": "Car",
+                                                "fields": [
+                                                    {
+                                                        "name": "make",
+                                                        "dtype": {
+                                                            "structType": {
+                                                                "name": "Manufacturer",
+                                                                "fields": [
+                                                                    {
+                                                                        "name": "name",
+                                                                        "dtype": {
+                                                                            "stringType": {}
+                                                                        },
+                                                                    },
+                                                                    {
+                                                                        "name": "country",
+                                                                        "dtype": {
+                                                                            "stringType": {}
+                                                                        },
+                                                                    },
+                                                                    {
+                                                                        "name": "timestamp",
+                                                                        "dtype": {
+                                                                            "timestampType": {}
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            }
+                                                        },
+                                                    },
+                                                    {
+                                                        "name": "model",
+                                                        "dtype": {
+                                                            "stringType": {}
+                                                        },
+                                                    },
+                                                    {
+                                                        "name": "year",
+                                                        "dtype": {
+                                                            "intType": {}
+                                                        },
+                                                    },
+                                                    {
+                                                        "name": "timestamp",
+                                                        "dtype": {
+                                                            "timestampType": {}
+                                                        },
+                                                    },
+                                                ],
+                                            }
+                                        }
+                                    }
+                                },
+                            },
+                        ]
+                    },
+                    "timestamp": "timestamp",
+                },
+                "history": "63072000s",
+                "retention": "63072000s",
+                "fieldMetadata": {
+                    "address": {},
+                    "cars": {},
+                    "timestamp": {},
+                    "name": {},
+                },
+                "pycode": {},
+                "isSourceDataset": True,
+            }
+        ],
+        "sources": [
+            {
+                "table": {
+                    "endpoint": {
+                        "db": {
+                            "name": "fennel_webhook",
+                            "webhook": {"name": "fennel_webhook"},
+                        },
+                        "endpoint": "DealerDataset",
+                    }
+                },
+                "dataset": "Dealer",
+                "lateness": "3600s",
+            }
+        ],
+        "extdbs": [
+            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
+        ],
+    }
     # Ignoring schema validation since they are bytes and not human readable
     expected_sync_request = ParseDict(d, SyncRequest())
     sync_request.datasets[0].pycode.Clear()
