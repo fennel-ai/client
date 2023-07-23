@@ -11,6 +11,9 @@ import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset
 from fennel.lib.includes.include_mod import FENNEL_INCLUDED_MOD
+from fennel.lib.schema import (
+    FENNEL_STRUCT_SRC_CODE,
+)
 from fennel.utils import fennel_get_source
 
 
@@ -60,6 +63,13 @@ def get_dataset_core_code(dataset: Dataset) -> str:
     # If python version 3.8 or below add @dataset decorator
     if sys.version_info < (3, 9):
         source_code = f"@dataset\n{dedent(source_code)}"
+
+    # Add any struct definitions
+    if hasattr(dataset, FENNEL_STRUCT_SRC_CODE):
+        source_code = (
+            getattr(dataset, FENNEL_STRUCT_SRC_CODE) + "\n\n" + source_code
+        )
+
     return _remove_empty_lines(source_code)
 
 

@@ -243,6 +243,7 @@ def test_invalid_struct_type():
         @dataset
         class Vehicle:
             vehicle: Union[Car, Bike]
+            timestamp: datetime
 
     assert (
         str(e.value)
