@@ -147,31 +147,11 @@ Currently, Fennel only supports OAuth 1 (username and password) authentication. 
 OAuth 2.0 if needed - if so, please talk to us!
 :::
 
-### HUDI
+### Hudi
 
-The HUDI source is very similar to the S3 source, since HUDI is built on top of S3. The only additional field that needs
-to be specified is the `format` field, which should be set to "hudi".
-
-The following fields need to be defined:
-
-1. **`name`** - A name to identify the source. The name should be unique across all sources.
-2. **`aws_access_key_id`** - In order to access private Buckets stored on AWS S3, this connector requires credentials
-   with the proper permissions. If accessing publicly available data, this field is not required.
-3. **`aws_secret_access_key`**- In order to access private S3 Buckets, this connector requires credentials with the
-   proper permissions. If accessing publicly available data, this field is not required.
-
-And the following fields need to be defined on the bucket:
-
-1. **`bucket`** - Name of the S3 bucket where the file(s) exist.
-2. **`prefix`** (optional) - By providing a path-like prefix (e.g., `myFolder/thisTable/`) under which all the relevant
-   files sit, we can optimize finding these in S3. This is optional but recommended if your bucket contains many
-   folders/files&#x20;
-3. **`format`** - Should be set to "hudi".
+Fennel integrates with Apache Hudi via its S3 connector. To use Hudi, simply set the `format` field to "hudi" when
+configuring the S3 bucket.
 
 <pre snippet="api-reference/source#s3_hudi_source"></pre>
-
-
-Fennel uses  `file_last_modified` property exported by S3 to track what data has been seen so far and hence a cursor
-field doesn't need to be specified.
 
 
