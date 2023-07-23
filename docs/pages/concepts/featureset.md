@@ -62,7 +62,7 @@ depending on the number of output features, of the same length as the input feat
 
 1. A featureset can have zero or more extractors.
 2. An extractor can have zero or more inputs but must have at least one output.
-3. Input features of an extractor can belong to any number of datasets but all 
+3. Input features of an extractor can belong to any number of featuresets but all 
    output features must be from the same featureset as the extractor.
 4. For any feature, there can be at most one extractor where the feature 
    appears in the output list.
