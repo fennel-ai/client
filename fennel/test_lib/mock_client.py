@@ -198,7 +198,6 @@ def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
     code = (
         extractor_proto.pycode.imports + extractor_proto.pycode.generated_code
     )
-    code = "from datetime import datetime\n" + code
     try:
         sys.modules[fqn] = mod
         exec(code, mod.__dict__)

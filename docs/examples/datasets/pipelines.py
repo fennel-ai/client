@@ -1,9 +1,9 @@
 import json
 from datetime import datetime, timedelta
-from typing import Optional, List
 
 import pandas as pd
 import requests
+from typing import Optional, List
 
 from fennel.datasets import dataset, field
 from fennel.datasets import pipeline, Dataset
@@ -131,9 +131,9 @@ def test_transaction_aggregation_example(client):
     assert data["count"].tolist() == [2, 2, 3, None]
     assert data["amount_1d"].tolist() == [500, 400, 600, None]
     assert data["recent_merchant_ids"].tolist() == [
-        [2, 3],
-        [1, 3],
-        [1, 2, 3],
+        [3, 2],
+        [3, 1],
+        [3, 2, 1],
         None,
     ]
     assert found.to_list() == [True, True, True, False]

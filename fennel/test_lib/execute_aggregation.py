@@ -113,7 +113,7 @@ class LastKState(AggState):
     def add_val_to_state(self, val):
         self.vals.append(val)
         if not self.dedeup:
-            return self.vals[-self.k :]
+            return list(reversed(self.vals[-self.k :]))
         else:
             to_ret = []
             for v in reversed(self.vals):
@@ -121,13 +121,13 @@ class LastKState(AggState):
                     to_ret.append(v)
                 if len(to_ret) == self.k:
                     break
-        return list(reversed(to_ret[: self.k]))
+        return list(to_ret[: self.k])
 
     def del_val_from_state(self, val):
         if val in self.vals:
             self.vals.remove(val)
         if not self.dedeup:
-            return self.vals[-self.k :]
+            return list(reversed(self.vals[-self.k :]))
 
         ret = []
         for v in reversed(self.vals):
@@ -135,10 +135,10 @@ class LastKState(AggState):
                 ret.append(v)
             if len(ret) == self.k:
                 break
-        return list(reversed(ret[: self.k]))
+        return list(ret[: self.k])
 
     def get_val(self):
-        return self.vals[-self.k :]
+        return list(reversed(self.vals[-self.k :]))
 
 
 class MinForeverState(AggState):

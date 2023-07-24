@@ -160,6 +160,24 @@ def get_fennel_struct(annotation) -> Any:
         return None
 
 
+def as_json(self):
+    def to_dict(value):
+        if dataclasses.is_dataclass(value):
+            return value.as_json()
+        elif isinstance(value, list):
+            return [to_dict(v) for v in value]
+        elif isinstance(value, dict):
+            return {k: to_dict(v) for k, v in value.items()}
+        else:
+            return value
+
+    result = {}
+    for field in dataclasses.fields(self):
+        value = getattr(self, field.name)
+        result[field.name] = to_dict(value)
+    return result
+
+
 def struct(cls):
     for name, member in inspect.getmembers(cls):
         if inspect.isfunction(member) and name in cls.__dict__:
@@ -211,11 +229,12 @@ def struct(cls):
         if sys.version_info < (3, 9):
             src_code = f"@struct\n{dedent(src_code)}"
         setattr(cls, FENNEL_STRUCT_SRC_CODE, src_code)
-    except TypeError:
+    except Exception:
         # In exec mode ( such as extractor code generation ) there is no file
         # to get the source from, so we let it pass.
         pass
     setattr(cls, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE, dependency_code)
+    cls.as_json = as_json
     return dataclasses.dataclass(cls)
 
 

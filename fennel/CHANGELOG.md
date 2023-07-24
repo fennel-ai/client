@@ -1,4 +1,7 @@
 # Changelog
+## [0.16.15] - 2023-07-20
+- Support struct type 
+
 ## [0.16.12] - 2023-07-20
 - Support verify_cert on kafka source
 

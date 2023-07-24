@@ -315,6 +315,10 @@ class Feature:
         return self.fqn_
 
 
+def is_user_defined(obj):
+    return inspect.isclass(type(obj)) and not inspect.isbuiltin(obj)
+
+
 def _add_featureset_name(func):
     """Rewrites the output column names of the extractor to be fully qualified names."""
 

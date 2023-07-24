@@ -60,28 +60,28 @@ def test_avg_state():
 def test_lastk_state():
     state = LastKState(k=3, dedup=False)
     assert state.add_val_to_state(1) == [1]
-    assert state.add_val_to_state(2) == [1, 2]
-    assert state.add_val_to_state(3) == [1, 2, 3]
-    assert state.add_val_to_state(4) == [2, 3, 4]
-    assert state.add_val_to_state(5) == [3, 4, 5]
+    assert state.add_val_to_state(2) == [2, 1]
+    assert state.add_val_to_state(3) == [3, 2, 1]
+    assert state.add_val_to_state(4) == [4, 3, 2]
+    assert state.add_val_to_state(5) == [5, 4, 3]
 
-    assert state.del_val_from_state(3) == [2, 4, 5]
-    assert state.del_val_from_state(4) == [1, 2, 5]
-    assert state.del_val_from_state(5) == [1, 2]
-    assert state.del_val_from_state(5) == [1, 2]
+    assert state.del_val_from_state(3) == [5, 4, 2]
+    assert state.del_val_from_state(4) == [5, 2, 1]
+    assert state.del_val_from_state(5) == [2, 1]
+    assert state.del_val_from_state(5) == [2, 1]
 
 
 def test_lastk_state_dedup():
     state = LastKState(k=3, dedup=True)
     assert state.add_val_to_state(1) == [1]
-    assert state.add_val_to_state(2) == [1, 2]
-    assert state.add_val_to_state(1) == [2, 1]
-    assert state.add_val_to_state(3) == [2, 1, 3]
-    assert state.add_val_to_state(4) == [1, 3, 4]
-    assert state.add_val_to_state(1) == [3, 4, 1]
+    assert state.add_val_to_state(2) == [2, 1]
+    assert state.add_val_to_state(1) == [1, 2]
+    assert state.add_val_to_state(3) == [3, 1, 2]
+    assert state.add_val_to_state(4) == [4, 3, 1]
+    assert state.add_val_to_state(1) == [1, 4, 3]
 
-    assert state.del_val_from_state(3) == [2, 4, 1]
-    assert state.del_val_from_state(4) == [2, 1]
+    assert state.del_val_from_state(3) == [1, 4, 2]
+    assert state.del_val_from_state(4) == [1, 2]
 
 
 def test_min_state():
