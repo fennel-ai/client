@@ -10,6 +10,7 @@ from typing import Dict, Optional, Any, Set, List, Union, Tuple
 import fennel._vendor.requests as requests  # type: ignore
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
+from fennel.lib.schema import parse_json
 from fennel.lib.to_proto import to_sync_request_proto
 from fennel.utils import check_response
 
@@ -354,13 +355,19 @@ class Client:
             )
 
         output_feature_names = []
+        output_feature_name_to_type = {}
         for output_feature in output_feature_list:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn())
+                output_feature_name_to_type[
+                    output_feature.fqn()
+                ] = output_feature.dtype
             elif isinstance(output_feature, Featureset):
                 output_feature_names.extend(
                     [f.fqn() for f in output_feature.features]
                 )
+                for f in output_feature.features:
+                    output_feature_name_to_type[f.fqn()] = f.dtype
 
         req = {
             "input_features": input_feature_names,
@@ -378,9 +385,19 @@ class Client:
         if len(output_feature_list) > 1 or isinstance(
             output_feature_list[0], Featureset
         ):
-            return pd.DataFrame(response.json())
+            df = pd.DataFrame(response.json())
+            for col in df.columns:
+                if df[col].dtype == "object":
+                    df[col] = df[col].apply(
+                        lambda x: parse_json(
+                            output_feature_name_to_type[col], x
+                        )
+                    )
+            return df
         else:
-            return pd.Series(response.json())
+            s = pd.Series(response.json())
+            dtype = output_feature_name_to_type[output_feature_names[0]]
+            return s.apply(lambda x: parse_json(dtype, x))
 
     def extract_historical_features(
         self,

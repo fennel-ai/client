@@ -76,7 +76,7 @@ class MovieFeatures:
     @outputs(cast_list)
     def extract_cast(cls, ts: pd.Series, movie: pd.Series):
         res, _ = MovieInfo.lookup(ts, movie=movie)  # type: ignore
-        return res
+        return pd.Series(res["cast_list"])
 
     @extractor(depends_on=[MovieInfo])
     @inputs(movie)
@@ -103,7 +103,7 @@ def log_movie_data(client):
         [
             {"movie_id": 101, "title": "Inception"},
             {"name": "Ellen Page", "actor_id": 2, "age": 34},
-            now,
+            now - pd.Timedelta("1 day"),
         ],
         [
             {"movie_id": 102, "title": "Titanic"},
@@ -113,7 +113,7 @@ def log_movie_data(client):
         [
             {"movie_id": 102, "title": "Titanic"},
             {"name": "Kate Winslet", "actor_id": 3, "age": 45},
-            now,
+            now - pd.Timedelta("1 day"),
         ],
     ]
     columns = ["movie", "cast", "timestamp"]
@@ -160,8 +160,8 @@ def test_struct_type(client):
     )  # 2 cast members for "Inception"
     assert len(df["MovieFeatures.cast_list"][1]) == 2  # 2 cast members for
     # "Titanic"
-    cast1 = df["MovieFeatures.cast_list"][0][0]
     leanardo = Cast(name="Leonardo DiCaprio", actor_id=1, age=46)
+    cast1 = df["MovieFeatures.cast_list"][0][0]
     assert cast1.name == leanardo.name
     assert cast1.actor_id == leanardo.actor_id
     assert cast1.age == leanardo.age

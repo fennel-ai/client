@@ -4,6 +4,8 @@ import time
 import pandas as pd
 from typing import List, Set, Tuple, Union
 
+from fennel.lib.schema import parse_json
+
 try:
     import pyarrow as pa
     from fennel_client_lib import RustClient  # type: ignore
@@ -109,15 +111,19 @@ class IntegrationClient:
                 f"Input dataframe columns: {input_dataframe.columns}"
             )
         output_feature_names = []
+        output_feature_name_to_type = {}
         for output_feature in output_feature_list:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn_)
+                output_feature_name_to_type[
+                    output_feature.fqn()
+                ] = output_feature.dtype
             elif isinstance(output_feature, Featureset):
                 output_feature_names.extend(
                     [f.fqn_ for f in output_feature.features]
                 )
-            elif type(output_feature) is tuple:
-                output_feature_names.extend([f.fqn_ for f in output_feature])
+                for f in output_feature.features:
+                    output_feature_name_to_type[f.fqn()] = f.dtype
 
         input_df_json = input_dataframe.to_json(orient="records")
         output_record_batch = self._client.extract_features(
@@ -128,8 +134,13 @@ class IntegrationClient:
             workflow,
             sampling_rate,
         )
-        output_df = output_record_batch.to_pandas()
-        return output_df
+        df = output_record_batch.to_pandas()
+        for col in df.columns:
+            if df[col].dtype == "object":
+                df[col] = df[col].apply(
+                    lambda x: parse_json(output_feature_name_to_type[col], x)
+                )
+        return df
 
     def add(self, obj: Union[Dataset, Featureset]):
         if isinstance(obj, Dataset):
