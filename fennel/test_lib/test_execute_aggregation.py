@@ -8,7 +8,10 @@ from fennel.test_lib.execute_aggregation import (
     MaxState,
     MinForeverState,
     MaxForeverState,
+    StddevState
 )
+
+from math import nan, sqrt
 
 
 def test_sum_state():
@@ -131,3 +134,15 @@ def test_max_forever_state():
     assert state.add_val_to_state(2) == 4
     assert state.add_val_to_state(3) == 4
     assert state.add_val_to_state(7) == 7
+
+
+def test_stddev_state():
+    state = StddevState()
+    assert state.add_val_to_state(1) == 0
+    assert state.add_val_to_state(1) == 0
+    assert state.add_val_to_state(10) == sqrt(18)
+    assert state.del_val_from_state(1) == 4.5
+    assert state.del_val_from_state(1) == 0
+    assert state.get_val() == 0
+    assert math.isnan(state.del_val_from_state(10))
+    assert math.isnan(state.get_val())

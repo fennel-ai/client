@@ -3,10 +3,11 @@ from abc import ABC, abstractmethod
 from collections import Counter
 
 import pandas as pd
+from math import nan, sqrt
 from typing import Dict, List
 
 from fennel.lib.aggregate import AggregateType
-from fennel.lib.aggregate import Count, Sum, Average, LastK, Min, Max
+from fennel.lib.aggregate import Count, Sum, Average, LastK, Min, Max, Stddev
 from fennel.lib.duration import duration_to_timedelta
 
 # Type of data, 1 indicates insert -1 indicates delete.
@@ -271,6 +272,41 @@ class MaxState(AggState):
         return self.max_heap.top()
 
 
+class StddevState(AggState):
+    def __init__(self):
+        self.count = 0
+        self.mean = 0
+        self.m2 = 0
+
+    def add_val_to_state(self, val):
+        self.count += 1
+        delta = val - self.mean
+        self.mean += delta / self.count
+        delta2 = val - self.mean
+        self.m2 += delta * delta2
+        return self.get_val()
+
+    def del_val_from_state(self, val):
+        self.count -= 1
+        if self.count == 0:
+            self.mean = 0
+            self.m2 = 0
+            return
+        delta = val - self.mean
+        self.mean -= delta / self.count
+        delta2 = val - self.mean
+        self.m2 -= delta * delta2
+        return self.get_val()
+
+    def get_val(self):
+        if self.count == 0:
+            return nan
+        variance = self.m2 / self.count
+        if variance < 0: 
+            return nan
+        return sqrt(variance)
+
+
 def get_aggregated_df(
     input_df: pd.DataFrame,
     aggregate: AggregateType,
@@ -342,6 +378,8 @@ def get_aggregated_df(
                         state[key] = MaxForeverState(aggregate.default)
                     else:
                         state[key] = MaxState(aggregate.default)
+                elif isinstance(aggregate, Stddev):
+                    state[key] = StddevState()
                 else:
                     raise Exception(
                         f"Unsupported aggregate function {aggregate}"

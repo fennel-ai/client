@@ -3,6 +3,7 @@ import re
 import time
 import unittest
 from datetime import datetime, timedelta
+from math import sqrt
 
 import pandas as pd
 import pytest
@@ -11,7 +12,7 @@ from typing import Optional, List, Dict
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Min, Max
-from fennel.lib.aggregate import Sum, Average, Count
+from fennel.lib.aggregate import Sum, Average, Count, Stddev
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import between, oneof, inputs, struct
@@ -370,6 +371,7 @@ class MovieRatingCalculated:
     sum_ratings: float
     min_ratings: float
     max_ratings: float
+    stddev_ratings: float
     t: datetime
 
     @pipeline(version=1)
@@ -401,6 +403,11 @@ class MovieRatingCalculated:
                     of="rating",
                     into_field=str(cls.max_ratings),
                     default=0.0,
+                ),
+                Stddev(
+                    window=Window("forever"),
+                    of="rating",
+                    into_field=str(cls.stddev_ratings),
                 ),
             ]
         )
@@ -822,14 +829,20 @@ class TestBasicAggregate(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (2, 7)
+        assert df.shape == (2, 8)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
         assert df["num_ratings"].tolist() == [4, 5]
         assert df["sum_ratings"].tolist() == [12, 20]
         assert df["min_ratings"].tolist() == [2, 3]
         assert df["max_ratings"].tolist() == [5, 5]
-
+        assert all([abs(actual - expected) < .001
+                    for actual, expected in zip(
+                    df["stddev_ratings"].tolist(), [sqrt(3/2), sqrt(4/5)])])
+        # todo zaki delete this
+        for a, e in zip(df["stddev_ratings"].tolist(),  [sqrt(3/2), sqrt(4/5)]):
+            print(f"rating is {a}, expected {e}")
+            assert abs(a - e) < .001
 
 @meta(owner="test@test.com")
 @dataset
@@ -841,6 +854,7 @@ class MovieRatingWindowed:
     sum_ratings_7d: float
     avg_rating_6h: float
     total_ratings: int
+    std_rating_3d: float
 
     t: datetime
 
@@ -863,6 +877,11 @@ class MovieRatingWindowed:
                 Count(
                     window=Window("forever"), into_field=str(cls.total_ratings)
                 ),
+                Stddev(
+                    window=Window("3d"),
+                    of="rating",
+                    into_field=str(cls.std_rating_3d),
+                )
             ]
         )
 
@@ -922,7 +941,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (6, 6)
+        assert df.shape == (6, 7)
         assert df["movie"].tolist() == [
             "Jumanji",
             "Titanic",
@@ -936,6 +955,14 @@ class TestBasicWindowAggregate(unittest.TestCase):
         assert df["sum_ratings_7d"].tolist() == [13, 19, 12, 17, 7, 4]
         assert df["avg_rating_6h"].tolist() == [0.0, 0.0, 0.0, 0.0, 2.0, 4.0]
         assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
+
+        # todo zaki delete this
+        for a, e in zip(df["std_rating_3d"].tolist(),  [0, 0, 0, 0, sqrt(2)/3, 0]):
+            print(f"rating is {a}, expected {e}")
+            assert abs(a - e) < .001
+        assert all([abs(actual - expected) < .001
+                    for actual, expected in zip(
+                    df["std_rating_3d"].tolist(), [0, 0, 0, 0, sqrt(2)/3, 0])])
 
 
 @meta(owner="test@test.com")
@@ -2288,6 +2315,7 @@ class TransactionsCreditInternetBanking:
     max_credit_internet_banking: float
     mean_credit_internet_banking: float
     number_credit_internet_banking: int
+    stddev_credit_internet_banking: float
 
     @pipeline(version=1)
     @inputs(TransactionsCredit)
@@ -2325,6 +2353,11 @@ class TransactionsCreditInternetBanking:
                         window=Window("forever"),
                         into_field="number_credit_internet_banking",
                     ),
+                    Stddev(
+                        of="computed_amount",
+                        window=Window("forever"),
+                        into_field="stddev_credit_internet_banking",
+                    )
                 ]
             )
         )
@@ -2342,7 +2375,7 @@ def test_chained_lambda(client):
     sync_request = view._get_sync_request_proto()
 
     assert len(sync_request.pipelines) == 1
-    assert len(sync_request.operators) == 5
+    assert len(sync_request.operators) == 6
 
     expected_code = """
 @dataset
@@ -2355,7 +2388,7 @@ class TransactionsCreditInternetBanking:
     max_credit_internet_banking: float
     mean_credit_internet_banking: float
     number_credit_internet_banking: int
-
+    stddev_credit_internet_banking: float
 
     @classmethod
     def wrapper_4d45b34b11(cls, *args, **kwargs):

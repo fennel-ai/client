@@ -27,7 +27,7 @@ from typing import (
 
 import fennel.sources as sources
 from fennel.lib.aggregate import AggregateType
-from fennel.lib.aggregate.aggregate import Average, Count, LastK, Sum, Min, Max
+from fennel.lib.aggregate.aggregate import Average, Count, LastK, Sum, Min, Max, Stddev
 from fennel.lib.duration.duration import (
     Duration,
     duration_to_timedelta,
@@ -325,6 +325,8 @@ class Aggregate(_Node):
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
                 values[agg.into_field] = List[dtype]  # type: ignore
+            elif isinstance(agg, Stddev):
+                values[agg.into_field] = float  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
         return DSSchema(
@@ -1642,6 +1644,8 @@ class SchemaValidator(Visitor):
                         f"invalid max: default value `{agg.default}` not of type `int`"
                     )
                 values[agg.into_field] = dtype  # type: ignore
+            elif isinstance(agg, Stddev):
+                values[agg.into_field] = float  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
         return DSSchema(

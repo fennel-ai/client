@@ -134,6 +134,7 @@ dmypy.json
 # IDE files
 **/.idea/
 **/.vscode
+**/*.sw*
 
 *.ipynb
 

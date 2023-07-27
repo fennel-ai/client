@@ -157,6 +157,21 @@ class LastK(AggregateType):
 
     def signature(self):
         return f"lastk_{self.of}_{self.window.signature()}"
+    
+class Stddev(AggregateType):
+    of: str
+
+    def to_proto(self):
+        return spec_proto.PreSpec(
+            stddev=spec_proto.Stddev(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+            )
+        )
+
+    def signature(self):
+        return f"stddev_{self.of}_{self.window.signature()}"
 
 
 class TopK(AggregateType):
