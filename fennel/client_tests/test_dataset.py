@@ -839,10 +839,6 @@ class TestBasicAggregate(unittest.TestCase):
         assert all([abs(actual - expected) < .001
                     for actual, expected in zip(
                     df["stddev_ratings"].tolist(), [sqrt(3/2), sqrt(4/5)])])
-        # todo zaki delete this
-        for a, e in zip(df["stddev_ratings"].tolist(),  [sqrt(3/2), sqrt(4/5)]):
-            print(f"rating is {a}, expected {e}")
-            assert abs(a - e) < .001
 
 @meta(owner="test@test.com")
 @dataset
@@ -955,11 +951,6 @@ class TestBasicWindowAggregate(unittest.TestCase):
         assert df["sum_ratings_7d"].tolist() == [13, 19, 12, 17, 7, 4]
         assert df["avg_rating_6h"].tolist() == [0.0, 0.0, 0.0, 0.0, 2.0, 4.0]
         assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
-
-        # todo zaki delete this
-        for a, e in zip(df["std_rating_3d"].tolist(),  [0, 0, 0, 0, sqrt(2)/3, 0]):
-            print(f"rating is {a}, expected {e}")
-            assert abs(a - e) < .001
         assert all([abs(actual - expected) < .001
                     for actual, expected in zip(
                     df["std_rating_3d"].tolist(), [0, 0, 0, 0, sqrt(2)/3, 0])])
