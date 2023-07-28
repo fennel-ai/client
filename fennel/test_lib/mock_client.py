@@ -112,8 +112,8 @@ def dataset_lookup_impl(
     timestamp_length = len(ts)
     if timestamp_length != keys.shape[0]:
         raise ValueError(
-            f"Timestamp length {timestamp_length} does not match key length "
-            f"{keys.shape[0]} for dataset {cls_name}."
+            f"Length of timestamp array `{timestamp_length}` does not match ",
+            f"length of keys array {keys.shape[0]} for dataset {cls_name}.",
         )
     keys[timestamp_field] = ts
     keys[FENNEL_ORDER] = np.arange(len(keys))
@@ -127,14 +127,22 @@ def dataset_lookup_impl(
         for col, right_df in data_dict.items():
             right_df[FENNEL_LOOKUP] = True
             right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
-            df = pd.merge_asof(
-                left=keys,
-                right=right_df,
-                on=timestamp_field,
-                by=join_columns,
-                direction="backward",
-                suffixes=("", "_right"),
-            )
+            try:
+                df = pd.merge_asof(
+                    left=keys,
+                    right=right_df,
+                    on=timestamp_field,
+                    by=join_columns,
+                    direction="backward",
+                    suffixes=("", "_right"),
+                )
+            except Exception as e:
+                raise ValueError(
+                    f"Error while performing lookup on dataset {cls_name} "
+                    f"with key fields {join_columns}, key length "
+                    f"{keys.shape}, and shape of dataset being"
+                    f"looked up{right_df.shape}: {e} "
+                )
             df.drop(timestamp_field, axis=1, inplace=True)
             df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
             df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
@@ -473,9 +481,17 @@ class MockClient(Client):
         extractors = get_extractor_order(
             input_feature_list, output_feature_list, self.extractors
         )
-        return self._run_extractors(
+        output_df = self._run_extractors(
             extractors, input_dataframe, output_feature_list, timestamps
         )
+        assert output_df.shape[0] == len(timestamps), (
+            "Output dataframe has {"
+            "} rows, but there are "
+            "only {} "
+            "timestamps".format(output_df.shape[0], len(timestamps))
+        )
+        output_df[timestamp_column] = timestamps
+        return output_df
 
     # --------------- Public MockClient Specific methods -------------------
 
@@ -659,7 +675,8 @@ class MockClient(Client):
             extractor_fqn = f"{extractor.featureset}.{extractor.name}"
             func = self.extractor_funcs[extractor_fqn]
             try:
-                output = func(timestamps, *prepare_args)
+                ts_clone = timestamps.copy()
+                output = func(ts_clone, *prepare_args)
             except Exception as e:
                 raise Exception(
                     f"Extractor `{extractor.name}` in `{extractor.featureset}` "

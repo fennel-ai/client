@@ -353,7 +353,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
             timestamp_column="timestamps",
         )
 
-        self.assertEqual(feature_df.shape, (2, 3))
+        self.assertEqual(feature_df.shape, (2, 4))
         self.assertEqual(
             feature_df["UserInfoTransformedFeatures.age_power_four"].tolist(),
             [1048576, 331776],
@@ -491,12 +491,13 @@ class TestDocumentDataset(unittest.TestCase):
             ),
             timestamp_column="timestamps",
         )
-        assert feature_df.shape == (2, 4)
+        assert feature_df.shape == (2, 5)
         assert feature_df.columns.tolist() == [
             "DocumentFeatures.doc_id",
             "DocumentFeatures.bert_embedding",
             "DocumentFeatures.fast_text_embedding",
             "DocumentFeatures.num_words",
+            "timestamps",
         ]
         assert feature_df["DocumentFeatures.doc_id"].tolist() == [
             18232,

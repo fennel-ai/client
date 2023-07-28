@@ -247,3 +247,4 @@ def test_aggregate(client):
     )
     assert df["UserAdStatsFeatures.num_clicks"].tolist() == [4, 4, 3, 2, 2]
     assert df["UserAdStatsFeatures.num_clicks_1w"].tolist() == [2, 2, 2, 1, 1]
+    assert "timestamps" in df.columns
