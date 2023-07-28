@@ -1111,6 +1111,99 @@ class TestBasicCountUnique(unittest.TestCase):
         assert df["unique_movies_2h"].tolist() == [2, 1, None]
 
 
+@meta(owner="test@test.com")
+@source(webhook.endpoint("RatingActivity"))
+@dataset
+class UniqueRatingActivity:
+    userid: int = field(key=True)
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(key=True)  # type: ignore # noqa =
+    rating: float
+    t: datetime
+
+
+@meta(owner="abhay@fennel.ai")
+@dataset
+class FirstMovieSeen:
+    userid: int = field(key=True)
+    rating: float
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
+    t: datetime
+
+    @pipeline(version=1)
+    @inputs(RatingActivity)
+    def pipeline_first_movie_seen(cls, rating: Dataset):
+        return rating.groupby("userid").first()
+
+
+class TestFirstOp(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_first_op(self, client):
+        # # Sync the dataset
+        client.sync(
+            datasets=[FirstMovieSeen, RatingActivity],
+        )
+        now = datetime.now()
+        five_hours_ago = now - timedelta(hours=5)
+        three_hours_ago = now - timedelta(hours=3)
+        two_hours_ago = now - timedelta(hours=2)
+        one_hour_ago = now - timedelta(hours=2)
+        minute_ago = now - timedelta(minutes=1)
+        data = [
+            [18231, 4.5, "Jumanji", five_hours_ago],
+            [18232, 3, "Titanic", five_hours_ago],
+            [18233, 5, "Titanic", five_hours_ago],
+            [18234, 4, "RaOne", five_hours_ago],
+        ]
+        columns = ["userid", "rating", "movie", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+        # Do some lookups to verify pipeline_unique_movies_seen is working as expected
+        ts = pd.Series([now, now, now, now])
+        df, _ = FirstMovieSeen.lookup(
+            ts,
+            userid=pd.Series([18231, 18232, 18233, 18234]),
+        )
+        assert df.shape == (4, 4)
+        assert df["movie"].tolist() == [
+            "Jumanji",
+            "Titanic",
+            "Titanic",
+            "RaOne",
+        ]
+        assert df["rating"].tolist() == [4.5, 3, 5, 4]
+
+        # Now, log some more data at later times. We should still get the same results as before.
+        data = [
+            [18232, 3, "Titanic", two_hours_ago],
+            [18231, 3.5, "Jumanji", three_hours_ago],
+            [18234, 4, "Titanic", minute_ago],
+            [18231, 2, "RaOne", one_hour_ago],
+            [18233, 3, "RaOne", minute_ago],
+            [18232, 1, "RaOne", two_hours_ago],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+        # Do some lookups to verify pipeline_unique_movies_seen is working as expected
+        ts = pd.Series([now, now, now, now])
+        df, _ = FirstMovieSeen.lookup(
+            ts,
+            userid=pd.Series([18231, 18232, 18233, 18234]),
+        )
+        assert df.shape == (4, 4)
+        assert df["movie"].tolist() == [
+            "Jumanji",
+            "Titanic",
+            "Titanic",
+            "RaOne",
+        ]
+        assert df["rating"].tolist() == [4.5, 3, 5, 4]
+
+
 ################################################################################
 #                           Dataset Complex Structure Unit Tests
 ################################################################################

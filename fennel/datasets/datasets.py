@@ -351,6 +351,11 @@ class GroupBy:
             self.keys = self.keys[0]  # type: ignore
         return Aggregate(self.node, list(self.keys), aggregates)
 
+    def first(self) -> _Node:
+        if len(self.keys) == 1 and isinstance(self.keys[0], list):
+            self.keys = self.keys[0]  # type: ignore
+        return First(self.node, list(self.keys))  # type: ignore
+
     def dsschema(self):
         raise NotImplementedError
 
@@ -389,6 +394,36 @@ class Explode(_Node):
             # extract type T from List[t]
             dsschema.values[c] = Optional[get_args(dsschema.values[c])[0]]
         return dsschema
+
+
+class First:
+    def __init__(self, node: _Node, keys: List[str]):
+        super().__init__()
+        if len(keys) == 0:
+            raise ValueError("Must specify at least one key")
+        self.keys = keys
+        self.node = node
+        self.node.out_edges.append(self)
+
+    def signature(self):
+        if isinstance(self.node, Dataset):
+            return fhash(self.node._name, self.keys)
+        return fhash(self.node.signature(), self.keys)
+
+    def dsschema(self):
+        input_schema = self.node.dsschema()
+        keys = {f: input_schema.get_type(f) for f in self.keys}
+        value_fields = [
+            f
+            for f in input_schema.values
+            if f not in self.keys and f != input_schema.timestamp
+        ]
+        values = {f: input_schema.get_type(f) for f in value_fields}
+        return DSSchema(
+            keys=keys,
+            timestamp=input_schema.timestamp,
+            values=values,
+        )
 
 
 class Join(_Node):
@@ -1314,6 +1349,8 @@ class Visitor:
             return self.visitDedup(obj)
         elif isinstance(obj, Explode):
             return self.visitExplode(obj)
+        elif isinstance(obj, First):
+            return self.visitFirst(obj)
         else:
             raise Exception("invalid node type: %s" % obj)
 
@@ -1348,6 +1385,9 @@ class Visitor:
         raise NotImplementedError()
 
     def visitExplode(self, obj):
+        raise NotImplementedError()
+
+    def visitFirst(self, obj):
         raise NotImplementedError()
 
 
@@ -1805,4 +1845,9 @@ class SchemaValidator(Visitor):
                 )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
+        return output_schema
+
+    def visitFirst(self, obj) -> DSSchema:
+        output_schema = copy.deepcopy(obj.dsschema())
+        output_schema.name = f"'[Pipeline:{self.pipeline_name}]->first node'"
         return output_schema

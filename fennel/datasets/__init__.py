@@ -16,4 +16,5 @@ from fennel.datasets.datasets import (
     Visitor,
     Dedup,
     Explode,
+    First,
 )
