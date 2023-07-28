@@ -485,7 +485,6 @@ def _kafka_conn_to_source_proto(
         data_source.sasl_mechanism,
         data_source.sasl_plain_username,
         data_source.sasl_plain_password,
-        data_source.sasl_jaas_config,
         data_source.verify_cert,
     )
     source = connector_proto.Source(
@@ -508,7 +507,6 @@ def _kafka_to_ext_db_proto(
     sasl_mechanism: Optional[str],
     sasl_plain_username: Optional[str],
     sasl_plain_password: Optional[str],
-    sasl_jaas_config: Optional[str],
     verify_cert: Optional[bool],
 ) -> connector_proto.ExtDatabase:
     if sasl_mechanism is None:
@@ -517,8 +515,6 @@ def _kafka_to_ext_db_proto(
         sasl_plain_username = ""
     if sasl_plain_password is None:
         sasl_plain_password = ""
-    if sasl_jaas_config is None:
-        sasl_jaas_config = ""
 
     return connector_proto.ExtDatabase(
         name=name,
@@ -528,7 +524,7 @@ def _kafka_to_ext_db_proto(
             sasl_mechanism=sasl_mechanism,
             sasl_plain_username=sasl_plain_username,
             sasl_plain_password=sasl_plain_password,
-            sasl_jaas_config=sasl_jaas_config,
+            sasl_jaas_config="",  # TODO(xiao): remove once server side is updated
             enable_ssl_certificate_verification=BoolValue(value=verify_cert),
         ),
     )

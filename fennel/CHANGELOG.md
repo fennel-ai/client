@@ -1,4 +1,10 @@
 # Changelog
+## [0.17.0] - 2023-08-03
+- Remove jaas config from kafka source
+- Fix kafka validation for security protocol
+- Add delta lake for S3 format
+- Fix validation bug
+
 ## [0.16.19] - 2023-08-02
 - Support for 'stddev' aggregate
 

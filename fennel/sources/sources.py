@@ -217,20 +217,19 @@ class Kafka(DataSource):
     sasl_mechanism: Optional[str]
     sasl_plain_username: Optional[str]
     sasl_plain_password: Optional[str]
-    sasl_jaas_config: Optional[str]
     verify_cert: Optional[bool]
 
     def _validate(self) -> List[Exception]:
         exceptions: List[Exception] = []
         if self.security_protocol not in [
-            "PLAIN TEXT",
-            "SASL PLAINTEXT",
-            "SASL SSL",
+            "PLAINTEXT",
+            "SASL_PLAINTEXT",
+            "SASL_SSL",
         ]:
             exceptions.append(
                 ValueError(
                     "sasl_mechanism must be one of "
-                    "PLAIN TEXT, SASL PLAINTEXT, SASL SSL"
+                    "PLAINTEXT, SASL_PLAINTEXT, SASL_SSL"
                 )
             )
         return exceptions
@@ -251,7 +250,6 @@ class Kafka(DataSource):
             sasl_mechanism="",
             sasl_plain_username="",
             sasl_plain_password="",
-            sasl_jaas_config="",
             verify_cert=None,
         )
 
@@ -491,18 +489,22 @@ class S3Connector(DataConnector):
 
     def _validate(self) -> List[Exception]:
         exceptions: List[Exception] = []
-        if self.format not in ["csv", "json", "parquet", "hudi"]:
+        if self.format not in ["csv", "json", "parquet", "hudi", "delta_lake"]:
             exceptions.append(
-                TypeError("format must be either csv, json, parquet, or hudi")
+                TypeError(
+                    "format must be either csv, json, parquet, hudi, delta_lake"
+                )
             )
         if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
             exceptions.append(
                 Exception("delimiter must be one of [',', '\t', '|']")
             )
-        if self.format == "hudi" and self.cursor is not None:
+        if (
+            self.format == "hudi" or self.format == "delta_lake"
+        ) and self.cursor is not None:
             exceptions.append(
                 Exception(
-                    "cursor must be None for hudi format, since it uses the commit timestamp."
+                    "cursor must be None for hudi or delta_lake format, since it uses the commit timestamp."
                 )
             )
         return exceptions
