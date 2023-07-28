@@ -382,22 +382,13 @@ class Client:
 
         response = self._post_json("{}/extract_features".format(V1_API), req)
         check_response(response)
-        if len(output_feature_list) > 1 or isinstance(
-            output_feature_list[0], Featureset
-        ):
-            df = pd.DataFrame(response.json())
-            for col in df.columns:
-                if df[col].dtype == "object":
-                    df[col] = df[col].apply(
-                        lambda x: parse_json(
-                            output_feature_name_to_type[col], x
-                        )
-                    )
-            return df
-        else:
-            s = pd.Series(response.json())
-            dtype = output_feature_name_to_type[output_feature_names[0]]
-            return s.apply(lambda x: parse_json(dtype, x))
+        df = pd.DataFrame(response.json())
+        for col in df.columns:
+            if df[col].dtype == "object":
+                df[col] = df[col].apply(
+                    lambda x: parse_json(output_feature_name_to_type[col], x)
+                )
+        return df
 
     def extract_historical_features(
         self,

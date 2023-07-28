@@ -205,6 +205,7 @@ feature_df = client.extract_historical_features(
 assert feature_df.columns.tolist() == [
     "UserSellerFeatures.num_orders_1d",
     "UserSellerFeatures.num_orders_1w",
+    "timestamps",
 ]
 assert feature_df["UserSellerFeatures.num_orders_1d"].tolist() == [2, 1, 0, 0]
 assert feature_df["UserSellerFeatures.num_orders_1w"].tolist() == [2, 1, 0, 0]

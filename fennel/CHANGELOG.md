@@ -1,4 +1,7 @@
 # Changelog
+## [0.16.16] - 2023-07-20
+- Better errors in mock client
+
 ## [0.16.15] - 2023-07-20
 - Support struct type 
 
