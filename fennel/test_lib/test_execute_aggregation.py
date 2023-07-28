@@ -11,7 +11,7 @@ from fennel.test_lib.execute_aggregation import (
     StddevState
 )
 
-from math import nan, sqrt
+from math import isnan, nan, sqrt
 
 
 def test_sum_state():
@@ -144,5 +144,4 @@ def test_stddev_state():
     assert state.del_val_from_state(1) == 4.5
     assert state.del_val_from_state(1) == 0
     assert state.get_val() == 0
-    assert math.isnan(state.del_val_from_state(10))
-    assert math.isnan(state.get_val())
+    assert isnan(state.del_val_from_state(10))

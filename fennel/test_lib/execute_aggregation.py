@@ -291,7 +291,7 @@ class StddevState(AggState):
         if self.count == 0:
             self.mean = 0
             self.m2 = 0
-            return
+            return nan
         delta = val - self.mean
         self.mean -= delta / self.count
         delta2 = val - self.mean

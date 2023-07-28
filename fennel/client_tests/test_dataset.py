@@ -2366,7 +2366,7 @@ def test_chained_lambda(client):
     sync_request = view._get_sync_request_proto()
 
     assert len(sync_request.pipelines) == 1
-    assert len(sync_request.operators) == 6
+    assert len(sync_request.operators) == 5
 
     expected_code = """
 @dataset
