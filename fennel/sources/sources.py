@@ -489,10 +489,10 @@ class S3Connector(DataConnector):
 
     def _validate(self) -> List[Exception]:
         exceptions: List[Exception] = []
-        if self.format not in ["csv", "json", "parquet", "hudi", "delta_lake"]:
+        if self.format not in ["csv", "json", "parquet", "hudi", "delta"]:
             exceptions.append(
                 TypeError(
-                    "format must be either csv, json, parquet, hudi, delta_lake"
+                    "format must be either csv, json, parquet, hudi, delta"
                 )
             )
         if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
@@ -500,11 +500,11 @@ class S3Connector(DataConnector):
                 Exception("delimiter must be one of [',', '\t', '|']")
             )
         if (
-            self.format == "hudi" or self.format == "delta_lake"
+            self.format == "hudi" or self.format == "delta"
         ) and self.cursor is not None:
             exceptions.append(
                 Exception(
-                    "cursor must be None for hudi or delta_lake format, since it uses the commit timestamp."
+                    "cursor must be None for hudi or delta format, since it uses the commit timestamp."
                 )
             )
         return exceptions
