@@ -838,7 +838,8 @@ class TestBasicAggregate(unittest.TestCase):
         assert df["max_ratings"].tolist() == [5, 5]
         assert all([abs(actual - expected) < .001
                     for actual, expected in zip(
-                    df["stddev_ratings"].tolist(), [sqrt(3/2), sqrt(4/5)])])
+                    df["stddev_ratings"].tolist(), [sqrt(3 / 2), sqrt(4 / 5)])])
+
 
 @meta(owner="test@test.com")
 @dataset
@@ -953,7 +954,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
         assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
         assert all([abs(actual - expected) < .001
                     for actual, expected in zip(
-                    df["std_rating_3d"].tolist(), [0, 0, 0, 0, sqrt(2)/3, 0])])
+                    df["std_rating_3d"].tolist(), [0, 0, 0, 0, sqrt(2) / 3, 0])])
 
 
 @meta(owner="test@test.com")

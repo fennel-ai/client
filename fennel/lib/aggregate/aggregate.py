@@ -157,7 +157,8 @@ class LastK(AggregateType):
 
     def signature(self):
         return f"lastk_{self.of}_{self.window.signature()}"
-    
+
+
 class Stddev(AggregateType):
     of: str
 

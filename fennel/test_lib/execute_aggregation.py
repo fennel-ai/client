@@ -302,7 +302,7 @@ class StddevState(AggState):
         if self.count == 0:
             return nan
         variance = self.m2 / self.count
-        if variance < 0: 
+        if variance < 0:
             return nan
         return sqrt(variance)
 
