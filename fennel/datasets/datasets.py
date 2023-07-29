@@ -400,7 +400,9 @@ class First:
     def __init__(self, node: _Node, keys: List[str]):
         super().__init__()
         if len(keys) == 0:
-            raise ValueError("Must specify at least one key")
+            raise ValueError(
+                "'group_by' before 'first' must specify at least one key"
+            )
         self.keys = keys
         self.node = node
         self.node.out_edges.append(self)

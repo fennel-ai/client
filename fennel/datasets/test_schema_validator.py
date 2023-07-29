@@ -781,3 +781,122 @@ def test_explode_fails_on_primitive_column():
                 return hits.explode(columns=["movie"])
 
     assert str(e.value) == """Column `movie` in explode is not of type List"""
+
+
+def test_first_without_key_fails():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class SingleHits:
+            director: str
+            movie: str
+            revenue: int
+            t: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class FirstHit:
+            director: str
+            movie: str
+            revenue: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(SingleHits)
+            def pipeline_first(cls, hits: Dataset):
+                return hits.groupby().first()
+
+    assert (
+        str(e.value)
+        == """'group_by' before 'first' must specify at least one key"""
+    )
+
+
+def test_first_incorrect_schema_nokey():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class SingleHits:
+            director: str
+            movie: str
+            revenue: int
+            t: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class FirstHit:
+            director: str
+            movie: str
+            revenue: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(SingleHits)
+            def pipeline_first(cls, hits: Dataset):
+                return hits.groupby("director").first()
+
+    assert (
+        str(e.value)
+        == """[TypeError('Field `director` is present in `pipeline pipeline_first output` `key` schema but not present in `FirstHit key` schema.'), TypeError('Field `director` is present in `FirstHit` `value` schema but not present in `pipeline pipeline_first output value` schema.')]"""
+    )
+
+
+def test_first_incorrect_schema_missing_field():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class SingleHits:
+            director: str
+            movie: str
+            revenue: int
+            t: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class FirstHit:
+            director: str = field(key=True)
+            movie: str
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(SingleHits)
+            def pipeline_first(cls, hits: Dataset):
+                return hits.groupby("director").first()
+
+    assert (
+        str(e.value)
+        == """[TypeError('Field `revenue` is present in `pipeline pipeline_first output` `value` schema but not present in `FirstHit value` schema.')]"""
+    )
+
+
+def test_first_wrong_field():
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class SingleHits:
+            director: str
+            movie: str
+            revenue: int
+            t: datetime
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class FirstHit:
+            actor: str = field(key=True)
+            movie: str
+            revenue: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(SingleHits)
+            def pipeline_first(cls, hits: Dataset):
+                return hits.groupby("actor").first()
+
+    assert (
+        str(e.value)
+        == """field actor not found in schema of '[Dataset:SingleHits]'"""
+    )
