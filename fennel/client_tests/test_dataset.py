@@ -1135,13 +1135,37 @@ class FirstMovieSeen:
         return rating.groupby("userid").first()
 
 
+@meta(owner="abhay@fennel.ai")
+@dataset
+class NumTimesFirstMovie:
+    """
+    Given a movie, count the number of times it was the first movie seen by a user
+    """
+
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(key=True)  # type: ignore # noqa
+    count: int
+    t: datetime
+
+    @pipeline(version=1)
+    @inputs(FirstMovieSeen)
+    def pipeline_num_first(cls, first_movies: Dataset):
+        return first_movies.groupby("movie").aggregate(
+            [
+                Count(
+                    window=Window("forever"),
+                    into_field=str(cls.count),
+                )
+            ]
+        )
+
+
 class TestFirstOp(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_first_op(self, client):
         # # Sync the dataset
         client.sync(
-            datasets=[FirstMovieSeen, RatingActivity],
+            datasets=[FirstMovieSeen, RatingActivity, NumTimesFirstMovie],
         )
         now = datetime.now()
         five_hours_ago = now - timedelta(hours=5)
@@ -1160,7 +1184,7 @@ class TestFirstOp(unittest.TestCase):
         response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
-        # Do some lookups to verify pipeline_unique_movies_seen is working as expected
+        # Do some lookups to verify pipeline_first_movie_seen is working as expected
         ts = pd.Series([now, now, now, now])
         df, _ = FirstMovieSeen.lookup(
             ts,
@@ -1188,7 +1212,7 @@ class TestFirstOp(unittest.TestCase):
         response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
-        # Do some lookups to verify pipeline_unique_movies_seen is working as expected
+        # Do some lookups to verify pipeline_first_movie_seen is working as expected
         ts = pd.Series([now, now, now, now])
         df, _ = FirstMovieSeen.lookup(
             ts,
@@ -1202,6 +1226,17 @@ class TestFirstOp(unittest.TestCase):
             "RaOne",
         ]
         assert df["rating"].tolist() == [4.5, 3, 5, 4]
+
+        # Following does not work with mock client.
+        if client.is_integration_client():
+            # Do some lookups to verify pipeline_num_first is working as expected
+            ts = pd.Series([now, now, now])
+            df, _ = NumTimesFirstMovie.lookup(
+                ts,
+                movie=pd.Series(["Jumanji", "Titanic", "RaOne"]),
+            )
+            assert df.shape == (3, 3)
+            assert df["count"].tolist() == [1, 2, 1]
 
 
 ################################################################################
