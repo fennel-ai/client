@@ -8,7 +8,7 @@ from fennel.test_lib.execute_aggregation import (
     MaxState,
     MinForeverState,
     MaxForeverState,
-    StddevState
+    StddevState,
 )
 
 from math import isnan, nan, sqrt

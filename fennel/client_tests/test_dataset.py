@@ -836,9 +836,14 @@ class TestBasicAggregate(unittest.TestCase):
         assert df["sum_ratings"].tolist() == [12, 20]
         assert df["min_ratings"].tolist() == [2, 3]
         assert df["max_ratings"].tolist() == [5, 5]
-        assert all([abs(actual - expected) < .001
-                    for actual, expected in zip(
-                    df["stddev_ratings"].tolist(), [sqrt(3 / 2), sqrt(4 / 5)])])
+        assert all(
+            [
+                abs(actual - expected) < 0.001
+                for actual, expected in zip(
+                    df["stddev_ratings"].tolist(), [sqrt(3 / 2), sqrt(4 / 5)]
+                )
+            ]
+        )
 
 
 @meta(owner="test@test.com")
@@ -878,7 +883,7 @@ class MovieRatingWindowed:
                     window=Window("3d"),
                     of="rating",
                     into_field=str(cls.std_rating_3d),
-                )
+                ),
             ]
         )
 
@@ -952,9 +957,14 @@ class TestBasicWindowAggregate(unittest.TestCase):
         assert df["sum_ratings_7d"].tolist() == [13, 19, 12, 17, 7, 4]
         assert df["avg_rating_6h"].tolist() == [0.0, 0.0, 0.0, 0.0, 2.0, 4.0]
         assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
-        assert all([abs(actual - expected) < .001
-                    for actual, expected in zip(
-                    df["std_rating_3d"].tolist(), [0, 0, 0, 0, sqrt(2) / 3, 0])])
+        assert all(
+            [
+                abs(actual - expected) < 0.001
+                for actual, expected in zip(
+                    df["std_rating_3d"].tolist(), [0, 0, 0, 0, sqrt(2) / 3, 0]
+                )
+            ]
+        )
 
 
 @meta(owner="test@test.com")
@@ -2349,7 +2359,7 @@ class TransactionsCreditInternetBanking:
                         of="computed_amount",
                         window=Window("forever"),
                         into_field="stddev_credit_internet_banking",
-                    )
+                    ),
                 ]
             )
         )

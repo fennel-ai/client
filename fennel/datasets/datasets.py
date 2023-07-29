@@ -27,7 +27,15 @@ from typing import (
 
 import fennel.sources as sources
 from fennel.lib.aggregate import AggregateType
-from fennel.lib.aggregate.aggregate import Average, Count, LastK, Sum, Min, Max, Stddev
+from fennel.lib.aggregate.aggregate import (
+    Average,
+    Count,
+    LastK,
+    Sum,
+    Min,
+    Max,
+    Stddev,
+)
 from fennel.lib.duration.duration import (
     Duration,
     duration_to_timedelta,
