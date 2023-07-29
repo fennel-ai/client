@@ -1111,16 +1111,6 @@ class TestBasicCountUnique(unittest.TestCase):
         assert df["unique_movies_2h"].tolist() == [2, 1, None]
 
 
-@meta(owner="test@test.com")
-@source(webhook.endpoint("RatingActivity"))
-@dataset
-class UniqueRatingActivity:
-    userid: int = field(key=True)
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(key=True)  # type: ignore # noqa =
-    rating: float
-    t: datetime
-
-
 @meta(owner="abhay@fennel.ai")
 @dataset
 class FirstMovieSeen:

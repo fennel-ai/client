@@ -417,7 +417,7 @@ class First:
         keys = {f: input_schema.get_type(f) for f in self.keys}
         value_fields = [
             f
-            for f in input_schema.values
+            for f in {**input_schema.values, **input_schema.keys}
             if f not in self.keys and f != input_schema.timestamp
         ]
         values = {f: input_schema.get_type(f) for f in value_fields}
