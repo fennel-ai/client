@@ -399,10 +399,6 @@ class Explode(_Node):
 class First:
     def __init__(self, node: _Node, keys: List[str]):
         super().__init__()
-        if len(keys) == 0:
-            raise ValueError(
-                "'group_by' before 'first' must specify at least one key"
-            )
         self.keys = keys
         self.node = node
         self.node.out_edges.append(self)
@@ -1851,5 +1847,9 @@ class SchemaValidator(Visitor):
 
     def visitFirst(self, obj) -> DSSchema:
         output_schema = copy.deepcopy(obj.dsschema())
+        if len(output_schema.keys) == 0:
+            raise ValueError(
+                f"'group_by' before 'first' in {self.pipeline_name} must specify at least one key"
+            )
         output_schema.name = f"'[Pipeline:{self.pipeline_name}]->first node'"
         return output_schema

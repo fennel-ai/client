@@ -809,7 +809,7 @@ def test_first_without_key_fails():
 
     assert (
         str(e.value)
-        == """'group_by' before 'first' must specify at least one key"""
+        == """'group_by' before 'first' in pipeline_first must specify at least one key"""
     )
 
 
