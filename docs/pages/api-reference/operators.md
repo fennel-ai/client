@@ -104,15 +104,17 @@ The `aggregate` operator has the following parameters:
 ### Groupby/ First
 
 Fennel allows you to groupby and get the first entry (by timestamp) in each group using the `first` operator.
-The api requires you to chain the `groupby` operator with the `first` operator.
+The `first` operator must be preceded by `groupby` to idenitfy the grouping fields.
 
-The `groupby` operator takes the following parameters:
+`groupby` takes the following parameters:
 
 1. `*args: str` - positional arguments that specify the list of fields to group by.
 
 The `first` operator does not take any parameters.
 
 The returned dataset's fields are the same as the input dataset, with the grouping fields as the keys.
+
+<pre snippet="api-reference/operators_ref#first"></pre>
 
 ### Drop
 
