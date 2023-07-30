@@ -39,7 +39,7 @@ class MerchantCategory:
 @dataset
 class UserTransactions:
     user_id: int
-    merchant_id: str
+    merchant_id: int
     transaction_amount: float
     timestamp: datetime
 
@@ -70,7 +70,7 @@ class UserTransactions:
 
 @meta(owner="abhay@fennel.ai")
 @dataset
-class UserFirstActionAmount:
+class UserFirstAction:
     user_id: int = field(key=True)
     transaction_amount: float
     timestamp: datetime
@@ -80,8 +80,8 @@ class UserFirstActionAmount:
     def create_user_first_action_category(cls, txns: UserTransactions):
         # docsnip first
         first_txns = txns.groupby("user_id").first()
+        return first_txns.drop(["merchant_id"])
         # /docsnip
-        return first_txns
 
 
 @meta(owner="aditya@fennel.ai")

@@ -396,7 +396,7 @@ class Explode(_Node):
         return dsschema
 
 
-class First:
+class First(_Node):
     def __init__(self, node: _Node, keys: List[str]):
         super().__init__()
         self.keys = keys
