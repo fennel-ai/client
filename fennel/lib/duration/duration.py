@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+
 from typing import List, Optional
 
 Duration = str
@@ -15,7 +16,7 @@ Duration = str
 
 
 def duration_to_timedelta(duration_string: Duration) -> timedelta:
-    if type(duration_string) != str:
+    if type(duration_string) is not str:
         raise TypeError(
             f"duration {duration_string} must be a specified as a string for "
             f"eg. 1d/2m/3y."

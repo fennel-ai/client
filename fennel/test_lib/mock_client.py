@@ -219,6 +219,7 @@ class _DatasetInfo:
     fields: List[str]
     key_fields: List[str]
     timestamp_field: str
+    is_source_dataset: bool
     on_demand: OnDemand
 
     def empty_df(self):
@@ -311,11 +312,6 @@ class MockClient(Client):
             print(f"Skipping log of empty dataframe for webhook {webhook}")
             return FakeResponse(200, "OK")
 
-        if df.shape[0] > _batch_size * 100:
-            print(
-                "Warning: Dataframe is too large, consider using a small dataframe"
-            )
-
         webhook_endpoint = f"{webhook}:{endpoint}"
         if webhook_endpoint not in self.webhook_to_dataset_map:
             return FakeResponse(
@@ -349,10 +345,12 @@ class MockClient(Client):
                 self._process_data_connector(dataset)
 
             self.datasets[dataset._name] = dataset
+            is_source_dataset = hasattr(dataset, sources.SOURCE_FIELD)
             self.dataset_info[dataset._name] = _DatasetInfo(
                 [f.name for f in dataset.fields],
                 dataset.key_fields,
                 dataset.timestamp_field,
+                is_source_dataset,
                 dataset.on_demand,
             )
             if (
@@ -607,7 +605,7 @@ class MockClient(Client):
                     "Featureset is not supported as input to an "
                     "extractor since they are mutable."
                 )
-            elif type(input) == tuple:
+            elif type(input) is tuple:
                 series = []
                 for feature in input:
                     if feature.fqn_ in intermediate_data:
@@ -732,7 +730,7 @@ class MockClient(Client):
             elif isinstance(output_feature, Featureset):
                 for f in output_feature.features:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
-            elif type(output_feature) == tuple:
+            elif type(output_feature) is tuple:
                 for f in output_feature:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
             else:
@@ -743,6 +741,13 @@ class MockClient(Client):
         return output_df
 
     def _merge_df(self, df: pd.DataFrame, dataset_name: str):
+        if not self.dataset_info[dataset_name].is_source_dataset:
+            # If it's a derived dataset, just replace the data, since we
+            # recompute the entire pipeline on every run.
+            timestamp_field = self.dataset_info[dataset_name].timestamp_field
+            self.data[dataset_name] = df.sort_values(timestamp_field)
+            return
+
         # Filter the dataframe to only include the columns in the schema
         columns = self.dataset_info[dataset_name].fields
         input_columns = df.columns.tolist()

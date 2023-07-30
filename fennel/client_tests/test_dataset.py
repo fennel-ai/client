@@ -1132,7 +1132,9 @@ class NumTimesFirstMovie:
     Given a movie, count the number of times it was the first movie seen by a user
     """
 
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(key=True)  # type: ignore # noqa
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True
+    )
     count: int
     t: datetime
 
@@ -1218,15 +1220,14 @@ class TestFirstOp(unittest.TestCase):
         assert df["rating"].tolist() == [4.5, 3, 5, 4]
 
         # Following does not work with mock client.
-        if client.is_integration_client():
-            # Do some lookups to verify pipeline_num_first is working as expected
-            ts = pd.Series([now, now, now])
-            df, _ = NumTimesFirstMovie.lookup(
-                ts,
-                movie=pd.Series(["Jumanji", "Titanic", "RaOne"]),
-            )
-            assert df.shape == (3, 3)
-            assert df["count"].tolist() == [1, 2, 1]
+        # Do some lookups to verify pipeline_num_first is working as expected
+        ts = pd.Series([now, now, now])
+        df, _ = NumTimesFirstMovie.lookup(
+            ts,
+            movie=pd.Series(["Jumanji", "Titanic", "RaOne"]),
+        )
+        assert df.shape == (3, 3)
+        assert df["count"].tolist() == [1, 2, 1]
 
 
 ################################################################################

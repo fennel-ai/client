@@ -116,7 +116,7 @@ class Field:
 
         if (
             _get_origin(self.dtype) is Union
-            and type(None) == _get_args(self.dtype)[1]
+            and type(None) is _get_args(self.dtype)[1]
         ):
             return True
 
@@ -827,7 +827,7 @@ def pipeline(
         raise ValueError(
             f"pipeline decorator on `{callable_name}` must have a parenthesis"
         )
-    if type(version) != int:
+    if type(version) is not int:
         raise ValueError(
             "pipeline version must be an integer, found %s" % type(version)
         )

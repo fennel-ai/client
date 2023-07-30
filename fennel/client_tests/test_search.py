@@ -1,11 +1,11 @@
 import unittest
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 import pytest
+from typing import Dict, List
 
 import fennel._vendor.requests as requests
 from fennel import sources
@@ -678,10 +678,10 @@ class TestSearchExample(unittest.TestCase):
         assert df.columns.tolist() == [
             "TopWordsFeatures.count",
         ]
-        assert df["TopWordsFeatures.count"].tolist() == [12, 4]
+        assert df["TopWordsFeatures.count"].tolist() == [8, 4]
 
         if client.is_integration_client():
             return
 
         df = client.get_dataset_df("DocumentContentDataset")
-        assert df.shape == (12, 8)
+        assert df.shape == (8, 8)
