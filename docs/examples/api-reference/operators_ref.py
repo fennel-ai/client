@@ -35,8 +35,8 @@ class MerchantCategory:
     timestamp: datetime
 
 
-@meta(owner="aditya@fennel.ai")
-@source(webhook.endpoint("Activity"))
+@meta(owner="abhay@fennel.ai")
+@dataset
 class UserTransactions:
     user_id: int
     merchant_id: str
