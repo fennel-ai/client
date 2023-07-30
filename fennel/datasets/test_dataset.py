@@ -11,7 +11,7 @@ from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, inputs
+from fennel.lib.schema import Embedding, inputs, oneof
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
@@ -1605,6 +1605,125 @@ def test_union_datasets():
                 "95a98aebceb48a64d9b2a8a7001d10df",
             ],
         },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+
+def test_first_operator():
+    @meta(owner="abhay@fennel.ai")
+    @dataset
+    class RatingActivity:
+        userid: int = field(key=True)
+        movie: str = field(key=True)
+        rating: float
+        t: datetime
+
+    @meta(owner="abhay@fennel.ai")
+    @dataset
+    class FirstMovieSeen:
+        userid: int = field(key=True)
+        rating: float
+        movie: str
+        t: datetime
+
+        @pipeline(version=1)
+        @inputs(RatingActivity)
+        def pipeline_first_movie_seen(cls, rating: Dataset):
+            return rating.groupby("userid").first()
+
+    view = InternalTestClient()
+    view.add(FirstMovieSeen)  # type: ignore
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "FirstMovieSeen",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "userid",
+                        "dtype": {"int_type": {}},
+                    }
+                ]
+            },
+            "values": {
+                "fields": [
+                    {
+                        "name": "rating",
+                        "dtype": {"double_type": {}},
+                    },
+                    {
+                        "name": "movie",
+                        "dtype": {"string_type": {}},
+                    },
+                ]
+            },
+            "timestamp": "t",
+        },
+        "metadata": {"owner": "abhay@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "userid": {},
+            "movie": {},
+            "rating": {},
+            "t": {},
+        },
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+    # Only one pipeline
+    assert len(sync_request.pipelines) == 1
+    pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
+    p = {
+        "name": "pipeline_first_movie_seen",
+        "dataset_name": "FirstMovieSeen",
+        "signature": "pipeline_first_movie_seen",
+        "metadata": {},
+        "input_dataset_names": ["RatingActivity"],
+        "version": 1,
+        "active": True,
+        "pycode": {},
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert pipeline_req == expected_pipeline_request, error_message(
+        pipeline_req, expected_pipeline_request
+    )
+
+    # 1 operators
+    assert len(sync_request.operators) == 2
+    operator_req = sync_request.operators[0]
+    o = {
+        "id": "RatingActivity",
+        "is_root": False,
+        "pipeline_name": "pipeline_first_movie_seen",
+        "dataset_name": "FirstMovieSeen",
+        "dataset_ref": {
+            "referring_dataset_name": "RatingActivity",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = sync_request.operators[1]
+    o = {
+        "id": "883e720f07ee6c1ecf924ca31416b8c3",
+        "is_root": True,
+        "pipelineName": "pipeline_first_movie_seen",
+        "datasetName": "FirstMovieSeen",
+        "first": {"operandId": "RatingActivity", "by": ["userid"]},
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(

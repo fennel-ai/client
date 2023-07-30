@@ -394,3 +394,12 @@ class Executor(Visitor):
         df = input_ret.df
         df = df.explode(obj.columns)
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+
+    def visitFirst(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None or input_ret.df.shape[0] == 0:
+            return None
+        df = copy.deepcopy(input_ret.df)
+        df = df.sort_values(input_ret.timestamp_field)
+        df = df.groupby(obj.keys).first().reset_index()
+        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)

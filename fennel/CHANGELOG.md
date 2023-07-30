@@ -1,9 +1,12 @@
 # Changelog
+## [0.16.17] - 2023-07-21
+- Support for 'first' operator
+
 ## [0.16.16] - 2023-07-20
 - Better errors in mock client
 
 ## [0.16.15] - 2023-07-20
-- Support struct type 
+- Support struct type
 
 ## [0.16.12] - 2023-07-20
 - Support verify_cert on kafka source

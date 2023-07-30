@@ -308,7 +308,7 @@ class oneof:
         if self.dtype is not int and self.dtype is not str:
             raise TypeError("'oneof' type only accepts int or str types")
         for x in self.options:
-            if type(x) != self.dtype:
+            if type(x) is not self.dtype:
                 raise TypeError(
                     "'oneof' options should match the type of "
                     f"dtype, found '{dtype_to_string(type(x))}' "
@@ -364,7 +364,7 @@ class regex:
 
 def get_datatype(type_: Any) -> schema_proto.DataType:
     # typing.Optional[x] is an alias for typing.Union[x, None]
-    if _get_origin(type_) is Union and type(None) == _get_args(type_)[1]:
+    if _get_origin(type_) is Union and type(None) is _get_args(type_)[1]:
         dtype = get_datatype(_get_args(type_)[0])
         return schema_proto.DataType(
             optional_type=schema_proto.OptionalType(of=dtype)
@@ -699,7 +699,7 @@ def is_hashable(dtype: Any) -> bool:
     # typing.Optional[x] is an alias for typing.Union[x, None]
     if (
         _get_origin(primitive_type) is Union
-        and type(None) == _get_args(primitive_type)[1]
+        and type(None) is _get_args(primitive_type)[1]
     ):
         return is_hashable(_get_args(primitive_type)[0])
     elif primitive_type in [int, str, bool]:

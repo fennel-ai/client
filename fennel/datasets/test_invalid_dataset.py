@@ -186,14 +186,14 @@ def test_invalid_struct_type():
             timestamp: datetime
 
         @struct
-        class Car:
+        class Car6:
             model: str
             manufacturer: Optional[Manufacturer]
             year: int
 
     assert (
-        str(e.value) == "Struct `Car` contains attribute `manufacturer` of a "
-        "non-struct type, which is not allowed."
+        str(e.value) == "Struct `Car6` contains attribute `manufacturer` "
+        "of a non-struct type, which is not allowed."
     )
 
     with pytest.raises(Exception) as e:
@@ -204,14 +204,14 @@ def test_invalid_struct_type():
             timestamp: datetime
 
         @struct
-        class Car:
+        class Car7:
             model: str
             manufacturer: List[Manufacturer]
             year: int
 
     assert (
-        str(e.value) == "Struct `Car` contains attribute `manufacturer` of a "
-        "non-struct type, which is not allowed."
+        str(e.value) == "Struct `Car7` contains attribute `manufacturer` "
+        "of a non-struct type, which is not allowed."
     )
 
     with pytest.raises(Exception) as e:
@@ -231,7 +231,7 @@ def test_invalid_struct_type():
     with pytest.raises(TypeError) as e:
 
         @struct
-        class Car:
+        class Car8:
             model: str
             year: int
 
@@ -242,12 +242,13 @@ def test_invalid_struct_type():
 
         @dataset
         class Vehicle:
-            vehicle: Union[Car, Bike]
+            vehicle: Union[Car8, Bike]
             timestamp: datetime
 
     assert (
         str(e.value)
-        == "Invalid type for field `vehicle` in dataset Vehicle: Multiple fennel structs found `Car, Bike`"
+        == "Invalid type for field `vehicle` in dataset Vehicle: Multiple "
+        "fennel structs found `Car8, Bike`"
     )
 
 

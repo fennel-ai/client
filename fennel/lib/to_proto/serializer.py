@@ -273,3 +273,15 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 columns=obj.columns,
             ),
         )
+
+    def visitFirst(self, obj):
+        return proto.Operator(
+            id=obj.signature(),
+            is_root=obj == self.terminal_node,
+            pipeline_name=self.pipeline_name,
+            dataset_name=self.dataset_name,
+            first=proto.First(
+                operand_id=self.visit(obj.node),
+                by=obj.keys,
+            ),
+        )
