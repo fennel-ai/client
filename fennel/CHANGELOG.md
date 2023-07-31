@@ -1,4 +1,7 @@
 # Changelog
+## [0.16.18] - 2023-07-21
+- Fix for 'first' operator
+
 ## [0.16.17] - 2023-07-21
 - Support for 'first' operator
 
