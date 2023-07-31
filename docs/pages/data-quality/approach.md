@@ -23,7 +23,8 @@ Here are some of the key ideas that help prevent/diagnose data quality issues:
 | Preventive | Compile time lineage validation | [Link](/data-quality/lineage-validation)      |
 | Preventive | Structured metadata & ownership | [Link](/data-quality/metaflags)               |
 | Diagnostic | Data Expectations               | [Link](/data-quality/data-expectations)       |
-
+| Diagnostic | Feature Drift Detection         | [Link](/data-quality/feature-drift)           |
+          
 
 Each of these methods is already powerful on their own. And their preventive/diagnostic power
 further amplifies when applied together. 

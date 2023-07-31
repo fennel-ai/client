@@ -36,6 +36,7 @@ sidebar:
       - "data-quality/lineage-validation"
       - "data-quality/metaflags"
       - "data-quality/data-expectations"
+      - "data-quality/feature-drift"
 
 
   - slug: "development"
