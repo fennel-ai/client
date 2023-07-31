@@ -1,7 +1,7 @@
 ---
 title: Monitoring & Alerting
 order: 3
-status: 'draft'
+status: 'published'
 ---
 
 # Monitoring & Alerting
@@ -15,7 +15,8 @@ Prometheus protocol towards this endpoint. Once your metric system is
 connected to Fennel's Prometheus endpoint, you can seamlessly use your existing 
 monitoring/alerting stack. 
 
-### Incident Management & Pagerduty
+
+## Incident Management & Pagerduty
 Since Fennel is completely managed, you don't need to be on Pager Duty for incidents
 affecting Fennel system itself - Fennel engineers get paged for those. 
 
@@ -24,7 +25,7 @@ you can do so on your own on top of the metrics exposed behind the Prometheus
 endpoint.
 
 
-### Exposed Metrics
+## Exposed Metrics
 
 Some examples of metrics that are avaialble behind this Prometheus endpoint:
 - Count & latencies of all API calls

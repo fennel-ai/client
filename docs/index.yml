@@ -39,11 +39,12 @@ sidebar:
 
 
   - slug: "development"
-    title: "Development"
+    title: "Development Workflow"
     pages:
       - "development/unit-testing"
       - "development/ci-cd-workflows"
       - "development/monitoring-alerting"
+      - "development/console"
 
   - slug: "guides"
     title: "Guides"
