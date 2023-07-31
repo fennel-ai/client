@@ -5,6 +5,8 @@ This repo houses all of the content that powers our documentation.
 To get up and running contributing to the documentation, take the following step:
 1. Clone this repo
 2. Rename `.env.example` to `.env` and fill out the values.
+    - `GITHUB_TOKEN` should be a valid Github PAT with access to read the `fennel-ai/turbo` repo
+    - `GITHUB_REPO` is the location of the Dockerfile that builds the frontend, and should be set to `fennel-ai/turbo`
 3. Run in your terminal `make up` from the root 
 	- This will pull in the Docs UI repo from Github, and run it on `localhost:3001/docs`
 4. Edit the markdown and python files in this repo, and get hot-reloading showing the latest changes on `localhost`
@@ -48,9 +50,9 @@ Here we are selecting the `examples/example.py` file, and the `my_snippet` snipp
 
 This directory includes of all the source markdown files for our documentation. Each markdown file in here is rendered in React as JSX, allowing us to very easily extend the markdown syntax with our own custom React components.
 
-## `config.yml`
-The `config.yml` file is used to set global configuration options for the docs. Currently we only use this to define the navigation sidebar. Section and their Pages within the config file are added to the left-hand navigation of the documentation UI.
+## `index.yml`
+The `index.yml` file is used to set global configuration options for the docs. Currently we only use this to define the navigation sidebar. Sections and their Pages within the config file are added to the navigation sidebar of the documentation UI.
 
-Any pages that are _not_ in the file are still generated in dev and production (if they are not a `draft`) and can be navigated/linked to, but won't appear in the main navigation.
+Any pages that are _not_ in the file are still generated in dev and production (if they are not a `draft`) and can be navigated/linked to, but won't appear in the sidebar.
 
 The `version` field gives us a way to easily pick out the version tag for this branch of the documentation from the UI side.
