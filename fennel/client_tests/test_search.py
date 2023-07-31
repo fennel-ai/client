@@ -24,7 +24,7 @@ biq_query = sources.BigQuery(
     name="bg_source",
     project_id="my-project-356105",
     dataset_id="query_data",
-    credentials_json="XYZ",
+    credentials_json="{}",
 )
 
 s3 = sources.S3(
