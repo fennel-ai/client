@@ -33,11 +33,24 @@ Fennel supports the following data types, expressed as native Python type hints.
 	<TypesListRow types={["datetime"]}>
 		Describes a timestamp, implemented as microseconds since Unix epoch (so minimum granularity is microseconds). Can be natively parsed from multiple formats.
 	</TypesListRow>
+	<TypesListRow types={["struct {T1, T2, ..}"]}>
+		Describes the equivalent of a struct or dataclass - a container containing a 
+		fixed set of fields of fixed types.
+	</TypesListRow>
 </TypesList>
 
 
 Note that types don't auto-typecast. For instance, if something was expected to
 be of type `float` but received an `int`, Fennel will declare that to be an error.
+
+
+**Struct Type**
+
+Fennel natively supports 'struct' type to represent a bag of fixed typed fields.
+Here is how to define and use a struct type. 
+
+<pre snippet="api-reference/data-types#struct_type" />
+
 
 
 ### Type Restrictions
