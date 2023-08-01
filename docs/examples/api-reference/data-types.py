@@ -10,11 +10,13 @@ from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
+
 # docsnip struct_type
-@struct #like dataclass but verifies that all fields are valid Fennel types
+@struct  # like dataclass but verifies that all fields are valid Fennel types
 class Size:
     height: int
     width: int
+
 
 @meta(owner="test@test.com")
 @dataset
@@ -22,8 +24,10 @@ class Student:
     id: int = field(key=True)
     name: str
     age: int
-    size: Size # Size is now a valid Fennel type for datasets/features
+    size: Size  # Size is now a valid Fennel type for datasets/features
     signup_time: datetime
+
+
 # /docsnip
 
 
