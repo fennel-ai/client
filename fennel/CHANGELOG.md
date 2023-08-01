@@ -1,4 +1,7 @@
 # Changelog
+## [0.16.20] - 2023-08-01
+- Support for 'stddev' aggregate
+
 ## [0.16.18] - 2023-07-21
 - Fix for 'first' operator
 
