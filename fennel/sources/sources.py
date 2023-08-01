@@ -1,6 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from pydantic import validator
 
 import json
 from datetime import datetime
@@ -9,6 +7,8 @@ from enum import Enum
 from typing import Any, Callable, List, Optional, TypeVar
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
+from fennel._vendor.pydantic import validator
+
 from fennel.lib.duration import (
     Duration,
 )
