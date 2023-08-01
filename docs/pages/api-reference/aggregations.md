@@ -40,3 +40,7 @@ Identical to "min", but instead maintains a rolling maximum in the given window.
 ### 6. LastK
 
 Maintains a list of "items" in the given rolling durations. If no events have been logged, returns an empty list. If input field is of type `T` the output field is of type `List[T]`
+
+### 7. Stddev
+
+Like average, but instead maintains a rolling population standard deviation in the given window. The population size used is the count in that given window. The input types can only be `int` or `float` and the output type is always `float`. The default return value is `NaN`.
