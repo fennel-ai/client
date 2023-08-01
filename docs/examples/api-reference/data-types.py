@@ -23,6 +23,7 @@ class Student:
     name: str
     age: int
     size: Size # Size is now a valid Fennel type for datasets/features
+    signup_time: datetime
 # /docsnip
 
 
