@@ -8,7 +8,7 @@ from typing import Optional, List
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
-from fennel.lib.aggregate import Count
+from fennel.lib.aggregate import Count, Average, Stddev
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, oneof
@@ -111,6 +111,78 @@ def test_simple_dataset():
     sync_request.datasets[0].pycode.Clear()
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
+    )
+
+
+def test_dataset_with_aggregates():
+    @meta(owner="test@test.com")
+    @dataset
+    class UserAggregatesDataset:
+        gender: str = field(key=True)
+        timestamp: datetime = field(timestamp=True)
+        count: int
+        avg_age: float
+        stddev_age: float
+
+        @pipeline(version=1)
+        @inputs(UserInfoDataset)
+        def create_aggregated_dataset(cls, user_info: Dataset):
+            return user_info.groupby("gender").aggregate(
+                [
+                    Count(
+                        window=Window("forever"),
+                        into_field=str(cls.count),
+                    ),
+                    Average(
+                        of="age",
+                        window=Window("forever"),
+                        into_field=str(cls.avg_age),
+                    ),
+                    Stddev(
+                        of="age",
+                        window=Window("forever"),
+                        into_field=str(cls.stddev_age),
+                    ),
+                ]
+            )
+
+    view = InternalTestClient()
+    view.add(UserAggregatesDataset)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "UserAggregatesDataset",
+        "metadata": {"owner": "test@test.com"},
+        "dsschema": {
+            "keys": {
+                "fields": [{"name": "gender", "dtype": {"stringType": {}}}]
+            },
+            "values": {
+                "fields": [
+                    {"name": "count", "dtype": {"intType": {}}},
+                    {"name": "avg_age", "dtype": {"doubleType": {}}},
+                    {"name": "stddev_age", "dtype": {"doubleType": {}}},
+                ]
+            },
+            "timestamp": "timestamp",
+        },
+        "history": "63072000s",
+        "retention": "63072000s",
+        "fieldMetadata": {
+            "avg_age": {},
+            "count": {},
+            "gender": {},
+            "stddev_age": {},
+            "timestamp": {},
+        },
+        "pycode": {},
+    }
+    # Ignoring schema validation since they are bytes and not human readable
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
     )
 
 
