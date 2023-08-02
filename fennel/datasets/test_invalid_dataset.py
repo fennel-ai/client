@@ -101,6 +101,7 @@ def test_incorrect_aggregate():
     )
 
     with pytest.raises(TypeError) as e:
+
         @meta(owner="test@test.com")
         @dataset
         class Ratings:
