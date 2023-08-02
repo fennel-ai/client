@@ -7,6 +7,7 @@ import pandas as pd
 from fennel.datasets import dataset, field
 from fennel.datasets import pipeline, Dataset
 from fennel.lib.aggregate import Sum, Count
+from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
 from fennel.lib.window import Window
@@ -34,19 +35,17 @@ class MerchantCategory:
     timestamp: datetime
 
 
-@meta(owner="aditya@fennel.ai")
+@meta(owner="abhay@fennel.ai")
 @dataset
-class FraudActivityDataset:
-    merchant_category: str = field(key=True)
-    txn_sum: float
-    txn_count: int
+class UserTransactions:
+    user_id: int
+    merchant_id: int
+    transaction_amount: float
     timestamp: datetime
 
     @pipeline(version=1)
-    @inputs(Activity, MerchantCategory)
-    def create_fraud_dataset(
-        cls, activity: Dataset, merchant_category: Dataset
-    ):
+    @inputs(Activity)
+    def create_user_transactions(cls, activity: Dataset):
         # docsnip transform
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
             df_json = df["metadata"].apply(json.loads).apply(pd.Series)
@@ -66,9 +65,40 @@ class FraudActivityDataset:
             },
         )
         # /docsnip
+        return transformed_ds
 
+
+@meta(owner="abhay@fennel.ai")
+@dataset
+class UserFirstAction:
+    user_id: int = field(key=True)
+    transaction_amount: float
+    timestamp: datetime
+
+    @pipeline(version=1)
+    @inputs(UserTransactions)
+    def create_user_first_action_category(cls, txns: UserTransactions):
+        # docsnip first
+        first_txns = txns.groupby("user_id").first()
+        return first_txns.drop(["merchant_id"])
+        # /docsnip
+
+
+@meta(owner="aditya@fennel.ai")
+@dataset
+class FraudActivityDataset:
+    merchant_category: str = field(key=True)
+    txn_sum: float
+    txn_count: int
+    timestamp: datetime
+
+    @pipeline(version=1)
+    @inputs(UserTransactions, MerchantCategory)
+    def create_fraud_dataset(
+        cls, txns: UserTransactions, merchant_category: Dataset
+    ):
         # docsnip rename
-        renamed_ds = transformed_ds.rename(
+        renamed_ds = txns.rename(
             {
                 "transaction_amount": "txn_amount",
                 "merchant_id": "merchant",

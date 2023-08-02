@@ -4,11 +4,33 @@ import pandas as pd
 
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
-from fennel.lib.schema import oneof, between, regex
+from fennel.lib.schema import oneof, between, regex, struct
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
+
+
+# docsnip struct_type
+@struct  # like dataclass but verifies that all fields are valid Fennel types
+class Address:
+    street: str
+    city: str
+    state: str
+    zip_code: str
+
+
+@meta(owner="test@test.com")
+@dataset
+class Student:
+    id: int = field(key=True)
+    name: str
+    age: int
+    address: Address  # Address is now a valid Fennel type for datasets/features
+    signup_time: datetime
+
+
+# /docsnip
 
 
 # docsnip dataset_type_restrictions

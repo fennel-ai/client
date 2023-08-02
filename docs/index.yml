@@ -36,13 +36,16 @@ sidebar:
       - "data-quality/lineage-validation"
       - "data-quality/metaflags"
       - "data-quality/data-expectations"
+      - "data-quality/feature-drift"
 
 
   - slug: "development"
-    title: "Development"
+    title: "Development Workflow"
     pages:
       - "development/unit-testing"
       - "development/ci-cd-workflows"
+      - "development/monitoring-alerting"
+      - "development/console"
 
   - slug: "guides"
     title: "Guides"
