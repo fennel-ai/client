@@ -13,9 +13,11 @@ webhook = Webhook(name="fennel_webhook")
 
 # docsnip struct_type
 @struct  # like dataclass but verifies that all fields are valid Fennel types
-class Size:
-    height: int
-    width: int
+class Address:
+    street: str
+    city: str
+    state: str
+    zip_code: str
 
 
 @meta(owner="test@test.com")
@@ -24,7 +26,7 @@ class Student:
     id: int = field(key=True)
     name: str
     age: int
-    size: Size  # Size is now a valid Fennel type for datasets/features
+    address: Address  # Address is now a valid Fennel type for datasets/features
     signup_time: datetime
 
 
