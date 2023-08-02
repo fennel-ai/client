@@ -12,5 +12,5 @@ from fennel.test_lib.test_utils import (
     error_message,
     erase_extractor_pycode,
     erase_operator_pycode,
-    fp_eq,
+    almost_equal,
 )

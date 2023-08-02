@@ -18,7 +18,7 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import between, oneof, inputs, struct
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
-from fennel.test_lib import fp_eq, mock, InternalTestClient
+from fennel.test_lib import almost_equal, mock, InternalTestClient
 
 ################################################################################
 #                           Dataset Unit Tests
@@ -971,7 +971,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
         assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
         assert all(
             [
-                fp_eq(actual, expected)
+                almost_equal(actual, expected)
                 for actual, expected in zip(
                     df["std_rating_3d"].tolist(), [0, 0, 0, 0, sqrt(2) / 3, 0]
                 )
@@ -979,7 +979,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
         )
         assert all(
             [
-                fp_eq(actual, expected)
+                almost_equal(actual, expected)
                 for actual, expected in zip(
                     df["std_rating_7d"].tolist(),
                     [
@@ -994,8 +994,8 @@ class TestBasicWindowAggregate(unittest.TestCase):
             ]
         )
         assert all(df["std_rating_10m"][:4].isnull().tolist())
-        assert fp_eq(df["std_rating_10m"][4], 0)
-        assert fp_eq(df["std_rating_10m"][5], 0)
+        assert almost_equal(df["std_rating_10m"][4], 0)
+        assert almost_equal(df["std_rating_10m"][5], 0)
 
 
 @meta(owner="test@test.com")

@@ -61,7 +61,7 @@ def erase_operator_pycode(operator: Operator) -> Operator:
     raise ValueError(f"Operator {operator} has no pycode field")
 
 
-def fp_eq(a: float, b: float, epsilon: float = 1e-6) -> bool:
+def almost_equal(a: float, b: float, epsilon: float = 1e-6) -> bool:
     if isnan(a) and isnan(b):
         return True
     return abs(a - b) < epsilon
