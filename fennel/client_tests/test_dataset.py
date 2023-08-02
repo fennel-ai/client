@@ -858,7 +858,7 @@ class MovieRatingWindowed:
     total_ratings: int
     std_rating_3d: float
     std_rating_7d: float
-    std_rating_1h: float
+    std_rating_10m: float
 
     t: datetime
 
@@ -894,7 +894,7 @@ class MovieRatingWindowed:
                 Stddev(
                     window=Window("10m"),
                     of="rating",
-                    into_field=str(cls.std_rating_1h),
+                    into_field=str(cls.std_rating_10m),
                 ),
             ]
         )
@@ -993,9 +993,9 @@ class TestBasicWindowAggregate(unittest.TestCase):
                 )
             ]
         )
-        assert all(df["std_rating_1h"][:4].isnull().tolist())
-        assert fp_eq(df["std_rating_1h"][4], 0)
-        assert fp_eq(df["std_rating_1h"][5], 0)
+        assert all(df["std_rating_10m"][:4].isnull().tolist())
+        assert fp_eq(df["std_rating_10m"][4], 0)
+        assert fp_eq(df["std_rating_10m"][5], 0)
 
 
 @meta(owner="test@test.com")
