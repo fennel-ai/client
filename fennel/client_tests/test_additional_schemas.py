@@ -75,7 +75,7 @@ class TestDataset(unittest.TestCase):
         if client.is_integration_client():
             assert (
                 response.json()["error"]
-                == """error: input parse error: value 123 does not match between type Between(Between { dtype: Int, min: Int(0), max: Int(100), strict_min: false, strict_max: false })"""
+                == """error: input parse error: unable to parse value 123 for field age: value 123 does not match between type Between(Between { dtype: Int, min: Int(0), max: Int(100), strict_min: false, strict_max: false })"""
             )
         else:
             assert (
@@ -106,7 +106,7 @@ class TestDataset(unittest.TestCase):
         if client.is_integration_client():
             assert (
                 response.json()["error"]
-                == """error: input parse error: expected string in [String("male"), String("female")], but got transgender"""
+                == """error: input parse error: unable to parse value "transgender" for field gender: expected string in [String("male"), String("female")], but got transgender"""
             )
         else:
             assert (
@@ -135,7 +135,7 @@ class TestDataset(unittest.TestCase):
         if client.is_integration_client():
             assert (
                 response.json()["error"]
-                == """error: input parse error: expected regex string [a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+ to match, but got johnfennel"""
+                == """error: input parse error: unable to parse value "johnfennel" for field email: expected regex string [a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+ to match, but got johnfennel"""
             )
         else:
             assert (
