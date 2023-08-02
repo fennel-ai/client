@@ -302,8 +302,10 @@ class StddevState(AggState):
         if self.count == 0:
             return nan
         variance = self.m2 / self.count
+        # due to floating point imprecision, a zero variance may be represented as
+        # a small negative number. In this case, stddev = sqrt(0)
         if variance < 0:
-            return nan
+            return 0 if variance > -1e-10 else nan
         return sqrt(variance)
 
 
@@ -391,7 +393,6 @@ def get_aggregated_df(
         df.drop(of_field, inplace=True, axis=1)
     # Drop the fennel_row_type column
     df.drop(FENNEL_ROW_TYPE, inplace=True, axis=1)
-    df.fillna(0, inplace=True)
     subset = key_fields + [ts_field]
     df = df.drop_duplicates(subset=subset, keep="last")
     df = df.reset_index(drop=True)

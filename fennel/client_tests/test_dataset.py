@@ -18,7 +18,7 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import between, oneof, inputs, struct
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock, InternalTestClient
+from fennel.test_lib import fp_eq, mock, InternalTestClient
 
 ################################################################################
 #                           Dataset Unit Tests
@@ -858,6 +858,7 @@ class MovieRatingWindowed:
     total_ratings: int
     std_rating_3d: float
     std_rating_7d: float
+    std_rating_1h: float
 
     t: datetime
 
@@ -889,6 +890,11 @@ class MovieRatingWindowed:
                     window=Window("7d"),
                     of="rating",
                     into_field=str(cls.std_rating_7d),
+                ),
+                Stddev(
+                    window=Window("10m"),
+                    of="rating",
+                    into_field=str(cls.std_rating_1h),
                 ),
             ]
         )
@@ -949,7 +955,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (6, 8)
+        assert df.shape == (6, 9)
         assert df["movie"].tolist() == [
             "Jumanji",
             "Titanic",
@@ -965,7 +971,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
         assert df["total_ratings"].tolist() == [6, 6, 4, 4, 3, 1]
         assert all(
             [
-                abs(actual - expected) < 0.001
+                fp_eq(actual, expected)
                 for actual, expected in zip(
                     df["std_rating_3d"].tolist(), [0, 0, 0, 0, sqrt(2) / 3, 0]
                 )
@@ -973,12 +979,23 @@ class TestBasicWindowAggregate(unittest.TestCase):
         )
         assert all(
             [
-                abs(actual - expected) < 0.001
+                fp_eq(actual, expected)
                 for actual, expected in zip(
-                    df["std_rating_7d"].tolist(), [sqrt(2 / 9), sqrt(0.96), sqrt(1.5), sqrt(11 / 16), sqrt(2 / 9), 0] 
+                    df["std_rating_7d"].tolist(),
+                    [
+                        sqrt(2 / 9),
+                        sqrt(0.96),
+                        sqrt(1.5),
+                        sqrt(11 / 16),
+                        sqrt(2 / 9),
+                        0,
+                    ],
                 )
             ]
         )
+        assert all(df["std_rating_1h"][:4].isnull().tolist())
+        assert fp_eq(df["std_rating_1h"][4], 0)
+        assert fp_eq(df["std_rating_1h"][5], 0)
 
 
 @meta(owner="test@test.com")
