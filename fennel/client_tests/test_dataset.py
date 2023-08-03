@@ -998,7 +998,14 @@ class TestBasicWindowAggregate(unittest.TestCase):
                 almost_equal(actual, expected)
                 for actual, expected in zip(
                     df["std_rating_10m"].tolist(),
-                    [-1, -1, -1, -1, 0, 0,],
+                    [
+                        -1,
+                        -1,
+                        -1,
+                        -1,
+                        0,
+                        0,
+                    ],
                 )
             ]
         ), f"expected [-1, -1, -1, 0, 0,] got {df['std_rating_10m'].tolist()}"
