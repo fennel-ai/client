@@ -1001,7 +1001,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
                     [-1, -1, -1, -1, 0, 0,],
                 )
             ]
-        )
+        ), f"expected [-1, -1, -1, 0, 0,] got {df['std_rating_10m'].tolist()}"
 
 
 @meta(owner="test@test.com")
