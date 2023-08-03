@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections import Counter
 
 import pandas as pd
-from math import nan, sqrt
+from math import sqrt
 from typing import Dict, List
 
 from fennel.lib.aggregate import AggregateType
@@ -291,7 +291,7 @@ class StddevState(AggState):
         if self.count == 0:
             self.mean = 0
             self.m2 = 0
-            return nan
+            return -1.0
         delta = val - self.mean
         self.mean -= delta / self.count
         delta2 = val - self.mean
@@ -300,12 +300,12 @@ class StddevState(AggState):
 
     def get_val(self):
         if self.count == 0:
-            return nan
+            return -1.0
         variance = self.m2 / self.count
         # due to floating point imprecision, a zero variance may be represented as
         # a small negative number. In this case, stddev = sqrt(0)
         if variance < 0:
-            return 0 if variance > -1e-10 else nan
+            return 0 if variance > -1e-10 else -1.0
         return sqrt(variance)
 
 

@@ -993,9 +993,15 @@ class TestBasicWindowAggregate(unittest.TestCase):
                 )
             ]
         )
-        assert all(df["std_rating_10m"][:4].isnull().tolist())
-        assert almost_equal(df["std_rating_10m"][4], 0)
-        assert almost_equal(df["std_rating_10m"][5], 0)
+        assert all(
+            [
+                almost_equal(actual, expected)
+                for actual, expected in zip(
+                    df["std_rating_10m"].tolist(),
+                    [-1, -1, -1, -1, 0, 0,],
+                )
+            ]
+        )
 
 
 @meta(owner="test@test.com")
