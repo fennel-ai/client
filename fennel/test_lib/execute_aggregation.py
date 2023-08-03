@@ -3,10 +3,11 @@ from abc import ABC, abstractmethod
 from collections import Counter
 
 import pandas as pd
+from math import sqrt
 from typing import Dict, List
 
 from fennel.lib.aggregate import AggregateType
-from fennel.lib.aggregate import Count, Sum, Average, LastK, Min, Max
+from fennel.lib.aggregate import Count, Sum, Average, LastK, Min, Max, Stddev
 from fennel.lib.duration import duration_to_timedelta
 
 # Type of data, 1 indicates insert -1 indicates delete.
@@ -271,6 +272,44 @@ class MaxState(AggState):
         return self.max_heap.top()
 
 
+class StddevState(AggState):
+    def __init__(self, default):
+        self.count = 0
+        self.mean = 0
+        self.m2 = 0
+        self.default = default
+
+    def add_val_to_state(self, val):
+        self.count += 1
+        delta = val - self.mean
+        self.mean += delta / self.count
+        delta2 = val - self.mean
+        self.m2 += delta * delta2
+        return self.get_val()
+
+    def del_val_from_state(self, val):
+        self.count -= 1
+        if self.count == 0:
+            self.mean = 0
+            self.m2 = 0
+            return self.default
+        delta = val - self.mean
+        self.mean -= delta / self.count
+        delta2 = val - self.mean
+        self.m2 -= delta * delta2
+        return self.get_val()
+
+    def get_val(self):
+        if self.count == 0:
+            return self.default
+        variance = self.m2 / self.count
+        # due to floating point imprecision, a zero variance may be represented as
+        # a small negative number. In this case, stddev = sqrt(0)
+        if variance < 0:
+            return 0 if variance > -1e-10 else -1.0
+        return sqrt(variance)
+
+
 def get_aggregated_df(
     input_df: pd.DataFrame,
     aggregate: AggregateType,
@@ -342,6 +381,8 @@ def get_aggregated_df(
                         state[key] = MaxForeverState(aggregate.default)
                     else:
                         state[key] = MaxState(aggregate.default)
+                elif isinstance(aggregate, Stddev):
+                    state[key] = StddevState(aggregate.default)
                 else:
                     raise Exception(
                         f"Unsupported aggregate function {aggregate}"
@@ -353,7 +394,6 @@ def get_aggregated_df(
         df.drop(of_field, inplace=True, axis=1)
     # Drop the fennel_row_type column
     df.drop(FENNEL_ROW_TYPE, inplace=True, axis=1)
-    df.fillna(0, inplace=True)
     subset = key_fields + [ts_field]
     df = df.drop_duplicates(subset=subset, keep="last")
     df = df.reset_index(drop=True)

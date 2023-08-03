@@ -159,6 +159,24 @@ class LastK(AggregateType):
         return f"lastk_{self.of}_{self.window.signature()}"
 
 
+class Stddev(AggregateType):
+    of: str
+    default: float = -1.0
+
+    def to_proto(self):
+        return spec_proto.PreSpec(
+            stddev=spec_proto.Stddev(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                default=self.default,
+                of=self.of,
+            )
+        )
+
+    def signature(self):
+        return f"stddev_{self.of}_{self.window.signature()}"
+
+
 class TopK(AggregateType):
     item: ItemType
     score: str

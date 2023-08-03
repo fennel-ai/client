@@ -8,4 +8,5 @@ from fennel.lib.aggregate.aggregate import (
     AggregateType,
     TopK,
     CF,
+    Stddev,
 )

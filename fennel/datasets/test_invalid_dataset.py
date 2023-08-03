@@ -4,7 +4,7 @@ import pytest
 from typing import Optional, List, Union
 
 from fennel.datasets import dataset, pipeline, field, Dataset
-from fennel.lib.aggregate import Count
+from fennel.lib.aggregate import Count, Average, Stddev
 from fennel.lib.expectations import (
     expectations,
     expect_column_values_to_be_between,
@@ -98,6 +98,45 @@ def test_incorrect_aggregate():
     assert (
         str(e.value)
         == "Invalid aggregate `window=Window(start='forever', end='0s') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported, please set approx=True"
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class Ratings:
+            cnt_rating: int
+            avg_rating: float
+            stddev: float
+            movie: str = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(RatingActivity)
+            def get_stddev_ratings(cls, rating: Dataset):
+                return rating.groupby("movie").aggregate(
+                    [
+                        Count(
+                            window=Window("forever"),
+                            into_field=str(cls.cnt_rating),
+                        ),
+                        Average(
+                            window=Window("forever"),
+                            into_field=str(cls.avg_rating),
+                            of="rating",
+                            default=0,
+                        ),
+                        Stddev(
+                            window=Window("forever"),
+                            into_field=str(cls.stddev),
+                            of="movie",  # invalid type for ratings
+                        ),
+                    ],
+                )
+
+    assert (
+        str(e.value)
+        == "Cannot get standard deviation of field movie of type str"
     )
 
 
