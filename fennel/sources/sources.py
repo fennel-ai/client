@@ -7,6 +7,8 @@ from enum import Enum
 from typing import Any, Callable, List, Optional, TypeVar
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
+from fennel._vendor.pydantic import validator
+
 from fennel.lib.duration import (
     Duration,
 )
@@ -81,16 +83,8 @@ class DataSource(BaseModel):
 
     name: str
 
-    def __post_init__(self):
-        exceptions = self._validate()
-        if len(exceptions) > 0:
-            raise Exception(exceptions)
-
     def type(self):
         return str(self.__class__.__name__)
-
-    def _validate(self) -> List[Exception]:
-        raise NotImplementedError()
 
     def required_fields(self) -> List[str]:
         raise NotImplementedError()
@@ -118,22 +112,6 @@ class SQLSource(DataSource):
     jdbc_params: Optional[str] = None
     _get: bool = False
 
-    def _validate(self) -> List[Exception]:
-        exceptions: List[Exception] = []
-        if not isinstance(self.host, str):
-            exceptions.append(TypeError("host must be a string"))
-        if not isinstance(self.db_name, str):
-            exceptions.append(TypeError("db_name must be a string"))
-        if not isinstance(self.username, str):
-            exceptions.append(TypeError("username must be a string"))
-        if not isinstance(self.password, str):
-            exceptions.append(TypeError("password must be a string"))
-        if self.jdbc_params is not None and not isinstance(
-            self.jdbc_params, str
-        ):
-            exceptions.append(TypeError("jdbc_params must be a string"))
-        return exceptions
-
     def required_fields(self) -> List[str]:
         return ["table", "cursor"]
 
@@ -141,9 +119,6 @@ class SQLSource(DataSource):
 class S3(DataSource):
     aws_access_key_id: Optional[str]
     aws_secret_access_key: Optional[str]
-
-    def _validate(self) -> List[Exception]:
-        return []
 
     def bucket(
         self,
@@ -183,13 +158,13 @@ class BigQuery(DataSource):
     dataset_id: str
     credentials_json: str
 
-    def _validate(self) -> List[Exception]:
-        exceptions = []
+    @validator("credentials_json")
+    def validate_json(cls, v: str) -> str:
         try:
-            json.loads(self.credentials_json)
-        except Exception as e:
-            exceptions.append(e)
-        return exceptions
+            json.loads(v)
+        except Exception:
+            raise ValueError("can't deserialize json")
+        return v
 
     def table(self, table_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name, cursor)
@@ -217,23 +192,20 @@ class Kafka(DataSource):
     sasl_mechanism: Optional[str]
     sasl_plain_username: Optional[str]
     sasl_plain_password: Optional[str]
-    sasl_jaas_config: Optional[str]
     verify_cert: Optional[bool]
 
-    def _validate(self) -> List[Exception]:
-        exceptions: List[Exception] = []
-        if self.security_protocol not in [
-            "PLAIN TEXT",
-            "SASL PLAINTEXT",
-            "SASL SSL",
+    @validator("security_protocol")
+    def validate_security_protocol(cls, security_protocol: str) -> str:
+        if security_protocol not in [
+            "PLAINTEXT",
+            "SASL_PLAINTEXT",
+            "SASL_SSL",
         ]:
-            exceptions.append(
-                ValueError(
-                    "sasl_mechanism must be one of "
-                    "PLAIN TEXT, SASL PLAINTEXT, SASL SSL"
-                )
+            raise ValueError(
+                "security protocol must be one of "
+                "PLAINTEXT, SASL_PLAINTEXT, SASL_SSL"
             )
-        return exceptions
+        return security_protocol
 
     def required_fields(self) -> List[str]:
         return ["topic"]
@@ -247,11 +219,10 @@ class Kafka(DataSource):
             name=name,
             _get=True,
             bootstrap_servers="",
-            security_protocol="",
+            security_protocol="PLAINTEXT",
             sasl_mechanism="",
             sasl_plain_username="",
             sasl_plain_password="",
-            sasl_jaas_config="",
             verify_cert=None,
         )
 
@@ -314,28 +285,6 @@ class Snowflake(DataSource):
     def table(self, table_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name, cursor)
 
-    def _validate(self) -> List[Exception]:
-        exceptions: List[Exception] = []
-        if not isinstance(self.account, str):
-            exceptions.append(TypeError("account must be a string"))
-        if not isinstance(self.db_name, str):
-            exceptions.append(TypeError("db_name must be a string"))
-        if not isinstance(self.username, str):
-            exceptions.append(TypeError("username must be a string"))
-        if not isinstance(self.password, str):
-            exceptions.append(TypeError("password must be a string"))
-        if not isinstance(self.warehouse, str):
-            exceptions.append(TypeError("warehouse must be a string"))
-        if not isinstance(self.src_schema, str):
-            exceptions.append(TypeError("src_schema must be a string"))
-        if not isinstance(self.role, str):
-            exceptions.append(TypeError("role must be a string"))
-        if self.jdbc_params is not None and not isinstance(
-            self.jdbc_params, str
-        ):
-            exceptions.append(TypeError("jdbc_params must be a string"))
-        return exceptions
-
     def required_fields(self) -> List[str]:
         return ["table", "cursor"]
 
@@ -360,12 +309,6 @@ class Snowflake(DataSource):
 class Kinesis(DataSource):
     role_arn: str
     _get: bool = False
-
-    def _validate(self) -> List[Exception]:
-        exceptions: List[Exception] = []
-        if not isinstance(self.role_arn, str):
-            exceptions.append(TypeError("role_arn must be a string"))
-        return exceptions
 
     def stream(
         self,
@@ -396,8 +339,6 @@ class Kinesis(DataSource):
 # ------------------------------------------------------------------------------
 # DataConnector
 # ------------------------------------------------------------------------------
-
-
 class DataConnector:
     """DataConnector is a fully specified data source or sink. It contains
     all the fields required to fetch data from a source or sink. DataConnectors
@@ -406,14 +347,6 @@ class DataConnector:
     data_source: DataSource
     every: Duration
     lateness: Duration
-
-    def __post_init__(self):
-        exceptions = self._validate()
-        if len(exceptions) > 0:
-            raise Exception(exceptions)
-
-    def _validate(self) -> List[Exception]:
-        return []
 
     def identifier(self):
         raise NotImplementedError
@@ -489,23 +422,22 @@ class S3Connector(DataConnector):
         self.format = format
         self.cursor = cursor
 
-    def _validate(self) -> List[Exception]:
-        exceptions: List[Exception] = []
-        if self.format not in ["csv", "json", "parquet", "hudi"]:
-            exceptions.append(
-                TypeError("format must be either csv, json, parquet, or hudi")
-            )
-        if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
-            exceptions.append(
-                Exception("delimiter must be one of [',', '\t', '|']")
-            )
-        if self.format == "hudi" and self.cursor is not None:
-            exceptions.append(
-                Exception(
-                    "cursor must be None for hudi format, since it uses the commit timestamp."
+        if self.format not in ["csv", "json", "parquet", "hudi", "delta"]:
+            raise (
+                ValueError(
+                    "format must be either csv, json, parquet, hudi, delta"
                 )
             )
-        return exceptions
+        if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
+            raise (ValueError("delimiter must be one of [',', '\t', '|']"))
+        if (
+            self.format == "hudi" or self.format == "delta"
+        ) and self.cursor is not None:
+            raise (
+                ValueError(
+                    "cursor must be None for hudi or delta format, since it uses the commit timestamp."
+                )
+            )
 
     def identifier(self) -> str:
         return (

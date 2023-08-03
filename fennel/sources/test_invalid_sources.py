@@ -1,4 +1,5 @@
 from datetime import datetime
+from fennel.sources.sources import BigQuery
 
 import pytest
 from typing import Optional
@@ -115,12 +116,8 @@ def test_simple_source():
 
 s3 = S3(
     name="ratings_source",
-    bucket_name="all_ratings",
-    path_prefix="prod/apac/",
     aws_access_key_id="ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
-    src_schema={"Name": "string", "Weight": "number", "Age": "integer"},
-    delimiter=",",
 )
 
 
@@ -261,3 +258,46 @@ def test_multiple_sources():
         str(e.value)
         == "Multiple sources are not supported in dataset `UserInfoDataset`."
     )
+
+
+def test_invalid_bigquery_credential():
+    with pytest.raises(ValueError) as e:
+        BigQuery(
+            name="bigquery",
+            project_id="project",
+            dataset_id="dataset",
+            credentials_json="bad_json",
+        )
+
+    assert "can't deserialize json" in str(e.value)
+
+
+def test_invalid_kaffa_security_protocol():
+    with pytest.raises(ValueError) as e:
+        Kafka(
+            name="kafka",
+            bootstrap_servers="localhost:9092",
+            security_protocol="Wrong Protocol",
+        )
+    assert "security protocol must be one of" in str(e.value)
+
+
+def test_invalid_s3_format():
+    with pytest.raises(Exception) as e:
+        s3.bucket(bucket_name="bucket", prefix="prefix", format="py")
+    assert "format must be either" in str(e.value)
+
+    with pytest.raises(Exception) as e:
+        s3.bucket(
+            bucket_name="bucket", prefix="prefix", format="csv", delimiter="  "
+        )
+    assert "delimiter must be one of" in str(e.value)
+
+    with pytest.raises(Exception) as e:
+        s3.bucket(
+            bucket_name="bucket",
+            prefix="prefix",
+            format="hudi",
+            cursor="timestamp",
+        )
+    assert "cursor must be None" in str(e.value)
