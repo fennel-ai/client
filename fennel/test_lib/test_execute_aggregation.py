@@ -137,11 +137,11 @@ def test_max_forever_state():
 
 
 def test_stddev_state():
-    state = StddevState()
+    state = StddevState(default=-1.0)
     assert state.add_val_to_state(1) == 0
     assert state.add_val_to_state(1) == 0
     assert state.add_val_to_state(10) == sqrt(18)
     assert state.del_val_from_state(1) == 4.5
     assert state.del_val_from_state(1) == 0
     assert state.get_val() == 0
-    assert state.del_val_from_state(10) == -1
+    assert state.del_val_from_state(10) == -1.0

@@ -273,10 +273,11 @@ class MaxState(AggState):
 
 
 class StddevState(AggState):
-    def __init__(self):
+    def __init__(self, default):
         self.count = 0
         self.mean = 0
         self.m2 = 0
+        self.default = default
 
     def add_val_to_state(self, val):
         self.count += 1
@@ -291,7 +292,7 @@ class StddevState(AggState):
         if self.count == 0:
             self.mean = 0
             self.m2 = 0
-            return -1.0
+            return self.default
         delta = val - self.mean
         self.mean -= delta / self.count
         delta2 = val - self.mean
@@ -300,7 +301,7 @@ class StddevState(AggState):
 
     def get_val(self):
         if self.count == 0:
-            return -1.0
+            return self.default
         variance = self.m2 / self.count
         # due to floating point imprecision, a zero variance may be represented as
         # a small negative number. In this case, stddev = sqrt(0)
@@ -381,7 +382,7 @@ def get_aggregated_df(
                     else:
                         state[key] = MaxState(aggregate.default)
                 elif isinstance(aggregate, Stddev):
-                    state[key] = StddevState()
+                    state[key] = StddevState(aggregate.default)
                 else:
                     raise Exception(
                         f"Unsupported aggregate function {aggregate}"

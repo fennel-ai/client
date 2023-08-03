@@ -43,4 +43,4 @@ Maintains a list of "items" in the given rolling durations. If no events have be
 
 ### 7. Stddev
 
-Like average, but instead maintains a rolling population standard deviation in the given window. The population size used is the count in that given window. The input types can only be `int` or `float` and the output type is always `float`. A `default` value is required for when there is a window with 0 data points.
+Like average, but instead maintains the standard deviation for the population in the given window. The population size used is the count in that given window. The input types can only be `int` or `float` and the output type is always `float`. A `default` value is required for when there is a window with 0 data points.

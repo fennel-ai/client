@@ -859,6 +859,7 @@ class MovieRatingWindowed:
     std_rating_3d: float
     std_rating_7d: float
     std_rating_10m: float
+    std_rating_10m_other_default: float
 
     t: datetime
 
@@ -895,6 +896,12 @@ class MovieRatingWindowed:
                     window=Window("10m"),
                     of="rating",
                     into_field=str(cls.std_rating_10m),
+                ),
+                Stddev(
+                    window=Window("10m"),
+                    of="rating",
+                    default=-3.14159,
+                    into_field=str(cls.std_rating_10m_other_default),
                 ),
             ]
         )
@@ -955,7 +962,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (6, 9)
+        assert df.shape == (6, 10)
         assert df["movie"].tolist() == [
             "Jumanji",
             "Titanic",
@@ -1009,6 +1016,22 @@ class TestBasicWindowAggregate(unittest.TestCase):
                 )
             ]
         ), f"expected [-1, -1, -1, 0, 0,] got {df['std_rating_10m'].tolist()}"
+        assert all(
+            [
+                almost_equal(actual, expected)
+                for actual, expected in zip(
+                    df["std_rating_10m_other_default"].tolist(),
+                    [
+                        -3.14159,
+                        -3.14159,
+                        -3.14159,
+                        -3.14159,
+                        0,
+                        0,
+                    ],
+                )
+            ]
+        )
 
 
 @meta(owner="test@test.com")
