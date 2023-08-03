@@ -223,18 +223,21 @@ class Stddev(google.protobuf.message.Message):
     OF_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
     WINDOW_FIELD_NUMBER: builtins.int
+    DEFAULT_FIELD_NUMBER: builtins.int
     of: builtins.str
     name: builtins.str
     @property
     def window(self) -> window_pb2.Window: ...
+    default: builtins.float
     def __init__(
         self,
         *,
         of: builtins.str = ...,
         name: builtins.str = ...,
         window: window_pb2.Window | None = ...,
+        default: builtins.float = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "of", b"of", "window", b"window"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["default", b"default", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___Stddev = Stddev
