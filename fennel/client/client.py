@@ -342,8 +342,9 @@ class Client:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn())
             elif isinstance(input_feature, Featureset):
-                input_feature_names.extend(
-                    [f.fqn() for f in input_feature.features]
+                raise Exception(
+                    f"Providing a featureset as input is deprecated. "
+                    "List the features instead for featureset {input_feature.name}."
                 )
 
         # Check if the input dataframe has all the required features
@@ -363,16 +364,15 @@ class Client:
                     output_feature.fqn()
                 ] = output_feature.dtype
             elif isinstance(output_feature, Featureset):
-                output_feature_names.extend(
-                    [f.fqn() for f in output_feature.features]
+                raise Exception(
+                    f"Providing a featureset as input is deprecated. "
+                    "List the features instead for featureset {input_feature.name}."
                 )
-                for f in output_feature.features:
-                    output_feature_name_to_type[f.fqn()] = f.dtype
 
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
-            "data": input_dataframe.to_json(orient="records"),
+            "data": input_dataframe.to_json(orient="list"),
             "log": log,
         }
         if workflow is not None:
@@ -433,8 +433,9 @@ class Client:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn())
             elif isinstance(input_feature, Featureset):
-                input_feature_names.extend(
-                    [f.fqn() for f in input_feature.features]
+                raise Exception(
+                    f"Providing a featureset as input is deprecated. "
+                    "List the features instead for featureset {output_feature.name}."
                 )
 
         input_info = {}
@@ -468,7 +469,7 @@ class Client:
                     f"Timestamp column {timestamp_column} not found in input dataframe."
                 )
             extract_historical_input["Pandas"] = input_dataframe.to_dict(
-                orient="records"
+                orient="list"
             )
         else:
             if input_bucket is None:
@@ -492,8 +493,9 @@ class Client:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, Featureset):
-                output_feature_names.extend(
-                    [f.fqn() for f in output_feature.features]
+                raise Exception(
+                    f"Providing a featureset as input is deprecated. "
+                    "List the features instead for featureset {output_feature.name}."
                 )
 
         req = {
