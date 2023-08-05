@@ -129,6 +129,7 @@ class Client:
             start = i * batch_size
             end = min((i + 1) * batch_size, num_rows)
             mini_df = dataframe[start:end]
+            # TODO zaki make this columnar
             payload = mini_df.to_json(orient="records")
             req = {
                 "webhook": webhook,
@@ -343,8 +344,8 @@ class Client:
                 input_feature_names.append(input_feature.fqn())
             elif isinstance(input_feature, Featureset):
                 raise Exception(
-                    f"Providing a featureset as input is deprecated. "
-                    "List the features instead for featureset {input_feature.name}."
+                    "Providing a featureset as input is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in input_feature.features]}."
                 )
 
         # Check if the input dataframe has all the required features
@@ -365,14 +366,14 @@ class Client:
                 ] = output_feature.dtype
             elif isinstance(output_feature, Featureset):
                 raise Exception(
-                    f"Providing a featureset as input is deprecated. "
-                    "List the features instead for featureset {input_feature.name}."
+                    "Providing a featureset as output is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in output_feature.features]}."
                 )
 
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
-            "data": input_dataframe.to_json(orient="list"),
+            "data": input_dataframe.to_dict(orient="list"),
             "log": log,
         }
         if workflow is not None:
@@ -434,8 +435,8 @@ class Client:
                 input_feature_names.append(input_feature.fqn())
             elif isinstance(input_feature, Featureset):
                 raise Exception(
-                    f"Providing a featureset as input is deprecated. "
-                    "List the features instead for featureset {output_feature.name}."
+                    "Providing a featureset as input is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in input_feature.features]}."
                 )
 
         input_info = {}
@@ -494,8 +495,8 @@ class Client:
                 output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, Featureset):
                 raise Exception(
-                    f"Providing a featureset as input is deprecated. "
-                    "List the features instead for featureset {output_feature.name}."
+                    "Providing a featureset as output is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in output_feature.features]}."
                 )
 
         req = {
