@@ -129,6 +129,7 @@ class Client:
             start = i * batch_size
             end = min((i + 1) * batch_size, num_rows)
             mini_df = dataframe[start:end]
+            # TODO zaki make this columnar
             payload = mini_df.to_json(orient="records")
             req = {
                 "webhook": webhook,
@@ -342,8 +343,9 @@ class Client:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn())
             elif isinstance(input_feature, Featureset):
-                input_feature_names.extend(
-                    [f.fqn() for f in input_feature.features]
+                raise Exception(
+                    "Providing a featureset as input is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in input_feature.features]}."
                 )
 
         # Check if the input dataframe has all the required features
@@ -363,16 +365,15 @@ class Client:
                     output_feature.fqn()
                 ] = output_feature.dtype
             elif isinstance(output_feature, Featureset):
-                output_feature_names.extend(
-                    [f.fqn() for f in output_feature.features]
+                raise Exception(
+                    "Providing a featureset as output is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in output_feature.features]}."
                 )
-                for f in output_feature.features:
-                    output_feature_name_to_type[f.fqn()] = f.dtype
 
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
-            "data": input_dataframe.to_json(orient="records"),
+            "data": input_dataframe.to_dict(orient="list"),
             "log": log,
         }
         if workflow is not None:
@@ -433,8 +434,9 @@ class Client:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn())
             elif isinstance(input_feature, Featureset):
-                input_feature_names.extend(
-                    [f.fqn() for f in input_feature.features]
+                raise Exception(
+                    "Providing a featureset as input is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in input_feature.features]}."
                 )
 
         input_info = {}
@@ -468,7 +470,7 @@ class Client:
                     f"Timestamp column {timestamp_column} not found in input dataframe."
                 )
             extract_historical_input["Pandas"] = input_dataframe.to_dict(
-                orient="records"
+                orient="list"
             )
         else:
             if input_bucket is None:
@@ -492,8 +494,9 @@ class Client:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, Featureset):
-                output_feature_names.extend(
-                    [f.fqn() for f in output_feature.features]
+                raise Exception(
+                    "Providing a featureset as output is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in output_feature.features]}."
                 )
 
         req = {

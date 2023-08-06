@@ -1,4 +1,8 @@
 # Changelog
+
+## [0.17.1] - 2023-08-04
+- Dataframes are serialized in columnar format for extractors
+
 ## [0.17.0] - 2023-08-03
 - Remove jaas config from kafka source
 - Fix kafka validation for security protocol
