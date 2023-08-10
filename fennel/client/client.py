@@ -129,12 +129,12 @@ class Client:
             start = i * batch_size
             end = min((i + 1) * batch_size, num_rows)
             mini_df = dataframe[start:end]
-            # TODO zaki make this columnar
-            payload = mini_df.to_json(orient="records")
+            #  TODO zaki test this with examples/
+            payload = mini_df.to_dict(orient="list")
             req = {
                 "webhook": webhook,
                 "endpoint": endpoint,
-                "rows": payload,
+                "data": payload,
             }
             response = self._post_json("{}/log".format(V1_API), req)
         return response
@@ -636,6 +636,7 @@ class Client:
             headers["Content-Encoding"] = "gzip"
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
+        breakpoint()
         response = self.http.request(
             "POST",
             self._url(path),
