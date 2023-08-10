@@ -210,7 +210,7 @@ def propogate_fennel_attributes(src: Any, dest: Any):
             setattr(dest, k, v)
 
 
-def to_columnar_json(df: DataFrame, as_str=False) -> Union[dict, str]:
+def to_columnar_json(df: DataFrame, as_str=False) -> str | Dict[str, Any]:
     """
     Converts a pandas dataframe into a json string that is
     made up of a dictionary of columns mapping to list of values, one value per row.

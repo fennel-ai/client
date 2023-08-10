@@ -374,7 +374,7 @@ class Client:
             "output_features": output_feature_names,
             "data": to_columnar_json(input_dataframe),
             "log": log,
-        }
+        }  # type: Dict[str, Any]
         if workflow is not None:
             req["workflow"] = workflow
         if sampling_rate is not None:
