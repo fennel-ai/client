@@ -135,7 +135,7 @@ class TestDataset(unittest.TestCase):
         response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         data = [
-            [18232, "Ross", "32", "USA", now],
+            [18232, "Ross", "32yrs", "USA", now],
             [18234, "Monica", 24, "Chile", yesterday],
         ]
         df = pd.DataFrame(data, columns=columns)
@@ -146,8 +146,8 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.BAD_REQUEST
         if client.is_integration_client():
             assert (
-                response.json()["error"]
-                == """error: input parse error: expected Int, but got String("32")"""
+                response.json()["error"].strip()
+                == """error: input parse error: expected int, but got string "32yrs" """.strip()
             )
         else:
             assert (
