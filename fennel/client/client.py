@@ -364,10 +364,11 @@ class Client:
                     output_feature.fqn()
                 ] = output_feature.dtype
             elif isinstance(output_feature, Featureset):
-                raise Exception(
-                    "Providing a featureset as output is deprecated. "
-                    f"List the features instead. {[f.fqn() for f in output_feature.features]}."
+                output_feature_names.extend(
+                    [f.fqn() for f in output_feature.features]
                 )
+                for f in output_feature.features:
+                    output_feature_name_to_type[f.fqn()] = f.dtype
 
         req = {
             "input_features": input_feature_names,
@@ -493,9 +494,8 @@ class Client:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, Featureset):
-                raise Exception(
-                    "Providing a featureset as output is deprecated. "
-                    f"List the features instead. {[f.fqn() for f in output_feature.features]}."
+                output_feature_names.extend(
+                    [f.fqn() for f in output_feature.features]
                 )
 
         req = {
