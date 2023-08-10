@@ -210,12 +210,14 @@ def propogate_fennel_attributes(src: Any, dest: Any):
             setattr(dest, k, v)
 
 
-def to_columnar_json(df: DataFrame) -> str:
+def to_columnar_json(df: DataFrame, as_str=False) -> Union[dict, str]:
     """
     Converts a pandas dataframe into a json string that is
     made up of a dictionary of columns mapping to list of values, one value per row.
     This function is preferred over to_dict since it uses pandas.DataFrame.to_json
     which properly handles datetimes and nans according to the json standard.
+    By default, a json-compatible dict is returned. Use as_str = true to 
+    stringify the json
     """
 
     # orient "split" returns: a list of columns, a list of index names, and
@@ -225,4 +227,4 @@ def to_columnar_json(df: DataFrame) -> str:
     num_rows = len(split_json["index"])
     for c, col in enumerate(split_json["columns"]):
         column_dict[col] = [split_json["data"][r][c] for r in range(num_rows)]
-    return json.dumps(column_dict)
+    return json.dumps(column_dict) if as_str else column_dict

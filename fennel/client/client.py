@@ -129,7 +129,6 @@ class Client:
             start = i * batch_size
             end = min((i + 1) * batch_size, num_rows)
             mini_df = dataframe[start:end]
-            # TODO (zaki) test this with examples/
             payload = to_columnar_json(mini_df)
             req = {
                 "webhook": webhook,
