@@ -68,9 +68,7 @@ class TestRestAPI(unittest.TestCase):
         # docsnip rest_extract_features_api_columnar
         url = "{}/api/v1/extract_features".format(SERVER)
         headers = {"Content-Type": "application/json"}
-        data = {
-            "UserFeatures.userid": [1, 2, 3]
-        }
+        data = {"UserFeatures.userid": [1, 2, 3]}
         req = {
             "output_features": ["UserFeatures"],
             "input_features": ["UserFeatures.userid"],
