@@ -9,6 +9,7 @@ import json
 import sys
 import textwrap
 
+from pandas import DataFrame
 from typing import Any
 from typing import cast, Callable, Dict, List, Tuple, Union
 
@@ -207,3 +208,21 @@ def propogate_fennel_attributes(src: Any, dest: Any):
     for k, v in src.__dict__.items():
         if k.startswith("__fennel") and k.endswith("__"):
             setattr(dest, k, v)
+
+def to_columnar_json(df: DataFrame) -> str:
+    """
+    Converts a pandas dataframe into a json string that is 
+    made up of a dictionary of columns mapping to list of values, one value per row.
+    This function is preferred over to_dict since it uses pandas.DataFrame.to_json 
+    which properly handles datetimes and nans according to the json standard.
+    """
+
+    # orient "split" returns: a list of columns, a list of index names, and
+    # a 2d array of data
+    split_json = json.loads(df.to_json(orient="split"))
+    column_dict = {}
+    num_rows = len(split_json["index"])
+    for c, col in enumerate(split_json["columns"]):
+        column_dict[col] = [split_json['data'][r][c] for r in range(num_rows)]
+    return json.dumps(column_dict)
+

@@ -5,6 +5,7 @@ import pandas as pd
 from typing import List, Set, Tuple, Union
 
 from fennel.lib.schema import parse_json
+from fennel.utils import to_columnar_json
 
 try:
     import pyarrow as pa
@@ -124,8 +125,7 @@ class IntegrationClient:
                 )
                 for f in output_feature.features:
                     output_feature_name_to_type[f.fqn()] = f.dtype
-        # TODO zaki verify this
-        input_df_json = input_dataframe.to_dict(orient="list")
+        input_df_json = to_columnar_json(input_dataframe)
         output_record_batch = self._client.extract_features(
             input_feature_names,
             output_feature_names,
@@ -169,7 +169,7 @@ class IntegrationClient:
             time.sleep(self.sleep_time)
     # TODO zaki test this
     def log_to_dataset(self, dataset_name: str, df: pd.DataFrame):
-        df_json = df.to_dict(orient="list")
+        df_json = to_columnar_json(df)
         try:
             self._client.log_to_dataset(dataset_name, df_json)
         except Exception as e:
