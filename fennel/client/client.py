@@ -12,7 +12,7 @@ from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature
 from fennel.lib.schema import parse_json
 from fennel.lib.to_proto import to_sync_request_proto
-from fennel.utils import check_response
+from fennel.utils import check_response, to_columnar_json
 
 V1_API = "/api/v1"
 
@@ -129,12 +129,12 @@ class Client:
             start = i * batch_size
             end = min((i + 1) * batch_size, num_rows)
             mini_df = dataframe[start:end]
-            # TODO zaki make this columnar
-            payload = mini_df.to_json(orient="records")
+            # TODO (zaki) test this with examples/
+            payload = to_columnar_json(mini_df)
             req = {
                 "webhook": webhook,
                 "endpoint": endpoint,
-                "rows": payload,
+                "data": payload,
             }
             response = self._post_json("{}/log".format(V1_API), req)
         return response
@@ -373,7 +373,7 @@ class Client:
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
-            "data": input_dataframe.to_dict(orient="list"),
+            "data": to_columnar_json(input_dataframe),
             "log": log,
         }
         if workflow is not None:

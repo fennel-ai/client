@@ -39,7 +39,7 @@ class TestRestAPI(unittest.TestCase):
         req = {
             "webhook": "fennel_webhook",
             "endpoint": "UserInfo",
-            "rows": data,
+            "data": data,
         }
         response = requests.post(url, headers=headers, data=req)
         assert response.status_code == requests.codes.OK, response.json()
@@ -53,6 +53,22 @@ class TestRestAPI(unittest.TestCase):
             {"UserFeatures.userid": 2},
             {"UserFeatures.userid": 3},
         ]
+        req = {
+            "output_features": ["UserFeatures"],
+            "input_features": ["UserFeatures.userid"],
+            "data": data,
+            "log": True,
+            "workflow": "test",
+        }
+
+        response = requests.post(url, headers=headers, data=req)
+        assert response.status_code == requests.codes.OK, response.json()
+        # /docsnip
+
+        # docsnip rest_extract_features_api_columnar
+        url = "{}/api/v1/extract_features".format(SERVER)
+        headers = {"Content-Type": "application/json"}
+        data = {"UserFeatures.userid": [1, 2, 3]}
         req = {
             "output_features": ["UserFeatures"],
             "input_features": ["UserFeatures.userid"],
