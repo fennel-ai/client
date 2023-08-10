@@ -129,7 +129,6 @@ class Client:
             start = i * batch_size
             end = min((i + 1) * batch_size, num_rows)
             mini_df = dataframe[start:end]
-            # TODO (zaki) test this with examples/
             payload = to_columnar_json(mini_df)
             req = {
                 "webhook": webhook,
@@ -375,7 +374,7 @@ class Client:
             "output_features": output_feature_names,
             "data": to_columnar_json(input_dataframe),
             "log": log,
-        }
+        }  # type: Dict[str, Any]
         if workflow is not None:
             req["workflow"] = workflow
         if sampling_rate is not None:
