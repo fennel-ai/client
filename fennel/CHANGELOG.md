@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.17.3] - 2023-08-10
+- Bug fixes for columnar serialization
+
 ## [0.17.2] - 2023-08-10
 - Bug fixes for columnar serialization
 
