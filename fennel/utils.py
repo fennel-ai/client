@@ -216,7 +216,7 @@ def to_columnar_json(df: DataFrame, as_str=False) -> Union[dict, str]:
     made up of a dictionary of columns mapping to list of values, one value per row.
     This function is preferred over to_dict since it uses pandas.DataFrame.to_json
     which properly handles datetimes and nans according to the json standard.
-    By default, a json-compatible dict is returned. Use as_str = true to 
+    By default, a json-compatible dict is returned. Use as_str = true to
     stringify the json
     """
 
