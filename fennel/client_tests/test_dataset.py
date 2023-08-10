@@ -139,7 +139,6 @@ class TestDataset(unittest.TestCase):
             [18234, "Monica", 24, "Chile", yesterday],
         ]
         df = pd.DataFrame(data, columns=columns)
-        #breakpoint() # TODO zaki rm
         if client.is_integration_client():
             response = client.log_to_dataset("UserInfoDataset", df)
         else:

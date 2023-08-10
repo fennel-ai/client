@@ -167,7 +167,7 @@ class IntegrationClient:
             time.sleep(seconds)
         else:
             time.sleep(self.sleep_time)
-    # TODO zaki test this
+    # TODO (zaki) test this
     def log_to_dataset(self, dataset_name: str, df: pd.DataFrame):
         df_json = to_columnar_json(df)
         try:

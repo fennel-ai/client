@@ -54,7 +54,6 @@ class TestRestAPI(unittest.TestCase):
             {"UserFeatures.userid": 3},
         ]
         req = {
-            # TODO zaki we should enumerate the features here
             "output_features": ["UserFeatures"],
             "input_features": ["UserFeatures.userid"],
             "data": data,
@@ -73,7 +72,6 @@ class TestRestAPI(unittest.TestCase):
             "UserFeatures.userid": [1, 2, 3]
         }
         req = {
-            # TODO zaki we should enumerate the features here
             "output_features": ["UserFeatures"],
             "input_features": ["UserFeatures.userid"],
             "data": data,
