@@ -1,5 +1,4 @@
 from datetime import datetime
-from fennel.sources.sources import BigQuery
 
 import pytest
 from typing import Optional
@@ -15,6 +14,7 @@ from fennel.sources import (
     Kinesis,
     InitPosition,
 )
+from fennel.sources.sources import BigQuery
 
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
@@ -292,12 +292,3 @@ def test_invalid_s3_format():
             bucket_name="bucket", prefix="prefix", format="csv", delimiter="  "
         )
     assert "delimiter must be one of" in str(e.value)
-
-    with pytest.raises(Exception) as e:
-        s3.bucket(
-            bucket_name="bucket",
-            prefix="prefix",
-            format="hudi",
-            cursor="timestamp",
-        )
-    assert "cursor must be None" in str(e.value)

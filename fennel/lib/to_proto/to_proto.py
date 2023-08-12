@@ -524,7 +524,8 @@ def _kafka_to_ext_db_proto(
             sasl_mechanism=sasl_mechanism,
             sasl_plain_username=sasl_plain_username,
             sasl_plain_password=sasl_plain_password,
-            sasl_jaas_config="",  # TODO(xiao): remove once server side is updated
+            sasl_jaas_config="",
+            # TODO(xiao): remove once server side is updated
             enable_ssl_certificate_verification=BoolValue(value=verify_cert),
         ),
     )
@@ -547,13 +548,14 @@ def _s3_conn_to_source_proto(
         path_prefix=connector.path_prefix,
         delimiter=connector.delimiter,
         format=connector.format,
+        presorted=connector.presorted,
     )
     source = connector_proto.Source(
         table=ext_table,
         dataset=dataset_name,
         every=to_duration_proto(connector.every),
         lateness=to_duration_proto(connector.lateness),
-        cursor=connector.cursor,
+        cursor=None,
         timestamp_field=timestamp_field,
     )
     return (ext_db, source)
@@ -579,6 +581,7 @@ def _s3_to_ext_table_proto(
     path_prefix: Optional[str],
     delimiter: str,
     format: str,
+    presorted: bool,
 ) -> connector_proto.ExtTable:
     if bucket is None:
         raise ValueError("bucket must be specified")
@@ -592,6 +595,7 @@ def _s3_to_ext_table_proto(
             path_prefix=path_prefix,
             delimiter=delimiter,
             format=format,
+            pre_sorted=presorted,
         )
     )
 
