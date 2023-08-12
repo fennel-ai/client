@@ -86,6 +86,12 @@ def dataset_lookup_impl(
             f"Use `depends_on` param in @extractor to specify dataset "
             f"dependencies."
         )
+    join_columns = keys.columns.tolist()
+    if keys.isnull().values.any():
+        null_rows = keys[keys.isnull().any(axis=1)]
+        raise ValueError(
+            f"Null values found in key fields {join_columns}\n. Eg {null_rows}"
+        )
     right_key_fields = datasets[cls_name].key_fields
     if len(right_key_fields) == 0:
         raise ValueError(
@@ -108,18 +114,23 @@ def dataset_lookup_impl(
         return empty_df, pd.Series(np.array([False] * len(keys)))
 
     timestamp_field = datasets[cls_name].timestamp_field
-    join_columns = keys.columns.tolist()
     timestamp_length = len(ts)
     if timestamp_length != keys.shape[0]:
         raise ValueError(
             f"Length of timestamp array `{timestamp_length}` does not match ",
             f"length of keys array {keys.shape[0]} for dataset {cls_name}.",
         )
+    keys.reset_index(drop=True, inplace=True)
+    assert keys.shape[0] == len(
+        ts
+    ), "Length of keys and ts should be same " "found {} and {}".format(
+        keys.shape[0], len(ts)
+    )
+
     keys[timestamp_field] = ts
     keys[FENNEL_ORDER] = np.arange(len(keys))
     # Sort the keys by timestamp
     keys = keys.sort_values(timestamp_field)
-
     if cls_name in aggregated_datasets:
         data_dict = aggregated_datasets[cls_name]
         # Gather all the columns that are needed from data_dict to create a df.
@@ -162,36 +173,26 @@ def dataset_lookup_impl(
         right_df = data[cls_name]
         right_df[FENNEL_LOOKUP] = True
         right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
-        df = pd.merge_asof(
-            left=keys,
-            right=right_df,
-            on=timestamp_field,
-            by=join_columns,
-            direction="backward",
-            suffixes=("", "_right"),
-        )
+        try:
+            df = pd.merge_asof(
+                left=keys,
+                right=right_df,
+                on=timestamp_field,
+                by=join_columns,
+                direction="backward",
+                suffixes=("", "_right"),
+            )
+        except Exception as e:
+            raise ValueError(
+                f"Error while performing lookup on dataset {cls_name} "
+                f"with key fields {join_columns}, key length "
+                f"{keys.shape}, and shape of dataset being"
+                f"looked up{right_df.shape}: {e} "
+            )
         df.drop(timestamp_field, axis=1, inplace=True)
         df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
         df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
     found = df[FENNEL_LOOKUP].apply(lambda x: x is not np.nan)
-
-    # On demand lookup is not supported for now.
-    #
-    # Check if an on_demand is found
-    # if datasets[cls_name].on_demand:
-    #     on_demand_keys = keys[~found].reset_index(drop=True)
-    #     args = [
-    #         on_demand_keys[col]
-    #         for col in keys.columns
-    #         if col != timestamp_field
-    #     ]
-    #     on_demand_df, on_demand_found = datasets[cls_name].on_demand.bound_func(
-    #         on_demand_keys[timestamp_field], *args
-    #     )
-    #     # Filter out the columns that are not in the dataset
-    #     df = df[found]
-    #     df = pd.concat([df, on_demand_df], ignore_index=True, axis=0)
-    #     found = pd.concat([found, on_demand_found])
     df.drop(columns=[FENNEL_LOOKUP], inplace=True)
     right_df.drop(columns=[FENNEL_LOOKUP], inplace=True)
     if len(fields) > 0:
@@ -637,7 +638,7 @@ class MockClient(Client):
         for col in input_df.columns:
             if input_df[col].apply(lambda x: isinstance(x, dict)).any():
                 input_df[col] = input_df[col].apply(lambda x: frozendict(x))
-            intermediate_data[col] = input_df[col]
+            intermediate_data[col] = input_df[col].reset_index(drop=True)
         for extractor in extractors:
             prepare_args = self._prepare_extractor_args(
                 extractor, intermediate_data
@@ -694,6 +695,7 @@ class MockClient(Client):
                     f"invalid type `{type(output)}`, expected a pandas series or dataframe"
                 )
             output_df = pd.DataFrame(output)
+            output_df.reset_index(inplace=True)
             exceptions = data_schema_check(dsschema, output_df, extractor.name)
             if len(exceptions) > 0:
                 raise Exception(

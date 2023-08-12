@@ -7,8 +7,7 @@ from enum import Enum
 from typing import Any, Callable, List, Optional, TypeVar
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
-from fennel._vendor.pydantic import validator
-
+from fennel._vendor.pydantic import validator  # type: ignore
 from fennel.lib.duration import (
     Duration,
 )

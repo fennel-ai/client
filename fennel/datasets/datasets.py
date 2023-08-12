@@ -711,7 +711,6 @@ def dataset(
                 res[col] = res[col].apply(
                     lambda x: parse_json(type_annotation, x)
                 )
-
             return res.replace({np.nan: None}), found
 
         args = {k: pd.Series for k in key_fields}
