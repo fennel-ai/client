@@ -433,12 +433,14 @@ class S3Table(google.protobuf.message.Message):
     DELIMITER_FIELD_NUMBER: builtins.int
     FORMAT_FIELD_NUMBER: builtins.int
     DB_FIELD_NUMBER: builtins.int
+    PRE_SORTED_FIELD_NUMBER: builtins.int
     bucket: builtins.str
     path_prefix: builtins.str
     delimiter: builtins.str
     format: builtins.str
     @property
     def db(self) -> global___ExtDatabase: ...
+    pre_sorted: builtins.bool
     def __init__(
         self,
         *,
@@ -447,9 +449,10 @@ class S3Table(google.protobuf.message.Message):
         delimiter: builtins.str = ...,
         format: builtins.str = ...,
         db: global___ExtDatabase | None = ...,
+        pre_sorted: builtins.bool = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bucket", b"bucket", "db", b"db", "delimiter", b"delimiter", "format", b"format", "path_prefix", b"path_prefix"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bucket", b"bucket", "db", b"db", "delimiter", b"delimiter", "format", b"format", "path_prefix", b"path_prefix", "pre_sorted", b"pre_sorted"]) -> None: ...
 
 global___S3Table = S3Table
 

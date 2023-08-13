@@ -125,7 +125,7 @@ class S3(DataSource):
         prefix: str,
         delimiter: str = ",",
         format: str = "csv",
-        cursor: Optional[str] = None,
+        presorted: bool = False,
     ) -> S3Connector:
         return S3Connector(
             self,
@@ -133,7 +133,7 @@ class S3(DataSource):
             prefix,
             delimiter,
             format,
-            cursor,
+            presorted,
         )
 
     def required_fields(self) -> List[str]:
@@ -403,7 +403,7 @@ class S3Connector(DataConnector):
     path_prefix: Optional[str]
     delimiter: str = ","
     format: str = "csv"
-    cursor: Optional[str] = None
+    presorted: bool = False
 
     def __init__(
         self,
@@ -412,14 +412,14 @@ class S3Connector(DataConnector):
         path_prefix,
         delimiter,
         format,
-        cursor,
+        presorted,
     ):
         self.data_source = data_source
         self.bucket_name = bucket_name
         self.path_prefix = path_prefix
         self.delimiter = delimiter
         self.format = format
-        self.cursor = cursor
+        self.presorted = presorted
 
         if self.format not in ["csv", "json", "parquet", "hudi", "delta"]:
             raise (
@@ -429,14 +429,6 @@ class S3Connector(DataConnector):
             )
         if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
             raise (ValueError("delimiter must be one of [',', '\t', '|']"))
-        if (
-            self.format == "hudi" or self.format == "delta"
-        ) and self.cursor is not None:
-            raise (
-                ValueError(
-                    "cursor must be None for hudi or delta format, since it uses the commit timestamp."
-                )
-            )
 
     def identifier(self) -> str:
         return (

@@ -231,6 +231,7 @@ def test_multiple_sources():
         s3.bucket(
             bucket_name="all_ratings",
             prefix="prod/apac/",
+            presorted=True,
         ),
         every="1h",
         lateness="2d",
@@ -263,6 +264,7 @@ def test_multiple_sources():
                 "pathPrefix": "prod/apac/",
                 "delimiter": ",",
                 "format": "csv",
+                "preSorted": True,
                 "db": {
                     "name": "ratings_source",
                     "s3": {
