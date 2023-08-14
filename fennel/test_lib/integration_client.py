@@ -169,7 +169,7 @@ class IntegrationClient:
             time.sleep(self.sleep_time)
 
     def log_to_dataset(self, dataset_name: str, df: pd.DataFrame):
-        df_json = to_columnar_json(df)
+        df_json = to_columnar_json(df, as_str=True)
         try:
             self._client.log_to_dataset(dataset_name, df_json)
 
