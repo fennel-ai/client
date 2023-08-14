@@ -93,6 +93,7 @@ class UserInfoMultipleExtractor:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
     age_reciprocal: float = feature(id=8)
+    age_doubled: int = feature(id=9)
 
     @extractor(depends_on=[UserInfoDataset])
     @inputs(userid)
@@ -122,6 +123,19 @@ class UserInfoMultipleExtractor:
     def get_age_reciprocal(cls, ts: pd.Series, age: pd.Series):
         d = age.apply(lambda x: 1 / (x / (3600.0 * 24)) + 0.01)
         return pd.Series(name="age_reciprocal", data=d)
+
+    @extractor
+    @inputs(age)
+    @outputs(age_doubled)
+    def get_age_doubled(cls, ts: pd.Series, age: pd.Series):
+        d2 = age.apply(lambda x: x * 2)
+        d2.name = "age_doubled"
+        d3 = age.apply(lambda x: x * 3)
+        d3.name = "age_tripled"
+        d4 = age.apply(lambda x: x * 4)
+        d4.name = "age_quad"
+        # returns a dataframe with extra columns
+        return pd.DataFrame([d4, d3, d2]).T
 
     @extractor(depends_on=[UserInfoDataset], version=2)
     @includes(get_country_geoid)
@@ -184,8 +198,8 @@ class TestSimpleExtractor(unittest.TestCase):
             [18234, "Monica", 24, "Chile", now],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
-        df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "UserInfoDataset", df)
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "UserInfoDataset", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         ts = pd.Series([now, now])
@@ -209,6 +223,14 @@ class TestSimpleExtractor(unittest.TestCase):
             UserInfoMultipleExtractor, ts, user_ids
         )
         assert series.tolist() == [5, 3]
+
+        res = UserInfoMultipleExtractor.get_age_doubled(
+            UserInfoMultipleExtractor, ts, input_df["age"]
+        )
+        self.assertEqual(res.shape, (2, 3))  # extractor has extra cols
+        self.assertEqual(
+            res["UserInfoMultipleExtractor.age_doubled"].tolist(), [64, 48]
+        )
 
 
 class TestExtractorDAGResolution(unittest.TestCase):
