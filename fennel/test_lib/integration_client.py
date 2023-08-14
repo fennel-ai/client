@@ -125,7 +125,7 @@ class IntegrationClient:
                 )
                 for f in output_feature.features:
                     output_feature_name_to_type[f.fqn()] = f.dtype
-        input_df_json = to_columnar_json(input_dataframe)
+        input_df_json = to_columnar_json(input_dataframe, as_str=True)
         output_record_batch = self._client.extract_features(
             input_feature_names,
             output_feature_names,
@@ -169,7 +169,7 @@ class IntegrationClient:
             time.sleep(self.sleep_time)
 
     def log_to_dataset(self, dataset_name: str, df: pd.DataFrame):
-        df_json = to_columnar_json(df)
+        df_json = to_columnar_json(df, as_str=True)
         try:
             self._client.log_to_dataset(dataset_name, df_json)
 
