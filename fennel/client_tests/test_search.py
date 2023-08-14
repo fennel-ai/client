@@ -624,43 +624,22 @@ class TestSearchExample(unittest.TestCase):
         assert df["UserBehaviorFeatures.num_short_views_7d"].tolist() == [2, 0]
         assert df["DocumentFeatures.num_views_28d"].tolist() == [1, 2]
 
-        if client.is_integration_client():
-            result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                0
-            ] == ["This", "is", "a", "random", "Coda", "document"]
-            assert result.all()
-
-            result = df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                1
-            ] == [
-                "This",
-                "is",
-                "a",
-                "rand",
-                "document",
-                "in",
-                "Coda",
-                "with",
-                "words",
-            ]
-            assert result.all()
-        else:
-            assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                0
-            ] == ["This", "is", "a", "random", "Coda", "document"]
-            assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
-                1
-            ] == [
-                "This",
-                "is",
-                "a",
-                "rand",
-                "document",
-                "in",
-                "Coda",
-                "with",
-                "words",
-            ]
+        assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
+            0
+        ] == ["This", "is", "a", "random", "Coda", "document"]
+        assert df["DocumentContentFeatures.top_10_unique_words"].tolist()[
+            1
+        ] == [
+            "This",
+            "is",
+            "a",
+            "rand",
+            "document",
+            "in",
+            "Coda",
+            "with",
+            "words",
+        ]
 
         if client.is_integration_client():
             client.sleep(120)
