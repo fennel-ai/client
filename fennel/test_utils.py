@@ -1,4 +1,4 @@
-from fennel.utils import fhash
+from fennel.utils import fhash, to_columnar_json
 
 
 def test_fhash_Callable():
@@ -32,3 +32,7 @@ def test_fhash_Callable():
         return x + y
 
     assert fhash(f) == hash_code
+
+
+def test_to_columnar_json():
+    raise NotImplementedError("TODO zaki do this test")
