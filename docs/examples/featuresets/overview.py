@@ -221,9 +221,12 @@ def test_multiple_features_extracted(client):
         ),
     )
     expected = pd.DataFrame([[41, 52, 49], [-74, 0, 2]]).T
-    expected.columns = ["UserLocationFeatures.latitude", "UserLocationFeatures.longitude"]
+    expected.columns = [
+        "UserLocationFeatures.latitude",
+        "UserLocationFeatures.longitude",
+    ]
     for col in expected.columns:
-        assert(all(abs(df - expected) <= 1))
+        assert all(abs(df - expected) <= 1)
 
 
 # docsnip extractors_across_featuresets
@@ -291,6 +294,9 @@ def test_extractors_across_featuresets(client):
     )
 
     expected = pd.DataFrame([[41, 52, 49], [-74, 0, 2]]).T
-    expected.columns = ["UserLocationFeatures.latitude", "UserLocationFeatures.longitude"]
+    expected.columns = [
+        "UserLocationFeatures.latitude",
+        "UserLocationFeatures.longitude",
+    ]
     for col in expected.columns:
-        assert(all(abs(df - expected) <= 1))
+        assert all(abs(df - expected) <= 1)
