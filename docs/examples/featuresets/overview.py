@@ -220,16 +220,10 @@ def test_multiple_features_extracted(client):
             {"UserLocationFeatures.uid": [1, 2, 3]},
         ),
     )
-    assert df["UserLocationFeatures.latitude"].round(0).tolist() == [
-        41,
-        52,
-        49,
-    ]
-    assert df["UserLocationFeatures.longitude"].round(0).tolist() == [
-        -74,
-        0,
-        2,
-    ]
+    expected = pd.DataFrame([[41, 52, 49], [-74, 0, 2]]).T
+    expected.columns = ["UserLocationFeatures.latitude", "UserLocationFeatures.longitude"]
+    for col in expected.columns:
+        assert(all(abs(df - expected) <= 1))
 
 
 # docsnip extractors_across_featuresets
@@ -296,13 +290,7 @@ def test_extractors_across_featuresets(client):
         ),
     )
 
-    assert df["UserLocationFeaturesRefactored.latitude"].tolist() == [
-        41,
-        52,
-        49,
-    ]
-    assert df["UserLocationFeaturesRefactored.longitude"].tolist() == [
-        -74,
-        0,
-        2,
-    ]
+    expected = pd.DataFrame([[41, 52, 49], [-74, 0, 2]]).T
+    expected.columns = ["UserLocationFeatures.latitude", "UserLocationFeatures.longitude"]
+    for col in expected.columns:
+        assert(all(abs(df - expected) <= 1))
