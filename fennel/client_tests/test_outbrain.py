@@ -7,10 +7,6 @@ from fennel.datasets import dataset, field
 from fennel.datasets import pipeline, Dataset
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.aggregate import Count
-from fennel.lib.expectations import (
-    expectations,
-    expect_column_values_to_be_between,
-)
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
@@ -67,14 +63,6 @@ class PageViewsByUser:
                 ]
             )
         )
-
-    @expectations
-    def get_expectations(cls):
-        return [
-            expect_column_values_to_be_between(
-                column="page_views", min_value=1, max_value=100, mostly=0.95
-            )
-        ]
 
 
 @meta(owner="aditya@fennel.ai")
