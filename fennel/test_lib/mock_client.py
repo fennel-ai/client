@@ -120,14 +120,15 @@ def dataset_lookup_impl(
             f"Length of timestamp array `{timestamp_length}` does not match ",
             f"length of keys array {keys.shape[0]} for dataset {cls_name}.",
         )
-    keys.reset_index(drop=True, inplace=True)
+    keys = keys.reset_index(drop=True)
+    ts = ts.reset_index(drop=True)
     assert keys.shape[0] == len(
         ts
     ), "Length of keys and ts should be same " "found {} and {}".format(
         keys.shape[0], len(ts)
     )
-
     keys[timestamp_field] = ts
+
     keys[FENNEL_ORDER] = np.arange(len(keys))
     # Sort the keys by timestamp
     keys = keys.sort_values(timestamp_field)
@@ -155,7 +156,6 @@ def dataset_lookup_impl(
                     f"looked up{right_df.shape}: {e} "
                 )
             df.drop(timestamp_field, axis=1, inplace=True)
-            df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
             df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
             result_dfs.append(df)
         # Get common columns
@@ -318,7 +318,6 @@ class MockClient(Client):
             return FakeResponse(
                 404, f"Webhook endpoint {webhook_endpoint} not " f"found"
             )
-
         for ds in self.webhook_to_dataset_map[webhook_endpoint]:
             resp = self._internal_log(ds, df)
             if resp.status_code != 200:
@@ -519,6 +518,7 @@ class MockClient(Client):
 
         if dataset_name not in self.dataset_requests:
             return FakeResponse(404, f"Dataset {dataset_name} not found")
+
         dataset_req = self.dataset_requests[dataset_name]
         timestamp_field = self.dataset_info[dataset_name].timestamp_field
         if timestamp_field not in df.columns:
@@ -720,6 +720,17 @@ class MockClient(Client):
                 raise Exception(
                     f"Extractor {extractor.name} returned "
                     f"invalid type {type(output)}"
+                )
+        # Ensure the  number of rows in each column is the same
+        num_rows_per_col = {
+            col: len(intermediate_data[col]) for col in intermediate_data
+        }
+        first_col = list(num_rows_per_col.keys())[0]
+        for col, num_rows in num_rows_per_col.items():
+            if num_rows != num_rows_per_col[first_col]:
+                raise Exception(
+                    f"Number of values in feature {col} is {num_rows}, "
+                    f"but {num_rows_per_col[first_col]} in feature {first_col}. "
                 )
 
         # Prepare the output dataframe

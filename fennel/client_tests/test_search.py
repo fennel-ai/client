@@ -334,10 +334,9 @@ class UserBehaviorFeatures:
     @extractor(depends_on=[UserEngagementDataset])
     @inputs(Query.user_id)
     def get_user_features(cls, ts: pd.Series, user_id: pd.Series):
-        df, found = UserEngagementDataset.lookup(  # type: ignore
+        df, _found = UserEngagementDataset.lookup(  # type: ignore
             ts, user_id=user_id  # type: ignore
         )
-        df.drop("timestamp", axis=1, inplace=True)
         return df
 
 
@@ -358,7 +357,6 @@ class DocumentFeatures:
         )
         df[str(cls.total_timespent_minutes)] = df["total_timespent"] / 60
         df.drop("total_timespent", axis=1, inplace=True)
-        df.drop("timestamp", axis=1, inplace=True)
         return df
 
 
