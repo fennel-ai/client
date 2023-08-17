@@ -1326,6 +1326,113 @@ class TestFirstOp(unittest.TestCase):
         assert df["count"].tolist() == [1, 2, 1]
 
 
+@meta(owner="abhay@fennel.ai")
+@dataset
+class FirstMovieSeenWithFilter:
+    userid: int = field(key=True)
+    rating: float
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
+    t: datetime
+
+    @pipeline(version=1)
+    @inputs(RatingActivity)
+    def pipeline_first_movie_seen(cls, rating: Dataset):
+        filtered_rating = rating.filter(lambda df: df["rating"] <= 3)
+        return filtered_rating.groupby("userid").first()
+
+
+class TestWaterMark(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_water_marking(self, client):
+        # # Sync the dataset
+        client.sync(
+            datasets=[FirstMovieSeenWithFilter, RatingActivity],
+        )
+        now = datetime.now()
+        minute_ago = now - timedelta(minutes=1)
+        data = [
+            [18231, 4.5, "Jumanji", minute_ago],
+        ]
+        columns = ["userid", "rating", "movie", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        client.sleep()
+        # Do some lookups to verify pipeline_first_movie_seen is working as expected
+        ts = pd.Series([now])
+        df, _ = FirstMovieSeenWithFilter.lookup(
+            ts,
+            userid=pd.Series([18231]),
+        )
+        assert df.shape == (1, 4)
+        assert df["movie"].tolist() == [None]
+        assert df["rating"].tolist() == [None]
+
+        # Now log several data points from sixteen days ago
+        sixteen_days_ago = now - timedelta(days=16)
+        data = [
+            [18231, 1, "Jumanji", sixteen_days_ago],
+            [18231, 1, "Jumanji", sixteen_days_ago],
+            [18231, 1, "Jumanji", sixteen_days_ago],
+            [18231, 1, "Jumanji", sixteen_days_ago],
+            [18231, 1, "Jumanji", sixteen_days_ago],
+            [18231, 1, "Jumanji", sixteen_days_ago],
+            [18232, 3, "Titanic", sixteen_days_ago],
+            [18233, 5, "Titanic", sixteen_days_ago],
+            [18232, 3, "Titanic", sixteen_days_ago],
+            [18233, 5, "Titanic", sixteen_days_ago],
+            [18232, 3, "RaOne", sixteen_days_ago],
+            [18233, 5, "RaOne", sixteen_days_ago],
+            [18232, 3, "RaOne", sixteen_days_ago],
+            [18233, 5, "RaOne", sixteen_days_ago],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        client.sleep(10)
+
+        # Ensure that the data is actually from sixteen days ago
+        df, _ = FirstMovieSeenWithFilter.lookup(ts, userid=pd.Series([18231]))
+        assert df.shape == (1, 4)
+        assert df["movie"].tolist() == [
+            "Jumanji",
+        ]
+        assert df["rating"].tolist() == [1]
+
+        if not client.is_integration_client():
+            return
+        # The remainder test will only work with integration client
+        # that maintains watermarks.
+
+        # Now log data 40 days ago
+        forty_days_ago = now - timedelta(days=40)
+        data = [
+            [18231, 2, "Jumanji", forty_days_ago],
+            [18231, 2, "Jumanji", forty_days_ago],
+            [18233, 3, "Titanic", forty_days_ago],
+            [18233, 3, "Titanic", forty_days_ago],
+            [18233, 3, "RaOne", forty_days_ago],
+            [18233, 3, "RaOne", forty_days_ago],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        client.sleep(10)
+
+        # Ensure that the data is ONLY from sixteen days ago since watermark
+        # wont allow data from 40 days ago to be processed
+        df, _ = FirstMovieSeenWithFilter.lookup(ts, userid=pd.Series([18231]))
+        assert df.shape == (1, 4)
+        assert df["movie"].tolist() == [
+            "Jumanji",
+        ]
+        assert df["rating"].tolist() == [1]
+
+
 ################################################################################
 #                           Dataset Complex Structure Unit Tests
 ################################################################################
