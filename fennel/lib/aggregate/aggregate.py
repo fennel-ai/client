@@ -63,6 +63,23 @@ class Count(AggregateType):
         return f"count_{self.window.signature()}"
 
 
+class Distinct(AggregateType):
+    of: Optional[str] = None
+    unordered: bool
+
+    def to_proto(self) -> spec_proto.PreSpec:
+        return NotImplementedError(
+            "TODO: Generate protos for client"
+        )  # type: ignore
+
+    def validate(self):
+        if not self.unordered:
+            return NotImplementedError("Distinct requires unordered=True")
+
+    def signature(self):
+        return f"distinct_{self.of}_{self.window.signature()}"
+
+
 class Sum(AggregateType):
     of: str
 

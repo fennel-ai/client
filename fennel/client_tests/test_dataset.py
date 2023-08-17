@@ -12,7 +12,7 @@ from typing import Optional, List, Dict
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Min, Max
-from fennel.lib.aggregate import Sum, Average, Count, Stddev
+from fennel.lib.aggregate import Sum, Average, Count, Stddev, Distinct
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import between, oneof, inputs, struct
@@ -372,6 +372,7 @@ class MovieRatingCalculated:
     min_ratings: float
     max_ratings: float
     stddev_ratings: float
+    distinct_users: List[int]
     t: datetime
 
     @pipeline(version=1)
@@ -408,6 +409,12 @@ class MovieRatingCalculated:
                     window=Window("forever"),
                     of="rating",
                     into_field=str(cls.stddev_ratings),
+                ),
+                Distinct(
+                    window=Window("forever"),
+                    of="userid",
+                    into_field=str(cls.distinct_users),
+                    unordered=True,
                 ),
             ]
         )
@@ -829,7 +836,7 @@ class TestBasicAggregate(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (2, 8)
+        assert df.shape == (2, 9)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
         assert df["num_ratings"].tolist() == [4, 5]
@@ -844,6 +851,7 @@ class TestBasicAggregate(unittest.TestCase):
                 )
             ]
         )
+        assert df["distinct_users"].tolist() == [[18231], [18231]]
 
 
 @meta(owner="test@test.com")
@@ -1205,6 +1213,82 @@ class TestBasicCountUnique(unittest.TestCase):
         assert df.shape == (3, 4)
         assert df["unique_movies"].tolist() == [2, 1, None]
         assert df["unique_movies_2h"].tolist() == [2, 1, None]
+
+
+@meta(owner="test@test.com")
+@dataset
+class UserUniqueMoviesSeen:
+    userid: int = field(key=True)
+    unique_movies: List[str]
+    unique_movies_2h: List[str]
+    t: datetime
+
+    @pipeline(version=1)
+    @inputs(RatingActivity)
+    def pipeline_unique_movies_seen(cls, rating: Dataset):
+        schema = rating.schema()
+        schema["movie"] = str
+        rating_t = rating.transform(lambda df: df, schema)
+        return rating_t.groupby("userid").aggregate(
+            [
+                Distinct(
+                    window=Window("forever"),
+                    into_field=str(cls.unique_movies),
+                    of="movie",
+                    unordered=True,
+                ),
+                Distinct(
+                    window=Window("2h"),
+                    into_field=str(cls.unique_movies_2h),
+                    of="movie",
+                    unordered=True,
+                ),
+            ],
+        )
+
+
+class TestBasicDistinct(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_basic_distinct(self, client):
+        client.sync(
+            datasets=[UserUniqueMoviesSeen, RatingActivity],
+        )
+        now = datetime.now()
+        one_hour_ago = now - timedelta(hours=1)
+        two_hours_ago = now - timedelta(hours=2)
+        three_hours_ago = now - timedelta(hours=3)
+        four_hours_ago = now - timedelta(hours=4)
+        five_hours_ago = now - timedelta(hours=5)
+        minute_ago = now - timedelta(minutes=1)
+        data = [
+            [18231, 4.5, "Jumanji", five_hours_ago],
+            [18231, 3, "Jumanji", four_hours_ago],
+            [18231, 3.5, "Jumanji", three_hours_ago],
+            [18231, 4, "Titanic", three_hours_ago],
+            [18231, 3, "Titanic", two_hours_ago],
+            [18231, 5, "Titanic", one_hour_ago],
+            [18231, 4, "Titanic", minute_ago],
+            [18231, 2, "RaOne", one_hour_ago],
+            [18231, 3, "RaOne", minute_ago],
+            [18231, 1, "RaOne", two_hours_ago],
+        ]
+        columns = ["userid", "rating", "movie", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        client.sleep()
+
+        # Do some lookups to verify pipeline_unique_movies_seen is working as expected
+        ts = pd.Series([now])
+        df, _ = UserUniqueMoviesSeen.lookup(
+            ts,
+            userid=pd.Series([18231]),
+        )
+        assert df.shape == (1, 4)
+        assert df["unique_movies"].tolist() == [["Jumanji", "Titanic", "RaOne"]]
+        assert df["unique_movies_2h"].tolist() == [["Titanic", "RaOne"]]
 
 
 @meta(owner="abhay@fennel.ai")

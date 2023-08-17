@@ -4,7 +4,7 @@ import pytest
 from typing import Optional, List, Union
 
 from fennel.datasets import dataset, pipeline, field, Dataset
-from fennel.lib.aggregate import Count, Average, Stddev
+from fennel.lib.aggregate import Count, Average, Stddev, Distinct
 from fennel.lib.expectations import (
     expectations,
     expect_column_values_to_be_between,
@@ -98,6 +98,80 @@ def test_incorrect_aggregate():
     assert (
         str(e.value)
         == "Invalid aggregate `window=Window(start='forever', end='0s') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported, please set approx=True"
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class PositiveRatingActivity2:
+            cnt_rating: int
+            unique_ratings: int
+            movie: str = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(RatingActivity)
+            def count_distinct_pipeline(cls, rating: Dataset):
+                filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
+                filter2 = filtered_ds.filter(
+                    lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
+                )
+                return filter2.groupby("movie").aggregate(
+                    [
+                        Count(
+                            window=Window("forever"),
+                            into_field=str(cls.cnt_rating),
+                        ),
+                        Distinct(
+                            window=Window("forever"),
+                            into_field=str(cls.unique_ratings),
+                            of="rating",
+                            unordered=True,
+                        ),
+                    ],
+                )
+
+    assert (
+        str(e.value)
+        == "Cannot use distinct for field `rating` of type `float`, as it is not hashable"
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class PositiveRatingActivity3:
+            cnt_rating: int
+            unique_users: int
+            movie: str = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(RatingActivity)
+            def count_distinct_pipeline(cls, rating: Dataset):
+                filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
+                filter2 = filtered_ds.filter(
+                    lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
+                )
+                return filter2.groupby("movie").aggregate(
+                    [
+                        Count(
+                            window=Window("forever"),
+                            into_field=str(cls.cnt_rating),
+                        ),
+                        Distinct(
+                            window=Window("forever"),
+                            into_field=str(cls.unique_users),
+                            of="userid",
+                            unordered=False,
+                        ),
+                    ],
+                )
+
+    assert (
+        str(e.value)
+        == "Invalid aggregate `window=Window(start='forever', end='0s') into_field='unique_users' of='userid' unordered=False`: Distinct requires unordered=True"
     )
 
     with pytest.raises(TypeError) as e:

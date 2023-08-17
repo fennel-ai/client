@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.17.7] - 2023-08-17
+- Distinct type for aggregations 
+
 ## [0.17.3] - 2023-08-10
 - Bug fixes for columnar serialization
 
