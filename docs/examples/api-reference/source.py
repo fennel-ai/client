@@ -133,3 +133,48 @@ class UserHudiSourcedDataset:
 
 
 # /docsnip
+
+# docsnip kafka_source
+kafka = sources.Kafka(
+    name="kafka_src",
+    bootstrap_servers="localhost:9092",
+    security_protocol="PLAINTEXT",
+    sasl_mechanism="PLAIN",
+    sasl_plain_username="test",
+    sasl_plain_password="test",
+    verify_cert=False,
+)
+
+
+@source(kafka.topic("user"))
+@meta(owner="abc@email.com")
+@dataset
+class UserKafkaSourcedDataset:
+    uid: int = field(key=True)
+    email: str
+    timestamp: datetime
+    ...
+
+
+# /docsnip
+
+
+# docsnip s3_delta_lake_source
+s3 = sources.S3(
+    name="ratings_source",
+    aws_access_key_id="<SOME_ACCESS_KEY>",
+    aws_secret_access_key="<SOME_SECRET_ACCESS_KEY>",
+)
+
+
+@source(s3.bucket("engagement", prefix="notion", format="delta"), every="30m")
+@meta(owner="abc@email.com")
+@dataset
+class UserDeltaLakeSourcedDataset:
+    uid: int = field(key=True)
+    email: str
+    timestamp: datetime
+    ...
+
+
+# /docsnip
