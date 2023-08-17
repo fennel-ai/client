@@ -1287,8 +1287,16 @@ class TestBasicDistinct(unittest.TestCase):
             userid=pd.Series([18231]),
         )
         assert df.shape == (1, 4)
-        assert df["unique_movies"].tolist() == [["Jumanji", "Titanic", "RaOne"]]
-        assert df["unique_movies_2h"].tolist() == [["Titanic", "RaOne"]]
+        assert sorted(df["unique_movies"].tolist()[0]) == [
+            "Jumanji",
+            "RaOne",
+            "Titanic",
+        ]
+
+        assert sorted(df["unique_movies_2h"].tolist()[0]) == [
+            "RaOne",
+            "Titanic",
+        ]
 
 
 @meta(owner="abhay@fennel.ai")
