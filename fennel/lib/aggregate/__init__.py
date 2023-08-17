@@ -1,5 +1,6 @@
 from fennel.lib.aggregate.aggregate import (
     Count,
+    Distinct,
     Sum,
     LastK,
     Min,

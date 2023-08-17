@@ -1,3 +1,5 @@
+from math import sqrt
+
 from fennel.test_lib.execute_aggregation import (
     SumState,
     AvgState,
@@ -9,9 +11,8 @@ from fennel.test_lib.execute_aggregation import (
     MinForeverState,
     MaxForeverState,
     StddevState,
+    DistinctState,
 )
-
-from math import sqrt
 
 
 def test_sum_state():
@@ -145,3 +146,17 @@ def test_stddev_state():
     assert state.del_val_from_state(1) == 0
     assert state.get_val() == 0
     assert state.del_val_from_state(10) == -1.0
+
+
+def test_distinct_state():
+    state = DistinctState()
+    assert state.add_val_to_state(1) == [1]
+    assert state.add_val_to_state(1) == [1]
+    assert state.add_val_to_state(2) == [1, 2]
+    assert state.get_val() == [1, 2]
+    assert state.add_val_to_state(3) == [1, 2, 3]
+    assert state.del_val_from_state(2) == [1, 3]
+    assert state.del_val_from_state(1) == [1, 3]
+    assert state.add_val_to_state(3) == [1, 3]
+    assert state.get_val() == [1, 3]
+    assert state.del_val_from_state(3) == [1, 3]

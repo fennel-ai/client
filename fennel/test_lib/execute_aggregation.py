@@ -1,12 +1,12 @@
 import heapq
 from abc import ABC, abstractmethod
 from collections import Counter
+from math import sqrt
 
 import pandas as pd
-from math import sqrt
 from typing import Dict, List
 
-from fennel.lib.aggregate import AggregateType
+from fennel.lib.aggregate import AggregateType, Distinct
 from fennel.lib.aggregate import Count, Sum, Average, LastK, Min, Max, Stddev
 from fennel.lib.duration import duration_to_timedelta
 
@@ -310,6 +310,24 @@ class StddevState(AggState):
         return sqrt(variance)
 
 
+class DistinctState(AggState):
+    def __init__(self):
+        self.counter = Counter()
+
+    def add_val_to_state(self, val):
+        self.counter[val] += 1
+        return list(self.counter.keys())
+
+    def del_val_from_state(self, val):
+        self.counter[val] -= 1
+        if self.counter[val] == 0:
+            del self.counter[val]
+        return list(self.counter.keys())
+
+    def get_val(self) -> List:
+        return list(self.counter.keys())
+
+
 def get_aggregated_df(
     input_df: pd.DataFrame,
     aggregate: AggregateType,
@@ -383,6 +401,8 @@ def get_aggregated_df(
                         state[key] = MaxState(aggregate.default)
                 elif isinstance(aggregate, Stddev):
                     state[key] = StddevState(aggregate.default)
+                elif isinstance(aggregate, Distinct):
+                    state[key] = DistinctState()
                 else:
                     raise Exception(
                         f"Unsupported aggregate function {aggregate}"

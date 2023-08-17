@@ -30,6 +30,7 @@ from fennel.lib.aggregate import AggregateType
 from fennel.lib.aggregate.aggregate import (
     Average,
     Count,
+    Distinct,
     LastK,
     Sum,
     Min,
@@ -328,6 +329,11 @@ class Aggregate(_Node):
                         f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
                     )
                 values[agg.into_field] = dtype  # type: ignore
+            elif isinstance(agg, Min) or isinstance(agg, Max):
+                values[agg.into_field] = input_schema.get_type(agg.of)
+            elif isinstance(agg, Distinct):
+                dtype = input_schema.get_type(agg.of)
+                values[agg.into_field] = List[dtype]  # type: ignore
             elif isinstance(agg, Average):
                 values[agg.into_field] = float  # type: ignore
             elif isinstance(agg, LastK):
@@ -1595,7 +1601,7 @@ class SchemaValidator(Visitor):
     def visitAggregate(self, obj) -> DSSchema:
         input_schema = self.visit(obj.node)
         keys = {f: input_schema.get_type(f) for f in obj.keys}
-        values = {}
+        values: Dict[str, Type] = {}
         for agg in obj.aggregates:
             exceptions = agg.validate()
             if exceptions is not None:
@@ -1609,22 +1615,36 @@ class SchemaValidator(Visitor):
                         )
                     if not is_hashable(input_schema.get_type(agg.of)):
                         raise TypeError(
-                            f"Cannot use count unique for field {agg.of} of "
-                            f"type {dtype_to_string(dtype)}"  # type: ignore
+                            f"Cannot use count unique for field `{agg.of}` of "
+                            f"type `{dtype_to_string(dtype)}`, as it is not "  # type: ignore
+                            f"hashable"
                         )
                 values[agg.into_field] = int
+            elif isinstance(agg, Distinct):
+                if agg.of is None:
+                    raise ValueError(
+                        f"Distinct aggregate `{agg}` must have `of` field."
+                    )
+                dtype = input_schema.get_type(agg.of)
+                if not is_hashable(input_schema.get_type(agg.of)):
+                    raise TypeError(
+                        f"Cannot use distinct for field `{agg.of}` of "
+                        f"type `{dtype_to_string(dtype)}`, as it is not hashable"
+                        # type: ignore
+                    )
+                values[agg.into_field] = List[dtype]  # type: ignore
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
                 if get_primitive_dtype(dtype) not in [int, float]:
                     raise TypeError(
-                        f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
+                        f"Cannot sum field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Average):
                 dtype = input_schema.get_type(agg.of)
                 if get_primitive_dtype(dtype) not in [int, float]:
                     raise TypeError(
-                        f"Cannot take average of field {agg.of} of type {dtype_to_string(dtype)}"
+                        f"Cannot take average of field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
                 values[agg.into_field] = float  # type: ignore
             elif isinstance(agg, LastK):
