@@ -26,6 +26,7 @@ class PreSpec(google.protobuf.message.Message):
     MIN_FIELD_NUMBER: builtins.int
     MAX_FIELD_NUMBER: builtins.int
     STDDEV_FIELD_NUMBER: builtins.int
+    DISTINCT_FIELD_NUMBER: builtins.int
     @property
     def sum(self) -> global___Sum: ...
     @property
@@ -40,6 +41,8 @@ class PreSpec(google.protobuf.message.Message):
     def max(self) -> global___Max: ...
     @property
     def stddev(self) -> global___Stddev: ...
+    @property
+    def distinct(self) -> global___Distinct: ...
     def __init__(
         self,
         *,
@@ -50,10 +53,11 @@ class PreSpec(google.protobuf.message.Message):
         min: global___Min | None = ...,
         max: global___Max | None = ...,
         stddev: global___Stddev | None = ...,
+        distinct: global___Distinct | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "last_k", b"last_k", "max", b"max", "min", b"min", "stddev", b"stddev", "sum", b"sum", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "last_k", b"last_k", "max", b"max", "min", b"min", "stddev", b"stddev", "sum", b"sum", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sum", "average", "count", "last_k", "min", "max", "stddev"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "distinct", b"distinct", "last_k", b"last_k", "max", b"max", "min", b"min", "stddev", b"stddev", "sum", b"sum", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "distinct", b"distinct", "last_k", b"last_k", "max", b"max", "min", b"min", "stddev", b"stddev", "sum", b"sum", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sum", "average", "count", "last_k", "min", "max", "stddev", "distinct"] | None: ...
 
 global___PreSpec = PreSpec
 
@@ -241,3 +245,26 @@ class Stddev(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["default", b"default", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___Stddev = Stddev
+
+@typing_extensions.final
+class Distinct(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    OF_FIELD_NUMBER: builtins.int
+    NAME_FIELD_NUMBER: builtins.int
+    WINDOW_FIELD_NUMBER: builtins.int
+    of: builtins.str
+    name: builtins.str
+    @property
+    def window(self) -> window_pb2.Window: ...
+    def __init__(
+        self,
+        *,
+        of: builtins.str = ...,
+        name: builtins.str = ...,
+        window: window_pb2.Window | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "of", b"of", "window", b"window"]) -> None: ...
+
+global___Distinct = Distinct

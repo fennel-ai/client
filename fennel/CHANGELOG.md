@@ -1,5 +1,9 @@
 # Changelog
 
+
+## [0.17.8] - 2023-08-17
+- Added support for distinct aggregate in the backend 
+
 ## [0.17.7] - 2023-08-17
 - Distinct type for aggregations 
 
