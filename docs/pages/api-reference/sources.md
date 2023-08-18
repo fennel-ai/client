@@ -154,4 +154,26 @@ configuring the S3 bucket.
 
 <pre snippet="api-reference/source#s3_hudi_source"></pre>
 
+### Kafka
 
+The following fields need to be defined for the source:
+
+1. **`name`** - A name to identify the source. The name should be unique across all sources.
+2. **`bootstrap_servers`** - A list of broker host or host\:port.
+3. **`security_protocol`** - Protocol used to communicate with brokers. Supported PLAINTEXT, SASL_PLAINTEXT, and SASL_SSL.
+4. **`sasl_mechanism`** - SASL mechanism to use for authentication. For example, SCRAM-SHA-256, PLAIN.
+5. **`sasl_plain_username`** - SASL username.
+6. **`sasl_plain_password`** - SASL password.
+7. **`verify_cert`** - Enable OpenSSL's builtin broker (server) certificate verification. Default is true.
+
+The following fields need to be defined on the topic:
+1. **`topic`** - The kafka topic.
+
+
+<pre snippet="api-reference/source#kafka_source"></pre>
+
+### Delta Lake
+
+Similar to Hudi, Fennel integrates with Delta Lkae via its S3 connector. To use delta lake, simply set the `format` field to "delta" when configuring the S3 bucket.
+
+<pre snippet="api-reference/source#s3_delta_lake_source"></pre>
