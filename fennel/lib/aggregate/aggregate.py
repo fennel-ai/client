@@ -64,13 +64,17 @@ class Count(AggregateType):
 
 
 class Distinct(AggregateType):
-    of: Optional[str] = None
+    of: str
     unordered: bool
 
     def to_proto(self) -> spec_proto.PreSpec:
-        return NotImplementedError(
-            "TODO: Generate protos for client"
-        )  # type: ignore
+        return spec_proto.PreSpec(
+            distinct=spec_proto.Distinct(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+            )
+        )
 
     def validate(self):
         if not self.unordered:
