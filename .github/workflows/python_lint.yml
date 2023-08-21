@@ -13,13 +13,17 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
+      - name: Install aspell for pyspelling
+        run: apt-get install -y aspell
       - name: Upgrade pip
         run: pip install --upgrade pip
       - name: Install packages
-        run: pip install "flake8>=4.0.1" "black>=22.6.0" "mypy==0.981" # install 0.981 of mypy since future versions seem to be not working with `--exclude`
+        run: pip install "flake8>=4.0.1" "black>=22.6.0" "mypy==0.981" "pyspelling>=2.8.2" # install 0.981 of mypy since future versions seem to be not working with `--exclude`
       - name: flake8 lint
         run: flake8 .
       - name: black lint
         run: black --diff --check .
       - name: mypy typechecking
         run: mypy .
+      - name: spellcheck
+        run: pyspelling
