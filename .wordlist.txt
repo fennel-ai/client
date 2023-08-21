@@ -32,7 +32,9 @@ MockClient
 Nones
 OAuth
 OOM
+OpenSSL's
 PII
+PLAINTEXT
 PagerDuty
 PoolableConnectionFactory
 PrivateLink
@@ -44,8 +46,11 @@ ROI
 RPCs
 Realtimeliness
 RocksDB
+SASL
 SDK
+SHA
 SLA
+SSL
 SearchRequest
 Signifier
 Stddev

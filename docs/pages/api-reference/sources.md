@@ -174,6 +174,6 @@ The following fields need to be defined on the topic:
 
 ### Delta Lake
 
-Similar to Hudi, Fennel integrates with Delta Lkae via its S3 connector. To use delta lake, simply set the `format` field to "delta" when configuring the S3 bucket.
+Similar to Hudi, Fennel integrates with Delta Lake via its S3 connector. To use delta lake, simply set the `format` field to "delta" when configuring the S3 bucket.
 
 <pre snippet="api-reference/source#s3_delta_lake_source"></pre>
