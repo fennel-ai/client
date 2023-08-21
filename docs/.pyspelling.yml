@@ -1,0 +1,29 @@
+matrix:
+  - name: Python source
+    sources:
+      - examples/**/*.py
+    dictionary:
+      wordlists:
+      - .wordlist.txt
+      output: wordlist.dic
+    encoding: utf-8
+    pipeline:
+      - pyspelling.filters.python:
+  - name: markdown
+    sources:
+      - '**/*.md'
+    dictionary:
+      wordlists:
+        - .wordlist.txt
+      output: wordlist.dic
+    pipeline:
+      - pyspelling.filters.markdown:
+      - pyspelling.filters.html:
+          comments: false
+          attributes:
+          - title
+          - alt
+          ignores:
+          - code
+          - pre
+      - pyspelling.filters.url:

@@ -28,5 +28,5 @@ cloud.
 6. Sit back as Fennel deploys its Feature Engineering Platform in this account and manages
    it from there. To deploy and perform ongoing maintenance and upgrades,
    Fennel peers the deployed VPC with a VPC in Fennel's account (a.k.a. the control plane).
-7. Access the Fennnel service from your production/dev account via AWS PrivateLink
+7. Access the Fennel service from your production/dev account via AWS PrivateLink
    or VPC peering if a peering connection was established in step 5.

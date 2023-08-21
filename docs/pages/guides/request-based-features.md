@@ -24,22 +24,22 @@ class UserFeatures:
     ...
     ctr_by_device_type: float = feature(id=17)
     ..
-    
+
     @extractor
     @inputs(SearchRequest.device_type)
     @outputs(ctr_by_device_type)
-    def f(cls, ts: pd.Series, devices: pd.Series): 
+    def f(cls, ts: pd.Series, devices: pd.Series):
         for device in devices:
             ...
 
 ```
 
-In this example, we defined a featureset called `SearchRequest` that contains 
+In this example, we defined a featureset called `SearchRequest` that contains
 all the properties of the request that are relevant for a feature. This featureset
 itself has no extractors - Fennel doesn't know how to extract any of these features.
 
-Features of other featuresets can now depend on `SearchRequest` features - in this 
-example some features of `UserFeatures` are depending on `SearchRequest.device_type.` 
+Features of other featuresets can now depend on `SearchRequest` features - in this
+example some features of `UserFeatures` are depending on `SearchRequest.device_type.`
 This way, as long as `SearchRequest` features are passed as input to extraction
 process, all such other features can be naturally computed.
 

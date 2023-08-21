@@ -13,7 +13,7 @@ provides the ability to specify expectations on the data.
 
 Fennel internally relies on [Great Expectations](https://greatexpectations.io/) to help
 users easily specify data expectations. Fennel's expectations are a subset of `Great Expectations`
-expectations and are documented below, but the api to specify expectations is the same. 
+expectations and are documented below, but the api to specify expectations is the same.
 
 ## Expectation Types
 
@@ -154,9 +154,9 @@ The following expectations operate on a single column at a time.
 <li>
 <details>
    <summary><b>[expect_column_values_to_not_match_regex_list](https://greatexpectations.io/expectations/expect_column_values_to_not_match_regex_list)</b></summary>
-   
+
    Expect column entries to be strings that do not match any of a list of regular expressions.<br/><br/>
-   
+
    *Parameters*:
    - `column (str)` – The column name.
    - `regex_list (list)` – The list of regular expressions that each column entry should not match any of.
@@ -189,7 +189,7 @@ The following expectations operate on a single column at a time.
    <summary><b>[expect_column_values_to_be_json_parseable](https://greatexpectations.io/expectations/expect_column_values_to_be_json_parseable)</b></summary>
 
    Expect column entries to be parseable as JSON.<br/><br/>
-   
+
    *Parameters*:
    - `column (str)` – The column name.
    </details>
@@ -199,7 +199,7 @@ The following expectations operate on a single column at a time.
    <summary><b>[expect_column_values_to_match_json_schema](https://greatexpectations.io/expectations/expect_column_values_to_match_json_schema)</b></summary>
 
    Expect column entries to match a given JSON schema.<br/><br/>
-   
+
    *Parameters*:
    - `column (str)` – The column name.
    - `json_schema (dict)` – The JSON schema that each column entry should match.
@@ -209,7 +209,7 @@ The following expectations operate on a single column at a time.
 
 ### Multi Column Expectations
 
-The following expectations require two or more columns. 
+The following expectations require two or more columns.
 
 <ol>
 <li>

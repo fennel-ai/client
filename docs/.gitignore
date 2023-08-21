@@ -4,3 +4,4 @@ examples/**.json
 venv/
 **/__pycache__/*
 .idea/
+wordlist.dic

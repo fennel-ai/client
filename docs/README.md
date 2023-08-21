@@ -7,32 +7,32 @@ To get up and running contributing to the documentation, take the following step
 2. Rename `.env.example` to `.env` and fill out the values.
     - `GITHUB_TOKEN` should be a valid Github PAT with access to read the `fennel-ai/turbo` repo
     - `GITHUB_REPO` is the location of the Dockerfile that builds the frontend, and should be set to `fennel-ai/turbo`
-3. Run in your terminal `make up` from the root 
-	- This will pull in the Docs UI repo from Github, and run it on `localhost:3001/docs`
+3. Run in your terminal `make up` from the root
+    - This will pull in the Docs UI repo from Github, and run it on `localhost:3001/docs`
 4. Edit the markdown and python files in this repo, and get hot-reloading showing the latest changes on `localhost`
 5. Commit changes once you're ready.
-	- Upon commit, the python files will run through the test suite and block any broken examples from going live in the documentation.
+    - Upon commit, the python files will run through the test suite and block any broken examples from going live in the documentation.
 
-> When new updates are made to the UI, you may need to run `make build` before `make up` in order to force Docker to refetch the latest changes and rebuild the image.
+> When new updates are made to the UI, you may need to run `make build` before `make up` in order to force Docker to fetch the latest changes and rebuild the image.
 
 ## `./examples`
-The example directory holds Python test files. Anywhere in these files you can wrap any number of lines between `# docsnip` comments 
+The example directory holds Python test files. Anywhere in these files you can wrap any number of lines between `# docsnip` comments
 **e.g.** `example.py`:
 ```python
-from fennel import * 
+from fennel import *
 
 # docsnip my_snippet
 @dataset
 class UserInfoDataset:
-	name: str
-	email: str
-	id: str
-	age: int
+    name: str
+    email: str
+    id: str
+    age: int
 # /docsnip
 
-	def my_pipeline():
-		# todo
-		return False
+    def my_pipeline():
+        # todo
+        return False
 ```
 
 Now, in any of our markdown files you can write:
