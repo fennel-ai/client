@@ -1,7 +1,7 @@
 ---
 title: Operators
 order: 4
-status: wip
+status: WIP
 ---
 
 # Operators
@@ -104,7 +104,7 @@ The `aggregate` operator has the following parameters:
 ### Groupby/ First
 
 Fennel allows you to groupby and get the first entry (by timestamp) in each group using the `first` operator.
-The `first` operator must be preceded by `groupby` to idenitfy the grouping fields.
+The `first` operator must be preceded by `groupby` to identify the grouping fields.
 
 `groupby` takes the following parameters:
 

@@ -8,11 +8,11 @@ status: 'published'
 
 ### General InfoSec
 
-Fennel runs inside your VPC and thus is subject to your usual infosec policies.
+Fennel runs inside your VPC and thus is subject to your usual InfoSec policies.
 The code or data never leave your cloud which eliminates many privacy/compliance
-vulnurabilities. 
+vulnerabilities.
 
-Fennel uses PrivateLink for creating endpoints - as a result, the endpoints aren't 
+Fennel uses PrivateLink for creating endpoints - as a result, the endpoints aren't
 visible to the public internet outside of your VPC.
 
 While Fennel's control plane runs outside of your VPC, it only has access to logs
@@ -24,6 +24,6 @@ and telemetry information.
 Fennel uses industry best-practices for data security:
 
 * All data is encrypted in transit and at rest
-* Secure strorage of user-provided secrets in secrete stores or encrypted disks
+* Secure storage of user-provided secrets in secrete stores or encrypted disks
 * All inter-server communication happens over TLS
 * Authentication and TLS for client-server requests

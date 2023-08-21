@@ -31,7 +31,7 @@ The following fields need to be specified:
 
 1. **`name`** - A name to identify the source. The name should be unique across all sources.
 2. **`host`** - The host name of the database.
-3. **`port`** - The port to connect to. By default it is 3303 for MySQL and 5432 for Posgres.
+3. **`port`** - The port to connect to. By default it is 3303 for MySQL and 5432 for Postgres.
 4. **`db_name`** - The database name.
 5. **`username`** - The username which is used to access the database.
 6. **`password`** - The password associated with the username.
@@ -103,7 +103,7 @@ Interfacing with BigQuery requires credentials for
 a [Service Account](https://cloud.google.com/iam/docs/service-accounts) with the "BigQuery User" and "BigQuery Data
 Editor" roles, which grants permissions to run BigQuery jobs, write to BigQuery Datasets, and read table metadata. It is
 highly recommended that this Service Account is exclusive to Fennel for ease of permissions and auditing. However, you
-can also use a pre-existing Service Account if you already have one with the correct permissions.
+can also use a preexisting Service Account if you already have one with the correct permissions.
 
 The easiest way to create a Service Account is to follow GCP's guide
 for [Creating a Service Account](https://cloud.google.com/iam/docs/creating-managing-service-accounts). Once you've

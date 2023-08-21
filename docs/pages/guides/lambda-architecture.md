@@ -35,7 +35,7 @@ Here imagine that we have two different datasets, potentially with their own sep
 
 ### **Implementing Lambda Architecture Via Multiple Pipelines**
 
-Generally speaking, Fennel itself follows [Kappa architecture](https://www.kai-waehner.de/blog/2021/09/23/real-time-kappa-architecture-mainstream-replacing-batch-lambda/) and expresses all computation via streaming. But it can be trivially used to implement [lambda architecture](https://www.databricks.com/glossary/lambda-architecture) for your usecases.&#x20;
+Generally speaking, Fennel itself follows [Kappa architecture](https://www.kai-waehner.de/blog/2021/09/23/real-time-kappa-architecture-mainstream-replacing-batch-lambda/) and expresses all computation via streaming. But it can be trivially used to implement [lambda architecture](https://www.databricks.com/glossary/lambda-architecture) for your use cases.&#x20;
 
 Imagine you have a realtime source (say in Kafka) and a batch source (say in Snowflake) that is batch corrected every night. And you'd like to do some computation using Kafka in realtime but also correct the data later when Snowflake data is available. That can be trivially done by writing a dataset having two pipelines - one of them can build on top of Kafka and work realtime. The other one can build on Snowflake and process the same data later.&#x20;
 

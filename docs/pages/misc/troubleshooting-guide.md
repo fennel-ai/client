@@ -13,7 +13,7 @@ status: 'published'
 Some users have reported that they could not connect to Amazon RDS MySQL or MariaDB. This can be diagnosed with the error message: `Cannot create a PoolableConnectionFactory`. To solve this issue please set **`jdbc_params` ** to **** `enabledTLSProtocols=TLSv1.2`&#x20;
 </details>
 
-<br/> 
+<br/>
 
 <details style={{fontSize: '1.25rem'}}>
 
@@ -28,7 +28,7 @@ print(filtered_ds.schema())
 
 </details>
 
-<br/> 
+<br/>
 
 <details style={{fontSize: '1.25rem'}}>
 
@@ -36,10 +36,10 @@ print(filtered_ds.schema())
 
 It might be helpful to print the current data that is stored in the datasets that you are using to extract features.
 You can do this by calling :
-`client.get_dataset_df(dataset_name) ` and printing the resultant dataframe.&#x20; 
+`client.get_dataset_df(dataset_name) ` and printing the resultant dataframe.&#x20;
 
 Please note that this debug functionality is only available in the mock client. To debug issues in prod, you need to use
-the metadata api's exposed by Fennel.&#x20;
+the metadata APIs exposed by Fennel.&#x20;
 
 Another possibility is that the timestamps for the datasets are equal to or ahead of the current time. Since fennel
 ensures that everything is point in time correct, this can result in null values for the features.&#x20;

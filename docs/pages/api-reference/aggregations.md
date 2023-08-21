@@ -6,7 +6,7 @@ status: 'published'
 
 # Aggregations
 
-Aggregations are provided to the \`aggregate\` operator and specify how the agggregation should happen. All aggregations take two common arguments:
+Aggregations are provided to the \`aggregate\` operator and specify how the aggregation should happen. All aggregations take two common arguments:
 
 1. `window`: Window - argument that specifies the length of the duration across which Fennel needs to perform the aggregation. See how [duration](/api-reference/duration) is specified in Fennel.
 2. `into_field`: str - the name of the field in the output dataset that corresponds to this aggregation. This&#x20;
@@ -18,7 +18,7 @@ Besides these common arguments, here is the rest of the API reference for all th
 Count computes a rolling count for each group key across a window.  It returns 0 by default. Its output type is always `int`.&#x20;
 The count aggregate also takes an optional argument `unique` which is a boolean. If set to true, counts the number of unique values in the given window.&#x20;
 The field over which the count is computed is specified by the `of` parameter of type `str`.&#x20;
-Count also takes `approx` as an argument that when set to true, makes the count an approximate, but allows Fennel to be more efficient with state storage. 
+Count also takes `approx` as an argument that when set to true, makes the count an approximate, but allows Fennel to be more efficient with state storage.
 Currently, Fennel only supports approximate unique counts, hence if `unique` is set to true, `approx` must also be set to true.&#x20;
 
 ### 2. Sum &#x20;

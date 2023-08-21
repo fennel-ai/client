@@ -90,7 +90,7 @@ def test_no_datetime_field():
 
 # invalid - no explicitly marked `timestamp` field
 # and multiple fields of type `datetime` so timestamp
-# field is amgiguous
+# field is ambiguous
 def test_ambiguous_timestamp_field():
     with pytest.raises(Exception) as e:
         # docsnip invalid_user_dataset_ambiguous_timestamp_field

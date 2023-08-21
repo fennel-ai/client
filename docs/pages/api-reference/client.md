@@ -1,7 +1,7 @@
 ---
 title: Client
 order: 0
-status: wip
+status: WIP
 ---
 
 # Client
@@ -14,7 +14,7 @@ Given some input and output features, extracts the current value of all the outp
 
 **Arguments:**
 
-* `output_feature_list: List[Union[Feature, Featureset]]`: list of features (written as fully qualified name of a feature along with the featureset) that should be extracted. Can also take featurset objects as input, in which case all features in the featureset are extracted.
+* `output_feature_list: List[Union[Feature, Featureset]]`: list of features (written as fully qualified name of a feature along with the featureset) that should be extracted. Can also take featureset objects as input, in which case all features in the featureset are extracted.
 * `input_feature_list: List[Union[Feature, Featureset]]` : list of features/featuresets for which values are known
 * `input_df: Dataframe`: a pandas dataframe object that contains the values of all features in the input feature list. Each row of the dataframe can be thought of as one entity for which features are desired.
 * `log: bool` - boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False
@@ -73,11 +73,11 @@ This method throws an error if the schema of the dataframe (i.e. column names an
 
 ### **extract_historical_features**
 
-For offline training of models, users often need to extract features for a large number of entities. 
+For offline training of models, users often need to extract features for a large number of entities.
 This method allows users to extract features for a large number of entities in a single call while ensuring
 point-in-time correctness of the extracted features.
 
-This api is an asynchronous api that returns a request id and the path to the output folder in S3 containing the extracted features.&#x20; 
+This api is an asynchronous api that returns a request id and the path to the output folder in S3 containing the extracted features.&#x20;
 &#x20;
 
 **Arguments:**
@@ -112,7 +112,7 @@ A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing
 
 ### **extract_historical_features_progress**
 
-This method allows users to monitor the progress of the extract_historical_features asynchronous operation. 
+This method allows users to monitor the progress of the extract_historical_features asynchronous operation.
 It accepts the request ID that was returned by the `extract_historical_features` method and returns the current status of that operation.
 
 The response format of this function and the `extract_historical_features` function are identical.&#x20;
@@ -129,7 +129,7 @@ The response format of this function and the `extract_historical_features` funct
   * request_id
   * output s3 bucket
   * output s3 path prefix
-  * completion rate. 
+  * completion rate.
   * failure rate.
 
 A completion rate of 1.0 indicates that all processing has been completed.
