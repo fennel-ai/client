@@ -143,4 +143,4 @@ dmypy.json
 /data/*.csv
 
 **/.DS_Store
-
+wordlist.dic

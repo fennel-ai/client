@@ -1,5 +1,5 @@
 name: Spellcheck
-on: [pull_request, push]
+on: [pull_request]
 jobs:
   checks:
     runs-on: ubuntu-latest

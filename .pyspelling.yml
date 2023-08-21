@@ -1,17 +1,17 @@
 matrix:
   - name: Python source
     sources:
-      - examples/**/*.py
+      - docs/examples/**/*.py
     dictionary:
       wordlists:
       - .wordlist.txt
-      output: wordlist.dic
+      output: docs/wordlist.dic
     encoding: utf-8
     pipeline:
       - pyspelling.filters.python:
   - name: markdown
     sources:
-      - '**/*.md'
+      - 'docs/**/*.md'
     dictionary:
       wordlists:
         - .wordlist.txt
