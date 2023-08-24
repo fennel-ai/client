@@ -6,18 +6,39 @@ import builtins
 import collections.abc
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
+import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import metadata_pb2
 import pycode_pb2
 import schema_pb2
 import sys
+import typing
 
-if sys.version_info >= (3, 8):
+if sys.version_info >= (3, 10):
     import typing as typing_extensions
 else:
     import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+
+class _ExtractorType:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _ExtractorTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ExtractorType.ValueType], builtins.type):
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    PY_FUNC: _ExtractorType.ValueType  # 0
+    """user supplied python extractor function"""
+    LOOKUP: _ExtractorType.ValueType  # 1
+    ALIAS: _ExtractorType.ValueType  # 2
+
+class ExtractorType(_ExtractorType, metaclass=_ExtractorTypeEnumTypeWrapper): ...
+
+PY_FUNC: ExtractorType.ValueType  # 0
+"""user supplied python extractor function"""
+LOOKUP: ExtractorType.ValueType  # 1
+ALIAS: ExtractorType.ValueType  # 2
+global___ExtractorType = ExtractorType
 
 @typing_extensions.final
 class CoreFeatureset(google.protobuf.message.Message):
@@ -74,6 +95,30 @@ class Feature(google.protobuf.message.Message):
 global___Feature = Feature
 
 @typing_extensions.final
+class DatasetLookupInfo(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    FIELD_FIELD_NUMBER: builtins.int
+    PROVIDER_FIELD_NUMBER: builtins.int
+    DEFAULT_VALUE_FIELD_NUMBER: builtins.int
+    @property
+    def field(self) -> schema_pb2.Field: ...
+    provider: builtins.str
+    @property
+    def default_value(self) -> schema_pb2.Value: ...
+    def __init__(
+        self,
+        *,
+        field: schema_pb2.Field | None = ...,
+        provider: builtins.str = ...,
+        default_value: schema_pb2.Value | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["default_value", b"default_value", "field", b"field"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["default_value", b"default_value", "field", b"field", "provider", b"provider"]) -> None: ...
+
+global___DatasetLookupInfo = DatasetLookupInfo
+
+@typing_extensions.final
 class Extractor(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -85,6 +130,9 @@ class Extractor(google.protobuf.message.Message):
     VERSION_FIELD_NUMBER: builtins.int
     PYCODE_FIELD_NUMBER: builtins.int
     FEATURE_SET_NAME_FIELD_NUMBER: builtins.int
+    EXTRACTOR_TYPE_FIELD_NUMBER: builtins.int
+    DATASET_INFO_FIELD_NUMBER: builtins.int
+    ALIASED_FEATURE_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def datasets(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
@@ -97,8 +145,15 @@ class Extractor(google.protobuf.message.Message):
     def metadata(self) -> metadata_pb2.Metadata: ...
     version: builtins.int
     @property
-    def pycode(self) -> pycode_pb2.PyCode: ...
+    def pycode(self) -> pycode_pb2.PyCode:
+        """required iff extractor_type == PY_FUNC"""
     feature_set_name: builtins.str
+    extractor_type: global___ExtractorType.ValueType
+    @property
+    def dataset_info(self) -> global___DatasetLookupInfo:
+        """required iff extractor_type == LOOKUP"""
+    aliased_feature: builtins.str
+    """required iff extractor_type == ALIAS"""
     def __init__(
         self,
         *,
@@ -110,9 +165,13 @@ class Extractor(google.protobuf.message.Message):
         version: builtins.int = ...,
         pycode: pycode_pb2.PyCode | None = ...,
         feature_set_name: builtins.str = ...,
+        extractor_type: global___ExtractorType.ValueType = ...,
+        dataset_info: global___DatasetLookupInfo | None = ...,
+        aliased_feature: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "feature_set_name", b"feature_set_name", "features", b"features", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["aliased_feature", b"aliased_feature", "dataset_info", b"dataset_info", "derived_extractor_info", b"derived_extractor_info", "metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["aliased_feature", b"aliased_feature", "dataset_info", b"dataset_info", "datasets", b"datasets", "derived_extractor_info", b"derived_extractor_info", "extractor_type", b"extractor_type", "feature_set_name", b"feature_set_name", "features", b"features", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "version", b"version"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["derived_extractor_info", b"derived_extractor_info"]) -> typing_extensions.Literal["dataset_info", "aliased_feature"] | None: ...
 
 global___Extractor = Extractor
 

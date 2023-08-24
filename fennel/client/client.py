@@ -93,6 +93,7 @@ class Client:
                     )
                 self.add(featureset)
         sync_request = self._get_sync_request_proto()
+        breakpoint() # TODO Zaki rm this
         response = self._post_bytes(
             "{}/sync".format(V1_API),
             sync_request.SerializeToString(),

@@ -27,6 +27,7 @@ from fennel.featuresets import (
     Featureset,
     Feature,
     Extractor,
+    ExtractorType
 )
 from fennel.lib.duration import (
     Duration,
@@ -368,6 +369,11 @@ def extractors_from_fs(
     extractors = []
     for extractor in fs._extractors:
         extractors.append(_extractor_to_proto(extractor, fs, fs_obj_map))
+    for feature in fs._features:
+        if feature.extractor is not None:
+            extractors.append(
+                _extractor_to_proto(feature.extractor, fs, fs_obj_map)
+            )
     return extractors
 
 
@@ -386,6 +392,7 @@ def _extractor_to_proto(
     extractor: Extractor, fs: Featureset, fs_obj_map: Dict[str, Featureset]
 ) -> fs_proto.Extractor:
     inputs = []
+    breakpoint()
     for input in extractor.inputs:
         if isinstance(input, Feature):
             inputs.append(feature_to_proto_as_input(input))
@@ -395,14 +402,14 @@ def _extractor_to_proto(
         elif isinstance(input, Featureset):
             raise TypeError(
                 f"Extractor input {input} is a Featureset, please use a"
-                f"a DataFrame of features"
+                f"DataFrame of features"
             )
         else:
             raise TypeError(
                 f"Extractor input {input} is not a Feature or "
                 f"a DataFrame of features, but a {type(input)}"
             )
-    return fs_proto.Extractor(
+    proto_extractor =  fs_proto.Extractor(
         name=extractor.name,
         datasets=[
             dataset._name for dataset in extractor.get_dataset_dependencies()
@@ -413,7 +420,13 @@ def _extractor_to_proto(
         version=extractor.version,
         pycode=to_extractor_pycode(extractor, fs, fs_obj_map),
         feature_set_name=extractor.featureset,
+        extractor_type=extractor.extractor_type,
     )
+    if extractor.extractor_type == ExtractorType.ALIAS:
+        proto_extractor.aliased_feature = extractor.derived_extractor_info
+    elif extractor.extractor_type == ExtractorType.LOOKUP:
+        proto_extractor.dataset_info = extractor.derived_extractor_info
+    return proto_extractor
 
 
 def _check_owner_exists(obj):
@@ -1085,6 +1098,8 @@ def to_extractor_pycode(
     featureset: Featureset,
     fs_obj_map: Dict[str, Featureset],
 ) -> pycode_proto.PyCode:
+    if extractor.extractor_type != ExtractorType.PY_FUNC:
+        return None
     dependencies = []
     gen_code = ""
     if hasattr(extractor.func, FENNEL_INCLUDED_MOD):

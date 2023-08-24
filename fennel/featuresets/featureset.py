@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 from dataclasses import dataclass
+from enum import Enum
 
 import pandas as pd
 from typing import (
@@ -18,7 +19,9 @@ from typing import (
     Set,
 )
 
-from fennel.datasets import Dataset
+
+from fennel.datasets import Dataset, Field
+from fennel.gen.featureset_pb2 import ExtractorType
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import (
@@ -59,11 +62,7 @@ def feature(
         T,
         Feature(
             id=id,
-            # These fields will be filled in later.
-            name="",
-            fqn_="",
-            dtype=None,
-            featureset_name="",
+            # Rest of fields filled in later
         ),
     )
 
@@ -259,7 +258,7 @@ def extractor(
         setattr(
             extractor_func,
             EXTRACTOR_ATTR,
-            Extractor(extractor_name, params, extractor_func, outputs, version),
+            Extractor(extractor_name, ExtractorType.PY_FUNC, params, outputs, version, func=extractor_func),
         )
         return classmethod(extractor_func)
 
@@ -285,11 +284,12 @@ def extractor(
 
 @dataclass
 class Feature:
-    name: str
-    fqn_: str
     id: int
-    featureset_name: str
-    dtype: Optional[Type]
+    _name: str = ""
+    _featureset_name: str = ""
+    fqn_: str = ""
+    dtype: Optional[Type] = None
+    extractor: Optional[Extractor] = None
     deprecated: bool = False
 
     def meta(self, **kwargs: Any) -> T:  # type: ignore
@@ -311,8 +311,79 @@ class Feature:
     def __str__(self) -> str:
         return self.name
 
+    @property
+    def name(self) -> str:
+        return self._name
+    
+    @name.setter
+    def name(self, name: str) -> None:
+        self._name = name
+        if self.extractor:
+            self.extractor.output_features = [name]            
+    
+    @property
+    def featureset_name(self) -> str:
+        return self._featureset_name
+    
+    @featureset_name.setter
+    def featureset_name(self, name: str) -> None:
+        self._featureset_name = name
+        if self.extractor:
+            self.extractor.featureset = name
+
     def fqn(self) -> str:
         return self.fqn_
+
+
+    # Derive an extractor for the feature using the givne params
+    # use `field` (optionally with provider and default) to derive an extractor
+    # that performs a lookup on the given field
+    # use `feature` to alias this feature to the given feature
+    def extract(self, field: Field = None, provider : Featureset = None, default=None, depends_on: List[Dataset] = None,
+                feature=None, version: int = 0) -> Feature:
+        if self.extractor:
+            raise ValueError("extract() can only be called once per feature")
+        if field is None and feature is None:
+            raise ValueError("Either field or feature must be specified")
+        
+        if feature is not None:
+            self.extractor = Extractor(
+                name = f"alias_{feature}",
+                extractor_type = ExtractorType.ALIAS,
+                inputs = [], # TODO zaki verify this
+                outputs = [self.id],
+                version = version,
+                derived_extractor_info = feature.fqn()
+            )
+            return self
+
+        breakpoint() # TODO zaki rm 
+
+        if provider is None:
+            raise NotImplementedError("provider should be the current featureset")
+        provider_features = []
+        ds = None
+        for d in depends_on:
+            if d.name == field.dataset_name:
+                ds = d
+                break
+        if ds is None:
+            raise ValueError(f"Dataset {field.dataset_name} not found in depends_on list")
+        for k in ds.dsschema().keys.keys():
+            feature = provider.feature(k)
+            if not feature:
+                raise ValueError(f"Dataset key {k} not found in provider {provider.name}")
+            provider_features.append(feature)
+
+        self.extractor = Extractor(
+            name = f"lookup_{field}",
+            extractor_type = ExtractorType.LOOKUP,
+            inputs = provider_features,
+            outputs = [self.id], 
+            version = version,
+            derived_extractor_info = Extractor.DatasetLookupInfo(field, default)
+        )
+        return self
 
 
 def is_user_defined(obj):
@@ -468,6 +539,9 @@ class Featureset:
     @property
     def features(self):
         return self._features
+    
+    def feature(self, name):
+        return self._feature_map[name]
 
     @property
     def original_cls(self):
@@ -477,8 +551,10 @@ class Featureset:
 class Extractor:
     # Name of the function that implements the extractor.
     name: str
+    extractor_type: ExtractorType
     inputs: List[Feature]
-    func: Callable
+    func: Optional[Callable]
+    derived_extractor_info: Optional[DatasetLookupInfo | str]
     featureset: str
     # If outputs is empty, entire featureset is being extracted
     # by this extractor, else stores the ids of the features being extracted.
@@ -489,14 +565,18 @@ class Extractor:
     def __init__(
         self,
         name: str,
+        extractor_type: ExtractorType,
         inputs: List,
-        func: Callable,
         outputs: List[int],
         version: int,
+        func: Optional[Callable] = None,
+        derived_extractor_info: Optional[DatasetLookupInfo | str] = None,
     ):
         self.name = name
+        self.extractor_type = extractor_type
         self.inputs = inputs
         self.func = func  # type: ignore
+        self.derived_extractor_info = derived_extractor_info
         self.output_feature_ids = outputs
         self.version = version
 
@@ -520,3 +600,11 @@ class Extractor:
         if hasattr(self.func, FENNEL_INCLUDED_MOD):
             return getattr(self.func, FENNEL_INCLUDED_MOD)
         return []
+    
+    class DatasetLookupInfo:
+        field: str
+        default: Any
+
+        def __init__(self, field: str, default_val: Any):
+            self.field = field
+            self.default = default_val

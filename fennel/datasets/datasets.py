@@ -93,6 +93,7 @@ RESERVED_FIELD_NAMES = [
 @dataclass
 class Field:
     name: str
+    dataset_name: str
     key: bool
     timestamp: bool
     dtype: Optional[Type]
@@ -130,6 +131,9 @@ class Field:
             return True
 
         return False
+    
+    def fqn(self) -> str:
+        return f"{self.dataset_name}.{self.name}"
 
     def __str__(self):
         return f"{self.name}"
@@ -149,13 +153,16 @@ def get_field(
     if isinstance(field, Field):
         field.name = annotation_name
         field.dtype = dtype
+        field.dataset_name = cls.__name__,
     else:
         field = Field(
             name=annotation_name,
+            dataset_name=cls.__name__,
             key=False,
             timestamp=False,
             dtype=dtype,
         )
+        breakpoint()
 
     description = get_meta_attr(field, "description")
     if description is None or description == "":
@@ -178,6 +185,7 @@ def field(
         T,
         Field(
             key=key,
+            dataset_name="",
             timestamp=timestamp,
             name="",
             dtype=None,
