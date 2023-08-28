@@ -17,6 +17,7 @@ SOURCE_FIELD = "__fennel_data_sources__"
 SINK_FIELD = "__fennel_data_sinks__"
 DEFAULT_EVERY = Duration("30m")
 DEFAULT_LATENESS = Duration("1h")
+DEFAULT_CDC = "append"
 
 
 # ------------------------------------------------------------------------------
@@ -28,6 +29,8 @@ def source(
     conn: DataConnector,
     every: Optional[Duration] = None,
     lateness: Optional[Duration] = None,
+    cdc: Optional[str] = None,
+    observe_at: Optional[str] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
@@ -40,6 +43,8 @@ def source(
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY
         conn.lateness = lateness if lateness is not None else DEFAULT_LATENESS
+        conn.cdc = cdc if cdc is not None else DEFAULT_CDC
+        conn.observe_at = observe_at
         if hasattr(dataset_cls, SOURCE_FIELD):
             raise Exception(
                 "Multiple sources are not supported in dataset `%s`."
@@ -185,6 +190,14 @@ class BigQuery(DataSource):
         return f"[BigQuery: {self.name}]"
 
 
+class Avro(BaseModel):
+    registry: str
+    url: str
+    username: Optional[str]
+    password: Optional[str]
+    token: Optional[str]
+
+
 class Kafka(DataSource):
     bootstrap_servers: str
     security_protocol: str
@@ -209,8 +222,10 @@ class Kafka(DataSource):
     def required_fields(self) -> List[str]:
         return ["topic"]
 
-    def topic(self, topic_name: str) -> KafkaConnector:
-        return KafkaConnector(self, topic_name)
+    def topic(
+        self, topic_name: str, format: Optional[str | Avro] = None
+    ) -> KafkaConnector:
+        return KafkaConnector(self, topic_name, format)
 
     @staticmethod
     def get(name: str) -> Kafka:
@@ -346,6 +361,8 @@ class DataConnector:
     data_source: DataSource
     every: Duration
     lateness: Duration
+    cdc: str
+    observe_at: Optional[str]
 
     def identifier(self):
         raise NotImplementedError
@@ -389,13 +406,15 @@ class KafkaConnector(DataConnector):
     Kafka."""
 
     topic: str
+    format: Optional[str | Avro]
 
-    def __init__(self, source, topic):
+    def __init__(self, source, topic, format):
         self.data_source = source
         self.topic = topic
+        self.format = format
 
     def identifier(self) -> str:
-        return f"{self.data_source.identifier()}(topic={self.topic})"
+        return f"{self.data_source.identifier()}(topic={self.topic}, format={self.format})"
 
 
 class S3Connector(DataConnector):
