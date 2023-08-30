@@ -76,7 +76,6 @@ def dataset_lookup_impl(
     fields: List[str],
     keys: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
-    breakpoint()
     if cls_name not in datasets:
         raise ValueError(
             f"Dataset {cls_name} not found, please ensure it is synced."
@@ -397,14 +396,9 @@ class MockClient(Client):
         for featureset in featuresets:
             proto_extractors = extractors_from_fs(featureset, fs_obj_map)
             for extractor in proto_extractors:
+                if extractor.extractor_type != ProtoExtractorType.PY_FUNC:
+                    continue
                 extractor_fqn = f"{featureset._name}.{extractor.name}"
-                if extractor.extractor_type == ProtoExtractorType.ALIAS:
-                    continue
-                elif extractor.extractor_type == ProtoExtractorType.LOOKUP:
-                    # TODO zaki implement this
-                    breakpoint()
-                    #raise NotImplementedError()
-                    continue
                 self.extractor_funcs[extractor_fqn] = get_extractor_func(
                     extractor
                 )
@@ -809,7 +803,6 @@ class MockClient(Client):
             allowed_datasets,
             extractor.name,
         )
-        breakpoint()
         results, _ = extractor.depends_on[0].lookup(timestamps, **input_features)
         results = results[extractor.derived_extractor_info.field.name]
         results = results.fillna(extractor.derived_extractor_info.default)

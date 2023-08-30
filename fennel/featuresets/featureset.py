@@ -479,7 +479,7 @@ class Featureset:
                 extractor = feature.extractor
                 if (
                     extractor.extractor_type == ExtractorType.LOOKUP
-                    and extractor.inputs is None
+                    and (extractor.inputs is None or len(extractor.inputs) == 0)
                 ):
                     feature.extractor.set_inputs_from_featureset(self)
                 # TODO TODO zaki decide if we want this here or not: should we actually capture
@@ -537,7 +537,7 @@ class Featureset:
                     )
                 extracted_features.add(feature_id)
 
-    def _set_extractors_as_attributes(self):
+    def _set_extractors_as_attributes(self): 
         for extractor in self._extractors:
             if extractor.extractor_type == ExtractorType.PY_FUNC:
                 setattr(self, extractor.func.__name__, extractor.func)
