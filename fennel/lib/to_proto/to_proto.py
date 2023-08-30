@@ -398,11 +398,8 @@ def _extractor_to_proto(
                 f"a DataFrame of features, but a {type(input)}"
             )
 
-    aliased_feature = None
     extractor_dataset_info = None
-    if extractor.extractor_type == ExtractorType.ALIAS:
-        aliased_feature = extractor.derived_extractor_info
-    elif extractor.extractor_type == ExtractorType.LOOKUP:
+    if extractor.extractor_type == ExtractorType.LOOKUP:
         extractor_dataset_info = _to_dataset_lookup_proto(
             extractor.derived_extractor_info
         )
@@ -420,7 +417,6 @@ def _extractor_to_proto(
         feature_set_name=extractor.featureset,
         extractor_type=extractor.extractor_type,
         dataset_info=extractor_dataset_info,
-        aliased_feature=aliased_feature,
     )
 
     return proto_extractor

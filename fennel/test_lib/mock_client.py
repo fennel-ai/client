@@ -402,15 +402,12 @@ class MockClient(Client):
                 #   aliasing is just pointing
 
                 if extractor.extractor_type == ProtoExtractorType.ALIAS:
-                    # TODO zaki we need to get the fqn for the aliased feature
-                    breakpoint()
-                    self.extractor_funcs[extractor_fqn] = self.extractor_funcs[
-                        extractor.aliased_feature
-                    ]
+                    continue
                 elif extractor.extractor_type == ProtoExtractorType.LOOKUP:
                     # TODO zaki implement this
                     breakpoint()
-                    raise NotImplementedError()
+                    #raise NotImplementedError()
+                    continue
                 self.extractor_funcs[extractor_fqn] = get_extractor_func(
                     extractor
                 )
@@ -687,6 +684,16 @@ class MockClient(Client):
             dsschema = DSSchema(
                 values=Schema(fields=fields)
             )  # stuff every field as value
+            
+            if extractor.extractor_type == ProtoExtractorType.ALIAS:
+                breakpoint()
+                feature_name = extractor.fqn_output_features()[0]
+                intermediate_data[feature_name] = intermediate_data[extractor.inputs[0].fqn()]
+                intermediate_data[feature_name].name = feature_name
+                self._check_exceptions(intermediate_data[feature_name], dsschema, extractor.name)
+                continue
+
+            # TODO zaki deal with lookup impl here
 
             allowed_datasets = [
                 x._name for x in extractor.get_dataset_dependencies()
@@ -722,14 +729,7 @@ class MockClient(Client):
                     f"Extractor `{extractor.name}` returned "
                     f"invalid type `{type(output)}`, expected a pandas series or dataframe"
                 )
-            output_df = pd.DataFrame(output)
-            output_df.reset_index(inplace=True)
-            exceptions = data_schema_check(dsschema, output_df, extractor.name)
-            if len(exceptions) > 0:
-                raise Exception(
-                    f"Extractor `{extractor.name}` returned "
-                    f"invalid schema: {exceptions}"
-                )
+            self._check_exceptions(output, dsschema, extractor.name)
             if isinstance(output, pd.Series):
                 if output.name in intermediate_data:
                     continue
@@ -780,6 +780,16 @@ class MockClient(Client):
                     f"during feature extraction."
                 )
         return output_df
+    
+    def _check_exceptions(self, output, dsschema : DSSchema, extractor_name : str):
+        output_df = pd.DataFrame(output)
+        output_df.reset_index(inplace=True)
+        exceptions = data_schema_check(dsschema, output_df, extractor_name)
+        if len(exceptions) > 0:
+            raise Exception(
+                f"Extractor `{extractor_name}` returned "
+                f"invalid schema: {exceptions}"
+            )
 
     def _merge_df(self, df: pd.DataFrame, dataset_name: str):
         if not self.dataset_info[dataset_name].is_source_dataset:

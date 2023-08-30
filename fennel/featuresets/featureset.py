@@ -351,22 +351,22 @@ class Feature:
         provider: Featureset = None,
         default=None,
         depends_on: List[Dataset] = None,
-        feature=None,
+        feature: Feature = None,
         version: int = 0,
     ) -> Feature:
         if self.extractor:
             raise ValueError("extract() can only be called once per feature")
         if field is None and feature is None:
             raise ValueError("Either field or feature must be specified")
-
+        
+        # aliasing
         if feature is not None:
             self.extractor = Extractor(
                 name=f"alias_{feature}",
                 extractor_type=ExtractorType.ALIAS,
-                inputs=[],  # TODO zaki verify this
+                inputs=[feature],
                 outputs=[self.id],
                 version=version,
-                derived_extractor_info=feature.fqn(),
             )
             return self
 
@@ -608,7 +608,7 @@ class Extractor:
         outputs: List[int],
         version: int,
         func: Optional[Callable] = None,
-        derived_extractor_info: Optional[DatasetLookupInfo | str] = None,
+        derived_extractor_info: Optional[DatasetLookupInfo] = None,
         depends_on: List[Dataset] = [],
     ):
         self.name = name
