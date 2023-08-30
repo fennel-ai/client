@@ -471,7 +471,6 @@ def _webhook_to_source_proto(
             lateness=to_duration_proto(connector.lateness),
             dataset=dataset_name,
             cdc=to_cdc_proto(connector.cdc),
-            observer=to_observer_proto(connector.observe_at),
         ),
     )
 
@@ -502,7 +501,6 @@ def _kafka_conn_to_source_proto(
         lateness=to_duration_proto(connector.lateness),
         dataset=dataset_name,
         cdc=to_cdc_proto(connector.cdc),
-        observer=to_observer_proto(connector.observe_at),
     )
     return (ext_db, source)
 
@@ -565,7 +563,6 @@ def _s3_conn_to_source_proto(
         cursor=None,
         timestamp_field=timestamp_field,
         cdc=to_cdc_proto(connector.cdc),
-        observer=to_observer_proto(connector.observe_at),
     )
     return (ext_db, source)
 
@@ -659,7 +656,6 @@ def _bigquery_conn_to_source_proto(
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
-            observer=to_observer_proto(connector.observe_at),
         ),
     )
 
@@ -721,7 +717,6 @@ def _snowflake_conn_to_source_proto(
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
-            observer=to_observer_proto(connector.observe_at),
         ),
     )
 
@@ -797,7 +792,6 @@ def _mysql_conn_to_source_proto(
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
-            observer=to_observer_proto(connector.observe_at),
         ),
     )
 
@@ -877,7 +871,6 @@ def _pg_conn_to_source_proto(
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
-            observer=to_observer_proto(connector.observe_at),
         ),
     )
 
@@ -953,7 +946,6 @@ def _kinesis_conn_to_source_proto(
             dataset=dataset_name,
             lateness=to_duration_proto(connector.lateness),
             cdc=to_cdc_proto(connector.cdc),
-            observer=to_observer_proto(connector.observe_at),
         ),
     )
 
@@ -1026,19 +1018,6 @@ def to_cdc_proto(cdc: str) -> connector_proto.CDCStrategy.ValueType:
     if cdc == "native":
         return connector_proto.CDCStrategy.Native
     raise ValueError(f"unknown cdc strategy {cdc}")
-
-
-# ------------------------------------------------------------------------------
-# Observer
-# ------------------------------------------------------------------------------
-
-
-def to_observer_proto(
-    observe_at: Optional[str],
-) -> Optional[connector_proto.Observer]:
-    if observe_at is not None:
-        return connector_proto.Observer(column_name=observe_at)
-    return None
 
 
 # ------------------------------------------------------------------------------

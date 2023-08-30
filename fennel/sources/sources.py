@@ -30,7 +30,6 @@ def source(
     every: Optional[Duration] = None,
     lateness: Optional[Duration] = None,
     cdc: Optional[str] = None,
-    observe_at: Optional[str] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
@@ -44,7 +43,6 @@ def source(
         conn.every = every if every is not None else DEFAULT_EVERY
         conn.lateness = lateness if lateness is not None else DEFAULT_LATENESS
         conn.cdc = cdc if cdc is not None else DEFAULT_CDC
-        conn.observe_at = observe_at
         if hasattr(dataset_cls, SOURCE_FIELD):
             raise Exception(
                 "Multiple sources are not supported in dataset `%s`."
@@ -362,7 +360,6 @@ class DataConnector:
     every: Duration
     lateness: Duration
     cdc: str
-    observe_at: Optional[str]
 
     def identifier(self):
         raise NotImplementedError

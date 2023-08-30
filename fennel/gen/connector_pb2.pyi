@@ -160,23 +160,6 @@ class AvroFormat(google.protobuf.message.Message):
 global___AvroFormat = AvroFormat
 
 @typing_extensions.final
-class Observer(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    COLUMN_NAME_FIELD_NUMBER: builtins.int
-    column_name: builtins.str
-    def __init__(
-        self,
-        *,
-        column_name: builtins.str = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["column_name", b"column_name", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["column_name", b"column_name", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["column_name"] | None: ...
-
-global___Observer = Observer
-
-@typing_extensions.final
 class Reference(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -672,7 +655,6 @@ class Source(google.protobuf.message.Message):
     LATENESS_FIELD_NUMBER: builtins.int
     TIMESTAMP_FIELD_FIELD_NUMBER: builtins.int
     CDC_FIELD_NUMBER: builtins.int
-    OBSERVER_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
@@ -683,8 +665,6 @@ class Source(google.protobuf.message.Message):
     def lateness(self) -> google.protobuf.duration_pb2.Duration: ...
     timestamp_field: builtins.str
     cdc: global___CDCStrategy.ValueType
-    @property
-    def observer(self) -> global___Observer: ...
     def __init__(
         self,
         *,
@@ -695,10 +675,9 @@ class Source(google.protobuf.message.Message):
         lateness: google.protobuf.duration_pb2.Duration | None = ...,
         timestamp_field: builtins.str = ...,
         cdc: global___CDCStrategy.ValueType = ...,
-        observer: global___Observer | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "every", b"every", "lateness", b"lateness", "observer", b"observer", "table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "observer", b"observer", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "every", b"every", "lateness", b"lateness", "table", b"table"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
 
 global___Source = Source

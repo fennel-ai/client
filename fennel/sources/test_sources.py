@@ -528,7 +528,6 @@ def test_multiple_sources():
             format=avro,
         ),
         cdc="debezium",
-        observe_at="updated_at",
     )
     @dataset
     class UserInfoDatasetKafka:
@@ -576,9 +575,6 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetKafka",
         "lateness": "3600s",
         "cdc": "Debezium",
-        "observer": {
-            "columnName": "updated_at",
-        },
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
