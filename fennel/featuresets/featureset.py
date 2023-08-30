@@ -358,7 +358,7 @@ class Feature:
             raise ValueError("extract() can only be called once per feature")
         if field is None and feature is None:
             raise ValueError("Either field or feature must be specified")
-        
+
         # aliasing
         if feature is not None:
             self.extractor = Extractor(
@@ -477,9 +477,8 @@ class Featureset:
         for feature in self._features:
             if feature.extractor:
                 extractor = feature.extractor
-                if (
-                    extractor.extractor_type == ExtractorType.LOOKUP
-                    and (extractor.inputs is None or len(extractor.inputs) == 0)
+                if extractor.extractor_type == ExtractorType.LOOKUP and (
+                    extractor.inputs is None or len(extractor.inputs) == 0
                 ):
                     feature.extractor.set_inputs_from_featureset(self)
                 # TODO TODO zaki decide if we want this here or not: should we actually capture
@@ -537,7 +536,7 @@ class Featureset:
                     )
                 extracted_features.add(feature_id)
 
-    def _set_extractors_as_attributes(self): 
+    def _set_extractors_as_attributes(self):
         for extractor in self._extractors:
             if extractor.extractor_type == ExtractorType.PY_FUNC:
                 setattr(self, extractor.func.__name__, extractor.func)

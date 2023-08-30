@@ -675,16 +675,22 @@ class MockClient(Client):
             dsschema = DSSchema(
                 values=Schema(fields=fields)
             )  # stuff every field as value
-            
+
             if extractor.extractor_type == ProtoExtractorType.ALIAS:
                 feature_name = extractor.fqn_output_features()[0]
-                intermediate_data[feature_name] = intermediate_data[extractor.inputs[0].fqn()]
+                intermediate_data[feature_name] = intermediate_data[
+                    extractor.inputs[0].fqn()
+                ]
                 intermediate_data[feature_name].name = feature_name
-                self._check_exceptions(intermediate_data[feature_name], dsschema, extractor.name)
+                self._check_exceptions(
+                    intermediate_data[feature_name], dsschema, extractor.name
+                )
                 continue
 
             if extractor.extractor_type == ProtoExtractorType.LOOKUP:
-                output = self._generated_lookup_extractor(extractor, timestamps.copy(), intermediate_data)
+                output = self._generated_lookup_extractor(
+                    extractor, timestamps.copy(), intermediate_data
+                )
                 self._check_exceptions(output, dsschema, extractor.name)
                 continue
 
@@ -773,8 +779,10 @@ class MockClient(Client):
                     f"during feature extraction."
                 )
         return output_df
-    
-    def _check_exceptions(self, output, dsschema : DSSchema, extractor_name : str):
+
+    def _check_exceptions(
+        self, output, dsschema: DSSchema, extractor_name: str
+    ):
         output_df = pd.DataFrame(output)
         output_df.reset_index(inplace=True)
         exceptions = data_schema_check(dsschema, output_df, extractor_name)
@@ -783,27 +791,40 @@ class MockClient(Client):
                 f"Extractor `{extractor_name}` returned "
                 f"invalid schema: {exceptions}"
             )
-        
-    def _generated_lookup_extractor(self, extractor: Extractor, timestamps: pd.Series, intermediate_data: Dict[str, pd.Series]):
-        if len(extractor.output_features) != 1:
-            raise ValueError(f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.output_features)}")
-        if len(extractor.depends_on) != 1:
-            raise ValueError(f"Lookup extractor {extractor.name} must have exactly one dependent dataset, found {len(extractor.depends_on)}")
 
-        input_features = {k.name: intermediate_data[k] for k in extractor.inputs} 
+    def _generated_lookup_extractor(
+        self,
+        extractor: Extractor,
+        timestamps: pd.Series,
+        intermediate_data: Dict[str, pd.Series],
+    ):
+        if len(extractor.output_features) != 1:
+            raise ValueError(
+                f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.output_features)}"
+            )
+        if len(extractor.depends_on) != 1:
+            raise ValueError(
+                f"Lookup extractor {extractor.name} must have exactly one dependent dataset, found {len(extractor.depends_on)}"
+            )
+
+        input_features = {
+            k.name: intermediate_data[k] for k in extractor.inputs
+        }
         # TODO zaki do I need to modify the lookup function here? probably?
         allowed_datasets = [
             x._name for x in extractor.get_dataset_dependencies()
         ]
         fennel.datasets.datasets.dataset_lookup = partial(
-           dataset_lookup_impl,
+            dataset_lookup_impl,
             self.data,
             self.aggregated_datasets,
             self.dataset_info,
             allowed_datasets,
             extractor.name,
         )
-        results, _ = extractor.depends_on[0].lookup(timestamps, **input_features)
+        results, _ = extractor.depends_on[0].lookup(
+            timestamps, **input_features
+        )
         results = results[extractor.derived_extractor_info.field.name]
         results = results.fillna(extractor.derived_extractor_info.default)
         results.name = extractor.fqn_output_features()[0]
