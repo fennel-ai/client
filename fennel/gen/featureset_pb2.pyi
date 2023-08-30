@@ -99,22 +99,18 @@ class DatasetLookupInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     FIELD_FIELD_NUMBER: builtins.int
-    PROVIDER_FIELD_NUMBER: builtins.int
     DEFAULT_VALUE_FIELD_NUMBER: builtins.int
     @property
     def field(self) -> schema_pb2.Field: ...
-    provider: builtins.str
-    @property
-    def default_value(self) -> schema_pb2.Value: ...
+    default_value: builtins.str
     def __init__(
         self,
         *,
         field: schema_pb2.Field | None = ...,
-        provider: builtins.str = ...,
-        default_value: schema_pb2.Value | None = ...,
+        default_value: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["default_value", b"default_value", "field", b"field"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["default_value", b"default_value", "field", b"field", "provider", b"provider"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["field", b"field"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["default_value", b"default_value", "field", b"field"]) -> None: ...
 
 global___DatasetLookupInfo = DatasetLookupInfo
 

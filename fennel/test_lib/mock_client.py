@@ -26,7 +26,7 @@ from fennel.gen.featureset_pb2 import CoreFeatureset
 from fennel.gen.featureset_pb2 import (
     Feature as ProtoFeature,
     Extractor as ProtoExtractor,
-    ExtractorType as ProtoExtractorType
+    ExtractorType as ProtoExtractorType,
 )
 from fennel.gen.schema_pb2 import Field, DSSchema, Schema
 from fennel.lib.graph_algorithms import (
@@ -400,11 +400,13 @@ class MockClient(Client):
                 # TODO zaki support non func extractors:
                 #   perhaps we generate the conceptualized extractor or its equivalent in the mock client
                 #   aliasing is just pointing
-                
+
                 if extractor.extractor_type == ProtoExtractorType.ALIAS:
                     # TODO zaki we need to get the fqn for the aliased feature
                     breakpoint()
-                    self.extractor_funcs[extractor_fqn] = self.extractor_funcs[extractor.aliased_feature]
+                    self.extractor_funcs[extractor_fqn] = self.extractor_funcs[
+                        extractor.aliased_feature
+                    ]
                 elif extractor.extractor_type == ProtoExtractorType.LOOKUP:
                     # TODO zaki implement this
                     breakpoint()

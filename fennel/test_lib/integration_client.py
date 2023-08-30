@@ -1,3 +1,11 @@
+import sys
+
+sys.path.insert(
+    0,
+    "/nix/store/5s1q4yjdr1ximqxgjmbzgp1vppkxz7v3-python3-3.11.4-env/lib/python3.11/site-packages/",
+)
+
+
 import json
 import time
 
@@ -11,8 +19,8 @@ try:
     import pyarrow as pa
     from fennel_client_lib import RustClient  # type: ignore
     from fennel_dataset import lookup  # type: ignore
-except ImportError:
-    pass
+except ImportError as e:
+    print(f"exception during import {e}")
 
 from fennel._vendor.requests import Response  # type: ignore
 
@@ -50,7 +58,9 @@ def lookup_wrapper(
 
 class IntegrationClient:
     def __init__(self, mode: str):
+        print("Going to init RustClient")
         self._client = RustClient()
+        print("RustClient init")
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
         self.mode = mode
@@ -58,6 +68,7 @@ class IntegrationClient:
             self.sleep_time = 15
         else:
             self.sleep_time = 3
+        print("IntegrationClient init")
         fennel.datasets.datasets.dataset_lookup = lookup_wrapper  # type: ignore
 
     def log(self, webhook: str, endpoint: str, df: pd.DataFrame):

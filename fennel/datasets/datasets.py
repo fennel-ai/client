@@ -131,7 +131,7 @@ class Field:
             return True
 
         return False
-    
+
     def fqn(self) -> str:
         return f"{self.dataset_name}.{self.name}"
 
@@ -153,7 +153,7 @@ def get_field(
     if isinstance(field, Field):
         field.name = annotation_name
         field.dtype = dtype
-        field.dataset_name = cls.__name__,
+        field.dataset_name = (cls.__name__,)
     else:
         field = Field(
             name=annotation_name,
@@ -162,7 +162,6 @@ def get_field(
             timestamp=False,
             dtype=dtype,
         )
-        breakpoint()
 
     description = get_meta_attr(field, "description")
     if description is None or description == "":
@@ -1339,6 +1338,10 @@ class Dataset(_Node[T]):
     @property
     def fields(self):
         return self._fields
+
+    @property
+    def name(self):
+        return self._name
 
 
 # ---------------------------------------------------------------------

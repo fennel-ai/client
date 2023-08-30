@@ -23,12 +23,7 @@ import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.services_pb2 as services_proto
 import fennel.sources as sources
 from fennel.datasets import Dataset, Pipeline, Field
-from fennel.featuresets import (
-    Featureset,
-    Feature,
-    Extractor,
-    ExtractorType
-)
+from fennel.featuresets import Featureset, Feature, Extractor, ExtractorType
 from fennel.lib.duration import (
     Duration,
     duration_to_timedelta,
@@ -135,7 +130,6 @@ def to_sync_request_proto(
             extractors.extend(extractors_from_fs(obj, featureset_obj_map))
         else:
             raise ValueError(f"Unknown object type {type(obj)}")
-
     return services_proto.SyncRequest(
         datasets=datasets,
         pipelines=pipelines,
@@ -369,11 +363,6 @@ def extractors_from_fs(
     extractors = []
     for extractor in fs._extractors:
         extractors.append(_extractor_to_proto(extractor, fs, fs_obj_map))
-    for feature in fs._features:
-        if feature.extractor is not None:
-            extractors.append(
-                _extractor_to_proto(feature.extractor, fs, fs_obj_map)
-            )
     return extractors
 
 
@@ -392,7 +381,6 @@ def _extractor_to_proto(
     extractor: Extractor, fs: Featureset, fs_obj_map: Dict[str, Featureset]
 ) -> fs_proto.Extractor:
     inputs = []
-    breakpoint()
     for input in extractor.inputs:
         if isinstance(input, Feature):
             inputs.append(feature_to_proto_as_input(input))
@@ -409,7 +397,17 @@ def _extractor_to_proto(
                 f"Extractor input {input} is not a Feature or "
                 f"a DataFrame of features, but a {type(input)}"
             )
-    proto_extractor =  fs_proto.Extractor(
+
+    aliased_feature = None
+    extractor_dataset_info = None
+    if extractor.extractor_type == ExtractorType.ALIAS:
+        aliased_feature = extractor.derived_extractor_info
+    elif extractor.extractor_type == ExtractorType.LOOKUP:
+        extractor_dataset_info = _to_dataset_lookup_proto(
+            extractor.derived_extractor_info
+        )
+
+    proto_extractor = fs_proto.Extractor(
         name=extractor.name,
         datasets=[
             dataset._name for dataset in extractor.get_dataset_dependencies()
@@ -421,11 +419,10 @@ def _extractor_to_proto(
         pycode=to_extractor_pycode(extractor, fs, fs_obj_map),
         feature_set_name=extractor.featureset,
         extractor_type=extractor.extractor_type,
+        dataset_info=extractor_dataset_info,
+        aliased_feature=aliased_feature,
     )
-    if extractor.extractor_type == ExtractorType.ALIAS:
-        proto_extractor.aliased_feature = extractor.derived_extractor_info
-    elif extractor.extractor_type == ExtractorType.LOOKUP:
-        proto_extractor.dataset_info = extractor.derived_extractor_info
+
     return proto_extractor
 
 
@@ -438,6 +435,15 @@ def _check_owner_exists(obj):
             raise Exception(f"Dataset {obj._name} must have an owner.")
         else:
             raise Exception(f"Object {obj.__name__} must have an owner.")
+
+
+def _to_dataset_lookup_proto(
+    info: Extractor.DatasetLookupInfo,
+) -> fs_proto.DatasetLookupInfo:
+    return fs_proto.DatasetLookupInfo(
+        field=_field_to_proto(info.field),
+        default_value=json.dumps(info.default),
+    )
 
 
 # ------------------------------------------------------------------------------

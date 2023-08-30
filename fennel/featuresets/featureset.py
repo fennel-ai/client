@@ -44,7 +44,7 @@ RESERVED_FEATURE_NAMES = [
     "fqn_",
     "dtype",
     "featureset_name",
-    "extractor",
+    "featureset" "extractor",
     "extractors",
     "features",
 ]
@@ -258,7 +258,14 @@ def extractor(
         setattr(
             extractor_func,
             EXTRACTOR_ATTR,
-            Extractor(extractor_name, ExtractorType.PY_FUNC, params, outputs, version, func=extractor_func),
+            Extractor(
+                extractor_name,
+                ExtractorType.PY_FUNC,
+                params,
+                outputs,
+                version,
+                func=extractor_func,
+            ),
         )
         return classmethod(extractor_func)
 
@@ -314,17 +321,17 @@ class Feature:
     @property
     def name(self) -> str:
         return self._name
-    
+
     @name.setter
     def name(self, name: str) -> None:
         self._name = name
         if self.extractor:
-            self.extractor.output_features = [name]            
-    
+            self.extractor.output_features = [name]
+
     @property
     def featureset_name(self) -> str:
         return self._featureset_name
-    
+
     @featureset_name.setter
     def featureset_name(self, name: str) -> None:
         self._featureset_name = name
@@ -334,54 +341,64 @@ class Feature:
     def fqn(self) -> str:
         return self.fqn_
 
-
     # Derive an extractor for the feature using the givne params
     # use `field` (optionally with provider and default) to derive an extractor
     # that performs a lookup on the given field
     # use `feature` to alias this feature to the given feature
-    def extract(self, field: Field = None, provider : Featureset = None, default=None, depends_on: List[Dataset] = None,
-                feature=None, version: int = 0) -> Feature:
+    def extract(
+        self,
+        field: Field = None,
+        provider: Featureset = None,
+        default=None,
+        depends_on: List[Dataset] = None,
+        feature=None,
+        version: int = 0,
+    ) -> Feature:
         if self.extractor:
             raise ValueError("extract() can only be called once per feature")
         if field is None and feature is None:
             raise ValueError("Either field or feature must be specified")
-        
+
         if feature is not None:
             self.extractor = Extractor(
-                name = f"alias_{feature}",
-                extractor_type = ExtractorType.ALIAS,
-                inputs = [], # TODO zaki verify this
-                outputs = [self.id],
-                version = version,
-                derived_extractor_info = feature.fqn()
+                name=f"alias_{feature}",
+                extractor_type=ExtractorType.ALIAS,
+                inputs=[],  # TODO zaki verify this
+                outputs=[self.id],
+                version=version,
+                derived_extractor_info=feature.fqn(),
             )
             return self
 
-        breakpoint() # TODO zaki rm 
-
-        if provider is None:
-            raise NotImplementedError("provider should be the current featureset")
         provider_features = []
-        ds = None
-        for d in depends_on:
-            if d.name == field.dataset_name:
-                ds = d
-                break
-        if ds is None:
-            raise ValueError(f"Dataset {field.dataset_name} not found in depends_on list")
-        for k in ds.dsschema().keys.keys():
-            feature = provider.feature(k)
-            if not feature:
-                raise ValueError(f"Dataset key {k} not found in provider {provider.name}")
-            provider_features.append(feature)
+        # If provider is none, then the provider is this featureset. The input features
+        # are captured once this featureset is initialized
+        if provider is not None:
+            ds = None
+            for d in depends_on:
+                if d.name == field.dataset_name:
+                    ds = d
+                    break
+            if ds is None:
+                raise ValueError(
+                    f"Dataset {field.dataset_name} not found in depends_on list"
+                )
+            for k in ds.dsschema().keys:
+                feature = provider.feature(k)
+                if not feature:
+                    raise ValueError(
+                        f"Dataset key {k} not found in provider {provider.name}"
+                    )
+                provider_features.append(feature)
 
         self.extractor = Extractor(
-            name = f"lookup_{field}",
-            extractor_type = ExtractorType.LOOKUP,
-            inputs = provider_features,
-            outputs = [self.id], 
-            version = version,
-            derived_extractor_info = Extractor.DatasetLookupInfo(field, default)
+            name=f"lookup_{field}",
+            extractor_type=ExtractorType.LOOKUP,
+            inputs=provider_features,
+            outputs=[self.id],
+            version=version,
+            derived_extractor_info=Extractor.DatasetLookupInfo(field, default),
+            depends_on=depends_on,
         )
         return self
 
@@ -456,6 +473,20 @@ class Featureset:
 
     def _get_extractors(self) -> List[Extractor]:
         extractors = []
+        # auto generated extractors for features
+        for feature in self._features:
+            if feature.extractor:
+                extractor = feature.extractor
+                if (
+                    extractor.extractor_type == ExtractorType.LOOKUP
+                    and extractor.inputs is None
+                ):
+                    feature.extractor.set_inputs_from_featureset(self)
+                # TODO TODO zaki decide if we want this here or not: should we actually capture
+                # these as featureset extractors?
+                extractors.append(extractor)
+
+        # user defined extractors
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
             if not callable(method):
                 continue
@@ -508,7 +539,8 @@ class Featureset:
 
     def _set_extractors_as_attributes(self):
         for extractor in self._extractors:
-            setattr(self, extractor.func.__name__, extractor.func)
+            if extractor.extractor_type == ExtractorType.PY_FUNC:
+                setattr(self, extractor.func.__name__, extractor.func)
 
     def _get_expectations(self):
         expectation = None
@@ -539,13 +571,17 @@ class Featureset:
     @property
     def features(self):
         return self._features
-    
+
     def feature(self, name):
         return self._feature_map[name]
 
     @property
     def original_cls(self):
         return self.__fennel_original_cls__
+
+    @property
+    def name(self):
+        return self._name
 
 
 class Extractor:
@@ -561,6 +597,8 @@ class Extractor:
     output_feature_ids: List[int]
     # List of names of features that this extractor produces
     output_features: List[str]
+    # depended on datasets: used for autogenerated extractors
+    depends_on: List[Dataset]
 
     def __init__(
         self,
@@ -571,6 +609,7 @@ class Extractor:
         version: int,
         func: Optional[Callable] = None,
         derived_extractor_info: Optional[DatasetLookupInfo | str] = None,
+        depends_on: List[Dataset] = [],
     ):
         self.name = name
         self.extractor_type = extractor_type
@@ -579,6 +618,7 @@ class Extractor:
         self.derived_extractor_info = derived_extractor_info
         self.output_feature_ids = outputs
         self.version = version
+        self.depends_on = depends_on
 
     def fqn(self) -> str:
         """Fully qualified name of the extractor."""
@@ -591,6 +631,8 @@ class Extractor:
         ]
 
     def get_dataset_dependencies(self) -> List[Dataset]:
+        if self.depends_on:
+            return self.depends_on
         depended_datasets = []
         if hasattr(self.func, DEPENDS_ON_DATASETS_ATTR):
             depended_datasets = getattr(self.func, DEPENDS_ON_DATASETS_ATTR)
@@ -600,7 +642,33 @@ class Extractor:
         if hasattr(self.func, FENNEL_INCLUDED_MOD):
             return getattr(self.func, FENNEL_INCLUDED_MOD)
         return []
-    
+
+    def set_inputs_from_featureset(self, featureset: Featureset):
+        if self.inputs and len(self.inputs) > 0:
+            return
+        if self.extractor_type != ExtractorType.LOOKUP:
+            return
+        if not hasattr(self.derived_extractor_info, "field"):
+            raise ValueError("A lookup extractor must have a field to lookup")
+        self.inputs = []
+        ds = None
+        field = self.derived_extractor_info.field
+        for d in self.depends_on:
+            if d.name == field.dataset_name:
+                ds = d
+                break
+        if ds is None:
+            raise ValueError(
+                f"Dataset {field.dataset_name} not found in depends_on list"
+            )
+        for k in ds.dsschema().keys:
+            feature = featureset.feature(k)
+            if not feature:
+                raise ValueError(
+                    f"Dataset key {k} not found in provider {featureset.name}"
+                )
+            self.inputs.append(feature)
+
     class DatasetLookupInfo:
         field: str
         default: Any
