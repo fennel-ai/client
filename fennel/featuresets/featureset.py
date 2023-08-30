@@ -590,7 +590,7 @@ class Extractor:
     extractor_type: ExtractorType
     inputs: List[Feature]
     func: Optional[Callable]
-    derived_extractor_info: Optional[DatasetLookupInfo | str]
+    derived_extractor_info: Optional[DatasetLookupInfo]
     featureset: str
     # If outputs is empty, entire featureset is being extracted
     # by this extractor, else stores the ids of the features being extracted.

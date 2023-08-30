@@ -76,6 +76,7 @@ def dataset_lookup_impl(
     fields: List[str],
     keys: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
+    breakpoint()
     if cls_name not in datasets:
         raise ValueError(
             f"Dataset {cls_name} not found, please ensure it is synced."
@@ -397,10 +398,6 @@ class MockClient(Client):
             proto_extractors = extractors_from_fs(featureset, fs_obj_map)
             for extractor in proto_extractors:
                 extractor_fqn = f"{featureset._name}.{extractor.name}"
-                # TODO zaki support non func extractors:
-                #   perhaps we generate the conceptualized extractor or its equivalent in the mock client
-                #   aliasing is just pointing
-
                 if extractor.extractor_type == ProtoExtractorType.ALIAS:
                     continue
                 elif extractor.extractor_type == ProtoExtractorType.LOOKUP:
@@ -686,14 +683,16 @@ class MockClient(Client):
             )  # stuff every field as value
             
             if extractor.extractor_type == ProtoExtractorType.ALIAS:
-                breakpoint()
                 feature_name = extractor.fqn_output_features()[0]
                 intermediate_data[feature_name] = intermediate_data[extractor.inputs[0].fqn()]
                 intermediate_data[feature_name].name = feature_name
                 self._check_exceptions(intermediate_data[feature_name], dsschema, extractor.name)
                 continue
 
-            # TODO zaki deal with lookup impl here
+            if extractor.extractor_type == ProtoExtractorType.LOOKUP:
+                output = self._generated_lookup_extractor(extractor, timestamps.copy(), intermediate_data)
+                self._check_exceptions(output, dsschema, extractor.name)
+                continue
 
             allowed_datasets = [
                 x._name for x in extractor.get_dataset_dependencies()
@@ -790,6 +789,43 @@ class MockClient(Client):
                 f"Extractor `{extractor_name}` returned "
                 f"invalid schema: {exceptions}"
             )
+        
+    def _generated_lookup_extractor(self, extractor: Extractor, timestamps: pd.Series, intermediate_data: Dict[str, pd.Series]):
+        if len(extractor.output_features) != 1:
+            raise ValueError(f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.output_features)}")
+        if len(extractor.depends_on) != 1:
+            raise ValueError(f"Lookup extractor {extractor.name} must have exactly one dependent dataset, found {len(extractor.depends_on)}")
+
+        input_features = {k.name: intermediate_data[k] for k in extractor.inputs} 
+        # TODO zaki do I need to modify the lookup function here? probably?
+        allowed_datasets = [
+            x._name for x in extractor.get_dataset_dependencies()
+        ]
+        fennel.datasets.datasets.dataset_lookup = partial(
+           dataset_lookup_impl,
+            self.data,
+            self.aggregated_datasets,
+            self.dataset_info,
+            allowed_datasets,
+            extractor.name,
+        )
+        breakpoint()
+        results, _ = extractor.depends_on[0].lookup(timestamps, **input_features)
+        results = results[extractor.derived_extractor_info.field.name]
+        results = results.fillna(extractor.derived_extractor_info.default)
+        results.name = extractor.fqn_output_features()[0]
+        intermediate_data[extractor.fqn_output_features()[0]] = results
+
+        fennel.datasets.datasets.dataset_lookup = partial(
+            dataset_lookup_impl,
+            self.data,
+            self.aggregated_datasets,
+            self.dataset_info,
+            None,
+            None,
+        )
+
+        return results
 
     def _merge_df(self, df: pd.DataFrame, dataset_name: str):
         if not self.dataset_info[dataset_name].is_source_dataset:
