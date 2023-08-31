@@ -1,11 +1,13 @@
 # Changelog
 
+## [0.18.0] - 2023-08-30
+- Added support for Debezium data in Avro format via Kafka connector
 
 ## [0.17.8] - 2023-08-17
-- Added support for distinct aggregate in the backend 
+- Added support for distinct aggregate in the backend
 
 ## [0.17.7] - 2023-08-17
-- Distinct type for aggregations 
+- Distinct type for aggregations
 
 ## [0.17.3] - 2023-08-10
 - Bug fixes for columnar serialization
