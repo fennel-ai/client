@@ -19,4 +19,5 @@ from fennel.sources.sources import (
     Kinesis,
     InitPosition,
     KinesisConnector,
+    Avro,
 )

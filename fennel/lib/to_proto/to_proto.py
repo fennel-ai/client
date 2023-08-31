@@ -7,9 +7,11 @@ from textwrap import dedent, indent
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
-from google.protobuf.wrappers_pb2 import BoolValue
+from google.protobuf.wrappers_pb2 import BoolValue, StringValue
 from typing import Any, Dict, List, Optional, Tuple
 
+import fennel.gen.schema_registry_pb2 as schema_registry_proto
+import fennel.gen.http_auth_pb2 as http_auth_proto
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.expectations_pb2 as exp_proto
@@ -468,6 +470,7 @@ def _webhook_to_source_proto(
             ),
             lateness=to_duration_proto(connector.lateness),
             dataset=dataset_name,
+            cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -492,10 +495,12 @@ def _kafka_conn_to_source_proto(
             kafka_topic=connector_proto.KafkaTopic(
                 topic=connector.topic,
                 db=ext_db,
+                format=to_kafka_format_proto(connector.format),
             ),
         ),
         lateness=to_duration_proto(connector.lateness),
         dataset=dataset_name,
+        cdc=to_cdc_proto(connector.cdc),
     )
     return (ext_db, source)
 
@@ -557,6 +562,7 @@ def _s3_conn_to_source_proto(
         lateness=to_duration_proto(connector.lateness),
         cursor=None,
         timestamp_field=timestamp_field,
+        cdc=to_cdc_proto(connector.cdc),
     )
     return (ext_db, source)
 
@@ -649,6 +655,7 @@ def _bigquery_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
+            cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -709,6 +716,7 @@ def _snowflake_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
+            cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -783,6 +791,7 @@ def _mysql_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
+            cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -861,6 +870,7 @@ def _pg_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
+            cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -935,6 +945,7 @@ def _kinesis_conn_to_source_proto(
             table=ext_table,
             dataset=dataset_name,
             lateness=to_duration_proto(connector.lateness),
+            cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -990,6 +1001,67 @@ def _kinesis_to_ext_table_proto(
             format=format,
         ),
     )
+
+
+# ------------------------------------------------------------------------------
+# CDC
+# ------------------------------------------------------------------------------
+
+
+def to_cdc_proto(cdc: str) -> connector_proto.CDCStrategy.ValueType:
+    if cdc == "append":
+        return connector_proto.CDCStrategy.Append
+    if cdc == "upsert":
+        return connector_proto.CDCStrategy.Upsert
+    if cdc == "debezium":
+        return connector_proto.CDCStrategy.Debezium
+    if cdc == "native":
+        return connector_proto.CDCStrategy.Native
+    raise ValueError(f"unknown cdc strategy {cdc}")
+
+
+# ------------------------------------------------------------------------------
+# Format
+# ------------------------------------------------------------------------------
+
+
+def to_kafka_format_proto(
+    format: Optional[str | sources.Avro],
+) -> Optional[connector_proto.KafkaFormat]:
+    if format is None or format == "json":
+        return connector_proto.KafkaFormat(json=connector_proto.JsonFormat())
+    if isinstance(format, sources.Avro):
+        if format.registry != "confluent":
+            raise ValueError(f"Registry unsupported: {format.registry}")
+        return connector_proto.KafkaFormat(
+            avro=connector_proto.AvroFormat(
+                schema_registry=schema_registry_proto.SchemaRegistry(
+                    registry_provider=schema_registry_proto.RegistryProvider.CONFLUENT,
+                    url=format.url,
+                    auth=to_auth_proto(
+                        format.username, format.password, format.token
+                    ),
+                )
+            )
+        )
+
+    raise ValueError(f"Unknown kafka format: {format}")
+
+
+def to_auth_proto(
+    username: Optional[str], password: Optional[str], token: Optional[str]
+) -> Optional[http_auth_proto.HTTPAuthentication]:
+    if username is not None:
+        return http_auth_proto.HTTPAuthentication(
+            basic=http_auth_proto.BasicAuthentication(
+                username=username, password=StringValue(value=password)
+            )
+        )
+    if token is not None:
+        return http_auth_proto.HTTPAuthentication(
+            token=http_auth_proto.TokenAuthentication(token=token)
+        )
+    return None
 
 
 # ------------------------------------------------------------------------------

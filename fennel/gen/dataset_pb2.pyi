@@ -294,7 +294,7 @@ class Join(google.protobuf.message.Message):
         ValueType = typing.NewType("ValueType", builtins.int)
         V: typing_extensions.TypeAlias = ValueType
 
-    class _HowEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Join._How.ValueType], builtins.type):  # noqa: F821
+    class _HowEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Join._How.ValueType], builtins.type):
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
         Left: Join._How.ValueType  # 0
         Inner: Join._How.ValueType  # 1

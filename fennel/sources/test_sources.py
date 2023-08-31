@@ -16,6 +16,7 @@ from fennel.sources import (
     Kafka,
     Kinesis,
     InitPosition,
+    Avro,
 )
 
 # noinspection PyUnresolvedReferences
@@ -511,6 +512,73 @@ def test_multiple_sources():
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
     assert extdb_request == expected_extdb_request, error_message(
         extdb_request, expected_extdb_request
+    )
+
+    avro = Avro(
+        registry="confluent",
+        url="http://localhost:8000",
+        username="user",
+        password="pwd",
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        kafka.topic(
+            "test_topic",
+            format=avro,
+        ),
+        cdc="debezium",
+    )
+    @dataset
+    class UserInfoDatasetKafka:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetKafka)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "kafkaTopic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrapServers": "localhost:9092",
+                        "securityProtocol": "PLAINTEXT",
+                        "saslMechanism": "PLAIN",
+                        "saslPlainUsername": "test",
+                        "saslPlainPassword": "test",
+                        "enableSslCertificateVerification": False,
+                    },
+                },
+                "topic": "test_topic",
+                "format": {
+                    "avro": {
+                        "schemaRegistry": {
+                            "url": "http://localhost:8000",
+                            "auth": {
+                                "basic": {"username": "user", "password": "pwd"}
+                            },
+                        }
+                    }
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetKafka",
+        "lateness": "3600s",
+        "cdc": "Debezium",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
     )
 
     @meta(owner="test@test.com")
