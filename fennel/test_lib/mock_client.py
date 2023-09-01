@@ -810,7 +810,6 @@ class MockClient(Client):
         input_features = {
             k.name: intermediate_data[k] for k in extractor.inputs
         }
-        # TODO zaki do I need to modify the lookup function here? probably?
         allowed_datasets = [
             x._name for x in extractor.get_dataset_dependencies()
         ]

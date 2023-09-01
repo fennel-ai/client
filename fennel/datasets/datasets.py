@@ -1339,9 +1339,6 @@ class Dataset(_Node[T]):
     def fields(self):
         return self._fields
 
-    @property
-    def name(self):
-        return self._name
 
 
 # ---------------------------------------------------------------------

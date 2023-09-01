@@ -99,7 +99,6 @@ class Client:
             False,
             300,
         )
-        breakpoint()  # TODO zaki rm after implementing server
         check_response(response)
 
     def log(

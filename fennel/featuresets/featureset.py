@@ -376,7 +376,8 @@ class Feature:
         if provider is not None:
             ds = None
             for d in depends_on:
-                if d.name == field.dataset_name:
+                # TODO zaki make name a property
+                if d._name == field.dataset_name:
                     ds = d
                     break
             if ds is None:
@@ -387,7 +388,7 @@ class Feature:
                 feature = provider.feature(k)
                 if not feature:
                     raise ValueError(
-                        f"Dataset key {k} not found in provider {provider.name}"
+                        f"Dataset key {k} not found in provider {provider._name}"
                     )
                 provider_features.append(feature)
 
@@ -578,9 +579,6 @@ class Featureset:
     def original_cls(self):
         return self.__fennel_original_cls__
 
-    @property
-    def name(self):
-        return self._name
 
 
 class Extractor:
@@ -653,7 +651,7 @@ class Extractor:
         ds = None
         field = self.derived_extractor_info.field
         for d in self.depends_on:
-            if d.name == field.dataset_name:
+            if d._name == field.dataset_name:
                 ds = d
                 break
         if ds is None:
@@ -664,7 +662,7 @@ class Extractor:
             feature = featureset.feature(k)
             if not feature:
                 raise ValueError(
-                    f"Dataset key {k} not found in provider {featureset.name}"
+                    f"Dataset key {k} not found in provider {featureset._name}"
                 )
             self.inputs.append(feature)
 
