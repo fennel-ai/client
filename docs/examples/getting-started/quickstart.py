@@ -133,7 +133,7 @@ client.sync(
     featuresets=[UserSellerFeatures],
 )
 
-now = datetime.now()
+now = datetime.utcnow()
 # create some product data
 columns = ["product_id", "seller_id", "price", "desc", "last_modified"]
 data = [
