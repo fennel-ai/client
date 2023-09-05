@@ -92,8 +92,8 @@ RESERVED_FIELD_NAMES = [
 
 @dataclass
 class Field:
-    name: str
-    dataset_name: str
+    name: Optional[str]
+    dataset_name: Optional[str]
     key: bool
     timestamp: bool
     dtype: Optional[Type]
@@ -182,11 +182,12 @@ def field(
 ) -> T:  # type: ignore
     return cast(
         T,
+        # Initially None fields are assigned later
         Field(
             key=key,
-            dataset_name="",
+            dataset_name=None,
             timestamp=timestamp,
-            name="",
+            name=None,
             dtype=None,
         ),
     )

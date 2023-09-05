@@ -44,7 +44,8 @@ RESERVED_FEATURE_NAMES = [
     "fqn_",
     "dtype",
     "featureset_name",
-    "featureset" "extractor",
+    "featureset",
+    "extractor",
     "extractors",
     "features",
 ]
@@ -341,10 +342,6 @@ class Feature:
     def fqn(self) -> str:
         return self.fqn_
 
-    # Derive an extractor for the feature using the givne params
-    # use `field` (optionally with provider and default) to derive an extractor
-    # that performs a lookup on the given field
-    # use `feature` to alias this feature to the given feature
     def extract(
         self,
         field: Field = None,
@@ -354,6 +351,26 @@ class Feature:
         feature: Feature = None,
         version: int = 0,
     ) -> Feature:
+        '''
+        Derives an extractor for the feature using the given params.
+        The derived extractor either performs a lookup on the given field,
+        or is an alias to the given feature.
+
+        Parameters:
+        field: the field in a dataset to lookup and return
+        provider: the input featureset that should contain a feature matching 
+                  the field name. If not provided, then the current featureset
+                  is assumed to contain the respective feature.
+        default: An optional default value to fill null values from the lookup
+        depends_on: The datasets this extractor depends on. For a lookup extractor,
+                    the dataset on which the lookup is done must be included
+        feature: If provided, this function creates a one way alias from the 
+                    calling feature to this feature.
+        version: the version of this extractor
+
+        Returns:
+        Feature: This feature
+        '''
         if self.extractor:
             raise ValueError("extract() can only be called once per feature")
         if field is None and feature is None:
@@ -376,7 +393,6 @@ class Feature:
         if provider is not None:
             ds = None
             for d in depends_on:
-                # TODO zaki make name a property
                 if d._name == field.dataset_name:
                     ds = d
                     break
@@ -482,8 +498,6 @@ class Featureset:
                     extractor.inputs is None or len(extractor.inputs) == 0
                 ):
                     feature.extractor.set_inputs_from_featureset(self)
-                # TODO TODO zaki decide if we want this here or not: should we actually capture
-                # these as featureset extractors?
                 extractors.append(extractor)
 
         # user defined extractors
