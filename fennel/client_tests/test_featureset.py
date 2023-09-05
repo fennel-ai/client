@@ -233,6 +233,45 @@ class TestSimpleExtractor(unittest.TestCase):
             res["UserInfoMultipleExtractor.age_doubled"].tolist(), [64, 48]
         )
 
+@meta(owner="test@test.com")
+@featureset
+class GeneratedFeatures:
+    uid: int = feature(id=1).extract(feature=UserInfoSingleExtractor.userid)
+    user_id: int = feature(id=2).extract(feature=uid)
+    # default provider
+    country: str = feature(id=1).extract(field=UserInfoDataset.country, default="pluto")
+
+class TestDerivedExtractor(unittest.TestCase):
+    @pytest.mark.integration
+    def test_derived_extractor(self, client):
+        client.sync(
+            datasets=[UserInfoDataset],
+            featuresets=[UserInfoSingleExtractor, GeneratedFeatures],
+        )
+        now = datetime.utcnow()
+        data = [
+            [18232, "John", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", now],
+        ]
+        df = pd.DataFrame(data, columns=["user_id", "name", "age", "country", "timestamp"])
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+        feature_df = client.extract_features(
+            output_feature_list=[
+                UserInfoSingleExtractor.userid,
+                GeneratedFeatures.user_id,
+                GeneratedFeatures.country,
+            ],
+            input_feature_list=[],
+            input_dataframe=pd.DataFrame(
+                {"UserInfoSingleExtractor.userid": [18232, 18234]}
+            ),
+        )
+        self.assertEqual(feature_df.shape, (2, 3))
+        self.assertEqual(list(feature_df["UserInfoSingleExtractor.userid"]), [18232, 18234])
+        self.assertEqual(list(feature_df["GeneratedFeatures.user_id"]), [18232, 18234])
+        self.assertEqual(list(feature_df["GeneratedFeatures.country"]), ["USA", "Chile"])
 
 class TestExtractorDAGResolution(unittest.TestCase):
     @pytest.mark.integration
