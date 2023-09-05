@@ -1,3 +1,4 @@
+from fennel.lib.schema import struct
 from fennel.utils import fhash, to_columnar_json
 from datetime import datetime, timezone
 from math import nan
@@ -85,9 +86,64 @@ def test_to_columnar_json():
     # str encodes Nones and nans as 'null'
     expected_str = (
         "{"
-        + f'"num": [1.0, null], "word": ["abc", "def"], "bool": [null, false], "math": [3.14, 2.71828], "time": [{now_ms}, {now_ms}]'
+        + '"num": [1.0, null], "word": ["abc", "def"], "bool": [null, false], '
+        + f'"math": [3.14, 2.71828], "time": [{now_ms}, {now_ms}]'
         + "}"
     )
     assert to_columnar_json(df3) == expected
     assert to_columnar_json(df3, as_str=True) == expected_str
     assert json.loads(to_columnar_json(df3, as_str=True)) == expected
+
+    # Contains complex types : list, dict, struct
+    @struct
+    class Building:
+        address: str
+        num_floors: int
+        surface_area: float
+
+    buildings = [
+        Building("1 Infinite Loop", 2, 1000.14159),
+        Building("50 Mission St", 65, 300.86),
+    ]
+
+    df4 = pd.DataFrame(
+        [
+            [
+                "abc",
+                [1, 2, 3, 4],
+                {"foo": 10, "bar": [False, True]},
+                buildings[0],
+            ],
+            [
+                "def",
+                [5, 6, 7, 8],
+                {"foo": 20, "bar": [True, False], "baz": "panda"},
+                buildings[1],
+            ],
+        ]
+    ).rename(columns={0: "word", 1: "nums_list", 2: "dict", 3: "building"})
+    expected = {
+        "word": ["abc", "def"],
+        "nums_list": [[1, 2, 3, 4], [5, 6, 7, 8]],
+        "dict": [
+            {"foo": 10, "bar": [False, True]},
+            {"foo": 20, "bar": [True, False], "baz": "panda"},
+        ],
+        "building": [
+            {
+                "address": "1 Infinite Loop",
+                "num_floors": 2,
+                "surface_area": 1000.14159,
+            },
+            {
+                "address": "50 Mission St",
+                "num_floors": 65,
+                "surface_area": 300.86,
+            },
+        ],
+    }
+
+    dict4 = to_columnar_json(df4)
+    assert dict4 == expected
+    assert all(pd.DataFrame(dict4) == df4)
+    assert json.loads(to_columnar_json(df4, as_str=True)) == expected
