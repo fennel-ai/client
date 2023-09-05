@@ -51,7 +51,7 @@ ideas.
 
 Fennel pipelines are built out of a few general purpose operators like `filter`,
 `transform`, `join` etc which can be composed together to write any pipeline.
-You can read about all the operators [here](/concepts/pipeline#operators). Further,
+You can read about all the operators [here](/api-reference/operators). Further,
 a few operators (e.g. `transform`, `filter`) take free-form Python using which
 arbitrary computation can be done (including making calls into external services
 if needed). For all such operators, input/outputs variables are Pandas DataFrames

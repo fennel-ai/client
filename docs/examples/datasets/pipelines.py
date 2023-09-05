@@ -66,7 +66,7 @@ class UserTransactionsAbroad:
             [
                 Count(window=Window("forever"), into_field="count"),
                 Sum(of="amount", window=Window("1d"), into_field="amount_1d"),
-                Sum(of="amount", window=Window("1d"), into_field="amount_1w"),
+                Sum(of="amount", window=Window("1w"), into_field="amount_1w"),
                 LastK(
                     of="merchant_id",
                     window=Window("1d"),
