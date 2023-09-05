@@ -125,9 +125,9 @@ class Extractor(google.protobuf.message.Message):
     FEATURES_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     VERSION_FIELD_NUMBER: builtins.int
+    PYCODE_FIELD_NUMBER: builtins.int
     FEATURE_SET_NAME_FIELD_NUMBER: builtins.int
     EXTRACTOR_TYPE_FIELD_NUMBER: builtins.int
-    PYCODE_FIELD_NUMBER: builtins.int
     DATASET_INFO_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
@@ -140,14 +140,16 @@ class Extractor(google.protobuf.message.Message):
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
     version: builtins.int
-    feature_set_name: builtins.str
-    extractor_type: global___ExtractorType.ValueType
     @property
     def pycode(self) -> pycode_pb2.PyCode:
         """required iff extractor_type == PY_FUNC"""
+    feature_set_name: builtins.str
+    extractor_type: global___ExtractorType.ValueType
     @property
     def dataset_info(self) -> global___DatasetLookupInfo:
-        """required iff extractor_type == LOOKUP"""
+        """pycode excluded from the oneof for better bwd compatibility in Rust
+        required iff extractor_type == LOOKUP
+        """
     def __init__(
         self,
         *,
@@ -157,14 +159,14 @@ class Extractor(google.protobuf.message.Message):
         features: collections.abc.Iterable[builtins.str] | None = ...,
         metadata: metadata_pb2.Metadata | None = ...,
         version: builtins.int = ...,
+        pycode: pycode_pb2.PyCode | None = ...,
         feature_set_name: builtins.str = ...,
         extractor_type: global___ExtractorType.ValueType = ...,
-        pycode: pycode_pb2.PyCode | None = ...,
         dataset_info: global___DatasetLookupInfo | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["dataset_info", b"dataset_info", "derived_extractor_info", b"derived_extractor_info", "metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["dataset_info", b"dataset_info", "datasets", b"datasets", "derived_extractor_info", b"derived_extractor_info", "extractor_type", b"extractor_type", "feature_set_name", b"feature_set_name", "features", b"features", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "version", b"version"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["derived_extractor_info", b"derived_extractor_info"]) -> typing_extensions.Literal["pycode", "dataset_info"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["derived_extractor_info", b"derived_extractor_info"]) -> typing_extensions.Literal["dataset_info"] | None: ...
 
 global___Extractor = Extractor
 
