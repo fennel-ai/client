@@ -236,10 +236,9 @@ class TestSimpleExtractor(unittest.TestCase):
 @meta(owner="test@test.com")
 @featureset
 class GeneratedFeatures:
-    uid: int = feature(id=1).extract(feature=UserInfoSingleExtractor.userid)
-    user_id: int = feature(id=2).extract(feature=uid)
+    user_id: int = feature(id=1).extract(feature=UserInfoSingleExtractor.userid) # type: ignore
     # default provider
-    country: str = feature(id=3).extract(
+    country: str = feature(id=3).extract( # type: ignore
         field=UserInfoDataset.country,
         default="pluto",
         depends_on=[UserInfoDataset],

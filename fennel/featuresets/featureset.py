@@ -347,37 +347,41 @@ class Feature:
         field: Field = None,
         provider: Featureset = None,
         default=None,
-        depends_on: List[Dataset] = None,
+        depends_on: List[Dataset] = [],
         feature: Feature = None,
         version: int = 0,
     ) -> Feature:
-        '''
+        """
         Derives an extractor for the feature using the given params.
         The derived extractor either performs a lookup on the given field,
         or is an alias to the given feature.
 
         Parameters:
         field: the field in a dataset to lookup and return
-        provider: the input featureset that should contain a feature matching 
+        provider: the input featureset that should contain a feature matching
                   the field name. If not provided, then the current featureset
                   is assumed to contain the respective feature.
         default: An optional default value to fill null values from the lookup
         depends_on: The datasets this extractor depends on. For a lookup extractor,
                     the dataset on which the lookup is done must be included
-        feature: If provided, this function creates a one way alias from the 
+        feature: If provided, this function creates a one way alias from the
                     calling feature to this feature.
         version: the version of this extractor
 
         Returns:
         Feature: This feature
-        '''
+        """
         if self.extractor:
-            raise ValueError("extract() can only be called once per feature")
+            raise TypeError(
+                f"extract() can only be called once for feature id={self.id}"
+            )
         if field is None and feature is None:
-            raise ValueError("Either field or feature must be specified")
+            raise TypeError(
+                f"Either field or feature must be specified to extract feature id={self.id}"
+            )
 
         # aliasing
-        if feature is not None:
+        if feature:
             self.extractor = Extractor(
                 name=f"alias_{feature}",
                 extractor_type=ExtractorType.ALIAS,
@@ -390,7 +394,9 @@ class Feature:
         provider_features = []
         # If provider is none, then the provider is this featureset. The input features
         # are captured once this featureset is initialized
-        if provider is not None:
+        name = f"lookup_{field}"
+        field = cast(Field, field)
+        if provider:
             ds = None
             for d in depends_on:
                 if d._name == field.dataset_name:
@@ -398,13 +404,13 @@ class Feature:
                     break
             if ds is None:
                 raise ValueError(
-                    f"Dataset {field.dataset_name} not found in depends_on list"
+                    f"Dataset {field.dataset_name} not found in depends_on list for extractor {name}"
                 )
             for k in ds.dsschema().keys:
                 feature = provider.feature(k)
                 if not feature:
                     raise ValueError(
-                        f"Dataset key {k} not found in provider {provider._name}"
+                        f"Dataset key {k} not found in provider {provider._name} for extractor {name}"
                     )
                 provider_features.append(feature)
 
@@ -587,12 +593,13 @@ class Featureset:
         return self._features
 
     def feature(self, name):
+        if name not in self._feature_map:
+            return None
         return self._feature_map[name]
 
     @property
     def original_cls(self):
         return self.__fennel_original_cls__
-
 
 
 class Extractor:
@@ -659,7 +666,7 @@ class Extractor:
             return
         if self.extractor_type != ExtractorType.LOOKUP:
             return
-        if not hasattr(self.derived_extractor_info, "field"):
+        if not self.derived_extractor_info or not hasattr(self.derived_extractor_info, "field"):
             raise ValueError("A lookup extractor must have a field to lookup")
         self.inputs = []
         ds = None
@@ -670,20 +677,20 @@ class Extractor:
                 break
         if ds is None:
             raise ValueError(
-                f"Dataset {field.dataset_name} not found in depends_on list"
+                f"Dataset {field.dataset_name} not found in depends_on list for extractor {self.name}"
             )
         for k in ds.dsschema().keys:
             feature = featureset.feature(k)
             if not feature:
                 raise ValueError(
-                    f"Dataset key {k} not found in provider {featureset._name}"
+                    f"Dataset key {k} not found in provider {featureset._name} for extractor {self.name}"
                 )
             self.inputs.append(feature)
 
     class DatasetLookupInfo:
-        field: str
+        field: Field
         default: Any
 
-        def __init__(self, field: str, default_val: Any):
+        def __init__(self, field: Field, default_val: Any):
             self.field = field
             self.default = default_val
