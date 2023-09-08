@@ -107,4 +107,14 @@ of things:
  key fields in the dataset become kwarg to the lookup function.
 * It's not possible to do lookups on dataset without keys.
 
+### Derived Extractors
+
+There are 2 common patterns of simple extractors:
+
+1. Lookup extractors. These extractors perform a lookup on a single field of a 
+dataset, potentially supply a default value for missing rows, and assign the 
+output to a single feature. The dataset lookup example above is such an extractor.
+
+2. Aliases. These extractors map an input feature to an output feature. 
+
 
