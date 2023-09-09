@@ -347,7 +347,6 @@ class Feature:
         field: Field = None,
         provider: Featureset = None,
         default=None,
-        depends_on: List[Dataset] = [],
         feature: Feature = None,
         version: int = 0,
     ) -> Feature:
@@ -362,8 +361,6 @@ class Feature:
                   the field name. If not provided, then the current featureset
                   is assumed to contain the respective feature.
         default: An optional default value to fill null values from the lookup
-        depends_on: The datasets this extractor depends on. For a lookup extractor,
-                    the dataset on which the lookup is done must be included
         feature: If provided, this function creates a one way alias from the
                     calling feature to this feature.
         version: the version of this extractor
@@ -396,16 +393,15 @@ class Feature:
         # are captured once this featureset is initialized
         name = f"lookup_{field}"
         field = cast(Field, field)
+        ds = None
         if provider:
-            ds = None
-            for d in depends_on:
-                if d._name == field.dataset_name:
-                    ds = d
-                    break
-            if ds is None:
+            if hasattr(field, "dataset"):
+                ds = field.dataset
+            if not ds:
                 raise ValueError(
-                    f"Dataset {field.dataset_name} not found in depends_on list for extractor {name}"
+                    f"Dataset {field.dataset_name} not found for field {field}"
                 )
+            
             for k in ds.dsschema().keys:
                 feature = provider.feature(k)
                 if not feature:
@@ -421,7 +417,7 @@ class Feature:
             outputs=[self.id],
             version=version,
             derived_extractor_info=Extractor.DatasetLookupInfo(field, default),
-            depends_on=depends_on,
+            depends_on=[ds] if ds else [],
         )
         return self
 
@@ -669,16 +665,17 @@ class Extractor:
         if not self.derived_extractor_info or not hasattr(self.derived_extractor_info, "field"):
             raise ValueError("A lookup extractor must have a field to lookup")
         self.inputs = []
-        ds = None
+
         field = self.derived_extractor_info.field
-        for d in self.depends_on:
-            if d._name == field.dataset_name:
-                ds = d
-                break
-        if ds is None:
+        ds = field.dataset
+        ds = None
+        if hasattr(field, "dataset"):
+            ds = field.dataset
+        if not ds:
             raise ValueError(
-                f"Dataset {field.dataset_name} not found in depends_on list for extractor {self.name}"
+                f"Dataset {field.dataset_name} not found for field {field}"
             )
+        self.depends_on = [ds]
         for k in ds.dsschema().keys:
             feature = featureset.feature(k)
             if not feature:

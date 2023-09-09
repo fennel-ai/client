@@ -55,7 +55,6 @@ def test_valid_derived_extractors():
         gender: str = feature(id=2).extract(
             field=UserInfoDataset.gender,
             default="unspecified",
-            depends_on=[UserInfoDataset],
         )
         # lookup with meta
         age_years: float = (
@@ -63,7 +62,6 @@ def test_valid_derived_extractors():
             .extract(
                 field=UserInfoDataset.age,
                 default=0,
-                depends_on=[UserInfoDataset],
             )
             .meta(owner="zaki@fennel.ai")
         )
@@ -73,7 +71,6 @@ def test_valid_derived_extractors():
             .extract(
                 field=UserInfoDataset.dob,
                 default="unspecified",
-                depends_on=[UserInfoDataset],
             )
             .meta(deprecated=True)
         )
@@ -372,7 +369,6 @@ def test_invalid_multiple_extracts():
                 .extract(
                     field=UserInfoDataset.age,
                     default=0,
-                    depends_on=[UserInfoDataset],
                 )
                 .extract(feature=User.age)
             )
@@ -389,7 +385,6 @@ def test_invalid_multiple_extracts():
                 .extract(
                     field=UserInfoDataset.age,
                     default=0,
-                    depends_on=[UserInfoDataset],
                 )
                 .meta(owner="zaki@fennel.ai")
                 .extract(feature=User.age)
@@ -406,7 +401,6 @@ def test_invalid_multiple_extracts():
             age: int = feature(id=2).extract(
                 field=UserInfoDataset.age,
                 default=0,
-                depends_on=[UserInfoDataset],
             )
 
             @extractor(depends_on=[UserInfoDataset])
@@ -420,12 +414,6 @@ def test_invalid_multiple_extracts():
 
 
 def test_invalid_missing_fields():
-    @meta(owner="test@test.com")
-    @dataset
-    class AnotherDataset:
-        foo: int = field(key=True)
-        ts: datetime = field(timestamp=True)
-
     # no field nor feature
     with pytest.raises(TypeError) as e:
 
@@ -433,7 +421,7 @@ def test_invalid_missing_fields():
         class UserInfo4:
             user_id: int = feature(id=1).extract(feature=User.id)
             age: int = feature(id=2).extract(
-                default=0, depends_on=[UserInfoDataset]
+                default=0, 
             )
 
     assert (
@@ -441,22 +429,6 @@ def test_invalid_missing_fields():
         == "Either field or feature must be specified to extract feature id=2"
     )
 
-    # missing dataset in depends_on
-    with pytest.raises(ValueError) as e:
-
-        @featureset
-        class UserInfo5:
-            user_id: int = feature(id=1).extract(feature=User.id)
-            age: int = feature(id=2).extract(
-                field=UserInfoDataset.age,
-                default=0,
-                depends_on=[AnotherDataset],
-            )
-
-    assert (
-        str(e.value)
-        == "Dataset UserInfoDataset not found in depends_on list for extractor lookup_age"
-    )
 
     # missing dataset key in current featureset
     with pytest.raises(ValueError) as e:
@@ -466,33 +438,11 @@ def test_invalid_missing_fields():
             age: int = feature(id=2).extract(
                 field=UserInfoDataset.age,
                 default=0,
-                depends_on=[UserInfoDataset],
             )
 
     assert (
         str(e.value)
         == "Dataset key user_id not found in provider UserInfo6 for extractor lookup_age"
-    )
-
-    # missing dataset in depends_on, with input provider
-    with pytest.raises(ValueError) as e:
-
-        @featureset
-        class UserRequest:
-            name: str = feature(id=1)
-
-        @featureset
-        class UserInfo7:
-            age: int = feature(id=2).extract(
-                field=UserInfoDataset.age,
-                provider=UserRequest,
-                default=0,
-                depends_on=[AnotherDataset],
-            )
-
-    assert (
-        str(e.value)
-        == "Dataset UserInfoDataset not found in depends_on list for extractor lookup_age"
     )
 
     # missing dataset key in provider
@@ -508,7 +458,6 @@ def test_invalid_missing_fields():
                 field=UserInfoDataset.age,
                 provider=UserRequest,
                 default=0,
-                depends_on=[UserInfoDataset],
             )
 
     assert (

@@ -1087,6 +1087,7 @@ class Dataset(_Node[T]):
     def _add_fields_as_attributes(self):
         for field in self._fields:
             setattr(self.__fennel_original_cls__, field.name, field)
+            setattr(field, "dataset", self)
 
     def _validate_field_names(self, fields: List[Field]):
         names = set()

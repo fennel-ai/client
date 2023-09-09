@@ -241,7 +241,6 @@ class GeneratedFeatures:
     country: str = feature(id=3).extract( # type: ignore
         field=UserInfoDataset.country,
         default="pluto",
-        depends_on=[UserInfoDataset],
     )
 
 

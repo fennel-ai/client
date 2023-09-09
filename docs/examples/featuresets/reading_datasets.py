@@ -49,7 +49,7 @@ class Request:
 @featureset
 class UserFeaturesDerived:
     uid: int = feature(id=1).extract(feature=Request.user_id)
-    name: str = feature(id=2).extract(field=User.name, default="Unknown", depends_on=[User])
+    name: str = feature(id=2).extract(field=User.name, default="Unknown")
 
 # /docsnip
 
@@ -63,7 +63,7 @@ class Request2:
 @featureset
 class UserFeaturesDerived2:
     name: str = feature(id=1).extract(
-        field=User.name, provider=Request2, default="Unknown", depends_on=[User])
+        field=User.name, provider=Request2, default="Unknown")
 
 # /docsnip
 
