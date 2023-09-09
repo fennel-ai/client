@@ -109,12 +109,34 @@ of things:
 
 ### Derived Extractors
 
-There are 2 common patterns of simple extractors:
+Fennel provides the ability to derive certain simple extractors as part of their
+feature definitions. The following extractor types are supported:
 
 1. Lookup extractors. These extractors perform a lookup on a single field of a 
 dataset, potentially supply a default value for missing rows, and assign the 
 output to a single feature. The dataset lookup example above is such an extractor.
 
-2. Aliases. These extractors map an input feature to an output feature. 
+2. Aliases. These extractors unidirectionally map an input feature to an output feature. 
 
+With these derived extractors, the Fennel backend skips calling into the Python runtime to 
+run custom extractor code, which significantly cuts the latency of producing their respective 
+features.
 
+These extractors are derived by the `feature.extract()` function. Here is an example:
+<pre snippet="featuresets/reading_datasets#derived_extractors"></pre>
+
+In this example, `UserFeaturesDerived.uid` is an alias to `Request.user_id`. Aliasing is 
+specified via the `feature` kwarg. `UserFeaturesDerived.name` specifies a lookup extractor,
+with the same functionality as the extractor `func` defined above. 
+The lookup extractor uses the following arguments:
+* `field` - The dataset field to do a lookup on
+* `default` - An optional default value for rows not found  
+* `provider` - A featureset that provides an input feature matching the field
+      to look up. The input feature name must match the field name. If not 
+      provided, as in the above example, then the current featureset is assumed
+      to be the provider. If the input feature that the extractor needs does not
+      match the name of the field, an `alias` extractor can be defined, as is the
+      case with `UserFeaturesDerived.uid` in the above example.
+
+Here is an example where the input provider is a different featureset:
+<pre snippet="featuresets/reading_datasets#derived_extractor_with_provider"></pre>

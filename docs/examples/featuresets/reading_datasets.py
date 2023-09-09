@@ -39,10 +39,37 @@ class UserFeatures:
 
 # /docsnip
 
+# docsnip derived_extractors
+@meta(owner="data-science-team@fennel.ai")
+@featureset
+class Request:
+    user_id: int = feature(id=1)
+
+@meta(owner="data-science-team@fennel.ai")
+@featureset
+class UserFeaturesDerived:
+    uid: int = feature(id=1).extract(feature = Request.user_id)
+    name: str = feature(id=2).extract(field=User.name, default="Unknown", depends_on=[User])
+
+# /docsnip
+
+# docsnip derived_extractor_with_provider
+@meta(owner="data-science-team@fennel.ai")
+@featureset
+class Request2:
+    uid: int = feature(id=1)
+
+@meta(owner="data-science-team@fennel.ai")
+@featureset
+class UserFeaturesDerived2:
+    name: str = feature(id=1).extract(
+        field=User.name, provider=Request2, default="Unknown", depends_on=[User])
+
+# /docsnip
 
 @mock
 def test_lookup_in_extractor(client):
-    client.sync(datasets=[User], featuresets=[UserFeatures])
+    client.sync(datasets=[User], featuresets=[UserFeatures, UserFeaturesDerived, UserFeaturesDerived2])
     now = datetime.now()
     data = pd.DataFrame(
         {
@@ -63,9 +90,28 @@ def test_lookup_in_extractor(client):
             }
         ),
     )
-    assert feature_df["UserFeatures.name"].tolist() == [
-        "Alice",
-        "Bob",
-        "Charlie",
-        "Unknown",
-    ]
+
+    expected = ["Alice", "Bob", "Charlie", "Unknown"]
+    assert feature_df["UserFeatures.name"].tolist() == expected
+
+    feature_df = client.extract_features(
+        output_feature_list=[UserFeaturesDerived.name],
+        input_feature_list=[Request.user_id],
+        input_dataframe=pd.DataFrame(
+            {
+                "Request.user_id": [1, 2, 3, 4],
+            }
+        ),
+    )
+    assert feature_df["UserFeaturesDerived.name"].tolist() == expected
+
+    feature_df = client.extract_features(
+        output_feature_list=[UserFeaturesDerived2.name],
+        input_feature_list=[Request2.uid],
+        input_dataframe=pd.DataFrame(
+            {
+                "Request2.uid": [1, 2, 3, 4],
+            }
+        ),
+    )
+    assert feature_df["UserFeaturesDerived2.name"].tolist() == expected
