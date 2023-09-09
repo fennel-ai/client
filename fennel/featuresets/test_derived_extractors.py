@@ -407,7 +407,7 @@ def test_invalid_multiple_extracts():
             @inputs(user_id)
             @outputs(age)
             def get_age(cls, ts: pd.Series, user_id: pd.Series):
-                df = UserInfoDataset.lookup(ts, user_id=user_id) # type: ignore
+                df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
                 return df.fillna(0)
 
     assert str(e.value) == "Feature `age` is extracted by multiple extractors."
@@ -421,14 +421,13 @@ def test_invalid_missing_fields():
         class UserInfo4:
             user_id: int = feature(id=1).extract(feature=User.id)
             age: int = feature(id=2).extract(
-                default=0, 
+                default=0,
             )
 
     assert (
         str(e.value)
         == "Either field or feature must be specified to extract feature id=2"
     )
-
 
     # missing dataset key in current featureset
     with pytest.raises(ValueError) as e:

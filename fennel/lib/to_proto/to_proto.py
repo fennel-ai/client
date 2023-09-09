@@ -485,7 +485,7 @@ def _webhook_to_source_proto(
             ),
             lateness=to_duration_proto(connector.lateness),
             dataset=dataset_name,
-            #cdc=to_cdc_proto(connector.cdc),
+            # cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -510,12 +510,12 @@ def _kafka_conn_to_source_proto(
             kafka_topic=connector_proto.KafkaTopic(
                 topic=connector.topic,
                 db=ext_db,
-                #format=to_kafka_format_proto(connector.format),
+                # format=to_kafka_format_proto(connector.format),
             ),
         ),
         lateness=to_duration_proto(connector.lateness),
         dataset=dataset_name,
-        #cdc=to_cdc_proto(connector.cdc),
+        # cdc=to_cdc_proto(connector.cdc),
     )
     return (ext_db, source)
 
@@ -577,7 +577,7 @@ def _s3_conn_to_source_proto(
         lateness=to_duration_proto(connector.lateness),
         cursor=None,
         timestamp_field=timestamp_field,
-        #cdc=to_cdc_proto(connector.cdc),
+        # cdc=to_cdc_proto(connector.cdc),
     )
     return (ext_db, source)
 
@@ -670,7 +670,7 @@ def _bigquery_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
-            #cdc=to_cdc_proto(connector.cdc),
+            # cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -731,7 +731,7 @@ def _snowflake_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
-            #cdc=to_cdc_proto(connector.cdc),
+            # cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -806,7 +806,7 @@ def _mysql_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
-            #cdc=to_cdc_proto(connector.cdc),
+            # cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -885,7 +885,7 @@ def _pg_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
-            #cdc=to_cdc_proto(connector.cdc),
+            # cdc=to_cdc_proto(connector.cdc),
         ),
     )
 
@@ -960,7 +960,7 @@ def _kinesis_conn_to_source_proto(
             table=ext_table,
             dataset=dataset_name,
             lateness=to_duration_proto(connector.lateness),
-            #cdc=to_cdc_proto(connector.cdc),
+            # cdc=to_cdc_proto(connector.cdc),
         ),
     )
 

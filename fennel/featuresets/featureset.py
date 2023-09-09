@@ -401,7 +401,7 @@ class Feature:
                 raise ValueError(
                     f"Dataset {field.dataset_name} not found for field {field}"
                 )
-            
+
             for k in ds.dsschema().keys:
                 feature = provider.feature(k)
                 if not feature:
@@ -662,7 +662,9 @@ class Extractor:
             return
         if self.extractor_type != ExtractorType.LOOKUP:
             return
-        if not self.derived_extractor_info or not hasattr(self.derived_extractor_info, "field"):
+        if not self.derived_extractor_info or not hasattr(
+            self.derived_extractor_info, "field"
+        ):
             raise ValueError("A lookup extractor must have a field to lookup")
         self.inputs = []
 
