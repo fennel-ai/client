@@ -114,13 +114,13 @@ feature definitions. The following extractor types are supported:
 
 1. Lookup extractors. These extractors perform a lookup on a single field of a 
 dataset, potentially supply a default value for missing rows, and assign the 
-output to a single feature. The dataset lookup example above is such an extractor.
+output to a single feature. The dataset lookup example above has this functionality.
 
 2. Aliases. These extractors unidirectionally map an input feature to an output feature. 
 
 With these derived extractors, the Fennel backend skips calling into the Python runtime to 
 run custom extractor code, which significantly cuts the latency of producing their respective 
-features.
+features. 
 
 These extractors are derived by the `feature.extract()` function. Here is an example:
 <pre snippet="featuresets/reading_datasets#derived_extractors"></pre>

@@ -48,7 +48,7 @@ class Request:
 @meta(owner="data-science-team@fennel.ai")
 @featureset
 class UserFeaturesDerived:
-    uid: int = feature(id=1).extract(feature = Request.user_id)
+    uid: int = feature(id=1).extract(feature=Request.user_id)
     name: str = feature(id=2).extract(field=User.name, default="Unknown", depends_on=[User])
 
 # /docsnip
