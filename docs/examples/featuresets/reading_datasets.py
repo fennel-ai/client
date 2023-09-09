@@ -45,13 +45,16 @@ class UserFeatures:
 class Request:
     user_id: int = feature(id=1)
 
+
 @meta(owner="data-science-team@fennel.ai")
 @featureset
 class UserFeaturesDerived:
     uid: int = feature(id=1).extract(feature=Request.user_id)
     name: str = feature(id=2).extract(field=User.name, default="Unknown")
 
+
 # /docsnip
+
 
 # docsnip derived_extractor_with_provider
 @meta(owner="data-science-team@fennel.ai")
@@ -59,17 +62,24 @@ class UserFeaturesDerived:
 class Request2:
     uid: int = feature(id=1)
 
+
 @meta(owner="data-science-team@fennel.ai")
 @featureset
 class UserFeaturesDerived2:
     name: str = feature(id=1).extract(
-        field=User.name, provider=Request2, default="Unknown")
+        field=User.name, provider=Request2, default="Unknown"
+    )
+
 
 # /docsnip
 
+
 @mock
 def test_lookup_in_extractor(client):
-    client.sync(datasets=[User], featuresets=[UserFeatures, UserFeaturesDerived, UserFeaturesDerived2])
+    client.sync(
+        datasets=[User],
+        featuresets=[UserFeatures, UserFeaturesDerived, UserFeaturesDerived2],
+    )
     now = datetime.now()
     data = pd.DataFrame(
         {
