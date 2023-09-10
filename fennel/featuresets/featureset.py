@@ -380,6 +380,9 @@ class Featureset:
         for feature in self._features:
             setattr(self, feature.name, feature)
 
+    def all(self) -> List[Feature]:
+        return self._features
+
     def _get_extractors(self) -> List[Extractor]:
         extractors = []
         for name, method in inspect.getmembers(self.__fennel_original_cls__):

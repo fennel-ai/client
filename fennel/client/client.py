@@ -400,6 +400,9 @@ class Client:
         input_dataframe: Optional[pd.DataFrame] = None,
         input_bucket: Optional[str] = None,
         input_prefix: Optional[str] = None,
+        output_bucket: Optional[str] = None,
+        output_prefix: Optional[str] = None,
+        column_to_feature_map: Optional[Dict[str, Feature]] = None,
     ) -> Dict[str, Any]:
         """
         Extract point in time correct features from a dataframe, where the
@@ -412,14 +415,21 @@ class Client:
         format (str): The format of the input data. Can be either "pandas",
             "csv", "json" or "parquet". Default is "pandas".
         input_dataframe (Optional[pd.DataFrame]): Dataframe containing the input features. Only relevant when format is "pandas".
-        input_bucket (Optional[str]): The name of the S3 bucket containing the input data. Only relevant when format is "csv", "json" or "parquet".
-        input_prefix (Optional[str]): The prefix of the S3 key containing the input data. Only relevant when format is "csv", "json" or "parquet".
+        output_bucket (Optional[str]): The name of the S3 bucket to store the output data.
+        output_prefix (Optional[str]): The prefix of the S3 key to store the output data.
+
+        The following parameters are only relevant when format is "csv", "json" or "parquet".
+
+        input_bucket (Optional[str]): The name of the S3 bucket containing the input data.
+        input_prefix (Optional[str]): The prefix of the S3 key containing the input data.
+        column_to_feature_map (Optional[Dict[str, str]]): A dictionary that maps columns in the S3 data to the required features.
 
 
         Returns:
         Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
                         A completion rate of 1.0 indicates that all processing has been completed.
                         A failure rate of 0.0 indicates that all processing has been completed successfully.
+                        The status of the request.
         """
 
         if format not in ["pandas", "csv", "json", "parquet"]:
@@ -487,6 +497,31 @@ class Client:
             input_info["input_prefix"] = input_prefix
             input_info["format"] = format.upper()
             input_info["compression"] = "None"
+
+            if column_to_feature_map is not None:
+                if len(column_to_feature_map) != len(input_feature_names):
+                    raise Exception(
+                        "Column mapping does not contain all the required features. "
+                        f"Required features: {input_feature_names}. "
+                        f"Column mapping: {column_to_feature_map}"
+                    )
+                # Check if the column mapping contains all the required features
+                inverse_column_mapping = {
+                    v: k for k, v in column_to_feature_map.items()
+                }
+                if len(inverse_column_mapping) != len(column_to_feature_map):
+                    raise Exception(
+                        "Column mapping contains duplicate values. "
+                    )
+                for input_feature_name in input_feature_names:
+                    if input_feature_name not in inverse_column_mapping:
+                        raise Exception(
+                            f"Column mapping does not contain all the required features. Feature: {input_feature_name},"
+                            f" not found in column mapping: {column_to_feature_map}"
+                        )
+
+                input_info["column_mapping"] = column_to_feature_map  # type: ignore
+
             extract_historical_input["S3"] = input_info
 
         output_feature_names = []
@@ -504,23 +539,32 @@ class Client:
             "input": extract_historical_input,
             "timestamp_column": timestamp_column,
         }
+        if output_bucket is not None:
+            req["output_bucket"] = output_bucket
+            if output_prefix is None:
+                raise Exception(
+                    "Output prefix not specified, but output bucket is specified. "
+                )
+            req["output_prefix"] = output_prefix
 
         return self._post_json(
             "{}/extract_historical_features".format(V1_API), req
         )
 
-    def extract_historical_features_progress(self, request_id):
+    def extract_historical_features_status(self, request_id, cancel=False):
         """
-        Get progress of extract historical features request.
+        Get/Set the status of extract historical features request.
 
         :param request_id: The request id returned by extract_historical_features.
+        :param cancel: If True, cancel the request.
 
         Returns:
         Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
                         A completion rate of 1.0 indicates that all processing has been completed.
                         A failure rate of 0.0 indicates that all processing has been completed successfully.
+                        The status of the request.
         """
-        req = {"request_id": request_id}
+        req = {"request_id": request_id, "cancel": cancel}
         return self._post_json(
             "{}/extract_historical_progress".format(V1_API), req
         )

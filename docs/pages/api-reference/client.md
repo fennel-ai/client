@@ -99,6 +99,7 @@ This api is an asynchronous api that returns a request id and the path to the ou
   * output s3 path prefix
   * completion rate.
   * failure rate.
+  * status
 
 A completion rate of 1.0 indicates that all processing has been completed.
 A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing has been completed successfully.
@@ -110,7 +111,7 @@ A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing
 
 ****
 
-### **extract_historical_features_progress**
+### **extract_historical_features_status**
 
 This method allows users to monitor the progress of the extract_historical_features asynchronous operation.
 It accepts the request ID that was returned by the `extract_historical_features` method and returns the current status of that operation.
@@ -121,7 +122,7 @@ The response format of this function and the `extract_historical_features` funct
 
 
 * `request_id: str` - The request ID returned by the `extract_historical_features` method. This ID uniquely identifies the feature extraction operation
-
+* `cancel: bool` - If set to True, the feature extraction operation will be cancelled. Default is ofcourse, False.
 
 **Returns:**
 
@@ -131,6 +132,7 @@ The response format of this function and the `extract_historical_features` funct
   * output s3 path prefix
   * completion rate.
   * failure rate.
+  * status
 
 A completion rate of 1.0 indicates that all processing has been completed.
 A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing has been completed successfully.

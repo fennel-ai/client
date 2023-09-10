@@ -449,6 +449,9 @@ class MockClient(Client):
         input_dataframe: Optional[pd.DataFrame] = None,
         input_bucket: Optional[str] = None,
         input_prefix: Optional[str] = None,
+        output_bucket: Optional[str] = None,
+        output_prefix: Optional[str] = None,
+        column_to_feature_map: Optional[Dict[str, Feature]] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         if format != "pandas":
             raise NotImplementedError(
@@ -458,6 +461,12 @@ class MockClient(Client):
             raise ValueError(
                 "input must contain a key 'input_dataframe' with the input dataframe"
             )
+        assert column_to_feature_map is None, "column_mapping is not supported"
+        assert input_bucket is None, "input_bucket is not supported"
+        assert input_prefix is None, "input_prefix is not supported"
+        assert output_bucket is None, "output_bucket is not supported"
+        assert output_prefix is None, "output_prefix is not supported"
+
         if input_dataframe.empty:
             return pd.DataFrame()
         timestamps = input_dataframe[timestamp_column]
@@ -483,10 +492,8 @@ class MockClient(Client):
             extractors, input_dataframe, output_feature_list, timestamps
         )
         assert output_df.shape[0] == len(timestamps), (
-            "Output dataframe has {"
-            "} rows, but there are "
-            "only {} "
-            "timestamps".format(output_df.shape[0], len(timestamps))
+            f"Output dataframe has {output_df.shape[0]} rows, but there are only {len(timestamps)} "
+            "timestamps"
         )
         output_df[timestamp_column] = timestamps
         return output_df

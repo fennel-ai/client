@@ -59,6 +59,13 @@ def test_simple_featureset():
     view.add(UserInfoDataset)
     view.add(UserInfo)
     view.add(User)
+    assert UserInfo.all() == [
+        "UserInfo.userid",
+        "UserInfo.home_geoid",
+        "UserInfo.gender",
+        "UserInfo.age",
+        "UserInfo.income",
+    ]
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.feature_sets) == 2
     assert len(sync_request.extractors) == 1
