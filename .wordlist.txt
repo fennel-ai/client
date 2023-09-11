@@ -166,6 +166,7 @@ uid
 uint
 uints
 uncomment
+unidirectionally
 unittest
 uptime
 uptimes
