@@ -94,6 +94,7 @@ RESERVED_FIELD_NAMES = [
 class Field:
     name: Optional[str]
     dataset_name: Optional[str]
+    dataset: Optional[Dataset]
     key: bool
     timestamp: bool
     dtype: Optional[Type]
@@ -153,11 +154,12 @@ def get_field(
     if isinstance(field, Field):
         field.name = annotation_name
         field.dtype = dtype
-        field.dataset_name = (cls.__name__,)
+        field.dataset_name = cls.__name__  # type: ignore
     else:
         field = Field(
             name=annotation_name,
-            dataset_name=cls.__name__,
+            dataset_name=cls.__name__,  # type: ignore
+            dataset=None,  # set as part of dataset initialization
             key=False,
             timestamp=False,
             dtype=dtype,
@@ -186,6 +188,7 @@ def field(
         Field(
             key=key,
             dataset_name=None,
+            dataset=None,
             timestamp=timestamp,
             name=None,
             dtype=None,
@@ -797,7 +800,7 @@ def dataset(
             fields,
             history=duration_to_timedelta(history),
             lookup_fn=_create_lookup_function(
-                dataset_cls.__name__, key_fields, struct_types
+                dataset_cls.__name__, key_fields, struct_types  # type: ignore
             ),
         )
 
@@ -1087,7 +1090,7 @@ class Dataset(_Node[T]):
     def _add_fields_as_attributes(self):
         for field in self._fields:
             setattr(self.__fennel_original_cls__, field.name, field)
-            setattr(field, "dataset", self)
+            field.dataset = self
 
     def _validate_field_names(self, fields: List[Field]):
         names = set()
@@ -1111,6 +1114,8 @@ class Dataset(_Node[T]):
 
     def _add_fields_to_class(self) -> None:
         for field in self._fields:
+            if not field.name:
+                continue
             setattr(self, field.name, field)
 
     def _create_signature(self):

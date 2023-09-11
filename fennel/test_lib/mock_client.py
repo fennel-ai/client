@@ -808,7 +808,7 @@ class MockClient(Client):
             )
 
         input_features = {
-            k.name: intermediate_data[k] for k in extractor.inputs
+            k.name: intermediate_data[k] for k in extractor.inputs  # type: ignore
         }
         allowed_datasets = [
             x._name for x in extractor.get_dataset_dependencies()
@@ -824,6 +824,14 @@ class MockClient(Client):
         results, _ = extractor.depends_on[0].lookup(
             timestamps, **input_features
         )
+        if (
+            not extractor.derived_extractor_info
+            or not extractor.derived_extractor_info.field
+            or not extractor.derived_extractor_info.field.name
+        ):
+            raise TypeError(
+                f"Field for lookup extractor {extractor.name} must have a named field"
+            )
         results = results[extractor.derived_extractor_info.field.name]
         results = results.fillna(extractor.derived_extractor_info.default)
         results.name = extractor.fqn_output_features()[0]

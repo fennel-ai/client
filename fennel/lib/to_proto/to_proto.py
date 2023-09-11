@@ -211,7 +211,9 @@ def _fields_to_dsschema(fields: List[Field]) -> schema_proto.DSSchema:
 
 
 def _field_metadata(fields: List[Field]) -> Dict[str, metadata_proto.Metadata]:
-    return {field.name: get_metadata_proto(field) for field in fields}
+    return {
+        field.name: get_metadata_proto(field) for field in fields if field.name
+    }
 
 
 def _field_to_proto(field: Field) -> schema_proto.Field:
@@ -400,6 +402,10 @@ def _extractor_to_proto(
 
     extractor_dataset_info = None
     if extractor.extractor_type == ExtractorType.LOOKUP:
+        if not extractor.derived_extractor_info:
+            raise TypeError(
+                f"Lookup extractor {extractor.name} must have DatasetLookupInfo"
+            )
         extractor_dataset_info = _to_dataset_lookup_proto(
             extractor.derived_extractor_info
         )
@@ -1102,6 +1108,10 @@ def to_extractor_pycode(
 ) -> pycode_proto.PyCode:
     if extractor.extractor_type != ExtractorType.PY_FUNC:
         return None
+    if not extractor.func:
+        raise TypeError(
+            f"extractor {extractor.name} has type PyFunc but no function defined"
+        )
     dependencies = []
     gen_code = ""
     if hasattr(extractor.func, FENNEL_INCLUDED_MOD):
