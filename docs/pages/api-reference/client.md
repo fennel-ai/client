@@ -88,8 +88,14 @@ This api is an asynchronous api that returns a request id and the path to the ou
 * `timestamp_column: str` - The name of the column containing the timestamps.
 * `format: str` - The format of the input data. Can be either "pandas", "csv", "json" or "parquet". Default is "pandas".
 * `input_dataframe: Optional[pd.DataFrame]` - Dataframe containing the input features. Only relevant when format is "pandas".
-* `input_bucket: Optional[str]` - The name of the S3 bucket containing the input data. Only relevant when format is "csv", "json" or "parquet".
-* `input_prefix: Optional[str]` - The prefix of the S3 key containing the input data. Only relevant when format is "csv", "json" or "parquet".
+* `output_bucket: Optional[str]` - The name of the S3 bucket where the output data should be stored.
+* `output_prefix: Optional[str]` - The prefix of the S3 key where the output data should be stored.
+
+The following parameters are only relevant when format is "csv", "json" or "parquet".
+
+* `input_bucket: Optional[str]` - The name of the S3 bucket containing the input data. 
+* `input_prefix: Optional[str]` - The prefix of the S3 key containing the input data. 
+* ` feature_to_column_map (Optional[Dict[Feature, str]])`: A dictionary mapping features to column names. 
 
 **Returns:**
 
@@ -111,7 +117,7 @@ A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing
 
 ****
 
-### **extract_historical_features_status**
+### **extract_historical_features_progress**
 
 This method allows users to monitor the progress of the extract_historical_features asynchronous operation.
 It accepts the request ID that was returned by the `extract_historical_features` method and returns the current status of that operation.
@@ -122,7 +128,6 @@ The response format of this function and the `extract_historical_features` funct
 
 
 * `request_id: str` - The request ID returned by the `extract_historical_features` method. This ID uniquely identifies the feature extraction operation
-* `cancel: bool` - If set to True, the feature extraction operation will be cancelled. Default is ofcourse, False.
 
 **Returns:**
 
@@ -144,3 +149,23 @@ client.extract_historical_features_progress(request_id='bf5dfe5d-0040-4405-a224-
 >>> {'request_id': 'bf5dfe5d-0040-4405-a224-b82c7a5bf085', 'output_bucket': <bucket_name>, 'output_prefix': <output_prefix>, 'completion_rate': 0.76, 'failure_rate': 0.0}
 ```
 
+
+### **extract_historical_cancel_request**
+
+The `extract_historical_cancel_request` method allows users to cancel an extract_historical_features asynchronous operation.
+The response format of this function and the `extract_historical_features` function are identical.&#x20;
+
+**Arguments:**
+
+
+* `request_id: str` - The request ID returned by the `extract_historical_features` method. This ID uniquely identifies the feature extraction operation
+
+**Returns:**
+
+* `Dict[str, Any]` - A dictionary containing the following information:
+  * request_id
+  * output s3 bucket
+  * output s3 path prefix
+  * completion rate.
+  * failure rate.
+  * status

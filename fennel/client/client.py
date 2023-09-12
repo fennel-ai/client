@@ -398,11 +398,11 @@ class Client:
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
-        input_bucket: Optional[str] = None,
-        input_prefix: Optional[str] = None,
         output_bucket: Optional[str] = None,
         output_prefix: Optional[str] = None,
-        column_to_feature_map: Optional[Dict[str, Feature]] = None,
+        input_bucket: Optional[str] = None,
+        input_prefix: Optional[str] = None,
+        feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Dict[str, Any]:
         """
         Extract point in time correct features from a dataframe, where the
@@ -422,7 +422,7 @@ class Client:
 
         input_bucket (Optional[str]): The name of the S3 bucket containing the input data.
         input_prefix (Optional[str]): The prefix of the S3 key containing the input data.
-        column_to_feature_map (Optional[Dict[str, str]]): A dictionary that maps columns in the S3 data to the required features.
+        feature_to_column_map (Optional[Dict[Feature, str]]): A dictionary that maps columns in the S3 data to the required features.
 
 
         Returns:
@@ -498,29 +498,21 @@ class Client:
             input_info["format"] = format.upper()
             input_info["compression"] = "None"
 
-            if column_to_feature_map is not None:
-                if len(column_to_feature_map) != len(input_feature_names):
+            if feature_to_column_map is not None:
+                if len(feature_to_column_map) != len(input_feature_names):
                     raise Exception(
                         "Column mapping does not contain all the required features. "
                         f"Required features: {input_feature_names}. "
-                        f"Column mapping: {column_to_feature_map}"
-                    )
-                # Check if the column mapping contains all the required features
-                inverse_column_mapping = {
-                    v: k for k, v in column_to_feature_map.items()
-                }
-                if len(inverse_column_mapping) != len(column_to_feature_map):
-                    raise Exception(
-                        "Column mapping contains duplicate values. "
+                        f"Column mapping: {feature_to_column_map}"
                     )
                 for input_feature_name in input_feature_names:
-                    if input_feature_name not in inverse_column_mapping:
+                    if input_feature_name not in feature_to_column_map:
                         raise Exception(
                             f"Column mapping does not contain all the required features. Feature: {input_feature_name},"
-                            f" not found in column mapping: {column_to_feature_map}"
+                            f" not found in column mapping: {feature_to_column_map}"
                         )
 
-                input_info["column_mapping"] = column_to_feature_map  # type: ignore
+                input_info["column_mapping"] = feature_to_column_map  # type: ignore
 
             extract_historical_input["S3"] = input_info
 
@@ -551,12 +543,11 @@ class Client:
             "{}/extract_historical_features".format(V1_API), req
         )
 
-    def extract_historical_features_status(self, request_id, cancel=False):
+    def extract_historical_features_progress(self, request_id):
         """
-        Get/Set the status of extract historical features request.
+        Get the status of extract historical features request.
 
         :param request_id: The request id returned by extract_historical_features.
-        :param cancel: If True, cancel the request.
 
         Returns:
         Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
@@ -564,9 +555,26 @@ class Client:
                         A failure rate of 0.0 indicates that all processing has been completed successfully.
                         The status of the request.
         """
-        req = {"request_id": request_id, "cancel": cancel}
+        req = {"request_id": request_id}
         return self._post_json(
-            "{}/extract_historical_progress".format(V1_API), req
+            "{}/extract_historical_request/status".format(V1_API), req
+        )
+
+    def extract_historical_cancel_request(self, request_id):
+        """
+        Cancel the extract historical features request.
+
+        :param request_id: The request id returned by extract_historical_features.
+
+        Returns:
+        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
+                        A completion rate of 1.0 indicates that all processing has been completed.
+                        A failure rate of 0.0 indicates that all processing has been completed successfully.
+                        The status of the request.
+        """
+        req = {"request_id": request_id}
+        return self._post_json(
+            "{}/extract_historical_request/cancel".format(V1_API), req
         )
 
     def lookup(

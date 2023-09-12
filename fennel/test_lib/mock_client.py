@@ -447,11 +447,11 @@ class MockClient(Client):
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
-        input_bucket: Optional[str] = None,
-        input_prefix: Optional[str] = None,
         output_bucket: Optional[str] = None,
         output_prefix: Optional[str] = None,
-        column_to_feature_map: Optional[Dict[str, Feature]] = None,
+        input_bucket: Optional[str] = None,
+        input_prefix: Optional[str] = None,
+        feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         if format != "pandas":
             raise NotImplementedError(
@@ -461,7 +461,7 @@ class MockClient(Client):
             raise ValueError(
                 "input must contain a key 'input_dataframe' with the input dataframe"
             )
-        assert column_to_feature_map is None, "column_mapping is not supported"
+        assert feature_to_column_map is None, "column_mapping is not supported"
         assert input_bucket is None, "input_bucket is not supported"
         assert input_prefix is None, "input_prefix is not supported"
         assert output_bucket is None, "output_bucket is not supported"
@@ -497,6 +497,12 @@ class MockClient(Client):
         )
         output_df[timestamp_column] = timestamps
         return output_df
+
+    def extract_historical_features_progress(self, request_id):
+        return FakeResponse(404, "Extract historical features not supported")
+
+    def extract_historical_cancel_request(self, request_id):
+        return FakeResponse(404, "Extract historical features not supported")
 
     # --------------- Public MockClient Specific methods -------------------
 
