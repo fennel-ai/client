@@ -398,8 +398,11 @@ class Client:
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
+        output_bucket: Optional[str] = None,
+        output_prefix: Optional[str] = None,
         input_bucket: Optional[str] = None,
         input_prefix: Optional[str] = None,
+        feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Dict[str, Any]:
         """
         Extract point in time correct features from a dataframe, where the
@@ -412,14 +415,21 @@ class Client:
         format (str): The format of the input data. Can be either "pandas",
             "csv", "json" or "parquet". Default is "pandas".
         input_dataframe (Optional[pd.DataFrame]): Dataframe containing the input features. Only relevant when format is "pandas".
-        input_bucket (Optional[str]): The name of the S3 bucket containing the input data. Only relevant when format is "csv", "json" or "parquet".
-        input_prefix (Optional[str]): The prefix of the S3 key containing the input data. Only relevant when format is "csv", "json" or "parquet".
+        output_bucket (Optional[str]): The name of the S3 bucket to store the output data.
+        output_prefix (Optional[str]): The prefix of the S3 key to store the output data.
+
+        The following parameters are only relevant when format is "csv", "json" or "parquet".
+
+        input_bucket (Optional[str]): The name of the S3 bucket containing the input data.
+        input_prefix (Optional[str]): The prefix of the S3 key containing the input data.
+        feature_to_column_map (Optional[Dict[Feature, str]]): A dictionary that maps columns in the S3 data to the required features.
 
 
         Returns:
         Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
                         A completion rate of 1.0 indicates that all processing has been completed.
                         A failure rate of 0.0 indicates that all processing has been completed successfully.
+                        The status of the request.
         """
 
         if format not in ["pandas", "csv", "json", "parquet"]:
@@ -487,6 +497,23 @@ class Client:
             input_info["input_prefix"] = input_prefix
             input_info["format"] = format.upper()
             input_info["compression"] = "None"
+
+            if feature_to_column_map is not None:
+                if len(feature_to_column_map) != len(input_feature_names):
+                    raise Exception(
+                        "Column mapping does not contain all the required features. "
+                        f"Required features: {input_feature_names}. "
+                        f"Column mapping: {feature_to_column_map}"
+                    )
+                for input_feature_name in input_feature_names:
+                    if input_feature_name not in feature_to_column_map:
+                        raise Exception(
+                            f"Column mapping does not contain all the required features. Feature: {input_feature_name},"
+                            f" not found in column mapping: {feature_to_column_map}"
+                        )
+
+                input_info["column_mapping"] = feature_to_column_map  # type: ignore
+
             extract_historical_input["S3"] = input_info
 
         output_feature_names = []
@@ -504,6 +531,13 @@ class Client:
             "input": extract_historical_input,
             "timestamp_column": timestamp_column,
         }
+        if output_bucket is not None:
+            req["output_bucket"] = output_bucket
+            if output_prefix is None:
+                raise Exception(
+                    "Output prefix not specified, but output bucket is specified. "
+                )
+            req["output_prefix"] = output_prefix
 
         return self._post_json(
             "{}/extract_historical_features".format(V1_API), req
@@ -511,7 +545,7 @@ class Client:
 
     def extract_historical_features_progress(self, request_id):
         """
-        Get progress of extract historical features request.
+        Get the status of extract historical features request.
 
         :param request_id: The request id returned by extract_historical_features.
 
@@ -519,10 +553,28 @@ class Client:
         Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
                         A completion rate of 1.0 indicates that all processing has been completed.
                         A failure rate of 0.0 indicates that all processing has been completed successfully.
+                        The status of the request.
         """
         req = {"request_id": request_id}
         return self._post_json(
-            "{}/extract_historical_progress".format(V1_API), req
+            "{}/extract_historical_request/status".format(V1_API), req
+        )
+
+    def extract_historical_cancel_request(self, request_id):
+        """
+        Cancel the extract historical features request.
+
+        :param request_id: The request id returned by extract_historical_features.
+
+        Returns:
+        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
+                        A completion rate of 1.0 indicates that all processing has been completed.
+                        A failure rate of 0.0 indicates that all processing has been completed successfully.
+                        The status of the request.
+        """
+        req = {"request_id": request_id}
+        return self._post_json(
+            "{}/extract_historical_request/cancel".format(V1_API), req
         )
 
     def lookup(

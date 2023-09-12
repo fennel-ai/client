@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.18.1] - 2023-09-08
+- Add support to specify output bucket and prefix for extract historical, and support to map output columns to different features.
+
 ## [0.18.0] - 2023-08-30
 - Added support for Debezium data in Avro format via Kafka connector
 

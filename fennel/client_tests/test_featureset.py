@@ -142,6 +142,16 @@ class TestSimpleExtractor(unittest.TestCase):
     def test_get_age_and_name_features(self):
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
+        assert UserInfoMultipleExtractor.all() == [
+            "UserInfoMultipleExtractor.userid",
+            "UserInfoMultipleExtractor.name",
+            "UserInfoMultipleExtractor.country_geoid",
+            "UserInfoMultipleExtractor.age",
+            "UserInfoMultipleExtractor.age_squared",
+            "UserInfoMultipleExtractor.age_cubed",
+            "UserInfoMultipleExtractor.is_name_common",
+            "UserInfoMultipleExtractor.age_reciprocal",
+        ]
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
         df = UserInfoMultipleExtractor.get_age_and_name_features(
             UserInfoMultipleExtractor.original_cls, ts, age, name
