@@ -277,7 +277,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 8))
+        self.assertEqual(feature_df.shape, (2, 9))
         self.assertEqual(
             list(feature_df["UserInfoMultipleExtractor.age_reciprocal"]),
             [2700.01, 3600.01],
