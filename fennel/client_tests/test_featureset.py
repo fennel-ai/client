@@ -233,6 +233,7 @@ class TestSimpleExtractor(unittest.TestCase):
             res["UserInfoMultipleExtractor.age_doubled"].tolist(), [64, 48]
         )
 
+
 @meta(owner="test@test.com")
 @featureset
 class GeneratedFeatures:

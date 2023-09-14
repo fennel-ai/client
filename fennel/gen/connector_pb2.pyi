@@ -19,6 +19,7 @@ import google.protobuf.message
 import google.protobuf.timestamp_pb2
 import google.protobuf.wrappers_pb2
 import kinesis_pb2
+import schema_registry_pb2
 import sys
 import typing
 
@@ -28,6 +29,25 @@ else:
     import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+
+class _CDCStrategy:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _CDCStrategyEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_CDCStrategy.ValueType], builtins.type):
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    Append: _CDCStrategy.ValueType  # 0
+    Upsert: _CDCStrategy.ValueType  # 1
+    Debezium: _CDCStrategy.ValueType  # 2
+    Native: _CDCStrategy.ValueType  # 3
+
+class CDCStrategy(_CDCStrategy, metaclass=_CDCStrategyEnumTypeWrapper): ...
+
+Append: CDCStrategy.ValueType  # 0
+Upsert: CDCStrategy.ValueType  # 1
+Debezium: CDCStrategy.ValueType  # 2
+Native: CDCStrategy.ValueType  # 3
+global___CDCStrategy = CDCStrategy
 
 @typing_extensions.final
 class ExtDatabase(google.protobuf.message.Message):
@@ -89,6 +109,55 @@ class ExtDatabase(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql", "postgres", "reference", "s3", "bigquery", "snowflake", "kafka", "webhook", "kinesis"] | None: ...
 
 global___ExtDatabase = ExtDatabase
+
+@typing_extensions.final
+class KafkaFormat(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    JSON_FIELD_NUMBER: builtins.int
+    AVRO_FIELD_NUMBER: builtins.int
+    @property
+    def json(self) -> global___JsonFormat: ...
+    @property
+    def avro(self) -> global___AvroFormat: ...
+    def __init__(
+        self,
+        *,
+        json: global___JsonFormat | None = ...,
+        avro: global___AvroFormat | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["json", "avro"] | None: ...
+
+global___KafkaFormat = KafkaFormat
+
+@typing_extensions.final
+class JsonFormat(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___JsonFormat = JsonFormat
+
+@typing_extensions.final
+class AvroFormat(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SCHEMA_REGISTRY_FIELD_NUMBER: builtins.int
+    @property
+    def schema_registry(self) -> schema_registry_pb2.SchemaRegistry: ...
+    def __init__(
+        self,
+        *,
+        schema_registry: schema_registry_pb2.SchemaRegistry | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> None: ...
+
+global___AvroFormat = AvroFormat
 
 @typing_extensions.final
 class Reference(google.protobuf.message.Message):
@@ -462,17 +531,21 @@ class KafkaTopic(google.protobuf.message.Message):
 
     DB_FIELD_NUMBER: builtins.int
     TOPIC_FIELD_NUMBER: builtins.int
+    FORMAT_FIELD_NUMBER: builtins.int
     @property
     def db(self) -> global___ExtDatabase: ...
     topic: builtins.str
+    @property
+    def format(self) -> global___KafkaFormat: ...
     def __init__(
         self,
         *,
         db: global___ExtDatabase | None = ...,
         topic: builtins.str = ...,
+        format: global___KafkaFormat | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "topic", b"topic"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["db", b"db", "format", b"format"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "format", b"format", "topic", b"topic"]) -> None: ...
 
 global___KafkaTopic = KafkaTopic
 
@@ -581,6 +654,7 @@ class Source(google.protobuf.message.Message):
     CURSOR_FIELD_NUMBER: builtins.int
     LATENESS_FIELD_NUMBER: builtins.int
     TIMESTAMP_FIELD_FIELD_NUMBER: builtins.int
+    CDC_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
@@ -590,6 +664,7 @@ class Source(google.protobuf.message.Message):
     @property
     def lateness(self) -> google.protobuf.duration_pb2.Duration: ...
     timestamp_field: builtins.str
+    cdc: global___CDCStrategy.ValueType
     def __init__(
         self,
         *,
@@ -599,9 +674,10 @@ class Source(google.protobuf.message.Message):
         cursor: builtins.str | None = ...,
         lateness: google.protobuf.duration_pb2.Duration | None = ...,
         timestamp_field: builtins.str = ...,
+        cdc: global___CDCStrategy.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "every", b"every", "lateness", b"lateness", "table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
 
 global___Source = Source
