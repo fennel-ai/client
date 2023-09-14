@@ -516,20 +516,12 @@ def _kafka_conn_to_source_proto(
             kafka_topic=connector_proto.KafkaTopic(
                 topic=connector.topic,
                 db=ext_db,
-<<<<<<< HEAD
-                # format=to_kafka_format_proto(connector.format),
-=======
                 format=to_kafka_format_proto(connector.format),
->>>>>>> parent of b2389e7 (comment out cdc in to_proto and source in kafka topic test)
             ),
         ),
         lateness=to_duration_proto(connector.lateness),
         dataset=dataset_name,
-<<<<<<< HEAD
-        # cdc=to_cdc_proto(connector.cdc),
-=======
         cdc=to_cdc_proto(connector.cdc),
->>>>>>> parent of b2389e7 (comment out cdc in to_proto and source in kafka topic test)
     )
     return (ext_db, source)
 
@@ -591,11 +583,7 @@ def _s3_conn_to_source_proto(
         lateness=to_duration_proto(connector.lateness),
         cursor=None,
         timestamp_field=timestamp_field,
-<<<<<<< HEAD
-        # cdc=to_cdc_proto(connector.cdc),
-=======
         cdc=to_cdc_proto(connector.cdc),
->>>>>>> parent of b2389e7 (comment out cdc in to_proto and source in kafka topic test)
     )
     return (ext_db, source)
 
@@ -688,11 +676,7 @@ def _bigquery_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
-<<<<<<< HEAD
-            # cdc=to_cdc_proto(connector.cdc),
-=======
             cdc=to_cdc_proto(connector.cdc),
->>>>>>> parent of b2389e7 (comment out cdc in to_proto and source in kafka topic test)
         ),
     )
 
@@ -753,11 +737,7 @@ def _snowflake_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
-<<<<<<< HEAD
-            # cdc=to_cdc_proto(connector.cdc),
-=======
             cdc=to_cdc_proto(connector.cdc),
->>>>>>> parent of b2389e7 (comment out cdc in to_proto and source in kafka topic test)
         ),
     )
 
@@ -832,11 +812,7 @@ def _mysql_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
-<<<<<<< HEAD
-            # cdc=to_cdc_proto(connector.cdc),
-=======
             cdc=to_cdc_proto(connector.cdc),
->>>>>>> parent of b2389e7 (comment out cdc in to_proto and source in kafka topic test)
         ),
     )
 
@@ -915,11 +891,7 @@ def _pg_conn_to_source_proto(
             every=to_duration_proto(connector.every),
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
-<<<<<<< HEAD
-            # cdc=to_cdc_proto(connector.cdc),
-=======
             cdc=to_cdc_proto(connector.cdc),
->>>>>>> parent of b2389e7 (comment out cdc in to_proto and source in kafka topic test)
         ),
     )
 
@@ -994,11 +966,7 @@ def _kinesis_conn_to_source_proto(
             table=ext_table,
             dataset=dataset_name,
             lateness=to_duration_proto(connector.lateness),
-<<<<<<< HEAD
-            # cdc=to_cdc_proto(connector.cdc),
-=======
             cdc=to_cdc_proto(connector.cdc),
->>>>>>> parent of b2389e7 (comment out cdc in to_proto and source in kafka topic test)
         ),
     )
 
