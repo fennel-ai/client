@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.18.2] - 2023-09-13
+- Add derived extractors for aliasing and lookups
+
 ## [0.18.1] - 2023-09-08
 - Add support to specify output bucket and prefix for extract historical, and support to map output columns to different features.
 
