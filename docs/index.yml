@@ -72,3 +72,4 @@ sidebar:
     pages:
       - "misc/python-environment"
       - "misc/troubleshooting-guide"
+      - "misc/performance-tuning"
