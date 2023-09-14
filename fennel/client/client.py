@@ -555,9 +555,8 @@ class Client:
                         A failure rate of 0.0 indicates that all processing has been completed successfully.
                         The status of the request.
         """
-        req = {"request_id": request_id}
-        return self._post_json(
-            "{}/extract_historical_request/status".format(V1_API), req
+        return self._get(
+            f"{V1_API}/extract_historical_request/status?request_id={request_id}"
         )
 
     def extract_historical_cancel_request(self, request_id):
