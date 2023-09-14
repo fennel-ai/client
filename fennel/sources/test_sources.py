@@ -560,21 +560,21 @@ def test_multiple_sources():
                     },
                 },
                 "topic": "test_topic",
-                # "format": {
-                #     "avro": {
-                #         "schemaRegistry": {
-                #             "url": "http://localhost:8000",
-                #             "auth": {
-                #                 "basic": {"username": "user", "password": "pwd"}
-                #             },
-                #         }
-                #     }
-                # },
+                "format": {
+                    "avro": {
+                        "schemaRegistry": {
+                            "url": "http://localhost:8000",
+                            "auth": {
+                                "basic": {"username": "user", "password": "pwd"}
+                            },
+                        }
+                    }
+                },
             }
         },
         "dataset": "UserInfoDatasetKafka",
         "lateness": "3600s",
-        # "cdc": "Debezium",
+        "cdc": "Debezium",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
