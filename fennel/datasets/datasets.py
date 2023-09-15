@@ -229,6 +229,12 @@ class _Node(Generic[T]):
     def drop(self, columns: List[str]) -> _Node:
         return Drop(self, columns)
 
+    def select(self, columns: List[str]) -> _Node:
+        ts = self.dsschema().timestamp
+        # Keep the timestamp col
+        drop_cols = list(filter(lambda c : c not in columns and c != ts, self.dsschema().fields()))
+        return Drop(self, drop_cols)
+
     def dedup(self, by: Optional[List[str]] = None) -> _Node:
         # If 'by' is not provided, dedup by all value fields.
         # Note: we don't use key fields because dedup cannot be applied on keyed datasets.

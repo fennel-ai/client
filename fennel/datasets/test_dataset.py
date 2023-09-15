@@ -1472,7 +1472,8 @@ def test_dataset_with_complex_pipe():
     )
 
 
-def test_delete_and_rename_column():
+def test_select_and_rename_column():
+    @meta(owner="test@test.com")
     @dataset
     class A:
         a1: int = field(key=True)
@@ -1480,6 +1481,7 @@ def test_delete_and_rename_column():
         a3: str
         t: datetime
 
+    @meta(owner="thaqib@fennel.ai")
     @dataset
     class B:
         b1: int = field(key=True)
@@ -1489,7 +1491,97 @@ def test_delete_and_rename_column():
         @inputs(A)
         def from_a(cls, a: Dataset):
             x = a.rename({"a1": "b1"})
-            return x.drop(["a2", "a3"])
+            return x.select(["b1"])
+   
+    view = InternalTestClient()
+    view.add(B)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "B",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "b1",
+                        "dtype": {"int_type": {}},
+                    }
+                ]
+            },
+            "values": {},
+            "timestamp": "t",
+        },
+        "metadata": {'owner': 'thaqib@fennel.ai'},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "b1": {},
+            "t": {},
+        },
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+    assert len(sync_request.pipelines) == 1
+    pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
+    p = {
+        "name": "from_a",
+        "dataset_name": "B",
+        "signature": "from_a",
+        "metadata": {},
+        "input_dataset_names": ["A"],
+        "version": 1,
+        "active": True,
+        "pycode": {},
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert pipeline_req == expected_pipeline_request, error_message(
+        pipeline_req, expected_pipeline_request
+    )
+
+    assert len(sync_request.operators) == 3
+    o = {
+        "id": "A",
+        "pipeline_name": "from_a",
+        "dataset_name": "B",
+        "dataset_ref": {
+            "referring_dataset_name": "A"
+        }
+    }
+    operator_req = sync_request.operators[0]
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    o = {'datasetName': 'B', 'id': '711888ae1afa3bf9a2092c01b361484d',
+         'pipelineName': 'from_a', 'rename': {'columnMap': {'a1': 'b1'},
+                                              'operandId': 'A'}}
+    operator_req = sync_request.operators[1]
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+
+    o = {'datasetName': 'B', 'drop': {'dropcols': ['a2', 'a3'], 'operandId':
+                                      '711888ae1afa3bf9a2092c01b361484d'},
+         'id': 'e46775a9f1ca840e9cf8b78cd6d8aee4', 'isRoot': True,
+         'pipelineName': 'from_a', 'datasetName': 'B', 'drop': {'operandId':
+                                                                '711888ae1afa3bf9a2092c01b361484d',
+                                                                'dropcols':
+                                                                ['a2', 'a3']}} # select(a1 -> b1) ~ drop(a2, a3)
+    operator_req = sync_request.operators[2]
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
 
 
 def test_union_datasets():
