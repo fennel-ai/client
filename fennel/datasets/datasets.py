@@ -240,6 +240,9 @@ class _Node(Generic[T]):
                 lambda c: c not in columns and c != ts, self.dsschema().fields()
             )
         )
+        # All the cols were selected
+        if len(drop_cols) == 0:
+            return self
         return Drop(self, drop_cols)
 
     def dedup(self, by: Optional[List[str]] = None) -> _Node:

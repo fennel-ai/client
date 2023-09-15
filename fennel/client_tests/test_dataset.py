@@ -122,7 +122,9 @@ class TestDataset(unittest.TestCase):
         assert df["country"].tolist() == ["USA", "Chile"]
 
         # Do lookup on UserInfoDatasetDerived
-        df, found = UserInfoDatasetDerivedSelect.lookup(ts, user_id=user_id_keys)
+        df, found = UserInfoDatasetDerivedSelect.lookup(
+            ts, user_id=user_id_keys
+        )
         assert df.shape == (2, 4)
         assert df["user_id"].tolist() == [18232, 18234]
         assert df["name"].tolist() == ["Ross", "Monica"]

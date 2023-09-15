@@ -111,7 +111,7 @@ class FraudActivityDataset:
         # /docsnip
 
         # docsnip select
-        select_ds = renamed_ds.select("txn_amount", "merchant")
+        select_ds = dropped_ds.select("txn_amount", "merchant")
         # /docsnip
 
         # docsnip join
