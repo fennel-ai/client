@@ -1492,7 +1492,7 @@ def test_select_and_rename_column():
         def from_a(cls, a: Dataset):
             x = a.rename({"a1": "b1"})
             return x.select(["b1"])
-   
+
     view = InternalTestClient()
     view.add(B)
     sync_request = view._get_sync_request_proto()
@@ -1568,20 +1568,16 @@ def test_select_and_rename_column():
         operator_req, expected_operator_request
     )
 
-
     o = {'datasetName': 'B', 'drop': {'dropcols': ['a2', 'a3'], 'operandId':
                                       '711888ae1afa3bf9a2092c01b361484d'},
          'id': 'e46775a9f1ca840e9cf8b78cd6d8aee4', 'isRoot': True,
-         'pipelineName': 'from_a', 'datasetName': 'B', 'drop': {'operandId':
-                                                                '711888ae1afa3bf9a2092c01b361484d',
-                                                                'dropcols':
-                                                                ['a2', 'a3']}} # select(a1 -> b1) ~ drop(a2, a3)
+         'pipelineName': 'from_a'}
+
     operator_req = sync_request.operators[2]
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
         operator_req, expected_operator_request
     )
-
 
 
 def test_union_datasets():
