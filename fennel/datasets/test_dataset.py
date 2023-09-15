@@ -1479,19 +1479,21 @@ def test_select_and_rename_column():
         a1: int = field(key=True)
         a2: int
         a3: str
+        a4: float
         t: datetime
 
     @meta(owner="thaqib@fennel.ai")
     @dataset
     class B:
         b1: int = field(key=True)
+        a2: int
         t: datetime
 
         @pipeline(version=1)
         @inputs(A)
         def from_a(cls, a: Dataset):
             x = a.rename({"a1": "b1"})
-            return x.select(["b1"])
+            return x.select("b1", "a2")
 
     view = InternalTestClient()
     view.add(B)
@@ -1508,14 +1510,22 @@ def test_select_and_rename_column():
                     }
                 ]
             },
-            "values": {},
+            "values": {
+                "fields": [
+                    {
+                        "name": "a2",
+                        "dtype": {"int_type": {}},
+                    }
+                ]
+            },
             "timestamp": "t",
         },
-        "metadata": {'owner': 'thaqib@fennel.ai'},
+        "metadata": {"owner": "thaqib@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
         "field_metadata": {
             "b1": {},
+            "a2": {},
             "t": {},
         },
         "pycode": {},
@@ -1549,9 +1559,7 @@ def test_select_and_rename_column():
         "id": "A",
         "pipeline_name": "from_a",
         "dataset_name": "B",
-        "dataset_ref": {
-            "referring_dataset_name": "A"
-        }
+        "dataset_ref": {"referring_dataset_name": "A"},
     }
     operator_req = sync_request.operators[0]
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -1559,22 +1567,35 @@ def test_select_and_rename_column():
         operator_req, expected_operator_request
     )
 
-    o = {'datasetName': 'B', 'id': '711888ae1afa3bf9a2092c01b361484d',
-         'pipelineName': 'from_a', 'rename': {'columnMap': {'a1': 'b1'},
-                                              'operandId': 'A'}}
+    o = {
+        "datasetName": "B",
+        "id": "10340ca369826992acc29dc84b073c18",
+        "pipelineName": "from_a",
+        "rename": {"columnMap": {"a1": "b1"}, "operandId": "A"},
+    }
+
     operator_req = sync_request.operators[1]
     expected_operator_request = ParseDict(o, ds_proto.Operator())
+
     assert operator_req == expected_operator_request, error_message(
         operator_req, expected_operator_request
     )
 
-    o = {'datasetName': 'B', 'drop': {'dropcols': ['a2', 'a3'], 'operandId':
-                                      '711888ae1afa3bf9a2092c01b361484d'},
-         'id': 'e46775a9f1ca840e9cf8b78cd6d8aee4', 'isRoot': True,
-         'pipelineName': 'from_a'}
+    o = {
+        "datasetName": "B",
+        "drop": {
+            "dropcols": ["a3", "a4"],
+            "operandId": "10340ca369826992acc29dc84b073c18",
+        },
+        "id": "0d52839b6fb94cde94dea24334ad9bce",
+        "isRoot": True,
+        "pipelineName": "from_a",
+    }
 
     operator_req = sync_request.operators[2]
     expected_operator_request = ParseDict(o, ds_proto.Operator())
+    print(operator_req)
+    print(expected_operator_request)
     assert operator_req == expected_operator_request, error_message(
         operator_req, expected_operator_request
     )

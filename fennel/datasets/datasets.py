@@ -229,10 +229,17 @@ class _Node(Generic[T]):
     def drop(self, columns: List[str]) -> _Node:
         return Drop(self, columns)
 
-    def select(self, columns: List[str]) -> _Node:
+    def select(self, *args) -> _Node:
+        columns = [*args]
+        if len(args) == 1 and isinstance(args[0], list):
+            columns = args[0]
         ts = self.dsschema().timestamp
         # Keep the timestamp col
-        drop_cols = list(filter(lambda c : c not in columns and c != ts, self.dsschema().fields()))
+        drop_cols = list(
+            filter(
+                lambda c: c not in columns and c != ts, self.dsschema().fields()
+            )
+        )
         return Drop(self, drop_cols)
 
     def dedup(self, by: Optional[List[str]] = None) -> _Node:
