@@ -111,8 +111,12 @@ def parse_json(annotation, json) -> Any:
                 raise TypeError(f"Expected list, got `{type(json).__name__}`")
             return [parse_json(args[0], x) for x in json]
         if origin is dict:
+            if isinstance(json, list):
+                return {k: parse_json(args[1], v) for k, v in json}
             if not isinstance(json, dict):
-                raise TypeError(f"Expected dict, got `{type(json).__name__}`")
+                raise TypeError(
+                    f"Expected dict or list of pairs, got `{type(json).__name__}`"
+                )
             return {k: parse_json(args[1], v) for k, v in json.items()}
         raise TypeError(f"Unsupported type `{origin}`")
     else:

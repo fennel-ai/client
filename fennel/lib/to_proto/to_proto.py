@@ -30,7 +30,7 @@ from fennel.lib.duration import (
 )
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr
-from fennel.lib.schema import get_datatype
+from fennel.lib.schema import get_datatype, FENNEL_STRUCT
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import (
     get_featureset_core_code,
@@ -442,9 +442,15 @@ def _check_owner_exists(obj):
 def _to_dataset_lookup_proto(
     info: Extractor.DatasetLookupInfo,
 ) -> fs_proto.DatasetLookupInfo:
+
+    if getattr(info.default.__class__, FENNEL_STRUCT, False):
+        default_val = json.dumps(info.default.as_json())
+    else:
+        default_val = json.dumps(info.default)
+
     return fs_proto.DatasetLookupInfo(
         field=_field_to_proto(info.field),
-        default_value=json.dumps(info.default),
+        default_value=default_val,
     )
 
 

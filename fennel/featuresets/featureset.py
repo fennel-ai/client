@@ -357,9 +357,9 @@ class Feature:
 
         Parameters:
         field: the field in a dataset to lookup and return
-        provider: the input featureset that should contain a feature matching
-                  the field name. If not provided, then the current featureset
-                  is assumed to contain the respective feature.
+        provider: the input featureset that should contain features matching
+                  the named of all key fields. If not provided, then the current featureset
+                  is assumed to contain the respective features
         default: An optional default value to fill null values from the lookup
         feature: If provided, this function creates a one way alias from the
                     calling feature to this feature.
@@ -372,15 +372,15 @@ class Feature:
             raise TypeError(
                 f"extract() can only be called once for feature id={self.id}"
             )
-        if field is None and feature is None:
+        if (not field and not feature) or (field and feature):
             raise TypeError(
-                f"Either field or feature must be specified to extract feature id={self.id}"
+                f"Exactly one of field or feature must be specified to extract feature id={self.id}"
             )
 
         # aliasing
         if feature:
             self.extractor = Extractor(
-                name=f"alias_{feature}",
+                name=f"_fennel_alias_{feature}",
                 extractor_type=ExtractorType.ALIAS,
                 inputs=[feature],
                 outputs=[self.id],
@@ -391,18 +391,18 @@ class Feature:
         provider_features = []
         # If provider is none, then the provider is this featureset. The input features
         # are captured once this featureset is initialized
-        name = f"lookup_{field}"
+        name = f"_fennel_lookup_{field}"
         field = cast(Field, field)
         ds = None
         if provider:
             if hasattr(field, "dataset"):
                 ds = field.dataset
-            if not ds:
+            else:
                 raise ValueError(
                     f"Dataset {field.dataset_name} not found for field {field}"
                 )
 
-            for k in ds.dsschema().keys:
+            for k in ds.dsschema().keys:  # type: ignore
                 feature = provider.feature(k)
                 if not feature:
                     raise ValueError(
@@ -411,7 +411,7 @@ class Feature:
                 provider_features.append(feature)
 
         self.extractor = Extractor(
-            name=f"lookup_{field}",
+            name=f"_fennel_lookup_{field}",
             extractor_type=ExtractorType.LOOKUP,
             inputs=provider_features,
             outputs=[self.id],

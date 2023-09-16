@@ -688,7 +688,7 @@ class MockClient(Client):
                 continue
 
             if extractor.extractor_type == ProtoExtractorType.LOOKUP:
-                output = self._generated_lookup_extractor(
+                output = self._compute_lookup_extractor(
                     extractor, timestamps.copy(), intermediate_data
                 )
                 self._check_exceptions(output, dsschema, extractor.name)
@@ -792,7 +792,7 @@ class MockClient(Client):
                 f"invalid schema: {exceptions}"
             )
 
-    def _generated_lookup_extractor(
+    def _compute_lookup_extractor(
         self,
         extractor: Extractor,
         timestamps: pd.Series,
@@ -833,7 +833,12 @@ class MockClient(Client):
                 f"Field for lookup extractor {extractor.name} must have a named field"
             )
         results = results[extractor.derived_extractor_info.field.name]
-        results = results.fillna(extractor.derived_extractor_info.default)
+        if results.dtype != object:
+            results = results.fillna(extractor.derived_extractor_info.default)
+        else:
+            # fillna doesn't work for list type or ditc type :cols
+            for row in results.loc[results.isnull()].index:
+                results[row] = extractor.derived_extractor_info.default
         results.name = extractor.fqn_output_features()[0]
         intermediate_data[extractor.fqn_output_features()[0]] = results
 

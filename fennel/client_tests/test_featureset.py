@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import pytest
-from typing import Optional
+from typing import Optional, Dict, List
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
@@ -15,7 +15,7 @@ from fennel.lib.expectations import (
 )
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, inputs, outputs
+from fennel.lib.schema import Embedding, inputs, outputs, struct
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 
@@ -234,14 +234,52 @@ class TestSimpleExtractor(unittest.TestCase):
         )
 
 
+@struct
+class Velocity:
+    speed: float
+    direction: int
+
+
+@meta(owner="test@test.com")
+@source(webhook.endpoint("FlightDataset"))
+@dataset
+class FlightDataset:
+    id: int = field(key=True)
+    ts: datetime = field(timestamp=True)
+    v_cruising: Velocity
+    layout: Dict[str, Optional[int]]
+    pilot_ids: List[int]
+
+
+@meta(owner="test@test.com")
+@featureset
+class FlightRequest:
+    id: int = feature(id=1)
+
+
 @meta(owner="test@test.com")
 @featureset
 class GeneratedFeatures:
+    # alias
     user_id: int = feature(id=1).extract(feature=UserInfoSingleExtractor.userid)  # type: ignore
-    # default provider
+    # lookup default provider
     country: str = feature(id=3).extract(  # type: ignore
         field=UserInfoDataset.country,
         default="pluto",
+    )
+    # more lookups with complex types
+    velocity: Velocity = feature(id=4).extract(  # type: ignore
+        field=FlightDataset.v_cruising,
+        default=Velocity(500.0, 0),  # type: ignore
+        provider=FlightRequest,
+    )
+    layout: Dict[str, Optional[int]] = feature(id=5).extract(  # type: ignore
+        field=FlightDataset.layout,
+        default={"economy": 0},
+        provider=FlightRequest,
+    )
+    pilots: List[int] = feature(id=6).extract(  # type: ignore
+        field=FlightDataset.pilot_ids, default=[0, 0, 0], provider=FlightRequest
     )
 
 
@@ -250,8 +288,12 @@ class TestDerivedExtractor(unittest.TestCase):
     @mock
     def test_derived_extractor(self, client):
         client.sync(
-            datasets=[UserInfoDataset],
-            featuresets=[UserInfoSingleExtractor, GeneratedFeatures],
+            datasets=[UserInfoDataset, FlightDataset],
+            featuresets=[
+                UserInfoSingleExtractor,
+                GeneratedFeatures,
+                FlightRequest,
+            ],
         )
         now = datetime.utcnow()
         data = [
@@ -263,19 +305,43 @@ class TestDerivedExtractor(unittest.TestCase):
         )
         response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
+
+        flight_data = {
+            "id": [4032, 555],
+            "ts": [now, now],
+            "v_cruising": [Velocity(400, 180), Velocity(550, 90)],
+            "layout": [
+                {"economy": 180},
+                {"first": 8, "business": 24, "economy": 300},
+            ],
+            "pilot_ids": [[1, 2], [3, 4, 5, 6]],
+        }
+        df = pd.DataFrame(flight_data)
+
+        response = client.log("fennel_webhook", "FlightDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         feature_df = client.extract_features(
             output_feature_list=[
                 UserInfoSingleExtractor.userid,
                 GeneratedFeatures.user_id,
                 GeneratedFeatures.country,
+                GeneratedFeatures.velocity,
+                GeneratedFeatures.layout,
+                GeneratedFeatures.pilots,
             ],
-            input_feature_list=[UserInfoSingleExtractor.userid],
+            input_feature_list=[
+                UserInfoSingleExtractor.userid,
+                FlightRequest.id,
+            ],
             input_dataframe=pd.DataFrame(
-                {"UserInfoSingleExtractor.userid": [18232, 18234, 7]}
+                {
+                    "UserInfoSingleExtractor.userid": [18232, 18234, 7],
+                    "FlightRequest.id": [555, 1131, 4032],
+                }
             ),
         )
-        self.assertEqual(feature_df.shape, (3, 3))
+        self.assertEqual(feature_df.shape, (3, 6))
         self.assertEqual(
             list(feature_df["UserInfoSingleExtractor.userid"]),
             [18232, 18234, 7],
@@ -286,6 +352,22 @@ class TestDerivedExtractor(unittest.TestCase):
         self.assertEqual(
             list(feature_df["GeneratedFeatures.country"]),
             ["USA", "Chile", "pluto"],
+        )
+        self.assertEqual(
+            list(feature_df["GeneratedFeatures.velocity"]),
+            [Velocity(550, 90), Velocity(500.0, 0), Velocity(400, 180)],
+        )
+        self.assertEqual(
+            list(feature_df["GeneratedFeatures.layout"]),
+            [
+                {"first": 8, "business": 24, "economy": 300},
+                {"economy": 0},
+                {"economy": 180},
+            ],
+        )
+        self.assertEqual(
+            list(feature_df["GeneratedFeatures.pilots"]),
+            [[3, 4, 5, 6], [0, 0, 0], [1, 2]],
         )
 
 
