@@ -442,7 +442,6 @@ def _check_owner_exists(obj):
 def _to_dataset_lookup_proto(
     info: Extractor.DatasetLookupInfo,
 ) -> fs_proto.DatasetLookupInfo:
-
     if getattr(info.default.__class__, FENNEL_STRUCT, False):
         default_val = json.dumps(info.default.as_json())
     else:
