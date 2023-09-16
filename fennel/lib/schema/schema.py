@@ -574,6 +574,8 @@ def _validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
+            # isinstance(<frozendict instance>, dict) does not return true in
+            # python3.8
             if not (isinstance(row, dict) or isinstance(row, frozendict)):
                 raise ValueError(
                     f"Field `{name}` is of type map, but the "
