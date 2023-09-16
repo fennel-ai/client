@@ -574,11 +574,11 @@ def _validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
-            if not isinstance(row, dict):
+            if not (isinstance(row, dict) or isinstance(row, frozendict)):
                 raise ValueError(
                     f"Field `{name}` is of type map, but the "
-                    f"column in the dataframe is not a dict. Error found during "
-                    f"checking schema for `{entity_name}`."
+                    f"column in the dataframe is not a dict. (type = {type(row)}). "
+                    f"Error found during checking schema for `{entity_name}`."
                 )
     elif dtype.between_type != schema_proto.Between():
         bw_type = dtype.between_type
