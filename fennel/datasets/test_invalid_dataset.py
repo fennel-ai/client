@@ -83,6 +83,92 @@ def test_invalid_select():
     )
 
 
+def test_select_drop_invalid_param():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            a2: int
+            a3: str
+            a4: float
+            t: datetime
+
+        @meta(owner="thaqib@fennel.ai")
+        @dataset
+        class B:
+            a1: int = field(key=True)
+            a2: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(A)
+            def from_a(cls, a: Dataset):
+                return a.select("a1", "a2", columns=["a1", "a2"])
+
+    assert (
+        str(e.value)
+        == "can only specify either 'columns' or positional arguments to select, not both."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            a2: int
+            a3: str
+            a4: float
+            t: datetime
+
+        @meta(owner="thaqib@fennel.ai")
+        @dataset
+        class C:
+            a1: int = field(key=True)
+            a2: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(A)
+            def from_a_drop(cls, a: Dataset):
+                return a.drop("a3", "a4", columns=["a3", "a4"])
+
+    assert (
+        str(e.value)
+        == "can only specify either 'columns' or positional arguments to drop, not both."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            a2: int
+            a3: str
+            a4: float
+            t: datetime
+
+        @meta(owner="thaqib@fennel.ai")
+        @dataset
+        class D:
+            a1: int = field(key=True)
+            a2: int
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(A)
+            def from_a_drop(cls, a: Dataset):
+                return a.drop()
+
+    assert (
+        str(e.value)
+        == "must specify either 'columns' or positional arguments to drop."
+    )
+
+
 @meta(owner="test@test.com")
 @dataset
 class RatingActivity:

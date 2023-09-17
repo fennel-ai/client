@@ -226,24 +226,46 @@ class _Node(Generic[T]):
     def rename(self, columns: Dict[str, str]) -> _Node:
         return Rename(self, columns)
 
-    def drop(self, columns: List[str]) -> _Node:
+    def __drop(self, columns: List[str]) -> _Node:
         return Drop(self, columns)
 
-    def select(self, *args) -> _Node:
-        columns = [*args]
-        if len(args) == 1 and isinstance(args[0], list):
-            columns = args[0]
+    @classmethod
+    def __get_drop_args(
+        cls, *args, columns: List[str], name="drop"
+    ) -> List[str]:
+        if args and columns is not None:
+            raise ValueError(
+                f"can only specify either 'columns' or positional arguments to {name}, not both."
+            )
+        elif columns is not None:
+            return columns
+        elif args:
+            cols = [*args]
+            if len(args) == 1 and isinstance(args[0], list):
+                cols = args[0]
+            return cols
+        else:
+            raise ValueError(
+                f"must specify either 'columns' or positional arguments to {name}."
+            )
+
+    def drop(self, *args, columns: List[str] = None) -> _Node:
+        drop_cols = _Node.__get_drop_args(*args, columns=columns)
+        return self.__drop(drop_cols)
+
+    def select(self, *args, columns: List[str] = None) -> _Node:
+        cols = _Node.__get_drop_args(*args, columns=columns, name="select")
         ts = self.dsschema().timestamp
         # Keep the timestamp col
         drop_cols = list(
             filter(
-                lambda c: c not in columns and c != ts, self.dsschema().fields()
+                lambda c: c not in cols and c != ts, self.dsschema().fields()
             )
         )
         # All the cols were selected
         if len(drop_cols) == 0:
             return self
-        return Drop(self, drop_cols)
+        return self.__drop(drop_cols)
 
     def dedup(self, by: Optional[List[str]] = None) -> _Node:
         # If 'by' is not provided, dedup by all value fields.
