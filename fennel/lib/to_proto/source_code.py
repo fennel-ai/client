@@ -30,6 +30,8 @@ def get_featureset_core_code(featureset: Featureset) -> str:
     # Keep all lines till class definition
     source_code = fennel_get_source(featureset.__fennel_original_cls__)
     for extractor in featureset.extractors:
+        if not extractor.func:
+            continue
         extractor_code = fennel_get_source(extractor.func)
         extractor_code = indent(dedent(extractor_code), " " * 4)
         # Delete extractor code from source_code

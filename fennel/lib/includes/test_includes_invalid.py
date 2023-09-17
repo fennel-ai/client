@@ -212,7 +212,7 @@ def test_invalid_code_changes(client):
             is_name_common: bool = feature(id=7)
             another_feature: int = feature(id=8)
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(depends_on=[UserInfoDataset], version=1)
             @includes(power_4, cube)
             @inputs(userid)
             @outputs(age, age_power_four, age_cubed, is_name_common)

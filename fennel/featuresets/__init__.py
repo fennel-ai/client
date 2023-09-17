@@ -4,6 +4,7 @@ from fennel.featuresets.featureset import (
     Feature,
     extractor,
     Extractor,
+    ExtractorType,
     feature,
     EXTRACTOR_ATTR,
     DEPENDS_ON_DATASETS_ATTR,

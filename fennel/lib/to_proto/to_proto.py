@@ -23,18 +23,14 @@ import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.services_pb2 as services_proto
 import fennel.sources as sources
 from fennel.datasets import Dataset, Pipeline, Field
-from fennel.featuresets import (
-    Featureset,
-    Feature,
-    Extractor,
-)
+from fennel.featuresets import Featureset, Feature, Extractor, ExtractorType
 from fennel.lib.duration import (
     Duration,
     duration_to_timedelta,
 )
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr
-from fennel.lib.schema import get_datatype
+from fennel.lib.schema import get_datatype, FENNEL_STRUCT
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import (
     get_featureset_core_code,
@@ -134,7 +130,6 @@ def to_sync_request_proto(
             extractors.extend(extractors_from_fs(obj, featureset_obj_map))
         else:
             raise ValueError(f"Unknown object type {type(obj)}")
-
     return services_proto.SyncRequest(
         datasets=datasets,
         pipelines=pipelines,
@@ -216,7 +211,9 @@ def _fields_to_dsschema(fields: List[Field]) -> schema_proto.DSSchema:
 
 
 def _field_metadata(fields: List[Field]) -> Dict[str, metadata_proto.Metadata]:
-    return {field.name: get_metadata_proto(field) for field in fields}
+    return {
+        field.name: get_metadata_proto(field) for field in fields if field.name
+    }
 
 
 def _field_to_proto(field: Field) -> schema_proto.Field:
@@ -395,14 +392,25 @@ def _extractor_to_proto(
         elif isinstance(input, Featureset):
             raise TypeError(
                 f"Extractor input {input} is a Featureset, please use a"
-                f"a DataFrame of features"
+                f"DataFrame of features"
             )
         else:
             raise TypeError(
                 f"Extractor input {input} is not a Feature or "
                 f"a DataFrame of features, but a {type(input)}"
             )
-    return fs_proto.Extractor(
+
+    extractor_dataset_info = None
+    if extractor.extractor_type == ExtractorType.LOOKUP:
+        if not extractor.derived_extractor_info:
+            raise TypeError(
+                f"Lookup extractor {extractor.name} must have DatasetLookupInfo"
+            )
+        extractor_dataset_info = _to_dataset_lookup_proto(
+            extractor.derived_extractor_info
+        )
+
+    proto_extractor = fs_proto.Extractor(
         name=extractor.name,
         datasets=[
             dataset._name for dataset in extractor.get_dataset_dependencies()
@@ -413,7 +421,11 @@ def _extractor_to_proto(
         version=extractor.version,
         pycode=to_extractor_pycode(extractor, fs, fs_obj_map),
         feature_set_name=extractor.featureset,
+        extractor_type=extractor.extractor_type,
+        dataset_info=extractor_dataset_info,
     )
+
+    return proto_extractor
 
 
 def _check_owner_exists(obj):
@@ -425,6 +437,20 @@ def _check_owner_exists(obj):
             raise Exception(f"Dataset {obj._name} must have an owner.")
         else:
             raise Exception(f"Object {obj.__name__} must have an owner.")
+
+
+def _to_dataset_lookup_proto(
+    info: Extractor.DatasetLookupInfo,
+) -> fs_proto.DatasetLookupInfo:
+    if getattr(info.default.__class__, FENNEL_STRUCT, False):
+        default_val = json.dumps(info.default.as_json())
+    else:
+        default_val = json.dumps(info.default)
+
+    return fs_proto.DatasetLookupInfo(
+        field=_field_to_proto(info.field),
+        default_value=default_val,
+    )
 
 
 # ------------------------------------------------------------------------------
@@ -1085,6 +1111,12 @@ def to_extractor_pycode(
     featureset: Featureset,
     fs_obj_map: Dict[str, Featureset],
 ) -> pycode_proto.PyCode:
+    if extractor.extractor_type != ExtractorType.PY_FUNC:
+        return None
+    if not extractor.func:
+        raise TypeError(
+            f"extractor {extractor.name} has type PyFunc but no function defined"
+        )
     dependencies = []
     gen_code = ""
     if hasattr(extractor.func, FENNEL_INCLUDED_MOD):
