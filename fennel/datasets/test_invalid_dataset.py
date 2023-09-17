@@ -53,6 +53,36 @@ def test_invalid_retention_window():
     )
 
 
+def test_invalid_select():
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            a2: int
+            a3: str
+            a4: float
+            t: datetime
+
+        @meta(owner="thaqib@fennel.ai")
+        @dataset
+        class B:
+            a1: int
+            a2: str
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(A)
+            def from_a(cls, a: Dataset):
+                return a.select("a2", "a3")
+
+    assert (
+        str(e.value) == "Field `a1` is not a non-key non-timestamp field in "
+        "schema of drop node input '[Dataset:A]'. Value fields are: ['a2', 'a3', 'a4']"
+    )
+
+
 @meta(owner="test@test.com")
 @dataset
 class RatingActivity:
