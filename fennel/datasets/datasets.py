@@ -231,7 +231,7 @@ class _Node(Generic[T]):
 
     @classmethod
     def __get_drop_args(
-        cls, *args, columns: List[str], name="drop"
+        cls, *args, columns: Optional[List[str]], name="drop"
     ) -> List[str]:
         if args and columns is not None:
             raise ValueError(
@@ -249,11 +249,11 @@ class _Node(Generic[T]):
                 f"must specify either 'columns' or positional arguments to {name}."
             )
 
-    def drop(self, *args, columns: List[str] = None) -> _Node:
+    def drop(self, *args, columns: Optional[List[str]] = None) -> _Node:
         drop_cols = _Node.__get_drop_args(*args, columns=columns)
         return self.__drop(drop_cols)
 
-    def select(self, *args, columns: List[str] = None) -> _Node:
+    def select(self, *args, columns: Optional[List[str]] = None) -> _Node:
         cols = _Node.__get_drop_args(*args, columns=columns, name="select")
         ts = self.dsschema().timestamp
         # Keep the timestamp col
