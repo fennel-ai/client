@@ -79,7 +79,7 @@ def test_invalid_select():
 
     assert (
         str(e.value) == "Field `a1` is not a non-key non-timestamp field in "
-        "schema of drop node input '[Dataset:A]'. Value fields are: ['a2', 'a3', 'a4']"
+        "schema of select node input '[Dataset:A]'. Value fields are: ['a2', 'a3', 'a4']"
     )
 
 

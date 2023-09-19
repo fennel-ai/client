@@ -226,8 +226,8 @@ class _Node(Generic[T]):
     def rename(self, columns: Dict[str, str]) -> _Node:
         return Rename(self, columns)
 
-    def __drop(self, columns: List[str]) -> _Node:
-        return Drop(self, columns)
+    def __drop(self, columns: List[str], name="drop") -> _Node:
+        return Drop(self, columns, name=name)
 
     @classmethod
     def __get_drop_args(
@@ -265,7 +265,7 @@ class _Node(Generic[T]):
         # All the cols were selected
         if len(drop_cols) == 0:
             return self
-        return self.__drop(drop_cols)
+        return self.__drop(drop_cols, name="select")
 
     def dedup(self, by: Optional[List[str]] = None) -> _Node:
         # If 'by' is not provided, dedup by all value fields.
@@ -626,10 +626,11 @@ class Rename(_Node):
 
 
 class Drop(_Node):
-    def __init__(self, node: _Node, columns: List[str]):
+    def __init__(self, node: _Node, columns: List[str], name="drop"):
         super().__init__()
         self.node = node
         self.columns = columns
+        self.__name = name
         self.node.out_edges.append(self)
 
     def signature(self):
@@ -640,6 +641,10 @@ class Drop(_Node):
         for field in self.columns:
             input_schema.drop_column(field)
         return input_schema
+
+    @property
+    def name(self):
+        return self.__name
 
 
 # ---------------------------------------------------------------------
@@ -1858,7 +1863,7 @@ class SchemaValidator(Visitor):
             if field not in val_fields:
                 raise ValueError(
                     f"Field `{field}` is not a non-key non-timestamp field in schema of "
-                    f"drop node input {input_schema.name}. Value fields are: {list(val_fields)}"
+                    f"{obj.name} node input {input_schema.name}. Value fields are: {list(val_fields)}"
                 )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
