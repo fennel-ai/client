@@ -402,13 +402,14 @@ def _extractor_to_proto(
 
     extractor_dataset_info = None
     if extractor.extractor_type == ExtractorType.LOOKUP:
-        if not extractor.derived_extractor_info:
+        if len(extractor.derived_extractor_info) == 0:
             raise TypeError(
                 f"Lookup extractor {extractor.name} must have DatasetLookupInfo"
             )
-        extractor_dataset_info = _to_dataset_lookup_proto(
-            extractor.derived_extractor_info
-        )
+        extractor_dataset_info = [
+            _to_dataset_lookup_proto(info)
+            for info in extractor.derived_extractor_info
+        ]
 
     proto_extractor = fs_proto.Extractor(
         name=extractor.name,
