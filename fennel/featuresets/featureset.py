@@ -17,6 +17,7 @@ from typing import (
     List,
     overload,
     Set,
+    Tuple,
 )
 
 
@@ -298,6 +299,7 @@ class Feature:
     fqn_: str = ""
     dtype: Optional[Type] = None
     extractor: Optional[Extractor] = None
+    lookup_extractor_info: Optional[LookupExtractorInfo] = None
     deprecated: bool = False
 
     def meta(self, **kwargs: Any) -> T:  # type: ignore
@@ -388,38 +390,33 @@ class Feature:
             )
             return self
 
-        provider_features = []
         # If provider is none, then the provider is this featureset. The input features
         # are captured once this featureset is initialized
-        name = f"_fennel_lookup_{field}"
         field = cast(Field, field)
-        ds = None
-        if provider:
-            if hasattr(field, "dataset"):
-                ds = field.dataset
-            else:
-                raise ValueError(
-                    f"Dataset {field.dataset_name} not found for field {field}"
-                )
-
-            for k in ds.dsschema().keys:  # type: ignore
-                feature = provider.feature(k)
-                if not feature:
-                    raise ValueError(
-                        f"Dataset key {k} not found in provider {provider._name} for extractor {name}"
-                    )
-                provider_features.append(feature)
-
-        self.extractor = Extractor(
-            name=f"_fennel_lookup_{field}",
-            extractor_type=ExtractorType.LOOKUP,
-            inputs=provider_features,
-            outputs=[self.id],
+        if not hasattr(field, "dataset"):
+            raise ValueError(
+                f"Dataset {field.dataset_name} not found for field {field}"
+            )
+        self.lookup_extractor_info = Feature.LookupExtractorInfo(
+            ds=field.dataset,  # type: ignore
+            provider=provider,
+            lookup_info=Extractor.DatasetLookupInfo(field, default),
             version=version,
-            derived_extractor_info=Extractor.DatasetLookupInfo(field, default),
-            depends_on=[ds] if ds else [],
         )
         return self
+
+    @dataclass
+    class LookupExtractorInfo:
+        """
+        Holds info needed by Featureset to build batched lookup extractors. We hold this info
+        within the feature before the FS is constructed
+        """
+
+        ds: Dataset
+        # provider = None means the provider is this FS
+        provider: Optional[Featureset]
+        lookup_info: Extractor.DatasetLookupInfo
+        version: int
 
 
 def is_user_defined(obj):
@@ -491,16 +488,16 @@ class Featureset:
         return self._features
 
     def _get_extractors(self) -> List[Extractor]:
-        extractors = []
-        # auto generated extractors for features
+        # start with batched lookup extractors
+        extractors = self._generate_lookup_extractors()
+        # TODO zaki rm
+        if len(extractors) > 0:
+            breakpoint()
+
+        # auto generated per-feature extractors, e.g aliases
         for feature in self._features:
             if feature.extractor:
-                extractor = feature.extractor
-                if extractor.extractor_type == ExtractorType.LOOKUP and (
-                    extractor.inputs is None or len(extractor.inputs) == 0
-                ):
-                    feature.extractor.set_inputs_from_featureset(self)
-                extractors.append(extractor)
+                extractors.append(feature.extractor)
 
         # user defined extractors
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
@@ -580,6 +577,58 @@ class Featureset:
             "Expectations are not yet supported for featuresets."
         )
 
+    def _generate_lookup_extractors(self):
+        """
+        Generates the derived lookup extractors for the features of this FS.
+        A single extractor is generated for all fields with the same (dataset, provider) pair.
+        """
+        lookup_extractors: Dict[Tuple(Dataset, List[Feature]), Extractor] = {}
+        for feature in self._features:
+            if feature.lookup_extractor_info:
+                info = feature.lookup_extractor_info
+                if not info.provider:
+                    info.provider = self
+                k = (info.ds, info.provider)
+                if k in lookup_extractors:
+                    lookup_extractors[k].output_feature_ids.append(feature.id)
+                    lookup_extractors[k].output_features.append(feature.name)
+                    lookup_extractors[k].derived_extractor_info.append(
+                        info.lookup_info
+                    )
+                else:
+                    name = (
+                        f"_fennel_lookup_{info.ds._name}_from_{info.provider._name}",
+                    )
+                    ex = Extractor(
+                        name=name,
+                        extractor_type=ExtractorType.LOOKUP,
+                        inputs=self._get_provider_features(
+                            info.ds, info.provider, name
+                        ),
+                        outputs=[feature.id],
+                        version=info.version,
+                        derived_extractor_info=[info.lookup_info],
+                        depends_on=[info.ds],
+                    )
+                    ex.output_features = [self._id_to_feature[feature.id].name]
+                    ex.featureset = self._name
+                    lookup_extractors[k] = ex
+
+        return [ex for _, ex in lookup_extractors.items()]
+
+    def _get_provider_features(
+        self, ds: Dataset, provider: Featureset, name: str
+    ):
+        provider_features = []
+        for k in ds.dsschema().keys:  # type: ignore
+            feature = provider.feature(k)
+            if not feature:
+                raise ValueError(
+                    f"Dataset key {k} not found in provider {provider._name} for extractor {name}"
+                )
+            provider_features.append(feature)
+        return provider_features
+
     @property
     def extractors(self):
         return self._extractors
@@ -604,7 +653,7 @@ class Extractor:
     extractor_type: ExtractorType
     inputs: List[Feature]
     func: Optional[Callable]
-    derived_extractor_info: Optional[DatasetLookupInfo]
+    derived_extractor_info: List[DatasetLookupInfo]
     featureset: str
     # If outputs is empty, entire featureset is being extracted
     # by this extractor, else stores the ids of the features being extracted.
@@ -622,7 +671,7 @@ class Extractor:
         outputs: List[int],
         version: int,
         func: Optional[Callable] = None,
-        derived_extractor_info: Optional[DatasetLookupInfo] = None,
+        derived_extractor_info: List[DatasetLookupInfo] = [],
         depends_on: List[Dataset] = [],
     ):
         self.name = name
@@ -656,35 +705,6 @@ class Extractor:
         if hasattr(self.func, FENNEL_INCLUDED_MOD):
             return getattr(self.func, FENNEL_INCLUDED_MOD)
         return []
-
-    def set_inputs_from_featureset(self, featureset: Featureset):
-        if self.inputs and len(self.inputs) > 0:
-            return
-        if self.extractor_type != ExtractorType.LOOKUP:
-            return
-        if not self.derived_extractor_info or not hasattr(
-            self.derived_extractor_info, "field"
-        ):
-            raise ValueError("A lookup extractor must have a field to lookup")
-        self.inputs = []
-
-        field = self.derived_extractor_info.field
-        ds = field.dataset
-        ds = None
-        if hasattr(field, "dataset"):
-            ds = field.dataset
-        if not ds:
-            raise ValueError(
-                f"Dataset {field.dataset_name} not found for field {field}"
-            )
-        self.depends_on = [ds]
-        for k in ds.dsschema().keys:
-            feature = featureset.feature(k)
-            if not feature:
-                raise ValueError(
-                    f"Dataset key {k} not found in provider {featureset._name} for extractor {self.name}"
-                )
-            self.inputs.append(feature)
 
     class DatasetLookupInfo:
         field: Field
