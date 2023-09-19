@@ -95,7 +95,7 @@ class Feature(google.protobuf.message.Message):
 global___Feature = Feature
 
 @typing_extensions.final
-class DatasetLookupInfo(google.protobuf.message.Message):
+class DatasetFieldInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     FIELD_FIELD_NUMBER: builtins.int
@@ -112,6 +112,22 @@ class DatasetLookupInfo(google.protobuf.message.Message):
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["field", b"field"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["default_value", b"default_value", "field", b"field"]) -> None: ...
+
+global___DatasetFieldInfo = DatasetFieldInfo
+
+@typing_extensions.final
+class DatasetLookupInfo(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    FIELDS_FIELD_NUMBER: builtins.int
+    @property
+    def fields(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___DatasetFieldInfo]: ...
+    def __init__(
+        self,
+        *,
+        fields: collections.abc.Iterable[global___DatasetFieldInfo] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields"]) -> None: ...
 
 global___DatasetLookupInfo = DatasetLookupInfo
 
