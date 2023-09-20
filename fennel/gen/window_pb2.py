@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -17,39 +16,16 @@ from google.protobuf import duration_pb2 as google_dot_protobuf_dot_duration__pb
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cwindow.proto\x12\x13\x66\x65nnel.proto.window\x1a\x1egoogle/protobuf/duration.proto\"u\n\x06Window\x12/\n\x07sliding\x18\x01 \x01(\x0b\x32\x1c.fennel.proto.window.SlidingH\x00\x12/\n\x07\x66orever\x18\x02 \x01(\x0b\x32\x1c.fennel.proto.window.ForeverH\x00\x42\t\n\x07variant\"6\n\x07Sliding\x12+\n\x08\x64uration\x18\x01 \x01(\x0b\x32\x19.google.protobuf.Duration\"\t\n\x07\x46oreverb\x06proto3')
 
-
-
-_WINDOW = DESCRIPTOR.message_types_by_name['Window']
-_SLIDING = DESCRIPTOR.message_types_by_name['Sliding']
-_FOREVER = DESCRIPTOR.message_types_by_name['Forever']
-Window = _reflection.GeneratedProtocolMessageType('Window', (_message.Message,), {
-  'DESCRIPTOR' : _WINDOW,
-  '__module__' : 'window_pb2'
-  # @@protoc_insertion_point(class_scope:fennel.proto.window.Window)
-  })
-_sym_db.RegisterMessage(Window)
-
-Sliding = _reflection.GeneratedProtocolMessageType('Sliding', (_message.Message,), {
-  'DESCRIPTOR' : _SLIDING,
-  '__module__' : 'window_pb2'
-  # @@protoc_insertion_point(class_scope:fennel.proto.window.Sliding)
-  })
-_sym_db.RegisterMessage(Sliding)
-
-Forever = _reflection.GeneratedProtocolMessageType('Forever', (_message.Message,), {
-  'DESCRIPTOR' : _FOREVER,
-  '__module__' : 'window_pb2'
-  # @@protoc_insertion_point(class_scope:fennel.proto.window.Forever)
-  })
-_sym_db.RegisterMessage(Forever)
-
+_globals = globals()
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'window_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _WINDOW._serialized_start=69
-  _WINDOW._serialized_end=186
-  _SLIDING._serialized_start=188
-  _SLIDING._serialized_end=242
-  _FOREVER._serialized_start=244
-  _FOREVER._serialized_end=253
+  _globals['_WINDOW']._serialized_start=69
+  _globals['_WINDOW']._serialized_end=186
+  _globals['_SLIDING']._serialized_start=188
+  _globals['_SLIDING']._serialized_end=242
+  _globals['_FOREVER']._serialized_start=244
+  _globals['_FOREVER']._serialized_end=253
 # @@protoc_insertion_point(module_scope)

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import pytest
-from typing import Optional
+from typing import Optional, Dict, List
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
@@ -15,7 +15,7 @@ from fennel.lib.expectations import (
 )
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, inputs, outputs
+from fennel.lib.schema import Embedding, inputs, outputs, struct
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 
@@ -93,6 +93,7 @@ class UserInfoMultipleExtractor:
     age_cubed: int = feature(id=6)
     is_name_common: bool = feature(id=7)
     age_reciprocal: float = feature(id=8)
+    age_doubled: int = feature(id=9)
 
     @extractor(depends_on=[UserInfoDataset])
     @inputs(userid)
@@ -123,6 +124,19 @@ class UserInfoMultipleExtractor:
         d = age.apply(lambda x: 1 / (x / (3600.0 * 24)) + 0.01)
         return pd.Series(name="age_reciprocal", data=d)
 
+    @extractor
+    @inputs(age)
+    @outputs(age_doubled)
+    def get_age_doubled(cls, ts: pd.Series, age: pd.Series):
+        d2 = age.apply(lambda x: x * 2)
+        d2.name = "age_doubled"
+        d3 = age.apply(lambda x: x * 3)
+        d3.name = "age_tripled"
+        d4 = age.apply(lambda x: x * 4)
+        d4.name = "age_quad"
+        # returns a dataframe with extra columns
+        return pd.DataFrame([d4, d3, d2]).T
+
     @extractor(depends_on=[UserInfoDataset], version=2)
     @includes(get_country_geoid)
     @inputs(userid)
@@ -142,6 +156,17 @@ class TestSimpleExtractor(unittest.TestCase):
     def test_get_age_and_name_features(self):
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
+        assert UserInfoMultipleExtractor.all() == [
+            "UserInfoMultipleExtractor.userid",
+            "UserInfoMultipleExtractor.name",
+            "UserInfoMultipleExtractor.country_geoid",
+            "UserInfoMultipleExtractor.age",
+            "UserInfoMultipleExtractor.age_squared",
+            "UserInfoMultipleExtractor.age_cubed",
+            "UserInfoMultipleExtractor.is_name_common",
+            "UserInfoMultipleExtractor.age_reciprocal",
+            "UserInfoMultipleExtractor.age_doubled",
+        ]
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
         df = UserInfoMultipleExtractor.get_age_and_name_features(
             UserInfoMultipleExtractor.original_cls, ts, age, name
@@ -174,8 +199,8 @@ class TestSimpleExtractor(unittest.TestCase):
             [18234, "Monica", 24, "Chile", now],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
-        df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "UserInfoDataset", df)
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "UserInfoDataset", input_df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
         ts = pd.Series([now, now])
@@ -199,6 +224,151 @@ class TestSimpleExtractor(unittest.TestCase):
             UserInfoMultipleExtractor, ts, user_ids
         )
         assert series.tolist() == [5, 3]
+
+        res = UserInfoMultipleExtractor.get_age_doubled(
+            UserInfoMultipleExtractor, ts, input_df["age"]
+        )
+        self.assertEqual(res.shape, (2, 3))  # extractor has extra cols
+        self.assertEqual(
+            res["UserInfoMultipleExtractor.age_doubled"].tolist(), [64, 48]
+        )
+
+
+@struct
+class Velocity:
+    speed: float
+    direction: int
+
+
+@meta(owner="test@test.com")
+@source(webhook.endpoint("FlightDataset"))
+@dataset
+class FlightDataset:
+    id: int = field(key=True)
+    ts: datetime = field(timestamp=True)
+    v_cruising: Velocity
+    layout: Dict[str, Optional[int]]
+    pilot_ids: List[int]
+
+
+@meta(owner="test@test.com")
+@featureset
+class FlightRequest:
+    id: int = feature(id=1)
+
+
+@meta(owner="test@test.com")
+@featureset
+class GeneratedFeatures:
+    # alias
+    user_id: int = feature(id=1).extract(feature=UserInfoSingleExtractor.userid)  # type: ignore
+    # lookup default provider
+    country: str = feature(id=3).extract(  # type: ignore
+        field=UserInfoDataset.country,
+        default="pluto",
+    )
+    # more lookups with complex types
+    velocity: Velocity = feature(id=4).extract(  # type: ignore
+        field=FlightDataset.v_cruising,
+        default=Velocity(500.0, 0),  # type: ignore
+        provider=FlightRequest,
+    )
+    layout: Dict[str, Optional[int]] = feature(id=5).extract(  # type: ignore
+        field=FlightDataset.layout,
+        default={"economy": 0},
+        provider=FlightRequest,
+    )
+    pilots: List[int] = feature(id=6).extract(  # type: ignore
+        field=FlightDataset.pilot_ids, default=[0, 0, 0], provider=FlightRequest
+    )
+
+
+class TestDerivedExtractor(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_derived_extractor(self, client):
+        client.sync(
+            datasets=[UserInfoDataset, FlightDataset],
+            featuresets=[
+                UserInfoSingleExtractor,
+                GeneratedFeatures,
+                FlightRequest,
+            ],
+        )
+        now = datetime.utcnow()
+        data = [
+            [18232, "John", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", now],
+        ]
+        df = pd.DataFrame(
+            data, columns=["user_id", "name", "age", "country", "timestamp"]
+        )
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        flight_data = {
+            "id": [4032, 555],
+            "ts": [now, now],
+            "v_cruising": [Velocity(400, 180), Velocity(550, 90)],
+            "layout": [
+                {"economy": 180},
+                {"first": 8, "business": 24, "economy": 300},
+            ],
+            "pilot_ids": [[1, 2], [3, 4, 5, 6]],
+        }
+        df = pd.DataFrame(flight_data)
+
+        response = client.log("fennel_webhook", "FlightDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+        feature_df = client.extract_features(
+            output_feature_list=[
+                UserInfoSingleExtractor.userid,
+                GeneratedFeatures.user_id,
+                GeneratedFeatures.country,
+                GeneratedFeatures.velocity,
+                GeneratedFeatures.layout,
+                GeneratedFeatures.pilots,
+            ],
+            input_feature_list=[
+                UserInfoSingleExtractor.userid,
+                FlightRequest.id,
+            ],
+            input_dataframe=pd.DataFrame(
+                {
+                    "UserInfoSingleExtractor.userid": [18232, 18234, 7],
+                    "FlightRequest.id": [555, 1131, 4032],
+                }
+            ),
+        )
+        self.assertEqual(feature_df.shape, (3, 6))
+        self.assertEqual(
+            list(feature_df["UserInfoSingleExtractor.userid"]),
+            [18232, 18234, 7],
+        )
+        self.assertEqual(
+            list(feature_df["GeneratedFeatures.user_id"]), [18232, 18234, 7]
+        )
+        self.assertEqual(
+            list(feature_df["GeneratedFeatures.country"]),
+            ["USA", "Chile", "pluto"],
+        )
+        self.assertEqual(
+            list(feature_df["GeneratedFeatures.velocity"]),
+            [Velocity(550, 90), Velocity(500.0, 0), Velocity(400, 180)],
+        )
+        self.assertEqual(
+            list(feature_df["GeneratedFeatures.layout"]),
+            [
+                {"first": 8, "business": 24, "economy": 300},
+                {"economy": 0},
+                {"economy": 180},
+            ],
+        )
+        self.assertEqual(
+            list(feature_df["GeneratedFeatures.pilots"]),
+            [[3, 4, 5, 6], [0, 0, 0], [1, 2]],
+        )
 
 
 class TestExtractorDAGResolution(unittest.TestCase):
@@ -245,7 +415,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 8))
+        self.assertEqual(feature_df.shape, (2, 9))
         self.assertEqual(
             list(feature_df["UserInfoMultipleExtractor.age_reciprocal"]),
             [2700.01, 3600.01],

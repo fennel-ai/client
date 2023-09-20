@@ -92,7 +92,9 @@ RESERVED_FIELD_NAMES = [
 
 @dataclass
 class Field:
-    name: str
+    name: Optional[str]
+    dataset_name: Optional[str]
+    dataset: Optional[Dataset]
     key: bool
     timestamp: bool
     dtype: Optional[Type]
@@ -131,6 +133,9 @@ class Field:
 
         return False
 
+    def fqn(self) -> str:
+        return f"{self.dataset_name}.{self.name}"
+
     def __str__(self):
         return f"{self.name}"
 
@@ -149,9 +154,12 @@ def get_field(
     if isinstance(field, Field):
         field.name = annotation_name
         field.dtype = dtype
+        field.dataset_name = cls.__name__  # type: ignore
     else:
         field = Field(
             name=annotation_name,
+            dataset_name=cls.__name__,  # type: ignore
+            dataset=None,  # set as part of dataset initialization
             key=False,
             timestamp=False,
             dtype=dtype,
@@ -176,10 +184,13 @@ def field(
 ) -> T:  # type: ignore
     return cast(
         T,
+        # Initially None fields are assigned later
         Field(
             key=key,
+            dataset_name=None,
+            dataset=None,
             timestamp=timestamp,
-            name="",
+            name=None,
             dtype=None,
         ),
     )
@@ -832,7 +843,7 @@ def dataset(
             fields,
             history=duration_to_timedelta(history),
             lookup_fn=_create_lookup_function(
-                dataset_cls.__name__, key_fields, struct_types
+                dataset_cls.__name__, key_fields, struct_types  # type: ignore
             ),
         )
 
@@ -1122,6 +1133,7 @@ class Dataset(_Node[T]):
     def _add_fields_as_attributes(self):
         for field in self._fields:
             setattr(self.__fennel_original_cls__, field.name, field)
+            field.dataset = self
 
     def _validate_field_names(self, fields: List[Field]):
         names = set()
@@ -1145,6 +1157,8 @@ class Dataset(_Node[T]):
 
     def _add_fields_to_class(self) -> None:
         for field in self._fields:
+            if not field.name:
+                continue
             setattr(self, field.name, field)
 
     def _create_signature(self):

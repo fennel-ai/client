@@ -111,8 +111,12 @@ def parse_json(annotation, json) -> Any:
                 raise TypeError(f"Expected list, got `{type(json).__name__}`")
             return [parse_json(args[0], x) for x in json]
         if origin is dict:
+            if isinstance(json, list):
+                return {k: parse_json(args[1], v) for k, v in json}
             if not isinstance(json, dict):
-                raise TypeError(f"Expected dict, got `{type(json).__name__}`")
+                raise TypeError(
+                    f"Expected dict or list of pairs, got `{type(json).__name__}`"
+                )
             return {k: parse_json(args[1], v) for k, v in json.items()}
         raise TypeError(f"Unsupported type `{origin}`")
     else:
@@ -570,11 +574,13 @@ def _validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
-            if not isinstance(row, dict):
+            # isinstance(<frozendict instance>, dict) does not return true in
+            # python3.8
+            if not (isinstance(row, dict) or isinstance(row, frozendict)):
                 raise ValueError(
                     f"Field `{name}` is of type map, but the "
-                    f"column in the dataframe is not a dict. Error found during "
-                    f"checking schema for `{entity_name}`."
+                    f"column in the dataframe is not a dict. (type = {type(row)}). "
+                    f"Error found during checking schema for `{entity_name}`."
                 )
     elif dtype.between_type != schema_proto.Between():
         bw_type = dtype.between_type

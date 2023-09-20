@@ -26,6 +26,7 @@ from fennel.gen.featureset_pb2 import CoreFeatureset
 from fennel.gen.featureset_pb2 import (
     Feature as ProtoFeature,
     Extractor as ProtoExtractor,
+    ExtractorType as ProtoExtractorType,
 )
 from fennel.gen.schema_pb2 import Field, DSSchema, Schema
 from fennel.lib.graph_algorithms import (
@@ -395,6 +396,8 @@ class MockClient(Client):
         for featureset in featuresets:
             proto_extractors = extractors_from_fs(featureset, fs_obj_map)
             for extractor in proto_extractors:
+                if extractor.extractor_type != ProtoExtractorType.PY_FUNC:
+                    continue
                 extractor_fqn = f"{featureset._name}.{extractor.name}"
                 self.extractor_funcs[extractor_fqn] = get_extractor_func(
                     extractor
@@ -447,8 +450,11 @@ class MockClient(Client):
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
+        output_bucket: Optional[str] = None,
+        output_prefix: Optional[str] = None,
         input_bucket: Optional[str] = None,
         input_prefix: Optional[str] = None,
+        feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         if format != "pandas":
             raise NotImplementedError(
@@ -458,6 +464,12 @@ class MockClient(Client):
             raise ValueError(
                 "input must contain a key 'input_dataframe' with the input dataframe"
             )
+        assert feature_to_column_map is None, "column_mapping is not supported"
+        assert input_bucket is None, "input_bucket is not supported"
+        assert input_prefix is None, "input_prefix is not supported"
+        assert output_bucket is None, "output_bucket is not supported"
+        assert output_prefix is None, "output_prefix is not supported"
+
         if input_dataframe.empty:
             return pd.DataFrame()
         timestamps = input_dataframe[timestamp_column]
@@ -483,13 +495,17 @@ class MockClient(Client):
             extractors, input_dataframe, output_feature_list, timestamps
         )
         assert output_df.shape[0] == len(timestamps), (
-            "Output dataframe has {"
-            "} rows, but there are "
-            "only {} "
-            "timestamps".format(output_df.shape[0], len(timestamps))
+            f"Output dataframe has {output_df.shape[0]} rows, but there are only {len(timestamps)} "
+            "timestamps"
         )
         output_df[timestamp_column] = timestamps
         return output_df
+
+    def extract_historical_features_progress(self, request_id):
+        return FakeResponse(404, "Extract historical features not supported")
+
+    def extract_historical_cancel_request(self, request_id):
+        return FakeResponse(404, "Extract historical features not supported")
 
     # --------------- Public MockClient Specific methods -------------------
 
@@ -660,6 +676,24 @@ class MockClient(Client):
                 values=Schema(fields=fields)
             )  # stuff every field as value
 
+            if extractor.extractor_type == ProtoExtractorType.ALIAS:
+                feature_name = extractor.fqn_output_features()[0]
+                intermediate_data[feature_name] = intermediate_data[
+                    extractor.inputs[0].fqn()
+                ]
+                intermediate_data[feature_name].name = feature_name
+                self._check_exceptions(
+                    intermediate_data[feature_name], dsschema, extractor.name
+                )
+                continue
+
+            if extractor.extractor_type == ProtoExtractorType.LOOKUP:
+                output = self._compute_lookup_extractor(
+                    extractor, timestamps.copy(), intermediate_data
+                )
+                self._check_exceptions(output, dsschema, extractor.name)
+                continue
+
             allowed_datasets = [
                 x._name for x in extractor.get_dataset_dependencies()
             ]
@@ -694,14 +728,7 @@ class MockClient(Client):
                     f"Extractor `{extractor.name}` returned "
                     f"invalid type `{type(output)}`, expected a pandas series or dataframe"
                 )
-            output_df = pd.DataFrame(output)
-            output_df.reset_index(inplace=True)
-            exceptions = data_schema_check(dsschema, output_df, extractor.name)
-            if len(exceptions) > 0:
-                raise Exception(
-                    f"Extractor `{extractor.name}` returned "
-                    f"invalid schema: {exceptions}"
-                )
+            self._check_exceptions(output, dsschema, extractor.name)
             if isinstance(output, pd.Series):
                 if output.name in intermediate_data:
                     continue
@@ -752,6 +779,79 @@ class MockClient(Client):
                     f"during feature extraction."
                 )
         return output_df
+
+    def _check_exceptions(
+        self, output, dsschema: DSSchema, extractor_name: str
+    ):
+        output_df = pd.DataFrame(output)
+        output_df.reset_index(inplace=True)
+        exceptions = data_schema_check(dsschema, output_df, extractor_name)
+        if len(exceptions) > 0:
+            raise Exception(
+                f"Extractor `{extractor_name}` returned "
+                f"invalid schema: {exceptions}"
+            )
+
+    def _compute_lookup_extractor(
+        self,
+        extractor: Extractor,
+        timestamps: pd.Series,
+        intermediate_data: Dict[str, pd.Series],
+    ):
+        if len(extractor.output_features) != 1:
+            raise ValueError(
+                f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.output_features)}"
+            )
+        if len(extractor.depends_on) != 1:
+            raise ValueError(
+                f"Lookup extractor {extractor.name} must have exactly one dependent dataset, found {len(extractor.depends_on)}"
+            )
+
+        input_features = {
+            k.name: intermediate_data[k] for k in extractor.inputs  # type: ignore
+        }
+        allowed_datasets = [
+            x._name for x in extractor.get_dataset_dependencies()
+        ]
+        fennel.datasets.datasets.dataset_lookup = partial(
+            dataset_lookup_impl,
+            self.data,
+            self.aggregated_datasets,
+            self.dataset_info,
+            allowed_datasets,
+            extractor.name,
+        )
+        results, _ = extractor.depends_on[0].lookup(
+            timestamps, **input_features
+        )
+        if (
+            not extractor.derived_extractor_info
+            or not extractor.derived_extractor_info.field
+            or not extractor.derived_extractor_info.field.name
+        ):
+            raise TypeError(
+                f"Field for lookup extractor {extractor.name} must have a named field"
+            )
+        results = results[extractor.derived_extractor_info.field.name]
+        if results.dtype != object:
+            results = results.fillna(extractor.derived_extractor_info.default)
+        else:
+            # fillna doesn't work for list type or ditc type :cols
+            for row in results.loc[results.isnull()].index:
+                results[row] = extractor.derived_extractor_info.default
+        results.name = extractor.fqn_output_features()[0]
+        intermediate_data[extractor.fqn_output_features()[0]] = results
+
+        fennel.datasets.datasets.dataset_lookup = partial(
+            dataset_lookup_impl,
+            self.data,
+            self.aggregated_datasets,
+            self.dataset_info,
+            None,
+            None,
+        )
+
+        return results
 
     def _merge_df(self, df: pd.DataFrame, dataset_name: str):
         if not self.dataset_info[dataset_name].is_source_dataset:

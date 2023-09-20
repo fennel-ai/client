@@ -106,5 +106,3 @@ of things:
  pass the extractor's timestamp list to this function as it is. In addition, all the
  key fields in the dataset become kwarg to the lookup function.
 * It's not possible to do lookups on dataset without keys.
-
-
