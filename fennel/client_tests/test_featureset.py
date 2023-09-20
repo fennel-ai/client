@@ -259,6 +259,13 @@ class FlightRequest:
 
 @meta(owner="test@test.com")
 @featureset
+class FlightCrewRequest:
+    id: int = feature(id=1)
+    airline: str = feature(id=2)
+
+
+@meta(owner="test@test.com")
+@featureset
 class GeneratedFeatures:
     # alias
     user_id: int = feature(id=1).extract(feature=UserInfoSingleExtractor.userid)  # type: ignore
@@ -268,6 +275,7 @@ class GeneratedFeatures:
         default="pluto",
     )
     # more lookups with complex types
+    # the following 2 features use the same derived extractor
     velocity: Velocity = feature(id=4).extract(  # type: ignore
         field=FlightDataset.v_cruising,
         default=Velocity(500.0, 0),  # type: ignore
@@ -278,8 +286,11 @@ class GeneratedFeatures:
         default={"economy": 0},
         provider=FlightRequest,
     )
+    # We use a different provider here to test that different providers can be used
     pilots: List[int] = feature(id=6).extract(  # type: ignore
-        field=FlightDataset.pilot_ids, default=[0, 0, 0], provider=FlightRequest
+        field=FlightDataset.pilot_ids,
+        default=[0, 0, 0],
+        provider=FlightCrewRequest,
     )
 
 
@@ -293,6 +304,7 @@ class TestDerivedExtractor(unittest.TestCase):
                 UserInfoSingleExtractor,
                 GeneratedFeatures,
                 FlightRequest,
+                FlightCrewRequest,
             ],
         )
         now = datetime.utcnow()
@@ -333,11 +345,14 @@ class TestDerivedExtractor(unittest.TestCase):
             input_feature_list=[
                 UserInfoSingleExtractor.userid,
                 FlightRequest.id,
+                FlightCrewRequest.id,
             ],
             input_dataframe=pd.DataFrame(
                 {
                     "UserInfoSingleExtractor.userid": [18232, 18234, 7],
                     "FlightRequest.id": [555, 1131, 4032],
+                    "FlightCrewRequest.id": [555, 1131, 4032],
+                    "FlightCrewRequest.airline": ["AA", "WN", "WN"],
                 }
             ),
         )
