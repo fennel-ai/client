@@ -837,7 +837,7 @@ class MockClient(Client):
         ):
             result_col = results[colname]
             if result_col.dtype != object:
-                results.loc[found == False, colname] = default_val # noqa: E712
+                results.loc[found == False, colname] = default_val  # noqa: E712
             else:
                 # Assign one at a time, using 'at' to deal with assigning
                 # dicts and lists to a single cell
