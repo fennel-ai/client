@@ -406,10 +406,12 @@ def _extractor_to_proto(
             raise TypeError(
                 f"Lookup extractor {extractor.name} must have DatasetLookupInfo"
             )
-        extractor_dataset_info = [
-            _to_dataset_lookup_proto(info)
-            for info in extractor.derived_extractor_info
-        ]
+        extractor_dataset_info = fs_proto.DatasetLookupInfo(
+            fields=[
+                _to_field_lookup_proto(info)
+                for info in extractor.derived_extractor_info
+            ]
+        )
 
     proto_extractor = fs_proto.Extractor(
         name=extractor.name,
@@ -425,7 +427,6 @@ def _extractor_to_proto(
         extractor_type=extractor.extractor_type,
         dataset_info=extractor_dataset_info,
     )
-
     return proto_extractor
 
 
@@ -440,15 +441,15 @@ def _check_owner_exists(obj):
             raise Exception(f"Object {obj.__name__} must have an owner.")
 
 
-def _to_dataset_lookup_proto(
-    info: Extractor.DatasetLookupInfo,
-) -> fs_proto.DatasetLookupInfo:
+def _to_field_lookup_proto(
+    info: Extractor.FieldLookupInfo,
+) -> fs_proto.FieldLookupInfo:
     if getattr(info.default.__class__, FENNEL_STRUCT, False):
         default_val = json.dumps(info.default.as_json())
     else:
         default_val = json.dumps(info.default)
 
-    return fs_proto.DatasetLookupInfo(
+    return fs_proto.FieldLookupInfo(
         field=_field_to_proto(info.field),
         default_value=default_val,
     )

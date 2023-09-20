@@ -798,10 +798,6 @@ class MockClient(Client):
         timestamps: pd.Series,
         intermediate_data: Dict[str, pd.Series],
     ):
-        if len(extractor.output_features) != 1:
-            raise ValueError(
-                f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.output_features)}"
-            )
         if len(extractor.depends_on) != 1:
             raise ValueError(
                 f"Lookup extractor {extractor.name} must have exactly one dependent dataset, found {len(extractor.depends_on)}"
@@ -821,26 +817,35 @@ class MockClient(Client):
             allowed_datasets,
             extractor.name,
         )
-        results, _ = extractor.depends_on[0].lookup(
+        results, found = extractor.depends_on[0].lookup(
             timestamps, **input_features
         )
-        if (
-            not extractor.derived_extractor_info
-            or not extractor.derived_extractor_info.field
-            or not extractor.derived_extractor_info.field.name
+
+        # replace nulls with default vals
+        if len(extractor.derived_extractor_info) == 0:
+            raise TypeError("Lookup extractor has no field")
+        for fi in extractor.derived_extractor_info:
+            if not fi.field or not fi.field.name:
+                raise TypeError(
+                    f"Field for lookup extractor {extractor.name} must have a named field"
+                )
+        results = results[
+            [fi.field.name for fi in extractor.derived_extractor_info]
+        ]
+        for (colname, default_val) in zip(
+            results, [fi.default for fi in extractor.derived_extractor_info]
         ):
-            raise TypeError(
-                f"Field for lookup extractor {extractor.name} must have a named field"
-            )
-        results = results[extractor.derived_extractor_info.field.name]
-        if results.dtype != object:
-            results = results.fillna(extractor.derived_extractor_info.default)
-        else:
-            # fillna doesn't work for list type or ditc type :cols
-            for row in results.loc[results.isnull()].index:
-                results[row] = extractor.derived_extractor_info.default
-        results.name = extractor.fqn_output_features()[0]
-        intermediate_data[extractor.fqn_output_features()[0]] = results
+            result_col = results[colname]
+            if result_col.dtype != object:
+                results.loc[found == False, colname] = default_val
+            else:
+                # Assign one at a time, using 'at' to deal with assigning
+                # dicts and lists to a single cell
+                for row in result_col.loc[found == False].index:  # noqa: E712
+                    result_col.at[row] = default_val
+
+        results.columns = extractor.fqn_output_features()
+        intermediate_data.update(results.to_dict("series"))
 
         fennel.datasets.datasets.dataset_lookup = partial(
             dataset_lookup_impl,

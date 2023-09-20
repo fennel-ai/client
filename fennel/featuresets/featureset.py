@@ -400,7 +400,7 @@ class Feature:
         self.lookup_extractor_info = Feature.LookupExtractorInfo(
             ds=field.dataset,  # type: ignore
             provider=provider,
-            lookup_info=Extractor.DatasetLookupInfo(field, default),
+            lookup_info=Extractor.FieldLookupInfo(field, default),
             version=version,
         )
         return self
@@ -415,7 +415,7 @@ class Feature:
         ds: Dataset
         # provider = None means the provider is this FS
         provider: Optional[Featureset]
-        lookup_info: Extractor.DatasetLookupInfo
+        lookup_info: Extractor.FieldLookupInfo
         version: int
 
 
@@ -490,9 +490,6 @@ class Featureset:
     def _get_extractors(self) -> List[Extractor]:
         # start with batched lookup extractors
         extractors = self._generate_lookup_extractors()
-        # TODO zaki rm
-        if len(extractors) > 0:
-            breakpoint()
 
         # auto generated per-feature extractors, e.g aliases
         for feature in self._features:
@@ -596,9 +593,8 @@ class Featureset:
                         info.lookup_info
                     )
                 else:
-                    name = (
-                        f"_fennel_lookup_{info.ds._name}_from_{info.provider._name}",
-                    )
+                    name = f"_fennel_lookup_{info.ds._name}_from_{info.provider._name}"
+
                     ex = Extractor(
                         name=name,
                         extractor_type=ExtractorType.LOOKUP,
@@ -653,7 +649,7 @@ class Extractor:
     extractor_type: ExtractorType
     inputs: List[Feature]
     func: Optional[Callable]
-    derived_extractor_info: List[DatasetLookupInfo]
+    derived_extractor_info: List[FieldLookupInfo]
     featureset: str
     # If outputs is empty, entire featureset is being extracted
     # by this extractor, else stores the ids of the features being extracted.
@@ -671,7 +667,7 @@ class Extractor:
         outputs: List[int],
         version: int,
         func: Optional[Callable] = None,
-        derived_extractor_info: List[DatasetLookupInfo] = [],
+        derived_extractor_info: List[FieldLookupInfo] = [],
         depends_on: List[Dataset] = [],
     ):
         self.name = name
@@ -706,7 +702,7 @@ class Extractor:
             return getattr(self.func, FENNEL_INCLUDED_MOD)
         return []
 
-    class DatasetLookupInfo:
+    class FieldLookupInfo:
         field: Field
         default: Any
 
