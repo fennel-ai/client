@@ -32,10 +32,27 @@ class UserInfoDataset:
 
 
 @meta(owner="test@test.com")
+@source(webhook.endpoint("UsageByGenderDataset"))
+@dataset
+class UsageByGenderDataset:
+    gender: str = field(key=True)
+    timestamp: datetime = field(timestamp=True)
+    total_time: int
+    sessions: int
+
+
+@meta(owner="test@test.com")
 @featureset
 class User:
     id: int = feature(id=1)
     age: float = feature(id=2)
+
+
+@meta(owner="test@test.com")
+@featureset
+class PowerUser:
+    id: int = feature(id=1)
+    gender: str = feature(id=2)
 
 
 def test_valid_derived_extractors():
@@ -76,6 +93,21 @@ def test_valid_derived_extractors():
         # depends on derived feature
         age_group: AgeGroup = feature(id=5)
 
+        # lookup another dataset
+        gender_usage: int = feature(id=6).extract(
+            field=UsageByGenderDataset.total_time, default=0
+        )
+
+        # lookup with a different provider
+        gender_power_usage: int = feature(id=7).extract(
+            field=UsageByGenderDataset.total_time,
+            provider=PowerUser,
+            default=-1,
+        )
+        gender_power_sessions: int = feature(id=8).extract(
+            field=UsageByGenderDataset.sessions, provider=PowerUser, default=0
+        )
+
         @extractor(depends_on=[UserInfoDataset])
         @inputs(age_years)
         @outputs(age_group)
@@ -99,15 +131,18 @@ def test_valid_derived_extractors():
 
     view = InternalTestClient()
     view.add(UserInfoDataset)
+    view.add(UsageByGenderDataset)
     view.add(UserInfo)
     view.add(AgeInfo)
     view.add(User)
+    view.add(PowerUser)
     sync_request = view._get_sync_request_proto()
-    assert len(sync_request.feature_sets) == 3
-    # UserInfoDataset: 3 extractors (alias, bached lookup, pycode)
+    assert len(sync_request.feature_sets) == 4
+    # UserInfoDataset: 5 extractors (alias, 3 batched lookups, pyfunc)
     # AgeInfo: 2 alias extractors
-    assert len(sync_request.extractors) == 5
-    assert len(sync_request.features) == 9
+    assert len(sync_request.extractors) == 7
+    # User: 2, PowerUser: 2, UserInfo: 8 features, AgeInfo: 2 features
+    assert len(sync_request.features) == 14
 
     # featuresets
     def test_fs(fs_request, expected_dict):
@@ -189,6 +224,31 @@ def test_valid_derived_extractors():
             "feature_set_name": "UserInfo",
         },
         {
+            "id": 6,
+            "name": "gender_usage",
+            "dtype": {"int_type": {}},
+            "metadata": {
+                "description": "lookup another dataset",
+            },
+            "feature_set_name": "UserInfo",
+        },
+        {
+            "id": 7,
+            "name": "gender_power_usage",
+            "dtype": {"int_type": {}},
+            "metadata": {
+                "description": "lookup with a different provider",
+            },
+            "feature_set_name": "UserInfo",
+        },
+        {
+            "id": 8,
+            "name": "gender_power_sessions",
+            "dtype": {"int_type": {}},
+            "metadata": {},
+            "feature_set_name": "UserInfo",
+        },
+        {
             "id": 1,
             "name": "age_group",
             "dtype": {"struct_type": age_group_struct_type},
@@ -219,6 +279,20 @@ def test_valid_derived_extractors():
             "dtype": {"double_type": {}},
             "metadata": {},
             "feature_set_name": "User",
+        },
+        {
+            "id": 1,
+            "name": "id",
+            "dtype": {"int_type": {}},
+            "metadata": {},
+            "feature_set_name": "PowerUser",
+        },
+        {
+            "id": 2,
+            "name": "gender",
+            "dtype": {"string_type": {}},
+            "metadata": {},
+            "feature_set_name": "PowerUser",
         },
     ]
 
@@ -262,6 +336,61 @@ def test_valid_derived_extractors():
                     {
                         "field": {"name": "dob", "dtype": {"string_type": {}}},
                         "defaultValue": json.dumps("unspecified"),
+                    },
+                ]
+            },
+        },
+        {
+            "name": "_fennel_lookup_UsageByGenderDataset_from_UserInfo",
+            "datasets": ["UsageByGenderDataset"],
+            "inputs": [
+                {"feature": {"feature_set_name": "UserInfo", "name": "gender"}}
+            ],
+            "features": ["gender_usage"],
+            "metadata": {},
+            "version": 0,
+            "pycode": None,
+            "feature_set_name": "UserInfo",
+            "extractor_type": fs_proto.LOOKUP,
+            "dataset_info": {
+                "fields": [
+                    {
+                        "field": {
+                            "name": "total_time",
+                            "dtype": {"int_type": {}},
+                        },
+                        "defaultValue": json.dumps(0),
+                    },
+                ]
+            },
+        },
+        {
+            "name": "_fennel_lookup_UsageByGenderDataset_from_PowerUser",
+            "datasets": ["UsageByGenderDataset"],
+            "inputs": [
+                {"feature": {"feature_set_name": "PowerUser", "name": "gender"}}
+            ],
+            "features": ["gender_power_usage", "gender_power_sessions"],
+            "metadata": {},
+            "version": 0,
+            "pycode": None,
+            "feature_set_name": "UserInfo",
+            "extractor_type": fs_proto.LOOKUP,
+            "dataset_info": {
+                "fields": [
+                    {
+                        "field": {
+                            "name": "total_time",
+                            "dtype": {"int_type": {}},
+                        },
+                        "defaultValue": json.dumps(-1),
+                    },
+                    {
+                        "field": {
+                            "name": "sessions",
+                            "dtype": {"int_type": {}},
+                        },
+                        "defaultValue": json.dumps(0),
                     },
                 ]
             },
