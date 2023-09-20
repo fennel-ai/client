@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.18.1] - 2023-09-19
+- Added select operator
+
 ## [0.18.0] - 2023-08-30
 - Added support for Debezium data in Avro format via Kafka connector
 

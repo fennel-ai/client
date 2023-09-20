@@ -1594,8 +1594,6 @@ def test_select_and_rename_column():
 
     operator_req = sync_request.operators[2]
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    print(operator_req)
-    print(expected_operator_request)
     assert operator_req == expected_operator_request, error_message(
         operator_req, expected_operator_request
     )
