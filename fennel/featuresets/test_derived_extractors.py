@@ -104,7 +104,9 @@ def test_valid_derived_extractors():
     view.add(User)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.feature_sets) == 3
-    assert len(sync_request.extractors) == 7
+    # UserInfoDataset: 3 extractors (alias, bached lookup, pycode)
+    # AgeInfo: 2 alias extractors
+    assert len(sync_request.extractors) == 5
     assert len(sync_request.features) == 9
 
     # featuresets
@@ -233,6 +235,38 @@ def test_valid_derived_extractors():
 
     expected_extractors = [
         {
+            "name": "_fennel_lookup_UserInfoDataset_from_UserInfo",
+            "datasets": ["UserInfoDataset"],
+            "inputs": [
+                {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
+            ],
+            "features": ["gender", "age_years", "dob"],
+            "metadata": {},
+            "version": 0,
+            "pycode": None,
+            "feature_set_name": "UserInfo",
+            "extractor_type": fs_proto.LOOKUP,
+            "dataset_info": {
+                "fields": [
+                    {
+                        "field": {
+                            "name": "gender",
+                            "dtype": {"string_type": {}},
+                        },
+                        "defaultValue": json.dumps("unspecified"),
+                    },
+                    {
+                        "field": {"name": "age", "dtype": {"int_type": {}}},
+                        "defaultValue": json.dumps(0),
+                    },
+                    {
+                        "field": {"name": "dob", "dtype": {"string_type": {}}},
+                        "defaultValue": json.dumps("unspecified"),
+                    },
+                ]
+            },
+        },
+        {
             "name": "_fennel_alias_id",
             "datasets": [],
             "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
@@ -243,57 +277,6 @@ def test_valid_derived_extractors():
             "feature_set_name": "UserInfo",
             "extractor_type": fs_proto.ALIAS,
             "dataset_info": None,
-        },
-        {
-            "name": "_fennel_lookup_gender",
-            "datasets": ["UserInfoDataset"],
-            "inputs": [
-                {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
-            ],
-            "features": ["gender"],
-            "metadata": {},
-            "version": 0,
-            "pycode": None,
-            "feature_set_name": "UserInfo",
-            "extractor_type": fs_proto.LOOKUP,
-            "dataset_info": {
-                "field": {"name": "gender", "dtype": {"string_type": {}}},
-                "defaultValue": json.dumps("unspecified"),
-            },
-        },
-        {
-            "name": "_fennel_lookup_age",
-            "datasets": ["UserInfoDataset"],
-            "inputs": [
-                {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
-            ],
-            "features": ["age_years"],
-            "metadata": {},
-            "version": 0,
-            "pycode": None,
-            "feature_set_name": "UserInfo",
-            "extractor_type": fs_proto.LOOKUP,
-            "dataset_info": {
-                "field": {"name": "age", "dtype": {"int_type": {}}},
-                "defaultValue": json.dumps(0),
-            },
-        },
-        {
-            "name": "_fennel_lookup_dob",
-            "datasets": ["UserInfoDataset"],
-            "inputs": [
-                {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
-            ],
-            "features": ["dob"],
-            "metadata": {},
-            "version": 0,
-            "pycode": None,
-            "feature_set_name": "UserInfo",
-            "extractor_type": fs_proto.LOOKUP,
-            "dataset_info": {
-                "field": {"name": "dob", "dtype": {"string_type": {}}},
-                "defaultValue": json.dumps("unspecified"),
-            },
         },
         {
             "name": "get_age_group",

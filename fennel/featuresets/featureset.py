@@ -299,6 +299,7 @@ class Feature:
     fqn_: str = ""
     dtype: Optional[Type] = None
     extractor: Optional[Extractor] = None
+    extractor_called: bool = False
     lookup_extractor_info: Optional[LookupExtractorInfo] = None
     deprecated: bool = False
 
@@ -370,10 +371,11 @@ class Feature:
         Returns:
         Feature: This feature
         """
-        if self.extractor:
+        if self.extractor_called:
             raise TypeError(
                 f"extract() can only be called once for feature id={self.id}"
             )
+        self.extractor_called = True
         if (not field and not feature) or (field and feature):
             raise TypeError(
                 f"Exactly one of field or feature must be specified to extract feature id={self.id}"
