@@ -832,7 +832,7 @@ class MockClient(Client):
         results = results[
             [fi.field.name for fi in extractor.derived_extractor_info]
         ]
-        for (colname, default_val) in zip(
+        for colname, default_val in zip(
             results, [fi.default for fi in extractor.derived_extractor_info]
         ):
             result_col = results[colname]
