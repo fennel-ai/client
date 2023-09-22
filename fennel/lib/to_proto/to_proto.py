@@ -400,13 +400,13 @@ def _extractor_to_proto(
                 f"a DataFrame of features, but a {type(input)}"
             )
 
-    extractor_dataset_info = None
+    extractor_field_info = None
     if extractor.extractor_type == ExtractorType.LOOKUP:
         if not extractor.derived_extractor_info:
             raise TypeError(
                 f"Lookup extractor {extractor.name} must have DatasetLookupInfo"
             )
-        extractor_dataset_info = _to_dataset_lookup_proto(
+        extractor_field_info = _to_field_lookup_proto(
             extractor.derived_extractor_info
         )
 
@@ -422,7 +422,7 @@ def _extractor_to_proto(
         pycode=to_extractor_pycode(extractor, fs, fs_obj_map),
         feature_set_name=extractor.featureset,
         extractor_type=extractor.extractor_type,
-        dataset_info=extractor_dataset_info,
+        field_info=extractor_field_info,
     )
 
     return proto_extractor
@@ -439,15 +439,15 @@ def _check_owner_exists(obj):
             raise Exception(f"Object {obj.__name__} must have an owner.")
 
 
-def _to_dataset_lookup_proto(
+def _to_field_lookup_proto(
     info: Extractor.DatasetLookupInfo,
-) -> fs_proto.DatasetLookupInfo:
+) -> fs_proto.FieldLookupInfo:
     if getattr(info.default.__class__, FENNEL_STRUCT, False):
         default_val = json.dumps(info.default.as_json())
     else:
         default_val = json.dumps(info.default)
 
-    return fs_proto.DatasetLookupInfo(
+    return fs_proto.FieldLookupInfo(
         field=_field_to_proto(info.field),
         default_value=default_val,
     )
