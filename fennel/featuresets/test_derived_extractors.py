@@ -242,7 +242,7 @@ def test_valid_derived_extractors():
             "pycode": None,
             "feature_set_name": "UserInfo",
             "extractor_type": fs_proto.ALIAS,
-            "dataset_info": None,
+            "field_info": None,
         },
         {
             "name": "_fennel_lookup_gender",
@@ -256,7 +256,7 @@ def test_valid_derived_extractors():
             "pycode": None,
             "feature_set_name": "UserInfo",
             "extractor_type": fs_proto.LOOKUP,
-            "dataset_info": {
+            "field_info": {
                 "field": {"name": "gender", "dtype": {"string_type": {}}},
                 "defaultValue": json.dumps("unspecified"),
             },
@@ -273,7 +273,7 @@ def test_valid_derived_extractors():
             "pycode": None,
             "feature_set_name": "UserInfo",
             "extractor_type": fs_proto.LOOKUP,
-            "dataset_info": {
+            "field_info": {
                 "field": {"name": "age", "dtype": {"int_type": {}}},
                 "defaultValue": json.dumps(0),
             },
@@ -290,7 +290,7 @@ def test_valid_derived_extractors():
             "pycode": None,
             "feature_set_name": "UserInfo",
             "extractor_type": fs_proto.LOOKUP,
-            "dataset_info": {
+            "field_info": {
                 "field": {"name": "dob", "dtype": {"string_type": {}}},
                 "defaultValue": json.dumps("unspecified"),
             },
@@ -312,7 +312,7 @@ def test_valid_derived_extractors():
             "pycode": {"source_code": ""},
             "feature_set_name": "UserInfo",
             "extractor_type": fs_proto.PY_FUNC,
-            "dataset_info": None,
+            "field_info": None,
         },
         {
             "name": "_fennel_alias_age_group",
@@ -331,7 +331,7 @@ def test_valid_derived_extractors():
             "pycode": None,
             "feature_set_name": "AgeInfo",
             "extractor_type": fs_proto.ALIAS,
-            "dataset_info": None,
+            "field_info": None,
         },
         {
             "name": "_fennel_alias_age_years",
@@ -350,7 +350,7 @@ def test_valid_derived_extractors():
             "pycode": None,
             "feature_set_name": "AgeInfo",
             "extractor_type": fs_proto.ALIAS,
-            "dataset_info": None,
+            "field_info": None,
         },
     ]
     for i, e in enumerate(sync_request.extractors):

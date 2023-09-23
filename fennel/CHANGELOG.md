@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.18.4] - 2023-09-22
+- Minor proto update for derived lookup extractors
+
 ## [0.18.2] - 2023-09-13
 - Add derived extractors for aliasing and lookups
 
