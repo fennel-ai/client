@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.18.5] - 2023-09-19
+- Added select operator
+
 ## [0.18.4] - 2023-09-22
 - Minor proto update for derived lookup extractors
 
