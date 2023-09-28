@@ -249,6 +249,7 @@ class FlightDataset:
     v_cruising: Velocity
     layout: Dict[str, Optional[int]]
     pilot_ids: List[int]
+    region: str
 
 
 @meta(owner="test@test.com")
@@ -292,6 +293,11 @@ class GeneratedFeatures:
         default=[0, 0, 0],
         provider=FlightCrewRequest,
     )
+    # Optional feature
+    base_region: Optional[str] = feature(id=7).extract(  # type: ignore
+        field=FlightDataset.region,
+        provider=FlightRequest,
+    )
 
 
 class TestDerivedExtractor(unittest.TestCase):
@@ -327,6 +333,7 @@ class TestDerivedExtractor(unittest.TestCase):
                 {"first": 8, "business": 24, "economy": 300},
             ],
             "pilot_ids": [[1, 2], [3, 4, 5, 6]],
+            "region": ["CA", "East"],
         }
         df = pd.DataFrame(flight_data)
 
@@ -341,6 +348,7 @@ class TestDerivedExtractor(unittest.TestCase):
                 GeneratedFeatures.velocity,
                 GeneratedFeatures.layout,
                 GeneratedFeatures.pilots,
+                GeneratedFeatures.base_region,
             ],
             input_feature_list=[
                 UserInfoSingleExtractor.userid,
@@ -356,7 +364,7 @@ class TestDerivedExtractor(unittest.TestCase):
                 }
             ),
         )
-        self.assertEqual(feature_df.shape, (3, 6))
+        self.assertEqual(feature_df.shape, (3, 7))
         self.assertEqual(
             list(feature_df["UserInfoSingleExtractor.userid"]),
             [18232, 18234, 7],
@@ -383,6 +391,10 @@ class TestDerivedExtractor(unittest.TestCase):
         self.assertEqual(
             list(feature_df["GeneratedFeatures.pilots"]),
             [[3, 4, 5, 6], [0, 0, 0], [1, 2]],
+        )
+        self.assertEqual(
+            list(feature_df["GeneratedFeatures.base_region"]),
+            ["East", None, "CA"],
         )
 
 
