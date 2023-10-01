@@ -377,6 +377,14 @@ class Executor(Visitor):
 
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
 
+    def visitAssign(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        df = input_ret.df
+        df[obj.column] = obj.func(df)
+        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+
     def visitDedup(self, obj):
         input_ret = self.visit(obj.node)
         if input_ret is None:

@@ -182,3 +182,21 @@ The `explode` operator does not support exploding on key columns of datasets>
 
 <pre snippet="api-reference/operators_ref#rename"></pre>
 
+### Assign
+
+Fennel allows you to assign to a specific value column or create a new column by using the `assign` operator.
+The `assign` operator has the following parameters:
+
+1. ``column: str``: positional argument, that specifies the name of the column to assign to or create.
+2. ``result_type: Type``: positional argument, that specifies the type of the column in the output dataset
+3. ``func: Callable[pd.DataFrame, pd.DataFrame]``: positional argument, that specifies the assign function. 
+        It could be defined inline or could be a reference to a function defined elsewhere. 
+        The assign function should take a pandas dataframe as input and return a pandas dataframe as output.
+
+<pre snippet="api-reference/operators_ref#assign"></pre>
+
+:::info
+Fennel does not allow you to assign keys or timestamp columns from a dataset.
+:::
+
+

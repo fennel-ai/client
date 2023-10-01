@@ -443,6 +443,7 @@ class MovieRatingTransformed:
     rating_sq: float
     rating_cube: float
     rating_into_5: float
+    rating_orig: float
     t: datetime
 
     @pipeline(version=1)
@@ -456,7 +457,7 @@ class MovieRatingTransformed:
                 ["movie", "t", "rating_sq", "rating_cube", "rating_into_5"]
             ]
 
-        return m.transform(
+        x = m.transform(
             t,
             schema={
                 "movie": oneof(str, ["Jumanji", "Titanic", "RaOne"]),
@@ -465,6 +466,12 @@ class MovieRatingTransformed:
                 "rating_cube": float,
                 "rating_into_5": float,
             },
+        )
+
+        return x.assign(
+            column="rating_orig",
+            result_type=float,
+            func=lambda df: df["rating_sq"] ** 0.5,
         )
 
 
@@ -497,11 +504,12 @@ class TestBasicTransform(unittest.TestCase):
         )
 
         assert found.tolist() == [True, False]
-        assert df.shape == (2, 5)
+        assert df.shape == (2, 6)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating_sq"].tolist() == [16, None]
         assert df["rating_cube"].tolist() == [64, None]
         assert df["rating_into_5"].tolist() == [20, None]
+        assert df["rating_orig"].tolist() == [4, None]
 
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
@@ -511,11 +519,12 @@ class TestBasicTransform(unittest.TestCase):
             movie=names,
         )
 
-        assert df.shape == (2, 5)
+        assert df.shape == (2, 6)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating_sq"].tolist() == [16, 25]
         assert df["rating_cube"].tolist() == [64, 125]
         assert df["rating_into_5"].tolist() == [20, 25]
+        assert df["rating_orig"].tolist() == [4, 5]
 
 
 @meta(owner="test@test.com")

@@ -2189,4 +2189,26 @@ def test_auto_schema_generation():
                 "user_id": int,
                 "timestamp": datetime,
             }
+
+            assign_ds = activity.assign(
+                "transaction_amount", int, lambda df: df["user_id"] * 2
+            )
+            assert assign_ds.schema() == {
+                "action_type": float,
+                "timestamp": datetime,
+                "transaction_amount": int,
+                "user_id": int,
+                "amount": Optional[float],
+            }
+
+            assign_ds_str = activity.assign(
+                "user_id", str, lambda df: str(df["user_id"])
+            )
+            assert assign_ds_str.schema() == {
+                "action_type": float,
+                "timestamp": datetime,
+                "user_id": str,
+                "amount": Optional[float],
+            }
+
             return x

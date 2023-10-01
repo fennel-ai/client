@@ -70,6 +70,29 @@ class UserTransactions:
 
 @meta(owner="abhay@fennel.ai")
 @dataset
+class UserTransactionsV2:
+    user_id: int
+    merchant_id: int
+    transaction_amount: float
+    transaction_amount_sq: float
+    user_id_str: str
+    timestamp: datetime
+
+    @pipeline(version=1)
+    @inputs(UserTransactions)
+    def create_user_transactions(cls, user_transactions: Dataset):
+        # docsnip assign
+        assign_ds = user_transactions.assign(
+            "transaction_amount_sq",
+            float,
+            lambda df: df["transaction_amount"] ** 2,
+        ).assign("user_id_str", str, lambda df: df["user_id"].astype(str))
+        # /docsnip
+        return assign_ds
+
+
+@meta(owner="abhay@fennel.ai")
+@dataset
 class UserFirstAction:
     user_id: int = field(key=True)
     transaction_amount: float
