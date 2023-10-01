@@ -133,8 +133,12 @@ class FraudActivityDataset:
         dropped_ds = renamed_ds.drop(["user_id"])
         # /docsnip
 
+        # docsnip select
+        select_ds = dropped_ds.select("txn_amount", "merchant")
+        # /docsnip
+
         # docsnip join
-        joined_ds = dropped_ds.join(
+        joined_ds = select_ds.join(
             merchant_category,
             how="left",
             on=["merchant"],

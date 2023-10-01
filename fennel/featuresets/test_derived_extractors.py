@@ -22,6 +22,7 @@ webhook = Webhook(name="fennel_webhook")
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
+    nickname: str
     gender: str
     # Users date of birth
     dob: str
@@ -76,6 +77,11 @@ def test_valid_derived_extractors():
         # depends on derived feature
         age_group: AgeGroup = feature(id=5)
 
+        # optional lookup derived feature
+        optional_nickname: Optional[str] = feature(id=6).extract(
+            field=UserInfoDataset.nickname,
+        )
+
         @extractor(depends_on=[UserInfoDataset])
         @inputs(age_years)
         @outputs(age_group)
@@ -104,8 +110,8 @@ def test_valid_derived_extractors():
     view.add(User)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.feature_sets) == 3
-    assert len(sync_request.extractors) == 7
-    assert len(sync_request.features) == 9
+    assert len(sync_request.extractors) == 8
+    assert len(sync_request.features) == 10
 
     # featuresets
     def test_fs(fs_request, expected_dict):
@@ -184,6 +190,13 @@ def test_valid_derived_extractors():
             "name": "age_group",
             "dtype": {"struct_type": age_group_struct_type},
             "metadata": {"description": "depends on derived feature"},
+            "feature_set_name": "UserInfo",
+        },
+        {
+            "id": 6,
+            "name": "optional_nickname",
+            "dtype": {"optional_type": {"of": {"string_type": {}}}},
+            "metadata": {"description": "optional lookup derived feature"},
             "feature_set_name": "UserInfo",
         },
         {
@@ -293,6 +306,23 @@ def test_valid_derived_extractors():
             "field_info": {
                 "field": {"name": "dob", "dtype": {"string_type": {}}},
                 "defaultValue": json.dumps("unspecified"),
+            },
+        },
+        {
+            "name": "_fennel_lookup_nickname",
+            "datasets": ["UserInfoDataset"],
+            "inputs": [
+                {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
+            ],
+            "features": ["optional_nickname"],
+            "metadata": {},
+            "version": 0,
+            "pycode": None,
+            "feature_set_name": "UserInfo",
+            "extractor_type": fs_proto.LOOKUP,
+            "field_info": {
+                "field": {"name": "nickname", "dtype": {"string_type": {}}},
+                "defaultValue": json.dumps(None),
             },
         },
         {

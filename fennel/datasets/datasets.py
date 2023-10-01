@@ -234,14 +234,26 @@ class _Node(Generic[T]):
             raise TypeError("Cannot join with a non-dataset object")
         return Join(self, other, within, how, on, left_on, right_on)
 
-    def __add__(self, other):
-        return Union_(self, other)
-
     def rename(self, columns: Dict[str, str]) -> _Node:
         return Rename(self, columns)
 
-    def drop(self, columns: List[str]) -> _Node:
-        return Drop(self, columns)
+    def drop(self, *args, columns: Optional[List[str]] = None) -> _Node:
+        drop_cols = _Node.__get_drop_args(*args, columns=columns)
+        return self.__drop(drop_cols)
+
+    def select(self, *args, columns: Optional[List[str]] = None) -> _Node:
+        cols = _Node.__get_drop_args(*args, columns=columns, name="select")
+        ts = self.dsschema().timestamp
+        # Keep the timestamp col
+        drop_cols = list(
+            filter(
+                lambda c: c not in cols and c != ts, self.dsschema().fields()
+            )
+        )
+        # All the cols were selected
+        if len(drop_cols) == 0:
+            return self
+        return self.__drop(drop_cols, name="select")
 
     def dedup(self, by: Optional[List[str]] = None) -> _Node:
         # If 'by' is not provided, dedup by all value fields.
@@ -264,6 +276,32 @@ class _Node(Generic[T]):
 
     def num_out_edges(self) -> int:
         return len(self.out_edges)
+
+    def __drop(self, columns: List[str], name="drop") -> _Node:
+        return Drop(self, columns, name=name)
+
+    @classmethod
+    def __get_drop_args(
+        cls, *args, columns: Optional[List[str]], name="drop"
+    ) -> List[str]:
+        if args and columns is not None:
+            raise ValueError(
+                f"can only specify either 'columns' or positional arguments to {name}, not both."
+            )
+        elif columns is not None:
+            return columns
+        elif args:
+            if len(args) == 1 and isinstance(args[0], list):
+                return args[0]
+            else:
+                return [*args]
+        else:
+            raise ValueError(
+                f"must specify either 'columns' or positional arguments to {name}."
+            )
+
+    def __add__(self, other):
+        return Union_(self, other)
 
 
 class Transform(_Node):
@@ -628,10 +666,11 @@ class Rename(_Node):
 
 
 class Drop(_Node):
-    def __init__(self, node: _Node, columns: List[str]):
+    def __init__(self, node: _Node, columns: List[str], name="drop"):
         super().__init__()
         self.node = node
         self.columns = columns
+        self.__name = name
         self.node.out_edges.append(self)
 
     def signature(self):
@@ -642,6 +681,10 @@ class Drop(_Node):
         for field in self.columns:
             input_schema.drop_column(field)
         return input_schema
+
+    @property
+    def name(self):
+        return self.__name
 
 
 # ---------------------------------------------------------------------
@@ -1902,7 +1945,7 @@ class SchemaValidator(Visitor):
             if field not in val_fields:
                 raise ValueError(
                     f"Field `{field}` is not a non-key non-timestamp field in schema of "
-                    f"drop node input {input_schema.name}. Value fields are: {list(val_fields)}"
+                    f"{obj.name} node input {input_schema.name}. Value fields are: {list(val_fields)}"
                 )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name

@@ -128,8 +128,21 @@ The `drop` operator has the following parameters:
 Fennel does not allow you to drop keys or timestamp columns from a dataset.
 :::
 
-
 <pre snippet="api-reference/operators_ref#drop"></pre>
+
+### Select
+
+Fennel allows you to drop columns from a dataset using the `select` operator.
+
+The `select` operator has the following parameters:
+
+1. `*args: str` - positional arguments that specify the list of fields to select.
+
+:::info
+Fennel requires you to select all key fields, with the timestamp column automatically included.
+:::
+
+<pre snippet="api-reference/operators_ref#select"></pre>
 
 ### Rename
 
