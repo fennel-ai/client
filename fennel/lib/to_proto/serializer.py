@@ -185,11 +185,14 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
 
         return proto.Operator(
             id=obj.signature(),
-            id_root=(obj == self.terminal_node),
+            is_root=(obj == self.terminal_node),
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
-            assign=proto.Filter(
-                operand_id=self.visit(obj.node), pycode=gen_pycode
+            assign=proto.Assign(
+                operand_id=self.visit(obj.node),
+                pycode=gen_pycode,
+                column_name=obj.column,
+                output_type=get_datatype(obj.output_type),
             ),
         )
 

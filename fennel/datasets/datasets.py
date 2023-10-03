@@ -347,7 +347,10 @@ class Assign(_Node):
     def signature(self):
         if isinstance(self.node, Dataset):
             return fhash(
-                self.node._name, self.func, self.column, self.output_type
+                self.node._name,
+                self.func,
+                self.column,
+                self.output_type.__name__,
             )
         return fhash(
             self.node.signature(), self.func, self.column, self.output_type

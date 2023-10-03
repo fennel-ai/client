@@ -2,9 +2,9 @@ from math import isnan
 from typing import Any
 
 from fennel._vendor import jsondiff  # type: ignore
-from google.protobuf.json_format import MessageToDict  # type: ignore
+from google.protobuf.json_format import MessageToDict
 
-from fennel.gen.dataset_pb2 import Operator, Filter, Transform
+from fennel.gen.dataset_pb2 import Operator, Filter, Transform, Assign
 from fennel.gen.featureset_pb2 import Extractor
 from fennel.gen.pycode_pb2 import PyCode
 
@@ -55,6 +55,20 @@ def erase_operator_pycode(operator: Operator) -> Operator:
             transform=Transform(
                 operand_id=operator.transform.operand_id,
                 schema=operator.transform.schema,
+                pycode=PyCode(source_code=""),
+            ),
+        )
+    if operator.HasField("assign"):
+        return Operator(
+            id=operator.id,
+            name=operator.name,
+            pipeline_name=operator.pipeline_name,
+            dataset_name=operator.dataset_name,
+            is_root=operator.is_root,
+            assign=Assign(
+                operand_id=operator.assign.operand_id,
+                column_name=operator.assign.column_name,
+                output_type=operator.assign.output_type,
                 pycode=PyCode(source_code=""),
             ),
         )
