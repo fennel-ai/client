@@ -203,7 +203,7 @@ class TestDataset(unittest.TestCase):
         if client.is_integration_client():
             assert (
                 response.json()["error"].strip()
-                == """error: input parse error: expected int, but got string "32yrs" """.strip()
+                == """error: input parse error: trailing characters at line 1 column 3""".strip()
             )
         else:
             assert (
@@ -292,7 +292,7 @@ class TestDataset(unittest.TestCase):
         """Check if invalid data raises an error."""
         client.sync(datasets=[UserInfoDataset])
         data = [
-            [18232, "Ross", "32", "USA", 1668475993],
+            [18232, "Ross", "32y", "USA", 1668475993],
             [18234, "Monica", 24, "USA", 1668475343],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
@@ -792,7 +792,11 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             "Robin Williams",
             "Keanu Reeves",
         ]
-        assert df["revenue"].tolist() == [199, 25, None]
+        if client.is_integration_client():
+            # backend returns default value for the aggregate dataset
+            assert df["revenue"].tolist() == [199, 25, 0]
+        else:
+            assert df["revenue"].tolist() == [199, 25, None]
 
         # Now, send the movie info for The Matrix
         columns = ["title", "actors", "release"]
@@ -845,11 +849,19 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             "Robin Williams",
             "Keanu Reeves",
         ]
-        assert df["revenue"].tolist() == [
-            75,
-            None,
-            None,
-        ]
+        if client.is_integration_client():
+            # backend returns default values for aggregate datasets
+            assert df["revenue"].tolist() == [
+                75,
+                0,
+                0,
+            ]
+        else:
+            assert df["revenue"].tolist() == [
+                75,
+                None,
+                None,
+            ]
 
 
 class TestBasicAggregate(unittest.TestCase):
@@ -1164,7 +1176,11 @@ class TestBasicFilter(unittest.TestCase):
         )
         assert df.shape == (3, 3)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
-        assert df["cnt_rating"].tolist() == [2, 3, None]
+        if client.is_integration_client():
+            # backend returns default values for aggregate dataset
+            assert df["cnt_rating"].tolist() == [2, 3, 0]
+        else:
+            assert df["cnt_rating"].tolist() == [2, 3, None]
 
         ts = pd.Series([two_hours_ago, two_hours_ago, two_hours_ago])
         df, _ = PositiveRatingActivity.lookup(
@@ -1173,7 +1189,11 @@ class TestBasicFilter(unittest.TestCase):
         )
         assert df.shape == (3, 3)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
-        assert df["cnt_rating"].tolist() == [2, 1, None]
+        if client.is_integration_client():
+            # backend returns default values for aggregate dataset
+            assert df["cnt_rating"].tolist() == [2, 1, 0]
+        else:
+            assert df["cnt_rating"].tolist() == [2, 1, None]
 
 
 @meta(owner="test@test.com")
@@ -1267,8 +1287,13 @@ class TestBasicCountUnique(unittest.TestCase):
             static=pd.Series(["static", "static", "static"]),
         )
         assert df.shape == (3, 4)
-        assert df["unique_movies"].tolist() == [2, 1, None]
-        assert df["unique_movies_2h"].tolist() == [2, 1, None]
+        if client.is_integration_client():
+            # Our backends return default values for the aggregate datasets
+            assert df["unique_movies"].tolist() == [2, 1, 0]
+            assert df["unique_movies_2h"].tolist() == [2, 1, 0]
+        else:
+            assert df["unique_movies"].tolist() == [2, 1, None]
+            assert df["unique_movies_2h"].tolist() == [2, 1, None]
 
 
 @meta(owner="test@test.com")
