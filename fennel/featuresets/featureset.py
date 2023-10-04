@@ -255,7 +255,7 @@ def extractor(
                     f"Series or DataFrame, found {type(return_annotation)}"
                 )
 
-        extractor_func = _add_featureset_name(extractor_func)
+        extractor_func = _add_featureset_name(extractor_func, params)
         setattr(
             extractor_func,
             EXTRACTOR_ATTR,
@@ -426,12 +426,21 @@ def is_user_defined(obj):
     return inspect.isclass(type(obj)) and not inspect.isbuiltin(obj)
 
 
-def _add_featureset_name(func):
-    """Rewrites the output column names of the extractor to be fully qualified names."""
+def _add_featureset_name(func, params):
+    """Rewrites the output column names of the extractor to be fully qualified names.
+    Also add feature names to the input parameters of the extractor.
+    """
 
     @functools.wraps(func)
     def inner(*args, **kwargs):
-        ret = func(*args, **kwargs)
+        # Add param names from params to args
+        assert len(args) == len(params) + 2
+        args = list(args)
+        # The cls and ts parameter are unchanged
+        renamed_args = args[:2] + [
+            arg.rename(name.fqn()) for name, arg in zip(params, args[2:])
+        ]
+        ret = func(*renamed_args, **kwargs)
         fs_name = func.__qualname__.split(".")[0]
         if isinstance(ret, pd.Series):
             if ret.name is None:
