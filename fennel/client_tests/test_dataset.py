@@ -65,7 +65,9 @@ class UserInfoDatasetDerivedSelect:
     @inputs(UserInfoDataset)
     def get_info(cls, info: Dataset):
         x = info.rename({"country": "country_name", "timestamp": "ts"})
-        return x.select("user_id", "name", "country_name").dropnull("country_name")
+        return x.select("user_id", "name", "country_name").dropnull(
+            "country_name"
+        )
 
 
 class TestDataset(unittest.TestCase):

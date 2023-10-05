@@ -901,8 +901,10 @@ def test_first_wrong_field():
         == """field actor not found in schema of '[Dataset:SingleHits]'"""
     )
 
+
 def test_drop_null():
     with pytest.raises(ValueError) as e:
+
         @meta(owner="test@test.com")
         @dataset
         class C1:
@@ -913,13 +915,15 @@ def test_drop_null():
 
             @pipeline(version=1)
             @inputs(C)
-            def drop_null_noargs(cls, c: C):
+            def drop_null_noargs(cls, c: Dataset):
                 return c.dropnull()
+
     assert (
         str(e.value)
-        =="must specify either 'columns' or positional arguments to dropnull."
+        == "must specify either 'columns' or positional arguments to dropnull."
     )
     with pytest.raises(ValueError) as e:
+
         @meta(owner="test@test.com")
         @dataset
         class C2:
@@ -930,14 +934,16 @@ def test_drop_null():
 
             @pipeline(version=1)
             @inputs(C)
-            def drop_null_non_opt(cls, c: C):
+            def drop_null_non_opt(cls, c: Dataset):
                 return c.dropnull("b1")
+
     assert (
         str(e.value)
-        =="invalid dropnull b1 has type <class 'int'> expected Optional type"
+        == "invalid dropnull b1 has type <class 'int'> expected Optional type"
     )
 
     with pytest.raises(ValueError) as e:
+
         @meta(owner="test@test.com")
         @dataset
         class C3:
@@ -948,10 +954,10 @@ def test_drop_null():
 
             @pipeline(version=1)
             @inputs(C)
-            def drop_null_non_present(cls, c: C):
+            def drop_null_non_present(cls, c: Dataset):
                 return c.dropnull("b4")
+
     assert (
         str(e.value)
-        =="invalid dropnull column b4 not present in '[Dataset:C]'"
+        == "invalid dropnull column b4 not present in '[Dataset:C]'"
     )
-    

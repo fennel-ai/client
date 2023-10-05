@@ -56,7 +56,7 @@ from fennel.lib.schema import (
     parse_json,
     get_fennel_struct,
     FENNEL_STRUCT_SRC_CODE,
-    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE
+    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
 )
 
 from fennel.sources.sources import DataConnector, source
@@ -417,6 +417,7 @@ class GroupBy:
 
     def dsschema(self):
         raise NotImplementedError
+
 
 class Dedup(_Node):
     def __init__(self, node: _Node, by: List[str]):
@@ -868,10 +869,15 @@ def dataset(
 
 
 def fennel_is_optional(type_):
-    return typing.get_origin(type_) is Union and type(None) is typing.get_args(type_)[1]
+    return (
+        typing.get_origin(type_) is Union
+        and type(None) is typing.get_args(type_)[1]
+    )
+
 
 def fennel_optional_inner(type_):
-    return typing.get_args(type_)[0] 
+    return typing.get_args(type_)[0]
+
 
 # Fennel implementation of get_type_hints which does not error on forward
 # references not being types such as Embedding[4].
@@ -1532,7 +1538,6 @@ class DSSchema:
         else:
             raise Exception(f"field {name} not found in schema of {self.name}")
 
-
     def append_value_column(self, name: str, type_: Type):
         if name in self.keys:
             raise Exception(
@@ -1924,7 +1929,10 @@ class SchemaValidator(Visitor):
                 f"invalid dropnull - {output_schema_name} must have at least one column"
             )
         for field in obj.columns:
-            if field not in input_schema.schema() or field == input_schema.timestamp:
+            if (
+                field not in input_schema.schema()
+                or field == input_schema.timestamp
+            ):
                 raise ValueError(
                     f"invalid dropnull column {field} not present in {input_schema.name}"
                 )
@@ -1935,8 +1943,6 @@ class SchemaValidator(Visitor):
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
         return output_schema
-
-
 
     def visitDedup(self, obj) -> DSSchema:
         input_schema = self.visit(obj.node)
