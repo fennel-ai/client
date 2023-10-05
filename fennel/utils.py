@@ -10,10 +10,11 @@ import sys
 import textwrap
 
 from pandas import DataFrame
-from typing import Any
+from typing import Any, Type
 from typing import cast, Callable, Dict, List, Tuple, Union
 
-import fennel._vendor.astunparse as astunparse  # type: ignore
+import fennel._vendor.astunparse as astunparse
+from fennel._vendor.pydantic.typing import get_args, get_origin  # type: ignore
 import fennel._vendor.requests as requests  # type: ignore
 
 Tags = Union[List[str], Tuple[str, ...], str]

@@ -900,3 +900,58 @@ def test_first_wrong_field():
         str(e.value)
         == """field actor not found in schema of '[Dataset:SingleHits]'"""
     )
+
+def test_drop_null():
+    with pytest.raises(ValueError) as e:
+        @meta(owner="test@test.com")
+        @dataset
+        class C1:
+            b1: int = field(key=True)
+            b2: int
+            b3: str
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(C)
+            def drop_null_noargs(cls, c: C):
+                return c.dropnull()
+    assert (
+        str(e.value)
+        =="must specify either 'columns' or positional arguments to dropnull."
+    )
+    with pytest.raises(ValueError) as e:
+        @meta(owner="test@test.com")
+        @dataset
+        class C2:
+            b1: int = field(key=True)
+            b2: int
+            b3: str
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(C)
+            def drop_null_non_opt(cls, c: C):
+                return c.dropnull("b1")
+    assert (
+        str(e.value)
+        =="invalid dropnull b1 has type <class 'int'> expected Optional type"
+    )
+
+    with pytest.raises(ValueError) as e:
+        @meta(owner="test@test.com")
+        @dataset
+        class C3:
+            b1: int = field(key=True)
+            b2: int
+            b3: str
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(C)
+            def drop_null_non_present(cls, c: C):
+                return c.dropnull("b4")
+    assert (
+        str(e.value)
+        =="invalid dropnull column b4 not present in '[Dataset:C]'"
+    )
+    

@@ -6,6 +6,7 @@ import functools
 import inspect
 import sys
 from dataclasses import dataclass
+import typing
 
 import numpy as np
 import pandas as pd
@@ -55,8 +56,9 @@ from fennel.lib.schema import (
     parse_json,
     get_fennel_struct,
     FENNEL_STRUCT_SRC_CODE,
-    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
+    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE
 )
+
 from fennel.sources.sources import DataConnector, source
 from fennel.utils import (
     fhash,
@@ -119,19 +121,7 @@ class Field:
         return f
 
     def is_optional(self) -> bool:
-        def _get_origin(type_: Any) -> Any:
-            return getattr(type_, "__origin__", None)
-
-        def _get_args(type_: Any) -> Any:
-            return getattr(type_, "__args__", None)
-
-        if (
-            _get_origin(self.dtype) is Union
-            and type(None) is _get_args(self.dtype)[1]
-        ):
-            return True
-
-        return False
+        return fennel_is_optional(self.dtype)
 
     def fqn(self) -> str:
         return f"{self.dataset_name}.{self.name}"
@@ -237,6 +227,10 @@ class _Node(Generic[T]):
     def drop(self, *args, columns: Optional[List[str]] = None) -> _Node:
         drop_cols = _Node.__get_drop_args(*args, columns=columns)
         return self.__drop(drop_cols)
+
+    def dropnull(self, *args, columns: Optional[List[str]] = None) -> _Node:
+        cols = _Node.__get_drop_args(*args, columns=columns, name="dropnull")
+        return DropNull(self, cols)
 
     def select(self, *args, columns: Optional[List[str]] = None) -> _Node:
         cols = _Node.__get_drop_args(*args, columns=columns, name="select")
@@ -423,7 +417,6 @@ class GroupBy:
 
     def dsschema(self):
         raise NotImplementedError
-
 
 class Dedup(_Node):
     def __init__(self, node: _Node, by: List[str]):
@@ -658,6 +651,22 @@ class Drop(_Node):
         return self.__name
 
 
+class DropNull(_Node):
+    def __init__(self, node: _Node, columns: List[str]):
+        self.node = node
+        self.columns = columns
+        self.node.out_edges.append(self)
+
+    def signature(self):
+        return fhash(self.node.signature(), self.columns)
+
+    def dsschema(self):
+        input_schema = copy.deepcopy(self.node.dsschema())
+        for field in self.columns:
+            input_schema.drop_null_column(field)
+        return input_schema
+
+
 # ---------------------------------------------------------------------
 # dataset & pipeline decorators
 # ---------------------------------------------------------------------
@@ -857,6 +866,12 @@ def dataset(
     # @dataset decorator was used without arguments
     return wrap(cls)
 
+
+def fennel_is_optional(type_):
+    return typing.get_origin(type_) is Union and type(None) is typing.get_args(type_)[1]
+
+def fennel_optional_inner(type_):
+    return typing.get_args(type_)[0] 
 
 # Fennel implementation of get_type_hints which does not error on forward
 # references not being types such as Embedding[4].
@@ -1421,6 +1436,8 @@ class Visitor:
             return self.visitExplode(obj)
         elif isinstance(obj, First):
             return self.visitFirst(obj)
+        elif isinstance(obj, DropNull):
+            return self.visitDropNull(obj)
         else:
             raise Exception("invalid node type: %s" % obj)
 
@@ -1458,6 +1475,9 @@ class Visitor:
         raise NotImplementedError()
 
     def visitFirst(self, obj):
+        raise NotImplementedError()
+
+    def visitDropNull(self, obj):
         raise NotImplementedError()
 
 
@@ -1499,6 +1519,19 @@ class DSSchema:
             raise Exception(
                 f"field {old_name} not found in schema of {self.name}"
             )
+
+    def drop_null_column(self, name: str):
+        if name in self.keys:
+            self.keys[name] = fennel_optional_inner(self.keys[name])
+        elif name in self.values:
+            self.values[name] = fennel_optional_inner(self.values[name])
+        elif name == self.timestamp:
+            raise Exception(
+                f"cannot drop_null on timestamp field {name} of {self.name}"
+            )
+        else:
+            raise Exception(f"field {name} not found in schema of {self.name}")
+
 
     def append_value_column(self, name: str, type_: Type):
         if name in self.keys:
@@ -1882,6 +1915,28 @@ class SchemaValidator(Visitor):
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
         return output_schema
+
+    def visitDropNull(self, obj):
+        input_schema = copy.deepcopy(self.visit(obj.node))
+        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->dropnull node'"
+        if obj.columns is None or len(obj.columns) == 0:
+            raise ValueError(
+                f"invalid dropnull - {output_schema_name} must have at least one column"
+            )
+        for field in obj.columns:
+            if field not in input_schema.schema() or field == input_schema.timestamp:
+                raise ValueError(
+                    f"invalid dropnull column {field} not present in {input_schema.name}"
+                )
+            if not fennel_is_optional(input_schema.get_type(field)):
+                raise ValueError(
+                    f"invalid dropnull {field} has type {input_schema.get_type(field)} expected Optional type"
+                )
+        output_schema = obj.dsschema()
+        output_schema.name = output_schema_name
+        return output_schema
+
+
 
     def visitDedup(self, obj) -> DSSchema:
         input_schema = self.visit(obj.node)

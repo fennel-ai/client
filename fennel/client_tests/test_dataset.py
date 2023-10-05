@@ -58,14 +58,14 @@ class UserInfoDatasetDerived:
 class UserInfoDatasetDerivedSelect:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
     name: str = field().meta(description="User name")  # type: ignore
-    country_name: Optional[str]
+    country_name: str
     ts: datetime = field(timestamp=True)
 
     @pipeline(version=1)
     @inputs(UserInfoDataset)
     def get_info(cls, info: Dataset):
         x = info.rename({"country": "country_name", "timestamp": "ts"})
-        return x.select("user_id", "name", "country_name")
+        return x.select("user_id", "name", "country_name").dropnull("country_name")
 
 
 class TestDataset(unittest.TestCase):
@@ -103,6 +103,9 @@ class TestDataset(unittest.TestCase):
         data = [
             [18232, "Ross", 32, "USA", now],
             [18234, "Monica", 24, "Chile", yesterday],
+            [18235, "Jessica", 24, None, yesterday],
+            [18236, "Jane", 24, None, yesterday],
+            [18237, "Chandler", 24, None, yesterday],
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)

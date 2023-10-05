@@ -377,6 +377,19 @@ class Executor(Visitor):
 
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
 
+    def visitDropNull(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        df = input_ret.df
+        print("before")
+        print(df)
+        df = df.dropna(subset=obj.columns)
+        print("after")
+        print(df)
+
+        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+
     def visitDedup(self, obj):
         input_ret = self.visit(obj.node)
         if input_ret is None:
