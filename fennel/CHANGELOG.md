@@ -1,5 +1,9 @@
 # Changelog
 
+
+## [0.18.6] - 2023-09-19
+- Added assign operator
+
 ## [0.18.5] - 2023-09-19
 - Added select operator
 
