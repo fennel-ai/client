@@ -499,6 +499,7 @@ class MovieRatingTransformed:
     rating_sq: float
     rating_cube: float
     rating_into_5: float
+    rating_orig: float
     t: datetime
 
     @pipeline(version=1)
@@ -512,7 +513,7 @@ class MovieRatingTransformed:
                 ["movie", "t", "rating_sq", "rating_cube", "rating_into_5"]
             ]
 
-        return m.transform(
+        x = m.transform(
             t,
             schema={
                 "movie": oneof(str, ["Jumanji", "Titanic", "RaOne"]),
@@ -522,6 +523,36 @@ class MovieRatingTransformed:
                 "rating_into_5": float,
             },
         )
+
+        return x.assign(
+            column="rating_orig",
+            result_type=float,
+            func=lambda df: df["rating_sq"] ** 0.5,
+        )
+
+
+@meta(owner="test@test.com")
+@dataset
+class MovieRatingAssign:
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True
+    )
+    rating_sq: float
+    rating_cube: float
+    rating_into_5: float
+    t: datetime
+
+    @pipeline(version=1)
+    @inputs(MovieRating)
+    def pipeline_assign(cls, m: Dataset):
+        rating_sq = m.assign("rating_sq", float, lambda df: df["rating"] ** 2)
+        rating_cube = rating_sq.assign(
+            "rating_cube", float, lambda df: df["rating_sq"] * df["rating"]
+        )
+        rating_into_5 = rating_cube.assign(
+            "rating_into_5", float, lambda df: df["rating"] * 5
+        )
+        return rating_into_5.drop("num_ratings", "sum_ratings", "rating")
 
 
 class TestBasicTransform(unittest.TestCase):
@@ -553,6 +584,58 @@ class TestBasicTransform(unittest.TestCase):
         )
 
         assert found.tolist() == [True, False]
+        assert df.shape == (2, 6)
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+        assert df["rating_sq"].tolist() == [16, None]
+        assert df["rating_cube"].tolist() == [64, None]
+        assert df["rating_into_5"].tolist() == [20, None]
+        assert df["rating_orig"].tolist() == [4, None]
+
+        ts = pd.Series([now, now])
+        names = pd.Series(["Jumanji", "Titanic"])
+        client.sleep()
+        df, _ = MovieRatingTransformed.lookup(
+            ts,
+            movie=names,
+        )
+
+        assert df.shape == (2, 6)
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+        assert df["rating_sq"].tolist() == [16, 25]
+        assert df["rating_cube"].tolist() == [64, 125]
+        assert df["rating_into_5"].tolist() == [20, 25]
+        assert df["rating_orig"].tolist() == [4, 5]
+
+
+class TestBasicAssign(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_basic_assign(self, client):
+        # # Sync the dataset
+        client.sync(
+            datasets=[MovieRating, MovieRatingAssign, RatingActivity],
+        )
+        now = datetime.now()
+        two_hours_ago = now - timedelta(hours=2)
+        data = [
+            ["Jumanji", 4, 343, 789, two_hours_ago],
+            ["Titanic", 5, 729, 1232, now],
+        ]
+        columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "MovieRating", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+        # Do some lookups to verify pipeline_transform is working as expected
+        an_hour_ago = now - timedelta(hours=1)
+        ts = pd.Series([an_hour_ago, an_hour_ago])
+        names = pd.Series(["Jumanji", "Titanic"])
+        df, found = MovieRatingAssign.lookup(
+            ts,
+            movie=names,
+        )
+
+        assert found.tolist() == [True, False]
         assert df.shape == (2, 5)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating_sq"].tolist() == [16, None]
@@ -562,7 +645,7 @@ class TestBasicTransform(unittest.TestCase):
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
         client.sleep()
-        df, _ = MovieRatingTransformed.lookup(
+        df, _ = MovieRatingAssign.lookup(
             ts,
             movie=names,
         )

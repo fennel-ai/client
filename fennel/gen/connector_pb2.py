@@ -24,7 +24,6 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'connector_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
   _KAFKA.fields_by_name['sasl_jaas_config']._options = None
   _KAFKA.fields_by_name['sasl_jaas_config']._serialized_options = b'\030\001'

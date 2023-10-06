@@ -213,6 +213,9 @@ class _Node(Generic[T]):
     def filter(self, func: Callable) -> _Node:
         return Filter(self, func)
 
+    def assign(self, column: str, result_type: Type, func: Callable) -> _Node:
+        return Assign(self, column, result_type, func)
+
     def groupby(self, *args) -> GroupBy:
         return GroupBy(self, *args)
 
@@ -328,6 +331,38 @@ class Transform(_Node):
             },
             timestamp=input_schema.timestamp,
         )
+
+
+class Assign(_Node):
+    def __init__(
+        self, node: _Node, column: str, output_type: Type, func: Callable
+    ):
+        super().__init__()
+        self.node = node
+        self.node.out_edges.append(self)
+        self.func = func
+        self.column = column
+        self.output_type = output_type
+
+    def signature(self):
+        if isinstance(self.node, Dataset):
+            return fhash(
+                self.node._name,
+                self.func,
+                self.column,
+                self.output_type.__name__,
+            )
+        return fhash(
+            self.node.signature(),
+            self.func,
+            self.column,
+            self.output_type.__name__,
+        )
+
+    def dsschema(self):
+        input_schema = self.node.dsschema()
+        input_schema.update_column(self.column, self.output_type)
+        return input_schema
 
 
 class Filter(_Node):
@@ -1421,6 +1456,8 @@ class Visitor:
             return self.visitExplode(obj)
         elif isinstance(obj, First):
             return self.visitFirst(obj)
+        elif isinstance(obj, Assign):
+            return self.visitAssign(obj)
         else:
             raise Exception("invalid node type: %s" % obj)
 
@@ -1458,6 +1495,9 @@ class Visitor:
         raise NotImplementedError()
 
     def visitFirst(self, obj):
+        raise NotImplementedError()
+
+    def visitAssign(self, obj):
         raise NotImplementedError()
 
 
@@ -1527,6 +1567,18 @@ class DSSchema:
             )
         else:
             raise Exception(f"field {name} not found in schema of {self.name}")
+
+    def update_column(self, name: str, tpe: Type):
+        if name in self.keys:
+            self.keys[name] = tpe
+        elif name in self.values:
+            self.values[name] = tpe
+        elif name == self.timestamp:
+            raise Exception(
+                f"cannot assign timestamp field {name} from {self.name}"
+            )
+        else:
+            self.values[name] = tpe  # Add to values
 
     def matches(
         self, other_schema: DSSchema, this_name: str, other_name: str
@@ -1599,7 +1651,8 @@ class SchemaValidator(Visitor):
         return self.visit(pipe.terminal_node)
 
     def visit(self, obj) -> DSSchema:
-        return super(SchemaValidator, self).visit(obj)
+        vis = super(SchemaValidator, self).visit(obj)
+        return vis
 
     def visitDataset(self, obj) -> DSSchema:
         return DSSchema(
@@ -1864,6 +1917,26 @@ class SchemaValidator(Visitor):
                 )
             input_schema.rename_column(old, new)
         return input_schema
+
+    def visitAssign(self, obj) -> DSSchema:
+        input_schema: DSSchema = copy.deepcopy(self.visit(obj.node))
+        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->assign node'"
+        if obj.column is None or len(obj.column) == 0:
+            raise ValueError(
+                f"invalid assign - {output_schema_name} must specify a column to assign"
+            )
+        val_fields = input_schema.values.keys()
+        if (
+            obj.column in input_schema.keys
+            or obj.column == input_schema.timestamp
+        ):
+            raise ValueError(
+                f"Field `{obj.column}` is not a non-key non-timestamp field in schema of "
+                f"assign node input {input_schema.name}. Value fields are: {list(val_fields)}"
+            )
+        output_schema = obj.dsschema()
+        output_schema.name = output_schema_name
+        return output_schema
 
     def visitDrop(self, obj) -> DSSchema:
         input_schema = copy.deepcopy(self.visit(obj.node))
