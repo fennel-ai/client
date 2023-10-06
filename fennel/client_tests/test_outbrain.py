@@ -147,19 +147,11 @@ def test_outbrain(client):
         input_dataframe=input_df,
     )
     assert feature_df.shape[0] == 347
-    # Backend aggregations are approximate and can overcount by a bit. Account for that in expectations.
-    # Note that it doesn't overcount when all the data is within the aggregation window (in this case, the 28d window).
-    if client.is_integration_client():
-        assert (
-            feature_df["UserPageViewFeatures.page_views"].sum(),
-            feature_df["UserPageViewFeatures.page_views_1d"].sum(),
-            feature_df["UserPageViewFeatures.page_views_3d"].sum(),
-            feature_df["UserPageViewFeatures.page_views_9d"].sum(),
-        ) == (11975, 1228, 3897, 9676)
-    else:
-        assert (
-            feature_df["UserPageViewFeatures.page_views"].sum(),
-            feature_df["UserPageViewFeatures.page_views_1d"].sum(),
-            feature_df["UserPageViewFeatures.page_views_3d"].sum(),
-            feature_df["UserPageViewFeatures.page_views_9d"].sum(),
-        ) == (11975, 1140, 3840, 9544)
+    # NOTE: It is possible that based on the time of execution of the test, the integration mode
+    # could fail due to undercounting at the beginning of the configured window.
+    assert (
+        feature_df["UserPageViewFeatures.page_views"].sum(),
+        feature_df["UserPageViewFeatures.page_views_1d"].sum(),
+        feature_df["UserPageViewFeatures.page_views_3d"].sum(),
+        feature_df["UserPageViewFeatures.page_views_9d"].sum(),
+    ) == (11975, 1140, 3840, 9544)
