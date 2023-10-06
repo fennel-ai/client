@@ -534,7 +534,9 @@ class MovieRatingTransformed:
 @meta(owner="test@test.com")
 @dataset
 class MovieRatingAssign:
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(key=True)
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True
+    )
     rating_sq: float
     rating_cube: float
     rating_into_5: float
@@ -543,9 +545,13 @@ class MovieRatingAssign:
     @pipeline(version=1)
     @inputs(MovieRating)
     def pipeline_assign(cls, m: Dataset):
-        rating_sq = m.assign("rating_sq", float, lambda df : df["rating"]**2)
-        rating_cube = rating_sq.assign("rating_cube", float, lambda df: df["rating_sq"]*df["rating"])
-        rating_into_5 = rating_cube.assign("rating_into_5", float, lambda df : df["rating"]*5)
+        rating_sq = m.assign("rating_sq", float, lambda df: df["rating"] ** 2)
+        rating_cube = rating_sq.assign(
+            "rating_cube", float, lambda df: df["rating_sq"] * df["rating"]
+        )
+        rating_into_5 = rating_cube.assign(
+            "rating_into_5", float, lambda df: df["rating"] * 5
+        )
         return rating_into_5.drop("num_ratings", "sum_ratings", "rating")
 
 
@@ -649,7 +655,6 @@ class TestBasicAssign(unittest.TestCase):
         assert df["rating_sq"].tolist() == [16, 25]
         assert df["rating_cube"].tolist() == [64, 125]
         assert df["rating_into_5"].tolist() == [20, 25]
-
 
 
 @meta(owner="test@test.com")

@@ -353,7 +353,10 @@ class Assign(_Node):
                 self.output_type.__name__,
             )
         return fhash(
-            self.node.signature(), self.func, self.column, self.output_type.__name__
+            self.node.signature(),
+            self.func,
+            self.column,
+            self.output_type.__name__,
         )
 
     def dsschema(self):
