@@ -1648,8 +1648,7 @@ class SchemaValidator(Visitor):
 
     def validate(self, pipe: Pipeline) -> DSSchema:
         self.pipeline_name = pipe.name
-        x = self.visit(pipe.terminal_node)
-        return x
+        return self.visit(pipe.terminal_node)
 
     def visit(self, obj) -> DSSchema:
         vis = super(SchemaValidator, self).visit(obj)
