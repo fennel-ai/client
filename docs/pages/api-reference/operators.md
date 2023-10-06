@@ -197,7 +197,7 @@ The `explode` operator does not support exploding on key columns of datasets>
 
 ### Assign
 
-Fennel allows you to assign to a specific value column or create a new column by using the `assign` operator.
+Fennel lets you assign a value column or create a new column by using the `assign` operator.
 The `assign` operator has the following parameters:
 
 1. ``column: str``: positional argument, that specifies the name of the column to assign to or create.
