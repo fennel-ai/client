@@ -108,7 +108,7 @@ def dataset_lookup_impl(
         # Create a dataframe with all nulls
         val_cols = datasets[cls_name].fields
         if len(fields) > 0:
-            val_cols = [x for x in val_cols if x in fields or x in keys.columns]
+            val_cols = [x for x in val_cols if x in fields]
         empty_df = pd.DataFrame(
             columns=val_cols, data=[[None] * len(val_cols)] * len(keys)
         )
@@ -363,6 +363,8 @@ class MockClient(Client):
                 )
 
             for pipeline in dataset._pipelines:
+                if not pipeline.active:
+                    continue
                 for input in pipeline.inputs:
                     self.listeners[input._name].append(pipeline)
 

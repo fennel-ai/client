@@ -252,6 +252,8 @@ class Executor(Visitor):
             left_by = copy.deepcopy(obj.left_on)
             right_by = copy.deepcopy(obj.right_on)
 
+        left_df = left_df.sort_values(by=ts_query_field)
+        right_df = right_df.sort_values(by=ts_query_field)
         merged_df = pd.merge_asof(
             left=left_df,
             right=right_df,
