@@ -1472,6 +1472,91 @@ def test_dataset_with_complex_pipe():
     )
 
 
+def test_assign_column():
+    @meta(owner="test@test.com")
+    @dataset
+    class A:
+        a1: int = field(key=True)
+        a2: int
+        a3: str
+        a4: float
+        t: datetime
+
+    @meta(owner="thaqib@fennel.ai")
+    @dataset
+    class B:
+        a1: int = field(key=True)
+        a2: str
+        t: datetime
+
+        @pipeline(version=1)
+        @inputs(A)
+        def from_a(cls, a: Dataset):
+            x = a.assign("a2", str, lambda df: df["a3"])
+            return x.select("a1", "a2")
+
+    view = InternalTestClient()
+    view.add(B)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "B",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "a1",
+                        "dtype": {"int_type": {}},
+                    }
+                ]
+            },
+            "values": {
+                "fields": [
+                    {
+                        "name": "a2",
+                        "dtype": {"string_type": {}},
+                    }
+                ]
+            },
+            "timestamp": "t",
+        },
+        "metadata": {"owner": "thaqib@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "a1": {},
+            "a2": {},
+            "t": {},
+        },
+        "pycode": {},
+    }
+
+    dataset_req = sync_request.datasets[0]
+
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+    operator_req = erase_operator_pycode(sync_request.operators[1])
+    o = {
+        "id": "666ab6a479657032e71942594b9d0fb4",
+        "pipeline_name": "from_a",
+        "dataset_name": "B",
+        "assign": {
+            "columnName": "a2",
+            "operandId": "A",
+            "outputType": {"stringType": {}},
+            "pycode": {},
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+
 def test_select_and_rename_column():
     @meta(owner="test@test.com")
     @dataset
@@ -2296,4 +2381,26 @@ def test_auto_schema_generation():
                 "user_id": int,
                 "timestamp": datetime,
             }
+
+            assign_ds = activity.assign(
+                "transaction_amount", int, lambda df: df["user_id"] * 2
+            )
+            assert assign_ds.schema() == {
+                "action_type": float,
+                "timestamp": datetime,
+                "transaction_amount": int,
+                "user_id": int,
+                "amount": Optional[float],
+            }
+
+            assign_ds_str = activity.assign(
+                "user_id", str, lambda df: str(df["user_id"])
+            )
+            assert assign_ds_str.schema() == {
+                "action_type": float,
+                "timestamp": datetime,
+                "user_id": str,
+                "amount": Optional[float],
+            }
+
             return x

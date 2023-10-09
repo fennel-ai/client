@@ -192,6 +192,7 @@ class Operator(google.protobuf.message.Message):
     EXPLODE_FIELD_NUMBER: builtins.int
     DEDUP_FIELD_NUMBER: builtins.int
     FIRST_FIELD_NUMBER: builtins.int
+    ASSIGN_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
     id: builtins.str
     """Every operator has an ID assigned by the client"""
@@ -225,6 +226,8 @@ class Operator(google.protobuf.message.Message):
     def dedup(self) -> global___Dedup: ...
     @property
     def first(self) -> global___First: ...
+    @property
+    def assign(self) -> global___Assign: ...
     name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -249,11 +252,12 @@ class Operator(google.protobuf.message.Message):
         explode: global___Explode | None = ...,
         dedup: global___Dedup | None = ...,
         first: global___First | None = ...,
+        assign: global___Assign | None = ...,
         name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "explode", b"explode", "filter", b"filter", "first", b"first", "join", b"join", "kind", b"kind", "rename", b"rename", "transform", b"transform", "union", b"union"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "dataset_name", b"dataset_name", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "explode", b"explode", "filter", b"filter", "first", b"first", "id", b"id", "is_root", b"is_root", "join", b"join", "kind", b"kind", "name", b"name", "pipeline_name", b"pipeline_name", "rename", b"rename", "transform", b"transform", "union", b"union"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union", "filter", "dataset_ref", "rename", "drop", "explode", "dedup", "first"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "explode", b"explode", "filter", b"filter", "first", b"first", "join", b"join", "kind", b"kind", "rename", b"rename", "transform", b"transform", "union", b"union"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_name", b"dataset_name", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "explode", b"explode", "filter", b"filter", "first", b"first", "id", b"id", "is_root", b"is_root", "join", b"join", "kind", b"kind", "name", b"name", "pipeline_name", b"pipeline_name", "rename", b"rename", "transform", b"transform", "union", b"union"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union", "filter", "dataset_ref", "rename", "drop", "explode", "dedup", "first", "assign"] | None: ...
 
 global___Operator = Operator
 
@@ -437,6 +441,39 @@ class Filter(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["operand_id", b"operand_id", "operand_name", b"operand_name", "pycode", b"pycode"]) -> None: ...
 
 global___Filter = Filter
+
+@typing_extensions.final
+class Assign(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    OPERAND_ID_FIELD_NUMBER: builtins.int
+    PYCODE_FIELD_NUMBER: builtins.int
+    COLUMN_NAME_FIELD_NUMBER: builtins.int
+    OUTPUT_TYPE_FIELD_NUMBER: builtins.int
+    OPERAND_NAME_FIELD_NUMBER: builtins.int
+    operand_id: builtins.str
+    @property
+    def pycode(self) -> pycode_pb2.PyCode: ...
+    column_name: builtins.str
+    @property
+    def output_type(self) -> schema_pb2.DataType: ...
+    operand_name: builtins.str
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
+    THE CLIENT
+    """
+    def __init__(
+        self,
+        *,
+        operand_id: builtins.str = ...,
+        pycode: pycode_pb2.PyCode | None = ...,
+        column_name: builtins.str = ...,
+        output_type: schema_pb2.DataType | None = ...,
+        operand_name: builtins.str = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["output_type", b"output_type", "pycode", b"pycode"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["column_name", b"column_name", "operand_id", b"operand_id", "operand_name", b"operand_name", "output_type", b"output_type", "pycode", b"pycode"]) -> None: ...
+
+global___Assign = Assign
 
 @typing_extensions.final
 class Drop(google.protobuf.message.Message):

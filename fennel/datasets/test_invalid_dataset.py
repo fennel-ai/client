@@ -83,6 +83,34 @@ def test_invalid_select():
     )
 
 
+def test_invalid_assign():
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            a2: int
+            t: datetime
+
+        @meta(owner="thaqib@fennel.ai")
+        @dataset
+        class B:
+            a1: int
+            a2: str
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(A)
+            def from_a(cls, a: Dataset):
+                return a.assign("a1", float, lambda df: df["a1"] * 1.0)
+
+    assert (
+        str(e.value) == "Field `a1` is not a non-key non-timestamp field in "
+        "schema of assign node input '[Dataset:A]'. Value fields are: ['a2']"
+    )
+
+
 def test_select_drop_invalid_param():
     with pytest.raises(ValueError) as e:
 

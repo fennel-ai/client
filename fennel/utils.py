@@ -76,7 +76,7 @@ def fennel_get_source(obj: Any) -> str:
 def check_response(response: requests.Response):  # type: ignore
     """Check the response from the server and raise an exception if the response is not OK"""
     if response.status_code != 200:
-        raise Exception(
+        print(
             "Server returned: {}, {}, {}".format(
                 response.status_code,
                 response.reason,

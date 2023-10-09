@@ -941,9 +941,7 @@ def test_drop_null():
         str(e.value)
         == "invalid dropnull b1 has type <class 'int'> expected Optional type"
     )
-
     with pytest.raises(ValueError) as e:
-
         @meta(owner="test@test.com")
         @dataset
         class C3:
@@ -961,3 +959,104 @@ def test_drop_null():
         str(e.value)
         == "invalid dropnull column b4 not present in '[Dataset:C]'"
     )
+
+def test_assign():
+    @meta(owner="test@test.com")
+    @dataset
+    class RatingActivity:
+        userid: int = field(key=True)
+        rating: float
+        movie: str
+        t: datetime
+
+    with pytest.raises(Exception) as e:
+
+        @dataset
+        class RatingActivity1:
+            t: datetime
+            userid: int = field(key=True)
+            movie: str
+            rating: float
+
+            @pipeline(version=1)
+            @inputs(RatingActivity)
+            def create_dataset(cls, activity: Dataset):
+                return activity.assign(
+                    column="t",
+                    result_type=float,
+                    func=lambda df: float(df["t"]),
+                )
+
+    assert (
+        str(e.value)
+        == "Field `t` is not a non-key non-timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
+    )
+
+    with pytest.raises(Exception) as e:
+
+        @dataset
+        class RatingActivity2:
+            t: datetime
+            userid: int = field(key=True)
+            movie: str
+            rating: float
+
+            @pipeline(version=1)
+            @inputs(RatingActivity)
+            def create_dataset(cls, activity: Dataset):
+                return activity.assign(
+                    column="",
+                    result_type=float,
+                    func=lambda df: float(df["t"]),
+                )
+
+    assert (
+        str(e.value)
+        == "invalid assign - '[Pipeline:create_dataset]->assign node' must specify a column to assign"
+    )
+
+    with pytest.raises(Exception) as e:
+
+        @dataset
+        class RatingActivity3:
+            t: datetime
+            userid: int = field(key=True)
+            movie: str
+            rating: float
+
+            @pipeline(version=1)
+            @inputs(RatingActivity)
+            def create_dataset(cls, activity: Dataset):
+                return activity.assign(
+                    column="",
+                    result_type=float,
+                    func=lambda df: float(df["t"]),
+                )
+
+    assert (
+        str(e.value)
+        == "invalid assign - '[Pipeline:create_dataset]->assign node' must specify a column to assign"
+    )
+    with pytest.raises(Exception) as e:
+      
+        @dataset
+        class RatingActivity4:
+            t: datetime
+            userid: int = field(key=True)
+            movie: str
+            rating: float
+
+            @pipeline(version=1)
+            @inputs(RatingActivity)
+            def create_dataset(cls, activity: Dataset):
+                return activity.assign(
+                    column="userid",
+                    result_type=float,
+                    func=lambda df: float(df["userid"]),
+                )
+
+    assert (
+        str(e.value)
+        == "Field `userid` is not a non-key non-timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
+    )
+ 

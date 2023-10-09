@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import re
 from textwrap import dedent, indent
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 import google.protobuf.duration_pb2 as duration_proto
 
@@ -47,7 +47,13 @@ class Serializer(Visitor):
         _ = self.visit(self.terminal_node)
         return self.operators
 
-    def wrap_function(self, op_pycode, is_filter=False) -> pycode_proto.PyCode:
+    def wrap_function(
+        self,
+        op_pycode,
+        is_filter=False,
+        is_assign=False,
+        column_name: Optional[str] = None,
+    ) -> pycode_proto.PyCode:
         gen_func_name = hashlib.sha256(
             _del_spaces_tabs_and_newlines(op_pycode.core_code).encode()
         ).hexdigest()[:10]
@@ -90,6 +96,13 @@ def {new_entry_point}(*args, **kwargs):
             gen_code += f"""
 def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
     return df[{old_entry_point}(df)]
+"""
+        if is_assign:
+            old_entry_point = new_entry_point
+            new_entry_point = f"{old_entry_point}_assign"
+            gen_code += f"""
+def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
+    return df.assign({column_name}={old_entry_point})
 """
 
         return pycode_proto.PyCode(
@@ -161,6 +174,25 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             filter=proto.Filter(
                 operand_id=self.visit(obj.node),
                 pycode=gen_pycode,
+            ),
+        )
+
+    def visitAssign(self, obj):
+        assign_func_pycode = to_includes_proto(obj.func)
+        gen_pycode = self.wrap_function(
+            assign_func_pycode, is_assign=True, column_name=obj.column
+        )
+
+        return proto.Operator(
+            id=obj.signature(),
+            is_root=(obj == self.terminal_node),
+            pipeline_name=self.pipeline_name,
+            dataset_name=self.dataset_name,
+            assign=proto.Assign(
+                operand_id=self.visit(obj.node),
+                pycode=gen_pycode,
+                column_name=obj.column,
+                output_type=get_datatype(obj.output_type),
             ),
         )
 
