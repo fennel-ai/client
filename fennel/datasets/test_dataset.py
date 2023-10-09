@@ -1557,6 +1557,130 @@ def test_assign_column():
     )
 
 
+def test_dropnull():
+    @meta(owner="test@test.com")
+    @dataset
+    class A:
+        a1: int = field(key=True)
+        a2: Optional[int]
+        a3: str
+        a4: Optional[float]
+        t: datetime
+
+    @meta(owner="test@test.com")
+    @dataset
+    class B:
+        a1: int = field(key=True)
+        a2: int
+        a3: str
+        a4: float
+        t: datetime
+
+        @pipeline(version=1)
+        @inputs(A)
+        def from_a(cls, a: Dataset):
+            x = a.dropnull("a2", "a4")
+            return x
+
+    view = InternalTestClient()
+    view.add(B)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "B",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "a1",
+                        "dtype": {"int_type": {}},
+                    }
+                ]
+            },
+            "values": {
+                "fields": [
+                    {
+                        "name": "a2",
+                        "dtype": {"int_type": {}},
+                    },
+                    {
+                        "name": "a3",
+                        "dtype": {"string_type": {}},
+                    },
+                    {
+                        "name": "a4",
+                        "dtype": {"double_type": {}},
+                    },
+                ]
+            },
+            "timestamp": "t",
+        },
+        "metadata": {"owner": "test@test.com"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "a1": {},
+            "a2": {},
+            "a3": {},
+            "a4": {},
+            "t": {},
+        },
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+    assert len(sync_request.pipelines) == 1
+    pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
+    p = {
+        "name": "from_a",
+        "dataset_name": "B",
+        "signature": "from_a",
+        "metadata": {},
+        "input_dataset_names": ["A"],
+        "version": 1,
+        "active": True,
+        "pycode": {},
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert pipeline_req == expected_pipeline_request, error_message(
+        pipeline_req, expected_pipeline_request
+    )
+
+    assert len(sync_request.operators) == 2
+    o = {
+        "id": "A",
+        "pipeline_name": "from_a",
+        "dataset_name": "B",
+        "dataset_ref": {"referring_dataset_name": "A"},
+    }
+    operator_req = sync_request.operators[0]
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    o = {
+        "id": "be210d6a1d0ed8ab544d737b629a1c8d",
+        "isRoot": True,
+        "pipelineName": "from_a",
+        "datasetName": "B",
+        "dropnull": {"operandId": "A", "columns": ["a2", "a4"]},
+    }
+
+    operator_req = sync_request.operators[1]
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+
 def test_select_and_rename_column():
     @meta(owner="test@test.com")
     @dataset

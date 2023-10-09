@@ -942,6 +942,7 @@ def test_drop_null():
         == "invalid dropnull b1 has type <class 'int'> expected Optional type"
     )
     with pytest.raises(ValueError) as e:
+
         @meta(owner="test@test.com")
         @dataset
         class C3:
@@ -959,6 +960,7 @@ def test_drop_null():
         str(e.value)
         == "invalid dropnull column b4 not present in '[Dataset:C]'"
     )
+
 
 def test_assign():
     @meta(owner="test@test.com")
@@ -1038,7 +1040,7 @@ def test_assign():
         == "invalid assign - '[Pipeline:create_dataset]->assign node' must specify a column to assign"
     )
     with pytest.raises(Exception) as e:
-      
+
         @dataset
         class RatingActivity4:
             t: datetime
@@ -1059,4 +1061,3 @@ def test_assign():
         str(e.value)
         == "Field `userid` is not a non-key non-timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
     )
- 

@@ -259,6 +259,17 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             ),
         )
 
+    def visitDropNull(self, obj):
+        return proto.Operator(
+            id=obj.signature(),
+            is_root=(obj == self.terminal_node),
+            pipeline_name=self.pipeline_name,
+            dataset_name=self.dataset_name,
+            dropnull=proto.Dropnull(
+                operand_id=self.visit(obj.node), columns=obj.columns
+            ),
+        )
+
     def visitRename(self, obj):
         return proto.Operator(
             id=obj.signature(),

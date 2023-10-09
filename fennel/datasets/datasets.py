@@ -1522,6 +1522,7 @@ class Visitor:
 
     def visitDropNull(self, obj):
         raise NotImplementedError()
+
     def visitAssign(self, obj):
         raise NotImplementedError()
 

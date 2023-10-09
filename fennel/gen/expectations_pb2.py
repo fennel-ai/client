@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 import fennel.gen.metadata_pb2 as metadata__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x65xpectations.proto\x12\x19\x66\x65nnel.proto.expectations\x1a\x0emetadata.proto\"\xb1\x02\n\x0c\x45xpectations\x12\x13\n\x0b\x65ntity_name\x18\x01 \x01(\t\x12\r\n\x05suite\x18\x02 \x01(\t\x12<\n\x0c\x65xpectations\x18\x03 \x03(\x0b\x32&.fennel.proto.expectations.Expectation\x12\x0f\n\x07version\x18\x04 \x01(\x05\x12\x31\n\x08metadata\x18\x05 \x01(\x0b\x32\x1f.fennel.proto.metadata.Metadata\x12\x42\n\x06\x65_type\x18\x06 \x01(\x0e\x32\x32.fennel.proto.expectations.Expectations.EntityType\"7\n\nEntityType\x12\x0b\n\x07\x44\x61taset\x10\x00\x12\x0e\n\nFeatureset\x10\x01\x12\x0c\n\x08Pipeline\x10\x02\"C\n\x0b\x45xpectation\x12\x18\n\x10\x65xpectation_type\x18\x01 \x01(\t\x12\x1a\n\x12\x65xpectation_kwargs\x18\x02 \x01(\tb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x65xpectations.proto\x12\x19\x66\x65nnel.proto.expectations\x1a\x0emetadata.proto\"\xbf\x02\n\x0c\x45xpectations\x12\x13\n\x0b\x65ntity_name\x18\x01 \x01(\t\x12\r\n\x05suite\x18\x02 \x01(\t\x12<\n\x0c\x65xpectations\x18\x03 \x03(\x0b\x32&.fennel.proto.expectations.Expectation\x12\x0f\n\x07version\x18\x04 \x01(\x05\x12\x31\n\x08metadata\x18\x05 \x01(\x0b\x32\x1f.fennel.proto.metadata.Metadata\x12\x42\n\x06\x65_type\x18\x06 \x01(\x0e\x32\x32.fennel.proto.expectations.Expectations.EntityType\x12\x0c\n\x04tags\x18\x07 \x03(\t\"7\n\nEntityType\x12\x0b\n\x07\x44\x61taset\x10\x00\x12\x0e\n\nFeatureset\x10\x01\x12\x0c\n\x08Pipeline\x10\x02\"C\n\x0b\x45xpectation\x12\x18\n\x10\x65xpectation_type\x18\x01 \x01(\t\x12\x1a\n\x12\x65xpectation_kwargs\x18\x02 \x01(\tb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,9 +22,9 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'expectations_pb2', _globals
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _globals['_EXPECTATIONS']._serialized_start=66
-  _globals['_EXPECTATIONS']._serialized_end=371
-  _globals['_EXPECTATIONS_ENTITYTYPE']._serialized_start=316
-  _globals['_EXPECTATIONS_ENTITYTYPE']._serialized_end=371
-  _globals['_EXPECTATION']._serialized_start=373
-  _globals['_EXPECTATION']._serialized_end=440
+  _globals['_EXPECTATIONS']._serialized_end=385
+  _globals['_EXPECTATIONS_ENTITYTYPE']._serialized_start=330
+  _globals['_EXPECTATIONS_ENTITYTYPE']._serialized_end=385
+  _globals['_EXPECTATION']._serialized_start=387
+  _globals['_EXPECTATION']._serialized_end=454
 # @@protoc_insertion_point(module_scope)

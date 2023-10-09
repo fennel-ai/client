@@ -386,7 +386,7 @@ class Executor(Visitor):
         df = input_ret.df
         df = df.dropna(subset=obj.columns)
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
-     
+
     def visitAssign(self, obj):
         input_ret = self.visit(obj.node)
         df = input_ret.df

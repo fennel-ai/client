@@ -44,6 +44,7 @@ class Expectations(google.protobuf.message.Message):
     VERSION_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     E_TYPE_FIELD_NUMBER: builtins.int
+    TAGS_FIELD_NUMBER: builtins.int
     entity_name: builtins.str
     suite: builtins.str
     @property
@@ -52,6 +53,8 @@ class Expectations(google.protobuf.message.Message):
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
     e_type: global___Expectations.EntityType.ValueType
+    @property
+    def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
@@ -61,9 +64,10 @@ class Expectations(google.protobuf.message.Message):
         version: builtins.int = ...,
         metadata: metadata_pb2.Metadata | None = ...,
         e_type: global___Expectations.EntityType.ValueType = ...,
+        tags: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["e_type", b"e_type", "entity_name", b"entity_name", "expectations", b"expectations", "metadata", b"metadata", "suite", b"suite", "version", b"version"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["e_type", b"e_type", "entity_name", b"entity_name", "expectations", b"expectations", "metadata", b"metadata", "suite", b"suite", "tags", b"tags", "version", b"version"]) -> None: ...
 
 global___Expectations = Expectations
 
