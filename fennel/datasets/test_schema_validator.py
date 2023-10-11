@@ -903,13 +903,13 @@ def test_first_wrong_field():
 
 
 def test_drop_null():
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(TypeError) as e:
 
         @meta(owner="test@test.com")
         @dataset
         class C1:
             b1: int = field(key=True)
-            b2: int
+            b2: Optional[int]
             b3: str
             t: datetime
 
@@ -918,9 +918,10 @@ def test_drop_null():
             def drop_null_noargs(cls, c: Dataset):
                 return c.dropnull()
 
+    print(e.value)
     assert (
         str(e.value)
-        == "must specify either 'columns' or positional arguments to dropnull."
+        == """[TypeError('Field `b2` has type `int` in `pipeline drop_null_noargs output value` schema but type `Optional[int]` in `C1 value` schema.')]"""
     )
     with pytest.raises(ValueError) as e:
 

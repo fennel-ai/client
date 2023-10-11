@@ -70,6 +70,21 @@ class UserInfoDatasetDerivedSelect:
         )
 
 
+@meta(owner="test@test.com")
+@dataset
+class UserInfoDatasetDerivedDropnull:
+    user_id: int = field(key=True).meta(description="User ID")  # type: ignore
+    name: str = field().meta(description="User name")  # type: ignore
+    country: str
+    age: int
+    timestamp: datetime = field(timestamp=True)
+
+    @pipeline(version=1)
+    @inputs(UserInfoDataset)
+    def get_info(cls, info: Dataset):
+        return info.dropnull()
+
+
 class TestDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
@@ -138,6 +153,71 @@ class TestDataset(unittest.TestCase):
         assert "ts" in df.columns
         assert all(x in df.columns for x in ["user_id", "name", "country_name"])
         assert "age" not in df.columns
+
+    @pytest.mark.integration
+    @mock
+    def test_simple_drop_null(self, client):
+        # Sync the dataset
+        client.sync(datasets=[UserInfoDataset, UserInfoDatasetDerivedDropnull])
+        now = datetime.now()
+        data = [
+            [18232, "Ross", 32, "USA", now],
+            [18234, "Monica", None, "Chile", now],
+            [18235, "Jessica", 24, None, now],
+            [18236, "Jane", 24, None, now],
+            [18237, "Chandler", 24, None, now],
+            [18238, "Mike", 32, "UK", now],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+        df["age"] = df["age"].astype(pd.Int64Dtype())
+        response = client.log("fennel_webhook", "UserInfoDataset", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        # Do lookup on UserInfoDataset
+        if client.is_integration_client():
+            client.sleep()
+        ts = pd.Series([now, now, now, now, now, now])
+        user_id_keys = pd.Series([18232, 18234, 18235, 18236, 18237, 18238])
+
+        df, found = UserInfoDataset.lookup(ts, user_id=user_id_keys)
+        assert df.shape == (6, 5)
+        assert df["user_id"].tolist() == [
+            18232,
+            18234,
+            18235,
+            18236,
+            18237,
+            18238,
+        ]
+        assert df["name"].tolist() == [
+            "Ross",
+            "Monica",
+            "Jessica",
+            "Jane",
+            "Chandler",
+            "Mike",
+        ]
+        assert df["age"].tolist() == [32, None, 24, 24, 24, 32]
+        assert df["country"].tolist() == [
+            "USA",
+            "Chile",
+            None,
+            None,
+            None,
+            "UK",
+        ]
+
+        # Do lookup on UserInfoDatasetDerived
+        df, found = UserInfoDatasetDerivedDropnull.lookup(
+            ts, user_id=user_id_keys
+        )
+
+        # TODO (thaqib)
+        assert df.shape == (6, 5)
+        assert df["user_id"].tolist() == user_id_keys.tolist()
+        assert df["name"].tolist() == ["Ross", None, None, None, None, "Mike"]
+        assert df["country"].tolist() == ["USA", None, None, None, None, "UK"]
 
     @pytest.mark.integration
     @mock

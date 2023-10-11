@@ -232,7 +232,13 @@ class _Node(Generic[T]):
         return self.__drop(drop_cols)
 
     def dropnull(self, *args, columns: Optional[List[str]] = None) -> _Node:
-        cols = _Node.__get_drop_args(*args, columns=columns, name="dropnull")
+        cols = None
+        if len(args) == 0 and columns is None:  # dropnull with no get_args
+            cols = self.dsschema().get_optional_cols()
+        else:
+            cols = _Node.__get_drop_args(
+                *args, columns=columns, name="dropnull"
+            )
         return DropNull(self, cols)
 
     def select(self, *args, columns: Optional[List[str]] = None) -> _Node:
@@ -910,7 +916,7 @@ def fennel_is_optional(type_):
     )
 
 
-def fennel_optional_inner(type_):
+def fennel_get_optional_inner(type_):
     return typing.get_args(type_)[0]
 
 
@@ -1566,11 +1572,16 @@ class DSSchema:
                 f"field {old_name} not found in schema of {self.name}"
             )
 
+    def get_optional_cols(self) -> List[str]:
+        return [
+            col for col, t in self.schema().items() if fennel_is_optional(t)
+        ]
+
     def drop_null_column(self, name: str):
         if name in self.keys:
-            self.keys[name] = fennel_optional_inner(self.keys[name])
+            self.keys[name] = fennel_get_optional_inner(self.keys[name])
         elif name in self.values:
-            self.values[name] = fennel_optional_inner(self.values[name])
+            self.values[name] = fennel_get_optional_inner(self.values[name])
         elif name == self.timestamp:
             raise Exception(
                 f"cannot drop_null on timestamp field {name} of {self.name}"
