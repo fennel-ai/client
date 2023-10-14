@@ -46,7 +46,6 @@ class UserTransactions:
     @pipeline(version=1)
     @inputs(Activity)
     def create_user_transactions(cls, activity: Dataset):
-
         # docsnip dropnull
         dropnull_amounts = activity.dropnull("amount")
         # /docsnip
