@@ -695,6 +695,7 @@ class Drop(_Node):
 
 class DropNull(_Node):
     def __init__(self, node: _Node, columns: List[str]):
+        super().__init__()
         self.node = node
         self.columns = columns
         self.node.out_edges.append(self)

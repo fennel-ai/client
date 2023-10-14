@@ -130,9 +130,24 @@ Fennel does not allow you to drop keys or timestamp columns from a dataset.
 
 <pre snippet="api-reference/operators_ref#drop"></pre>
 
+
+### Dropnull
+
+Fennel allows you to drop null values from columns of a dataset using the `dropnull` operator.
+
+The `dropnull` operator has the following parameters:
+
+1. `columns: List[str]` - positional argument, that specifies the list of columns to apply dropnull on from the dataset.
+
+:::info
+Fennel only allows you to call dropnull of columns with Optional type.
+:::
+
+<pre snippet="api-reference/operators_ref#dropnull"></pre>
+
 ### Select
 
-Fennel allows you to drop columns from a dataset using the `select` operator.
+Fennel allows you to select columns from a dataset using the `select` operator.
 
 The `select` operator has the following parameters:
 
