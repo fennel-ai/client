@@ -47,20 +47,24 @@ class CoreFeatureset(google.protobuf.message.Message):
     NAME_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     PYCODE_FIELD_NUMBER: builtins.int
+    TAGS_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
     @property
     def pycode(self) -> pycode_pb2.PyCode: ...
+    @property
+    def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         name: builtins.str = ...,
         metadata: metadata_pb2.Metadata | None = ...,
         pycode: pycode_pb2.PyCode | None = ...,
+        tags: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "name", b"name", "pycode", b"pycode"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "name", b"name", "pycode", b"pycode", "tags", b"tags"]) -> None: ...
 
 global___CoreFeatureset = CoreFeatureset
 
@@ -73,6 +77,7 @@ class Feature(google.protobuf.message.Message):
     DTYPE_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     FEATURE_SET_NAME_FIELD_NUMBER: builtins.int
+    TAGS_FIELD_NUMBER: builtins.int
     id: builtins.int
     name: builtins.str
     @property
@@ -80,6 +85,8 @@ class Feature(google.protobuf.message.Message):
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
     feature_set_name: builtins.str
+    @property
+    def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
@@ -88,9 +95,10 @@ class Feature(google.protobuf.message.Message):
         dtype: schema_pb2.DataType | None = ...,
         metadata: metadata_pb2.Metadata | None = ...,
         feature_set_name: builtins.str = ...,
+        tags: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "feature_set_name", b"feature_set_name", "id", b"id", "metadata", b"metadata", "name", b"name"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "feature_set_name", b"feature_set_name", "id", b"id", "metadata", b"metadata", "name", b"name", "tags", b"tags"]) -> None: ...
 
 global___Feature = Feature
 
@@ -129,6 +137,7 @@ class Extractor(google.protobuf.message.Message):
     FEATURE_SET_NAME_FIELD_NUMBER: builtins.int
     EXTRACTOR_TYPE_FIELD_NUMBER: builtins.int
     FIELD_INFO_FIELD_NUMBER: builtins.int
+    TAGS_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def datasets(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
@@ -150,6 +159,8 @@ class Extractor(google.protobuf.message.Message):
         """pycode excluded from the oneof for better bwd compatibility in Rust
         required iff extractor_type == LOOKUP
         """
+    @property
+    def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
@@ -163,9 +174,10 @@ class Extractor(google.protobuf.message.Message):
         feature_set_name: builtins.str = ...,
         extractor_type: global___ExtractorType.ValueType = ...,
         field_info: global___FieldLookupInfo | None = ...,
+        tags: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["derived_extractor_info", b"derived_extractor_info", "field_info", b"field_info", "metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "derived_extractor_info", b"derived_extractor_info", "extractor_type", b"extractor_type", "feature_set_name", b"feature_set_name", "features", b"features", "field_info", b"field_info", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "version", b"version"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "derived_extractor_info", b"derived_extractor_info", "extractor_type", b"extractor_type", "feature_set_name", b"feature_set_name", "features", b"features", "field_info", b"field_info", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "tags", b"tags", "version", b"version"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["derived_extractor_info", b"derived_extractor_info"]) -> typing_extensions.Literal["field_info"] | None: ...
 
 global___Extractor = Extractor

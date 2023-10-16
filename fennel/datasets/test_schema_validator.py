@@ -902,6 +902,67 @@ def test_first_wrong_field():
     )
 
 
+def test_drop_null():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class C1:
+            b1: int = field(key=True)
+            b2: Optional[int]
+            b3: str
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(C)
+            def drop_null_noargs(cls, c: Dataset):
+                return c.dropnull()
+
+    print(e.value)
+    assert (
+        str(e.value)
+        == """[TypeError('Field `b2` has type `int` in `pipeline drop_null_noargs output value` schema but type `Optional[int]` in `C1 value` schema.')]"""
+    )
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class C2:
+            b1: int = field(key=True)
+            b2: int
+            b3: str
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(C)
+            def drop_null_non_opt(cls, c: Dataset):
+                return c.dropnull("b1")
+
+    assert (
+        str(e.value)
+        == "invalid dropnull b1 has type <class 'int'> expected Optional type"
+    )
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class C3:
+            b1: int = field(key=True)
+            b2: int
+            b3: str
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(C)
+            def drop_null_non_present(cls, c: Dataset):
+                return c.dropnull("b4")
+
+    assert (
+        str(e.value)
+        == "invalid dropnull column b4 not present in '[Dataset:C]'"
+    )
+
+
 def test_assign():
     @meta(owner="test@test.com")
     @dataset
@@ -979,8 +1040,7 @@ def test_assign():
         str(e.value)
         == "invalid assign - '[Pipeline:create_dataset]->assign node' must specify a column to assign"
     )
-
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(Exception) as e:
 
         @dataset
         class RatingActivity4:

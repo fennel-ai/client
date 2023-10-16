@@ -122,7 +122,8 @@ Fennel allows you to drop columns from a dataset using the `drop` operator.
 
 The `drop` operator has the following parameters:
 
-1. `columns: List[str]` - positional argument, that specifies the list of columns to drop from the dataset.
+1. `columns: List[str]` - keyword or positional argument, that specifies the list of columns to drop from the dataset.
+    - You can also use `*args` to pass the column names for added flexibility.
 
 :::info
 Fennel does not allow you to drop keys or timestamp columns from a dataset.
@@ -130,13 +131,36 @@ Fennel does not allow you to drop keys or timestamp columns from a dataset.
 
 <pre snippet="api-reference/operators_ref#drop"></pre>
 
+
+### Dropnull
+
+Fennel allows you to drop null values from columns of a dataset using the `dropnull` operator.
+`dropnull` changes the type of the columns specified from `Optional[T]` to `T`
+
+The `dropnull` operator has the following parameters:
+
+1. `columns: List[str]` - keyword or positional argument, that specifies the list of columns to filter out null values in the dataset.
+    - You can also use `*args` to pass the column names for added flexibility.
+
+Either one of `*args` or `columns` can be provided as an argument for `dropnull`. 
+If no arguments are given, `columns` will be all fields with the type `Optional[T]` in the dataset.
+
+:::info
+Fennel only allows you to call dropnull of columns with Optional type.
+:::
+
+<pre snippet="api-reference/operators_ref#dropnull"></pre>
+
 ### Select
 
-Fennel allows you to drop columns from a dataset using the `select` operator.
+Fennel allows you to select columns from a dataset using the `select` operator.
 
 The `select` operator has the following parameters:
 
-1. `*args: str` - positional arguments that specify the list of fields to select.
+1. `columns: List[str]` - keyword argument, that specifies the list of columns to select from the dataset.
+    - You can also use `*args` to pass the column names for added flexibility.
+
+Either one of `*args` or `columns` must be provided as an argument for `select`. 
 
 :::info
 Fennel requires you to select all key fields, with the timestamp column automatically included.

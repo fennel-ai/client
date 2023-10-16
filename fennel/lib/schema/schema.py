@@ -46,9 +46,13 @@ def _is_optional(field):
     return _get_origin(field) is Union and type(None) in _get_args(field)
 
 
+def _optional_inner(type_):
+    return _get_args(type_)[0]
+
+
 def dtype_to_string(type_: Any) -> str:
     if _is_optional(type_):
-        return f"Optional[{dtype_to_string(_get_args(type_)[0])}]"
+        return f"Optional[{dtype_to_string(_optional_inner(type_))}]"
     if isinstance(type_, type):
         return type_.__name__
     return str(type_)

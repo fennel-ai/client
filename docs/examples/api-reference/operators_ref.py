@@ -46,6 +46,10 @@ class UserTransactions:
     @pipeline(version=1)
     @inputs(Activity)
     def create_user_transactions(cls, activity: Dataset):
+        # docsnip dropnull
+        dropnull_amounts = activity.dropnull("amount")
+        # /docsnip
+
         # docsnip transform
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
             df_json = df["metadata"].apply(json.loads).apply(pd.Series)
@@ -55,7 +59,7 @@ class UserTransactions:
                 ["merchant_id", "transaction_amount", "user_id", "timestamp"]
             ]
 
-        transformed_ds = activity.transform(
+        transformed_ds = dropnull_amounts.transform(
             extract_info,
             schema={
                 "transaction_amount": float,
