@@ -298,7 +298,7 @@ def test_invalid_starting_from():
             bigquery.table("users_bq", cursor="added_on"),
             every="1h",
             lateness="2h",
-            starting_from=datetime.now(),
+            since=datetime.now(),
         )
         @dataset
         class UserInfoDatasetBigQuery:
@@ -325,7 +325,7 @@ def test_invalid_starting_from():
         @source(
             s3.bucket(bucket_name="bucket", prefix="prefix"),
             every="1h",
-            starting_from="2020-01-01T00:00:00Z",
+            since="2020-01-01T00:00:00Z",
         )
         @meta(owner="aditya@fennel.ai")
         @dataset

@@ -235,9 +235,7 @@ def test_multiple_sources():
         ),
         every="1h",
         lateness="2d",
-        starting_from=datetime.strptime(
-            "2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
-        ),
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
     class UserInfoDatasetS3:
