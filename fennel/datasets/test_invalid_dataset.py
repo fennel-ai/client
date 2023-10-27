@@ -17,7 +17,6 @@ from fennel.test_lib import *
 
 def test_multiple_date_time():
     with pytest.raises(ValueError) as e:
-
         @dataset
         class UserInfoDataset:
             user_id: int = field(key=True)
@@ -32,14 +31,13 @@ def test_multiple_date_time():
 
     _ = InternalTestClient()
     assert (
-        str(e.value) == "Multiple timestamp fields are not supported in "
-        "dataset `UserInfoDataset`."
+            str(e.value) == "Multiple timestamp fields are not supported in "
+                            "dataset `UserInfoDataset`."
     )
 
 
 def test_invalid_retention_window():
     with pytest.raises(TypeError) as e:
-
         @dataset(history=324)
         class Activity:
             user_id: int
@@ -48,14 +46,13 @@ def test_invalid_retention_window():
             timestamp: datetime
 
     assert (
-        str(e.value) == "duration 324 must be a specified as a string for eg. "
-        "1d/2m/3y."
+            str(e.value) == "duration 324 must be a specified as a string for eg. "
+                            "1d/2m/3y."
     )
 
 
 def test_invalid_select():
     with pytest.raises(Exception) as e:
-
         @meta(owner="test@test.com")
         @dataset
         class A:
@@ -78,14 +75,13 @@ def test_invalid_select():
                 return a.select("a2", "a3")
 
     assert (
-        str(e.value) == "Field `a1` is not a non-key non-timestamp field in "
-        "schema of select node input '[Dataset:A]'. Value fields are: ['a2', 'a3', 'a4']"
+            str(e.value) == "Field `a1` is not a non-key non-timestamp field in "
+                            "schema of select node input '[Dataset:A]'. Value fields are: ['a2', 'a3', 'a4']"
     )
 
 
 def test_invalid_assign():
     with pytest.raises(Exception) as e:
-
         @meta(owner="test@test.com")
         @dataset
         class A:
@@ -106,14 +102,13 @@ def test_invalid_assign():
                 return a.assign("a1", float, lambda df: df["a1"] * 1.0)
 
     assert (
-        str(e.value) == "Field `a1` is not a non-key non-timestamp field in "
-        "schema of assign node input '[Dataset:A]'. Value fields are: ['a2']"
+            str(e.value) == "Field `a1` is not a non-key non-timestamp field in "
+                            "schema of assign node input '[Dataset:A]'. Value fields are: ['a2']"
     )
 
 
 def test_select_drop_invalid_param():
     with pytest.raises(ValueError) as e:
-
         @meta(owner="test@test.com")
         @dataset
         class A:
@@ -136,12 +131,11 @@ def test_select_drop_invalid_param():
                 return a.select("a1", "a2", columns=["a1", "a2"])
 
     assert (
-        str(e.value)
-        == "can only specify either 'columns' or positional arguments to select, not both."
+            str(e.value)
+            == "can only specify either 'columns' or positional arguments to select, not both."
     )
 
     with pytest.raises(ValueError) as e:
-
         @meta(owner="test@test.com")
         @dataset
         class A:
@@ -164,12 +158,11 @@ def test_select_drop_invalid_param():
                 return a.drop("a3", "a4", columns=["a3", "a4"])
 
     assert (
-        str(e.value)
-        == "can only specify either 'columns' or positional arguments to drop, not both."
+            str(e.value)
+            == "can only specify either 'columns' or positional arguments to drop, not both."
     )
 
     with pytest.raises(ValueError) as e:
-
         @meta(owner="test@test.com")
         @dataset
         class A:
@@ -192,8 +185,8 @@ def test_select_drop_invalid_param():
                 return a.drop()
 
     assert (
-        str(e.value)
-        == "must specify either 'columns' or positional arguments to drop."
+            str(e.value)
+            == "must specify either 'columns' or positional arguments to drop."
     )
 
 
@@ -208,7 +201,6 @@ class RatingActivity:
 
 def test_incorrect_aggregate():
     with pytest.raises(ValueError) as e:
-
         @meta(owner="test@test.com")
         @dataset
         class PositiveRatingActivity:
@@ -240,12 +232,11 @@ def test_incorrect_aggregate():
                 )
 
     assert (
-        str(e.value)
-        == "Invalid aggregate `window=Window(start='forever', end='0s') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported, please set approx=True"
+            str(e.value)
+            == "Invalid aggregate `window=Window(start='forever', end='0s') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported, please set approx=True"
     )
 
     with pytest.raises(TypeError) as e:
-
         @meta(owner="test@test.com")
         @dataset
         class PositiveRatingActivity2:
@@ -277,12 +268,11 @@ def test_incorrect_aggregate():
                 )
 
     assert (
-        str(e.value)
-        == "Cannot use distinct for field `rating` of type `float`, as it is not hashable"
+            str(e.value)
+            == "Cannot use distinct for field `rating` of type `float`, as it is not hashable"
     )
 
     with pytest.raises(ValueError) as e:
-
         @meta(owner="test@test.com")
         @dataset
         class PositiveRatingActivity3:
@@ -314,12 +304,11 @@ def test_incorrect_aggregate():
                 )
 
     assert (
-        str(e.value)
-        == "Invalid aggregate `window=Window(start='forever', end='0s') into_field='unique_users' of='userid' unordered=False`: Distinct requires unordered=True"
+            str(e.value)
+            == "Invalid aggregate `window=Window(start='forever', end='0s') into_field='unique_users' of='userid' unordered=False`: Distinct requires unordered=True"
     )
 
     with pytest.raises(TypeError) as e:
-
         @meta(owner="test@test.com")
         @dataset
         class Ratings:
@@ -353,14 +342,13 @@ def test_incorrect_aggregate():
                 )
 
     assert (
-        str(e.value)
-        == "Cannot get standard deviation of field movie of type str"
+            str(e.value)
+            == "Cannot get standard deviation of field movie of type str"
     )
 
 
 def test_invalid_struct_type():
     with pytest.raises(TypeError) as e:
-
         @struct
         class Car:
             model: str
@@ -370,12 +358,11 @@ def test_invalid_struct_type():
                 self.year = year
 
     assert (
-        str(e.value)
-        == "Struct `Car` contains method `set_year`, which is not allowed."
+            str(e.value)
+            == "Struct `Car` contains method `set_year`, which is not allowed."
     )
 
     with pytest.raises(TypeError) as e:
-
         @struct
         class Car2:
             model: str
@@ -390,26 +377,24 @@ def test_invalid_struct_type():
                 ]
 
     assert (
-        str(e.value)
-        == "Struct `Car2` contains method `get_expectations`, which is not "
-        "allowed."
+            str(e.value)
+            == "Struct `Car2` contains method `get_expectations`, which is not "
+               "allowed."
     )
 
     with pytest.raises(ValueError) as e:
-
         @struct
         class Car3:
             model: str
             year: int = 1990
 
     assert (
-        str(e.value)
-        == "Struct `Car3` contains attribute `year` with a default value, "
-        "`1990` which is not allowed."
+            str(e.value)
+            == "Struct `Car3` contains attribute `year` with a default value, "
+               "`1990` which is not allowed."
     )
 
     with pytest.raises(ValueError) as e:
-
         @struct
         @meta(owner="test@test.com")
         class Car4:
@@ -417,12 +402,11 @@ def test_invalid_struct_type():
             year: int
 
     assert (
-        str(e.value)
-        == "Struct `Car4` contains decorator @meta which is not allowed."
+            str(e.value)
+            == "Struct `Car4` contains decorator @meta which is not allowed."
     )
 
     with pytest.raises(Exception) as e:
-
         @struct
         class Car5:
             model: str
@@ -430,13 +414,12 @@ def test_invalid_struct_type():
             year: int
 
     assert (
-        str(e.value)
-        == "Struct `Car5` contains forward reference `sibling_car` which is "
-        "not allowed."
+            str(e.value)
+            == "Struct `Car5` contains forward reference `sibling_car` which is "
+               "not allowed."
     )
 
     with pytest.raises(TypeError) as e:
-
         class Manufacturer:
             name: str
             country: str
@@ -449,12 +432,11 @@ def test_invalid_struct_type():
             year: int
 
     assert (
-        str(e.value) == "Struct `Car6` contains attribute `manufacturer` "
-        "of a non-struct type, which is not allowed."
+            str(e.value) == "Struct `Car6` contains attribute `manufacturer` "
+                            "of a non-struct type, which is not allowed."
     )
 
     with pytest.raises(Exception) as e:
-
         class Manufacturer:
             name: str
             country: str
@@ -467,26 +449,27 @@ def test_invalid_struct_type():
             year: int
 
     assert (
-        str(e.value) == "Struct `Car7` contains attribute `manufacturer` "
-        "of a non-struct type, which is not allowed."
+            str(e.value) == "Struct `Car7` contains attribute `manufacturer` "
+                            "of a non-struct type, which is not allowed."
     )
 
     with pytest.raises(Exception) as e:
+        class NotStruct:
+            num: int
 
         @struct
         class Manufacturer:
             name: str
             country: str
-            timestamp: datetime
+            s: NotStruct
 
     assert (
-        str(e.value)
-        == "Struct `Manufacturer` contains attribute `timestamp` of a "
-        "non-struct type, which is not allowed."
+            str(e.value)
+            == "Struct `Manufacturer` contains attribute `s` of a "
+               "non-struct type, which is not allowed."
     )
 
     with pytest.raises(TypeError) as e:
-
         @struct
         class Car8:
             model: str
@@ -503,9 +486,9 @@ def test_invalid_struct_type():
             timestamp: datetime
 
     assert (
-        str(e.value)
-        == "Invalid type for field `vehicle` in dataset Vehicle: Multiple "
-        "fennel structs found `Car8, Bike`"
+            str(e.value)
+            == "Invalid type for field `vehicle` in dataset Vehicle: Multiple "
+               "fennel structs found `Car8, Bike`"
     )
 
 
@@ -517,7 +500,6 @@ def test_dataset_with_pipes():
         timestamp: datetime
 
     with pytest.raises(Exception) as e:
-
         @dataset
         class ABCDataset:
             a: int = field(key=True)
@@ -530,12 +512,11 @@ def test_dataset_with_pipes():
                 return a
 
     assert (
-        str(e.value)
-        == "pipeline decorator on `create_pipeline` must have a parenthesis"
+            str(e.value)
+            == "pipeline decorator on `create_pipeline` must have a parenthesis"
     )
 
     with pytest.raises(Exception) as e:
-
         @dataset
         class ABCDataset1:
             a: int = field(key=True)
@@ -550,7 +531,6 @@ def test_dataset_with_pipes():
     assert str(e.value) == "pipeline decorator on `XYZ` must have a parenthesis"
 
     with pytest.raises(Exception) as e:
-
         @dataset
         class ABCDataset2:
             a: int = field(key=True)
@@ -563,12 +543,11 @@ def test_dataset_with_pipes():
                 return a
 
     assert (
-        str(e.value)
-        == "pipeline `create_pipeline` must have Datasets as @input parameters."
+            str(e.value)
+            == "pipeline `create_pipeline` must have Datasets as @input parameters."
     )
 
     with pytest.raises(TypeError) as e:
-
         @dataset
         class ABCDataset3:
             a: int = field(key=True)
@@ -582,15 +561,14 @@ def test_dataset_with_pipes():
                 return a
 
     assert (
-        str(e.value)
-        == "pipeline functions are classmethods and must have cls as the "
-        "first parameter, found `a` for pipeline `create_pipeline`."
+            str(e.value)
+            == "pipeline functions are classmethods and must have cls as the "
+               "first parameter, found `a` for pipeline `create_pipeline`."
     )
 
 
 def test_dataset_incorrect_join():
     with pytest.raises(ValueError) as e:
-
         @dataset
         class XYZ:
             user_id: int
@@ -615,7 +593,6 @@ def test_dataset_incorrect_join():
 
 def test_dataset_incorrect_join_bounds():
     with pytest.raises(ValueError) as e:
-
         @dataset
         class A:
             a1: int = field(key=True)
@@ -645,7 +622,6 @@ def test_dataset_incorrect_join_bounds():
     assert "Should be a tuple of 2 values" in str(e.value)
 
     with pytest.raises(ValueError) as e:
-
         @dataset
         class A:
             a1: int = field(key=True)
@@ -675,7 +651,6 @@ def test_dataset_incorrect_join_bounds():
     assert "Neither bounds can be None" in str(e.value)
 
     with pytest.raises(ValueError) as e:
-
         @dataset
         class A:
             a1: int = field(key=True)
@@ -705,7 +680,6 @@ def test_dataset_incorrect_join_bounds():
     assert "Neither bounds can be None" in str(e.value)
 
     with pytest.raises(ValueError) as e:
-
         @dataset
         class A:
             a1: int = field(key=True)
@@ -735,7 +709,6 @@ def test_dataset_incorrect_join_bounds():
     assert "Neither bounds can be None" in str(e.value)
 
     with pytest.raises(ValueError) as e:
-
         @dataset
         class A:
             a1: int = field(key=True)
@@ -767,7 +740,6 @@ def test_dataset_incorrect_join_bounds():
 
 def test_dataset_optional_key():
     with pytest.raises(ValueError) as e:
-
         @dataset
         class XYZ:
             user_id: int
@@ -779,7 +751,6 @@ def test_dataset_optional_key():
 
 def test_protected_fields():
     with pytest.raises(Exception) as e:
-
         @dataset(history="324d")
         class Activity:
             fields: List[int]
@@ -788,20 +759,19 @@ def test_protected_fields():
             timestamp_field: datetime
 
     assert (
-        str(e.value)
-        == "[Exception('Field name `fields` is reserved. Please use a "
-        "different name in dataset `Activity`.'), Exception('Field "
-        "name `key_fields` is reserved. Please use a different name in dataset `Activity`"
-        ".'), Exception('Field name `on_demand` is reserved. Please "
-        "use a different name in dataset `Activity`.'), Exception('Field "
-        "name `timestamp_field` is reserved. Please use a different "
-        "name in dataset `Activity`.')]"
+            str(e.value)
+            == "[Exception('Field name `fields` is reserved. Please use a "
+               "different name in dataset `Activity`.'), Exception('Field "
+               "name `key_fields` is reserved. Please use a different name in dataset `Activity`"
+               ".'), Exception('Field name `on_demand` is reserved. Please "
+               "use a different name in dataset `Activity`.'), Exception('Field "
+               "name `timestamp_field` is reserved. Please use a different "
+               "name in dataset `Activity`.')]"
     )
 
 
 def test_join():
     with pytest.raises(ValueError) as e:
-
         @dataset
         class A:
             a1: int = field(key=True)
@@ -832,6 +802,6 @@ def test_join():
                 return x
 
     assert (
-        "Column name collision. `v` already exists in schema of left input"
-        in str(e.value)
+            "Column name collision. `v` already exists in schema of left input"
+            in str(e.value)
     )

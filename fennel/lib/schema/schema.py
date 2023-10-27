@@ -77,7 +77,7 @@ def _contains_forward_ref(annotation) -> bool:
 
 
 def _is_user_defined_class(cls) -> bool:
-    return isinstance(cls, type) and cls.__module__ != "builtins"
+    return isinstance(cls, type) and cls.__module__ not in ["builtins", "datetime"]
 
 
 def _contains_user_defined_class(annotation) -> bool:

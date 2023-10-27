@@ -156,14 +156,14 @@ def test_additional_dtypes_invalid():
     with pytest.raises(TypeError) as e:
         get_datatype(oneof(int, [1.2, 2.3, 3]))
     assert (
-        str(e.value) == "'oneof' options should match the type of dtype, "
-        "found 'float' expected 'int'."
+            str(e.value) == "'oneof' options should match the type of dtype, "
+                            "found 'float' expected 'int'."
     )
     with pytest.raises(TypeError) as e:
         get_datatype(oneof(str, [1, 2, 3]))
     assert (
-        str(e.value) == "'oneof' options should match the type of dtype, "
-        "found 'int' expected 'str'."
+            str(e.value) == "'oneof' options should match the type of dtype, "
+                            "found 'int' expected 'str'."
     )
 
     with pytest.raises(TypeError) as e:
@@ -547,6 +547,7 @@ class MyString:
 class Manufacturer2:
     name: MyString
     country: str
+    founded: datetime
 
 
 @struct
@@ -561,6 +562,7 @@ def test_parse_json_with_car():
         "make": {
             "name": {"value": "Test Manufacturer"},
             "country": "Test " "Country",
+            "founded": "2021-01-01T00:00:00",
         },
         "model": "Test Model",
         "year": "2023",
@@ -595,6 +597,7 @@ class MyString:
 class Manufacturer2:
     name: MyString
     country: str
+    founded: datetime
     """
     assert hasattr(Car2, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE)
     dependency_code = getattr(Car2, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE)
