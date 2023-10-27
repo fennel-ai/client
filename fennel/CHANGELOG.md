@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.18.9]- 2023-10-27
+- Added support for datetime fields in struct types
 
 ## [0.18.6] - 2023-09-19
 - Added assign operator

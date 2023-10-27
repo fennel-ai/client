@@ -473,15 +473,17 @@ def test_invalid_struct_type():
 
     with pytest.raises(Exception) as e:
 
+        class NotStruct:
+            num: int
+
         @struct
         class Manufacturer:
             name: str
             country: str
-            timestamp: datetime
+            s: NotStruct
 
     assert (
-        str(e.value)
-        == "Struct `Manufacturer` contains attribute `timestamp` of a "
+        str(e.value) == "Struct `Manufacturer` contains attribute `s` of a "
         "non-struct type, which is not allowed."
     )
 
