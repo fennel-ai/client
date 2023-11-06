@@ -156,7 +156,7 @@ class TestMovieTicketSale(unittest.TestCase):
             response.status_code == requests.codes.OK
         ), response.json()  # noqa
 
-        now = datetime.now()
+        now = datetime.utcnow()
         one_hour_ago = now - timedelta(hours=1)
         one_day_ago = now - timedelta(days=1)
         two_hours_ago = now - timedelta(hours=2)

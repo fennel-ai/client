@@ -81,7 +81,7 @@ def test_lookup_in_extractor(client):
         datasets=[User],
         featuresets=[UserFeatures, UserFeaturesDerived, UserFeaturesDerived2],
     )
-    now = datetime.now()
+    now = datetime.utcnow()
     data = pd.DataFrame(
         {
             "uid": [1, 2, 3],
