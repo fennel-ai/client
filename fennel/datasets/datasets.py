@@ -1167,6 +1167,7 @@ class Dataset(_Node[T]):
         self,
         conn: DataConnector,
         every: Optional[Duration] = None,
+        starting_from: Optional[datetime.datetime] = None,
         lateness: Optional[Duration] = None,
     ):
         if len(self._pipelines) > 0:
@@ -1177,7 +1178,7 @@ class Dataset(_Node[T]):
         ds_copy = copy.deepcopy(self)
         if hasattr(ds_copy, sources.SOURCE_FIELD):
             delattr(ds_copy, sources.SOURCE_FIELD)
-        src_fn = source(conn, every, lateness)
+        src_fn = source(conn, every, starting_from, lateness)
         return src_fn(ds_copy)
 
     def dsschema(self):

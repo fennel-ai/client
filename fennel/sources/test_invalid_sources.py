@@ -282,6 +282,67 @@ def test_invalid_kaffa_security_protocol():
     assert "security protocol must be one of" in str(e.value)
 
 
+bigquery = BigQuery(
+    name="bq_movie_tags",
+    project_id="gold-cocoa-356105",
+    dataset_id="movie_tags",
+    credentials_json="{}",
+)
+
+
+def test_invalid_starting_from():
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="test@test.com")
+        @source(
+            bigquery.table("users_bq", cursor="added_on"),
+            every="1h",
+            lateness="2h",
+            since=datetime.now(),
+        )
+        @dataset
+        class UserInfoDatasetBigQuery:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # bigquery source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetBigQuery)
+        _sync_request = view._get_sync_request_proto()  # noqa
+    assert "BigQuery connector does not support starting_from parameter" in str(
+        e.value
+    )
+
+    with pytest.raises(Exception) as e:
+
+        @source(
+            s3.bucket(bucket_name="bucket", prefix="prefix"),
+            every="1h",
+            since="2020-01-01T00:00:00Z",
+        )
+        @meta(owner="aditya@fennel.ai")
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+    assert "starting_from must be of type datetime" in str(e.value)
+
+
 def test_invalid_s3_format():
     with pytest.raises(Exception) as e:
         s3.bucket(bucket_name="bucket", prefix="prefix", format="py")

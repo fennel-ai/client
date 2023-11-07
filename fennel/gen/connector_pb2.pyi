@@ -40,6 +40,7 @@ class _CDCStrategyEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._En
     Upsert: _CDCStrategy.ValueType  # 1
     Debezium: _CDCStrategy.ValueType  # 2
     Native: _CDCStrategy.ValueType  # 3
+    Delete: _CDCStrategy.ValueType  # 4
 
 class CDCStrategy(_CDCStrategy, metaclass=_CDCStrategyEnumTypeWrapper): ...
 
@@ -47,6 +48,7 @@ Append: CDCStrategy.ValueType  # 0
 Upsert: CDCStrategy.ValueType  # 1
 Debezium: CDCStrategy.ValueType  # 2
 Native: CDCStrategy.ValueType  # 3
+Delete: CDCStrategy.ValueType  # 4
 global___CDCStrategy = CDCStrategy
 
 @typing_extensions.final
@@ -655,6 +657,7 @@ class Source(google.protobuf.message.Message):
     LATENESS_FIELD_NUMBER: builtins.int
     TIMESTAMP_FIELD_FIELD_NUMBER: builtins.int
     CDC_FIELD_NUMBER: builtins.int
+    STARTING_FROM_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
@@ -665,6 +668,8 @@ class Source(google.protobuf.message.Message):
     def lateness(self) -> google.protobuf.duration_pb2.Duration: ...
     timestamp_field: builtins.str
     cdc: global___CDCStrategy.ValueType
+    @property
+    def starting_from(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     def __init__(
         self,
         *,
@@ -675,9 +680,10 @@ class Source(google.protobuf.message.Message):
         lateness: google.protobuf.duration_pb2.Duration | None = ...,
         timestamp_field: builtins.str = ...,
         cdc: global___CDCStrategy.ValueType = ...,
+        starting_from: google.protobuf.timestamp_pb2.Timestamp | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "every", b"every", "lateness", b"lateness", "table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "every", b"every", "lateness", b"lateness", "starting_from", b"starting_from", "table", b"table"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
 
 global___Source = Source

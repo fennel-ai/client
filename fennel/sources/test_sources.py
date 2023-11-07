@@ -231,9 +231,11 @@ def test_multiple_sources():
             bucket_name="all_ratings",
             prefix="prod/apac/",
             presorted=True,
+            format="delta",
         ),
         every="1h",
         lateness="2d",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
     class UserInfoDatasetS3:
@@ -262,7 +264,7 @@ def test_multiple_sources():
                 "bucket": "all_ratings",
                 "pathPrefix": "prod/apac/",
                 "delimiter": ",",
-                "format": "csv",
+                "format": "delta",
                 "preSorted": True,
                 "db": {
                     "name": "ratings_source",
@@ -276,6 +278,7 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetS3",
         "every": "3600s",
         "lateness": "172800s",
+        "startingFrom": "2021-08-10T00:00:00Z",
         "timestamp_field": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())

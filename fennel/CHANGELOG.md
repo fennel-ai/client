@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.18.10] - 2023-10-30
+- Add support for `since` in S3 source.
+
 ## [0.18.9]- 2023-10-27
 - Added support for datetime fields in struct types
 
