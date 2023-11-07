@@ -28,6 +28,7 @@ DEFAULT_CDC = "append"
 def source(
     conn: DataConnector,
     every: Optional[Duration] = None,
+    since: Optional[datetime] = None,
     lateness: Optional[Duration] = None,
     cdc: Optional[str] = None,
 ) -> Callable[[T], Any]:
@@ -39,10 +40,14 @@ def source(
             f"{', '.join(conn.required_fields())}."
         )
 
+    if since is not None and not isinstance(since, datetime):
+        raise TypeError("starting_from must be of type datetime")
+
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY
         conn.lateness = lateness if lateness is not None else DEFAULT_LATENESS
         conn.cdc = cdc if cdc is not None else DEFAULT_CDC
+        conn.starting_from = since
         if hasattr(dataset_cls, SOURCE_FIELD):
             raise Exception(
                 "Multiple sources are not supported in dataset `%s`."
@@ -360,6 +365,7 @@ class DataConnector:
     every: Duration
     lateness: Duration
     cdc: str
+    starting_from: Optional[datetime] = None
 
     def identifier(self):
         raise NotImplementedError
