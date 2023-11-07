@@ -76,13 +76,20 @@ def fennel_get_source(obj: Any) -> str:
 def check_response(response: requests.Response):  # type: ignore
     """Check the response from the server and raise an exception if the response is not OK"""
     if response.status_code != 200:
-        print(
-            "Server returned: {}, {}, {}".format(
-                response.status_code,
-                response.reason,
-                response.text,
+        if response.headers.get("content-type") == "application/json":
+            print(
+                "Server returned: {}, {}".format(
+                    response.status_code, response.reason
+                )
             )
-        )
+        else:
+            print(
+                "Server returned: {}, {}, {}".format(
+                    response.status_code,
+                    response.reason,
+                    response.text,
+                )
+            )
 
 
 def del_namespace(obj, depth):

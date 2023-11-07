@@ -100,6 +100,12 @@ class Client:
             300,
         )
         check_response(response)
+        if response.headers.get("content-type") == "application/json":
+            res_json = response.json()
+            if "diffs" in res_json:
+                diffs = res_json["diffs"]
+                for line in diffs:
+                    print(line)
 
     def log(
         self,
