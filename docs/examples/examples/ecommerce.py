@@ -100,7 +100,7 @@ class TestUserLivestreamFeatures(unittest.TestCase):
             datasets=[fake_Order, UserSellerOrders], featuresets=[UserSeller]
         )
         columns = ["uid", "product_id", "seller_id", "timestamp"]
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             [1, 1, 1, now - timedelta(days=8)],
             [1, 2, 1, now - timedelta(days=6)],

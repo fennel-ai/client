@@ -234,7 +234,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
