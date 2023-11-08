@@ -227,7 +227,8 @@ def test_invalid_kinesis_source():
     )
 
 
-def test_multiple_sources():
+@mock
+def test_multiple_sources(client):
     with pytest.raises(Exception) as e:
 
         @meta(owner="test@test.com")
@@ -254,9 +255,11 @@ def test_multiple_sources():
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
+        client.sync(datasets=[UserInfoDataset], featuresets=[])
+
     assert (
         str(e.value)
-        == "Multiple sources are not supported in dataset `UserInfoDataset`."
+        == "Dataset `UserInfoDataset` has more than one source defined, found 4 sources."
     )
 
 

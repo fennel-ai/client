@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timedelta
 
 import pandas as pd
+import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional, List
 
@@ -13,7 +14,7 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, oneof
 from fennel.lib.window import Window
-from fennel.sources import source, Webhook
+from fennel.sources import source, Webhook, Kafka
 from fennel.test_lib import *
 
 webhook = Webhook(name="fennel_webhook")
@@ -2528,3 +2529,55 @@ def test_auto_schema_generation():
             }
 
             return x
+
+
+def test_pipeline_with_tier_selector():
+    kafka = Kafka.get(name="my_kafka")
+
+    @meta(owner="test@test.com")
+    @source(kafka.topic("orders"), lateness="1h")
+    @dataset
+    class A:
+        a1: int = field(key=True)
+        t: datetime
+
+    @meta(owner="test@test.com")
+    @source(kafka.topic("orders2"), lateness="1h")
+    @dataset
+    class B:
+        b1: int = field(key=True)
+        t: datetime
+
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class ABCDatasetDefault:
+        a1: int = field(key=True)
+        t: datetime
+
+        @pipeline(version=1, tiers="prod")
+        @inputs(A, B)
+        def pipeline1(cls, a: Dataset, b: Dataset):
+            return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
+
+        @pipeline(version=1, tiers="staging")
+        @inputs(A, B)
+        def pipeline2(cls, a: Dataset, b: Dataset):
+            return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
+
+    view = InternalTestClient()
+    view.add(A)  # type: ignore
+    view.add(B)  # type: ignore
+    view.add(ABCDatasetDefault)  # type: ignore
+    with pytest.raises(ValueError) as e:
+        _ = view._get_sync_request_proto()
+    assert (
+        str(e.value)
+        == "Pipeline ABCDatasetDefault-pipeline2 has the same version as another pipeline in the dataset."
+    )
+
+    with pytest.raises(ValueError) as e:
+        _ = view._get_sync_request_proto(tier=["prod"])
+    assert str(e.value) == "Expected tier to be a string, got ['prod']"
+    sync_request = view._get_sync_request_proto(tier="prod")
+    pipelines = sync_request.pipelines
+    assert len(pipelines) == 1

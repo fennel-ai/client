@@ -60,6 +60,7 @@ class Client:
         self,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
+        tier: Optional[str] = None,
     ):
         """
         Sync the client with the server. This will register any datasets or
@@ -92,7 +93,7 @@ class Client:
                         f" of type `{type(featureset)}` instead."
                     )
                 self.add(featureset)
-        sync_request = self._get_sync_request_proto()
+        sync_request = self._get_sync_request_proto(tier)
         response = self._post_bytes(
             "{}/sync".format(V1_API),
             sync_request.SerializeToString(),
@@ -634,8 +635,10 @@ class Client:
         )
         return http
 
-    def _get_sync_request_proto(self):
-        return to_sync_request_proto(self.to_register_objects)
+    def _get_sync_request_proto(self, tier: Optional[str] = None):
+        if tier is not None and not isinstance(tier, str):
+            raise ValueError(f"Expected tier to be a string, got {tier}")
+        return to_sync_request_proto(self.to_register_objects, tier)
 
     def _get(self, path: str):
         headers = None

@@ -4,6 +4,7 @@ from typing import Optional, List
 import pandas as pd
 import pytest
 
+from fennel import meta
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.schema import inputs, outputs
@@ -25,6 +26,7 @@ class UserInfoDataset:
     timestamp: datetime = field(timestamp=True)
 
 
+@meta(owner="aditya@fennel.ai")
 @featureset
 class User:
     id: int = feature(id=1)
@@ -54,6 +56,7 @@ def test_featureset_as_input():
 def test_complex_featureset():
     with pytest.raises(TypeError) as e:
 
+        @meta(owner="aditya@fennel.ai")
         @featureset
         class UserInfo:
             userid: int = feature(id=1)
@@ -81,8 +84,13 @@ def test_complex_featureset():
             def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
+        view = InternalTestClient()
+        view.add(User)
+        view.add(UserInfo)
+        view._get_sync_request_proto()
     assert (
-        str(e.value) == "Feature `gender` is extracted by multiple extractors."
+        str(e.value)
+        == "Feature `gender` is extracted by multiple extractors including `get_user_info3`."
     )
 
 

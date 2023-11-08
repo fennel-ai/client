@@ -9,7 +9,7 @@ from fennel.featuresets import feature, featureset
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock
+from fennel.test_lib import mock, InternalTestClient
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -70,34 +70,41 @@ class MoviesManyExtractors:
 # /docsnip
 
 
-def test_multiple_extractors_of_same_feature():
-    with pytest.raises(Exception):
-        # docsnip featureset_extractors_of_same_feature
-        @featureset
-        class Movies:
-            duration: int = feature(id=1)
-            over_2hrs: bool = feature(id=2)
-            # invalid: both e1 & e2 output `over_3hrs`
-            over_3hrs: bool = feature(id=3)
+@mock
+def test_multiple_extractors_of_same_feature(client):
+    # docsnip featureset_extractors_of_same_feature
+    @meta(owner="aditya@xyz.ai")
+    @featureset
+    class Movies:
+        duration: int = feature(id=1)
+        over_2hrs: bool = feature(id=2)
+        # invalid: both e1 & e2 output `over_3hrs`
+        over_3hrs: bool = feature(id=3)
 
-            @extractor
-            @inputs(duration)
-            @outputs(over_2hrs, over_3hrs)
-            def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.DataFrame:
-                two_hrs = durations > 2 * 3600
-                three_hrs = durations > 3 * 3600
-                return pd.DataFrame(
-                    {"over_2hrs": two_hrs, "over_3hrs": three_hrs}
-                )
+        @extractor(tiers=["default"])
+        @inputs(duration)
+        @outputs(over_2hrs, over_3hrs)
+        def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.DataFrame:
+            two_hrs = durations > 2 * 3600
+            three_hrs = durations > 3 * 3600
+            return pd.DataFrame({"over_2hrs": two_hrs, "over_3hrs": three_hrs})
 
-            @extractor
-            @inputs(duration)
-            @outputs(over_3hrs)
-            def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
-                return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
+        @extractor(tiers=["non-default"])
+        @inputs(duration)
+        @outputs(over_3hrs)
+        def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
 
+    # /docsnip
 
-# /docsnip
+    view = InternalTestClient()
+    view.add(Movies)
+    with pytest.raises(Exception) as e:
+        view._get_sync_request_proto()
+    assert (
+        str(e.value)
+        == "Feature `over_3hrs` is extracted by multiple extractors including `e2`."
+    )
 
 
 # docsnip remote_feature_as_input

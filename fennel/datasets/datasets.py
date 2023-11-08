@@ -43,6 +43,7 @@ from fennel.lib.duration.duration import (
     duration_to_timedelta,
 )
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
+from fennel.lib.includes import TierSelector
 from fennel.lib.metadata import (
     meta,
     get_meta_attr,
@@ -943,7 +944,9 @@ def f_get_type_hints(obj):
 
 
 def pipeline(
-    version: int = 1, active: bool = False
+    version: int = 1,
+    active: bool = False,
+    tiers: Optional[str | List[str]] = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     if isinstance(version, Callable) or isinstance(  # type: ignore
         version, Dataset
@@ -1011,6 +1014,7 @@ def pipeline(
                 func=pipeline_func,
                 version=version,
                 active=active,
+                tiers=tiers,
             ),
         )
         return pipeline_func
@@ -1067,6 +1071,7 @@ class Pipeline:
     name: str
     version: int
     active: bool
+    tiers: TierSelector
 
     def __init__(
         self,
@@ -1074,12 +1079,14 @@ class Pipeline:
         func: Callable,
         version: int,
         active: bool = False,
+        tiers: Optional[str | List[str]] = None,
     ):
         self.inputs = inputs
         self.func = func  # type: ignore
         self.name = func.__name__
         self.version = version
         self.active = active
+        self.tiers = TierSelector(tiers)
 
     # Validate the schema of all intermediate nodes
     # and return the schema of the terminal node.
@@ -1169,6 +1176,7 @@ class Dataset(_Node[T]):
         every: Optional[Duration] = None,
         starting_from: Optional[datetime.datetime] = None,
         lateness: Optional[Duration] = None,
+        tiers: Optional[str | List[str]] = None,
     ):
         if len(self._pipelines) > 0:
             raise Exception(
@@ -1178,7 +1186,7 @@ class Dataset(_Node[T]):
         ds_copy = copy.deepcopy(self)
         if hasattr(ds_copy, sources.SOURCE_FIELD):
             delattr(ds_copy, sources.SOURCE_FIELD)
-        src_fn = source(conn, every, starting_from, lateness)
+        src_fn = source(conn, every, starting_from, lateness, None, tiers)
         return src_fn(ds_copy)
 
     def dsschema(self):
@@ -1341,7 +1349,6 @@ class Dataset(_Node[T]):
     def _get_pipelines(self) -> List[Pipeline]:
         pipelines = []
         dataset_name = self._name
-        versions = set()
         names = set()
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
             if not callable(method):
@@ -1351,11 +1358,6 @@ class Dataset(_Node[T]):
 
             pipeline = getattr(method, PIPELINE_ATTR)
 
-            if pipeline.version in versions:
-                raise ValueError(
-                    f"Duplicate pipeline id {pipeline.version} for dataset {dataset_name}."
-                )
-            versions.add(pipeline.version)
             if pipeline.name in names:
                 raise ValueError(
                     f"Duplicate pipeline name {pipeline.name} for dataset {dataset_name}."
@@ -1388,25 +1390,13 @@ class Dataset(_Node[T]):
             timestamp=self.timestamp_field,
         )
 
-        found_active = False
         for pipeline in pipelines:
             pipeline_schema = pipeline.get_terminal_schema()
-            if pipeline.active and found_active:
-                raise ValueError(
-                    f"Multiple active pipelines are not supported for dataset {self._name}."
-                )
-            if pipeline.active:
-                found_active = True
             err = pipeline_schema.matches(
                 ds_schema, f"pipeline {pipeline.name} output", self._name
             )
             if len(err) > 0:
                 exceptions.extend(err)
-        if not found_active and len(pipelines) > 1:
-            raise ValueError(
-                f"No active pipeline found for dataset {self._name}."
-            )
-
         if exceptions:
             raise TypeError(exceptions)
 

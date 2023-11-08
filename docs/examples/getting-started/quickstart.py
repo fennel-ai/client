@@ -149,6 +149,7 @@ columns = ["uid", "product_id", "timestamp"]
 data = [[1, 1, now], [1, 2, now], [1, 3, now]]
 df = pd.DataFrame(data, columns=columns)
 response = client.log("fennel_webhook", "Order", df)
+print(response.json())
 assert response.status_code == requests.codes.OK, response.json()
 # /docsnip
 

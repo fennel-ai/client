@@ -329,6 +329,7 @@ class MockClient(Client):
         self,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
+        tier: Optional[str] = None,
     ):
         self._reset()
         if datasets is None:
@@ -524,6 +525,13 @@ class MockClient(Client):
 
     def _process_data_connector(self, dataset: Dataset):
         connector = getattr(dataset, sources.SOURCE_FIELD)
+        if len(connector) > 1:
+            raise ValueError(
+                f"Dataset `{dataset._name}` has more than one source defined, found {len(connector)} sources."
+            )
+        if len(connector) == 0:
+            return
+        connector = connector[0]
         if isinstance(connector, sources.WebhookConnector):
             src = connector.data_source
             webhook_endpoint = f"{src.name}:{connector.endpoint}"
