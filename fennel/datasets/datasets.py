@@ -1050,6 +1050,13 @@ def dataset_lookup(
     raise NotImplementedError("dataset_lookup should not be called directly.")
 
 
+# For better Errors
+@dataclass
+class SourceLocation:
+    source_file: str
+    source_line: int
+    lines: List[str]
+
 # ---------------------------------------------------------------------
 # Dataset & Pipeline
 # ---------------------------------------------------------------------
@@ -1061,6 +1068,7 @@ class Pipeline:
     _sign: str
     _root: str
     _nodes: List
+    _source_loc: SourceLocation
     # Dataset it is part of
     _dataset_name: str
     func: Callable
@@ -1075,11 +1083,16 @@ class Pipeline:
         version: int,
         active: bool = False,
     ):
+        import inspect
+        self.active = active
         self.inputs = inputs
         self.func = func  # type: ignore
         self.name = func.__name__
         self.version = version
-        self.active = active
+
+        (lines, loc) = inspect.getsourcelines(func)
+        fname = inspect.getfile(func) # Fix this to use relative path
+        self._source_loc = SourceLocation(fname, loc, lines)
 
     # Validate the schema of all intermediate nodes
     # and return the schema of the terminal node.
@@ -1101,6 +1114,15 @@ class Pipeline:
 
     def __str__(self):
         return f"Pipeline({self.signature()})"
+
+    def source_loc(self):
+        return self._source_loc
+
+    @classmethod
+    def pretty_print(cls, version = None, active = None):
+        return "@pipeline(... {}, ... {})".format(
+            f"{version=}" if version else "",
+            f"{active=}" if active else "")
 
     @property
     def dataset_name(self):
@@ -1403,13 +1425,37 @@ class Dataset(_Node[T]):
             if len(err) > 0:
                 exceptions.extend(err)
         if not found_active and len(pipelines) > 1:
-            raise ValueError(
+           errors = self._make_no_active_pipeline_error(pipelines)
+           print(errors, file=sys.stderr)
+           raise ValueError(
                 f"No active pipeline found for dataset {self._name}."
             )
 
         if exceptions:
             raise TypeError(exceptions)
 
+    def _make_no_active_pipeline_error(self, pipelines: List[Pipeline]):
+        active_text = Pipeline.pretty_print(active=True)
+        def make_one(pipeline: Pipeline):
+            loc = pipeline.source_loc()
+            line = loc.source_line
+            fname = loc.source_file
+            first_line = loc.lines[0].strip()
+            second_line = loc.lines[1].strip()
+            message = f"""
+            No active pipeline found for dataset {self._name}
+            Pipeline:
+            {first_line}
+            {second_line}
+            Defined on: {fname}:{line}
+            Set {active_text} on One of them
+            """
+            return message
+        
+        errors = map(make_one, pipelines)
+        return "\n".join(errors)
+
+ 
     def _get_expectations(self):
         expectation = None
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
