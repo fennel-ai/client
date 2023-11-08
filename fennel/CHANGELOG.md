@@ -1,6 +1,10 @@
 # Changelog
 
 ## [0.18.10] - 2023-10-30
+- Added `dry_run` parameter to sync.
+- Show entity diffs on sync.
+
+## [0.18.10] - 2023-10-30
 - Add support for `since` in S3 source.
 
 ## [0.18.9]- 2023-10-27
