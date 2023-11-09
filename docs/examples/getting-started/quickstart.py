@@ -31,11 +31,7 @@ webhook = Webhook(name="fennel_webhook")
 
 # docsnip datasets
 @dataset
-@source(
-    postgres.table("product_info", cursor="last_modified"),
-    every="1m",
-    tier="prod",
-)
+@source(postgres.table("product", cursor="updated"), every="1m", tier="prod")
 @source(webhook.endpoint("Product"), tier="dev")
 @meta(owner="chris@fennel.ai", tags=["PII"])
 class Product:
@@ -83,20 +79,12 @@ class UserSellerOrders:
     @inputs(Order, Product)
     def my_pipeline(cls, orders: Dataset, products: Dataset):
         orders = orders.join(products, how="left", on=["product_id"])
-        orders = orders.transform(
-            lambda df: df[["uid", "seller_id", "timestamp"]].fillna(0),
-            schema={
-                "uid": int,
-                "seller_id": int,
-                "timestamp": datetime,
-            },
-        )
-
+        orders = orders.transform(lambda df: df.fillna(0))
+        orders = orders.drop("product_id", "desc", "price")
+        orders = orders.dropnull()
         return orders.groupby("uid", "seller_id").aggregate(
-            [
-                Count(window=Window("1d"), into_field="num_orders_1d"),
-                Count(window=Window("1w"), into_field="num_orders_1w"),
-            ]
+            Count(window=Window("1d"), into_field="num_orders_1d"),
+            Count(window=Window("1w"), into_field="num_orders_1w"),
         )
 
 

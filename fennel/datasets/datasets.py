@@ -443,12 +443,15 @@ class GroupBy:
         self.node = node
         self.node.out_edges.append(self)
 
-    def aggregate(self, aggregates: List[AggregateType], *args) -> _Node:
-        if len(args) > 0 or not isinstance(aggregates, list):
+    def aggregate(self, *args) -> _Node:
+        if len(args) == 0:
             raise TypeError(
-                "aggregate operator, takes a list of aggregates "
-                "found: {}".format(type(aggregates))
+                "aggregate operator expects atleast one aggregation operation"
             )
+        if len(args) == 1 and isinstance(args[0], list):
+            aggregates = args[0]
+        else:
+            aggregates = list(args)
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
         return Aggregate(self.node, list(self.keys), aggregates)
