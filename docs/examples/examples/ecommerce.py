@@ -30,7 +30,13 @@ postgres = Postgres(
 
 
 # docsnip datasets
-@source(postgres.table("orders", cursor="timestamp"), every="1m", lateness="1d")
+@source(
+    postgres.table("orders", cursor="timestamp"),
+    every="1m",
+    lateness="1d",
+    tier="prod",
+)
+@source(Webhook(name="fennel_webhook").endpoint("Order"), tier="dev")
 @meta(owner="data-eng-oncall@fennel.ai")
 @dataset
 class Order:
@@ -89,15 +95,14 @@ class UserSeller:
 # We can write a unit test to verify that the feature is working as expected
 # docsnip test
 
-fake_webhook = Webhook(name="fennel_webhook")
-
 
 class TestUserLivestreamFeatures(unittest.TestCase):
     @mock
     def test_feature(self, client):
-        fake_Order = Order.with_source(fake_webhook.endpoint("Order"))
         client.sync(
-            datasets=[fake_Order, UserSellerOrders], featuresets=[UserSeller]
+            datasets=[Order, UserSellerOrders],
+            featuresets=[UserSeller],
+            tier="dev",
         )
         columns = ["uid", "product_id", "seller_id", "timestamp"]
         now = datetime.utcnow()

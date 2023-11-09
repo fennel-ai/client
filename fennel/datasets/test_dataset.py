@@ -2554,12 +2554,12 @@ def test_pipeline_with_tier_selector():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(version=1, tiers="prod")
+        @pipeline(version=1, tier="prod")
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
 
-        @pipeline(version=1, tiers="staging")
+        @pipeline(version=1, tier="staging")
         @inputs(A, B)
         def pipeline2(cls, a: Dataset, b: Dataset):
             return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])

@@ -26,15 +26,15 @@ def includes(*args: Any):
 
 class TierSelector(BaseModel):
     """
-    TierSelector is a mixin class that can be used to specify the tiers the entity supports.
+    TierSelector is a feature that can be added to entities to specify the tiers an entity supports.
     """
 
-    tiers: Optional[str | List[str]] = None
+    tiers: Optional[Union[str, List[str]]] = None
 
     def __init__(self, tiers):
         super().__init__(tiers=tiers)
 
-    @validator("tiers", pre=True, each_item=True)
+    @validator("tiers", pre=True, each_item=True, allow_reuse=True)
     def check_string(cls, v):
         if v is None:
             return v
@@ -45,9 +45,11 @@ class TierSelector(BaseModel):
                 )
             if len(v.strip()) == 0:
                 raise ValidationError("Tier string must not be empty, found", v)
+            if v == "~":
+                raise ValidationError("Tier string must not be ~, found", v)
         return v
 
-    @validator("tiers")
+    @validator("tiers", allow_reuse=True)
     def validate_tiers(cls, v):
         if isinstance(v, str) or v is None:
             return v

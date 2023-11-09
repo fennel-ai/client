@@ -17,6 +17,7 @@ from typing import (
     List,
     overload,
     Set,
+    Union,
 )
 
 
@@ -126,40 +127,11 @@ def featureset(featureset_cls: Type[T]):
     )
 
 
-@overload
-def extractor(
-    func: Callable[..., T],
-):
-    ...
-
-
-@overload
-def extractor(
-    *,
-    depends_on: List[T],
-    version: int,
-):
-    ...
-
-
-@overload
-def extractor(
-    *,
-    depends_on: List[T],
-):
-    ...
-
-
-@overload
-def extractor():
-    ...
-
-
 def extractor(
     func: Optional[Callable] = None,
     depends_on: List = [],
     version: int = 0,
-    tiers: Optional[str | List[str]] = None,
+    tier: Optional[Union[str, List[str]]] = None,
 ):
     """
     extractor is a decorator for a function that extracts a feature from a
@@ -270,7 +242,7 @@ def extractor(
                 outputs,
                 version,
                 func=extractor_func,
-                tiers=tiers,
+                tier=tier,
             ),
         )
         return classmethod(extractor_func)
@@ -354,7 +326,7 @@ class Feature:
         default=None,
         feature: Feature = None,
         version: int = 0,
-        tiers: Optional[str | List[str]] = None,
+        tier: Optional[Union[str, List[str]]] = None,
     ) -> Feature:
         """
         Derives an extractor for the feature using the given params.
@@ -392,7 +364,7 @@ class Feature:
                 inputs=[feature],
                 outputs=[self.id],
                 version=version,
-                tiers=tiers,
+                tier=tier,
             )
             return self
 
@@ -426,7 +398,7 @@ class Feature:
             version=version,
             derived_extractor_info=Extractor.DatasetLookupInfo(field, default),
             depends_on=[ds] if ds else [],
-            tiers=tiers,
+            tier=tier,
         )
         return self
 
@@ -633,7 +605,7 @@ class Extractor:
         func: Optional[Callable] = None,
         derived_extractor_info: Optional[DatasetLookupInfo] = None,
         depends_on: List[Dataset] = [],
-        tiers: Optional[str | List[str]] = None,
+        tier: Optional[Union[str, List[str]]] = None,
     ):
         self.name = name
         self.extractor_type = extractor_type
@@ -643,7 +615,7 @@ class Extractor:
         self.output_feature_ids = outputs
         self.version = version
         self.depends_on = depends_on
-        self.tiers = TierSelector(tiers)
+        self.tiers = TierSelector(tier)
 
     def fqn(self) -> str:
         """Fully qualified name of the extractor."""
@@ -704,3 +676,19 @@ class Extractor:
         def __init__(self, field: Field, default_val: Any):
             self.field = field
             self.default = default_val
+
+
+def sync_validation_for_extractors(extractors: List[Extractor]):
+    """
+    This validation function contains the checks that are run just before the sync call.
+    It should only contain checks that are not possible to run during the registration phase/compilation phase.
+    """
+    extracted_features: Set[str] = set()
+    for extractor in extractors:
+        for feature in extractor.output_features:
+            if feature in extracted_features:
+                raise TypeError(
+                    f"Feature `{feature}` is "
+                    f"extracted by multiple extractors including `{extractor.name}`."
+                )
+            extracted_features.add(feature)

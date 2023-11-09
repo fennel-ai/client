@@ -50,7 +50,7 @@ class ActorStats:
     revenue: int
     at: datetime
 
-    @pipeline(version=1)
+    @pipeline(version=1, tier="prod")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join(cls, info: Dataset, sale: Dataset):
         uniq = sale.groupby("ticket_id").first()
@@ -73,7 +73,7 @@ class ActorStats:
             ]
         )
 
-    @pipeline(version=2, active=True)
+    @pipeline(version=2, active=True, tier="prod")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join_v2(cls, info: Dataset, sale: Dataset):
         def foo(df):
@@ -112,17 +112,21 @@ class RequestFeatures:
 class ActorFeatures:
     revenue: int = feature(id=1)
 
-    @extractor(depends_on=[ActorStats])
+    @extractor(depends_on=[ActorStats], tier="prod")
     @inputs(RequestFeatures.name)
     @outputs(revenue)
     def extract_revenue(cls, ts: pd.Series, name: pd.Series):
-        import sys
-
-        print(name, file=sys.stderr)
-        print("##", name.name, file=sys.stderr)
         df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
         df = df.fillna(0)
         return df["revenue"]
+
+    @extractor(depends_on=[ActorStats], tier="staging")
+    @inputs(RequestFeatures.name)
+    @outputs(revenue)
+    def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
+        df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
+        df = df.fillna(0)
+        return df["revenue"] * 2
 
 
 class TestMovieTicketSale(unittest.TestCase):
@@ -130,7 +134,7 @@ class TestMovieTicketSale(unittest.TestCase):
     def test_movie_ticket_sale(self, client):
         datasets = [MovieInfo, TicketSale, ActorStats]  # type: ignore
         featuresets = [ActorFeatures, RequestFeatures]
-        client.sync(datasets=datasets, featuresets=featuresets)  # type: ignore
+        client.sync(datasets=datasets, featuresets=featuresets, tier="prod")  # type: ignore
         client.sleep()
         data = [
             [

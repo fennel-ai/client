@@ -23,6 +23,7 @@ from fennel.sources import source, Postgres, Snowflake, Kafka, Webhook
 postgres = Postgres.get(name="my_rdbms")
 warehouse = Snowflake.get(name="my_warehouse")
 kafka = Kafka.get(name="my_kafka")
+webhook = Webhook(name="fennel_webhook")
 
 
 # /docsnip
@@ -30,7 +31,12 @@ kafka = Kafka.get(name="my_kafka")
 
 # docsnip datasets
 @dataset
-@source(postgres.table("product_info", cursor="last_modified"), every="1m")
+@source(
+    postgres.table("product_info", cursor="last_modified"),
+    every="1m",
+    tier="prod",
+)
+@source(webhook.endpoint("Product"), tier="dev")
 @meta(owner="chris@fennel.ai", tags=["PII"])
 class Product:
     product_id: int = field(key=True)
@@ -51,7 +57,8 @@ class Product:
 
 # ingesting realtime data from Kafka works exactly the same way
 @meta(owner="eva@fennel.ai")
-@source(kafka.topic("orders"), lateness="1h")
+@source(kafka.topic("orders"), lateness="1h", tier="prod")
+@source(webhook.endpoint("Order"), tier="dev")
 @dataset
 class Order:
     uid: int
@@ -122,15 +129,13 @@ class UserSellerFeatures:
 # docsnip sync
 from fennel.test_lib import MockClient
 
-webhook = Webhook(name="fennel_webhook")
 
 # client = Client('<FENNEL SERVER URL>') # uncomment this line to use a real Fennel server
 client = MockClient()  # comment this line to use a real Fennel server
-fake_Product = Product.with_source(webhook.endpoint("Product"))
-fake_Order = Order.with_source(webhook.endpoint("Order"))
 client.sync(
-    datasets=[fake_Order, fake_Product, UserSellerOrders],
+    datasets=[Order, Product, UserSellerOrders],
     featuresets=[UserSellerFeatures],
+    tier="dev",
 )
 
 now = datetime.utcnow()
@@ -149,7 +154,6 @@ columns = ["uid", "product_id", "timestamp"]
 data = [[1, 1, now], [1, 2, now], [1, 3, now]]
 df = pd.DataFrame(data, columns=columns)
 response = client.log("fennel_webhook", "Order", df)
-print(response.json())
 assert response.status_code == requests.codes.OK, response.json()
 # /docsnip
 

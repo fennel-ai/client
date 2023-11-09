@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from enum import Enum
 
-from typing import Any, Callable, List, Optional, TypeVar
+from typing import Any, Callable, List, Optional, TypeVar, Union
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
@@ -32,7 +32,7 @@ def source(
     since: Optional[datetime] = None,
     lateness: Optional[Duration] = None,
     cdc: Optional[str] = None,
-    tiers: Optional[str | List[str]] = None,
+    tier: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
@@ -50,7 +50,7 @@ def source(
         conn.lateness = lateness if lateness is not None else DEFAULT_LATENESS
         conn.cdc = cdc if cdc is not None else DEFAULT_CDC
         conn.starting_from = since
-        conn.tiers = TierSelector(tiers)
+        conn.tiers = TierSelector(tier)
         connectors = getattr(dataset_cls, SOURCE_FIELD, [])
         connectors.append(conn)
         setattr(dataset_cls, SOURCE_FIELD, connectors)

@@ -7,6 +7,7 @@ import inspect
 import sys
 from dataclasses import dataclass
 import typing
+import logging
 
 import numpy as np
 import pandas as pd
@@ -946,7 +947,7 @@ def f_get_type_hints(obj):
 def pipeline(
     version: int = 1,
     active: bool = False,
-    tiers: Optional[str | List[str]] = None,
+    tier: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     if isinstance(version, Callable) or isinstance(  # type: ignore
         version, Dataset
@@ -1014,7 +1015,7 @@ def pipeline(
                 func=pipeline_func,
                 version=version,
                 active=active,
-                tiers=tiers,
+                tier=tier,
             ),
         )
         return pipeline_func
@@ -1071,7 +1072,7 @@ class Pipeline:
     name: str
     version: int
     active: bool
-    tiers: TierSelector
+    tier: TierSelector
 
     def __init__(
         self,
@@ -1079,14 +1080,14 @@ class Pipeline:
         func: Callable,
         version: int,
         active: bool = False,
-        tiers: Optional[str | List[str]] = None,
+        tier: Optional[Union[str, List[str]]] = None,
     ):
         self.inputs = inputs
         self.func = func  # type: ignore
         self.name = func.__name__
         self.version = version
         self.active = active
-        self.tiers = TierSelector(tiers)
+        self.tier = TierSelector(tier)
 
     # Validate the schema of all intermediate nodes
     # and return the schema of the terminal node.
@@ -1176,8 +1177,12 @@ class Dataset(_Node[T]):
         every: Optional[Duration] = None,
         starting_from: Optional[datetime.datetime] = None,
         lateness: Optional[Duration] = None,
-        tiers: Optional[str | List[str]] = None,
+        tiers: Optional[Union[str, List[str]]] = None,
     ):
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            "with_source is deprecated. Please use tier selector instead."
+        )
         if len(self._pipelines) > 0:
             raise Exception(
                 f"Dataset {self._name} is contains a pipeline. "
@@ -1442,6 +1447,33 @@ class Dataset(_Node[T]):
     @property
     def fields(self):
         return self._fields
+
+
+def sync_validation_for_pipelines(pipelines: List[Pipeline], ds_name: str):
+    """
+    This validation function contains the checks that are run just before the sync call.
+    It should only contain checks that are not possible to run during the registration phase/compilation phase.
+    """
+    versions = set()
+    for pipeline in pipelines:
+        if pipeline.version in versions:
+            raise ValueError(
+                f"Pipeline {pipeline.fqn} has the same version as another pipeline in the dataset."
+            )
+        versions.add(pipeline.version)
+
+    found_active = False
+    for pipeline in pipelines:
+        if pipeline.active and found_active:
+            raise ValueError(
+                f"Multiple active pipelines are not supported for dataset {ds_name}."
+            )
+        if pipeline.active:
+            found_active = True
+    if not found_active and len(pipelines) > 1:
+        raise ValueError(
+            f"No active pipeline found for dataset {ds_name}. Please mark one of the pipelines as active by setting `active=True`."
+        )
 
 
 # ---------------------------------------------------------------------

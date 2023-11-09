@@ -81,7 +81,7 @@ def test_multiple_extractors_of_same_feature(client):
         # invalid: both e1 & e2 output `over_3hrs`
         over_3hrs: bool = feature(id=3)
 
-        @extractor(tiers=["default"])
+        @extractor(tier=["default"])
         @inputs(duration)
         @outputs(over_2hrs, over_3hrs)
         def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.DataFrame:
@@ -89,7 +89,7 @@ def test_multiple_extractors_of_same_feature(client):
             three_hrs = durations > 3 * 3600
             return pd.DataFrame({"over_2hrs": two_hrs, "over_3hrs": three_hrs})
 
-        @extractor(tiers=["non-default"])
+        @extractor(tier=["non-default"])
         @inputs(duration)
         @outputs(over_3hrs)
         def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:

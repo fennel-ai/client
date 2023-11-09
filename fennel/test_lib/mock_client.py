@@ -20,7 +20,9 @@ import fennel.sources as sources
 from fennel._vendor.requests import Response  # type: ignore
 from fennel.client import Client
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
+from fennel.datasets.datasets import sync_validation_for_pipelines
 from fennel.featuresets import Featureset, Feature, Extractor
+from fennel.featuresets.featureset import sync_validation_for_extractors
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.gen.featureset_pb2 import CoreFeatureset
 from fennel.gen.featureset_pb2 import (
@@ -344,7 +346,7 @@ class MockClient(Client):
                 )
             self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
             if hasattr(dataset, sources.SOURCE_FIELD):
-                self._process_data_connector(dataset)
+                self._process_data_connector(dataset, tier)
 
             self.datasets[dataset._name] = dataset
             is_source_dataset = hasattr(dataset, sources.SOURCE_FIELD)
@@ -362,10 +364,13 @@ class MockClient(Client):
                 raise ValueError(
                     f"Dataset {dataset._name} has no pipelines and is not a source dataset"
                 )
-
-            for pipeline in dataset._pipelines:
-                if not pipeline.active:
-                    continue
+            selected_pipelines = [
+                x
+                for x in dataset._pipelines
+                if x.tier.is_entity_selected(tier) and x.active
+            ]
+            sync_validation_for_pipelines(selected_pipelines, dataset._name)
+            for pipeline in selected_pipelines:
                 for input in pipeline.inputs:
                     self.listeners[input._name].append(pipeline)
 
@@ -383,6 +388,8 @@ class MockClient(Client):
             )
             # Check if the dataset used by the extractor is registered
             for extractor in featureset.extractors:
+                if not extractor.tiers.is_entity_selected(tier):
+                    continue
                 datasets = [
                     x._name for x in extractor.get_dataset_dependencies()
                 ]
@@ -391,13 +398,19 @@ class MockClient(Client):
                         raise ValueError(
                             f"Dataset {dataset} not found in sync call"
                         )
-            self.extractors.extend(featureset.extractors)
+            self.extractors.extend(
+                [
+                    x
+                    for x in featureset.extractors
+                    if x.tiers.is_entity_selected(tier)
+                ]
+            )
         fs_obj_map = {
             featureset._name: featureset for featureset in featuresets
         }
 
         for featureset in featuresets:
-            proto_extractors = extractors_from_fs(featureset, fs_obj_map)
+            proto_extractors = extractors_from_fs(featureset, fs_obj_map, tier)
             for extractor in proto_extractors:
                 if extractor.extractor_type != ProtoExtractorType.PY_FUNC:
                     continue
@@ -523,8 +536,10 @@ class MockClient(Client):
 
     # ----------------- Private methods --------------------------------------
 
-    def _process_data_connector(self, dataset: Dataset):
+    def _process_data_connector(self, dataset: Dataset, tier):
         connector = getattr(dataset, sources.SOURCE_FIELD)
+        connector = connector if isinstance(connector, list) else [connector]
+        connector = [x for x in connector if x.tiers.is_entity_selected(tier)]
         if len(connector) > 1:
             raise ValueError(
                 f"Dataset `{dataset._name}` has more than one source defined, found {len(connector)} sources."

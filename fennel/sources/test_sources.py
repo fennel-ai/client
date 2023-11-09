@@ -227,16 +227,16 @@ kinesis = Kinesis(
 
 def test_tier_selector_on_source():
     @meta(owner="test@test.com")
-    @source(kafka.topic("test_topic"), tiers=["dev-2"])
+    @source(kafka.topic("test_topic"), tier=["dev-2"])
     @source(
         mysql.table("users_mysql", cursor="added_on"),
         every="1h",
-        tiers=["prod"],
+        tier=["prod"],
     )
     @source(
         snowflake.table("users_Sf", cursor="added_on"),
         every="1h",
-        tiers=["staging"],
+        tier=["staging"],
     )
     @source(
         s3.bucket(
@@ -245,7 +245,7 @@ def test_tier_selector_on_source():
         ),
         every="1h",
         lateness="2d",
-        tiers=["dev"],
+        tier=["dev"],
     )
     @dataset
     class UserInfoDataset:

@@ -23,7 +23,9 @@ import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.services_pb2 as services_proto
 import fennel.sources as sources
 from fennel.datasets import Dataset, Pipeline, Field
+from fennel.datasets.datasets import sync_validation_for_pipelines
 from fennel.featuresets import Featureset, Feature, Extractor, ExtractorType
+from fennel.featuresets.featureset import sync_validation_for_extractors
 from fennel.lib.duration import (
     Duration,
     duration_to_timedelta,
@@ -79,6 +81,8 @@ def _expectations_to_proto(
 # ------------------------------------------------------------------------------
 # Sync
 # ------------------------------------------------------------------------------
+
+
 def to_sync_request_proto(
     registered_objs: List[Any],
     tier: Optional[str] = None,
@@ -227,31 +231,11 @@ def pipelines_from_ds(
 ) -> List[ds_proto.Pipeline]:
     pipelines = []
     for pipeline in ds._pipelines:
-        if pipeline.tiers.is_entity_selected(tier):
+        if pipeline.tier.is_entity_selected(tier):
             pipelines.append(pipeline)
-    versions = set()
-    for pipeline in pipelines:
-        if pipeline.version in versions:
-            raise ValueError(
-                f"Pipeline {pipeline.fqn} has the same version as another pipeline in the dataset."
-            )
-        versions.add(pipeline.version)
-
-    found_active = False
-    for pipeline in pipelines:
-        if pipeline.active and found_active:
-            raise ValueError(
-                f"Multiple active pipelines are not supported for dataset {ds._name}."
-            )
-        if pipeline.active:
-            found_active = True
-    if not found_active and len(pipelines) > 1:
-        raise ValueError(
-            f"No active pipeline found for dataset {ds._name}. Please mark one of the pipelines as active by setting `active=True`."
-        )
+    sync_validation_for_pipelines(pipelines, ds._name)
     if len(pipelines) == 1:
         pipelines[0].active = True
-
     pipeline_protos = []
     for pipeline in pipelines:
         pipeline_protos.append(_pipeline_to_proto(pipeline, ds))
@@ -337,7 +321,6 @@ def sources_from_ds(
             for source in all_sources
             if source.tiers.is_entity_selected(tier)
         ]
-        print("FS", filtered_sources)
         if len(filtered_sources) == 0:
             return None
         if len(filtered_sources) > 1:
@@ -417,15 +400,7 @@ def extractors_from_fs(
             extractor_protos.append(
                 _extractor_to_proto(extractor, fs, fs_obj_map)
             )
-    extracted_features: Set[str] = set()
-    for extractor in extractors:
-        for feature in extractor.output_features:
-            if feature in extracted_features:
-                raise TypeError(
-                    f"Feature `{feature}` is "
-                    f"extracted by multiple extractors including `{extractor.name}`."
-                )
-            extracted_features.add(feature)
+    sync_validation_for_extractors(extractors)
     return extractor_protos
 
 

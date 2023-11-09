@@ -358,7 +358,7 @@ def test_extractor_tier_selector():
     @featureset
     class UserInfo:
         userid: int = feature(id=1).extract(
-            feature=Request.user_id, tiers=["~staging", "~prod"]
+            feature=Request.user_id, tier=["~staging", "~prod"]
         )
         home_geoid: int = feature(id=2)
         # The users gender among male/female/non-binary
@@ -368,22 +368,22 @@ def test_extractor_tier_selector():
             field=UserInfoDataset.avg_income,
             provider=Request,
             default="pluto",
-            tiers=["~prod"],
+            tier=["~prod"],
         )
 
-        @extractor(depends_on=[UserInfoDataset], tiers=["~prod", "~dev"])
+        @extractor(depends_on=[UserInfoDataset], tier=["~prod", "~dev"])
         @inputs(User.id)
         @outputs(userid, home_geoid)
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset], tiers=["prod"])
+        @extractor(depends_on=[UserInfoDataset], tier=["prod"])
         @inputs(User.id)
         @outputs(userid, home_geoid)
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset], tiers=["prod"])
+        @extractor(depends_on=[UserInfoDataset], tier=["prod"])
         @inputs(User.id)
         @outputs(income)
         def get_user_income(cls, ts: pd.Series, user_id: pd.Series):
