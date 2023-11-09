@@ -53,16 +53,16 @@ def test_e2e_extraction(client):
     # docsnip e2e_extraction
     feature_df = client.extract_features(
         output_feature_list=[
-            User.age,
-            UserPost.score,
-            UserPost.affinity
+            "User.age",
+            "UserPost.score",
+            "UserPost.affinity"
             # there are 10 features in this list
         ],
         input_feature_list=[
-            User.id,
-            UserPost.uid,
-            UserPost.pid,
-            Request.ip,
+            "User.id",
+            "UserPost.uid",
+            "UserPost.pid",
+            "Request.ip",
         ],
         input_dataframe=pd.DataFrame(
             {

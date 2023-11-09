@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.18.12] - 2023-11-08
+- Add support for strings in extract_features and extract_historical_features 
+
 ## [0.18.11] - 2023-11-08
 - Add support for tier selectors. 
 

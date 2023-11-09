@@ -96,6 +96,9 @@ def _contains_user_defined_class(annotation) -> bool:
 
 # Parse a json object into a python object based on the type annotation.
 def parse_json(annotation, json) -> Any:
+    if annotation is Any:
+        return json
+
     if isinstance(json, frozendict):
         json = dict(json)
 
