@@ -6,11 +6,13 @@ from fennel.lib.ascii_visualizer import draw_graph
 from fennel.lib.graph_algorithms.utils import extractor_graph
 
 
-def _get_features(feature: Union[Feature, Featureset]) -> set:
+def _get_features(feature: Union[Feature, Featureset, str]) -> set:
     if isinstance(feature, Feature):
         return {feature.fqn()}
     elif isinstance(feature, Featureset):
         return {f.fqn() for f in feature.features}
+    elif isinstance(feature, str):
+        return {feature}
     elif type(feature) is tuple:
         return {f.fqn() for f in feature}
     else:
@@ -110,8 +112,8 @@ def get_vertices_and_eges(
 
 
 def get_extractor_order(
-    input_features: List[Union[Feature, Featureset]],
-    output_features: List[Union[Feature, Featureset]],
+    input_features: List[Union[Feature, Featureset, str]],
+    output_features: List[Union[Feature, Featureset, str]],
     extractors: List[Extractor],
 ) -> List[Extractor]:
     """

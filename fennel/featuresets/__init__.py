@@ -7,5 +7,6 @@ from fennel.featuresets.featureset import (
     ExtractorType,
     feature,
     EXTRACTOR_ATTR,
+    is_valid_feature,
     DEPENDS_ON_DATASETS_ATTR,
 )

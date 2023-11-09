@@ -536,11 +536,11 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 
         feature_df = client.extract_historical_features(
             output_feature_list=[
-                UserInfoTransformedFeatures.age_power_four,
-                UserInfoTransformedFeatures.is_name_common,
-                UserInfoTransformedFeatures.country_geoid_square,
+                "UserInfoTransformedFeatures.age_power_four",
+                "UserInfoTransformedFeatures.is_name_common",
+                "UserInfoTransformedFeatures.country_geoid_square",
             ],
-            input_feature_list=[UserInfoMultipleExtractor.userid],
+            input_feature_list=["UserInfoMultipleExtractor.userid"],
             input_dataframe=pd.DataFrame(
                 {
                     "UserInfoMultipleExtractor.userid": [18232, 18234],

@@ -21,7 +21,7 @@ from fennel._vendor.requests import Response  # type: ignore
 from fennel.client import Client
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.datasets.datasets import sync_validation_for_pipelines
-from fennel.featuresets import Featureset, Feature, Extractor
+from fennel.featuresets import Featureset, Feature, Extractor, is_valid_feature
 from fennel.featuresets.featureset import sync_validation_for_extractors
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.gen.featureset_pb2 import CoreFeatureset
@@ -425,8 +425,8 @@ class MockClient(Client):
 
     def extract_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset]],
-        output_feature_list: List[Union[Feature, Featureset]],
+        input_feature_list: List[Union[Feature, Featureset, str]],
+        output_feature_list: List[Union[Feature, Featureset, str]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
         workflow: Optional[str] = "default",
@@ -440,6 +440,10 @@ class MockClient(Client):
         for input_feature in input_feature_list:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn_)
+            elif isinstance(input_feature, str) and is_valid_feature(
+                input_feature
+            ):
+                input_feature_names.append(input_feature)
             elif isinstance(input_feature, Featureset):
                 input_feature_names.extend(
                     [f.fqn_ for f in input_feature.features]
@@ -461,8 +465,8 @@ class MockClient(Client):
 
     def extract_historical_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset]],
-        output_feature_list: List[Union[Feature, Featureset]],
+        input_feature_list: List[Union[Feature, Featureset, str]],
+        output_feature_list: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
@@ -490,12 +494,14 @@ class MockClient(Client):
             return pd.DataFrame()
         timestamps = input_dataframe[timestamp_column]
         input_feature_names = []
-        for input_feature in input_feature_list:
-            if isinstance(input_feature, Feature):
-                input_feature_names.append(input_feature.fqn_)
-            elif isinstance(input_feature, Featureset):
+        for inp_feature in input_feature_list:
+            if isinstance(inp_feature, Feature):
+                input_feature_names.append(inp_feature.fqn_)
+            elif isinstance(inp_feature, str) and is_valid_feature(inp_feature):
+                input_feature_names.append(inp_feature)
+            elif isinstance(inp_feature, Featureset):
                 input_feature_names.extend(
-                    [f.fqn_ for f in input_feature.features]
+                    [f.fqn_ for f in inp_feature.features]
                 )
         # Check if the input dataframe has all the required features
         if not set(input_feature_names).issubset(set(input_dataframe.columns)):
@@ -671,7 +677,7 @@ class MockClient(Client):
         self,
         extractors: List[Extractor],
         input_df: pd.DataFrame,
-        output_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset, str]],
         timestamps: pd.Series,
     ):
         # Map of feature name to the pandas series
@@ -787,20 +793,22 @@ class MockClient(Client):
 
         # Prepare the output dataframe
         output_df = pd.DataFrame()
-        for output_feature in output_feature_list:
-            if isinstance(output_feature, Feature):
-                output_df[output_feature.fqn_] = intermediate_data[
-                    output_feature.fqn_
+        for out_feature in output_feature_list:
+            if isinstance(out_feature, Feature):
+                output_df[out_feature.fqn_] = intermediate_data[
+                    out_feature.fqn_
                 ]
-            elif isinstance(output_feature, Featureset):
-                for f in output_feature.features:
+            elif isinstance(out_feature, str) and is_valid_feature(out_feature):
+                output_df[out_feature] = intermediate_data[out_feature]
+            elif isinstance(out_feature, Featureset):
+                for f in out_feature.features:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
-            elif type(output_feature) is tuple:
-                for f in output_feature:
+            elif type(out_feature) is tuple:
+                for f in out_feature:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
             else:
                 raise Exception(
-                    f"Unknown feature type {type(output_feature)} found "
+                    f"Unknown feature {out_feature} of type {type(out_feature)} found "
                     f"during feature extraction."
                 )
         return output_df

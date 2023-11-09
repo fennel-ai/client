@@ -118,12 +118,12 @@ class TestUserLivestreamFeatures(unittest.TestCase):
 
         feature_df = client.extract_features(
             output_feature_list=[
-                UserSeller.num_orders_1d,
-                UserSeller.num_orders_1w,
+                "UserSeller.num_orders_1d",
+                "UserSeller.num_orders_1w",
             ],
             input_feature_list=[
-                UserSeller.uid,
-                UserSeller.seller_id,
+                "UserSeller.uid",
+                "UserSeller.seller_id",
             ],
             input_dataframe=pd.DataFrame(
                 [

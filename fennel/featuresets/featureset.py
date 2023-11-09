@@ -403,6 +403,15 @@ class Feature:
         return self
 
 
+def is_valid_feature(feature_name: str):
+    if "." not in feature_name or len(feature_name.split(".")) != 2:
+        raise Exception(
+            f"Invalid input feature name {feature_name}. "
+            "Please provide the feature name in the format <featureset>.<feature>."
+        )
+    return True
+
+
 def is_user_defined(obj):
     return inspect.isclass(type(obj)) and not inspect.isbuiltin(obj)
 
