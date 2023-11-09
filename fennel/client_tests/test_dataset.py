@@ -1111,43 +1111,39 @@ class MovieRatingWindowed:
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
-            [
-                Count(window=Window("3d"), into_field=str(cls.num_ratings_3d)),
-                Sum(
-                    window=Window("7d"),
-                    of="rating",
-                    into_field=str(cls.sum_ratings_7d),
-                ),
-                Average(
-                    window=Window("6h"),
-                    of="rating",
-                    into_field=str(cls.avg_rating_6h),
-                ),
-                Count(
-                    window=Window("forever"), into_field=str(cls.total_ratings)
-                ),
-                Stddev(
-                    window=Window("3d"),
-                    of="rating",
-                    into_field=str(cls.std_rating_3d),
-                ),
-                Stddev(
-                    window=Window("7d"),
-                    of="rating",
-                    into_field=str(cls.std_rating_7d),
-                ),
-                Stddev(
-                    window=Window("10m"),
-                    of="rating",
-                    into_field=str(cls.std_rating_10m),
-                ),
-                Stddev(
-                    window=Window("10m"),
-                    of="rating",
-                    default=-3.14159,
-                    into_field=str(cls.std_rating_10m_other_default),
-                ),
-            ]
+            Count(window=Window("3d"), into_field=str(cls.num_ratings_3d)),
+            Sum(
+                window=Window("7d"),
+                of="rating",
+                into_field=str(cls.sum_ratings_7d),
+            ),
+            Average(
+                window=Window("6h"),
+                of="rating",
+                into_field=str(cls.avg_rating_6h),
+            ),
+            Count(window=Window("forever"), into_field=str(cls.total_ratings)),
+            Stddev(
+                window=Window("3d"),
+                of="rating",
+                into_field=str(cls.std_rating_3d),
+            ),
+            Stddev(
+                window=Window("7d"),
+                of="rating",
+                into_field=str(cls.std_rating_7d),
+            ),
+            Stddev(
+                window=Window("10m"),
+                of="rating",
+                into_field=str(cls.std_rating_10m),
+            ),
+            Stddev(
+                window=Window("10m"),
+                of="rating",
+                default=-3.14159,
+                into_field=str(cls.std_rating_10m_other_default),
+            ),
         )
 
 
