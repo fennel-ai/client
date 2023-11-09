@@ -8,7 +8,7 @@ from textwrap import dedent, indent
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, StringValue
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Set
 
 import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.http_auth_pb2 as http_auth_proto
@@ -23,7 +23,9 @@ import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.services_pb2 as services_proto
 import fennel.sources as sources
 from fennel.datasets import Dataset, Pipeline, Field
+from fennel.datasets.datasets import sync_validation_for_pipelines
 from fennel.featuresets import Featureset, Feature, Extractor, ExtractorType
+from fennel.featuresets.featureset import sync_validation_for_extractors
 from fennel.lib.duration import (
     Duration,
     duration_to_timedelta,
@@ -79,8 +81,11 @@ def _expectations_to_proto(
 # ------------------------------------------------------------------------------
 # Sync
 # ------------------------------------------------------------------------------
+
+
 def to_sync_request_proto(
     registered_objs: List[Any],
+    tier: Optional[str] = None,
 ) -> services_proto.SyncRequest:
     datasets = []
     pipelines = []
@@ -108,12 +113,10 @@ def to_sync_request_proto(
                 )
 
             datasets.append(dataset_to_proto(obj))
-            pipelines.extend(pipelines_from_ds(obj))
+            pipelines.extend(pipelines_from_ds(obj, tier))
             operators.extend(operators_from_ds(obj))
             expectations.extend(expectations_from_ds(obj))
-            res = sources_from_ds(
-                obj, sources.SOURCE_FIELD, obj.timestamp_field
-            )
+            res = sources_from_ds(obj, obj.timestamp_field, tier)
             if res is None:
                 continue
             (ext_db, s) = res
@@ -127,7 +130,7 @@ def to_sync_request_proto(
         elif isinstance(obj, Featureset):
             featuresets.append(featureset_to_proto(obj))
             features.extend(features_from_fs(obj))
-            extractors.extend(extractors_from_fs(obj, featureset_obj_map))
+            extractors.extend(extractors_from_fs(obj, featureset_obj_map, tier))
         else:
             raise ValueError(f"Unknown object type {type(obj)}")
     return services_proto.SyncRequest(
@@ -223,11 +226,20 @@ def _field_to_proto(field: Field) -> schema_proto.Field:
     )
 
 
-def pipelines_from_ds(ds: Dataset) -> List[ds_proto.Pipeline]:
+def pipelines_from_ds(
+    ds: Dataset, tier: Optional[str] = None
+) -> List[ds_proto.Pipeline]:
     pipelines = []
     for pipeline in ds._pipelines:
-        pipelines.append(_pipeline_to_proto(pipeline, ds))
-    return pipelines
+        if pipeline.tier.is_entity_selected(tier):
+            pipelines.append(pipeline)
+    sync_validation_for_pipelines(pipelines, ds._name)
+    if len(pipelines) == 1:
+        pipelines[0].active = True
+    pipeline_protos = []
+    for pipeline in pipelines:
+        pipeline_protos.append(_pipeline_to_proto(pipeline, ds))
+    return pipeline_protos
 
 
 def _pipeline_to_proto(pipeline: Pipeline, ds: Dataset) -> ds_proto.Pipeline:
@@ -290,7 +302,7 @@ def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
 
 
 def sources_from_ds(
-    ds: Dataset, source_field, timestamp_field: str
+    ds: Dataset, timestamp_field: str, tier: Optional[str] = None
 ) -> Optional[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
     """
     Returns the source proto for a dataset if it exists
@@ -300,9 +312,25 @@ def sources_from_ds(
     :param timestamp_field: An optional column that can be used to sort the
     data from the source.
     """
-    if hasattr(ds, source_field):
-        source: sources.DataConnector = getattr(ds, source_field)
-        return _conn_to_source_proto(source, ds._name, timestamp_field)
+    if hasattr(ds, sources.SOURCE_FIELD):
+        all_sources: List[sources.DataConnector] = getattr(
+            ds, sources.SOURCE_FIELD
+        )
+        filtered_sources = [
+            source
+            for source in all_sources
+            if source.tiers.is_entity_selected(tier)
+        ]
+        if len(filtered_sources) == 0:
+            return None
+        if len(filtered_sources) > 1:
+            raise ValueError(
+                f"Dataset {ds._name} has multiple sources ({len(filtered_sources)}) defined. "
+                f"Please define only one source per dataset, or check your tier selection."
+            )
+        return _conn_to_source_proto(
+            filtered_sources[0], ds._name, timestamp_field
+        )
     return None  # type: ignore
 
 
@@ -360,12 +388,20 @@ def _feature_to_proto(f: Feature) -> fs_proto.Feature:
 
 
 def extractors_from_fs(
-    fs: Featureset, fs_obj_map: Dict[str, Featureset]
+    fs: Featureset,
+    fs_obj_map: Dict[str, Featureset],
+    tier: Optional[str] = None,
 ) -> List[fs_proto.Extractor]:
     extractors = []
+    extractor_protos = []
     for extractor in fs._extractors:
-        extractors.append(_extractor_to_proto(extractor, fs, fs_obj_map))
-    return extractors
+        if extractor.tiers.is_entity_selected(tier):
+            extractors.append(extractor)
+            extractor_protos.append(
+                _extractor_to_proto(extractor, fs, fs_obj_map)
+            )
+    sync_validation_for_extractors(extractors)
+    return extractor_protos
 
 
 # Feature as input

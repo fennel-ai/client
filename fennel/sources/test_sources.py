@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional
 
@@ -222,6 +223,114 @@ kinesis = Kinesis(
     name="kinesis_src",
     role_arn="arn:aws:iam::123456789012:role/test-role",
 )
+
+
+def test_tier_selector_on_source():
+    @meta(owner="test@test.com")
+    @source(kafka.topic("test_topic"), tier=["dev-2"])
+    @source(
+        mysql.table("users_mysql", cursor="added_on"),
+        every="1h",
+        tier=["prod"],
+    )
+    @source(
+        snowflake.table("users_Sf", cursor="added_on"),
+        every="1h",
+        tier=["staging"],
+    )
+    @source(
+        s3.bucket(
+            bucket_name="all_ratings",
+            prefix="prod/apac/",
+        ),
+        every="1h",
+        lateness="2d",
+        tier=["dev"],
+    )
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDataset)
+    with pytest.raises(ValueError) as e:
+        view._get_sync_request_proto()
+    assert (
+        str(e.value)
+        == "Dataset UserInfoDataset has multiple sources (4) defined. Please define only one source per dataset, or check your tier selection."
+    )
+    sync_request = view._get_sync_request_proto("prod")
+    assert len(sync_request.datasets) == 1
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.extdbs) == 1
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "mysqlTable": {
+                "db": {
+                    "name": "mysql",
+                    "mysql": {
+                        "host": "localhost",
+                        "database": "test",
+                        "user": "root",
+                        "password": "root",
+                        "port": 3306,
+                    },
+                },
+                "tableName": "users_mysql",
+            }
+        },
+        "dataset": "UserInfoDataset",
+        "every": "3600s",
+        "cursor": "added_on",
+        "lateness": "3600s",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    sync_request = view._get_sync_request_proto("staging")
+    assert len(sync_request.datasets) == 1
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.extdbs) == 1
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "snowflakeTable": {
+                "db": {
+                    "name": "snowflake_src",
+                    "snowflake": {
+                        "account": "nhb38793.us-west-2.snowflakecomputing.com",
+                        "user": "<username>",
+                        "password": "<password>",
+                        "schema": "PUBLIC",
+                        "warehouse": "TEST",
+                        "role": "ACCOUNTADMIN",
+                        "database": "MOVIELENS",
+                    },
+                },
+                "tableName": "users_Sf",
+            }
+        },
+        "dataset": "UserInfoDataset",
+        "every": "3600s",
+        "cursor": "added_on",
+        "lateness": "3600s",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
 
 
 def test_multiple_sources():

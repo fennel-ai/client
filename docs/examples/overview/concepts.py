@@ -26,11 +26,15 @@ from fennel.sources import source, Postgres, Kafka
 
 postgres = Postgres.get(name="postgres")
 kafka = Kafka.get(name="kafka")
+webhook = Webhook(name="fennel_webhook")
 
 
 # docsnip external_data_sources
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(postgres.table("user", cursor="update_timestamp"), every="1m")
+@source(
+    postgres.table("user", cursor="update_timestamp"), every="1m", tier="prod"
+)
+@source(webhook.endpoint("User"), tier="dev")
 @dataset
 class User:
     uid: int = field(key=True)
@@ -40,7 +44,8 @@ class User:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(kafka.topic("transactions"))
+@source(kafka.topic("transactions"), tier="prod")
+@source(webhook.endpoint("Transaction"), tier="dev")
 @dataset
 class Transaction:
     uid: int
@@ -118,15 +123,13 @@ class UserFeature:
 
 # /docsnip
 
-webhook = Webhook(name="fennel_webhook")
-
 
 # Tests to ensure that there are no run time errors in the snippets
 @mock
 def test_overview(client):
-    fake_User = User.with_source(webhook.endpoint("User"))
-    fake_Transaction = Transaction.with_source(webhook.endpoint("Transaction"))
-    client.sync(datasets=[fake_User, fake_Transaction, UserTransactionsAbroad])
+    client.sync(
+        datasets=[User, Transaction, UserTransactionsAbroad], tier="dev"
+    )
     now = datetime.now()
     dob = now - timedelta(days=365 * 30)
     data = [

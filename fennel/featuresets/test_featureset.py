@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional
 
@@ -28,6 +29,7 @@ class UserInfoDataset:
     account_creation_date: datetime
     country: Optional[str]
     timestamp: datetime = field(timestamp=True)
+    avg_income: int
 
 
 @meta(owner="test@test.com")
@@ -344,3 +346,75 @@ def test_complex_featureset():
     assert actual_extractor == expected_extractor, error_message(
         actual_extractor, expected_extractor
     )
+
+
+def test_extractor_tier_selector():
+    @meta(owner="aditya@fennel.ai")
+    @featureset
+    class Request:
+        user_id: int = feature(id=1)
+
+    @meta(owner="aditya@fennel.ai")
+    @featureset
+    class UserInfo:
+        userid: int = feature(id=1).extract(
+            feature=Request.user_id, tier=["~staging", "~prod"]
+        )
+        home_geoid: int = feature(id=2)
+        # The users gender among male/female/non-binary
+        gender: str = feature(id=3)
+        age: int = feature(id=4).meta(owner="aditya@fennel.ai")
+        income: int = feature(id=5).extract(  # type: ignore
+            field=UserInfoDataset.avg_income,
+            provider=Request,
+            default="pluto",
+            tier=["~prod"],
+        )
+
+        @extractor(depends_on=[UserInfoDataset], tier=["~prod", "~dev"])
+        @inputs(User.id)
+        @outputs(userid, home_geoid)
+        def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
+            pass
+
+        @extractor(depends_on=[UserInfoDataset], tier=["prod"])
+        @inputs(User.id)
+        @outputs(userid, home_geoid)
+        def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
+            pass
+
+        @extractor(depends_on=[UserInfoDataset], tier=["prod"])
+        @inputs(User.id)
+        @outputs(income)
+        def get_user_income(cls, ts: pd.Series, user_id: pd.Series):
+            pass
+
+    view = InternalTestClient()
+    view.add(UserInfoDataset)
+    view.add(UserInfo)
+    view.add(User)
+    with pytest.raises(TypeError) as e:
+        view._get_sync_request_proto()
+    assert (
+        str(e.value)
+        == "Feature `income` is extracted by multiple extractors including `get_user_income`."
+    )
+
+    sync_request = view._get_sync_request_proto("prod")
+    assert len(sync_request.feature_sets) == 2
+    assert len(sync_request.extractors) == 2
+    assert len(sync_request.features) == 7
+
+    extractor_req = sync_request.extractors[1]
+    assert extractor_req.name == "get_user_info2"
+
+    sync_request = view._get_sync_request_proto("dev")
+    assert len(sync_request.feature_sets) == 2
+    assert len(sync_request.extractors) == 2
+    assert len(sync_request.features) == 7
+
+    extractor_req = sync_request.extractors[0]
+    assert extractor_req.name == "_fennel_alias_user_id"
+
+    extractor_req = sync_request.extractors[1]
+    assert extractor_req.name == "_fennel_lookup_avg_income"

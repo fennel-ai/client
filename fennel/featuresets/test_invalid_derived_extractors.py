@@ -74,6 +74,7 @@ def test_invalid_multiple_extracts():
     # Tests a derived and manual extractor for the same feature
     with pytest.raises(TypeError) as e:
 
+        @meta(owner="user@xyz.ai")
         @featureset
         class UserInfo3:
             user_id: int = feature(id=1).extract(feature=User.id)
@@ -89,7 +90,13 @@ def test_invalid_multiple_extracts():
                 df = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
                 return df.fillna(0)
 
-    assert str(e.value) == "Feature `age` is extracted by multiple extractors."
+        view = InternalTestClient()
+        view.add(UserInfo3)
+        view._get_sync_request_proto()
+    assert (
+        str(e.value)
+        == "Feature `age` is extracted by multiple extractors including `get_age`."
+    )
 
 
 def test_invalid_missing_fields():
