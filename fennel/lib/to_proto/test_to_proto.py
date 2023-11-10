@@ -118,7 +118,9 @@ def test_includes():
     }
     TestFeatureset.extractors[0]
     includes_proto = to_extractor_pycode(
-        TestFeatureset.extractors[0], TestFeatureset, {}
+        TestFeatureset.extractors[0],
+        TestFeatureset,
+        {"TestFeatureset": TestFeatureset},
     )
     expected_extractor = rm_imports(ParseDict(f, pycode_proto.PyCode()))
     includes_proto = rm_imports(includes_proto)

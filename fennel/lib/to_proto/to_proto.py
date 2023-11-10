@@ -1196,8 +1196,14 @@ def to_extractor_pycode(
             gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
             dependencies.append(dep)
 
+    datasets_added = set()
     # Extractor code construction
     for dataset in extractor.get_dataset_dependencies():
+        datasets_added.add(dataset)
+    for dataset in fs_obj_map[extractor.featureset].get_dataset_dependencies():
+        datasets_added.add(dataset)
+
+    for dataset in datasets_added:
         gen_code += get_dataset_core_code(dataset)
 
     input_fs_added = set()

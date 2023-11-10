@@ -480,6 +480,31 @@ class Featureset:
         self._expectation = self._get_expectations()
         propogate_fennel_attributes(featureset_cls, self)
 
+    def get_dataset_dependencies(self):
+        """
+        This function gets the list of datasets the Featureset depends upon.
+        This dependency is introduced by features that directly lookup a dataset
+        via the DS-FS route.
+
+        The motivation for this function is to help generated the required code, even
+        if an extractor does not depend on a dataset, but is part of a featureset which
+        has these kinds of dependencies.
+        """
+        depended_datasets = []
+        for f in self._features:
+            if (
+                f.extractor is not None
+                and f.extractor.derived_extractor_info is not None
+            ):
+                assert (
+                    f.extractor.derived_extractor_info.field.dataset is not None
+                )
+                depended_datasets.append(
+                    f.extractor.derived_extractor_info.field.dataset
+                )
+
+        return depended_datasets
+
     # ------------------- Private Methods ----------------------------------
 
     def _add_feature_names_as_attributes(self):
