@@ -767,30 +767,33 @@ def dataset(
         :param struct: Map from column names to Struct Classes. We use this to
         convert any dictionaries back to structs post lookup.
         """
-        if len(key_fields) == 0:
-            return None
 
         def lookup(
             ts: pd.Series, *args, **kwargs
         ) -> Tuple[pd.DataFrame, pd.Series]:
+            if len(key_fields) == 0:
+                raise Exception(
+                    f"Trying to lookup dataset `{cls_name} with no keys defined.\n"
+                    f"Please define one or more keys using field(key=True) to perform a lookup."
+                )
             if len(args) > 0:
                 raise ValueError(
-                    f"lookup expects key value arguments and can "
+                    f"Lookup for dataset `{cls_name}` expects key value arguments and can "
                     f"optionally include fields, found {args}"
                 )
             if len(kwargs) < len(key_fields):
                 raise ValueError(
-                    f"lookup expects keys of the table being looked up and can "
+                    f"Lookup for dataset `{cls_name}` expects keys of the table being looked up and can "
                     f"optionally include fields, found {kwargs}"
                 )
             # Check that ts is a series of datetime64[ns]
             if not isinstance(ts, pd.Series):
                 raise ValueError(
-                    f"lookup expects a series of timestamps, found {type(ts)}"
+                    f"Lookup for dataset `{cls_name}` expects a series of timestamps, found {type(ts)}"
                 )
             if not np.issubdtype(ts.dtype, np.datetime64):
                 raise ValueError(
-                    f"lookup expects a series of timestamps, found {ts.dtype}"
+                    f"Lookup for dataset `{cls_name}` expects a series of timestamps, found {ts.dtype}"
                 )
             # extract keys and fields from kwargs
             arr = []

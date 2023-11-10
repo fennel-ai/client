@@ -107,7 +107,7 @@ class UserFirstAction:
     def create_user_first_action_category(cls, txns: UserTransactions):
         # docsnip first
         first_txns = txns.groupby("user_id").first()
-        return first_txns.drop(["merchant_id"])
+        return first_txns.drop("merchant_id")
         # /docsnip
 
 
