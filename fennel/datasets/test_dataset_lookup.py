@@ -13,8 +13,9 @@ from fennel.test_lib import *
 
 webhook = Webhook(name="fennel_webhook")
 
+__owner__ = "test@test.com"
 
-@meta(owner="test@test.com")
+
 @source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
@@ -52,7 +53,6 @@ def fake_func(
 def test_dataset_lookup():
     fennel.datasets.datasets.dataset_lookup = fake_func
 
-    @meta(owner="test@test.com")
     @featureset
     class UserAgeFeatures:
         userid: int = feature(id=1)
