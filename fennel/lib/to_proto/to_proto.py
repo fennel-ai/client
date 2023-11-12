@@ -38,6 +38,7 @@ from fennel.lib.to_proto.source_code import (
     get_featureset_core_code,
     get_dataset_core_code,
     get_all_imports,
+    get_featureset_gen_code,
 )
 from fennel.lib.to_proto.source_code import to_includes_proto
 from fennel.utils import fennel_get_source
@@ -479,10 +480,18 @@ def _check_owner_exists(obj):
 def _to_field_lookup_proto(
     info: Extractor.DatasetLookupInfo,
 ) -> fs_proto.FieldLookupInfo:
+    if info.default is None:
+        return fs_proto.FieldLookupInfo(
+            field=_field_to_proto(info.field), default_value=json.dumps(None)
+        )
+
     if getattr(info.default.__class__, FENNEL_STRUCT, False):
         default_val = json.dumps(info.default.as_json())
     else:
-        default_val = json.dumps(info.default)
+        try:
+            default_val = json.dumps(info.default)
+        except TypeError:
+            default_val = json.dumps(str(info.default))
 
     return fs_proto.FieldLookupInfo(
         field=_field_to_proto(info.field),
@@ -1197,14 +1206,8 @@ def to_extractor_pycode(
             gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
             dependencies.append(dep)
 
-    datasets_added = set()
     # Extractor code construction
     for dataset in extractor.get_dataset_dependencies():
-        datasets_added.add(dataset)
-    for dataset in fs_obj_map[extractor.featureset].get_dataset_dependencies():
-        datasets_added.add(dataset)
-
-    for dataset in datasets_added:
         gen_code += get_dataset_core_code(dataset)
 
     input_fs_added = set()
@@ -1227,13 +1230,15 @@ def to_extractor_pycode(
                 )
             gen_code = (
                 gen_code
-                + get_featureset_core_code(fs_obj_map[input.featureset_name])
-                + "\n"
+                + get_featureset_gen_code(
+                    fs_obj_map[input.featureset_name], fs_obj_map
+                )
+                + "\n\n"
             )
 
     extractor_src_code = dedent(inspect.getsource(extractor.func))
     indented_code = indent(extractor_src_code, " " * 4)
-    featureset_core_code = get_featureset_core_code(featureset)
+    featureset_core_code = get_featureset_gen_code(featureset, fs_obj_map)
     gen_code = gen_code + "\n" + featureset_core_code + "\n" + indented_code
     ref_includes = {featureset._name: pycode_proto.RefType.Featureset}
     datasets = extractor.get_dataset_dependencies()

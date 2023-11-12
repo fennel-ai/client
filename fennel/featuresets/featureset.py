@@ -322,6 +322,7 @@ class Feature:
 
     def extract(
         self,
+        *,
         field: Field = None,
         provider: Featureset = None,
         default=None,
@@ -484,7 +485,7 @@ class Featureset:
         setattr(self, OWNER, owner)
         propogate_fennel_attributes(featureset_cls, self)
 
-    def get_dataset_dependencies(self):
+    def get_dataset_dependencies(self) -> List[Dataset]:
         """
         This function gets the list of datasets the Featureset depends upon.
         This dependency is introduced by features that directly lookup a dataset
@@ -509,6 +510,24 @@ class Featureset:
 
         return depended_datasets
 
+    def get_featureset_dependencies(self) -> List[str]:
+        """
+        This function gets the list of featuresets the Featureset depends upon.
+        This dependency is introduced by features that directly lookup a featureset
+        via the FS-DS route, while specifying a provider.
+        """
+        depended_featuresets = set()
+        for f in self._features:
+            if f.extractor is None:
+                continue
+            if f.extractor.extractor_type == ExtractorType.ALIAS:
+                # Alias extractors have exactly one input feature
+                depended_featuresets.add(f.extractor.inputs[0].featureset_name)
+            elif f.extractor.extractor_type == ExtractorType.LOOKUP:
+                for inp_feature in f.extractor.inputs:
+                    depended_featuresets.add(inp_feature.featureset_name)
+        return list(depended_featuresets)
+
     # ------------------- Private Methods ----------------------------------
 
     def _add_feature_names_as_attributes(self):
@@ -527,7 +546,7 @@ class Featureset:
                 if extractor.extractor_type == ExtractorType.LOOKUP and (
                     extractor.inputs is None or len(extractor.inputs) == 0
                 ):
-                    feature.extractor.set_inputs_from_featureset(self)
+                    feature.extractor.set_inputs_from_featureset(self, feature)
                 extractors.append(extractor)
 
         # user defined extractors
@@ -678,7 +697,9 @@ class Extractor:
             return getattr(self.func, FENNEL_INCLUDED_MOD)
         return []
 
-    def set_inputs_from_featureset(self, featureset: Featureset):
+    def set_inputs_from_featureset(
+        self, featureset: Featureset, feature: Feature
+    ):
         if self.inputs and len(self.inputs) > 0:
             return
         if self.extractor_type != ExtractorType.LOOKUP:
@@ -696,22 +717,22 @@ class Extractor:
             ds = field.dataset
         if not ds:
             raise ValueError(
-                f"Dataset {field.dataset_name} not found for field {field}"
+                f"Dataset `{field.dataset_name}` not found for field `{field}`"
             )
         self.depends_on = [ds]
         for k in ds.dsschema().keys:
-            feature = featureset.feature(k)
-            if not feature:
+            f = featureset.feature(k)
+            if not f:
                 raise ValueError(
-                    f"Dataset key {k} not found in provider {featureset._name} for extractor {self.name}"
+                    f"Key field `{k}` for dataset `{ds._name}` not found in provider `{featureset._name}` for feature: `{feature.name}` auto generated extractor"
                 )
-            self.inputs.append(feature)
+            self.inputs.append(f)
 
     class DatasetLookupInfo:
         field: Field
-        default: Any
+        default: Optional[Any] = None
 
-        def __init__(self, field: Field, default_val: Any):
+        def __init__(self, field: Field, default_val: Optional[Any] = None):
             self.field = field
             self.default = default_val
 

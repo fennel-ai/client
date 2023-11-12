@@ -390,6 +390,7 @@ def test_extractor_tier_selector():
             pass
 
     view = InternalTestClient()
+    view.add(Request)
     view.add(UserInfoDataset)
     view.add(UserInfo)
     view.add(User)
@@ -401,17 +402,17 @@ def test_extractor_tier_selector():
     )
 
     sync_request = view._get_sync_request_proto("prod")
-    assert len(sync_request.feature_sets) == 2
+    assert len(sync_request.feature_sets) == 3
     assert len(sync_request.extractors) == 2
-    assert len(sync_request.features) == 7
+    assert len(sync_request.features) == 8
 
     extractor_req = sync_request.extractors[1]
     assert extractor_req.name == "get_user_info2"
 
     sync_request = view._get_sync_request_proto("dev")
-    assert len(sync_request.feature_sets) == 2
+    assert len(sync_request.feature_sets) == 3
     assert len(sync_request.extractors) == 2
-    assert len(sync_request.features) == 7
+    assert len(sync_request.features) == 8
 
     extractor_req = sync_request.extractors[0]
     assert extractor_req.name == "_fennel_alias_user_id"

@@ -9,6 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
+import logging
 
 import numpy as np
 import pandas as pd
@@ -51,6 +52,8 @@ TEST_DATA_PORT = 50052
 FENNEL_LOOKUP = "__fennel_lookup_exists__"
 FENNEL_ORDER = "__fennel_order__"
 FENNEL_TIMESTAMP = "__fennel_timestamp__"
+
+logger = logging.getLogger(__name__)
 
 
 class FakeResponse(Response):
@@ -107,6 +110,9 @@ def dataset_lookup_impl(
             f"but {len(keys.columns)} key fields were provided."
         )
     if cls_name not in data and cls_name not in aggregated_datasets:
+        logger.warning(
+            f"Not data found for Dataset `{cls_name}` during lookup, returning an empty dataframe"
+        )
         # Create a dataframe with all nulls
         val_cols = datasets[cls_name].fields
         if len(fields) > 0:
@@ -747,7 +753,7 @@ class MockClient(Client):
                     extractor.inputs[0].fqn()
                 ]
                 intermediate_data[feature_name].name = feature_name
-                self._check_exceptions(
+                self._check_schema_exceptions(
                     intermediate_data[feature_name], dsschema, extractor.name
                 )
                 continue
@@ -756,7 +762,7 @@ class MockClient(Client):
                 output = self._compute_lookup_extractor(
                     extractor, timestamps.copy(), intermediate_data
                 )
-                self._check_exceptions(output, dsschema, extractor.name)
+                self._check_schema_exceptions(output, dsschema, extractor.name)
                 continue
 
             allowed_datasets = [
@@ -793,7 +799,7 @@ class MockClient(Client):
                     f"Extractor `{extractor.name}` returned "
                     f"invalid type `{type(output)}`, expected a pandas series or dataframe"
                 )
-            self._check_exceptions(output, dsschema, extractor.name)
+            self._check_schema_exceptions(output, dsschema, extractor.name)
             if isinstance(output, pd.Series):
                 if output.name in intermediate_data:
                     continue
@@ -847,9 +853,11 @@ class MockClient(Client):
                 )
         return output_df
 
-    def _check_exceptions(
+    def _check_schema_exceptions(
         self, output, dsschema: DSSchema, extractor_name: str
     ):
+        if output is None or output.shape[0] == 0:
+            return
         output_df = pd.DataFrame(output)
         output_df.reset_index(inplace=True)
         exceptions = data_schema_check(dsschema, output_df, extractor_name)
@@ -864,7 +872,7 @@ class MockClient(Client):
         extractor: Extractor,
         timestamps: pd.Series,
         intermediate_data: Dict[str, pd.Series],
-    ):
+    ) -> pd.Series:
         if len(extractor.output_features) != 1:
             raise ValueError(
                 f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.output_features)}"
@@ -900,15 +908,30 @@ class MockClient(Client):
                 f"Field for lookup extractor {extractor.name} must have a named field"
             )
         results = results[extractor.derived_extractor_info.field.name]
-        if results.dtype != object:
-            results = results.fillna(extractor.derived_extractor_info.default)
+        if extractor.derived_extractor_info.default is not None:
+            if results.dtype != object:
+                results = results.fillna(
+                    extractor.derived_extractor_info.default
+                )
+            else:
+                # fillna doesn't work for list type or dict type :cols
+                for row in results.loc[results.isnull()].index:
+                    results[row] = extractor.derived_extractor_info.default
+            results = cast_col_to_dtype(
+                results,
+                get_datatype(extractor.derived_extractor_info.field.dtype),
+            )
         else:
-            # fillna doesn't work for list type or ditc type :cols
-            for row in results.loc[results.isnull()].index:
-                results[row] = extractor.derived_extractor_info.default
+            results = cast_col_to_dtype(
+                results,
+                get_datatype(
+                    Optional[extractor.derived_extractor_info.field.dtype]
+                ),
+            )
+            results.replace({np.nan: None}, inplace=True)
+
         results.name = extractor.fqn_output_features()[0]
         intermediate_data[extractor.fqn_output_features()[0]] = results
-
         fennel.datasets.datasets.dataset_lookup = partial(
             dataset_lookup_impl,
             self.data,

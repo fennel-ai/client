@@ -91,6 +91,7 @@ def test_invalid_multiple_extracts():
                 return df.fillna(0)
 
         view = InternalTestClient()
+        view.add(User)
         view.add(UserInfo3)
         view._get_sync_request_proto()
     assert (
@@ -142,7 +143,7 @@ def test_invalid_missing_fields():
 
     assert (
         str(e.value)
-        == "Dataset key user_id not found in provider UserInfo6 for extractor _fennel_lookup_age"
+        == "Key field `user_id` for dataset `UserInfoDataset` not found in provider `UserInfo6` for feature: `age` auto generated extractor"
     )
 
     # missing dataset key in provider
