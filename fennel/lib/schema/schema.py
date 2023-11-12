@@ -503,6 +503,9 @@ def _validate_field_in_df(
 ):
     name = field.name
     dtype = field.dtype
+    if df.shape[0] == 0:
+        return
+
     if name not in df.columns:
         raise ValueError(
             f"Field `{name}` not found in dataframe during checking schema for "

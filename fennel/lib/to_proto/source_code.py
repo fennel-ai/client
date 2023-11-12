@@ -5,7 +5,7 @@ import re
 import sys
 from textwrap import dedent, indent
 
-from typing import Callable
+from typing import Callable, Dict
 
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset
@@ -26,7 +26,9 @@ def _remove_empty_lines(source_code: str) -> str:
     return source_code
 
 
-def get_featureset_core_code(featureset: Featureset) -> str:
+def get_featureset_core_code(
+    featureset: Featureset,
+) -> str:
     # Keep all lines till class definition
     source_code = fennel_get_source(featureset.__fennel_original_cls__)
     for extractor in featureset.extractors:
@@ -40,8 +42,36 @@ def get_featureset_core_code(featureset: Featureset) -> str:
     # If python version 3.8 or below add @feature decorator
     if sys.version_info < (3, 9):
         source_code = f"@featureset\n{dedent(source_code)}"
-    z = _remove_empty_lines(source_code)
-    return z
+    return _remove_empty_lines(source_code)
+
+
+def get_featureset_gen_code(
+    featureset: Featureset, fs_obj_map: Dict[str, Featureset]
+) -> str:
+    """
+    Now that featuresets can hold features, which can be auto generated, we need to ensure
+    that all the code required for the features and their extractors is present in the
+    generated code.
+
+    :param featureset:
+    :return:
+    """
+    gen_code = ""
+    for ds in featureset.get_dataset_dependencies():
+        gen_code = get_dataset_core_code(ds) + "\n" + gen_code + "\n"
+
+    for fs in featureset.get_featureset_dependencies():
+        if fs not in fs_obj_map:
+            raise ValueError(
+                f"Featureset `{fs}` is required by `{featureset._name}` but is not present in the sync call. Please "
+                f"ensure that all featuresets are present in the sync call."
+            )
+        if fs == featureset._name:
+            continue
+        fs_code = get_featureset_gen_code(fs_obj_map[fs], fs_obj_map)
+        gen_code = dedent(fs_code) + "\n" + gen_code + "\n"
+    source_code = gen_code + "\n" + get_featureset_core_code(featureset)
+    return _remove_empty_lines(source_code)
 
 
 def remove_source_decorator(text):
@@ -69,7 +99,7 @@ def get_dataset_core_code(dataset: Dataset) -> str:
     # Add any struct definitions
     if hasattr(dataset, FENNEL_STRUCT_SRC_CODE):
         source_code = (
-            getattr(dataset, FENNEL_STRUCT_SRC_CODE) + "\n\n" + source_code
+            getattr(dataset, FENNEL_STRUCT_SRC_CODE) + "\n" + source_code
         )
 
     return _remove_empty_lines(source_code)
