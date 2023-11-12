@@ -36,7 +36,7 @@ class UserInfo:
 @meta(owner="data-eng@myspace.com")
 class PostInfo:
     title: str
-    category: str
+    category: str  # type: ignore
     post_id: int = field(key=True)
     timestamp: datetime
 
@@ -168,7 +168,7 @@ def test_social_network(client):
     user_data_df = pd.read_csv("fennel/client_tests/data/user_data.csv")
     post_data_df = pd.read_csv("fennel/client_tests/data/post_data.csv")
     view_data_df = pd.read_csv("fennel/client_tests/data/view_data_sampled.csv")
-    ts = datetime(2018, 1, 1, 0, 0, 0)
+    ts = "2018-01-01 00:00:00"
     user_data_df["timestamp"] = ts
     post_data_df["timestamp"] = ts
     view_data_df["time_stamp"] = view_data_df["time_stamp"].apply(
@@ -194,7 +194,7 @@ def test_social_network(client):
 
     feature_df = client.extract_features(
         output_feature_list=[UserFeatures],
-        input_feature_list=[Request],
+        input_feature_list=[Request.user_id, Request.category],
         input_dataframe=pd.DataFrame(
             {
                 "Request.user_id": [

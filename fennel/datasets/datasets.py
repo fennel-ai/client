@@ -53,10 +53,14 @@ from fennel.lib.metadata import (
 from fennel.lib.schema import (
     dtype_to_string,
     get_primitive_dtype,
+    fennel_is_optional,
+    fennel_get_optional_inner,
+    get_pd_dtype,
     FENNEL_INPUTS,
     is_hashable,
     parse_json,
     get_fennel_struct,
+    get_python_type_from_pd,
     FENNEL_STRUCT_SRC_CODE,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
 )
@@ -88,6 +92,7 @@ RESERVED_FIELD_NAMES = [
     "fqn",
 ]
 
+primitive_numeric_types = [int, float, pd.Int64Dtype, pd.Float64Dtype]
 
 # ---------------------------------------------------------------------
 # Field
@@ -327,7 +332,7 @@ class Transform(_Node):
         return DSSchema(
             keys=inp_keys,
             values={
-                f: dtype
+                f: get_pd_dtype(dtype)
                 for f, dtype in self.new_schema.items()
                 if f not in inp_keys.keys() and f != input_schema.timestamp
             },
@@ -363,7 +368,7 @@ class Assign(_Node):
 
     def dsschema(self):
         input_schema = self.node.dsschema()
-        input_schema.update_column(self.column, self.output_type)
+        input_schema.update_column(self.column, get_pd_dtype(self.output_type))
         return input_schema
 
 
@@ -407,26 +412,31 @@ class Aggregate(_Node):
         values = {}
         for agg in self.aggregates:
             if isinstance(agg, Count):
-                values[agg.into_field] = int
+                values[agg.into_field] = pd.Int64Dtype
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
-                if dtype not in [int, float]:
+                dtype = get_primitive_dtype(dtype)
+                if dtype not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
                     )
-                values[agg.into_field] = dtype  # type: ignore
+                values[agg.into_field] = dtype
             elif isinstance(agg, Min) or isinstance(agg, Max):
-                values[agg.into_field] = input_schema.get_type(agg.of)
+                dtype = input_schema.get_type(agg.of)
+                dtype = get_primitive_dtype(dtype)
+                values[agg.into_field] = dtype
             elif isinstance(agg, Distinct):
                 dtype = input_schema.get_type(agg.of)
-                values[agg.into_field] = List[dtype]  # type: ignore
+                list_type = get_python_type_from_pd(dtype)
+                values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Average):
-                values[agg.into_field] = float  # type: ignore
+                values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
-                values[agg.into_field] = List[dtype]  # type: ignore
+                list_type = get_python_type_from_pd(dtype)
+                values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Stddev):
-                values[agg.into_field] = float  # type: ignore
+                values[agg.into_field] = pd.Float64Dtype  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
         return DSSchema(
@@ -498,6 +508,7 @@ class Explode(_Node):
         for c in self.columns:
             # extract type T from List[t]
             dsschema.values[c] = Optional[get_args(dsschema.values[c])[0]]
+            dsschema.values[c] = get_pd_dtype(dsschema.values[c])
         return dsschema
 
 
@@ -918,17 +929,6 @@ def dataset(
     return wrap(cls)
 
 
-def fennel_is_optional(type_):
-    return (
-        typing.get_origin(type_) is Union
-        and type(None) is typing.get_args(type_)[1]
-    )
-
-
-def fennel_get_optional_inner(type_):
-    return typing.get_args(type_)[0]
-
-
 # Fennel implementation of get_type_hints which does not error on forward
 # references not being types such as Embedding[4].
 def f_get_type_hints(obj):
@@ -1202,9 +1202,9 @@ class Dataset(_Node[T]):
 
     def dsschema(self):
         return DSSchema(
-            keys={f.name: f.dtype for f in self._fields if f.key},
+            keys={f.name: get_pd_dtype(f.dtype) for f in self._fields if f.key},
             values={
-                f.name: f.dtype
+                f.name: get_pd_dtype(f.dtype)
                 for f in self._fields
                 if not f.key and f.name != self._timestamp_field
             },
@@ -1391,15 +1391,7 @@ class Dataset(_Node[T]):
 
     def _validate_pipelines(self, pipelines: List[Pipeline]):
         exceptions = []
-        ds_schema = DSSchema(
-            keys={f.name: f.dtype for f in self.fields if f.key},
-            values={
-                f.name: f.dtype
-                for f in self.fields
-                if not f.key and f.name != self._timestamp_field
-            },
-            timestamp=self.timestamp_field,
-        )
+        ds_schema = self.dsschema()
 
         for pipeline in pipelines:
             pipeline_schema = pipeline.get_terminal_schema()
@@ -1571,7 +1563,11 @@ class DSSchema:
     name: str = ""
 
     def schema(self) -> Dict[str, Type]:
-        return {**self.keys, **self.values, self.timestamp: datetime.datetime}
+        schema = {**self.keys, **self.values, self.timestamp: datetime.datetime}
+        # Convert int -> Int64, float -> Float64 and string -> String
+        for k, v in schema.items():
+            schema[k] = get_pd_dtype(v)
+        return schema
 
     def fields(self) -> List[str]:
         return (
@@ -1647,17 +1643,17 @@ class DSSchema:
         else:
             raise Exception(f"field {name} not found in schema of {self.name}")
 
-    def update_column(self, name: str, tpe: Type):
+    def update_column(self, name: str, type: Type):
         if name in self.keys:
-            self.keys[name] = tpe
+            self.keys[name] = type
         elif name in self.values:
-            self.values[name] = tpe
+            self.values[name] = type
         elif name == self.timestamp:
             raise Exception(
                 f"cannot assign timestamp field {name} from {self.name}"
             )
         else:
-            self.values[name] = tpe  # Add to values
+            self.values[name] = type  # Add to values
 
     def matches(
         self, other_schema: DSSchema, this_name: str, other_name: str
@@ -1734,16 +1730,7 @@ class SchemaValidator(Visitor):
         return vis
 
     def visitDataset(self, obj) -> DSSchema:
-        return DSSchema(
-            keys={f.name: f.dtype for f in obj.fields if f.key},
-            values={
-                f.name: f.dtype
-                for f in obj.fields
-                if not f.key and f.name != obj.timestamp_field
-            },
-            timestamp=obj.timestamp_field,
-            name=f"'[Dataset:{obj._name}]'",
-        )
+        return obj.dsschema()
 
     def visitTransform(self, obj) -> DSSchema:
         input_schema = self.visit(obj.node)
@@ -1762,7 +1749,7 @@ class SchemaValidator(Visitor):
                         f"Key field {name} must be present in schema of "
                         f"{node_name}."
                     )
-                if dtype != obj.new_schema[name]:
+                if dtype != get_pd_dtype(obj.new_schema[name]):
                     raise TypeError(
                         f"Key field {name} has type {dtype_to_string(dtype)} in "
                         f"input schema "
@@ -1774,7 +1761,7 @@ class SchemaValidator(Visitor):
             return DSSchema(
                 keys=inp_keys,
                 values={
-                    f: dtype
+                    f: get_pd_dtype(dtype)
                     for f, dtype in obj.new_schema.items()
                     if f not in inp_keys.keys() and f != input_schema.timestamp
                 },
@@ -1808,7 +1795,7 @@ class SchemaValidator(Visitor):
                             f"type `{dtype_to_string(dtype)}`, as it is not "  # type: ignore
                             f"hashable"
                         )
-                values[agg.into_field] = int
+                values[agg.into_field] = pd.Int64Dtype
             elif isinstance(agg, Distinct):
                 if agg.of is None:
                     raise ValueError(
@@ -1821,31 +1808,33 @@ class SchemaValidator(Visitor):
                         f"type `{dtype_to_string(dtype)}`, as it is not hashable"
                         # type: ignore
                     )
-                values[agg.into_field] = List[dtype]  # type: ignore
+                list_type = get_python_type_from_pd(dtype)
+                values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in [int, float]:
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot sum field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Average):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in [int, float]:
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot take average of field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
-                values[agg.into_field] = float  # type: ignore
+                values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
-                values[agg.into_field] = List[dtype]  # type: ignore
+                list_type = get_python_type_from_pd(dtype)
+                values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Min):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in [int, float]:
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
                     raise TypeError(
                         f"invalid min: type of field `{agg.of}` is not int or float"
                     )
-                if get_primitive_dtype(dtype) == int and (
+                if get_primitive_dtype(dtype) == pd.Int64Dtype and (
                     int(agg.default) != agg.default
                 ):
                     raise TypeError(
@@ -1854,11 +1843,11 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in [int, float]:
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
                     raise TypeError(
                         f"invalid max: type of field `{agg.of}` is not int or float"
                     )
-                if get_primitive_dtype(dtype) == int and (
+                if get_primitive_dtype(dtype) == pd.Int64Dtype and (
                     int(agg.default) != agg.default
                 ):
                     raise TypeError(
@@ -1867,11 +1856,11 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Stddev):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in [int, float]:
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot get standard deviation of field {agg.of} of type {dtype_to_string(dtype)}"
                     )
-                values[agg.into_field] = float  # type: ignore
+                values[agg.into_field] = pd.Float64Dtype  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
         return DSSchema(
@@ -2040,7 +2029,7 @@ class SchemaValidator(Visitor):
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->dropnull node'"
         if obj.columns is None or len(obj.columns) == 0:
             raise ValueError(
-                f"invalid dropnull - {output_schema_name} must have at least one column"
+                f"invalid dropnull - `{output_schema_name}` must have at least one column"
             )
         for field in obj.columns:
             if (
@@ -2048,11 +2037,11 @@ class SchemaValidator(Visitor):
                 or field == input_schema.timestamp
             ):
                 raise ValueError(
-                    f"invalid dropnull column {field} not present in {input_schema.name}"
+                    f"invalid dropnull column `{field}` not present in `{input_schema.name}`"
                 )
             if not fennel_is_optional(input_schema.get_type(field)):
                 raise ValueError(
-                    f"invalid dropnull {field} has type {input_schema.get_type(field)} expected Optional type"
+                    f"invalid dropnull `{field}` has type `{dtype_to_string(input_schema.get_type(field))}` expected Optional type"
                 )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name

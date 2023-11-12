@@ -918,7 +918,6 @@ def test_drop_null():
             def drop_null_noargs(cls, c: Dataset):
                 return c.dropnull()
 
-    print(e.value)
     assert (
         str(e.value)
         == """[TypeError('Field `b2` has type `int` in `pipeline drop_null_noargs output value` schema but type `Optional[int]` in `C1 value` schema.')]"""
@@ -940,7 +939,7 @@ def test_drop_null():
 
     assert (
         str(e.value)
-        == "invalid dropnull b1 has type <class 'int'> expected Optional type"
+        == "invalid dropnull `b1` has type `int` expected Optional type"
     )
     with pytest.raises(ValueError) as e:
 
@@ -959,7 +958,7 @@ def test_drop_null():
 
     assert (
         str(e.value)
-        == "invalid dropnull column b4 not present in '[Dataset:C]'"
+        == "invalid dropnull column `b4` not present in `'[Dataset:C]'`"
     )
 
 

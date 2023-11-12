@@ -2,7 +2,6 @@ from datetime import datetime
 
 import pytest
 from typing import Optional, List, Union
-
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.lib.aggregate import Count, Average, Stddev, Distinct
 from fennel.lib.expectations import (
@@ -587,6 +586,36 @@ def test_dataset_with_pipes():
         str(e.value)
         == "pipeline functions are classmethods and must have cls as the "
         "first parameter, found `a` for pipeline `create_pipeline`."
+    )
+
+
+@mock
+def test_pipeline_input_validation_during_sync(client):
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="eng@fennel.ai")
+        @dataset
+        class XYZ:
+            user_id: int
+            name: str
+            timestamp: datetime
+
+        @meta(owner="eng@fennel.ai")
+        @dataset
+        class ABCDataset:
+            user_id: int
+            name: str
+            timestamp: datetime
+
+            @pipeline(version=1)
+            @inputs(XYZ)
+            def create_pipeline(cls, a: Dataset):
+                return a
+
+        client.sync(datasets=[ABCDataset])
+    assert (
+        str(e.value)
+        == "Dataset `XYZ` is an input to the pipelines: `['create_pipeline']` but is not synced. Please add it to the sync call."
     )
 
 

@@ -8,16 +8,15 @@ import requests
 from fennel import featureset, extractor, feature
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib.schema import inputs, outputs, between
 from fennel.sources import source
 from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Sum
+from fennel.lib.aggregate import Sum, LastK, Distinct
 from fennel.lib.window import Window
 from fennel.sources import Webhook
 from fennel.test_lib import mock, MockClient
 
-from typing import List
-
+from typing import List, Optional
 
 client = MockClient()
 
@@ -29,7 +28,7 @@ webhook = Webhook(name="fennel_webhook")
 @dataset
 class MovieInfo:
     title: str = field(key=True)
-    actors: List[str]  # can be an empty list
+    actors: List[Optional[str]]  # can be an empty list
     release: datetime
 
 
@@ -39,7 +38,7 @@ class MovieInfo:
 class TicketSale:
     ticket_id: str
     title: str
-    price: int
+    price: int  # type: ignore
     at: datetime
 
 
@@ -47,7 +46,7 @@ class TicketSale:
 @dataset
 class ActorStats:
     name: str = field(key=True)
-    revenue: int
+    revenue: int  # type: ignore
     at: datetime
 
     @pipeline(version=1, tier="prod")
@@ -101,6 +100,46 @@ class ActorStats:
         )
 
 
+@meta(owner="abhay@fennel.ai")
+@dataset
+class ActorStatsList:
+    name: str = field(key=True)
+    revenue: List[int]  # type: ignore
+    revenue_distinct: List[int]  # type: ignore
+    at: datetime
+
+    @pipeline(version=1, tier="prod")
+    @inputs(MovieInfo, TicketSale)
+    def pipeline_join(cls, info: Dataset, sale: Dataset):
+        uniq = sale.groupby("ticket_id").first()
+        c = (
+            uniq.join(info, how="inner", on=["title"])
+            .explode(columns=["actors"])
+            .rename(columns={"actors": "name"})
+        )
+        # name -> Option[str]
+        schema = c.schema()
+        schema["name"] = str
+        c = c.transform(lambda x: x, schema)
+        return c.groupby("name").aggregate(
+            [
+                LastK(
+                    window=Window("forever"),
+                    of="price",
+                    into_field="revenue",
+                    limit=10,
+                    dedup=False,
+                ),
+                Distinct(
+                    window=Window("forever"),
+                    of="price",
+                    into_field="revenue_distinct",
+                    unordered=True,
+                ),
+            ]
+        )
+
+
 @meta(owner="zaki@fennel.ai")
 @featureset
 class RequestFeatures:
@@ -132,7 +171,7 @@ class ActorFeatures:
 class TestMovieTicketSale(unittest.TestCase):
     @mock
     def test_movie_ticket_sale(self, client):
-        datasets = [MovieInfo, TicketSale, ActorStats]  # type: ignore
+        datasets = [MovieInfo, TicketSale, ActorStats, ActorStatsList]  # type: ignore
         featuresets = [ActorFeatures, RequestFeatures]
         client.sync(datasets=datasets, featuresets=featuresets, tier="prod")  # type: ignore
         client.sleep()
@@ -166,10 +205,10 @@ class TestMovieTicketSale(unittest.TestCase):
         two_hours_ago = now - timedelta(hours=2)
         columns = ["ticket_id", "title", "price", "at"]
         data = [
-            ["1", "Titanic", 50, one_hour_ago],
-            ["2", "Titanic", 100, one_day_ago],
-            ["3", "Jumanji", 25, one_hour_ago],
-            ["4", "The Matrix", 50, two_hours_ago],  # no match
+            ["1", "Titanic", "50", one_hour_ago],
+            ["2", "Titanic", "100", one_day_ago],
+            ["3", "Jumanji", "25", one_hour_ago],
+            ["4", "The Matrix", "50", two_hours_ago],  # no match
             ["5", "Great Gatbsy", 49, one_hour_ago],
         ]
         df = pd.DataFrame(data, columns=columns)

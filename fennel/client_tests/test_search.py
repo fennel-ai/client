@@ -5,7 +5,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import pytest
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import fennel._vendor.requests as requests
 from fennel import sources
@@ -14,7 +14,7 @@ from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.aggregate import Count, Sum
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding
+from fennel.lib.schema import Embedding, oneof
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 from fennel.sources import source
@@ -217,7 +217,7 @@ class TopWordsCount:
 class UserActivity:
     user_id: int
     doc_id: int
-    action_type: str
+    action_type: oneof(str, ["view", "edit"])  # type: ignore
     view_time: float
     timestamp: datetime
 
@@ -597,7 +597,7 @@ class TestSearchExample(unittest.TestCase):
                 DocumentFeatures,
                 DocumentContentFeatures,
             ],
-            input_feature_list=[Query],
+            input_feature_list=[Query.doc_id, Query.user_id],
             input_dataframe=input_df,
         )
         assert df.shape == (2, 15)
