@@ -492,6 +492,10 @@ class Client:
                 raise Exception(
                     f"Timestamp column {timestamp_column} not found in input dataframe."
                 )
+            # Convert timestamp column to string to make it JSON serializable
+            input_dataframe[timestamp_column] = input_dataframe[
+                timestamp_column
+            ].astype(str)
             extract_historical_input["Pandas"] = input_dataframe.to_dict(
                 orient="list"
             )

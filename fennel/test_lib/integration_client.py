@@ -9,6 +9,12 @@ from fennel.utils import to_columnar_json
 
 try:
     import pyarrow as pa
+    import sys
+
+    sys.path.insert(
+        0,
+        "/nix/store/wrkjic4qykdb8gkg271b388cdqhzxf7d-python3-3.11.5-env/lib/python3.11/site-packages",
+    )
     from fennel_client_lib import RustClient  # type: ignore
     from fennel_dataset import lookup  # type: ignore
 except ImportError:
@@ -69,7 +75,9 @@ class IntegrationClient:
         return FakeResponse(200, "OK")
 
     def sync(
-        self, datasets: List[Dataset] = [], featuresets: List[Featureset] = []
+        self,
+        datasets: List[Dataset] = [],
+        featuresets: List[Featureset] = [],
     ):
         self.to_register_objects = []
         self.to_register = set()
@@ -79,7 +87,7 @@ class IntegrationClient:
             self.add(featureset)
 
         sync_request = self._get_sync_request_proto()
-        self._client.sync(sync_request.SerializeToString())
+        self._client.sync(sync_request.SerializeToString(), _dry_run=False)
         time.sleep(1.1)
         return FakeResponse(200, "OK")
 

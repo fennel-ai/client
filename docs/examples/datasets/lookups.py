@@ -36,7 +36,8 @@ class UserFeature:
     def func(cls, ts: pd.Series, uid: pd.Series):
         df, _found = User.lookup(ts, uid=uid)
         return pd.Series(
-            name="in_home_city", data=df["home_city"] == df["cur_city"]
+            name="in_home_city",
+            data=df["home_city"] == df["cur_city"],
         )
 
 

@@ -176,7 +176,7 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
     return ds_proto.CoreDataset(
         name=ds.__name__,
         metadata=get_metadata_proto(ds),
-        dsschema=_fields_to_dsschema(ds.fields),
+        dsschema=fields_to_dsschema(ds.fields),
         history=history,
         retention=retention,
         field_metadata=_field_metadata(ds._fields),
@@ -193,7 +193,7 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
     )
 
 
-def _fields_to_dsschema(fields: List[Field]) -> schema_proto.DSSchema:
+def fields_to_dsschema(fields: List[Field]) -> schema_proto.DSSchema:
     keys = []
     values = []
     ts = None

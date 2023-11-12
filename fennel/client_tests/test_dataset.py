@@ -178,7 +178,9 @@ class TestDataset(unittest.TestCase):
         if client.is_integration_client():
             client.sleep()
         ts = pd.Series([now, now, now, now, now, now])
-        user_id_keys = pd.Series([18232, 18234, 18235, 18236, 18237, 18238])
+        user_id_keys = pd.Series(
+            [18232, 18234, 18235, 18236, 18237, 18238], dtype="Int64"
+        )
 
         df, found = UserInfoDataset.lookup(ts, user_id=user_id_keys)
         assert df.shape == (6, 5)
@@ -294,12 +296,11 @@ class TestDataset(unittest.TestCase):
             assert (
                 response.json()["error"]
                 == "Schema validation failed during data insertion to "
-                "`UserInfoDataset` [ValueError('Field `age` is of type int, but the column "
-                "in the dataframe is of type `object`. Error found during checking schema for `UserInfoDataset`.')]"
+                """`UserInfoDataset`: Failed to cast data logged to column `age` of type `optional(int)`: Unable to parse string "32yrs" at position 0"""
             )
         client.sleep(10)
         # Do some lookups
-        user_ids = pd.Series([18232, 18234, 1920])
+        user_ids = pd.Series([18232, 18234, 1920], dtype="Int64")
         lookup_now = datetime.now() + pd.Timedelta(minutes=1)
         ts = pd.Series([lookup_now, lookup_now, lookup_now])
         df, found = UserInfoDataset.lookup(
@@ -323,7 +324,7 @@ class TestDataset(unittest.TestCase):
                 pd.Timestamp(yday_rounded),
             ]
         # Do some lookups with a timestamp
-        user_ids = pd.Series([18232, 18234])
+        user_ids = pd.Series([18232, 18234], dtype="Int64")
         six_hours_ago = now - pd.Timedelta(hours=6)
         ts = pd.Series([six_hours_ago, six_hours_ago])
         df, found = UserInfoDataset.lookup(
@@ -2651,16 +2652,29 @@ class LocationLatLong:
             "latitude": float,
             "longitude": float,
         }
-        data = event.transform(
-            extract_payload,
-            schema={"json_payload": Dict[str, float], "timestamp": datetime},
-        ).transform(
-            lambda x: extract_keys(
-                x,
-                json_col="json_payload",
-                keys=["latitude", "longitude"],
-            ),
-            schema=new_schema,
+        data = (
+            event.transform(
+                extract_payload,
+                schema={
+                    "json_payload": Dict[str, float],
+                    "timestamp": datetime,
+                },
+            )
+            .assign(
+                "latitude",
+                float,
+                lambda df: df["json_payload"]
+                .apply(lambda x: x["latitude"])
+                .astype(float),
+            )
+            .assign(
+                "longitude",
+                float,
+                lambda df: df["json_payload"]
+                .apply(lambda x: x["longitude"])
+                .astype(float),
+            )
+            .drop("json_payload")
         )
 
         new_schema.update({"latlng2": str})
@@ -2697,7 +2711,7 @@ def test_complex_lambda(client):
     view.add(LocationLatLong)
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 2
-    assert len(sync_request.operators) == 6
+    assert len(sync_request.operators) == 8
 
     expected_code = """
 def extract_location_index(
@@ -2777,17 +2791,17 @@ def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
         {
             "name": "LocationLatLong",
             "timestamp": datetime.now(),
-            "payload": '{"user_id": "247", "latitude": 12.3, "longitude": 12.3, "token": "abc"}',
+            "payload": '{"user_id": 247, "latitude": 12.3, "longitude": 12.3}',
         },
         {
             "name": "LocationLatLong",
             "timestamp": datetime.now(),
-            "payload": '{"user_id": "248", "latitude": 12.3, "longitude": 12.4, "token": "abc"}',
+            "payload": '{"user_id": 248, "latitude": 12.3, "longitude": 12.4}',
         },
         {
             "name": "LocationLatLong",
             "timestamp": datetime.now(),
-            "payload": '{"user_id": "246", "latitude": 12.3, "longitude": 12.3, "token": "abc"}',
+            "payload": '{"user_id": 246, "latitude": 12.3, "longitude": 12.3}',
         },
     ]
     res = client.log("fennel_webhook", "CommonEvent", pd.DataFrame(data))

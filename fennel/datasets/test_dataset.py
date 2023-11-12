@@ -2473,10 +2473,10 @@ def test_auto_schema_generation():
                 ]
 
             assert activity.schema() == {
-                "action_type": float,
+                "action_type": pd.Float64Dtype,
                 "timestamp": datetime,
-                "amount": Optional[float],
-                "user_id": int,
+                "amount": Optional[pd.Float64Dtype],
+                "user_id": pd.Int64Dtype,
             }
 
             filtered_ds = activity.filter(
@@ -2484,26 +2484,26 @@ def test_auto_schema_generation():
             )
 
             assert filtered_ds.schema() == {
-                "action_type": float,
-                "amount": Optional[float],
+                "action_type": pd.Float64Dtype,
+                "amount": Optional[pd.Float64Dtype],
                 "timestamp": datetime,
-                "user_id": int,
+                "user_id": pd.Int64Dtype,
             }
 
             x = filtered_ds.transform(
                 extract_info,
                 schema={
-                    "transaction_amount": float,
-                    "merchant_id": int,
-                    "user_id": int,
+                    "transaction_amount": pd.Float64Dtype,
+                    "merchant_id": pd.Int64Dtype,
+                    "user_id": pd.Int64Dtype,
                     "timestamp": datetime,
                 },
             )
 
             assert x.schema() == {
-                "merchant_id": int,
-                "transaction_amount": float,
-                "user_id": int,
+                "merchant_id": pd.Int64Dtype,
+                "transaction_amount": pd.Float64Dtype,
+                "user_id": pd.Int64Dtype,
                 "timestamp": datetime,
             }
 
@@ -2511,21 +2511,21 @@ def test_auto_schema_generation():
                 "transaction_amount", int, lambda df: df["user_id"] * 2
             )
             assert assign_ds.schema() == {
-                "action_type": float,
+                "action_type": pd.Float64Dtype,
                 "timestamp": datetime,
-                "transaction_amount": int,
-                "user_id": int,
-                "amount": Optional[float],
+                "transaction_amount": pd.Int64Dtype,
+                "user_id": pd.Int64Dtype,
+                "amount": Optional[pd.Float64Dtype],
             }
 
             assign_ds_str = activity.assign(
                 "user_id", str, lambda df: str(df["user_id"])
             )
             assert assign_ds_str.schema() == {
-                "action_type": float,
+                "action_type": pd.Float64Dtype,
                 "timestamp": datetime,
-                "user_id": str,
-                "amount": Optional[float],
+                "user_id": pd.StringDtype,
+                "amount": Optional[pd.Float64Dtype],
             }
 
             return x
