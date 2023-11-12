@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.18.15] - 2023-11-12
+- Allow owner to be specified at the file level itself. 
+
 ## [0.18.14] - 2023-11-11
 - Use pd types rather than python types 
 

@@ -23,6 +23,7 @@ from fennel._vendor.pydantic import BaseModel, validator  # type: ignore
 
 EMAIL_REGEX = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
 META_FIELD = "__fennel_metadata__"
+OWNER = "__owner__"
 
 
 class Metadata(BaseModel):
@@ -102,12 +103,17 @@ def set_meta_attr(obj: Any, attr: str, value: Any):
     setattr(obj, META_FIELD, meta)
 
 
-def get_metadata_proto(obj: Any) -> proto.Metadata:
+def get_metadata_proto(
+    obj: Any,
+) -> proto.Metadata:
+    owner = getattr(obj, OWNER, "")
     meta = get_meta(obj)
     if meta is None:
-        return proto.Metadata()
+        return proto.Metadata(owner=owner)
+    if meta.owner != "":
+        owner = meta.owner
     return proto.Metadata(
-        owner=meta.owner,
+        owner=owner,
         description=meta.description,
         tags=meta.tags,
         deprecated=meta.deprecated,

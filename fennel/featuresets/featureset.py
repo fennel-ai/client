@@ -27,6 +27,7 @@ from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import (
     meta,
+    OWNER,
     get_meta_attr,
     set_meta_attr,
 )
@@ -120,11 +121,11 @@ def featureset(featureset_cls: Type[T]):
             setattr(featureset_cls, FENNEL_VIRTUAL_FILE, file_name)
     except Exception:
         pass
-
-    return Featureset(
-        featureset_cls,
-        features,
-    )
+    cls_module = inspect.getmodule(featureset_cls)
+    owner = None
+    if cls_module is not None and hasattr(cls_module, OWNER):
+        owner = getattr(cls_module, OWNER)
+    return Featureset(featureset_cls, features, owner)
 
 
 def extractor(
@@ -462,11 +463,13 @@ class Featureset:
     _extractors: List[Extractor]
     _id_to_feature: Dict[int, Feature] = {}
     _expectation: Expectations
+    owner: Optional[str] = None
 
     def __init__(
         self,
         featureset_cls: Type[T],
         features: List[Feature],
+        owner: Optional[str] = None,
     ):
         self.__fennel_original_cls__ = featureset_cls
         self._name = featureset_cls.__name__
@@ -478,6 +481,7 @@ class Featureset:
         self._add_feature_names_as_attributes()
         self._set_extractors_as_attributes()
         self._expectation = self._get_expectations()
+        setattr(self, OWNER, owner)
         propogate_fennel_attributes(featureset_cls, self)
 
     def get_dataset_dependencies(self):

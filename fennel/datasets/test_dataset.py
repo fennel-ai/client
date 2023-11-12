@@ -18,13 +18,13 @@ from fennel.sources import source, Webhook, Kafka
 from fennel.test_lib import *
 
 webhook = Webhook(name="fennel_webhook")
+__owner__ = "ml-eng@fennel.ai"
 
 
-@meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
-    user_id: int = field(key=True)
+    user_id: int = field(key=True).meta(owner="xyz@fennel.ai")  # type: ignore
     name: str
     gender: str
     # Users date of birth
@@ -45,7 +45,7 @@ def test_simple_dataset():
         "datasets": [
             {
                 "name": "UserInfoDataset",
-                "metadata": {"owner": "test@test.com"},
+                "metadata": {"owner": "ml-eng@fennel.ai"},
                 "dsschema": {
                     "keys": {
                         "fields": [
@@ -79,7 +79,7 @@ def test_simple_dataset():
                     "name": {},
                     "account_creation_date": {},
                     "country": {},
-                    "user_id": {},
+                    "user_id": {"owner": "xyz@fennel.ai"},
                     "gender": {},
                     "timestamp": {},
                     "dob": {"description": "Users date of birth"},
@@ -188,7 +188,6 @@ def test_dataset_with_aggregates():
 
 
 @source(webhook.endpoint("Activity"))
-@meta(owner="test@test.com")
 @dataset(history="120d")
 class Activity:
     user_id: int
@@ -207,7 +206,7 @@ def test_dataset_with_retention():
         "datasets": [
             {
                 "name": "Activity",
-                "metadata": {"owner": "test@test.com"},
+                "metadata": {"owner": "ml-eng@fennel.ai"},
                 "dsschema": {
                     "keys": {},
                     "values": {

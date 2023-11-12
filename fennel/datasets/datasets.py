@@ -29,6 +29,7 @@ from typing import (
 
 import fennel.sources as sources
 from fennel.lib.aggregate import AggregateType
+
 from fennel.lib.aggregate.aggregate import (
     Average,
     Count,
@@ -47,6 +48,7 @@ from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.includes import TierSelector
 from fennel.lib.metadata import (
     meta,
+    OWNER,
     get_meta_attr,
     set_meta_attr,
 )
@@ -909,6 +911,11 @@ def dataset(
         if struct_code:
             setattr(dataset_cls, FENNEL_STRUCT_SRC_CODE, struct_code)
 
+        cls_module = inspect.getmodule(dataset_cls)
+        owner = None
+        if cls_module is not None and hasattr(cls_module, OWNER):
+            owner = getattr(cls_module, OWNER)
+
         return Dataset(
             dataset_cls,
             fields,
@@ -916,6 +923,7 @@ def dataset(
             lookup_fn=_create_lookup_function(
                 dataset_cls.__name__, key_fields, struct_types  # type: ignore
             ),
+            owner=owner,
         )
 
     def wrap(c: Type[T]) -> Dataset:
@@ -1148,6 +1156,7 @@ class Dataset(_Node[T]):
         fields: List[Field],
         history: datetime.timedelta,
         lookup_fn: Optional[Callable] = None,
+        owner: Optional[str] = None,
     ):
         super().__init__()
         self._name = cls.__name__  # type: ignore
@@ -1168,6 +1177,7 @@ class Dataset(_Node[T]):
             self.lookup = lookup_fn  # type: ignore
         self._add_fields_as_attributes()
         self.expectations = self._get_expectations()
+        setattr(self, OWNER, owner)
 
     def __class_getitem__(cls, item):
         return item

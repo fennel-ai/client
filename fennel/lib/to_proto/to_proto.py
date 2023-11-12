@@ -31,7 +31,7 @@ from fennel.lib.duration import (
     duration_to_timedelta,
 )
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
-from fennel.lib.metadata import get_metadata_proto, get_meta_attr
+from fennel.lib.metadata import get_metadata_proto, get_meta_attr, OWNER
 from fennel.lib.schema import get_datatype, FENNEL_STRUCT
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import (
@@ -172,7 +172,6 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
         from fennel.datasets.datasets import dataset_lookup
         """
     )
-
     return ds_proto.CoreDataset(
         name=ds.__name__,
         metadata=get_metadata_proto(ds),
@@ -468,9 +467,11 @@ def _check_owner_exists(obj):
     owner = get_meta_attr(obj, "owner")
     if owner is None or owner == "":
         if isinstance(obj, Featureset):
-            raise Exception(f"Featureset {obj._name} must have an owner.")
+            if not hasattr(obj, OWNER) or getattr(obj, OWNER) is None:
+                raise Exception(f"Featureset {obj._name} must have an owner.")
         elif isinstance(obj, Dataset):
-            raise Exception(f"Dataset {obj._name} must have an owner.")
+            if not hasattr(obj, OWNER) or getattr(obj, OWNER) is None:
+                raise Exception(f"Dataset {obj._name} must have an owner.")
         else:
             raise Exception(f"Object {obj.__name__} must have an owner.")
 

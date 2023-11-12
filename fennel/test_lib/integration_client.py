@@ -9,12 +9,6 @@ from fennel.utils import to_columnar_json
 
 try:
     import pyarrow as pa
-    import sys
-
-    sys.path.insert(
-        0,
-        "/nix/store/wrkjic4qykdb8gkg271b388cdqhzxf7d-python3-3.11.5-env/lib/python3.11/site-packages",
-    )
     from fennel_client_lib import RustClient  # type: ignore
     from fennel_dataset import lookup  # type: ignore
 except ImportError:
