@@ -552,6 +552,7 @@ class Join(_Node):
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
+        # Currently not supported
         lsuffix: str = "",
         rsuffix: str = "",
     ):
@@ -1923,6 +1924,8 @@ class SchemaValidator(Visitor):
                         f"in left schema but type "
                         f"{dtype_to_string(right_schema.get_type(key))} in right schema."
                     )
+            # Check that none of the other fields collide
+
         else:
             #  obj.right_on should be the keys of the right dataset
             if set(obj.right_on) != set(right_schema.keys.keys()):

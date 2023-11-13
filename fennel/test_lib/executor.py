@@ -264,6 +264,15 @@ class Executor(Visitor):
             left_by = copy.deepcopy(obj.left_on)
             right_by = copy.deepcopy(obj.right_on)
 
+        # Rename the right_by columns to avoid conflicts with any of the left columns.
+        # We dont need to worry about right value columns conflicting with left key columns,
+        # because we have already verified that.
+        if set(right_by).intersection(set(left_df.columns)):
+            right_df = right_df.rename(
+                columns={col: f"__@@__{col}" for col in right_by}
+            )
+            right_by = [f"__@@__{col}" for col in right_by]
+
         left_df = left_df.sort_values(by=ts_query_field)
         right_df = right_df.sort_values(by=ts_query_field)
         merged_df = pd.merge_asof(

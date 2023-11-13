@@ -26,6 +26,8 @@ from fennel.test_lib import almost_equal, mock, InternalTestClient
 
 webhook = Webhook(name="fennel_webhook")
 
+__owner__ = "eng@fennel.ai"
+
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"))
@@ -2934,3 +2936,143 @@ def TransactionsCreditInternetBanking_wrapper_4d45b34b11_filter(df: pd.DataFrame
     assert del_spaces_tabs_and_newlines(
         sync_request.operators[3].filter.pycode.generated_code
     ) == del_spaces_tabs_and_newlines(expected_code)
+
+
+@mock
+def test_inner_join_column_name_collision(client):
+    webhook = Webhook(name="fennel_webhook")
+
+    @dataset
+    @source(webhook.endpoint("PaymentEventDataset"), tier="local")
+    class PaymentEventDataset:
+        customer: int = field(key=True)
+        created: datetime
+        outcome_risk_score: float
+
+    @dataset
+    @source(webhook.endpoint("PaymentAccountDataset"), tier="local")
+    class PaymentAccountDataset:
+        id: int
+        created: datetime
+        customer_id: int = field(key=True)
+
+    @dataset
+    @source(webhook.endpoint("PaymentAccountAssociationDataset"), tier="local")
+    class PaymentAccountAssociationDataset:
+        id: int = field(key=True)
+        created: datetime
+        account_id: int
+
+    @dataset
+    @source(webhook.endpoint("AccountDataset"), tier="local")
+    class AccountDataset:
+        id: int = field(key=True)
+        created: datetime
+        primary_rider_id: int
+
+    @dataset
+    class RiderAggRiskScore:
+        primary_rider_id: int = field(key=True)
+        created: datetime
+        max_risk_score: float
+        min_risk_score: float
+
+        @pipeline()
+        @inputs(
+            PaymentEventDataset,
+            PaymentAccountDataset,
+            PaymentAccountAssociationDataset,
+            AccountDataset,
+        )
+        def stripe_enrichment(
+            cls,
+            stripe_charge: Dataset,
+            payment_account: Dataset,
+            payment_account_association: Dataset,
+            account: Dataset,
+        ):
+            return (
+                stripe_charge.join(
+                    payment_account,
+                    how="inner",
+                    left_on=["customer"],
+                    right_on=["customer_id"],
+                )
+                .join(payment_account_association, how="inner", on=["id"])
+                .join(
+                    account,
+                    left_on=["account_id"],
+                    right_on=["id"],
+                    how="inner",
+                )
+                .groupby("primary_rider_id")
+                .aggregate(
+                    Max(
+                        of="outcome_risk_score",
+                        window=Window("forever"),
+                        into_field="max_risk_score",
+                        default=-1.0,
+                    ),
+                    Min(
+                        of="outcome_risk_score",
+                        window=Window("forever"),
+                        into_field="min_risk_score",
+                        default=-1.0,
+                    ),
+                )
+            )
+
+    initial = client.sync(
+        datasets=[
+            RiderAggRiskScore,
+            PaymentEventDataset,
+            PaymentAccountDataset,
+            PaymentAccountAssociationDataset,
+            AccountDataset,
+        ]
+    )
+    assert initial.status_code == 200
+    now = datetime.now()
+
+    stripe_charge_df = pd.DataFrame(
+        {"customer": [1], "created": [now], "outcome_risk_score": [0.5]}
+    )
+    stripe_charge_response = client.log(
+        webhook="fennel_webhook",
+        endpoint="PaymentEventDataset",
+        df=stripe_charge_df,
+    )
+    assert stripe_charge_response.status_code == 200
+
+    payment_account_df = pd.DataFrame(
+        {"id": [1], "created": [now], "customer_id": [1]}
+    )
+    payment_account_response = client.log(
+        webhook="fennel_webhook",
+        endpoint="PaymentAccountDataset",
+        df=payment_account_df,
+    )
+    assert payment_account_response.status_code == 200
+
+    payment_account_association_df = pd.DataFrame(
+        {"id": [1], "created": [now], "account_id": [1]}
+    )
+    payment_account_association_response = client.log(
+        webhook="fennel_webhook",
+        endpoint="PaymentAccountAssociationDataset",
+        df=payment_account_association_df,
+    )
+    assert payment_account_association_response.status_code == 200
+
+    account_df = pd.DataFrame(
+        {"id": [1], "created": [now], "primary_rider_id": [1]}
+    )
+    account_response = client.log(
+        webhook="fennel_webhook", endpoint="AccountDataset", df=account_df
+    )
+
+    assert account_response.status_code == 200
+
+    extracted_df = client.get_dataset_df("RiderAggRiskScore")
+    assert extracted_df.shape[0] == 1
+    assert extracted_df["max_risk_score"].iloc[0] == 0.5
