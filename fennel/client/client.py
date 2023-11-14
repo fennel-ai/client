@@ -60,7 +60,7 @@ class Client:
         self,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
-        dry_run=False,
+        preview=False,
     ):
         """
         Sync the client with the server. This will register any datasets or
@@ -95,7 +95,7 @@ class Client:
                 self.add(featureset)
         sync_request = self._get_sync_request_proto()
         response = self._post_bytes(
-            "{}/sync?dry_run={}".format(V1_API, str(dry_run).lower()),
+            "{}/sync?preview={}".format(V1_API, str(preview).lower()),
             sync_request.SerializeToString(),
             False,
             300,
@@ -106,7 +106,7 @@ class Client:
             if "diffs" in res_json:
                 diffs = res_json["diffs"]
                 for line in diffs:
-                    print(line)
+                    print(line, end="")
 
     def log(
         self,

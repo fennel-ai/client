@@ -69,7 +69,10 @@ class IntegrationClient:
         return FakeResponse(200, "OK")
 
     def sync(
-        self, datasets: List[Dataset] = [], featuresets: List[Featureset] = [], dry_run: bool = False
+        self,
+        datasets: List[Dataset] = [],
+        featuresets: List[Featureset] = [],
+        dry_run: bool = False,
     ):
         self.to_register_objects = []
         self.to_register = set()

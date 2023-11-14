@@ -329,7 +329,7 @@ class MockClient(Client):
         self,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
-        dry_run=False,
+        preview=False,
     ):
         self._reset()
         if datasets is None:

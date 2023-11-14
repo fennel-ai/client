@@ -1,7 +1,7 @@
 # Changelog
 
 ## [0.18.10] - 2023-10-30
-- Added `dry_run` parameter to sync.
+- Added `preview` parameter to sync.
 - Show entity diffs on sync.
 
 ## [0.18.10] - 2023-10-30
