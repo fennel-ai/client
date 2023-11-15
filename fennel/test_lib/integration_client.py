@@ -11,8 +11,8 @@ try:
     import pyarrow as pa
     from fennel_client_lib import RustClient  # type: ignore
     from fennel_dataset import lookup  # type: ignore
-except ImportError as e:
-    print(f"exception during import {e}")
+except ImportError:
+    pass
 
 from fennel._vendor.requests import Response  # type: ignore
 

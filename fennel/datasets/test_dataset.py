@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timedelta
 
 import pandas as pd
+import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional, List
 
@@ -13,17 +14,17 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, oneof
 from fennel.lib.window import Window
-from fennel.sources import source, Webhook
+from fennel.sources import source, Webhook, Kafka
 from fennel.test_lib import *
 
 webhook = Webhook(name="fennel_webhook")
+__owner__ = "ml-eng@fennel.ai"
 
 
-@meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"))
 @dataset
 class UserInfoDataset:
-    user_id: int = field(key=True)
+    user_id: int = field(key=True).meta(owner="xyz@fennel.ai")  # type: ignore
     name: str
     gender: str
     # Users date of birth
@@ -44,7 +45,7 @@ def test_simple_dataset():
         "datasets": [
             {
                 "name": "UserInfoDataset",
-                "metadata": {"owner": "test@test.com"},
+                "metadata": {"owner": "ml-eng@fennel.ai"},
                 "dsschema": {
                     "keys": {
                         "fields": [
@@ -78,7 +79,7 @@ def test_simple_dataset():
                     "name": {},
                     "account_creation_date": {},
                     "country": {},
-                    "user_id": {},
+                    "user_id": {"owner": "xyz@fennel.ai"},
                     "gender": {},
                     "timestamp": {},
                     "dob": {"description": "Users date of birth"},
@@ -187,7 +188,6 @@ def test_dataset_with_aggregates():
 
 
 @source(webhook.endpoint("Activity"))
-@meta(owner="test@test.com")
 @dataset(history="120d")
 class Activity:
     user_id: int
@@ -206,7 +206,7 @@ def test_dataset_with_retention():
         "datasets": [
             {
                 "name": "Activity",
-                "metadata": {"owner": "test@test.com"},
+                "metadata": {"owner": "ml-eng@fennel.ai"},
                 "dsschema": {
                     "keys": {},
                     "values": {
@@ -2472,10 +2472,10 @@ def test_auto_schema_generation():
                 ]
 
             assert activity.schema() == {
-                "action_type": float,
+                "action_type": pd.Float64Dtype,
                 "timestamp": datetime,
-                "amount": Optional[float],
-                "user_id": int,
+                "amount": Optional[pd.Float64Dtype],
+                "user_id": pd.Int64Dtype,
             }
 
             filtered_ds = activity.filter(
@@ -2483,26 +2483,26 @@ def test_auto_schema_generation():
             )
 
             assert filtered_ds.schema() == {
-                "action_type": float,
-                "amount": Optional[float],
+                "action_type": pd.Float64Dtype,
+                "amount": Optional[pd.Float64Dtype],
                 "timestamp": datetime,
-                "user_id": int,
+                "user_id": pd.Int64Dtype,
             }
 
             x = filtered_ds.transform(
                 extract_info,
                 schema={
-                    "transaction_amount": float,
-                    "merchant_id": int,
-                    "user_id": int,
+                    "transaction_amount": pd.Float64Dtype,
+                    "merchant_id": pd.Int64Dtype,
+                    "user_id": pd.Int64Dtype,
                     "timestamp": datetime,
                 },
             )
 
             assert x.schema() == {
-                "merchant_id": int,
-                "transaction_amount": float,
-                "user_id": int,
+                "merchant_id": pd.Int64Dtype,
+                "transaction_amount": pd.Float64Dtype,
+                "user_id": pd.Int64Dtype,
                 "timestamp": datetime,
             }
 
@@ -2510,21 +2510,73 @@ def test_auto_schema_generation():
                 "transaction_amount", int, lambda df: df["user_id"] * 2
             )
             assert assign_ds.schema() == {
-                "action_type": float,
+                "action_type": pd.Float64Dtype,
                 "timestamp": datetime,
-                "transaction_amount": int,
-                "user_id": int,
-                "amount": Optional[float],
+                "transaction_amount": pd.Int64Dtype,
+                "user_id": pd.Int64Dtype,
+                "amount": Optional[pd.Float64Dtype],
             }
 
             assign_ds_str = activity.assign(
                 "user_id", str, lambda df: str(df["user_id"])
             )
             assert assign_ds_str.schema() == {
-                "action_type": float,
+                "action_type": pd.Float64Dtype,
                 "timestamp": datetime,
-                "user_id": str,
-                "amount": Optional[float],
+                "user_id": pd.StringDtype,
+                "amount": Optional[pd.Float64Dtype],
             }
 
             return x
+
+
+def test_pipeline_with_tier_selector():
+    kafka = Kafka.get(name="my_kafka")
+
+    @meta(owner="test@test.com")
+    @source(kafka.topic("orders"), lateness="1h")
+    @dataset
+    class A:
+        a1: int = field(key=True)
+        t: datetime
+
+    @meta(owner="test@test.com")
+    @source(kafka.topic("orders2"), lateness="1h")
+    @dataset
+    class B:
+        b1: int = field(key=True)
+        t: datetime
+
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class ABCDatasetDefault:
+        a1: int = field(key=True)
+        t: datetime
+
+        @pipeline(version=1, tier="prod")
+        @inputs(A, B)
+        def pipeline1(cls, a: Dataset, b: Dataset):
+            return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
+
+        @pipeline(version=1, tier="staging")
+        @inputs(A, B)
+        def pipeline2(cls, a: Dataset, b: Dataset):
+            return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
+
+    view = InternalTestClient()
+    view.add(A)  # type: ignore
+    view.add(B)  # type: ignore
+    view.add(ABCDatasetDefault)  # type: ignore
+    with pytest.raises(ValueError) as e:
+        _ = view._get_sync_request_proto()
+    assert (
+        str(e.value)
+        == "Pipeline ABCDatasetDefault-pipeline2 has the same version as another pipeline in the dataset."
+    )
+
+    with pytest.raises(ValueError) as e:
+        _ = view._get_sync_request_proto(tier=["prod"])
+    assert str(e.value) == "Expected tier to be a string, got ['prod']"
+    sync_request = view._get_sync_request_proto(tier="prod")
+    pipelines = sync_request.pipelines
+    assert len(pipelines) == 1

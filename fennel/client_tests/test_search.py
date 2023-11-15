@@ -5,7 +5,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import pytest
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import fennel._vendor.requests as requests
 from fennel import sources
@@ -14,7 +14,7 @@ from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.aggregate import Count, Sum
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding
+from fennel.lib.schema import Embedding, oneof
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 from fennel.sources import source
@@ -37,6 +37,7 @@ s3 = sources.S3(
 
 webhook = sources.Webhook(name="fennel_webhook")
 
+__owner__ = "data-eng@fennel.ai"
 
 ################################################################################
 #                           Datasets
@@ -54,7 +55,6 @@ class NotionDocs:
     creation_timestamp: datetime
 
 
-@meta(owner="e2@company.com")
 @source(s3.bucket("engagement", prefix="coda"))
 @dataset
 class CodaDocs:
@@ -65,7 +65,6 @@ class CodaDocs:
     creation_timestamp: datetime
 
 
-@meta(owner="e3@company.com")
 @source(s3.bucket("engagement", prefix="google"))
 @dataset
 class GoogleDocs:
@@ -76,7 +75,6 @@ class GoogleDocs:
     creation_timestamp: datetime
 
 
-@meta(owner="e2@company.com")
 @dataset
 class Document:
     doc_id: int = field(key=True).meta(owner="aditya@fennel.ai")  # type: ignore
@@ -157,7 +155,6 @@ def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
     ]
 
 
-@meta(owner="test@fennel.ai")
 @dataset
 class DocumentContentDataset:
     doc_id: int = field(key=True)
@@ -185,7 +182,6 @@ class DocumentContentDataset:
         )
 
 
-@meta(owner="abhay@fennel.ai")
 @dataset
 class TopWordsCount:
     word: str = field(key=True)
@@ -211,18 +207,16 @@ class TopWordsCount:
         )  # type: ignore
 
 
-@meta(owner="aditya@fennel.ai")
 @source(biq_query.table("user_activity", cursor="timestamp"), every="1h")
 @dataset
 class UserActivity:
     user_id: int
     doc_id: int
-    action_type: str
+    action_type: oneof(str, ["view", "edit"])  # type: ignore
     view_time: float
     timestamp: datetime
 
 
-@meta(owner="sagar@fennel.ai")
 @dataset
 class UserEngagementDataset:
     user_id: int = field(key=True)
@@ -272,7 +266,6 @@ class UserEngagementDataset:
         )
 
 
-@meta(owner="aditya@fennel.ai")
 @dataset
 class DocumentEngagementDataset:
     doc_id: int = field(key=True)
@@ -314,14 +307,12 @@ class DocumentEngagementDataset:
 ################################################################################
 
 
-@meta(owner="aditya@fennel.ai")
 @featureset
 class Query:
     doc_id: int = feature(id=1)
     user_id: int = feature(id=2)
 
 
-@meta(owner="aditya@fennel.ai")
 @featureset
 class UserBehaviorFeatures:
     user_id: int = feature(id=1)
@@ -340,7 +331,6 @@ class UserBehaviorFeatures:
         return df
 
 
-@meta(owner="aditya@fennel.ai")
 @featureset
 class DocumentFeatures:
     doc_id: int = feature(id=1)
@@ -360,7 +350,6 @@ class DocumentFeatures:
         return df
 
 
-@meta(owner="aditya@fennel.ai")
 @featureset
 class DocumentContentFeatures:
     doc_id: int = feature(id=1)
@@ -380,7 +369,6 @@ class DocumentContentFeatures:
         return df
 
 
-@meta(owner="abhay@fennel.ai")
 @featureset
 class TopWordsFeatures:
     word: str = feature(id=1)
@@ -597,7 +585,7 @@ class TestSearchExample(unittest.TestCase):
                 DocumentFeatures,
                 DocumentContentFeatures,
             ],
-            input_feature_list=[Query],
+            input_feature_list=[Query.doc_id, Query.user_id],
             input_dataframe=input_df,
         )
         assert df.shape == (2, 15)

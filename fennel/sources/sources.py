@@ -4,13 +4,14 @@ import json
 from datetime import datetime
 from enum import Enum
 
-from typing import Any, Callable, List, Optional, TypeVar
+from typing import Any, Callable, List, Optional, TypeVar, Union
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
 from fennel.lib.duration import (
     Duration,
 )
+from fennel.lib.includes import TierSelector
 
 T = TypeVar("T")
 SOURCE_FIELD = "__fennel_data_sources__"
@@ -31,6 +32,7 @@ def source(
     since: Optional[datetime] = None,
     lateness: Optional[Duration] = None,
     cdc: Optional[str] = None,
+    tier: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
@@ -48,13 +50,10 @@ def source(
         conn.lateness = lateness if lateness is not None else DEFAULT_LATENESS
         conn.cdc = cdc if cdc is not None else DEFAULT_CDC
         conn.starting_from = since
-        if hasattr(dataset_cls, SOURCE_FIELD):
-            raise Exception(
-                "Multiple sources are not supported in dataset `%s`."
-                % dataset_cls.__name__  # type: ignore
-            )
-        else:
-            setattr(dataset_cls, SOURCE_FIELD, conn)
+        conn.tiers = TierSelector(tier)
+        connectors = getattr(dataset_cls, SOURCE_FIELD, [])
+        connectors.append(conn)
+        setattr(dataset_cls, SOURCE_FIELD, connectors)
         return dataset_cls
 
     return decorator
@@ -366,6 +365,7 @@ class DataConnector:
     lateness: Duration
     cdc: str
     starting_from: Optional[datetime] = None
+    tiers: TierSelector
 
     def identifier(self):
         raise NotImplementedError

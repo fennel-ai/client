@@ -9,7 +9,7 @@ from typing import Dict, Optional, Any, Set, List, Union, Tuple
 
 import fennel._vendor.requests as requests  # type: ignore
 from fennel.datasets import Dataset
-from fennel.featuresets import Featureset, Feature
+from fennel.featuresets import Featureset, Feature, is_valid_feature
 from fennel.lib.schema import parse_json
 from fennel.lib.to_proto import to_sync_request_proto
 from fennel.utils import check_response, to_columnar_json
@@ -61,6 +61,7 @@ class Client:
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
+        tier: Optional[str] = None,
     ):
         """
         Sync the client with the server. This will register any datasets or
@@ -93,7 +94,7 @@ class Client:
                         f" of type `{type(featureset)}` instead."
                     )
                 self.add(featureset)
-        sync_request = self._get_sync_request_proto()
+        sync_request = self._get_sync_request_proto(tier)
         response = self._post_bytes(
             "{}/sync?preview={}".format(V1_API, str(preview).lower()),
             sync_request.SerializeToString(),
@@ -319,8 +320,8 @@ class Client:
 
     def extract_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset]],
-        output_feature_list: List[Union[Feature, Featureset]],
+        input_feature_list: List[Union[Feature, Featureset, str]],
+        output_feature_list: List[Union[Feature, Featureset, str]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
         workflow: Optional[str] = None,
@@ -345,13 +346,15 @@ class Client:
             return pd.DataFrame()
 
         input_feature_names = []
-        for input_feature in input_feature_list:
-            if isinstance(input_feature, Feature):
-                input_feature_names.append(input_feature.fqn())
-            elif isinstance(input_feature, Featureset):
+        for inp_feature in input_feature_list:
+            if isinstance(inp_feature, Feature):
+                input_feature_names.append(inp_feature.fqn())
+            elif isinstance(inp_feature, str) and is_valid_feature(inp_feature):
+                input_feature_names.append(inp_feature)
+            elif isinstance(inp_feature, Featureset):
                 raise Exception(
                     "Providing a featureset as input is deprecated. "
-                    f"List the features instead. {[f.fqn() for f in input_feature.features]}."
+                    f"List the features instead. {[f.fqn() for f in inp_feature.features]}."
                 )
 
         # Check if the input dataframe has all the required features
@@ -363,18 +366,21 @@ class Client:
             )
 
         output_feature_names = []
-        output_feature_name_to_type = {}
-        for output_feature in output_feature_list:
-            if isinstance(output_feature, Feature):
-                output_feature_names.append(output_feature.fqn())
+        output_feature_name_to_type: Dict[str, Any] = {}
+        for out_feature in output_feature_list:
+            if isinstance(out_feature, Feature):
+                output_feature_names.append(out_feature.fqn())
                 output_feature_name_to_type[
-                    output_feature.fqn()
-                ] = output_feature.dtype
-            elif isinstance(output_feature, Featureset):
+                    out_feature.fqn()
+                ] = out_feature.dtype
+            elif isinstance(out_feature, str) and is_valid_feature(out_feature):
+                output_feature_names.append(out_feature)
+                output_feature_name_to_type[out_feature] = Any
+            elif isinstance(out_feature, Featureset):
                 output_feature_names.extend(
-                    [f.fqn() for f in output_feature.features]
+                    [f.fqn() for f in out_feature.features]
                 )
-                for f in output_feature.features:
+                for f in out_feature.features:
                     output_feature_name_to_type[f.fqn()] = f.dtype
 
         req = {
@@ -400,8 +406,8 @@ class Client:
 
     def extract_historical_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset]],
-        output_feature_list: List[Union[Feature, Featureset]],
+        input_feature_list: List[Union[Feature, Featureset, str]],
+        output_feature_list: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
@@ -450,6 +456,13 @@ class Client:
         for input_feature in input_feature_list:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn())
+            elif isinstance(input_feature, str):
+                if "." not in input_feature:
+                    raise Exception(
+                        f"Invalid input feature name {input_feature}. "
+                        "Please provide the feature name in the format <featureset>.<feature>."
+                    )
+                input_feature_names.append(input_feature)
             elif isinstance(input_feature, Featureset):
                 raise Exception(
                     "Providing a featureset as input is deprecated. "
@@ -486,6 +499,10 @@ class Client:
                 raise Exception(
                     f"Timestamp column {timestamp_column} not found in input dataframe."
                 )
+            # Convert timestamp column to string to make it JSON serializable
+            input_dataframe[timestamp_column] = input_dataframe[
+                timestamp_column
+            ].astype(str)
             extract_historical_input["Pandas"] = input_dataframe.to_dict(
                 orient="list"
             )
@@ -527,6 +544,13 @@ class Client:
         for output_feature in output_feature_list:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn())
+            elif isinstance(output_feature, str):
+                if "." not in output_feature:
+                    raise Exception(
+                        f"Invalid output feature name {output_feature}. "
+                        "Please provide the feature name in the format <featureset>.<feature>."
+                    )
+                output_feature_names.append(output_feature)
             elif isinstance(output_feature, Featureset):
                 output_feature_names.extend(
                     [f.fqn() for f in output_feature.features]
@@ -641,8 +665,10 @@ class Client:
         )
         return http
 
-    def _get_sync_request_proto(self):
-        return to_sync_request_proto(self.to_register_objects)
+    def _get_sync_request_proto(self, tier: Optional[str] = None):
+        if tier is not None and not isinstance(tier, str):
+            raise ValueError(f"Expected tier to be a string, got {tier}")
+        return to_sync_request_proto(self.to_register_objects, tier)
 
     def _get(self, path: str):
         headers = None

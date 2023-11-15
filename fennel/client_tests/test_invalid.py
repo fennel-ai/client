@@ -34,7 +34,7 @@ class MemberActivityDataset:
     domain: str = field(key=True)
     hasShortcut: bool
     country: str
-    DOMAIN_USED_COUNT: int
+    domain_used_count: int
 
 
 @meta(owner="test@fennel.ai")
@@ -53,7 +53,7 @@ class MemberDataset:
 @dataset
 class MemberActivityDatasetCopy:
     domain: str = field(key=True)
-    DOMAIN_USED_COUNT: int
+    domain_used_count: int
     time: datetime = field(timestamp=True)
     url: str
     uid: str
@@ -71,11 +71,11 @@ class MemberActivityDatasetCopy:
 @featureset
 class DomainFeatures:
     domain: str = feature(id=1)
-    DOMAIN_USED_COUNT: int = feature(id=2)
+    domain_used_count: int = feature(id=2)
 
     @extractor(depends_on=[MemberActivityDatasetCopy])
     @inputs(Query.domain)
-    @outputs(domain, DOMAIN_USED_COUNT)
+    @outputs(domain, domain_used_count)
     def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
         df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
             ts, domain=domain
@@ -106,16 +106,16 @@ class TestInvalidSync(unittest.TestCase):
 @featureset
 class DomainFeatures2:
     domain: str = feature(id=1)
-    DOMAIN_USED_COUNT: int = feature(id=2)
+    domain_used_count: int = feature(id=2)
 
     @extractor()
     @inputs(Query.domain)
-    @outputs(domain, DOMAIN_USED_COUNT)
+    @outputs(domain, domain_used_count)
     def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
         df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
             ts, domain=domain
         )
-        return df[[str(cls.domain), str(cls.DOMAIN_USED_COUNT)]]
+        return df[[str(cls.domain), str(cls.domain_used_count)]]
 
 
 class TestInvalidExtractorDependsOn(unittest.TestCase):
@@ -133,7 +133,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             domain: str = field(key=True)
             hasShortcut: bool
             country: str
-            DOMAIN_USED_COUNT: int
+            domain_used_count: int
 
         @meta(owner="test@fennel.ai")
         @source(webhook.endpoint("MemberDataset"))
@@ -150,7 +150,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
         @dataset
         class MemberActivityDatasetCopy:
             domain: str = field(key=True)
-            DOMAIN_USED_COUNT: int
+            domain_used_count: int
             time: datetime = field(timestamp=True)
             url: str
             uid: str
@@ -167,11 +167,11 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
         @featureset
         class DomainFeatures:
             domain: str = feature(id=1)
-            DOMAIN_USED_COUNT: int = feature(id=2)
+            domain_used_count: int = feature(id=2)
 
             @extractor(depends_on=[MemberActivityDatasetCopy])
             @inputs(Query.domain)
-            @outputs(domain, DOMAIN_USED_COUNT)
+            @outputs(domain, domain_used_count)
             def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
                 df, found = MemberActivityDatasetCopy.lookup(  # type: ignore
                     ts, domain=domain
@@ -188,7 +188,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
             client.extract_features(
                 output_feature_list=[DomainFeatures2],
-                input_feature_list=[Query],
+                input_feature_list=[Query.member_id],
                 input_dataframe=pd.DataFrame(
                     {
                         "Query.domain": [
@@ -262,9 +262,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         else:
             assert (
-                "Extractor `get_domain_feature` in `DomainFeatures2` "
-                "failed to run with error: name "
-                "'MemberActivityDatasetCopy' is not defined. " == str(e.value)
+                str(e.value)
+                == """Dataset `MemberActivityDataset` is an input to the pipelines: `['copy']` but is not synced. Please add it to the sync call."""
             )
 
     @mock

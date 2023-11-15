@@ -26,7 +26,9 @@ webhook = Webhook(name="outbrain_webhook")
 @source(
     s3.bucket("fennel-demo-data", prefix="outbrain/page_views_filter.csv"),
     every="1d",
+    tier="prod",
 )
+@source(webhook.endpoint("PageViews"), tier="dev")
 @meta(owner="xiao@fennel.ai")
 @dataset
 class PageViews:
@@ -101,16 +103,16 @@ class UserPageViewFeatures:
 @pytest.mark.integration
 @mock
 def test_outbrain(client):
-    fake_PageViews = PageViews.with_source(webhook.endpoint("PageViews"))
     client.sync(
         datasets=[
-            fake_PageViews,
+            PageViews,
             PageViewsByUser,
         ],
         featuresets=[
             Request,
             UserPageViewFeatures,
         ],
+        tier="dev",
     )
     df = pd.read_csv("fennel/client_tests/data/page_views_sample.csv")
     # Current time in ms
@@ -143,7 +145,7 @@ def test_outbrain(client):
             Request,
             UserPageViewFeatures,
         ],
-        input_feature_list=[Request],
+        input_feature_list=[Request.uuid, Request.document_id],
         input_dataframe=input_df,
     )
     assert feature_df.shape[0] == 347

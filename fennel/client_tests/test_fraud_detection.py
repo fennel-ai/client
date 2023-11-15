@@ -65,10 +65,8 @@ class UserTransactionSums:
     @inputs(CreditCardTransactions)
     def first_pipeline(cls, transactions: Dataset):
         return transactions.groupby("cc_num").aggregate(
-            [
-                Sum(of="amt", window=Window("1d"), into_field="sum_amt_1d"),
-                Sum(of="amt", window=Window("7d"), into_field="sum_amt_7d"),
-            ]
+            Sum(of="amt", window=Window("1d"), into_field="sum_amt_1d"),
+            Sum(of="amt", window=Window("7d"), into_field="sum_amt_7d"),
         )
 
 

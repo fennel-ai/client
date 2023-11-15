@@ -4,6 +4,7 @@ import dataclasses
 import inspect
 import re
 import sys
+import typing
 from dataclasses import dataclass
 from datetime import datetime
 from textwrap import dedent
@@ -20,6 +21,8 @@ from typing import (
     get_origin,
     get_args,
     ForwardRef,
+    Type,
+    Optional,
 )
 
 import fennel.gen.schema_pb2 as schema_proto
@@ -53,6 +56,14 @@ def _optional_inner(type_):
 def dtype_to_string(type_: Any) -> str:
     if _is_optional(type_):
         return f"Optional[{dtype_to_string(_optional_inner(type_))}]"
+    if type_ == pd.Int64Dtype:
+        return "int"
+    if type_ == pd.Float64Dtype:
+        return "float"
+    if type_ == pd.StringDtype:
+        return "str"
+    if type_ == pd.BooleanDtype:
+        return "bool"
     if isinstance(type_, type):
         return type_.__name__
     return str(type_)
@@ -63,7 +74,7 @@ def get_primitive_dtype(dtype):
     if isinstance(dtype, oneof) or isinstance(dtype, between):
         return dtype.dtype
     if isinstance(dtype, regex):
-        return str
+        return pd.StringDtype
     return dtype
 
 
@@ -96,6 +107,9 @@ def _contains_user_defined_class(annotation) -> bool:
 
 # Parse a json object into a python object based on the type annotation.
 def parse_json(annotation, json) -> Any:
+    if annotation is Any:
+        return json
+
     if isinstance(json, frozendict):
         json = dict(json)
 
@@ -373,24 +387,34 @@ class regex:
         )
 
 
+def fennel_is_optional(type_):
+    return (
+        typing.get_origin(type_) is Union
+        and type(None) is typing.get_args(type_)[1]
+    )
+
+
+def fennel_get_optional_inner(type_):
+    return typing.get_args(type_)[0]
+
+
 def get_datatype(type_: Any) -> schema_proto.DataType:
-    # typing.Optional[x] is an alias for typing.Union[x, None]
-    if _get_origin(type_) is Union and type(None) is _get_args(type_)[1]:
+    if fennel_is_optional(type_):
         dtype = get_datatype(_get_args(type_)[0])
         return schema_proto.DataType(
             optional_type=schema_proto.OptionalType(of=dtype)
         )
-    elif type_ is int:
+    elif type_ is int or type_ is np.int64 or type_ == pd.Int64Dtype:
         return schema_proto.DataType(int_type=schema_proto.IntType())
-    elif type_ is float:
+    elif type_ is float or type_ is np.float64 or type_ == pd.Float64Dtype:
         return schema_proto.DataType(double_type=schema_proto.DoubleType())
-    elif type_ is str:
+    elif type_ is str or type_ is np.str_ or type_ == pd.StringDtype:
         return schema_proto.DataType(string_type=schema_proto.StringType())
-    elif type_ is datetime:
+    elif type_ is datetime or type_ is np.datetime64:
         return schema_proto.DataType(
             timestamp_type=schema_proto.TimestampType()
         )
-    elif type_ is bool:
+    elif type_ is bool or type_ == pd.BooleanDtype:
         return schema_proto.DataType(bool_type=schema_proto.BoolType())
     elif _get_origin(type_) is list:
         return schema_proto.DataType(
@@ -436,7 +460,41 @@ def get_datatype(type_: Any) -> schema_proto.DataType:
     raise ValueError(f"Cannot serialize type {type_}.")
 
 
-# TODO(Aditya): Add support for nested schema checks for arrays and maps
+def get_pd_dtype(type: Type):
+    """
+    Convert int -> Int64, float -> Float64 and string -> String, bool -> Bool
+    """
+    if type == int:
+        return pd.Int64Dtype
+    elif type == float:
+        return pd.Float64Dtype
+    elif type == str:
+        return pd.StringDtype
+    elif type == bool:
+        return pd.BooleanDtype
+    elif fennel_is_optional(type):
+        return Optional[get_pd_dtype(fennel_get_optional_inner(type))]
+    else:
+        return type
+
+
+def get_python_type_from_pd(type):
+    if type == pd.Int64Dtype:
+        return int
+    elif type == pd.Float64Dtype:
+        return float
+    elif type == pd.StringDtype:
+        return str
+    elif type == pd.BooleanDtype:
+        return bool
+    elif fennel_is_optional(type):
+        return Optional[
+            get_python_type_from_pd(fennel_get_optional_inner(type))
+        ]
+    return type
+
+
+# TODO(Aditya): Add support for nested schema checks for arrays and maps and structs
 def _validate_field_in_df(
     field: schema_proto.Field,
     df: pd.DataFrame,
@@ -445,6 +503,9 @@ def _validate_field_in_df(
 ):
     name = field.name
     dtype = field.dtype
+    if df.shape[0] == 0:
+        return
+
     if name not in df.columns:
         raise ValueError(
             f"Field `{name}` not found in dataframe during checking schema for "
@@ -463,7 +524,7 @@ def _validate_field_in_df(
     if not is_nullable and df[name].isnull().any():
         raise ValueError(
             f"Field `{name}` is not nullable, but the "
-            f"column in the dataframe has null values. Error found during"
+            f"column in the dataframe has null values. Error found during "
             f"checking schema for `{entity_name}`."
         )
 
@@ -526,7 +587,7 @@ def _validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
     elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
-        if df[name].dtype != np.bool_:
+        if df[name].dtype != np.bool_ and df[name].dtype != pd.BooleanDtype():
             raise ValueError(
                 f"Field `{name}` is of type bool, but the "
                 f"column in the dataframe is of type "
@@ -715,7 +776,14 @@ def is_hashable(dtype: Any) -> bool:
         and type(None) is _get_args(primitive_type)[1]
     ):
         return is_hashable(_get_args(primitive_type)[0])
-    elif primitive_type in [int, str, bool]:
+    elif primitive_type in [
+        int,
+        str,
+        bool,
+        pd.Int64Dtype,
+        pd.StringDtype,
+        pd.BooleanDtype,
+    ]:
         return True
     elif _get_origin(primitive_type) is list:
         return is_hashable(_get_args(primitive_type)[0])

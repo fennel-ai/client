@@ -9,6 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
+import logging
 
 import numpy as np
 import pandas as pd
@@ -20,7 +21,9 @@ import fennel.sources as sources
 from fennel._vendor.requests import Response  # type: ignore
 from fennel.client import Client
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
-from fennel.featuresets import Featureset, Feature, Extractor
+from fennel.datasets.datasets import sync_validation_for_pipelines
+from fennel.featuresets import Featureset, Feature, Extractor, is_valid_feature
+from fennel.featuresets.featureset import sync_validation_for_extractors
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.gen.featureset_pb2 import CoreFeatureset
 from fennel.gen.featureset_pb2 import (
@@ -34,7 +37,7 @@ from fennel.lib.graph_algorithms import (
     is_extractor_graph_cyclic,
 )
 from fennel.lib.includes import includes  # noqa
-from fennel.lib.schema import data_schema_check
+from fennel.lib.schema import data_schema_check, get_datatype
 from fennel.lib.to_proto import (
     dataset_to_proto,
     features_from_fs,
@@ -49,6 +52,8 @@ TEST_DATA_PORT = 50052
 FENNEL_LOOKUP = "__fennel_lookup_exists__"
 FENNEL_ORDER = "__fennel_order__"
 FENNEL_TIMESTAMP = "__fennel_timestamp__"
+
+logger = logging.getLogger(__name__)
 
 
 class FakeResponse(Response):
@@ -105,6 +110,9 @@ def dataset_lookup_impl(
             f"but {len(keys.columns)} key fields were provided."
         )
     if cls_name not in data and cls_name not in aggregated_datasets:
+        logger.warning(
+            f"Not data found for Dataset `{cls_name}` during lookup, returning an empty dataframe"
+        )
         # Create a dataframe with all nulls
         val_cols = datasets[cls_name].fields
         if len(fields) > 0:
@@ -140,6 +148,10 @@ def dataset_lookup_impl(
         for col, right_df in data_dict.items():
             right_df[FENNEL_LOOKUP] = True
             right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
+            # Cast the column in keys to the same dtype as the column in right_df
+            for col in keys:
+                if col in right_df and keys[col].dtype != right_df[col].dtype:
+                    keys[col] = keys[col].astype(right_df[col].dtype)
             try:
                 df = pd.merge_asof(
                     left=keys,
@@ -153,8 +165,8 @@ def dataset_lookup_impl(
                 raise ValueError(
                     f"Error while performing lookup on dataset {cls_name} "
                     f"with key fields {join_columns}, key length "
-                    f"{keys.shape}, and shape of dataset being"
-                    f"looked up{right_df.shape}: {e} "
+                    f"{keys.shape}, and shape of dataset being "
+                    f"looked up {right_df.shape}: {e} "
                 )
             df.drop(timestamp_field, axis=1, inplace=True)
             df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
@@ -174,6 +186,9 @@ def dataset_lookup_impl(
         right_df = data[cls_name]
         right_df[FENNEL_LOOKUP] = True
         right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
+        for col in keys:
+            if col in right_df and keys[col].dtype != right_df[col].dtype:
+                keys[col] = keys[col].astype(right_df[col].dtype)
         try:
             df = pd.merge_asof(
                 left=keys,
@@ -330,12 +345,15 @@ class MockClient(Client):
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
+        tier: Optional[str] = None,
     ):
         self._reset()
         if datasets is None:
             datasets = []
         if featuresets is None:
             featuresets = []
+
+        input_datasets_for_pipelines = defaultdict(list)
         for dataset in datasets:
             if not isinstance(dataset, Dataset):
                 raise TypeError(
@@ -344,7 +362,7 @@ class MockClient(Client):
                 )
             self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
             if hasattr(dataset, sources.SOURCE_FIELD):
-                self._process_data_connector(dataset)
+                self._process_data_connector(dataset, tier)
 
             self.datasets[dataset._name] = dataset
             is_source_dataset = hasattr(dataset, sources.SOURCE_FIELD)
@@ -362,13 +380,26 @@ class MockClient(Client):
                 raise ValueError(
                     f"Dataset {dataset._name} has no pipelines and is not a source dataset"
                 )
+            selected_pipelines = [
+                x
+                for x in dataset._pipelines
+                if x.tier.is_entity_selected(tier) and x.active
+            ]
+            sync_validation_for_pipelines(selected_pipelines, dataset._name)
 
-            for pipeline in dataset._pipelines:
-                if not pipeline.active:
-                    continue
+            for pipeline in selected_pipelines:
                 for input in pipeline.inputs:
+                    input_datasets_for_pipelines[input._name].append(
+                        pipeline.name
+                    )
                     self.listeners[input._name].append(pipeline)
 
+        # Check that input_datasets_for_pipelines is a subset of self.datasets.
+        for ds, pipelines in input_datasets_for_pipelines.items():
+            if ds not in self.datasets:
+                raise ValueError(
+                    f"Dataset `{ds}` is an input to the pipelines: `{pipelines}` but is not synced. Please add it to the sync call."
+                )
         for featureset in featuresets:
             if not isinstance(featureset, Featureset):
                 raise TypeError(
@@ -383,6 +414,8 @@ class MockClient(Client):
             )
             # Check if the dataset used by the extractor is registered
             for extractor in featureset.extractors:
+                if not extractor.tiers.is_entity_selected(tier):
+                    continue
                 datasets = [
                     x._name for x in extractor.get_dataset_dependencies()
                 ]
@@ -391,13 +424,19 @@ class MockClient(Client):
                         raise ValueError(
                             f"Dataset {dataset} not found in sync call"
                         )
-            self.extractors.extend(featureset.extractors)
+            self.extractors.extend(
+                [
+                    x
+                    for x in featureset.extractors
+                    if x.tiers.is_entity_selected(tier)
+                ]
+            )
         fs_obj_map = {
             featureset._name: featureset for featureset in featuresets
         }
 
         for featureset in featuresets:
-            proto_extractors = extractors_from_fs(featureset, fs_obj_map)
+            proto_extractors = extractors_from_fs(featureset, fs_obj_map, tier)
             for extractor in proto_extractors:
                 if extractor.extractor_type != ProtoExtractorType.PY_FUNC:
                     continue
@@ -412,8 +451,8 @@ class MockClient(Client):
 
     def extract_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset]],
-        output_feature_list: List[Union[Feature, Featureset]],
+        input_feature_list: List[Union[Feature, Featureset, str]],
+        output_feature_list: List[Union[Feature, Featureset, str]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
         workflow: Optional[str] = "default",
@@ -427,9 +466,14 @@ class MockClient(Client):
         for input_feature in input_feature_list:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn_)
+            elif isinstance(input_feature, str) and is_valid_feature(
+                input_feature
+            ):
+                input_feature_names.append(input_feature)
             elif isinstance(input_feature, Featureset):
-                input_feature_names.extend(
-                    [f.fqn_ for f in input_feature.features]
+                raise Exception(
+                    "Providing a featureset as input is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in input_feature.features]}."
                 )
         # Check if the input dataframe has all the required features
         if not set(input_feature_names).issubset(set(input_dataframe.columns)):
@@ -438,6 +482,16 @@ class MockClient(Client):
                 f"Required features: {input_feature_names}. "
                 f"Input dataframe columns: {input_dataframe.columns}"
             )
+        for input_col, feature in zip(
+            input_dataframe.columns, input_feature_list
+        ):
+            if isinstance(feature, str):
+                continue
+            col_type = get_datatype(feature.dtype)  # type: ignore
+            input_dataframe[input_col] = cast_col_to_dtype(
+                input_dataframe[input_col], col_type
+            )
+
         extractors = get_extractor_order(
             input_feature_list, output_feature_list, self.extractors
         )
@@ -448,8 +502,8 @@ class MockClient(Client):
 
     def extract_historical_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset]],
-        output_feature_list: List[Union[Feature, Featureset]],
+        input_feature_list: List[Union[Feature, Featureset, str]],
+        output_feature_list: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
@@ -476,13 +530,17 @@ class MockClient(Client):
         if input_dataframe.empty:
             return pd.DataFrame()
         timestamps = input_dataframe[timestamp_column]
+        timestamps = pd.to_datetime(timestamps)
         input_feature_names = []
-        for input_feature in input_feature_list:
-            if isinstance(input_feature, Feature):
-                input_feature_names.append(input_feature.fqn_)
-            elif isinstance(input_feature, Featureset):
-                input_feature_names.extend(
-                    [f.fqn_ for f in input_feature.features]
+        for inp_feature in input_feature_list:
+            if isinstance(inp_feature, Feature):
+                input_feature_names.append(inp_feature.fqn_)
+            elif isinstance(inp_feature, str) and is_valid_feature(inp_feature):
+                input_feature_names.append(inp_feature)
+            elif isinstance(inp_feature, Featureset):
+                raise Exception(
+                    "Providing a featureset as input is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in inp_feature.features]}."
                 )
         # Check if the input dataframe has all the required features
         if not set(input_feature_names).issubset(set(input_dataframe.columns)):
@@ -490,6 +548,15 @@ class MockClient(Client):
                 f"Input dataframe does not contain all the required features. "
                 f"Required features: {input_feature_names}. "
                 f"Input dataframe columns: {input_dataframe.columns}"
+            )
+        for input_col, feature in zip(
+            input_dataframe.columns, input_feature_list
+        ):
+            if isinstance(feature, str):
+                continue
+            col_type = get_datatype(feature.dtype)  # type: ignore
+            input_dataframe[input_col] = cast_col_to_dtype(
+                input_dataframe[input_col], col_type
             )
         extractors = get_extractor_order(
             input_feature_list, output_feature_list, self.extractors
@@ -523,8 +590,17 @@ class MockClient(Client):
 
     # ----------------- Private methods --------------------------------------
 
-    def _process_data_connector(self, dataset: Dataset):
+    def _process_data_connector(self, dataset: Dataset, tier):
         connector = getattr(dataset, sources.SOURCE_FIELD)
+        connector = connector if isinstance(connector, list) else [connector]
+        connector = [x for x in connector if x.tiers.is_entity_selected(tier)]
+        if len(connector) > 1:
+            raise ValueError(
+                f"Dataset `{dataset._name}` has more than one source defined, found {len(connector)} sources."
+            )
+        if len(connector) == 0:
+            return
+        connector = connector[0]
         if isinstance(connector, sources.WebhookConnector):
             src = connector.data_source
             webhook_endpoint = f"{src.name}:{connector.endpoint}"
@@ -546,6 +622,19 @@ class MockClient(Client):
                 f"Timestamp field {timestamp_field} not found in dataframe "
                 f"while logging to dataset `{dataset_name}`",
             )
+        for col in df.columns:
+            # If any of the columns is a dictionary, convert it to a frozen dict
+            if df[col].apply(lambda x: isinstance(x, dict)).any():
+                df[col] = df[col].apply(lambda x: frozendict(x))
+        # Check if the dataframe has the same schema as the dataset
+        schema = dataset_req.dsschema
+        try:
+            df = cast_df_to_schema(df, schema)
+        except Exception as e:
+            return FakeResponse(
+                400,
+                f"Schema validation failed during data insertion to `{dataset_name}`: {str(e)}",
+            )
         if str(df[timestamp_field].dtype) != "datetime64[ns]":
             return FakeResponse(
                 400,
@@ -553,26 +642,6 @@ class MockClient(Client):
                 f"datetime64[ns] but found {df[timestamp_field].dtype} in "
                 f"dataset {dataset_name}",
             )
-        for col in df.columns:
-            # If any of the columns is a dictionary, convert it to a frozen dict
-            if df[col].apply(lambda x: isinstance(x, dict)).any():
-                df[col] = df[col].apply(lambda x: frozendict(x))
-        # Check if the dataframe has the same schema as the dataset
-        schema = dataset_req.dsschema
-        # TODO(mohit, aditya): Instead of validating data schema, we should attempt to cast the
-        # df returned to the likely pd dtypes for a DF corresponding to the Dataset and re-raise
-        # the exception from it.
-        #
-        # The following scenario is currently possible
-        # Assume D1, D2 and D3 are datasets.
-        #  - D3 = transform(D1.left_join(D2))
-        # Since entries of D1 may not be present in D2, few columns could have NaN values.
-        # Say one of these columns with NaN is a key field for D3, which as part of transform is filled
-        # with a default value with a schema to match the field type in D3.
-        # Since left_join will automatically convert the int columns to a float type and
-        # this code not enforcing type casting at the Transform layer, the resulting DF will have a float
-        # column. Future lookups on this DF will fail as well since Lookup impl uses `merge_asof`
-        # and requires the merge columns to have the same type.
         exceptions = data_schema_check(schema, df, dataset_name)
         if len(exceptions) > 0:
             return FakeResponse(
@@ -649,7 +718,7 @@ class MockClient(Client):
         self,
         extractors: List[Extractor],
         input_df: pd.DataFrame,
-        output_feature_list: List[Union[Feature, Featureset]],
+        output_feature_list: List[Union[Feature, Featureset, str]],
         timestamps: pd.Series,
     ):
         # Map of feature name to the pandas series
@@ -685,7 +754,7 @@ class MockClient(Client):
                     extractor.inputs[0].fqn()
                 ]
                 intermediate_data[feature_name].name = feature_name
-                self._check_exceptions(
+                self._check_schema_exceptions(
                     intermediate_data[feature_name], dsschema, extractor.name
                 )
                 continue
@@ -694,7 +763,7 @@ class MockClient(Client):
                 output = self._compute_lookup_extractor(
                     extractor, timestamps.copy(), intermediate_data
                 )
-                self._check_exceptions(output, dsschema, extractor.name)
+                self._check_schema_exceptions(output, dsschema, extractor.name)
                 continue
 
             allowed_datasets = [
@@ -731,7 +800,7 @@ class MockClient(Client):
                     f"Extractor `{extractor.name}` returned "
                     f"invalid type `{type(output)}`, expected a pandas series or dataframe"
                 )
-            self._check_exceptions(output, dsschema, extractor.name)
+            self._check_schema_exceptions(output, dsschema, extractor.name)
             if isinstance(output, pd.Series):
                 if output.name in intermediate_data:
                     continue
@@ -765,27 +834,31 @@ class MockClient(Client):
 
         # Prepare the output dataframe
         output_df = pd.DataFrame()
-        for output_feature in output_feature_list:
-            if isinstance(output_feature, Feature):
-                output_df[output_feature.fqn_] = intermediate_data[
-                    output_feature.fqn_
+        for out_feature in output_feature_list:
+            if isinstance(out_feature, Feature):
+                output_df[out_feature.fqn_] = intermediate_data[
+                    out_feature.fqn_
                 ]
-            elif isinstance(output_feature, Featureset):
-                for f in output_feature.features:
+            elif isinstance(out_feature, str) and is_valid_feature(out_feature):
+                output_df[out_feature] = intermediate_data[out_feature]
+            elif isinstance(out_feature, Featureset):
+                for f in out_feature.features:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
-            elif type(output_feature) is tuple:
-                for f in output_feature:
+            elif type(out_feature) is tuple:
+                for f in out_feature:
                     output_df[f.fqn_] = intermediate_data[f.fqn_]
             else:
                 raise Exception(
-                    f"Unknown feature type {type(output_feature)} found "
+                    f"Unknown feature {out_feature} of type {type(out_feature)} found "
                     f"during feature extraction."
                 )
         return output_df
 
-    def _check_exceptions(
+    def _check_schema_exceptions(
         self, output, dsschema: DSSchema, extractor_name: str
     ):
+        if output is None or output.shape[0] == 0:
+            return
         output_df = pd.DataFrame(output)
         output_df.reset_index(inplace=True)
         exceptions = data_schema_check(dsschema, output_df, extractor_name)
@@ -800,7 +873,7 @@ class MockClient(Client):
         extractor: Extractor,
         timestamps: pd.Series,
         intermediate_data: Dict[str, pd.Series],
-    ):
+    ) -> pd.Series:
         if len(extractor.output_features) != 1:
             raise ValueError(
                 f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.output_features)}"
@@ -836,15 +909,30 @@ class MockClient(Client):
                 f"Field for lookup extractor {extractor.name} must have a named field"
             )
         results = results[extractor.derived_extractor_info.field.name]
-        if results.dtype != object:
-            results = results.fillna(extractor.derived_extractor_info.default)
+        if extractor.derived_extractor_info.default is not None:
+            if results.dtype != object:
+                results = results.fillna(
+                    extractor.derived_extractor_info.default
+                )
+            else:
+                # fillna doesn't work for list type or dict type :cols
+                for row in results.loc[results.isnull()].index:
+                    results[row] = extractor.derived_extractor_info.default
+            results = cast_col_to_dtype(
+                results,
+                get_datatype(extractor.derived_extractor_info.field.dtype),
+            )
         else:
-            # fillna doesn't work for list type or ditc type :cols
-            for row in results.loc[results.isnull()].index:
-                results[row] = extractor.derived_extractor_info.default
+            results = cast_col_to_dtype(
+                results,
+                get_datatype(
+                    Optional[extractor.derived_extractor_info.field.dtype]
+                ),
+            )
+            results.replace({np.nan: None}, inplace=True)
+
         results.name = extractor.fqn_output_features()[0]
         intermediate_data[extractor.fqn_output_features()[0]] = results
-
         fennel.datasets.datasets.dataset_lookup = partial(
             dataset_lookup_impl,
             self.data,
@@ -917,6 +1005,96 @@ class MockClient(Client):
             None,
         )
         self.extractors: List[Extractor] = []
+
+
+def proto_to_dtype(proto_dtype) -> str:
+    if proto_dtype.HasField("int_type"):
+        return "int"
+    elif proto_dtype.HasField("double_type"):
+        return "float"
+    elif proto_dtype.HasField("string_type"):
+        return "string"
+    elif proto_dtype.HasField("bool_type"):
+        return "bool"
+    elif proto_dtype.HasField("timestamp_type"):
+        return "timestamp"
+    elif proto_dtype.HasField("optional_type"):
+        return f"optional({proto_to_dtype(proto_dtype.optional_type.of)})"
+    else:
+        return str(proto_dtype)
+
+
+def cast_col_to_dtype(series: pd.Series, dtype) -> pd.Series:
+    if not dtype.HasField("optional_type"):
+        if series.isnull().any():
+            raise ValueError("Null values found in non-optional field.")
+    if dtype.HasField("int_type"):
+        return pd.to_numeric(series).astype(pd.Int64Dtype())
+    elif dtype.HasField("double_type"):
+        return pd.to_numeric(series).astype(pd.Float64Dtype())
+    elif dtype.HasField("string_type") or dtype.HasField("regex_type"):
+        return pd.Series([str(x) for x in series]).astype(pd.StringDtype())
+    elif dtype.HasField("bool_type"):
+        return series.astype(pd.BooleanDtype())
+    elif dtype.HasField("timestamp_type"):
+        return pd.to_datetime(series)
+    elif dtype.HasField("optional_type"):
+        # Those fields which are not null should be casted to the right type
+        if series.notnull().any():
+            # collect the non-null values
+            tmp_series = series[series.notnull()]
+            non_null_idx = tmp_series.index
+            tmp_series = cast_col_to_dtype(
+                tmp_series,
+                dtype.optional_type.of,
+            )
+            tmp_series.index = non_null_idx
+            # set the non-null values with the casted values using the index
+            series.loc[non_null_idx] = tmp_series
+            series.replace({np.nan: None}, inplace=True)
+            if callable(tmp_series.dtype):
+                series = series.astype(tmp_series.dtype())
+            else:
+                series = series.astype(tmp_series.dtype)
+            return series
+    elif dtype.HasField("one_of_type"):
+        return cast_col_to_dtype(series, dtype.one_of_type.of)
+    elif dtype.HasField("between_type"):
+        return cast_col_to_dtype(series, dtype.between_type.dtype)
+    return series
+
+
+def cast_df_to_schema(df: pd.DataFrame, dsschema: DSSchema) -> pd.DataFrame:
+    # Handle fields in keys and values
+    fields = list(dsschema.keys.fields) + list(dsschema.values.fields)
+    df = df.copy()
+    df = df.reset_index(drop=True)
+    for f in fields:
+        if f.name not in df.columns:
+            raise ValueError(
+                f"Field {f.name} not found in dataframe while logging to dataset"
+            )
+        try:
+            series = cast_col_to_dtype(df[f.name], f.dtype)
+            series.name = f.name
+            df[f.name] = series
+        except Exception as e:
+            raise ValueError(
+                f"Failed to cast data logged to column `{f.name}` of type `{proto_to_dtype(f.dtype)}`: {e}"
+            )
+    if dsschema.timestamp not in df.columns:
+        raise ValueError(
+            f"Timestamp column `{dsschema.timestamp}` not found in dataframe while logging to dataset"
+        )
+    try:
+        df[dsschema.timestamp] = pd.to_datetime(df[dsschema.timestamp]).astype(
+            "datetime64[ns]"
+        )
+    except Exception as e:
+        raise ValueError(
+            f"Failed to cast data logged to timestamp column {dsschema.timestamp}: {e}"
+        )
+    return df
 
 
 def mock(test_func):

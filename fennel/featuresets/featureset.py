@@ -17,6 +17,7 @@ from typing import (
     List,
     overload,
     Set,
+    Union,
 )
 
 
@@ -26,9 +27,11 @@ from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import (
     meta,
+    OWNER,
     get_meta_attr,
     set_meta_attr,
 )
+from fennel.lib.includes import TierSelector
 from fennel.lib.schema import FENNEL_INPUTS, FENNEL_OUTPUTS
 from fennel.utils import (
     parse_annotation_comments,
@@ -118,44 +121,18 @@ def featureset(featureset_cls: Type[T]):
             setattr(featureset_cls, FENNEL_VIRTUAL_FILE, file_name)
     except Exception:
         pass
-
-    return Featureset(
-        featureset_cls,
-        features,
-    )
-
-
-@overload
-def extractor(
-    func: Callable[..., T],
-):
-    ...
-
-
-@overload
-def extractor(
-    *,
-    depends_on: List[T],
-    version: int,
-):
-    ...
-
-
-@overload
-def extractor(
-    *,
-    depends_on: List[T],
-):
-    ...
-
-
-@overload
-def extractor():
-    ...
+    cls_module = inspect.getmodule(featureset_cls)
+    owner = None
+    if cls_module is not None and hasattr(cls_module, OWNER):
+        owner = getattr(cls_module, OWNER)
+    return Featureset(featureset_cls, features, owner)
 
 
 def extractor(
-    func: Optional[Callable] = None, depends_on: List = [], version: int = 0
+    func: Optional[Callable] = None,
+    depends_on: List = [],
+    version: int = 0,
+    tier: Optional[Union[str, List[str]]] = None,
 ):
     """
     extractor is a decorator for a function that extracts a feature from a
@@ -266,6 +243,7 @@ def extractor(
                 outputs,
                 version,
                 func=extractor_func,
+                tier=tier,
             ),
         )
         return classmethod(extractor_func)
@@ -344,11 +322,13 @@ class Feature:
 
     def extract(
         self,
+        *,
         field: Field = None,
         provider: Featureset = None,
         default=None,
         feature: Feature = None,
         version: int = 0,
+        tier: Optional[Union[str, List[str]]] = None,
     ) -> Feature:
         """
         Derives an extractor for the feature using the given params.
@@ -364,6 +344,7 @@ class Feature:
         feature: If provided, this function creates a one way alias from the
                     calling feature to this feature.
         version: the version of this extractor
+        tiers: The tiers which are enabled for this feature. If None, then all tiers are enabled.
 
         Returns:
         Feature: This feature
@@ -385,6 +366,7 @@ class Feature:
                 inputs=[feature],
                 outputs=[self.id],
                 version=version,
+                tier=tier,
             )
             return self
 
@@ -418,8 +400,18 @@ class Feature:
             version=version,
             derived_extractor_info=Extractor.DatasetLookupInfo(field, default),
             depends_on=[ds] if ds else [],
+            tier=tier,
         )
         return self
+
+
+def is_valid_feature(feature_name: str):
+    if "." not in feature_name or len(feature_name.split(".")) != 2:
+        raise Exception(
+            f"Invalid input feature name {feature_name}. "
+            "Please provide the feature name in the format <featureset>.<feature>."
+        )
+    return True
 
 
 def is_user_defined(obj):
@@ -472,11 +464,13 @@ class Featureset:
     _extractors: List[Extractor]
     _id_to_feature: Dict[int, Feature] = {}
     _expectation: Expectations
+    owner: Optional[str] = None
 
     def __init__(
         self,
         featureset_cls: Type[T],
         features: List[Feature],
+        owner: Optional[str] = None,
     ):
         self.__fennel_original_cls__ = featureset_cls
         self._name = featureset_cls.__name__
@@ -488,7 +482,51 @@ class Featureset:
         self._add_feature_names_as_attributes()
         self._set_extractors_as_attributes()
         self._expectation = self._get_expectations()
+        setattr(self, OWNER, owner)
         propogate_fennel_attributes(featureset_cls, self)
+
+    def get_dataset_dependencies(self) -> List[Dataset]:
+        """
+        This function gets the list of datasets the Featureset depends upon.
+        This dependency is introduced by features that directly lookup a dataset
+        via the DS-FS route.
+
+        The motivation for this function is to help generated the required code, even
+        if an extractor does not depend on a dataset, but is part of a featureset which
+        has these kinds of dependencies.
+        """
+        depended_datasets = []
+        for f in self._features:
+            if (
+                f.extractor is not None
+                and f.extractor.derived_extractor_info is not None
+            ):
+                assert (
+                    f.extractor.derived_extractor_info.field.dataset is not None
+                )
+                depended_datasets.append(
+                    f.extractor.derived_extractor_info.field.dataset
+                )
+
+        return depended_datasets
+
+    def get_featureset_dependencies(self) -> List[str]:
+        """
+        This function gets the list of featuresets the Featureset depends upon.
+        This dependency is introduced by features that directly lookup a featureset
+        via the FS-DS route, while specifying a provider.
+        """
+        depended_featuresets = set()
+        for f in self._features:
+            if f.extractor is None:
+                continue
+            if f.extractor.extractor_type == ExtractorType.ALIAS:
+                # Alias extractors have exactly one input feature
+                depended_featuresets.add(f.extractor.inputs[0].featureset_name)
+            elif f.extractor.extractor_type == ExtractorType.LOOKUP:
+                for inp_feature in f.extractor.inputs:
+                    depended_featuresets.add(inp_feature.featureset_name)
+        return list(depended_featuresets)
 
     # ------------------- Private Methods ----------------------------------
 
@@ -508,7 +546,7 @@ class Featureset:
                 if extractor.extractor_type == ExtractorType.LOOKUP and (
                     extractor.inputs is None or len(extractor.inputs) == 0
                 ):
-                    feature.extractor.set_inputs_from_featureset(self)
+                    feature.extractor.set_inputs_from_featureset(self, feature)
                 extractors.append(extractor)
 
         # user defined extractors
@@ -550,17 +588,6 @@ class Featureset:
                     f"{feature.id}` in featureset `{self._name}`."
                 )
             feature_id_set.add(feature.id)
-
-        # Check that each feature is extracted by at max one extractor.
-        extracted_features: Set[int] = set()
-        for extractor in self._extractors:
-            for feature_id in extractor.output_feature_ids:
-                if feature_id in extracted_features:
-                    raise TypeError(
-                        f"Feature `{self._id_to_feature[feature_id].name}` is "
-                        f"extracted by multiple extractors."
-                    )
-                extracted_features.add(feature_id)
 
     def _set_extractors_as_attributes(self):
         for extractor in self._extractors:
@@ -623,6 +650,8 @@ class Extractor:
     # depended on datasets: used for autogenerated extractors
     depends_on: List[Dataset]
 
+    tiers: TierSelector
+
     def __init__(
         self,
         name: str,
@@ -633,6 +662,7 @@ class Extractor:
         func: Optional[Callable] = None,
         derived_extractor_info: Optional[DatasetLookupInfo] = None,
         depends_on: List[Dataset] = [],
+        tier: Optional[Union[str, List[str]]] = None,
     ):
         self.name = name
         self.extractor_type = extractor_type
@@ -642,6 +672,7 @@ class Extractor:
         self.output_feature_ids = outputs
         self.version = version
         self.depends_on = depends_on
+        self.tiers = TierSelector(tier)
 
     def fqn(self) -> str:
         """Fully qualified name of the extractor."""
@@ -666,7 +697,9 @@ class Extractor:
             return getattr(self.func, FENNEL_INCLUDED_MOD)
         return []
 
-    def set_inputs_from_featureset(self, featureset: Featureset):
+    def set_inputs_from_featureset(
+        self, featureset: Featureset, feature: Feature
+    ):
         if self.inputs and len(self.inputs) > 0:
             return
         if self.extractor_type != ExtractorType.LOOKUP:
@@ -684,21 +717,37 @@ class Extractor:
             ds = field.dataset
         if not ds:
             raise ValueError(
-                f"Dataset {field.dataset_name} not found for field {field}"
+                f"Dataset `{field.dataset_name}` not found for field `{field}`"
             )
         self.depends_on = [ds]
         for k in ds.dsschema().keys:
-            feature = featureset.feature(k)
-            if not feature:
+            f = featureset.feature(k)
+            if not f:
                 raise ValueError(
-                    f"Dataset key {k} not found in provider {featureset._name} for extractor {self.name}"
+                    f"Key field `{k}` for dataset `{ds._name}` not found in provider `{featureset._name}` for feature: `{feature.name}` auto generated extractor"
                 )
-            self.inputs.append(feature)
+            self.inputs.append(f)
 
     class DatasetLookupInfo:
         field: Field
-        default: Any
+        default: Optional[Any] = None
 
-        def __init__(self, field: Field, default_val: Any):
+        def __init__(self, field: Field, default_val: Optional[Any] = None):
             self.field = field
             self.default = default_val
+
+
+def sync_validation_for_extractors(extractors: List[Extractor]):
+    """
+    This validation function contains the checks that are run just before the sync call.
+    It should only contain checks that are not possible to run during the registration phase/compilation phase.
+    """
+    extracted_features: Set[str] = set()
+    for extractor in extractors:
+        for feature in extractor.output_features:
+            if feature in extracted_features:
+                raise TypeError(
+                    f"Feature `{feature}` is "
+                    f"extracted by multiple extractors including `{extractor.name}`."
+                )
+            extracted_features.add(feature)

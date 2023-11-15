@@ -7,6 +7,7 @@ import inspect
 import sys
 from dataclasses import dataclass
 import typing
+import logging
 
 import numpy as np
 import pandas as pd
@@ -28,6 +29,7 @@ from typing import (
 
 import fennel.sources as sources
 from fennel.lib.aggregate import AggregateType
+
 from fennel.lib.aggregate.aggregate import (
     Average,
     Count,
@@ -43,18 +45,24 @@ from fennel.lib.duration.duration import (
     duration_to_timedelta,
 )
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
+from fennel.lib.includes import TierSelector
 from fennel.lib.metadata import (
     meta,
+    OWNER,
     get_meta_attr,
     set_meta_attr,
 )
 from fennel.lib.schema import (
     dtype_to_string,
     get_primitive_dtype,
+    fennel_is_optional,
+    fennel_get_optional_inner,
+    get_pd_dtype,
     FENNEL_INPUTS,
     is_hashable,
     parse_json,
     get_fennel_struct,
+    get_python_type_from_pd,
     FENNEL_STRUCT_SRC_CODE,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
 )
@@ -86,6 +94,7 @@ RESERVED_FIELD_NAMES = [
     "fqn",
 ]
 
+primitive_numeric_types = [int, float, pd.Int64Dtype, pd.Float64Dtype]
 
 # ---------------------------------------------------------------------
 # Field
@@ -325,7 +334,7 @@ class Transform(_Node):
         return DSSchema(
             keys=inp_keys,
             values={
-                f: dtype
+                f: get_pd_dtype(dtype)
                 for f, dtype in self.new_schema.items()
                 if f not in inp_keys.keys() and f != input_schema.timestamp
             },
@@ -361,7 +370,7 @@ class Assign(_Node):
 
     def dsschema(self):
         input_schema = self.node.dsschema()
-        input_schema.update_column(self.column, self.output_type)
+        input_schema.update_column(self.column, get_pd_dtype(self.output_type))
         return input_schema
 
 
@@ -405,26 +414,31 @@ class Aggregate(_Node):
         values = {}
         for agg in self.aggregates:
             if isinstance(agg, Count):
-                values[agg.into_field] = int
+                values[agg.into_field] = pd.Int64Dtype
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
-                if dtype not in [int, float]:
+                dtype = get_primitive_dtype(dtype)
+                if dtype not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
                     )
-                values[agg.into_field] = dtype  # type: ignore
+                values[agg.into_field] = dtype
             elif isinstance(agg, Min) or isinstance(agg, Max):
-                values[agg.into_field] = input_schema.get_type(agg.of)
+                dtype = input_schema.get_type(agg.of)
+                dtype = get_primitive_dtype(dtype)
+                values[agg.into_field] = dtype
             elif isinstance(agg, Distinct):
                 dtype = input_schema.get_type(agg.of)
-                values[agg.into_field] = List[dtype]  # type: ignore
+                list_type = get_python_type_from_pd(dtype)
+                values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Average):
-                values[agg.into_field] = float  # type: ignore
+                values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
-                values[agg.into_field] = List[dtype]  # type: ignore
+                list_type = get_python_type_from_pd(dtype)
+                values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Stddev):
-                values[agg.into_field] = float  # type: ignore
+                values[agg.into_field] = pd.Float64Dtype  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
         return DSSchema(
@@ -441,12 +455,15 @@ class GroupBy:
         self.node = node
         self.node.out_edges.append(self)
 
-    def aggregate(self, aggregates: List[AggregateType], *args) -> _Node:
-        if len(args) > 0 or not isinstance(aggregates, list):
+    def aggregate(self, *args) -> _Node:
+        if len(args) == 0:
             raise TypeError(
-                "aggregate operator, takes a list of aggregates "
-                "found: {}".format(type(aggregates))
+                "aggregate operator expects atleast one aggregation operation"
             )
+        if len(args) == 1 and isinstance(args[0], list):
+            aggregates = args[0]
+        else:
+            aggregates = list(args)
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
         return Aggregate(self.node, list(self.keys), aggregates)
@@ -493,6 +510,7 @@ class Explode(_Node):
         for c in self.columns:
             # extract type T from List[t]
             dsschema.values[c] = Optional[get_args(dsschema.values[c])[0]]
+            dsschema.values[c] = get_pd_dtype(dsschema.values[c])
         return dsschema
 
 
@@ -534,6 +552,7 @@ class Join(_Node):
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
+        # Currently not supported
         lsuffix: str = "",
         rsuffix: str = "",
     ):
@@ -762,30 +781,33 @@ def dataset(
         :param struct: Map from column names to Struct Classes. We use this to
         convert any dictionaries back to structs post lookup.
         """
-        if len(key_fields) == 0:
-            return None
 
         def lookup(
             ts: pd.Series, *args, **kwargs
         ) -> Tuple[pd.DataFrame, pd.Series]:
+            if len(key_fields) == 0:
+                raise Exception(
+                    f"Trying to lookup dataset `{cls_name} with no keys defined.\n"
+                    f"Please define one or more keys using field(key=True) to perform a lookup."
+                )
             if len(args) > 0:
                 raise ValueError(
-                    f"lookup expects key value arguments and can "
+                    f"Lookup for dataset `{cls_name}` expects key value arguments and can "
                     f"optionally include fields, found {args}"
                 )
             if len(kwargs) < len(key_fields):
                 raise ValueError(
-                    f"lookup expects keys of the table being looked up and can "
+                    f"Lookup for dataset `{cls_name}` expects keys of the table being looked up and can "
                     f"optionally include fields, found {kwargs}"
                 )
             # Check that ts is a series of datetime64[ns]
             if not isinstance(ts, pd.Series):
                 raise ValueError(
-                    f"lookup expects a series of timestamps, found {type(ts)}"
+                    f"Lookup for dataset `{cls_name}` expects a series of timestamps, found {type(ts)}"
                 )
             if not np.issubdtype(ts.dtype, np.datetime64):
                 raise ValueError(
-                    f"lookup expects a series of timestamps, found {ts.dtype}"
+                    f"Lookup for dataset `{cls_name}` expects a series of timestamps, found {ts.dtype}"
                 )
             # extract keys and fields from kwargs
             arr = []
@@ -890,6 +912,11 @@ def dataset(
         if struct_code:
             setattr(dataset_cls, FENNEL_STRUCT_SRC_CODE, struct_code)
 
+        cls_module = inspect.getmodule(dataset_cls)
+        owner = None
+        if cls_module is not None and hasattr(cls_module, OWNER):
+            owner = getattr(cls_module, OWNER)
+
         return Dataset(
             dataset_cls,
             fields,
@@ -897,6 +924,7 @@ def dataset(
             lookup_fn=_create_lookup_function(
                 dataset_cls.__name__, key_fields, struct_types  # type: ignore
             ),
+            owner=owner,
         )
 
     def wrap(c: Type[T]) -> Dataset:
@@ -908,17 +936,6 @@ def dataset(
     cls = cast(Type[T], cls)
     # @dataset decorator was used without arguments
     return wrap(cls)
-
-
-def fennel_is_optional(type_):
-    return (
-        typing.get_origin(type_) is Union
-        and type(None) is typing.get_args(type_)[1]
-    )
-
-
-def fennel_get_optional_inner(type_):
-    return typing.get_args(type_)[0]
 
 
 # Fennel implementation of get_type_hints which does not error on forward
@@ -943,7 +960,9 @@ def f_get_type_hints(obj):
 
 
 def pipeline(
-    version: int = 1, active: bool = False
+    version: int = 1,
+    active: bool = False,
+    tier: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     if isinstance(version, Callable) or isinstance(  # type: ignore
         version, Dataset
@@ -1011,6 +1030,7 @@ def pipeline(
                 func=pipeline_func,
                 version=version,
                 active=active,
+                tier=tier,
             ),
         )
         return pipeline_func
@@ -1067,6 +1087,7 @@ class Pipeline:
     name: str
     version: int
     active: bool
+    tier: TierSelector
 
     def __init__(
         self,
@@ -1074,12 +1095,14 @@ class Pipeline:
         func: Callable,
         version: int,
         active: bool = False,
+        tier: Optional[Union[str, List[str]]] = None,
     ):
         self.inputs = inputs
         self.func = func  # type: ignore
         self.name = func.__name__
         self.version = version
         self.active = active
+        self.tier = TierSelector(tier)
 
     # Validate the schema of all intermediate nodes
     # and return the schema of the terminal node.
@@ -1134,6 +1157,7 @@ class Dataset(_Node[T]):
         fields: List[Field],
         history: datetime.timedelta,
         lookup_fn: Optional[Callable] = None,
+        owner: Optional[str] = None,
     ):
         super().__init__()
         self._name = cls.__name__  # type: ignore
@@ -1154,6 +1178,7 @@ class Dataset(_Node[T]):
             self.lookup = lookup_fn  # type: ignore
         self._add_fields_as_attributes()
         self.expectations = self._get_expectations()
+        setattr(self, OWNER, owner)
 
     def __class_getitem__(cls, item):
         return item
@@ -1169,7 +1194,12 @@ class Dataset(_Node[T]):
         every: Optional[Duration] = None,
         starting_from: Optional[datetime.datetime] = None,
         lateness: Optional[Duration] = None,
+        tiers: Optional[Union[str, List[str]]] = None,
     ):
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            "with_source is deprecated. Please use tier selector instead."
+        )
         if len(self._pipelines) > 0:
             raise Exception(
                 f"Dataset {self._name} is contains a pipeline. "
@@ -1178,14 +1208,14 @@ class Dataset(_Node[T]):
         ds_copy = copy.deepcopy(self)
         if hasattr(ds_copy, sources.SOURCE_FIELD):
             delattr(ds_copy, sources.SOURCE_FIELD)
-        src_fn = source(conn, every, starting_from, lateness)
+        src_fn = source(conn, every, starting_from, lateness, None, tiers)
         return src_fn(ds_copy)
 
     def dsschema(self):
         return DSSchema(
-            keys={f.name: f.dtype for f in self._fields if f.key},
+            keys={f.name: get_pd_dtype(f.dtype) for f in self._fields if f.key},
             values={
-                f.name: f.dtype
+                f.name: get_pd_dtype(f.dtype)
                 for f in self._fields
                 if not f.key and f.name != self._timestamp_field
             },
@@ -1341,7 +1371,6 @@ class Dataset(_Node[T]):
     def _get_pipelines(self) -> List[Pipeline]:
         pipelines = []
         dataset_name = self._name
-        versions = set()
         names = set()
         for name, method in inspect.getmembers(self.__fennel_original_cls__):
             if not callable(method):
@@ -1351,11 +1380,6 @@ class Dataset(_Node[T]):
 
             pipeline = getattr(method, PIPELINE_ATTR)
 
-            if pipeline.version in versions:
-                raise ValueError(
-                    f"Duplicate pipeline id {pipeline.version} for dataset {dataset_name}."
-                )
-            versions.add(pipeline.version)
             if pipeline.name in names:
                 raise ValueError(
                     f"Duplicate pipeline name {pipeline.name} for dataset {dataset_name}."
@@ -1378,35 +1402,15 @@ class Dataset(_Node[T]):
 
     def _validate_pipelines(self, pipelines: List[Pipeline]):
         exceptions = []
-        ds_schema = DSSchema(
-            keys={f.name: f.dtype for f in self.fields if f.key},
-            values={
-                f.name: f.dtype
-                for f in self.fields
-                if not f.key and f.name != self._timestamp_field
-            },
-            timestamp=self.timestamp_field,
-        )
+        ds_schema = self.dsschema()
 
-        found_active = False
         for pipeline in pipelines:
             pipeline_schema = pipeline.get_terminal_schema()
-            if pipeline.active and found_active:
-                raise ValueError(
-                    f"Multiple active pipelines are not supported for dataset {self._name}."
-                )
-            if pipeline.active:
-                found_active = True
             err = pipeline_schema.matches(
                 ds_schema, f"pipeline {pipeline.name} output", self._name
             )
             if len(err) > 0:
                 exceptions.extend(err)
-        if not found_active and len(pipelines) > 1:
-            raise ValueError(
-                f"No active pipeline found for dataset {self._name}."
-            )
-
         if exceptions:
             raise TypeError(exceptions)
 
@@ -1452,6 +1456,33 @@ class Dataset(_Node[T]):
     @property
     def fields(self):
         return self._fields
+
+
+def sync_validation_for_pipelines(pipelines: List[Pipeline], ds_name: str):
+    """
+    This validation function contains the checks that are run just before the sync call.
+    It should only contain checks that are not possible to run during the registration phase/compilation phase.
+    """
+    versions = set()
+    for pipeline in pipelines:
+        if pipeline.version in versions:
+            raise ValueError(
+                f"Pipeline {pipeline.fqn} has the same version as another pipeline in the dataset."
+            )
+        versions.add(pipeline.version)
+
+    found_active = False
+    for pipeline in pipelines:
+        if pipeline.active and found_active:
+            raise ValueError(
+                f"Multiple active pipelines are not supported for dataset {ds_name}."
+            )
+        if pipeline.active:
+            found_active = True
+    if not found_active and len(pipelines) > 1:
+        raise ValueError(
+            f"No active pipeline found for dataset {ds_name}. Please mark one of the pipelines as active by setting `active=True`."
+        )
 
 
 # ---------------------------------------------------------------------
@@ -1543,7 +1574,11 @@ class DSSchema:
     name: str = ""
 
     def schema(self) -> Dict[str, Type]:
-        return {**self.keys, **self.values, self.timestamp: datetime.datetime}
+        schema = {**self.keys, **self.values, self.timestamp: datetime.datetime}
+        # Convert int -> Int64, float -> Float64 and string -> String
+        for k, v in schema.items():
+            schema[k] = get_pd_dtype(v)
+        return schema
 
     def fields(self) -> List[str]:
         return (
@@ -1619,17 +1654,17 @@ class DSSchema:
         else:
             raise Exception(f"field {name} not found in schema of {self.name}")
 
-    def update_column(self, name: str, tpe: Type):
+    def update_column(self, name: str, type: Type):
         if name in self.keys:
-            self.keys[name] = tpe
+            self.keys[name] = type
         elif name in self.values:
-            self.values[name] = tpe
+            self.values[name] = type
         elif name == self.timestamp:
             raise Exception(
                 f"cannot assign timestamp field {name} from {self.name}"
             )
         else:
-            self.values[name] = tpe  # Add to values
+            self.values[name] = type  # Add to values
 
     def matches(
         self, other_schema: DSSchema, this_name: str, other_name: str
@@ -1706,16 +1741,7 @@ class SchemaValidator(Visitor):
         return vis
 
     def visitDataset(self, obj) -> DSSchema:
-        return DSSchema(
-            keys={f.name: f.dtype for f in obj.fields if f.key},
-            values={
-                f.name: f.dtype
-                for f in obj.fields
-                if not f.key and f.name != obj.timestamp_field
-            },
-            timestamp=obj.timestamp_field,
-            name=f"'[Dataset:{obj._name}]'",
-        )
+        return obj.dsschema()
 
     def visitTransform(self, obj) -> DSSchema:
         input_schema = self.visit(obj.node)
@@ -1734,7 +1760,7 @@ class SchemaValidator(Visitor):
                         f"Key field {name} must be present in schema of "
                         f"{node_name}."
                     )
-                if dtype != obj.new_schema[name]:
+                if dtype != get_pd_dtype(obj.new_schema[name]):
                     raise TypeError(
                         f"Key field {name} has type {dtype_to_string(dtype)} in "
                         f"input schema "
@@ -1746,7 +1772,7 @@ class SchemaValidator(Visitor):
             return DSSchema(
                 keys=inp_keys,
                 values={
-                    f: dtype
+                    f: get_pd_dtype(dtype)
                     for f, dtype in obj.new_schema.items()
                     if f not in inp_keys.keys() and f != input_schema.timestamp
                 },
@@ -1780,7 +1806,7 @@ class SchemaValidator(Visitor):
                             f"type `{dtype_to_string(dtype)}`, as it is not "  # type: ignore
                             f"hashable"
                         )
-                values[agg.into_field] = int
+                values[agg.into_field] = pd.Int64Dtype
             elif isinstance(agg, Distinct):
                 if agg.of is None:
                     raise ValueError(
@@ -1793,31 +1819,33 @@ class SchemaValidator(Visitor):
                         f"type `{dtype_to_string(dtype)}`, as it is not hashable"
                         # type: ignore
                     )
-                values[agg.into_field] = List[dtype]  # type: ignore
+                list_type = get_python_type_from_pd(dtype)
+                values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in [int, float]:
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot sum field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Average):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in [int, float]:
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot take average of field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
-                values[agg.into_field] = float  # type: ignore
+                values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
-                values[agg.into_field] = List[dtype]  # type: ignore
+                list_type = get_python_type_from_pd(dtype)
+                values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Min):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in [int, float]:
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
                     raise TypeError(
                         f"invalid min: type of field `{agg.of}` is not int or float"
                     )
-                if get_primitive_dtype(dtype) == int and (
+                if get_primitive_dtype(dtype) == pd.Int64Dtype and (
                     int(agg.default) != agg.default
                 ):
                     raise TypeError(
@@ -1826,11 +1854,11 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in [int, float]:
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
                     raise TypeError(
                         f"invalid max: type of field `{agg.of}` is not int or float"
                     )
-                if get_primitive_dtype(dtype) == int and (
+                if get_primitive_dtype(dtype) == pd.Int64Dtype and (
                     int(agg.default) != agg.default
                 ):
                     raise TypeError(
@@ -1839,11 +1867,11 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = dtype  # type: ignore
             elif isinstance(agg, Stddev):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in [int, float]:
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot get standard deviation of field {agg.of} of type {dtype_to_string(dtype)}"
                     )
-                values[agg.into_field] = float  # type: ignore
+                values[agg.into_field] = pd.Float64Dtype  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
         return DSSchema(
@@ -1896,6 +1924,8 @@ class SchemaValidator(Visitor):
                         f"in left schema but type "
                         f"{dtype_to_string(right_schema.get_type(key))} in right schema."
                     )
+            # Check that none of the other fields collide
+
         else:
             #  obj.right_on should be the keys of the right dataset
             if set(obj.right_on) != set(right_schema.keys.keys()):
@@ -2012,7 +2042,7 @@ class SchemaValidator(Visitor):
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->dropnull node'"
         if obj.columns is None or len(obj.columns) == 0:
             raise ValueError(
-                f"invalid dropnull - {output_schema_name} must have at least one column"
+                f"invalid dropnull - `{output_schema_name}` must have at least one column"
             )
         for field in obj.columns:
             if (
@@ -2020,11 +2050,11 @@ class SchemaValidator(Visitor):
                 or field == input_schema.timestamp
             ):
                 raise ValueError(
-                    f"invalid dropnull column {field} not present in {input_schema.name}"
+                    f"invalid dropnull column `{field}` not present in `{input_schema.name}`"
                 )
             if not fennel_is_optional(input_schema.get_type(field)):
                 raise ValueError(
-                    f"invalid dropnull {field} has type {input_schema.get_type(field)} expected Optional type"
+                    f"invalid dropnull `{field}` has type `{dtype_to_string(input_schema.get_type(field))}` expected Optional type"
                 )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name

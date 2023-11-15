@@ -4,11 +4,12 @@ from collections import Counter
 from math import sqrt
 
 import pandas as pd
-from typing import Dict, List
+from typing import Dict, List, Type
 
 from fennel.lib.aggregate import AggregateType, Distinct
 from fennel.lib.aggregate import Count, Sum, Average, LastK, Min, Max, Stddev
 from fennel.lib.duration import duration_to_timedelta
+from fennel.lib.schema import get_pd_dtype
 
 # Type of data, 1 indicates insert -1 indicates delete.
 FENNEL_ROW_TYPE = "__fennel_row_type__"
@@ -333,6 +334,7 @@ def get_aggregated_df(
     aggregate: AggregateType,
     ts_field: str,
     key_fields: List[str],
+    output_dtype: Type,
 ) -> pd.DataFrame:
     df = input_df.copy()
     df[FENNEL_ROW_TYPE] = 1
@@ -417,4 +419,12 @@ def get_aggregated_df(
     subset = key_fields + [ts_field]
     df = df.drop_duplicates(subset=subset, keep="last")
     df = df.reset_index(drop=True)
+    pd_dtype = get_pd_dtype(output_dtype)
+    if pd_dtype in [
+        pd.Int64Dtype,
+        pd.BooleanDtype,
+        pd.Float64Dtype,
+        pd.StringDtype,
+    ]:
+        df[aggregate.into_field] = df[aggregate.into_field].astype(pd_dtype())
     return df

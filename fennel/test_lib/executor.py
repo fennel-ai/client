@@ -114,9 +114,15 @@ class Executor(Visitor):
         sorted_df = t_df.sort_values(input_ret.timestamp_field)
         # Cast sorted_df to obj.schema()
         for col_name, col_type in obj.schema().items():
-            if col_type in [float, int, str, bool]:
+            if col_type in [
+                pd.BooleanDtype,
+                pd.Int64Dtype,
+                pd.Float64Dtype,
+                pd.StringDtype,
+            ]:
+                sorted_df[col_name] = sorted_df[col_name].astype(col_type())
+            elif col_type in [int, float, bool, str]:
                 sorted_df[col_name] = sorted_df[col_name].astype(col_type)
-
         return NodeRet(
             sorted_df, input_ret.timestamp_field, input_ret.key_fields
         )
@@ -156,6 +162,7 @@ class Executor(Visitor):
         # of fields to the dataframe that contains the aggregate values
         # for each timestamp for that field.
         result = {}
+        output_schema = obj.dsschema()
         for aggregate in obj.aggregates:
             # Select the columns that are needed for the aggregate
             # and drop the rest
@@ -163,8 +170,13 @@ class Executor(Visitor):
             if not isinstance(aggregate, Count) or aggregate.unique:
                 fields.append(aggregate.of)
             filtered_df = df[fields]
+
             result[aggregate.into_field] = get_aggregated_df(
-                filtered_df, aggregate, input_ret.timestamp_field, obj.keys
+                filtered_df,
+                aggregate,
+                input_ret.timestamp_field,
+                obj.keys,
+                output_schema.values[aggregate.into_field],
             )
         return NodeRet(
             pd.DataFrame(), input_ret.timestamp_field, obj.keys, result, True
@@ -252,6 +264,15 @@ class Executor(Visitor):
             left_by = copy.deepcopy(obj.left_on)
             right_by = copy.deepcopy(obj.right_on)
 
+        # Rename the right_by columns to avoid conflicts with any of the left columns.
+        # We dont need to worry about right value columns conflicting with left key columns,
+        # because we have already verified that.
+        if set(right_by).intersection(set(left_df.columns)):
+            right_df = right_df.rename(
+                columns={col: f"__@@__{col}" for col in right_by}
+            )
+            right_by = [f"__@@__{col}" for col in right_by]
+
         left_df = left_df.sort_values(by=ts_query_field)
         right_df = right_df.sort_values(by=ts_query_field)
         merged_df = pd.merge_asof(
@@ -321,7 +342,6 @@ class Executor(Visitor):
             columns=[tmp_ts_low, ts_query_field, tmp_left_ts, tmp_right_ts],
             inplace=True,
         )
-
         # sort the dataframe by the timestamp
         sorted_df = merged_df.sort_values(left_timestamp_field)
         return NodeRet(sorted_df, left_timestamp_field, input_ret.key_fields)
