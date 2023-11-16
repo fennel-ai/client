@@ -381,14 +381,14 @@ class Feature:
                 ds = field.dataset
             else:
                 raise ValueError(
-                    f"Dataset {field.dataset_name} not found for field {field}"
+                    f"Dataset `{field.dataset_name}` not found for field `{field}`"
                 )
 
             for k in ds.dsschema().keys:  # type: ignore
                 feature = provider.feature(k)
                 if not feature:
                     raise ValueError(
-                        f"Dataset key {k} not found in provider {provider._name} for extractor {name}"
+                        f"Dataset key `{k}` not found in provider `{provider._name}` for extractor `{name}`"
                     )
                 provider_features.append(feature)
 

@@ -97,7 +97,7 @@ class TestInvalidSync(unittest.TestCase):
             )
         else:
             assert (
-                str(e.value) == "Dataset MemberActivityDatasetCopy "
+                str(e.value) == "Dataset `MemberActivityDatasetCopy` "
                 "not found in sync call"
             )
 
@@ -263,7 +263,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
         else:
             assert (
                 str(e.value)
-                == """Dataset `MemberActivityDataset` is an input to the pipelines: `['copy']` but is not synced. Please add it to the sync call."""
+                == """Dataset `MemberActivityDataset` is an input to the pipelines: `['MemberActivityDatasetCopy.copy']` but is not synced. Please add it to the sync call."""
             )
 
     @mock

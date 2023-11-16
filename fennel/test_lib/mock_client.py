@@ -83,7 +83,7 @@ def dataset_lookup_impl(
 ) -> Tuple[pd.DataFrame, pd.Series]:
     if cls_name not in datasets:
         raise ValueError(
-            f"Dataset {cls_name} not found, please ensure it is synced."
+            f"Dataset `{cls_name}` not found, please ensure it is synced."
         )
     if allowed_datasets is not None and cls_name not in allowed_datasets:
         raise ValueError(
@@ -271,7 +271,7 @@ class MockClient(Client):
 
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
         if dataset_name not in self.dataset_info:
-            raise ValueError(f"Dataset {dataset_name} not found")
+            raise ValueError(f"Dataset `{dataset_name}` not found")
 
         # If we haven't seen any values for this dataset, return an empty df with the right schema.
         if (
@@ -390,7 +390,7 @@ class MockClient(Client):
             for pipeline in selected_pipelines:
                 for input in pipeline.inputs:
                     input_datasets_for_pipelines[input._name].append(
-                        pipeline.name
+                        f"{pipeline._dataset_name}.{pipeline.name}"
                     )
                     self.listeners[input._name].append(pipeline)
 
@@ -422,7 +422,7 @@ class MockClient(Client):
                 for dataset in datasets:
                     if dataset not in self.dataset_requests:
                         raise ValueError(
-                            f"Dataset {dataset} not found in sync call"
+                            f"Dataset `{dataset}` not found in sync call"
                         )
             self.extractors.extend(
                 [
@@ -608,18 +608,20 @@ class MockClient(Client):
 
     def _internal_log(self, dataset_name: str, df: pd.DataFrame):
         if df.shape[0] == 0:
-            print(f"Skipping log of empty dataframe for webhook {dataset_name}")
+            print(
+                f"Skipping log of empty dataframe for webhook `{dataset_name}`"
+            )
             return FakeResponse(200, "OK")
 
         if dataset_name not in self.dataset_requests:
-            return FakeResponse(404, f"Dataset {dataset_name} not found")
+            return FakeResponse(404, f"Dataset `{dataset_name}` not found")
 
         dataset_req = self.dataset_requests[dataset_name]
         timestamp_field = self.dataset_info[dataset_name].timestamp_field
         if timestamp_field not in df.columns:
             return FakeResponse(
                 400,
-                f"Timestamp field {timestamp_field} not found in dataframe "
+                f"Timestamp field `{timestamp_field}` not found in dataframe "
                 f"while logging to dataset `{dataset_name}`",
             )
         for col in df.columns:
@@ -741,7 +743,7 @@ class MockClient(Client):
             for feature_str in extractor.output_features:
                 feature_str = f"{extractor.featureset}.{feature_str}"
                 if feature_str not in feature_schema:
-                    raise ValueError(f"Feature {feature_str} not found")
+                    raise ValueError(f"Feature `{feature_str}` not found")
                 dtype = feature_schema[feature_str]
                 fields.append(Field(name=feature_str, dtype=dtype))
             dsschema = DSSchema(
@@ -1072,7 +1074,7 @@ def cast_df_to_schema(df: pd.DataFrame, dsschema: DSSchema) -> pd.DataFrame:
     for f in fields:
         if f.name not in df.columns:
             raise ValueError(
-                f"Field {f.name} not found in dataframe while logging to dataset"
+                f"Field `{f.name}` not found in dataframe while logging to dataset"
             )
         try:
             series = cast_col_to_dtype(df[f.name], f.dtype)

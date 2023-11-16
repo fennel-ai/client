@@ -257,7 +257,7 @@ def test_complex_auto_gen_extractors(client):
         )
     assert (
         str(e.value)
-        == "Dataset NumCompletedTripsDataset not found in sync call"
+        == "Dataset `NumCompletedTripsDataset` not found in sync call"
     )
 
     resp = client.sync(

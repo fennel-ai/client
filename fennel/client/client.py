@@ -492,12 +492,12 @@ class Client:
             ):
                 raise Exception(
                     f"Input dataframe does not contain all the required features. "
-                    f"Required features: {input_feature_names}. "
-                    f"Input dataframe columns: {input_dataframe.columns}"
+                    f"Required features: `{input_feature_names}`. "
+                    f"Input dataframe columns: `{input_dataframe.columns}`"
                 )
             if timestamp_column not in input_dataframe.columns:
                 raise Exception(
-                    f"Timestamp column {timestamp_column} not found in input dataframe."
+                    f"Timestamp column `{timestamp_column}` not found in input dataframe."
                 )
             # Convert timestamp column to string to make it JSON serializable
             input_dataframe[timestamp_column] = input_dataframe[
