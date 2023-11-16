@@ -621,7 +621,7 @@ def test_pipeline_input_validation_during_sync(client):
         client.sync(datasets=[ABCDataset])
     assert (
         str(e.value)
-        == "Dataset `XYZ` is an input to the pipelines: `['create_pipeline']` but is not synced. Please add it to the sync call."
+        == "Dataset `XYZ` is an input to the pipelines: `['ABCDataset.create_pipeline']` but is not synced. Please add it to the sync call."
     )
 
 

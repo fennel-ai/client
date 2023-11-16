@@ -898,7 +898,7 @@ def test_first_wrong_field():
 
     assert (
         str(e.value)
-        == """field actor not found in schema of '[Dataset:SingleHits]'"""
+        == """field `actor` not found in schema of `'[Dataset:SingleHits]'`"""
     )
 
 

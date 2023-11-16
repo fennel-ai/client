@@ -1595,7 +1595,9 @@ class DSSchema:
         elif field == self.timestamp:
             return datetime.datetime
         else:
-            raise Exception(f"field {field} not found in schema of {self.name}")
+            raise Exception(
+                f"field `{field}` not found in schema of `{self.name}`"
+            )
 
     def rename_column(self, old_name: str, new_name: str):
         if old_name in self.keys:
@@ -1606,7 +1608,7 @@ class DSSchema:
             self.timestamp = new_name
         else:
             raise Exception(
-                f"field {old_name} not found in schema of {self.name}"
+                f"field `{old_name}` not found in schema of `{self.name}`"
             )
 
     def get_optional_cols(self) -> List[str]:
@@ -1621,23 +1623,25 @@ class DSSchema:
             self.values[name] = fennel_get_optional_inner(self.values[name])
         elif name == self.timestamp:
             raise Exception(
-                f"cannot drop_null on timestamp field {name} of {self.name}"
+                f"cannot drop_null on timestamp field `{name}` of `{self.name}`"
             )
         else:
-            raise Exception(f"field {name} not found in schema of {self.name}")
+            raise Exception(
+                f"field `{name}` not found in schema of `{self.name}`"
+            )
 
     def append_value_column(self, name: str, type_: Type):
         if name in self.keys:
             raise Exception(
-                f"field {name} already exists in schema of {self.name}"
+                f"field `{name}` already exists in schema of `{self.name}`"
             )
         elif name in self.values:
             raise Exception(
-                f"field {name} already exists in schema of {self.name}"
+                f"field `{name}` already exists in schema of `{self.name}`"
             )
         elif name == self.timestamp:
             raise Exception(
-                f"cannot append timestamp field {name} to {self.name}"
+                f"cannot append timestamp field `{name}` to `{self.name}`"
             )
         else:
             self.values[name] = type_
@@ -1649,10 +1653,12 @@ class DSSchema:
             self.values.pop(name)
         elif name == self.timestamp:
             raise Exception(
-                f"cannot drop timestamp field {name} from {self.name}"
+                f"cannot drop timestamp field `{name}` from `{self.name}`"
             )
         else:
-            raise Exception(f"field {name} not found in schema of {self.name}")
+            raise Exception(
+                f"field `{name}` not found in schema of `{self.name}`"
+            )
 
     def update_column(self, name: str, type: Type):
         if name in self.keys:
@@ -1661,7 +1667,7 @@ class DSSchema:
             self.values[name] = type
         elif name == self.timestamp:
             raise Exception(
-                f"cannot assign timestamp field {name} from {self.name}"
+                f"cannot assign timestamp field `{name}` from `{self.name}`"
             )
         else:
             self.values[name] = type  # Add to values
