@@ -72,6 +72,7 @@ class IntegrationClient:
         self,
         datasets: List[Dataset] = [],
         featuresets: List[Featureset] = [],
+        preview: bool = False,
     ):
         self.to_register_objects = []
         self.to_register = set()
@@ -81,7 +82,7 @@ class IntegrationClient:
             self.add(featureset)
 
         sync_request = self._get_sync_request_proto()
-        self._client.sync(sync_request.SerializeToString(), _dry_run=False)
+        self._client.sync(sync_request.SerializeToString(), preview)
         time.sleep(1.1)
         return FakeResponse(200, "OK")
 

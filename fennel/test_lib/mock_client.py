@@ -344,6 +344,7 @@ class MockClient(Client):
         self,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
+        preview=False,
         tier: Optional[str] = None,
     ):
         self._reset()

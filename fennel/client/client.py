@@ -60,6 +60,7 @@ class Client:
         self,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
+        preview=False,
         tier: Optional[str] = None,
     ):
         """
@@ -95,12 +96,18 @@ class Client:
                 self.add(featureset)
         sync_request = self._get_sync_request_proto(tier)
         response = self._post_bytes(
-            "{}/sync".format(V1_API),
+            "{}/sync?preview={}".format(V1_API, str(preview).lower()),
             sync_request.SerializeToString(),
             False,
             300,
         )
         check_response(response)
+        if response.headers.get("content-type") == "application/json":
+            res_json = response.json()
+            if "diffs" in res_json:
+                diffs = res_json["diffs"]
+                for line in diffs:
+                    print(line, end="")
 
     def log(
         self,
