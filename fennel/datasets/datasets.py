@@ -228,7 +228,10 @@ class _Node(Generic[T]):
         within: Tuple[Duration, Duration] = ("forever", "0s"),
     ) -> Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
-            raise ValueError("Cannot join with an intermediate dataset")
+            raise ValueError(
+                "Cannot join with an intermediate dataset, i.e something defined inside a pipeline."
+                " Only joining against keyed datasets is permitted."
+            )
         if not isinstance(other, _Node):
             raise TypeError("Cannot join with a non-dataset object")
         return Join(self, other, within, how, on, left_on, right_on)
@@ -622,18 +625,14 @@ class Join(_Node):
         for col in common_cols:
             if self.lsuffix != "" and (col + self.lsuffix) in left_schema:
                 raise ValueError(
-                    "Column name collision. `{}` already exists in schema of left input {}".format(
-                        col + self.lsuffix, left_dsschema.name
-                    )
+                    f"Column name collision. `{col + self.lsuffix}` already exists in schema of left input {left_dsschema.name}, while joining with {self.dataset.dsschema().name}"
                 )
             if (
                 self.rsuffix != ""
                 and (col + self.rsuffix) in right_value_schema
             ):
                 raise ValueError(
-                    "Column name collision. `{}` already exists in schema of right input {}".format(
-                        col + self.rsuffix, self.dataset.dsschema().name
-                    )
+                    f"Column name collision. `{col + self.rsuffix}` already exists in schema of right input {self.dataset.dsschema().name}, while joining with {self.dataset.dsschema().name}"
                 )
             left_dsschema.rename_column(col, col + self.lsuffix)
             left_schema[col + self.lsuffix] = left_schema.pop(col)
@@ -648,9 +647,7 @@ class Join(_Node):
         for col, dtype in right_value_schema.items():
             if col in left_schema:
                 raise ValueError(
-                    "Column name collision. `{}` already exists in schema of left input {}".format(
-                        col, left_dsschema.name
-                    )
+                    f"Column name collision. `{col}` already exists in schema of left input {left_dsschema.name}, while joining with {self.dataset.dsschema().name}"
                 )
             joined_dsschema.append_value_column(col, dtype)
 
@@ -787,7 +784,7 @@ def dataset(
         ) -> Tuple[pd.DataFrame, pd.Series]:
             if len(key_fields) == 0:
                 raise Exception(
-                    f"Trying to lookup dataset `{cls_name} with no keys defined.\n"
+                    f"Trying to lookup dataset `{cls_name}` with no keys defined.\n"
                     f"Please define one or more keys using field(key=True) to perform a lookup."
                 )
             if len(args) > 0:
@@ -1273,7 +1270,7 @@ class Dataset(_Node[T]):
                 if timestamp_field_set:
                     raise ValueError(
                         f"Multiple timestamp fields are not supported in "
-                        f"dataset `{self._name}`."
+                        f"dataset `{self._name}`. Please set one of the datetime fields to be the timestamp field."
                     )
                 timestamp_field_set = True
 
@@ -1292,7 +1289,7 @@ class Dataset(_Node[T]):
             else:
                 raise ValueError(
                     f"Multiple timestamp fields are not "
-                    f"supported in dataset `{self._name}`."
+                    f"supported in dataset `{self._name}`. Please set one of the datetime fields to be the timestamp field."
                 )
         if not timestamp_field_set:
             raise ValueError(

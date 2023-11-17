@@ -178,11 +178,14 @@ def extractor(
                 elif hasattr(inp, "__name__"):
                     name = inp.__name__
                 else:
-                    name = str(inp)
+                    if hasattr(inp, "fqn"):
+                        name = inp.fqn()
+                    else:
+                        name = str(inp)
                 raise TypeError(
-                    f"Parameter `{name}` is not a feature of but a "
-                    f"`{type(inp)}`. Please note "
-                    f"that Featuresets are mutable and hence not supported."
+                    f"Parameter `{name}` is not a feature, but a "
+                    f"`{type(inp)}`, and hence not supported as an input for the extractor "
+                    f"`{extractor_name}`"
                 )
             params.append(inp)
         if hasattr(extractor_func, FENNEL_OUTPUTS):
@@ -748,6 +751,6 @@ def sync_validation_for_extractors(extractors: List[Extractor]):
             if feature in extracted_features:
                 raise TypeError(
                     f"Feature `{feature}` is "
-                    f"extracted by multiple extractors including `{extractor.name}`."
+                    f"extracted by multiple extractors including `{extractor.name}` in featureset `{extractor.featureset}`."
                 )
             extracted_features.add(feature)

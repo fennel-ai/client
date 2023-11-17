@@ -202,7 +202,9 @@ def fields_to_dsschema(fields: List[Field]) -> schema_proto.DSSchema:
             keys.append(_field_to_proto(field))
         elif field.timestamp:
             if ts is not None:
-                raise ValueError("Multiple timestamp fields are not supported")
+                raise ValueError(
+                    "Multiple timestamp fields are not supported. Please set one of the datetime fields to be the timestamp field."
+                )
             ts = field.name
         else:
             values.append(_field_to_proto(field))
@@ -1199,6 +1201,7 @@ def to_extractor_pycode(
             f"extractor {extractor.name} has type PyFunc but no function defined"
         )
     dependencies = []
+    extractor_fqn = f"{featureset._name}.{extractor.name}"
     gen_code = ""
     if hasattr(extractor.func, FENNEL_INCLUDED_MOD):
         for f in getattr(extractor.func, FENNEL_INCLUDED_MOD):
@@ -1214,8 +1217,8 @@ def to_extractor_pycode(
     for input in extractor.inputs:
         if not isinstance(input, Feature):
             raise ValueError(
-                f"Extractor {extractor.name} must have inputs "
-                f"of type Feature, but got {type(input)}"
+                f"Extractor `{extractor_fqn}` must have inputs "
+                f"of type Feature, but got `{type(input)}`"
             )
         # Dont add the featureset of the extractor itself
         if input.featureset_name == featureset._name:
@@ -1224,9 +1227,10 @@ def to_extractor_pycode(
             input_fs_added.add(input.featureset_name)
             if input.featureset_name not in fs_obj_map:
                 raise ValueError(
-                    f"Extractor {extractor.name} has an input "
-                    f"feature {input.name} from featureset "
-                    f"{input.featureset_name} which is not synced"
+                    f"Extractor `{extractor_fqn}` has an input "
+                    f"feature `{input.name}` from featureset "
+                    f"`{input.featureset_name}` which is not synced."
+                    f"Please add the featureset to the sync call."
                 )
             gen_code = (
                 gen_code

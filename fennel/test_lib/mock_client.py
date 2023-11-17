@@ -867,7 +867,7 @@ class MockClient(Client):
         if len(exceptions) > 0:
             raise Exception(
                 f"Extractor `{extractor_name}` returned "
-                f"invalid schema: {exceptions}"
+                f"invalid schema for data: {exceptions}"
             )
 
     def _compute_lookup_extractor(

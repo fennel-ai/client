@@ -49,7 +49,7 @@ def test_featureset_as_input():
 
     assert (
         str(e.value)
-        == "Parameter `User` is not a feature of but a `<class 'fennel.featuresets.featureset.Featureset'>`. Please note that Featuresets are mutable and hence not supported."
+        == "Parameter `User` is not a feature, but a `<class 'fennel.featuresets.featureset.Featureset'>`, and hence not supported as an input for the extractor `get_user_info1`"
     )
 
 
@@ -90,7 +90,7 @@ def test_complex_featureset():
         view._get_sync_request_proto()
     assert (
         str(e.value)
-        == "Feature `gender` is extracted by multiple extractors including `get_user_info3`."
+        == "Feature `gender` is extracted by multiple extractors including `get_user_info3` in featureset `UserInfo`."
     )
 
 
