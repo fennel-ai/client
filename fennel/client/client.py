@@ -101,7 +101,6 @@ class Client:
             False,
             300,
         )
-        check_response(response)
         if response.headers.get("content-type") == "application/json":
             res_json = response.json()
             if "diffs" in res_json:
@@ -395,7 +394,6 @@ class Client:
             req["sampling_rate"] = sampling_rate
 
         response = self._post_json("{}/extract_features".format(V1_API), req)
-        check_response(response)
         df = pd.DataFrame(response.json())
         for col in df.columns:
             if df[col].dtype == "object":
