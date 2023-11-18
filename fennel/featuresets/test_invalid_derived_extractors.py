@@ -96,7 +96,7 @@ def test_invalid_multiple_extracts():
         view._get_sync_request_proto()
     assert (
         str(e.value)
-        == "Feature `age` is extracted by multiple extractors including `get_age`."
+        == "Feature `age` is extracted by multiple extractors including `get_age` in featureset `UserInfo3`."
     )
 
 

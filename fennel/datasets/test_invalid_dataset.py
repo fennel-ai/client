@@ -38,7 +38,7 @@ def test_multiple_date_time():
     _ = InternalTestClient()
     assert (
         str(e.value) == "Multiple timestamp fields are not supported in "
-        "dataset `UserInfoDataset`."
+        "dataset `UserInfoDataset`. Please set one of the datetime fields to be the timestamp field."
     )
 
 
@@ -647,7 +647,10 @@ def test_dataset_incorrect_join():
                 b = a.transform(lambda x: x)
                 return a.join(b, how="left", on=["user_id"])  # type: ignore
 
-    assert str(e.value) == "Cannot join with an intermediate dataset"
+    assert (
+        str(e.value)
+        == "Cannot join with an intermediate dataset, i.e something defined inside a pipeline. Only joining against keyed datasets is permitted."
+    )
 
 
 def test_dataset_incorrect_join_bounds():
