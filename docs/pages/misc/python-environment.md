@@ -19,7 +19,7 @@ multidict==6.0.4
 nltk==3.8.1 
 numpy==1.24.1 
 pandas==1.5.2 
-pyarrow==10.0.1 
+pyarrow==14.0.0 
 pytz==2022.7.1 
 pyparsing==3.0.9 
 python-dateutil==2.8.2 
