@@ -280,11 +280,11 @@ class _Node(Generic[T]):
     def isignature(self):
         raise NotImplementedError
 
-    def dsschema(self):
-        raise NotImplementedError
-
     def schema(self):
         return copy.deepcopy(self.dsschema().schema())
+
+    def dsschema(self):
+        return copy.deepcopy(self.dsschema())
 
     def num_out_edges(self) -> int:
         return len(self.out_edges)
@@ -1887,23 +1887,23 @@ class SchemaValidator(Visitor):
     def visitJoin(self, obj) -> DSSchema:
         left_schema = self.visit(obj.node)
         right_schema = self.visit(obj.dataset)
-        output_schema_name = (f"'[Pipeline:{self.pipeline_name}]->join node'",)
+        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->join node'"
 
         def validate_join_bounds(within: Tuple[Duration, Duration]):
             if len(within) != 2:
                 raise ValueError(
-                    f"Invalid within clause: {within} in {output_schema_name}. "
+                    f"Invalid within clause: `{within}` in `{output_schema_name}`. "
                     "Should be a tuple of 2 values. e.g. ('forever', '0s')"
                 )
             # Neither of them can be None
             if within[0] is None or within[1] is None:
                 raise ValueError(
-                    f"Invalid within clause: {within} in {output_schema_name}."
+                    f"Invalid within clause: `{within}` in `{output_schema_name}`."
                     "Neither bounds can be None"
                 )
             if within[1] == "forever":
                 raise ValueError(
-                    f"Invalid within clause: {within} in {output_schema_name}"
+                    f"Invalid within clause: `{within}` in `{output_schema_name}`"
                     "Upper bound cannot be `forever`"
                 )
 
@@ -1916,16 +1916,16 @@ class SchemaValidator(Visitor):
             # obj.on should be the key of the right dataset
             if set(obj.on) != set(right_schema.keys.keys()):
                 raise ValueError(
-                    f"on field {obj.on} are not the key fields of the right "
-                    f"dataset {obj.dataset._name}."
+                    f"on field `{obj.on}` are not the key fields of the right "
+                    f"dataset `{obj.dataset._name}` for `{output_schema_name}`."
                 )
             # Check the schemas of the keys
             for key in obj.on:
                 if left_schema.get_type(key) != right_schema.get_type(key):
                     raise TypeError(
-                        f"Key field {key} has type {dtype_to_string(left_schema.get_type(key))} "
+                        f"Key field `{key}` has type `{dtype_to_string(left_schema.get_type(key))}` "
                         f"in left schema but type "
-                        f"{dtype_to_string(right_schema.get_type(key))} in right schema."
+                        f"`{dtype_to_string(right_schema.get_type(key))}` in right schema for `{output_schema_name}`"
                     )
             # Check that none of the other fields collide
 
@@ -1933,29 +1933,29 @@ class SchemaValidator(Visitor):
             #  obj.right_on should be the keys of the right dataset
             if set(obj.right_on) != set(right_schema.keys.keys()):
                 raise ValueError(
-                    f"right_on field {obj.right_on} are not the key fields of "
-                    f"the right dataset {obj.dataset._name}."
+                    f"right_on field `{obj.right_on}` are not the key fields of "
+                    f"the right dataset `{obj.dataset._name}` for `{output_schema_name}`."
                 )
             #  obj.left_on should be a subset of the schema of the left dataset
             if not is_subset(obj.left_on, list(left_schema.fields())):
                 raise ValueError(
-                    f"left_on field {obj.left_on} are not the key fields of "
-                    f"the left dataset {obj.node.dataset._name}."
+                    f"left_on field `{obj.left_on}` are not the key fields of "
+                    f"the left dataset `{obj.node.dataset._name}` for `{output_schema_name}`."
                 )
             # Check the schemas of the keys
             for lkey, rkey in zip(obj.left_on, obj.right_on):
                 if left_schema.get_type(lkey) != right_schema.get_type(rkey):
                     raise TypeError(
-                        f"Key field {lkey} has type"
-                        f" {dtype_to_string(left_schema.get_type(lkey))} "
-                        f"in left schema but, key field {rkey} has type "
-                        f"{dtype_to_string(right_schema.get_type(rkey))} in "
-                        f"right schema."
+                        f"Key field `{lkey}` has type"
+                        f" `{dtype_to_string(left_schema.get_type(lkey))}` "
+                        f"in left schema but, key field `{rkey}` has type "
+                        f"`{dtype_to_string(right_schema.get_type(rkey))}` in "
+                        f"right schema for `{output_schema_name}`"
                     )
 
         if obj.how not in ["inner", "left"]:
             raise ValueError(
-                f'"how" in {output_schema_name} must be either "inner" or "left"'
+                f'"how" in {output_schema_name} must be either "inner" or "left" for `{output_schema_name}`'
             )
 
         output_schema = obj.dsschema()
