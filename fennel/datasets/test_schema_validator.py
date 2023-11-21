@@ -546,7 +546,7 @@ def test_join_schema_validation_value():
 
     assert (
         str(e.value)
-        == """right_on field ['b1', 'b2'] are not the key fields of the right dataset B."""
+        == """right_on field `['b1', 'b2']` are not the key fields of the right dataset `B` for `'[Pipeline:pipeline_join]->join node'`."""
     )
 
 
@@ -587,7 +587,7 @@ def test_join_schema_validation_type():
 
     assert (
         str(e.value)
-        == """Key field a1 has type str in left schema but, key field b1 has type int in right schema."""
+        == """Key field `a1` has type `str` in left schema but, key field `b1` has type `int` in right schema for `'[Pipeline:pipeline_join]->join node'`"""
     )
 
     with pytest.raises(TypeError) as e:
@@ -608,7 +608,7 @@ def test_join_schema_validation_type():
 
     assert (
         str(e.value)
-        == """Key field a1 has type str in left schema but type int in right schema."""
+        == """Key field `a1` has type `str` in left schema but type `int` in right schema for `'[Pipeline:pipeline_join]->join node'`"""
     )
 
 

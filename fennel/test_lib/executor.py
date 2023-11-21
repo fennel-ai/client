@@ -409,6 +409,8 @@ class Executor(Visitor):
 
     def visitAssign(self, obj):
         input_ret = self.visit(obj.node)
+        if input_ret is None or input_ret.df.shape[0] == 0:
+            return None
         df = input_ret.df
         df[obj.column] = obj.func(df)
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
