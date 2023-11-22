@@ -1,6 +1,7 @@
 from math import isnan
 from typing import Any
-
+import pandas as pd
+import numpy as np
 from fennel._vendor import jsondiff  # type: ignore
 from google.protobuf.json_format import MessageToDict
 
@@ -79,3 +80,43 @@ def almost_equal(a: float, b: float, epsilon: float = 1e-6) -> bool:
     if isnan(a) and isnan(b):
         return True
     return abs(a - b) < epsilon
+
+
+def cast_col_to_dtype(series: pd.Series, dtype) -> pd.Series:
+    if not dtype.HasField("optional_type"):
+        if series.isnull().any():
+            raise ValueError("Null values found in non-optional field.")
+    if dtype.HasField("int_type"):
+        return pd.to_numeric(series).astype(pd.Int64Dtype())
+    elif dtype.HasField("double_type"):
+        return pd.to_numeric(series).astype(pd.Float64Dtype())
+    elif dtype.HasField("string_type") or dtype.HasField("regex_type"):
+        return pd.Series([str(x) for x in series]).astype(pd.StringDtype())
+    elif dtype.HasField("bool_type"):
+        return series.astype(pd.BooleanDtype())
+    elif dtype.HasField("timestamp_type"):
+        return pd.to_datetime(series)
+    elif dtype.HasField("optional_type"):
+        # Those fields which are not null should be casted to the right type
+        if series.notnull().any():
+            # collect the non-null values
+            tmp_series = series[series.notnull()]
+            non_null_idx = tmp_series.index
+            tmp_series = cast_col_to_dtype(
+                tmp_series,
+                dtype.optional_type.of,
+            )
+            tmp_series.index = non_null_idx
+            # set the non-null values with the casted values using the index
+            series.loc[non_null_idx] = tmp_series
+            series.replace({np.nan: None}, inplace=True)
+            if callable(tmp_series.dtype):
+                series = series.astype(tmp_series.dtype())
+            else:
+                series = series.astype(tmp_series.dtype)
+            return series
+    elif dtype.HasField("one_of_type"):
+        return cast_col_to_dtype(series, dtype.one_of_type.of)
+    elif dtype.HasField("between_type"):
+        return cast_col_to_dtype(series, dtype.between_type.dtype)
+    return series
