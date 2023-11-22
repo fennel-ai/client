@@ -73,7 +73,7 @@ def test_drop_schema_validation_drop_keys():
 
     assert (
         str(e.value)
-        == """Field `x` is not a non-key non-timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
+        == """Field `x` is a key or timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
     )
 
 
@@ -100,7 +100,7 @@ def test_drop_schema_validation_drop_timestamp():
 
     assert (
         str(e.value)
-        == """Field `t` is not a non-key non-timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
+        == """Field `t` is a key or timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
     )
 
 
@@ -722,7 +722,7 @@ def test_explode_fails_on_keyed_column():
 
     assert (
         str(e.value)
-        == """Field `director` is not a non-key non-timestamp field in schema of explode node input '[Dataset:SingleHits]'. Value fields are: ['movie', 'revenue']"""
+        == """Field `director` is a key or timestamp field in schema of explode node input '[Dataset:SingleHits]'. Value fields are: ['movie', 'revenue']"""
     )
 
 
@@ -991,7 +991,7 @@ def test_assign():
 
     assert (
         str(e.value)
-        == "Field `t` is not a non-key non-timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
+        == "Field `t` is a key or timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
     )
 
     with pytest.raises(Exception) as e:
@@ -1059,5 +1059,5 @@ def test_assign():
 
     assert (
         str(e.value)
-        == "Field `userid` is not a non-key non-timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
+        == "Field `userid` is a key or timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
     )

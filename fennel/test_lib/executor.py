@@ -13,6 +13,8 @@ from fennel.lib.duration import duration_to_timedelta
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import to_includes_proto
 from fennel.test_lib.execute_aggregation import get_aggregated_df
+from fennel.test_lib.test_utils import cast_col_to_dtype
+from fennel.lib.schema import get_datatype
 
 pd.set_option("display.max_columns", None)
 
@@ -275,13 +277,19 @@ class Executor(Visitor):
 
         left_df = left_df.sort_values(by=ts_query_field)
         right_df = right_df.sort_values(by=ts_query_field)
-        merged_df = pd.merge_asof(
-            left=left_df,
-            right=right_df,
-            on=ts_query_field,
-            left_by=left_by,
-            right_by=right_by,
-        )
+        try:
+            merged_df = pd.merge_asof(
+                left=left_df,
+                right=right_df,
+                on=ts_query_field,
+                left_by=left_by,
+                right_by=right_by,
+            )
+        except Exception as e:
+            raise Exception(
+                f"Error in join function for pipeline "
+                f"`{self.cur_pipeline_name}` in dataset `{self.cur_ds_name}, {e}"
+            )
         if obj.how == "inner":
             # Drop rows which have null values in any of the RHS key columns
             merged_df = merged_df.dropna(subset=right_by)
@@ -413,6 +421,9 @@ class Executor(Visitor):
             return None
         df = input_ret.df
         df[obj.column] = obj.func(df)
+        df[obj.column] = cast_col_to_dtype(
+            df[obj.column], get_datatype(obj.output_type)
+        )
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
 
     def visitDedup(self, obj):

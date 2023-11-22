@@ -1940,7 +1940,7 @@ class SchemaValidator(Visitor):
             if not is_subset(obj.left_on, list(left_schema.fields())):
                 raise ValueError(
                     f"left_on field `{obj.left_on}` are not the key fields of "
-                    f"the left dataset `{obj.node.dataset._name}` for `{output_schema_name}`."
+                    f"the left dataset `{obj.node.schema()}` for `{output_schema_name}`."
                 )
             # Check the schemas of the keys
             for lkey, rkey in zip(obj.left_on, obj.right_on):
@@ -2015,7 +2015,7 @@ class SchemaValidator(Visitor):
             or obj.column == input_schema.timestamp
         ):
             raise ValueError(
-                f"Field `{obj.column}` is not a non-key non-timestamp field in schema of "
+                f"Field `{obj.column}` is a key or timestamp field in schema of "
                 f"assign node input {input_schema.name}. Value fields are: {list(val_fields)}"
             )
         output_schema = obj.dsschema()
@@ -2033,7 +2033,7 @@ class SchemaValidator(Visitor):
         for field in obj.columns:
             if field not in val_fields:
                 raise ValueError(
-                    f"Field `{field}` is not a non-key non-timestamp field in schema of "
+                    f"Field `{field}` is a key or timestamp field in schema of "
                     f"{obj.name} node input {input_schema.name}. Value fields are: {list(val_fields)}"
                 )
         output_schema = obj.dsschema()
@@ -2110,7 +2110,7 @@ class SchemaValidator(Visitor):
             # 'field' must be a value column.
             if field not in val_fields:
                 raise ValueError(
-                    f"Field `{field}` is not a non-key non-timestamp field in schema of "
+                    f"Field `{field}` is a key or timestamp field in schema of "
                     f"explode node input {input_schema.name}. Value fields are: {list(val_fields)}"
                 )
             # Type of 'c' must be List.
