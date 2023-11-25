@@ -800,6 +800,19 @@ def is_hashable(dtype: Any) -> bool:
     return False
 
 
+def validate_value_matches_type(value: Any, dtype: Any) -> None:
+    # Create a dataframe with a single row and check the schema
+    # If the schema check fails, then the value does not match the type
+    df = pd.DataFrame({"0": [value]})
+    field = schema_proto.Field(name="0", dtype=get_datatype(dtype))
+    try:
+        _validate_field_in_df(field, df, "value")
+    except ValueError as e:
+        raise ValueError(
+            f"Value `{value}` does not match type `{dtype_to_string(dtype)}`"
+        )
+
+
 def data_schema_check(
     schema: schema_proto.DSSchema, df: pd.DataFrame, dataset_name=""
 ) -> List[ValueError]:

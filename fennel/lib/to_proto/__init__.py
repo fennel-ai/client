@@ -10,3 +10,4 @@ from fennel.lib.to_proto.to_proto import (
     to_duration_proto,
     to_sync_request_proto,
 )
+from fennel.lib.to_proto.source_code import FENNEL_GEN_CODE_MARKER

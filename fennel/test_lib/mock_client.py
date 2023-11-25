@@ -228,7 +228,9 @@ def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
         sys.modules[fqn] = mod
         exec(code, mod.__dict__)
     except Exception as e:
-        raise Exception(f"Error while executing code: {code} : {str(e)}")
+        raise Exception(
+            f"Error while executing code for {fqn}:\n {code} \n: {str(e)}"
+        )
     return mod.__dict__[extractor_proto.pycode.entry_point]
 
 

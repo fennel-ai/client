@@ -367,7 +367,7 @@ def test_extractor_tier_selector():
         income: int = feature(id=5).extract(  # type: ignore
             field=UserInfoDataset.avg_income,
             provider=Request,
-            default="pluto",
+            default=1,
             tier=["~prod"],
         )
 

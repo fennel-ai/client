@@ -421,9 +421,15 @@ class Executor(Visitor):
             return None
         df = input_ret.df
         df[obj.column] = obj.func(df)
-        df[obj.column] = cast_col_to_dtype(
-            df[obj.column], get_datatype(obj.output_type)
-        )
+        try:
+            df[obj.column] = cast_col_to_dtype(
+                df[obj.column], get_datatype(obj.output_type)
+            )
+        except Exception as e:
+            raise Exception(
+                f"Error in assign node for column `{obj.column}` for pipeline "
+                f"`{self.cur_pipeline_name}`, {e}"
+            )
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
 
     def visitDedup(self, obj):
