@@ -36,7 +36,9 @@ from fennel.lib.schema import (
     FENNEL_INPUTS,
     FENNEL_OUTPUTS,
     validate_value_matches_type,
+    fennel_get_optional_inner,
 )
+
 from fennel.lib import FENNEL_GEN_CODE_MARKER
 from fennel.utils import (
     parse_annotation_comments,
@@ -600,32 +602,27 @@ class Featureset:
                             f"`{extractor.inputs[0].dtype}`."
                         )
                 if extractor.extractor_type == ExtractorType.LOOKUP:
-                    x = extractor.derived_extractor_info.field.dtype
-
                     # Check that the types match
+                    field_dtype = extractor.derived_extractor_info.field.dtype
                     if extractor.derived_extractor_info.default is not None:
-                        if (
-                            feature.dtype
-                            != extractor.derived_extractor_info.field.dtype
-                        ):
+                        if extractor.derived_extractor_info.field.is_optional():
+                            field_dtype = fennel_get_optional_inner(field_dtype)
+
+                        if feature.dtype != field_dtype:
                             raise TypeError(
                                 f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
                                 f"but expected type `{extractor.derived_extractor_info.field.dtype}`."
                             )
                     else:
                         if extractor.derived_extractor_info.field.is_optional():
-                            expected_field_type = (
-                                extractor.derived_extractor_info.field.dtype
-                            )
+                            expected_field_type = field_dtype
                         else:
-                            expected_field_type = Optional[
-                                extractor.derived_extractor_info.field.dtype
-                            ]
+                            expected_field_type = Optional[field_dtype]
 
                         if feature.dtype != expected_field_type:
                             raise TypeError(
                                 f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
-                                f"but expectected type `Optiona[{extractor.derived_extractor_info.field.dtype}]`."
+                                f"but expectected type `{expected_field_type}`"
                             )
                     # Check that the default value has the right type
                     if extractor.derived_extractor_info.default is not None:

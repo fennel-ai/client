@@ -807,7 +807,7 @@ def validate_value_matches_type(value: Any, dtype: Any) -> None:
     field = schema_proto.Field(name="0", dtype=get_datatype(dtype))
     try:
         _validate_field_in_df(field, df, "value")
-    except ValueError as e:
+    except ValueError:
         raise ValueError(
             f"Value `{value}` does not match type `{dtype_to_string(dtype)}`"
         )

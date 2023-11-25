@@ -199,66 +199,66 @@ def test_complex_auto_gen_extractors(client):
     :param client:
     :return:
     """
-    # with pytest.raises(ValueError) as e:
-    #     _ = client.sync(
-    #         datasets=[
-    #             RiderDataset,
-    #             RiderCreditScoreDataset,
-    #             CountryLicenseDataset,
-    #             ReservationsDataset,
-    #             NumCompletedTripsDataset,
-    #         ],
-    #         featuresets=[
-    #             RiderFeatures,
-    #             RequestFeatures1,
-    #             RequestFeatures2,
-    #             RequestFeatures3,
-    #         ],
-    #     )
-    # error_msg1 = "Featureset `RequestFeatures0` is required by `RequestFeatures1` but is not present in the sync call. Please ensure that all featuresets are present in the sync call."
-    # error_msg2 = error_msg1.replace("RequestFeatures1", "RequestFeatures2")
-    # assert str(e.value) == error_msg1 or str(e.value) == error_msg2
-    #
-    # with pytest.raises(ValueError) as e:
-    #     _ = client.sync(
-    #         datasets=[
-    #             RiderDataset,
-    #             RiderCreditScoreDataset,
-    #             CountryLicenseDataset,
-    #             ReservationsDataset,
-    #             NumCompletedTripsDataset,
-    #         ],
-    #         featuresets=[
-    #             RiderFeatures,
-    #             RequestFeatures0,
-    #             RequestFeatures1,
-    #             RequestFeatures3,
-    #         ],
-    #     )
-    # error_msg1 = "Featureset `RequestFeatures2` is required by `RiderFeatures` but is not present in the sync call. Please ensure that all featuresets are present in the sync call."
-    # error_msg2 = error_msg1.replace("RiderFeatures", "RequestFeatures3")
-    # assert str(e.value) == error_msg1 or str(e.value) == error_msg2
-    #
-    # with pytest.raises(ValueError) as e:
-    #     _ = client.sync(
-    #         datasets=[
-    #             RiderDataset,
-    #             RiderCreditScoreDataset,
-    #             CountryLicenseDataset,
-    #             ReservationsDataset,
-    #         ],
-    #         featuresets=[
-    #             RiderFeatures,
-    #             RequestFeatures0,
-    #             RequestFeatures1,
-    #             RequestFeatures2,
-    #             RequestFeatures3,
-    #         ],
-    #     )
-    # assert (
-    #     str(e.value)
-    #     == "Dataset `NumCompletedTripsDataset` not found in sync call"
-    # )
+    with pytest.raises(ValueError) as e:
+        _ = client.sync(
+            datasets=[
+                RiderDataset,
+                RiderCreditScoreDataset,
+                CountryLicenseDataset,
+                ReservationsDataset,
+                NumCompletedTripsDataset,
+            ],
+            featuresets=[
+                RiderFeatures,
+                RequestFeatures1,
+                RequestFeatures2,
+                RequestFeatures3,
+            ],
+        )
+    error_msg1 = "Featureset `RequestFeatures0` is required by `RequestFeatures1` but is not present in the sync call. Please ensure that all featuresets are present in the sync call."
+    error_msg2 = error_msg1.replace("RequestFeatures1", "RequestFeatures2")
+    assert str(e.value) == error_msg1 or str(e.value) == error_msg2
+
+    with pytest.raises(ValueError) as e:
+        _ = client.sync(
+            datasets=[
+                RiderDataset,
+                RiderCreditScoreDataset,
+                CountryLicenseDataset,
+                ReservationsDataset,
+                NumCompletedTripsDataset,
+            ],
+            featuresets=[
+                RiderFeatures,
+                RequestFeatures0,
+                RequestFeatures1,
+                RequestFeatures3,
+            ],
+        )
+    error_msg1 = "Featureset `RequestFeatures2` is required by `RiderFeatures` but is not present in the sync call. Please ensure that all featuresets are present in the sync call."
+    error_msg2 = error_msg1.replace("RiderFeatures", "RequestFeatures3")
+    assert str(e.value) == error_msg1 or str(e.value) == error_msg2
+
+    with pytest.raises(ValueError) as e:
+        _ = client.sync(
+            datasets=[
+                RiderDataset,
+                RiderCreditScoreDataset,
+                CountryLicenseDataset,
+                ReservationsDataset,
+            ],
+            featuresets=[
+                RiderFeatures,
+                RequestFeatures0,
+                RequestFeatures1,
+                RequestFeatures2,
+                RequestFeatures3,
+            ],
+        )
+    assert (
+        str(e.value)
+        == "Dataset `NumCompletedTripsDataset` not found in sync call"
+    )
 
     resp = client.sync(
         datasets=[
@@ -282,8 +282,8 @@ def test_complex_auto_gen_extractors(client):
     rider_df = pd.DataFrame(
         {
             "rider_id": [1],
-            "created": [datetime.now()],
-            "birthdate": [datetime.now() - timedelta(days=365 * 30)],
+            "created": [datetime.utcnow()],
+            "birthdate": [datetime.utcnow() - timedelta(days=365 * 30)],
             "country_code": ["US"],
         }
     )
@@ -298,7 +298,7 @@ def test_complex_auto_gen_extractors(client):
             "rider_id": [1],
             "vehicle_id": [1],
             "is_completed_trip": [1],
-            "created": [datetime.now()],
+            "created": [datetime.utcnow()],
         }
     )
     log_response = client.log(
@@ -311,7 +311,7 @@ def test_complex_auto_gen_extractors(client):
     country_license_df = pd.DataFrame(
         {
             "rider_id": [1],
-            "created": [datetime.now()],
+            "created": [datetime.utcnow()],
             "country_code": ["US"],
         }
     )
