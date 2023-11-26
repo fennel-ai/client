@@ -112,7 +112,7 @@ class Client:
         self,
         webhook: str,
         endpoint: str,
-        dataframe: pd.DataFrame,
+        df: pd.DataFrame,
         batch_size: int = 1000,
     ):
         """
@@ -127,7 +127,7 @@ class Client:
         Returns:
         Dict: response from the server
         """
-        num_rows = dataframe.shape[0]
+        num_rows = df.shape[0]
         if num_rows == 0:
             print(f"No rows to log to webhook {webhook}:{endpoint}")
             return
@@ -135,7 +135,7 @@ class Client:
         for i in range(math.ceil(num_rows / batch_size)):
             start = i * batch_size
             end = min((i + 1) * batch_size, num_rows)
-            mini_df = dataframe[start:end]
+            mini_df = df[start:end]
             payload = to_columnar_json(mini_df)
             req = {
                 "webhook": webhook,

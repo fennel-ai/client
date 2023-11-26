@@ -875,3 +875,41 @@ def test_join():
         "Column name collision. `v` already exists in schema of left input"
         in str(e.value)
     )
+
+
+webhook = Webhook(name="fennel_webhook")
+
+__owner__ = "eng@fennel.ai"
+
+
+def test_invalid_assign_schema():
+    with pytest.raises(Exception) as e:
+
+        @source(webhook.endpoint("mysql_relayrides.location"), tier="local")
+        @dataset
+        class LocationDS:
+            id: int = field(key=True)
+            latitude: float
+            longitude: float
+            created: datetime
+
+        @dataset
+        class LocationDS2:
+            latitude_int: int = field(key=True)
+            longitude_int: int = field(key=True)
+            id: int
+            created: datetime
+
+            @pipeline(version=1)
+            @inputs(LocationDS)
+            def location_ds(cls, location: Dataset):
+                ds = location.assign(
+                    "latitude_int", int, lambda df: int(df["latitude"] * 1000)
+                )
+                ds = ds.assign(
+                    "longitude_int", int, lambda df: int(df["longitude"] * 1000)
+                )
+                ds = ds.drop(["latitude", "longitude"])
+                return ds.groupby(["latitude_int", "longitude_int"]).first()
+
+    assert str(e.value) == "sdf"
