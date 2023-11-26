@@ -32,7 +32,14 @@ from fennel.lib.metadata import (
     set_meta_attr,
 )
 from fennel.lib.includes import TierSelector
-from fennel.lib.schema import FENNEL_INPUTS, FENNEL_OUTPUTS
+from fennel.lib.schema import (
+    FENNEL_INPUTS,
+    FENNEL_OUTPUTS,
+    validate_value_matches_type,
+    fennel_get_optional_inner,
+)
+
+from fennel.lib import FENNEL_GEN_CODE_MARKER
 from fennel.utils import (
     parse_annotation_comments,
     propogate_fennel_attributes,
@@ -372,7 +379,6 @@ class Feature:
                 tier=tier,
             )
             return self
-
         provider_features = []
         # If provider is none, then the provider is this featureset. The input features
         # are captured once this featureset is initialized
@@ -480,8 +486,8 @@ class Featureset:
         self._features = features
         self._feature_map = {feature.name: feature for feature in features}
         self._id_to_feature = {feature.id: feature for feature in features}
-        self._extractors = self._get_extractors()
         self._validate()
+        self._extractors = self._get_extractors()
         self._add_feature_names_as_attributes()
         self._set_extractors_as_attributes()
         self._expectation = self._get_expectations()
@@ -576,6 +582,60 @@ class Featureset:
         return extractors
 
     def _validate(self):
+        cls_module = inspect.getmodule(self.__fennel_original_cls__)
+        if cls_module is not None and hasattr(
+            cls_module, FENNEL_GEN_CODE_MARKER
+        ):
+            if getattr(cls_module, FENNEL_GEN_CODE_MARKER):
+                return
+
+        # Validate all auto generated extractors.
+        for feature in self._features:
+            if feature.extractor:
+                extractor = feature.extractor
+                if extractor.extractor_type == ExtractorType.ALIAS:
+                    # Check that the types match
+                    if feature.dtype != extractor.inputs[0].dtype:
+                        raise TypeError(
+                            f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
+                            f"but the extractor aliasing `{extractor.inputs[0].fqn()}` has input type "
+                            f"`{extractor.inputs[0].dtype}`."
+                        )
+                if extractor.extractor_type == ExtractorType.LOOKUP:
+                    # Check that the types match
+                    field_dtype = extractor.derived_extractor_info.field.dtype
+                    if extractor.derived_extractor_info.default is not None:
+                        if extractor.derived_extractor_info.field.is_optional():
+                            field_dtype = fennel_get_optional_inner(field_dtype)
+
+                        if feature.dtype != field_dtype:
+                            raise TypeError(
+                                f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
+                                f"but expected type `{extractor.derived_extractor_info.field.dtype}`."
+                            )
+                    else:
+                        if extractor.derived_extractor_info.field.is_optional():
+                            expected_field_type = field_dtype
+                        else:
+                            expected_field_type = Optional[field_dtype]
+
+                        if feature.dtype != expected_field_type:
+                            raise TypeError(
+                                f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
+                                f"but expectected type `{expected_field_type}`"
+                            )
+                    # Check that the default value has the right type
+                    if extractor.derived_extractor_info.default is not None:
+                        try:
+                            validate_value_matches_type(
+                                extractor.derived_extractor_info.default,
+                                extractor.derived_extractor_info.field.dtype,
+                            )
+                        except ValueError as e:
+                            raise ValueError(
+                                f"Default value `{extractor.derived_extractor_info.default}` for feature `{feature.fqn()}` has incorrect default value: {e}"
+                            )
+
         # Check that all features have unique ids.
         feature_id_set = set()
         for feature in self._features:

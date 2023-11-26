@@ -282,8 +282,8 @@ def test_complex_auto_gen_extractors(client):
     rider_df = pd.DataFrame(
         {
             "rider_id": [1],
-            "created": [datetime.now()],
-            "birthdate": [datetime.now() - timedelta(days=365 * 30)],
+            "created": [datetime.utcnow()],
+            "birthdate": [datetime.utcnow() - timedelta(days=365 * 30)],
             "country_code": ["US"],
         }
     )
@@ -298,7 +298,7 @@ def test_complex_auto_gen_extractors(client):
             "rider_id": [1],
             "vehicle_id": [1],
             "is_completed_trip": [1],
-            "created": [datetime.now()],
+            "created": [datetime.utcnow()],
         }
     )
     log_response = client.log(
@@ -311,7 +311,7 @@ def test_complex_auto_gen_extractors(client):
     country_license_df = pd.DataFrame(
         {
             "rider_id": [1],
-            "created": [datetime.now()],
+            "created": [datetime.utcnow()],
             "country_code": ["US"],
         }
     )

@@ -15,6 +15,7 @@ from fennel.lib.schema import (
     FENNEL_STRUCT_SRC_CODE,
 )
 from fennel.utils import fennel_get_source
+from fennel.lib import FENNEL_GEN_CODE_MARKER
 
 
 def _remove_empty_lines(source_code: str) -> str:
@@ -214,7 +215,8 @@ def get_all_imports() -> str:
         "from fennel.datasets.datasets import dataset_lookup",
     ]
 
-    return "\n".join(imports + fennel_imports) + "\n"
+    gen_code_marker = f"{FENNEL_GEN_CODE_MARKER}=True\n"
+    return gen_code_marker + "\n".join(imports + fennel_imports) + "\n"
 
 
 def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
