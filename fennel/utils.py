@@ -77,11 +77,14 @@ def check_response(response: requests.Response):  # type: ignore
     """Check the response from the server and raise an exception if the response is not OK"""
     if response.status_code != 200:
         if response.headers.get("content-type") == "application/json":
+            response_json = response.json();
             print(
                 "Server returned: {}, {}".format(
                     response.status_code, response.reason
                 )
             )
+            if "err_msg" in response_json:
+                print(response_json["err_msg"])
         else:
             print(
                 "Server returned: {}, {}, {}".format(
