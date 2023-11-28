@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 import logging
+from fennel.sources.sources import S3Connector
 
 import numpy as np
 import pandas as pd
@@ -510,10 +511,8 @@ class MockClient(Client):
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
-        output_bucket: Optional[str] = None,
-        output_prefix: Optional[str] = None,
-        input_bucket: Optional[str] = None,
-        input_prefix: Optional[str] = None,
+        input_s3: Optional[S3Connector] = None,
+        output_s3: Optional[S3Connector] = None,
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         if format != "pandas":
@@ -525,10 +524,8 @@ class MockClient(Client):
                 "input must contain a key 'input_dataframe' with the input dataframe"
             )
         assert feature_to_column_map is None, "column_mapping is not supported"
-        assert input_bucket is None, "input_bucket is not supported"
-        assert input_prefix is None, "input_prefix is not supported"
-        assert output_bucket is None, "output_bucket is not supported"
-        assert output_prefix is None, "output_prefix is not supported"
+        assert input_s3 is None, "input_s3 is not supported"
+        assert output_s3 is None, "output_s3 is not supported"
 
         if input_dataframe.empty:
             return pd.DataFrame()
