@@ -86,7 +86,15 @@ def cast_col_to_dtype(series: pd.Series, dtype) -> pd.Series:
     if not dtype.HasField("optional_type"):
         if series.isnull().any():
             raise ValueError("Null values found in non-optional field.")
+
     if dtype.HasField("int_type"):
+        if series.dtype == pd.Float64Dtype():
+            # Cast to float64 numpy. We need to do this, because pandas has a wierd bug,
+            # where series of type float64 will throw an error if the floats are not ints ( expected ).
+            # For example, series([1.2, 2.4, 3.3]) will throw an error.
+            # BUT series of type pd.Float64Dtype() will not throw an error, but get rounded off.
+            # So we cast to float64 numpy and then cast to pd.Int64Dtype()
+            series = series.astype(np.float64)
         return pd.to_numeric(series).astype(pd.Int64Dtype())
     elif dtype.HasField("double_type"):
         return pd.to_numeric(series).astype(pd.Float64Dtype())

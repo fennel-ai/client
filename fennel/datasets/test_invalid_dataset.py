@@ -875,3 +875,61 @@ def test_join():
         "Column name collision. `v` already exists in schema of left input"
         in str(e.value)
     )
+
+
+webhook = Webhook(name="fennel_webhook")
+
+__owner__ = "eng@fennel.ai"
+
+
+@mock
+def test_invalid_assign_schema(client):
+    @source(webhook.endpoint("mysql_relayrides.location"), tier="local")
+    @dataset
+    class LocationDS:
+        id: int = field(key=True)
+        latitude: float
+        longitude: float
+        created: datetime
+
+    @dataset
+    class LocationDS2:
+        latitude_int: int = field(key=True)
+        longitude_int: int = field(key=True)
+        id: int
+        created: datetime
+
+        @pipeline(version=1)
+        @inputs(LocationDS)
+        def location_ds(cls, location: Dataset):
+            ds = location.assign(
+                "latitude_int", int, lambda df: df["latitude"] * 1000
+            )
+            ds = ds.assign(
+                "longitude_int", int, lambda df: df["longitude"] * 1000
+            )
+            ds = ds.drop(["latitude", "longitude"])
+            return ds.groupby(["latitude_int", "longitude_int"]).first()
+
+    client.sync(
+        datasets=[LocationDS, LocationDS2],
+    )
+    df = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "latitude": [1.12312, 2.3423423, 2.24343],
+            "longitude": [1.12312, 2.3423423, 2.24343],
+            "created": [
+                datetime.fromtimestamp(1672858163),
+                datetime.fromtimestamp(1672858163),
+                datetime.fromtimestamp(1672858163),
+            ],
+        }
+    )
+    res = client.log("fennel_webhook", "mysql_relayrides.location", df)
+
+    assert res.status_code == 400, res.json()
+    assert (
+        res.json()["error"]
+        == "Error while executing pipeline location_ds in dataset LocationDS: Error in assign node for column `latitude_int` for pipeline `LocationDS2.location_ds`, cannot safely cast non-equivalent float64 to int64"
+    )

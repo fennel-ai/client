@@ -657,9 +657,16 @@ class MockClient(Client):
         self._merge_df(df, dataset_name)
         for pipeline in self.listeners[dataset_name]:
             executor = Executor(self.data)
-            ret = executor.execute(
-                pipeline, self.datasets[pipeline._dataset_name]
-            )
+            try:
+                ret = executor.execute(
+                    pipeline, self.datasets[pipeline._dataset_name]
+                )
+            except Exception as e:
+                return FakeResponse(
+                    400,
+                    f"Error while executing pipeline {pipeline.name} "
+                    f"in dataset {dataset_name}: {str(e)}",
+                )
             if ret is None:
                 continue
             if ret.is_aggregate:
