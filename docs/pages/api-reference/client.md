@@ -95,7 +95,7 @@ The following parameters are only relevant when format is "csv", "json" or "parq
 * `input_s3: Optional[sources.S3Connector]` - Specifies the S3 bucket, prefix, and optional credentials for the input data
 * ` feature_to_column_map (Optional[Dict[Feature, str]])`: A dictionary mapping features to column names. 
 
-The `S3Connector` paramters are provided via the `S3.bucket()` function from the `sources` module. See [Sources](/api-reference/sources#s3)
+The `S3Connector` parameters are provided via the `S3.bucket()` function from the `sources` module. See [Sources](/api-reference/sources#s3)
 
 **Returns:**
 
