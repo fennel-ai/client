@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 import logging
+from fennel.sources.sources import S3Connector
 
 import numpy as np
 import pandas as pd
@@ -46,6 +47,7 @@ from fennel.lib.to_proto import (
 )
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.integration_client import IntegrationClient
+from fennel.test_lib.test_utils import cast_col_to_dtype
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -227,7 +229,9 @@ def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
         sys.modules[fqn] = mod
         exec(code, mod.__dict__)
     except Exception as e:
-        raise Exception(f"Error while executing code: {code} : {str(e)}")
+        raise Exception(
+            f"Error while executing code for {fqn}:\n {code} \n: {str(e)}"
+        )
     return mod.__dict__[extractor_proto.pycode.entry_point]
 
 
@@ -507,10 +511,8 @@ class MockClient(Client):
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
-        output_bucket: Optional[str] = None,
-        output_prefix: Optional[str] = None,
-        input_bucket: Optional[str] = None,
-        input_prefix: Optional[str] = None,
+        input_s3: Optional[S3Connector] = None,
+        output_s3: Optional[S3Connector] = None,
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         if format != "pandas":
@@ -522,10 +524,8 @@ class MockClient(Client):
                 "input must contain a key 'input_dataframe' with the input dataframe"
             )
         assert feature_to_column_map is None, "column_mapping is not supported"
-        assert input_bucket is None, "input_bucket is not supported"
-        assert input_prefix is None, "input_prefix is not supported"
-        assert output_bucket is None, "output_bucket is not supported"
-        assert output_prefix is None, "output_prefix is not supported"
+        assert input_s3 is None, "input_s3 is not supported"
+        assert output_s3 is None, "output_s3 is not supported"
 
         if input_dataframe.empty:
             return pd.DataFrame()
@@ -654,9 +654,16 @@ class MockClient(Client):
         self._merge_df(df, dataset_name)
         for pipeline in self.listeners[dataset_name]:
             executor = Executor(self.data)
-            ret = executor.execute(
-                pipeline, self.datasets[pipeline._dataset_name]
-            )
+            try:
+                ret = executor.execute(
+                    pipeline, self.datasets[pipeline._dataset_name]
+                )
+            except Exception as e:
+                return FakeResponse(
+                    400,
+                    f"Error while executing pipeline {pipeline.name} "
+                    f"in dataset {dataset_name}: {str(e)}",
+                )
             if ret is None:
                 continue
             if ret.is_aggregate:
@@ -867,7 +874,7 @@ class MockClient(Client):
         if len(exceptions) > 0:
             raise Exception(
                 f"Extractor `{extractor_name}` returned "
-                f"invalid schema: {exceptions}"
+                f"invalid schema for data: {exceptions}"
             )
 
     def _compute_lookup_extractor(
@@ -1024,46 +1031,6 @@ def proto_to_dtype(proto_dtype) -> str:
         return f"optional({proto_to_dtype(proto_dtype.optional_type.of)})"
     else:
         return str(proto_dtype)
-
-
-def cast_col_to_dtype(series: pd.Series, dtype) -> pd.Series:
-    if not dtype.HasField("optional_type"):
-        if series.isnull().any():
-            raise ValueError("Null values found in non-optional field.")
-    if dtype.HasField("int_type"):
-        return pd.to_numeric(series).astype(pd.Int64Dtype())
-    elif dtype.HasField("double_type"):
-        return pd.to_numeric(series).astype(pd.Float64Dtype())
-    elif dtype.HasField("string_type") or dtype.HasField("regex_type"):
-        return pd.Series([str(x) for x in series]).astype(pd.StringDtype())
-    elif dtype.HasField("bool_type"):
-        return series.astype(pd.BooleanDtype())
-    elif dtype.HasField("timestamp_type"):
-        return pd.to_datetime(series)
-    elif dtype.HasField("optional_type"):
-        # Those fields which are not null should be casted to the right type
-        if series.notnull().any():
-            # collect the non-null values
-            tmp_series = series[series.notnull()]
-            non_null_idx = tmp_series.index
-            tmp_series = cast_col_to_dtype(
-                tmp_series,
-                dtype.optional_type.of,
-            )
-            tmp_series.index = non_null_idx
-            # set the non-null values with the casted values using the index
-            series.loc[non_null_idx] = tmp_series
-            series.replace({np.nan: None}, inplace=True)
-            if callable(tmp_series.dtype):
-                series = series.astype(tmp_series.dtype())
-            else:
-                series = series.astype(tmp_series.dtype)
-            return series
-    elif dtype.HasField("one_of_type"):
-        return cast_col_to_dtype(series, dtype.one_of_type.of)
-    elif dtype.HasField("between_type"):
-        return cast_col_to_dtype(series, dtype.between_type.dtype)
-    return series
 
 
 def cast_df_to_schema(df: pd.DataFrame, dsschema: DSSchema) -> pd.DataFrame:

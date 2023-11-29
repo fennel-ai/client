@@ -73,7 +73,7 @@ def test_drop_schema_validation_drop_keys():
 
     assert (
         str(e.value)
-        == """Field `x` is not a non-key non-timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
+        == """Field `x` is a key or timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
     )
 
 
@@ -100,7 +100,7 @@ def test_drop_schema_validation_drop_timestamp():
 
     assert (
         str(e.value)
-        == """Field `t` is not a non-key non-timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
+        == """Field `t` is a key or timestamp field in schema of drop node input '[Dataset:A]'. Value fields are: ['y']"""
     )
 
 
@@ -546,7 +546,7 @@ def test_join_schema_validation_value():
 
     assert (
         str(e.value)
-        == """right_on field ['b1', 'b2'] are not the key fields of the right dataset B."""
+        == """right_on field `['b1', 'b2']` are not the key fields of the right dataset `B` for `'[Pipeline:pipeline_join]->join node'`."""
     )
 
 
@@ -587,7 +587,7 @@ def test_join_schema_validation_type():
 
     assert (
         str(e.value)
-        == """Key field a1 has type str in left schema but, key field b1 has type int in right schema."""
+        == """Key field `a1` has type `str` in left schema but, key field `b1` has type `int` in right schema for `'[Pipeline:pipeline_join]->join node'`"""
     )
 
     with pytest.raises(TypeError) as e:
@@ -608,7 +608,7 @@ def test_join_schema_validation_type():
 
     assert (
         str(e.value)
-        == """Key field a1 has type str in left schema but type int in right schema."""
+        == """Key field `a1` has type `str` in left schema but type `int` in right schema for `'[Pipeline:pipeline_join]->join node'`"""
     )
 
 
@@ -722,7 +722,7 @@ def test_explode_fails_on_keyed_column():
 
     assert (
         str(e.value)
-        == """Field `director` is not a non-key non-timestamp field in schema of explode node input '[Dataset:SingleHits]'. Value fields are: ['movie', 'revenue']"""
+        == """Field `director` is a key or timestamp field in schema of explode node input '[Dataset:SingleHits]'. Value fields are: ['movie', 'revenue']"""
     )
 
 
@@ -991,7 +991,7 @@ def test_assign():
 
     assert (
         str(e.value)
-        == "Field `t` is not a non-key non-timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
+        == "Field `t` is a key or timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
     )
 
     with pytest.raises(Exception) as e:
@@ -1059,5 +1059,5 @@ def test_assign():
 
     assert (
         str(e.value)
-        == "Field `userid` is not a non-key non-timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
+        == "Field `userid` is a key or timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
     )

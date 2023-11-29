@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.19.0] - 2023-11-28
+- Allow for AWS access key credentials for extract_historical_features buckets
+
+## [0.18.21] - 2023-11-18
+- Fix error response being logged twice in the client for sync and extract_features.
+
 ## [0.18.15] - 2023-11-12
 - Allow owner to be specified at the file level itself. 
 

@@ -103,7 +103,7 @@ def test_multiple_extractors_of_same_feature(client):
         view._get_sync_request_proto()
     assert (
         str(e.value)
-        == "Feature `over_3hrs` is extracted by multiple extractors including `e2`."
+        == "Feature `over_3hrs` is extracted by multiple extractors including `e2` in featureset `Movies`."
     )
 
 

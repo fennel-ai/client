@@ -13,6 +13,7 @@ from fennel.featuresets import Featureset, Feature, is_valid_feature
 from fennel.lib.schema import parse_json
 from fennel.lib.to_proto import to_sync_request_proto
 from fennel.utils import check_response, to_columnar_json
+from fennel.sources import S3Connector
 
 V1_API = "/api/v1"
 
@@ -101,7 +102,6 @@ class Client:
             False,
             300,
         )
-        check_response(response)
         if response.headers.get("content-type") == "application/json":
             res_json = response.json()
             if "diffs" in res_json:
@@ -113,7 +113,7 @@ class Client:
         self,
         webhook: str,
         endpoint: str,
-        dataframe: pd.DataFrame,
+        df: pd.DataFrame,
         batch_size: int = 1000,
     ):
         """
@@ -128,7 +128,7 @@ class Client:
         Returns:
         Dict: response from the server
         """
-        num_rows = dataframe.shape[0]
+        num_rows = df.shape[0]
         if num_rows == 0:
             print(f"No rows to log to webhook {webhook}:{endpoint}")
             return
@@ -136,7 +136,7 @@ class Client:
         for i in range(math.ceil(num_rows / batch_size)):
             start = i * batch_size
             end = min((i + 1) * batch_size, num_rows)
-            mini_df = dataframe[start:end]
+            mini_df = df[start:end]
             payload = to_columnar_json(mini_df)
             req = {
                 "webhook": webhook,
@@ -395,7 +395,6 @@ class Client:
             req["sampling_rate"] = sampling_rate
 
         response = self._post_json("{}/extract_features".format(V1_API), req)
-        check_response(response)
         df = pd.DataFrame(response.json())
         for col in df.columns:
             if df[col].dtype == "object":
@@ -411,10 +410,8 @@ class Client:
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
-        output_bucket: Optional[str] = None,
-        output_prefix: Optional[str] = None,
-        input_bucket: Optional[str] = None,
-        input_prefix: Optional[str] = None,
+        input_s3: Optional[S3Connector] = None,
+        output_s3: Optional[S3Connector] = None,
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Dict[str, Any]:
         """
@@ -428,13 +425,13 @@ class Client:
         format (str): The format of the input data. Can be either "pandas",
             "csv", "json" or "parquet". Default is "pandas".
         input_dataframe (Optional[pd.DataFrame]): Dataframe containing the input features. Only relevant when format is "pandas".
-        output_bucket (Optional[str]): The name of the S3 bucket to store the output data.
-        output_prefix (Optional[str]): The prefix of the S3 key to store the output data.
+        output_s3 (Optional[S3Connector]): Contains the S3 info -- bucket, prefix, and optional access key id
+            and secret key -- used for storing the output of the extract historical request
 
         The following parameters are only relevant when format is "csv", "json" or "parquet".
 
-        input_bucket (Optional[str]): The name of the S3 bucket containing the input data.
-        input_prefix (Optional[str]): The prefix of the S3 key containing the input data.
+        input_s3 (Optional[sources.S3Connector]): The info for the input S3 data, containing bucket, prefix, and optional access key id
+            and secret key
         feature_to_column_map (Optional[Dict[Feature, str]]): A dictionary that maps columns in the S3 data to the required features.
 
 
@@ -507,18 +504,26 @@ class Client:
                 orient="list"
             )
         else:
-            if input_bucket is None:
+            if (
+                input_s3 is None
+                or input_s3.bucket_name is None
+                or input_s3.path_prefix is None
+            ):
                 raise Exception(
-                    "Input bucket not found in input dictionary. "
+                    "Input bucket and prefix not found in input dictionary. "
                     "Please provide a bucket name as value for the key 'input_bucket'."
                 )
-            if input_prefix is None:
-                raise Exception(
-                    "Input prefix not found in input dictionary. "
-                    "Please provide a prefix as value for the key 'input_prefix'."
-                )
-            input_info["input_bucket"] = input_bucket
-            input_info["input_prefix"] = input_prefix
+            input_info["input_bucket"] = input_s3.bucket_name
+            input_info["input_prefix"] = input_s3.path_prefix
+            access_key_id, secret_access_key = input_s3.creds()
+            if access_key_id is not None:
+                input_info["input_access_key_id"] = access_key_id
+                if secret_access_key is None:
+                    raise Exception(
+                        "Input acess key id specified but secret key not found."
+                    )
+                input_info["input_secret_access_key"] = secret_access_key
+
             input_info["format"] = format.upper()
             input_info["compression"] = "None"
 
@@ -556,20 +561,26 @@ class Client:
                     [f.fqn() for f in output_feature.features]
                 )
 
+        output_info = {}
+        if output_s3 is not None:
+            output_info["output_bucket"] = output_s3.bucket_name
+            output_info["output_prefix"] = output_s3.path_prefix
+            access_key_id, secret_access_key = output_s3.creds()
+            if access_key_id is not None:
+                output_info["output_access_key_id"] = access_key_id
+                if secret_access_key is None:
+                    raise Exception(
+                        "Output access key id specified but secret key not found."
+                    )
+                output_info["output_secret_access_key"] = secret_access_key
+
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
             "input": extract_historical_input,
             "timestamp_column": timestamp_column,
+            "s3_output": output_info if len(output_info) > 0 else None,
         }
-        if output_bucket is not None:
-            req["output_bucket"] = output_bucket
-            if output_prefix is None:
-                raise Exception(
-                    "Output prefix not specified, but output bucket is specified. "
-                )
-            req["output_prefix"] = output_prefix
-
         return self._post_json(
             "{}/extract_historical_features".format(V1_API), req
         )

@@ -367,7 +367,7 @@ def test_extractor_tier_selector():
         income: int = feature(id=5).extract(  # type: ignore
             field=UserInfoDataset.avg_income,
             provider=Request,
-            default="pluto",
+            default=1,
             tier=["~prod"],
         )
 
@@ -398,7 +398,7 @@ def test_extractor_tier_selector():
         view._get_sync_request_proto()
     assert (
         str(e.value)
-        == "Feature `income` is extracted by multiple extractors including `get_user_income`."
+        == "Feature `income` is extracted by multiple extractors including `get_user_income` in featureset `UserInfo`."
     )
 
     sync_request = view._get_sync_request_proto("prod")

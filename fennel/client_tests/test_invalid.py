@@ -286,5 +286,5 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                     return d.drop(columns=["createdAt"])
 
         assert (
-            "Field `createdAt` is not a non-key non-timestamp field in schema of drop node input '[Dataset:MemberDataset]'. Value fields are: ['pk', 'sk', 'email', 'displayName']"
+            """Field `createdAt` is a key or timestamp field in schema of drop node input '[Dataset:MemberDataset]'. Value fields are: ['pk', 'sk', 'email', 'displayName']"""
         ) == str(e.value)

@@ -57,7 +57,7 @@ def test_valid_derived_extractors():
             default="unspecified",
         )
         # lookup with meta
-        age_years: float = (
+        age_years: int = (
             feature(id=3)
             .extract(
                 field=UserInfoDataset.age,
@@ -101,7 +101,7 @@ def test_valid_derived_extractors():
         # alias a feature that has an explicit extractor
         age_group: AgeGroup = feature(id=1).extract(feature=UserInfo.age_group)
         # alias a feature that has a derived extractor
-        age: float = feature(id=2).extract(feature=UserInfo.age_years)
+        age: int = feature(id=2).extract(feature=UserInfo.age_years)
 
     view = InternalTestClient()
     view.add(UserInfoDataset)
@@ -168,7 +168,7 @@ def test_valid_derived_extractors():
         {
             "id": 3,
             "name": "age_years",
-            "dtype": {"double_type": {}},
+            "dtype": {"int_type": {}},
             "metadata": {
                 "owner": "zaki@fennel.ai",
                 "description": "lookup with meta",
@@ -211,7 +211,7 @@ def test_valid_derived_extractors():
         {
             "id": 2,
             "name": "age",
-            "dtype": {"double_type": {}},
+            "dtype": {"int_type": {}},
             "metadata": {
                 "description": "alias a feature that has a derived extractor"
             },

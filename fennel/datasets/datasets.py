@@ -228,7 +228,10 @@ class _Node(Generic[T]):
         within: Tuple[Duration, Duration] = ("forever", "0s"),
     ) -> Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
-            raise ValueError("Cannot join with an intermediate dataset")
+            raise ValueError(
+                "Cannot join with an intermediate dataset, i.e something defined inside a pipeline."
+                " Only joining against keyed datasets is permitted."
+            )
         if not isinstance(other, _Node):
             raise TypeError("Cannot join with a non-dataset object")
         return Join(self, other, within, how, on, left_on, right_on)
@@ -277,11 +280,11 @@ class _Node(Generic[T]):
     def isignature(self):
         raise NotImplementedError
 
-    def dsschema(self):
-        raise NotImplementedError
-
     def schema(self):
         return copy.deepcopy(self.dsschema().schema())
+
+    def dsschema(self):
+        return copy.deepcopy(self.dsschema())
 
     def num_out_edges(self) -> int:
         return len(self.out_edges)
@@ -622,18 +625,14 @@ class Join(_Node):
         for col in common_cols:
             if self.lsuffix != "" and (col + self.lsuffix) in left_schema:
                 raise ValueError(
-                    "Column name collision. `{}` already exists in schema of left input {}".format(
-                        col + self.lsuffix, left_dsschema.name
-                    )
+                    f"Column name collision. `{col + self.lsuffix}` already exists in schema of left input {left_dsschema.name}, while joining with {self.dataset.dsschema().name}"
                 )
             if (
                 self.rsuffix != ""
                 and (col + self.rsuffix) in right_value_schema
             ):
                 raise ValueError(
-                    "Column name collision. `{}` already exists in schema of right input {}".format(
-                        col + self.rsuffix, self.dataset.dsschema().name
-                    )
+                    f"Column name collision. `{col + self.rsuffix}` already exists in schema of right input {self.dataset.dsschema().name}, while joining with {self.dataset.dsschema().name}"
                 )
             left_dsschema.rename_column(col, col + self.lsuffix)
             left_schema[col + self.lsuffix] = left_schema.pop(col)
@@ -648,9 +647,7 @@ class Join(_Node):
         for col, dtype in right_value_schema.items():
             if col in left_schema:
                 raise ValueError(
-                    "Column name collision. `{}` already exists in schema of left input {}".format(
-                        col, left_dsschema.name
-                    )
+                    f"Column name collision. `{col}` already exists in schema of left input {left_dsschema.name}, while joining with {self.dataset.dsschema().name}"
                 )
             joined_dsschema.append_value_column(col, dtype)
 
@@ -787,7 +784,7 @@ def dataset(
         ) -> Tuple[pd.DataFrame, pd.Series]:
             if len(key_fields) == 0:
                 raise Exception(
-                    f"Trying to lookup dataset `{cls_name} with no keys defined.\n"
+                    f"Trying to lookup dataset `{cls_name}` with no keys defined.\n"
                     f"Please define one or more keys using field(key=True) to perform a lookup."
                 )
             if len(args) > 0:
@@ -1273,7 +1270,7 @@ class Dataset(_Node[T]):
                 if timestamp_field_set:
                     raise ValueError(
                         f"Multiple timestamp fields are not supported in "
-                        f"dataset `{self._name}`."
+                        f"dataset `{self._name}`. Please set one of the datetime fields to be the timestamp field."
                     )
                 timestamp_field_set = True
 
@@ -1292,7 +1289,7 @@ class Dataset(_Node[T]):
             else:
                 raise ValueError(
                     f"Multiple timestamp fields are not "
-                    f"supported in dataset `{self._name}`."
+                    f"supported in dataset `{self._name}`. Please set one of the datetime fields to be the timestamp field."
                 )
         if not timestamp_field_set:
             raise ValueError(
@@ -1890,23 +1887,23 @@ class SchemaValidator(Visitor):
     def visitJoin(self, obj) -> DSSchema:
         left_schema = self.visit(obj.node)
         right_schema = self.visit(obj.dataset)
-        output_schema_name = (f"'[Pipeline:{self.pipeline_name}]->join node'",)
+        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->join node'"
 
         def validate_join_bounds(within: Tuple[Duration, Duration]):
             if len(within) != 2:
                 raise ValueError(
-                    f"Invalid within clause: {within} in {output_schema_name}. "
+                    f"Invalid within clause: `{within}` in `{output_schema_name}`. "
                     "Should be a tuple of 2 values. e.g. ('forever', '0s')"
                 )
             # Neither of them can be None
             if within[0] is None or within[1] is None:
                 raise ValueError(
-                    f"Invalid within clause: {within} in {output_schema_name}."
+                    f"Invalid within clause: `{within}` in `{output_schema_name}`."
                     "Neither bounds can be None"
                 )
             if within[1] == "forever":
                 raise ValueError(
-                    f"Invalid within clause: {within} in {output_schema_name}"
+                    f"Invalid within clause: `{within}` in `{output_schema_name}`"
                     "Upper bound cannot be `forever`"
                 )
 
@@ -1919,16 +1916,16 @@ class SchemaValidator(Visitor):
             # obj.on should be the key of the right dataset
             if set(obj.on) != set(right_schema.keys.keys()):
                 raise ValueError(
-                    f"on field {obj.on} are not the key fields of the right "
-                    f"dataset {obj.dataset._name}."
+                    f"on field `{obj.on}` are not the key fields of the right "
+                    f"dataset `{obj.dataset._name}` for `{output_schema_name}`."
                 )
             # Check the schemas of the keys
             for key in obj.on:
                 if left_schema.get_type(key) != right_schema.get_type(key):
                     raise TypeError(
-                        f"Key field {key} has type {dtype_to_string(left_schema.get_type(key))} "
+                        f"Key field `{key}` has type `{dtype_to_string(left_schema.get_type(key))}` "
                         f"in left schema but type "
-                        f"{dtype_to_string(right_schema.get_type(key))} in right schema."
+                        f"`{dtype_to_string(right_schema.get_type(key))}` in right schema for `{output_schema_name}`"
                     )
             # Check that none of the other fields collide
 
@@ -1936,29 +1933,29 @@ class SchemaValidator(Visitor):
             #  obj.right_on should be the keys of the right dataset
             if set(obj.right_on) != set(right_schema.keys.keys()):
                 raise ValueError(
-                    f"right_on field {obj.right_on} are not the key fields of "
-                    f"the right dataset {obj.dataset._name}."
+                    f"right_on field `{obj.right_on}` are not the key fields of "
+                    f"the right dataset `{obj.dataset._name}` for `{output_schema_name}`."
                 )
             #  obj.left_on should be a subset of the schema of the left dataset
             if not is_subset(obj.left_on, list(left_schema.fields())):
                 raise ValueError(
-                    f"left_on field {obj.left_on} are not the key fields of "
-                    f"the left dataset {obj.node.dataset._name}."
+                    f"left_on field `{obj.left_on}` are not the key fields of "
+                    f"the left dataset `{obj.node.schema()}` for `{output_schema_name}`."
                 )
             # Check the schemas of the keys
             for lkey, rkey in zip(obj.left_on, obj.right_on):
                 if left_schema.get_type(lkey) != right_schema.get_type(rkey):
                     raise TypeError(
-                        f"Key field {lkey} has type"
-                        f" {dtype_to_string(left_schema.get_type(lkey))} "
-                        f"in left schema but, key field {rkey} has type "
-                        f"{dtype_to_string(right_schema.get_type(rkey))} in "
-                        f"right schema."
+                        f"Key field `{lkey}` has type"
+                        f" `{dtype_to_string(left_schema.get_type(lkey))}` "
+                        f"in left schema but, key field `{rkey}` has type "
+                        f"`{dtype_to_string(right_schema.get_type(rkey))}` in "
+                        f"right schema for `{output_schema_name}`"
                     )
 
         if obj.how not in ["inner", "left"]:
             raise ValueError(
-                f'"how" in {output_schema_name} must be either "inner" or "left"'
+                f'"how" in {output_schema_name} must be either "inner" or "left" for `{output_schema_name}`'
             )
 
         output_schema = obj.dsschema()
@@ -2018,7 +2015,7 @@ class SchemaValidator(Visitor):
             or obj.column == input_schema.timestamp
         ):
             raise ValueError(
-                f"Field `{obj.column}` is not a non-key non-timestamp field in schema of "
+                f"Field `{obj.column}` is a key or timestamp field in schema of "
                 f"assign node input {input_schema.name}. Value fields are: {list(val_fields)}"
             )
         output_schema = obj.dsschema()
@@ -2036,7 +2033,7 @@ class SchemaValidator(Visitor):
         for field in obj.columns:
             if field not in val_fields:
                 raise ValueError(
-                    f"Field `{field}` is not a non-key non-timestamp field in schema of "
+                    f"Field `{field}` is a key or timestamp field in schema of "
                     f"{obj.name} node input {input_schema.name}. Value fields are: {list(val_fields)}"
                 )
         output_schema = obj.dsschema()
@@ -2113,7 +2110,7 @@ class SchemaValidator(Visitor):
             # 'field' must be a value column.
             if field not in val_fields:
                 raise ValueError(
-                    f"Field `{field}` is not a non-key non-timestamp field in schema of "
+                    f"Field `{field}` is a key or timestamp field in schema of "
                     f"explode node input {input_schema.name}. Value fields are: {list(val_fields)}"
                 )
             # Type of 'c' must be List.
