@@ -573,7 +573,7 @@ class Client:
                         "Output access key id specified but secret key not found."
                     )
                 output_info["output_secret_access_key"] = secret_access_key
-        
+
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
