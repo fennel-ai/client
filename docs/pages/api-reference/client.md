@@ -113,7 +113,13 @@ A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing
 
 **Example**
 
+Here is an exmaple with `format="pandas"` and the default output bucket
+
 <pre snippet="api-reference/client#extract_historical_features_api"></pre>
+
+Here is an example specifying input and output S3 buckets
+
+<pre snippet="api-reference/client#extract_historical_features_s3"></pre>
 
 ****
 
