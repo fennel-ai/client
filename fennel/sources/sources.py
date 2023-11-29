@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from enum import Enum
 
-from typing import Any, Callable, List, Optional, TypeVar, Union
+from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
@@ -456,6 +456,12 @@ class S3Connector(DataConnector):
         return (
             f"{self.data_source.identifier()}(bucket={self.bucket_name}"
             f",prefix={self.path_prefix})"
+        )
+
+    def creds(self) -> Tuple[Optional[str], Optional[str]]:
+        return (
+            self.data_source.aws_access_key_id,
+            self.data_source.aws_secret_access_key,
         )
 
 
