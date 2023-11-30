@@ -128,3 +128,32 @@ class TestExtractorDAGResolution(unittest.TestCase):
             timestamp_column="timestamp",
         )
         # /docsnip
+
+        with self.assertRaises(NotImplementedError) as e:
+            # docsnip extract_historical_features_s3
+            from fennel.sources import S3
+
+            s3 = S3(
+                name="extract_hist_input",
+                aws_access_key_id="<ACCESS KEY HERE>",
+                aws_secret_access_key="<SECRET KEY HERE>",
+            )
+            s3_input_connection = s3.bucket(
+                "bucket", prefix="data/user_features"
+            )
+            s3_output_connection = s3.bucket("bucket", prefix="output")
+
+            response = client.extract_historical_features(
+                output_feature_list=[
+                    UserFeatures,
+                ],
+                input_feature_list=[UserFeatures.userid],
+                format="csv",
+                timestamp_column="timestamp",
+                input_s3=s3_input_connection,
+                output_s3=s3_output_connection,
+            )
+            # /docsnip
+        assert "Only pandas format is supported in MockClient" in str(
+            e.exception
+        )
