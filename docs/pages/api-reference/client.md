@@ -88,14 +88,14 @@ This api is an asynchronous api that returns a request id and the path to the ou
 * `timestamp_column: str` - The name of the column containing the timestamps.
 * `format: str` - The format of the input data. Can be either "pandas", "csv", "json" or "parquet". Default is "pandas".
 * `input_dataframe: Optional[pd.DataFrame]` - Dataframe containing the input features. Only relevant when format is "pandas".
-* `output_bucket: Optional[str]` - The name of the S3 bucket where the output data should be stored.
-* `output_prefix: Optional[str]` - The prefix of the S3 key where the output data should be stored.
+* `output_s3: Optional[sources.S3Connector]` - Specifies the S3 bucket, prefix, and optional credentials for where the output data should be stored.
 
 The following parameters are only relevant when format is "csv", "json" or "parquet".
 
-* `input_bucket: Optional[str]` - The name of the S3 bucket containing the input data. 
-* `input_prefix: Optional[str]` - The prefix of the S3 key containing the input data. 
+* `input_s3: Optional[sources.S3Connector]` - Specifies the S3 bucket, prefix, and optional credentials for the input data
 * ` feature_to_column_map (Optional[Dict[Feature, str]])`: A dictionary mapping features to column names. 
+
+The `S3Connector` parameters are provided via the `S3.bucket()` function from the `sources` module. See [Sources](/api-reference/sources#s3)
 
 **Returns:**
 
@@ -113,7 +113,13 @@ A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing
 
 **Example**
 
+Here is an example with `format="pandas"` and the default output bucket
+
 <pre snippet="api-reference/client#extract_historical_features_api"></pre>
+
+Here is an example specifying input and output S3 buckets
+
+<pre snippet="api-reference/client#extract_historical_features_s3"></pre>
 
 ****
 
