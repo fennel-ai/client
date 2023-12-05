@@ -17,7 +17,7 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import between, oneof, inputs, struct
 from fennel.lib.window import Window
-from fennel.sources import source, Webhook
+from fennel.sources import source, Webhook, ref
 from fennel.test_lib import almost_equal, mock, InternalTestClient
 
 ################################################################################
@@ -3076,3 +3076,54 @@ def test_inner_join_column_name_collision(client):
     extracted_df = client.get_dataset_df("RiderAggRiskScore")
     assert extracted_df.shape[0] == 1
     assert extracted_df["max_risk_score"].iloc[0] == 0.5
+
+
+@meta(owner="test@test.com")
+@source(
+    webhook.endpoint("UserInfoDatasetPreProc"),
+    pre_proc={
+        "age": 10,
+        "country": ref("upstream.country"),
+        "timestamp": datetime(1970, 1, 1, 0, 0, 0),
+    },
+)
+@dataset
+class UserInfoDatasetPreProc:
+    user_id: int = field(key=True).meta(description="User ID")  # type: ignore
+    name: str = field().meta(description="User name")  # type: ignore
+    age: Optional[int]
+    country: Optional[str]
+    timestamp: datetime = field(timestamp=True)
+
+
+@pytest.mark.integration
+@mock
+def test_dataset_with_pre_proc_log(client):
+    # Sync the dataset
+    client.sync(datasets=[UserInfoDatasetPreProc])
+    now = datetime.now()
+    data = [
+        [18232, "Ross", "USA"],
+        [18234, "Monica", "Chile"],
+    ]
+    columns = ["user_id", "name", "upstream.country"]
+    df = pd.DataFrame(data, columns=columns)
+    response = client.log("fennel_webhook", "UserInfoDatasetPreProc", df)
+    assert response.status_code == requests.codes.OK, response.json()
+
+    # Do lookup on UserInfoDataset
+    if client.is_integration_client():
+        client.sleep()
+    ts = pd.Series([now, now])
+    user_id_keys = pd.Series([18232, 18234])
+    df, found = UserInfoDatasetPreProc.lookup(ts, user_id=user_id_keys)
+    assert df.shape == (2, 5)
+    assert df["user_id"].tolist() == [18232, 18234]
+    assert df["name"].tolist() == ["Ross", "Monica"]
+    assert df["age"].tolist() == [
+        10,
+        10,
+    ]  # should return the default value of 10 assigned above
+    assert df["country"].tolist() == ["USA", "Chile"]
+    epoch = datetime(1970, 1, 1, 0, 0, 0)
+    assert df["timestamp"].tolist() == [epoch, epoch]

@@ -16,70 +16,76 @@ from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__
 from google.protobuf import wrappers_pb2 as google_dot_protobuf_dot_wrappers__pb2
 import fennel.gen.kinesis_pb2 as kinesis__pb2
 import fennel.gen.schema_registry_pb2 as schema__registry__pb2
+import fennel.gen.schema_pb2 as schema__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x63onnector.proto\x12\x16\x66\x65nnel.proto.connector\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\rkinesis.proto\x1a\x15schema_registry.proto\"\xf4\x03\n\x0b\x45xtDatabase\x12\x0c\n\x04name\x18\x01 \x01(\t\x12.\n\x05mysql\x18\x02 \x01(\x0b\x32\x1d.fennel.proto.connector.MySQLH\x00\x12\x34\n\x08postgres\x18\x03 \x01(\x0b\x32 .fennel.proto.connector.PostgresH\x00\x12\x36\n\treference\x18\x04 \x01(\x0b\x32!.fennel.proto.connector.ReferenceH\x00\x12(\n\x02s3\x18\x05 \x01(\x0b\x32\x1a.fennel.proto.connector.S3H\x00\x12\x34\n\x08\x62igquery\x18\x06 \x01(\x0b\x32 .fennel.proto.connector.BigqueryH\x00\x12\x36\n\tsnowflake\x18\x07 \x01(\x0b\x32!.fennel.proto.connector.SnowflakeH\x00\x12.\n\x05kafka\x18\x08 \x01(\x0b\x32\x1d.fennel.proto.connector.KafkaH\x00\x12\x32\n\x07webhook\x18\t \x01(\x0b\x32\x1f.fennel.proto.connector.WebhookH\x00\x12\x32\n\x07kinesis\x18\n \x01(\x0b\x32\x1f.fennel.proto.connector.KinesisH\x00\x42\t\n\x07variant\"\x80\x01\n\x0bKafkaFormat\x12\x32\n\x04json\x18\x01 \x01(\x0b\x32\".fennel.proto.connector.JsonFormatH\x00\x12\x32\n\x04\x61vro\x18\x02 \x01(\x0b\x32\".fennel.proto.connector.AvroFormatH\x00\x42\t\n\x07variant\"\x0c\n\nJsonFormat\"S\n\nAvroFormat\x12\x45\n\x0fschema_registry\x18\x01 \x01(\x0b\x32,.fennel.proto.schema_registry.SchemaRegistry\"\xb8\x01\n\tReference\x12;\n\x06\x64\x62type\x18\x01 \x01(\x0e\x32+.fennel.proto.connector.Reference.ExtDBType\"n\n\tExtDBType\x12\t\n\x05MYSQL\x10\x00\x12\x0c\n\x08POSTGRES\x10\x01\x12\x06\n\x02S3\x10\x02\x12\t\n\x05KAFKA\x10\x03\x12\x0c\n\x08\x42IGQUERY\x10\x04\x12\r\n\tSNOWFLAKE\x10\x05\x12\x0b\n\x07WEBHOOK\x10\x06\x12\x0b\n\x07KINESIS\x10\x07\"\x17\n\x07Webhook\x12\x0c\n\x04name\x18\x01 \x01(\t\"j\n\x05MySQL\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x10\n\x08\x64\x61tabase\x18\x02 \x01(\t\x12\x0c\n\x04user\x18\x03 \x01(\t\x12\x10\n\x08password\x18\x04 \x01(\t\x12\x0c\n\x04port\x18\x05 \x01(\r\x12\x13\n\x0bjdbc_params\x18\x06 \x01(\t\"m\n\x08Postgres\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x10\n\x08\x64\x61tabase\x18\x02 \x01(\t\x12\x0c\n\x04user\x18\x03 \x01(\t\x12\x10\n\x08password\x18\x04 \x01(\t\x12\x0c\n\x04port\x18\x05 \x01(\r\x12\x13\n\x0bjdbc_params\x18\x06 \x01(\t\">\n\x02S3\x12\x1d\n\x15\x61ws_secret_access_key\x18\x01 \x01(\t\x12\x19\n\x11\x61ws_access_key_id\x18\x02 \x01(\t\"I\n\x08\x42igquery\x12\x0f\n\x07\x64\x61taset\x18\x01 \x01(\t\x12\x18\n\x10\x63redentials_json\x18\x02 \x01(\t\x12\x12\n\nproject_id\x18\x03 \x01(\t\"\x94\x01\n\tSnowflake\x12\x0f\n\x07\x61\x63\x63ount\x18\x01 \x01(\t\x12\x0c\n\x04user\x18\x02 \x01(\t\x12\x10\n\x08password\x18\x03 \x01(\t\x12\x0e\n\x06schema\x18\x04 \x01(\t\x12\x11\n\twarehouse\x18\x05 \x01(\t\x12\x0c\n\x04role\x18\x06 \x01(\t\x12\x13\n\x0bjdbc_params\x18\x07 \x01(\t\x12\x10\n\x08\x64\x61tabase\x18\t \x01(\t\"\x8c\x02\n\x05Kafka\x12\x19\n\x11\x62ootstrap_servers\x18\x01 \x01(\t\x12\x19\n\x11security_protocol\x18\x02 \x01(\t\x12\x16\n\x0esasl_mechanism\x18\x03 \x01(\t\x12\x1c\n\x10sasl_jaas_config\x18\x04 \x01(\tB\x02\x18\x01\x12\x1b\n\x13sasl_plain_username\x18\x05 \x01(\t\x12\x1b\n\x13sasl_plain_password\x18\x06 \x01(\t\x12\x14\n\x08group_id\x18\x07 \x01(\tB\x02\x18\x01\x12G\n#enable_ssl_certificate_verification\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.BoolValue\"\x1b\n\x07Kinesis\x12\x10\n\x08role_arn\x18\x01 \x01(\t\"\xfd\x03\n\x08\x45xtTable\x12\x39\n\x0bmysql_table\x18\x01 \x01(\x0b\x32\".fennel.proto.connector.MySQLTableH\x00\x12\x39\n\x08pg_table\x18\x02 \x01(\x0b\x32%.fennel.proto.connector.PostgresTableH\x00\x12\x33\n\x08s3_table\x18\x03 \x01(\x0b\x32\x1f.fennel.proto.connector.S3TableH\x00\x12\x39\n\x0bkafka_topic\x18\x04 \x01(\x0b\x32\".fennel.proto.connector.KafkaTopicH\x00\x12\x41\n\x0fsnowflake_table\x18\x05 \x01(\x0b\x32&.fennel.proto.connector.SnowflakeTableH\x00\x12?\n\x0e\x62igquery_table\x18\x06 \x01(\x0b\x32%.fennel.proto.connector.BigqueryTableH\x00\x12;\n\x08\x65ndpoint\x18\x07 \x01(\x0b\x32\'.fennel.proto.connector.WebhookEndpointH\x00\x12?\n\x0ekinesis_stream\x18\x08 \x01(\x0b\x32%.fennel.proto.connector.KinesisStreamH\x00\x42\t\n\x07variant\"Q\n\nMySQLTable\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x12\n\ntable_name\x18\x02 \x01(\t\"T\n\rPostgresTable\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x12\n\ntable_name\x18\x02 \x01(\t\"\x96\x01\n\x07S3Table\x12\x0e\n\x06\x62ucket\x18\x01 \x01(\t\x12\x13\n\x0bpath_prefix\x18\x02 \x01(\t\x12\x11\n\tdelimiter\x18\x04 \x01(\t\x12\x0e\n\x06\x66ormat\x18\x05 \x01(\t\x12/\n\x02\x64\x62\x18\x06 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x12\n\npre_sorted\x18\x07 \x01(\x08\"\x81\x01\n\nKafkaTopic\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\r\n\x05topic\x18\x02 \x01(\t\x12\x33\n\x06\x66ormat\x18\x03 \x01(\x0b\x32#.fennel.proto.connector.KafkaFormat\"T\n\rBigqueryTable\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x12\n\ntable_name\x18\x02 \x01(\t\"U\n\x0eSnowflakeTable\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x12\n\ntable_name\x18\x02 \x01(\t\"T\n\x0fWebhookEndpoint\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x10\n\x08\x65ndpoint\x18\x02 \x01(\t\"\xd3\x01\n\rKinesisStream\x12\x12\n\nstream_arn\x18\x01 \x01(\t\x12\x39\n\rinit_position\x18\x02 \x01(\x0e\x32\".fennel.proto.kinesis.InitPosition\x12\x32\n\x0einit_timestamp\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0e\n\x06\x66ormat\x18\x04 \x01(\t\x12/\n\x02\x64\x62\x18\x05 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\"\xbf\x02\n\x06Source\x12/\n\x05table\x18\x01 \x01(\x0b\x32 .fennel.proto.connector.ExtTable\x12\x0f\n\x07\x64\x61taset\x18\x02 \x01(\t\x12(\n\x05\x65very\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x13\n\x06\x63ursor\x18\x04 \x01(\tH\x00\x88\x01\x01\x12+\n\x08lateness\x18\x05 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x17\n\x0ftimestamp_field\x18\x06 \x01(\t\x12\x30\n\x03\x63\x64\x63\x18\x07 \x01(\x0e\x32#.fennel.proto.connector.CDCStrategy\x12\x31\n\rstarting_from\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.TimestampB\t\n\x07_cursor\"H\n\x04Sink\x12/\n\x05table\x18\x01 \x01(\x0b\x32 .fennel.proto.connector.ExtTable\x12\x0f\n\x07\x64\x61taset\x18\x02 \x01(\t*K\n\x0b\x43\x44\x43Strategy\x12\n\n\x06\x41ppend\x10\x00\x12\n\n\x06Upsert\x10\x01\x12\x0c\n\x08\x44\x65\x62\x65zium\x10\x02\x12\n\n\x06Native\x10\x03\x12\n\n\x06\x44\x65lete\x10\x04\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x63onnector.proto\x12\x16\x66\x65nnel.proto.connector\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\rkinesis.proto\x1a\x15schema_registry.proto\x1a\x0cschema.proto\"\xf4\x03\n\x0b\x45xtDatabase\x12\x0c\n\x04name\x18\x01 \x01(\t\x12.\n\x05mysql\x18\x02 \x01(\x0b\x32\x1d.fennel.proto.connector.MySQLH\x00\x12\x34\n\x08postgres\x18\x03 \x01(\x0b\x32 .fennel.proto.connector.PostgresH\x00\x12\x36\n\treference\x18\x04 \x01(\x0b\x32!.fennel.proto.connector.ReferenceH\x00\x12(\n\x02s3\x18\x05 \x01(\x0b\x32\x1a.fennel.proto.connector.S3H\x00\x12\x34\n\x08\x62igquery\x18\x06 \x01(\x0b\x32 .fennel.proto.connector.BigqueryH\x00\x12\x36\n\tsnowflake\x18\x07 \x01(\x0b\x32!.fennel.proto.connector.SnowflakeH\x00\x12.\n\x05kafka\x18\x08 \x01(\x0b\x32\x1d.fennel.proto.connector.KafkaH\x00\x12\x32\n\x07webhook\x18\t \x01(\x0b\x32\x1f.fennel.proto.connector.WebhookH\x00\x12\x32\n\x07kinesis\x18\n \x01(\x0b\x32\x1f.fennel.proto.connector.KinesisH\x00\x42\t\n\x07variant\"\x80\x01\n\x0bKafkaFormat\x12\x32\n\x04json\x18\x01 \x01(\x0b\x32\".fennel.proto.connector.JsonFormatH\x00\x12\x32\n\x04\x61vro\x18\x02 \x01(\x0b\x32\".fennel.proto.connector.AvroFormatH\x00\x42\t\n\x07variant\"\x0c\n\nJsonFormat\"S\n\nAvroFormat\x12\x45\n\x0fschema_registry\x18\x01 \x01(\x0b\x32,.fennel.proto.schema_registry.SchemaRegistry\"\xb8\x01\n\tReference\x12;\n\x06\x64\x62type\x18\x01 \x01(\x0e\x32+.fennel.proto.connector.Reference.ExtDBType\"n\n\tExtDBType\x12\t\n\x05MYSQL\x10\x00\x12\x0c\n\x08POSTGRES\x10\x01\x12\x06\n\x02S3\x10\x02\x12\t\n\x05KAFKA\x10\x03\x12\x0c\n\x08\x42IGQUERY\x10\x04\x12\r\n\tSNOWFLAKE\x10\x05\x12\x0b\n\x07WEBHOOK\x10\x06\x12\x0b\n\x07KINESIS\x10\x07\"\x17\n\x07Webhook\x12\x0c\n\x04name\x18\x01 \x01(\t\"j\n\x05MySQL\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x10\n\x08\x64\x61tabase\x18\x02 \x01(\t\x12\x0c\n\x04user\x18\x03 \x01(\t\x12\x10\n\x08password\x18\x04 \x01(\t\x12\x0c\n\x04port\x18\x05 \x01(\r\x12\x13\n\x0bjdbc_params\x18\x06 \x01(\t\"m\n\x08Postgres\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x10\n\x08\x64\x61tabase\x18\x02 \x01(\t\x12\x0c\n\x04user\x18\x03 \x01(\t\x12\x10\n\x08password\x18\x04 \x01(\t\x12\x0c\n\x04port\x18\x05 \x01(\r\x12\x13\n\x0bjdbc_params\x18\x06 \x01(\t\">\n\x02S3\x12\x1d\n\x15\x61ws_secret_access_key\x18\x01 \x01(\t\x12\x19\n\x11\x61ws_access_key_id\x18\x02 \x01(\t\"I\n\x08\x42igquery\x12\x0f\n\x07\x64\x61taset\x18\x01 \x01(\t\x12\x18\n\x10\x63redentials_json\x18\x02 \x01(\t\x12\x12\n\nproject_id\x18\x03 \x01(\t\"\x94\x01\n\tSnowflake\x12\x0f\n\x07\x61\x63\x63ount\x18\x01 \x01(\t\x12\x0c\n\x04user\x18\x02 \x01(\t\x12\x10\n\x08password\x18\x03 \x01(\t\x12\x0e\n\x06schema\x18\x04 \x01(\t\x12\x11\n\twarehouse\x18\x05 \x01(\t\x12\x0c\n\x04role\x18\x06 \x01(\t\x12\x13\n\x0bjdbc_params\x18\x07 \x01(\t\x12\x10\n\x08\x64\x61tabase\x18\t \x01(\t\"\x8c\x02\n\x05Kafka\x12\x19\n\x11\x62ootstrap_servers\x18\x01 \x01(\t\x12\x19\n\x11security_protocol\x18\x02 \x01(\t\x12\x16\n\x0esasl_mechanism\x18\x03 \x01(\t\x12\x1c\n\x10sasl_jaas_config\x18\x04 \x01(\tB\x02\x18\x01\x12\x1b\n\x13sasl_plain_username\x18\x05 \x01(\t\x12\x1b\n\x13sasl_plain_password\x18\x06 \x01(\t\x12\x14\n\x08group_id\x18\x07 \x01(\tB\x02\x18\x01\x12G\n#enable_ssl_certificate_verification\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.BoolValue\"\x1b\n\x07Kinesis\x12\x10\n\x08role_arn\x18\x01 \x01(\t\"\xfd\x03\n\x08\x45xtTable\x12\x39\n\x0bmysql_table\x18\x01 \x01(\x0b\x32\".fennel.proto.connector.MySQLTableH\x00\x12\x39\n\x08pg_table\x18\x02 \x01(\x0b\x32%.fennel.proto.connector.PostgresTableH\x00\x12\x33\n\x08s3_table\x18\x03 \x01(\x0b\x32\x1f.fennel.proto.connector.S3TableH\x00\x12\x39\n\x0bkafka_topic\x18\x04 \x01(\x0b\x32\".fennel.proto.connector.KafkaTopicH\x00\x12\x41\n\x0fsnowflake_table\x18\x05 \x01(\x0b\x32&.fennel.proto.connector.SnowflakeTableH\x00\x12?\n\x0e\x62igquery_table\x18\x06 \x01(\x0b\x32%.fennel.proto.connector.BigqueryTableH\x00\x12;\n\x08\x65ndpoint\x18\x07 \x01(\x0b\x32\'.fennel.proto.connector.WebhookEndpointH\x00\x12?\n\x0ekinesis_stream\x18\x08 \x01(\x0b\x32%.fennel.proto.connector.KinesisStreamH\x00\x42\t\n\x07variant\"Q\n\nMySQLTable\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x12\n\ntable_name\x18\x02 \x01(\t\"T\n\rPostgresTable\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x12\n\ntable_name\x18\x02 \x01(\t\"\x96\x01\n\x07S3Table\x12\x0e\n\x06\x62ucket\x18\x01 \x01(\t\x12\x13\n\x0bpath_prefix\x18\x02 \x01(\t\x12\x11\n\tdelimiter\x18\x04 \x01(\t\x12\x0e\n\x06\x66ormat\x18\x05 \x01(\t\x12/\n\x02\x64\x62\x18\x06 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x12\n\npre_sorted\x18\x07 \x01(\x08\"\x81\x01\n\nKafkaTopic\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\r\n\x05topic\x18\x02 \x01(\t\x12\x33\n\x06\x66ormat\x18\x03 \x01(\x0b\x32#.fennel.proto.connector.KafkaFormat\"T\n\rBigqueryTable\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x12\n\ntable_name\x18\x02 \x01(\t\"U\n\x0eSnowflakeTable\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x12\n\ntable_name\x18\x02 \x01(\t\"T\n\x0fWebhookEndpoint\x12/\n\x02\x64\x62\x18\x01 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12\x10\n\x08\x65ndpoint\x18\x02 \x01(\t\"\xd3\x01\n\rKinesisStream\x12\x12\n\nstream_arn\x18\x01 \x01(\t\x12\x39\n\rinit_position\x18\x02 \x01(\x0e\x32\".fennel.proto.kinesis.InitPosition\x12\x32\n\x0einit_timestamp\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0e\n\x06\x66ormat\x18\x04 \x01(\t\x12/\n\x02\x64\x62\x18\x05 \x01(\x0b\x32#.fennel.proto.connector.ExtDatabase\"U\n\x0cPreProcValue\x12\r\n\x03ref\x18\x01 \x01(\tH\x00\x12+\n\x05value\x18\x02 \x01(\x0b\x32\x1a.fennel.proto.schema.ValueH\x00\x42\t\n\x07variant\"\xd4\x03\n\x06Source\x12/\n\x05table\x18\x01 \x01(\x0b\x32 .fennel.proto.connector.ExtTable\x12\x0f\n\x07\x64\x61taset\x18\x02 \x01(\t\x12(\n\x05\x65very\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x13\n\x06\x63ursor\x18\x04 \x01(\tH\x00\x88\x01\x01\x12+\n\x08lateness\x18\x05 \x01(\x0b\x32\x19.google.protobuf.Duration\x12\x17\n\x0ftimestamp_field\x18\x06 \x01(\t\x12\x30\n\x03\x63\x64\x63\x18\x07 \x01(\x0e\x32#.fennel.proto.connector.CDCStrategy\x12\x31\n\rstarting_from\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12=\n\x08pre_proc\x18\t \x03(\x0b\x32+.fennel.proto.connector.Source.PreProcEntry\x1aT\n\x0cPreProcEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x33\n\x05value\x18\x02 \x01(\x0b\x32$.fennel.proto.connector.PreProcValue:\x02\x38\x01\x42\t\n\x07_cursor\"H\n\x04Sink\x12/\n\x05table\x18\x01 \x01(\x0b\x32 .fennel.proto.connector.ExtTable\x12\x0f\n\x07\x64\x61taset\x18\x02 \x01(\t*K\n\x0b\x43\x44\x43Strategy\x12\n\n\x06\x41ppend\x10\x00\x12\n\n\x06Upsert\x10\x01\x12\x0c\n\x08\x44\x65\x62\x65zium\x10\x02\x12\n\n\x06Native\x10\x03\x12\n\n\x06\x44\x65lete\x10\x04\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'connector_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
-  _KAFKA.fields_by_name['sasl_jaas_config']._options = None
-  _KAFKA.fields_by_name['sasl_jaas_config']._serialized_options = b'\030\001'
-  _KAFKA.fields_by_name['group_id']._options = None
-  _KAFKA.fields_by_name['group_id']._serialized_options = b'\030\001'
-  _globals['_CDCSTRATEGY']._serialized_start=3767
-  _globals['_CDCSTRATEGY']._serialized_end=3842
-  _globals['_EXTDATABASE']._serialized_start=179
-  _globals['_EXTDATABASE']._serialized_end=679
-  _globals['_KAFKAFORMAT']._serialized_start=682
-  _globals['_KAFKAFORMAT']._serialized_end=810
-  _globals['_JSONFORMAT']._serialized_start=812
-  _globals['_JSONFORMAT']._serialized_end=824
-  _globals['_AVROFORMAT']._serialized_start=826
-  _globals['_AVROFORMAT']._serialized_end=909
-  _globals['_REFERENCE']._serialized_start=912
-  _globals['_REFERENCE']._serialized_end=1096
-  _globals['_REFERENCE_EXTDBTYPE']._serialized_start=986
-  _globals['_REFERENCE_EXTDBTYPE']._serialized_end=1096
-  _globals['_WEBHOOK']._serialized_start=1098
-  _globals['_WEBHOOK']._serialized_end=1121
-  _globals['_MYSQL']._serialized_start=1123
-  _globals['_MYSQL']._serialized_end=1229
-  _globals['_POSTGRES']._serialized_start=1231
-  _globals['_POSTGRES']._serialized_end=1340
-  _globals['_S3']._serialized_start=1342
-  _globals['_S3']._serialized_end=1404
-  _globals['_BIGQUERY']._serialized_start=1406
-  _globals['_BIGQUERY']._serialized_end=1479
-  _globals['_SNOWFLAKE']._serialized_start=1482
-  _globals['_SNOWFLAKE']._serialized_end=1630
-  _globals['_KAFKA']._serialized_start=1633
-  _globals['_KAFKA']._serialized_end=1901
-  _globals['_KINESIS']._serialized_start=1903
-  _globals['_KINESIS']._serialized_end=1930
-  _globals['_EXTTABLE']._serialized_start=1933
-  _globals['_EXTTABLE']._serialized_end=2442
-  _globals['_MYSQLTABLE']._serialized_start=2444
-  _globals['_MYSQLTABLE']._serialized_end=2525
-  _globals['_POSTGRESTABLE']._serialized_start=2527
-  _globals['_POSTGRESTABLE']._serialized_end=2611
-  _globals['_S3TABLE']._serialized_start=2614
-  _globals['_S3TABLE']._serialized_end=2764
-  _globals['_KAFKATOPIC']._serialized_start=2767
-  _globals['_KAFKATOPIC']._serialized_end=2896
-  _globals['_BIGQUERYTABLE']._serialized_start=2898
-  _globals['_BIGQUERYTABLE']._serialized_end=2982
-  _globals['_SNOWFLAKETABLE']._serialized_start=2984
-  _globals['_SNOWFLAKETABLE']._serialized_end=3069
-  _globals['_WEBHOOKENDPOINT']._serialized_start=3071
-  _globals['_WEBHOOKENDPOINT']._serialized_end=3155
-  _globals['_KINESISSTREAM']._serialized_start=3158
-  _globals['_KINESISSTREAM']._serialized_end=3369
-  _globals['_SOURCE']._serialized_start=3372
-  _globals['_SOURCE']._serialized_end=3691
-  _globals['_SINK']._serialized_start=3693
-  _globals['_SINK']._serialized_end=3765
+  _globals['_KAFKA'].fields_by_name['sasl_jaas_config']._options = None
+  _globals['_KAFKA'].fields_by_name['sasl_jaas_config']._serialized_options = b'\030\001'
+  _globals['_KAFKA'].fields_by_name['group_id']._options = None
+  _globals['_KAFKA'].fields_by_name['group_id']._serialized_options = b'\030\001'
+  _globals['_SOURCE_PREPROCENTRY']._options = None
+  _globals['_SOURCE_PREPROCENTRY']._serialized_options = b'8\001'
+  _globals['_CDCSTRATEGY']._serialized_start=4017
+  _globals['_CDCSTRATEGY']._serialized_end=4092
+  _globals['_EXTDATABASE']._serialized_start=193
+  _globals['_EXTDATABASE']._serialized_end=693
+  _globals['_KAFKAFORMAT']._serialized_start=696
+  _globals['_KAFKAFORMAT']._serialized_end=824
+  _globals['_JSONFORMAT']._serialized_start=826
+  _globals['_JSONFORMAT']._serialized_end=838
+  _globals['_AVROFORMAT']._serialized_start=840
+  _globals['_AVROFORMAT']._serialized_end=923
+  _globals['_REFERENCE']._serialized_start=926
+  _globals['_REFERENCE']._serialized_end=1110
+  _globals['_REFERENCE_EXTDBTYPE']._serialized_start=1000
+  _globals['_REFERENCE_EXTDBTYPE']._serialized_end=1110
+  _globals['_WEBHOOK']._serialized_start=1112
+  _globals['_WEBHOOK']._serialized_end=1135
+  _globals['_MYSQL']._serialized_start=1137
+  _globals['_MYSQL']._serialized_end=1243
+  _globals['_POSTGRES']._serialized_start=1245
+  _globals['_POSTGRES']._serialized_end=1354
+  _globals['_S3']._serialized_start=1356
+  _globals['_S3']._serialized_end=1418
+  _globals['_BIGQUERY']._serialized_start=1420
+  _globals['_BIGQUERY']._serialized_end=1493
+  _globals['_SNOWFLAKE']._serialized_start=1496
+  _globals['_SNOWFLAKE']._serialized_end=1644
+  _globals['_KAFKA']._serialized_start=1647
+  _globals['_KAFKA']._serialized_end=1915
+  _globals['_KINESIS']._serialized_start=1917
+  _globals['_KINESIS']._serialized_end=1944
+  _globals['_EXTTABLE']._serialized_start=1947
+  _globals['_EXTTABLE']._serialized_end=2456
+  _globals['_MYSQLTABLE']._serialized_start=2458
+  _globals['_MYSQLTABLE']._serialized_end=2539
+  _globals['_POSTGRESTABLE']._serialized_start=2541
+  _globals['_POSTGRESTABLE']._serialized_end=2625
+  _globals['_S3TABLE']._serialized_start=2628
+  _globals['_S3TABLE']._serialized_end=2778
+  _globals['_KAFKATOPIC']._serialized_start=2781
+  _globals['_KAFKATOPIC']._serialized_end=2910
+  _globals['_BIGQUERYTABLE']._serialized_start=2912
+  _globals['_BIGQUERYTABLE']._serialized_end=2996
+  _globals['_SNOWFLAKETABLE']._serialized_start=2998
+  _globals['_SNOWFLAKETABLE']._serialized_end=3083
+  _globals['_WEBHOOKENDPOINT']._serialized_start=3085
+  _globals['_WEBHOOKENDPOINT']._serialized_end=3169
+  _globals['_KINESISSTREAM']._serialized_start=3172
+  _globals['_KINESISSTREAM']._serialized_end=3383
+  _globals['_PREPROCVALUE']._serialized_start=3385
+  _globals['_PREPROCVALUE']._serialized_end=3470
+  _globals['_SOURCE']._serialized_start=3473
+  _globals['_SOURCE']._serialized_end=3941
+  _globals['_SOURCE_PREPROCENTRY']._serialized_start=3846
+  _globals['_SOURCE_PREPROCENTRY']._serialized_end=3930
+  _globals['_SINK']._serialized_start=3943
+  _globals['_SINK']._serialized_end=4015
 # @@protoc_insertion_point(module_scope)
