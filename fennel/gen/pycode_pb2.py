@@ -19,10 +19,9 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'pycode_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
-  _PYCODE_REFINCLUDESENTRY._options = None
-  _PYCODE_REFINCLUDESENTRY._serialized_options = b'8\001'
+  _globals['_PYCODE_REFINCLUDESENTRY']._options = None
+  _globals['_PYCODE_REFINCLUDESENTRY']._serialized_options = b'8\001'
   _globals['_REFTYPE']._serialized_start=347
   _globals['_REFTYPE']._serialized_end=385
   _globals['_PYCODE']._serialized_start=38

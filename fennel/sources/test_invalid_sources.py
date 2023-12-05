@@ -356,3 +356,49 @@ def test_invalid_s3_format():
             bucket_name="bucket", prefix="prefix", format="csv", delimiter="  "
         )
     assert "delimiter must be one of" in str(e.value)
+
+
+def test_invalid_pre_proc():
+    @source(
+        s3.bucket(
+            bucket_name="all_ratings",
+            prefix="prod/apac/",
+        ),
+        every="1h",
+        # column doesn't exist
+        pre_proc={
+            "age": 10,
+        },
+    )
+    @meta(owner="test@test.com", tags=["test", "yolo"])
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        timestamp: datetime = field(timestamp=True)
+
+    with pytest.raises(ValueError):
+        view = InternalTestClient()
+        view.add(UserInfoDataset)
+        view._get_sync_request_proto()
+
+    @source(
+        s3.bucket(
+            bucket_name="all_ratings",
+            prefix="prod/apac/",
+        ),
+        every="1h",
+        # data type is wrong
+        pre_proc={
+            "timestamp": 10,
+        },
+    )
+    @meta(owner="test@test.com", tags=["test", "yolo"])
+    @dataset
+    class UserInfoDataset2:
+        user_id: int = field(key=True)
+        timestamp: datetime = field(timestamp=True)
+
+    with pytest.raises(ValueError):
+        view = InternalTestClient()
+        view.add(UserInfoDataset2)
+        view._get_sync_request_proto()

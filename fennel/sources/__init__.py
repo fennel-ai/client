@@ -20,4 +20,7 @@ from fennel.sources.sources import (
     InitPosition,
     KinesisConnector,
     Avro,
+    Ref,
+    ref,
+    PreProcValue,
 )

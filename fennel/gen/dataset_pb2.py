@@ -24,16 +24,15 @@ _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'dataset_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-
   DESCRIPTOR._options = None
-  _COREDATASET_FIELDMETADATAENTRY._options = None
-  _COREDATASET_FIELDMETADATAENTRY._serialized_options = b'8\001'
-  _JOIN_ONENTRY._options = None
-  _JOIN_ONENTRY._serialized_options = b'8\001'
-  _TRANSFORM_SCHEMAENTRY._options = None
-  _TRANSFORM_SCHEMAENTRY._serialized_options = b'8\001'
-  _RENAME_COLUMNMAPENTRY._options = None
-  _RENAME_COLUMNMAPENTRY._serialized_options = b'8\001'
+  _globals['_COREDATASET_FIELDMETADATAENTRY']._options = None
+  _globals['_COREDATASET_FIELDMETADATAENTRY']._serialized_options = b'8\001'
+  _globals['_JOIN_ONENTRY']._options = None
+  _globals['_JOIN_ONENTRY']._serialized_options = b'8\001'
+  _globals['_TRANSFORM_SCHEMAENTRY']._options = None
+  _globals['_TRANSFORM_SCHEMAENTRY']._serialized_options = b'8\001'
+  _globals['_RENAME_COLUMNMAPENTRY']._options = None
+  _globals['_RENAME_COLUMNMAPENTRY']._serialized_options = b'8\001'
   _globals['_COREDATASET']._serialized_start=128
   _globals['_COREDATASET']._serialized_end=710
   _globals['_COREDATASET_FIELDMETADATAENTRY']._serialized_start=625

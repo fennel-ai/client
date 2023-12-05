@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.19.1] - 2023-12-05
+- Add support for `pre_proc` on `@sources` to specify default values for columns which may not exist in the data sources.
+
 ## [0.19.0] - 2023-11-28
 - Allow for AWS access key credentials for extract_historical_features buckets
 

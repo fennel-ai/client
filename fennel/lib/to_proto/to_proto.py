@@ -8,7 +8,7 @@ from textwrap import dedent, indent
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, StringValue
-from typing import Any, Dict, List, Optional, Tuple, Set
+from typing import Any, Dict, List, Optional, Tuple, Set, Mapping
 
 import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.http_auth_pb2 as http_auth_proto
@@ -303,6 +303,31 @@ def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
     return expectations
 
 
+def _validate_source_pre_proc(
+    pre_proc: Dict[str, sources.PreProcValue], ds: Dataset
+):
+    for field_name, pre_proc_val in pre_proc.items():
+        ds_field = None
+        for field in ds._fields:
+            if field.name == field_name:
+                ds_field = field
+                break
+        if not ds_field:
+            raise ValueError(
+                f"Dataset {ds._name} has a source with a pre_proc value set for field {field_name}, "
+                "but the field is not defined in the dataset."
+            )
+        # If the pre_proc is a `ref`, then skip - we can't check the value type or if the exists in the dataset
+        if isinstance(pre_proc_val, sources.Ref):
+            continue
+        # Else check that the data type matches the field type
+        if ds_field.dtype != type(pre_proc_val):
+            raise ValueError(
+                f"Dataset {ds._name} has a source with a pre_proc value set for field {field_name}, "
+                f"but the field type does not match the pre_proc value {pre_proc_val} type."
+            )
+
+
 def sources_from_ds(
     ds: Dataset, timestamp_field: str, tier: Optional[str] = None
 ) -> Optional[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
@@ -330,9 +355,10 @@ def sources_from_ds(
                 f"Dataset {ds._name} has multiple sources ({len(filtered_sources)}) defined. "
                 f"Please define only one source per dataset, or check your tier selection."
             )
-        return _conn_to_source_proto(
-            filtered_sources[0], ds._name, timestamp_field
-        )
+        filtered_source = filtered_sources[0]
+        if filtered_source.pre_proc:
+            _validate_source_pre_proc(filtered_source.pre_proc, ds)
+        return _conn_to_source_proto(filtered_source, ds._name, timestamp_field)
     return None  # type: ignore
 
 
@@ -504,6 +530,63 @@ def _to_field_lookup_proto(
 # ------------------------------------------------------------------------------
 # Connector
 # ------------------------------------------------------------------------------
+
+
+def _pre_proc_value_to_proto(
+    pre_proc_value: sources.PreProcValue,
+) -> connector_proto.PreProcValue:
+    if isinstance(pre_proc_value, sources.Ref):
+        return connector_proto.PreProcValue(
+            ref=pre_proc_value.name,
+        )
+    # Get the dtype of the pre_proc value.
+    #
+    # NOTE: We use the same the utility used to serialize the field types so that the types and their
+    # serialization are consistent.
+    dtype = get_datatype(type(pre_proc_value))
+    if dtype == schema_proto.DataType(string_type=schema_proto.StringType()):
+        return connector_proto.PreProcValue(
+            value=schema_proto.Value(string=StringValue(value=pre_proc_value))
+        )
+    elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
+        return connector_proto.PreProcValue(
+            value=schema_proto.Value(bool=BoolValue(value=pre_proc_value))
+        )
+    elif dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
+        return connector_proto.PreProcValue(
+            value=schema_proto.Value(int=pre_proc_value)
+        )
+    elif dtype == schema_proto.DataType(double_type=schema_proto.DoubleType()):
+        return connector_proto.PreProcValue(
+            value=schema_proto.Value(float=pre_proc_value)
+        )
+    elif dtype == schema_proto.DataType(
+        timestamp_type=schema_proto.TimestampType()
+    ):
+        ts = Timestamp()
+        ts.FromDatetime(pre_proc_value)
+        return connector_proto.PreProcValue(
+            value=schema_proto.Value(timestamp=ts)
+        )
+    # TODO(mohit): Extend the pre_proc value proto to support other types
+    else:
+        raise ValueError(
+            f"PreProc value {pre_proc_value} is of type {dtype}, "
+            f"which is not currently not supported."
+        )
+
+
+def _pre_proc_to_proto(
+    pre_proc: Optional[Dict[str, sources.PreProcValue]]
+) -> Mapping[str, connector_proto.PreProcValue]:
+    if pre_proc is None:
+        return {}
+    proto_pre_proc = {}
+    for k, v in pre_proc.items():
+        proto_pre_proc[k] = _pre_proc_value_to_proto(v)
+    return proto_pre_proc
+
+
 def _conn_to_source_proto(
     connector: sources.DataConnector, dataset_name: str, timestamp_field: str
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
@@ -545,6 +628,7 @@ def _webhook_to_source_proto(
             lateness=to_duration_proto(connector.lateness),
             dataset=dataset_name,
             cdc=to_cdc_proto(connector.cdc),
+            pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
 
@@ -579,6 +663,7 @@ def _kafka_conn_to_source_proto(
         lateness=to_duration_proto(connector.lateness),
         dataset=dataset_name,
         cdc=to_cdc_proto(connector.cdc),
+        pre_proc=_pre_proc_to_proto(connector.pre_proc),
     )
     return (ext_db, source)
 
@@ -651,6 +736,7 @@ def _s3_conn_to_source_proto(
         cursor=None,
         timestamp_field=timestamp_field,
         cdc=to_cdc_proto(connector.cdc),
+        pre_proc=_pre_proc_to_proto(connector.pre_proc),
     )
     return (ext_db, source)
 
@@ -748,6 +834,7 @@ def _bigquery_conn_to_source_proto(
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
+            pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
 
@@ -813,6 +900,7 @@ def _snowflake_conn_to_source_proto(
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
+            pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
 
@@ -893,6 +981,7 @@ def _mysql_conn_to_source_proto(
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
+            pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
 
@@ -976,6 +1065,7 @@ def _pg_conn_to_source_proto(
             lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
+            pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
 
@@ -1055,6 +1145,7 @@ def _kinesis_conn_to_source_proto(
             dataset=dataset_name,
             lateness=to_duration_proto(connector.lateness),
             cdc=to_cdc_proto(connector.cdc),
+            pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
 

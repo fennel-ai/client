@@ -247,6 +247,23 @@ class _DatasetInfo:
         return pd.DataFrame(columns=self.fields)
 
 
+def _transform_df(
+    df: pd.DataFrame, pre_proc: Dict[str, sources.PreProcValue]
+) -> pd.DataFrame:
+    new_df = df.copy()
+    for col, pre_proc_value in pre_proc.items():
+        if isinstance(pre_proc_value, sources.Ref):
+            col_name = pre_proc_value.name
+            if col_name not in df.columns:
+                raise ValueError(
+                    f"Referenced column {col_name} not found in dataframe"
+                )
+            new_df[col] = df[col_name]
+        else:
+            new_df[col] = pre_proc_value
+    return new_df
+
+
 class MockClient(Client):
     def __init__(self):
         self.dataset_requests: Dict[str, CoreDataset] = {}
@@ -269,6 +286,9 @@ class MockClient(Client):
             None,
         )
         self.webhook_to_dataset_map: Dict[str, List[str]] = defaultdict(list)
+        self.dataset_to_pre_proc_map: Dict[
+            str, Optional[Dict[str, sources.PreProcValue]]
+        ] = defaultdict(lambda: None)
         self.extractors: List[Extractor] = []
 
     # ----------------- Debug methods -----------------------------------------
@@ -605,6 +625,8 @@ class MockClient(Client):
             src = connector.data_source
             webhook_endpoint = f"{src.name}:{connector.endpoint}"
             self.webhook_to_dataset_map[webhook_endpoint].append(dataset._name)
+            pre_proc = connector.pre_proc
+            self.dataset_to_pre_proc_map[dataset._name] = pre_proc
 
     def _internal_log(self, dataset_name: str, df: pd.DataFrame):
         if df.shape[0] == 0:
@@ -616,6 +638,22 @@ class MockClient(Client):
         if dataset_name not in self.dataset_requests:
             return FakeResponse(404, f"Dataset `{dataset_name}` not found")
 
+        for col in df.columns:
+            # If any of the columns is a dictionary, convert it to a frozen dict
+            if df[col].apply(lambda x: isinstance(x, dict)).any():
+                df[col] = df[col].apply(lambda x: frozendict(x))
+
+        # If pre_proc for the dataset is set, transform the dataframe using it
+        pre_proc = self.dataset_to_pre_proc_map[dataset_name]
+        if pre_proc is not None:
+            try:
+                df = _transform_df(df, pre_proc)
+            except Exception as e:
+                return FakeResponse(
+                    400,
+                    f"Error using pre_proc for dataset `{dataset_name}`: {str(e)}",
+                )
+
         dataset_req = self.dataset_requests[dataset_name]
         timestamp_field = self.dataset_info[dataset_name].timestamp_field
         if timestamp_field not in df.columns:
@@ -624,10 +662,7 @@ class MockClient(Client):
                 f"Timestamp field `{timestamp_field}` not found in dataframe "
                 f"while logging to dataset `{dataset_name}`",
             )
-        for col in df.columns:
-            # If any of the columns is a dictionary, convert it to a frozen dict
-            if df[col].apply(lambda x: isinstance(x, dict)).any():
-                df[col] = df[col].apply(lambda x: frozendict(x))
+
         # Check if the dataframe has the same schema as the dataset
         schema = dataset_req.dsschema
         try:

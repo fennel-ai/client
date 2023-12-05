@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from enum import Enum
 
-from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple
+from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
@@ -24,6 +24,15 @@ DEFAULT_CDC = "append"
 # ------------------------------------------------------------------------------
 # source & sink decorators
 # ------------------------------------------------------------------------------
+class Ref(BaseModel):
+    name: str
+
+
+def ref(ref_name: str) -> PreProcValue:
+    return Ref(name=ref_name)
+
+
+PreProcValue = Union[Ref, Any]
 
 
 def source(
@@ -33,6 +42,7 @@ def source(
     lateness: Optional[Duration] = None,
     cdc: Optional[str] = None,
     tier: Optional[Union[str, List[str]]] = None,
+    pre_proc: Optional[Dict[str, PreProcValue]] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
@@ -51,6 +61,7 @@ def source(
         conn.cdc = cdc if cdc is not None else DEFAULT_CDC
         conn.starting_from = since
         conn.tiers = TierSelector(tier)
+        conn.pre_proc = pre_proc
         connectors = getattr(dataset_cls, SOURCE_FIELD, [])
         connectors.append(conn)
         setattr(dataset_cls, SOURCE_FIELD, connectors)
@@ -366,6 +377,7 @@ class DataConnector:
     cdc: str
     starting_from: Optional[datetime] = None
     tiers: TierSelector
+    pre_proc: Optional[Dict[str, PreProcValue]] = None
 
     def identifier(self):
         raise NotImplementedError

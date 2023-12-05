@@ -67,7 +67,7 @@ from fennel.lib.schema import (
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
 )
 
-from fennel.sources.sources import DataConnector, source
+from fennel.sources.sources import DataConnector, source, PreProcValue
 from fennel.utils import (
     fhash,
     parse_annotation_comments,
@@ -1191,6 +1191,7 @@ class Dataset(_Node[T]):
         every: Optional[Duration] = None,
         starting_from: Optional[datetime.datetime] = None,
         lateness: Optional[Duration] = None,
+        pre_proc: Optional[Dict[str, PreProcValue]] = None,
         tiers: Optional[Union[str, List[str]]] = None,
     ):
         logger = logging.getLogger(__name__)
@@ -1205,7 +1206,9 @@ class Dataset(_Node[T]):
         ds_copy = copy.deepcopy(self)
         if hasattr(ds_copy, sources.SOURCE_FIELD):
             delattr(ds_copy, sources.SOURCE_FIELD)
-        src_fn = source(conn, every, starting_from, lateness, None, tiers)
+        src_fn = source(
+            conn, every, starting_from, lateness, None, tiers, pre_proc
+        )
         return src_fn(ds_copy)
 
     def dsschema(self):
