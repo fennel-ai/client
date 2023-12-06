@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.19.3] - 2023-12-06
+- Rename `pre_proc` to `preproc` on `@sources`. 
+
 ## [0.19.2] - 2023-12-05
 - Add support for `pre_proc` on `@sources` to specify default values for columns which may not exist in the data sources.
 

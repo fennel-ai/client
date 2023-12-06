@@ -366,7 +366,7 @@ def test_invalid_pre_proc():
         ),
         every="1h",
         # column doesn't exist
-        pre_proc={
+        preproc={
             "age": 10,
         },
     )
@@ -388,7 +388,7 @@ def test_invalid_pre_proc():
         ),
         every="1h",
         # data type is wrong
-        pre_proc={
+        preproc={
             "timestamp": 10,
         },
     )
