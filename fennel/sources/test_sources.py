@@ -182,7 +182,7 @@ def test_simple_source_with_pre_proc():
         ),
         every="1h",
         lateness="20h",
-        pre_proc={
+        preproc={
             "age": 10,
             "timestamp": datetime(1970, 1, 1, 0, 0, 0),
             "country": ref("upstream.country"),

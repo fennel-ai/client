@@ -3081,7 +3081,7 @@ def test_inner_join_column_name_collision(client):
 @meta(owner="test@test.com")
 @source(
     webhook.endpoint("UserInfoDatasetPreProc"),
-    pre_proc={
+    preproc={
         "age": 10,
         "country": ref("upstream.country"),
         "timestamp": datetime(1970, 1, 1, 0, 0, 0),
