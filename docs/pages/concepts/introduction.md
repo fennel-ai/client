@@ -10,7 +10,7 @@ Fennel has two main concepts -- datasets and featuresets. Let's look at both one
 
 ## 1. Dataset
 
-Dataset refers to a "table" of data with typed columns. Duh! Here is how a dataset is defined.&#x20;
+Dataset refers to a "table" of data with typed columns. Here is how a dataset is defined.&#x20;
 
 <pre snippet="overview/concepts#user_dataset"></pre>
 
@@ -23,7 +23,7 @@ First we define the external sources by providing the required credentials:
 ```python
 from fennel.sources import source, Postgres, Kafka
 
-postgres = Postgres(host=...<credentials>..)
+pg = Postgres(host=...<credentials>..)
 kafka = Kafka(...<credentials>..)
 ```
 
@@ -33,6 +33,12 @@ Then we define the datasets that will hydrate themselves from these sources:
 
 The first dataset will poll postgres table for new updates every minute and hydrate itself with new data. The second dataset hydrates itself from a kafka topic. Fennel supports connectors with all main sources - check [here](/concepts/source) for details.
 
+You might have also noticed another source with `webhook` on both the datasets
+with tier value set to `dev`. This is the case because in dev/testing scenarios,
+we don't want to hit production postgres. Here we are telling Fennel that postgres
+should only be used for prod. And for dev, we will be manually pushing data
+into the dataset (aka webhook in Fennel vocabulary).
+
 Hydrating datasets this way from external sources already looks somewhat cool because it allows you to bring data from multiple places in the same abstraction layer. But what to do with these datasets?
 
 Fennel lets you derive new datasets from existing datasets by writing simple declarative Python code - it's unimaginatively called a pipeline. Let's look at one such pipeline:
@@ -40,9 +46,22 @@ Fennel lets you derive new datasets from existing datasets by writing simple dec
 <pre snippet="overview/concepts#pipeline"></pre>
 
 
-This is a dataset that will keep rolling stats about transactions made by a user abroad and we want to derive it from `User` dataset and `Transaction` dataset. Line 8-17 define this pipeline. You'd note that this pipeline is written using native Python and Pandas so you can unleash the full power of Python. But more importantly, this pipeline is operating on two datasets, one of which is streaming (i.e. `Transaction` ) and comes from Kafka and the other is static-ish dataset (i.e. `User`) coming from Postgres. And you can do joins and aggregations across them both. Wow! Now this is beginning to look powerful. What else can you do with the datasets?
+This is a dataset that will keep rolling stats about transactions made by a user
+abroad and we want to derive it from `User` dataset and `Transaction` dataset. 
+Lines 16-27 define this pipeline. You'd note that this pipeline is written using
+native Python and Pandas so you can unleash the full power of Python. But more 
+importantly, this pipeline is operating on two datasets, one of which is 
+streaming (i.e. `Transaction` ) and comes from Kafka and the other is static-ish 
+dataset (i.e. `User`) coming from Postgres. And you can do joins and aggregations
+across them both. Wow! Now this is beginning to look powerful. What else can you 
+do with the datasets?
 
-It's also possible to do low latency lookups on these datasets using dataset keys. Earlier you were asked to ignore the field descriptors -- it's time to revisit those. If you look carefully, line 3 above defines `uid` to be a key (dataset can have multi-column keys too). If we know the uid of a user, we can ask this dataset for the value of the rest of the columns. Something (but not exactly) like this:
+It's also possible to do low latency lookups on these datasets using dataset keys. 
+Earlier you were asked to ignore the field descriptors -- it's time to revisit 
+those. If you look carefully, line 3 above defines `uid` to be a key (dataset 
+can have multi-column keys too). If we know the uid of a user, we can ask this 
+dataset for the value of the rest of the columns. Something (but not exactly) 
+like this:
 
 <pre snippet="overview/concepts#dataset_lookup"></pre>
 
@@ -52,7 +71,11 @@ Okay so we can define datasets, source them from external datasets, derive them 
 
 ## 2. Featureset
 
-A featureset, as the name implies, is just a collection of features, each with some code that knows how to extract it - called an _extractor_. That may sound like a mouthful but isn't that complicated. Let's define a feature that computes user's age using the datasets we defined above.
+A featureset, as the name implies, is just a collection of features. Features in 
+Fennel, however, are different from features in many other systems - they don't 
+represent stored data but instead are backed by a Python function that knows how 
+to extract it - called an _extractor_. Let's define a feature that computes user's
+age using the datasets we defined above.
 
 Here is how a really simple featureset looks:
 
@@ -83,6 +106,7 @@ client = Client(<FENNEL SERVER URL>)
 client.sync(
     datasets=[User, Transaction, UserTransactionsAbroad],
     featuresets=[UserFeature],
+	tier='dev'
 )
 ```
 
@@ -92,6 +116,9 @@ Overtime, you'd have many more datasets and featuresets - you'd send all of them
 
 Assuming the call succeeds, any datasets/featuresets that don't yet exist will be created, any datasets/featuresets that exist but are not provided in the sync call are deleted and rest are left unchanged. See the [section on CI/CD](/development/ci-cd-workflows) to learn how the end to end deployment could work in a production environment
 
+Also note that we passed `tier="dev"` in the last line - this tells Fennel to only
+apply behaviors where tier matches `dev`. As a result, the User dataset will be
+sourced via push based webhook vs postgres.
 
 ### Learn more
 
