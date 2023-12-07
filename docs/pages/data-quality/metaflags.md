@@ -87,3 +87,16 @@ for teams to simply delete them on ownership transitions vs keeping them around.
 
 Ownership and other metaflags in itself don't magically prevent any quality
 issues but hopefully should lead to subjectively higher hygiene for code and data.
+
+
+### Module Level Ownership
+
+Having to type owner for each dataset/featureset can get repetitive over time. 
+You can save this drudgery by specifying `__owner__` once at the start of a module
+and any dataset/featureset without an explicit owner specified will just use
+this module level ownership value.
+
+In the following example, both `User` and `Transaction` inherit their owner
+from the module level `__owner__` property.
+
+<pre snippet="data-quality/metaflags#module_ownership"/>

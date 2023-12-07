@@ -24,16 +24,14 @@ class UserDataset:
 # since docs requires not compilable credentials.
 from fennel.sources import source, Postgres, Kafka
 
-postgres = Postgres.get(name="postgres")
+pg = Postgres.get(name="postgres")
 kafka = Kafka.get(name="kafka")
 webhook = Webhook(name="fennel_webhook")
 
 
 # docsnip external_data_sources
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(
-    postgres.table("user", cursor="update_timestamp"), every="1m", tier="prod"
-)
+@source(pg.table("user", cursor="update_timestamp"), every="1m", tier="prod")
 @source(webhook.endpoint("User"), tier="dev")
 @dataset
 class User:
@@ -57,13 +55,13 @@ class Transaction:
 
 # /docsnip
 
-# docsnip pipeline
 from fennel.datasets import pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum
 from fennel.lib.window import Window
 from fennel.lib.schema import inputs
 
 
+# docsnip pipeline
 @meta(owner="data-eng-oncall@fennel.ai")
 @dataset
 class UserTransactionsAbroad:
@@ -81,11 +79,9 @@ class UserTransactionsAbroad:
             lambda df: df["country"] != df["payment_country"]
         )
         return abroad.groupby("uid").aggregate(
-            [
-                Count(window=Window("forever"), into_field="count"),
-                Sum(of="amount", window=Window("1d"), into_field="amount_1d"),
-                Sum(of="amount", window=Window("1d"), into_field="amount_1w"),
-            ]
+            Count(window=Window("forever"), into_field="count"),
+            Sum(of="amount", window=Window("1d"), into_field="amount_1d"),
+            Sum(of="amount", window=Window("1d"), into_field="amount_1w"),
         )
 
 
@@ -93,11 +89,11 @@ class UserTransactionsAbroad:
 
 from datetime import timedelta
 
-# docsnip featureset
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.schema import inputs, outputs
 
 
+# docsnip featureset
 @featureset
 class UserFeature:
     uid: int = feature(id=1)
@@ -178,3 +174,26 @@ def test_overview(client):
     assert data["count"].tolist() == [2, 2, 3, None]
     assert data["amount_1d"].tolist() == [500, 400, 600, None]
     assert found.to_list() == [True, True, True, False]
+
+
+# docsnip source
+from fennel.sources import source, Postgres
+
+postgres = Postgres(
+    name="my-postgres",
+    host="localhost",
+    db_name="my_db",
+    port=5432,
+    username="admin",
+    password="password",
+)
+
+@source(postgres.table('user', cursor='update_time'), every='1m')
+@meta(owner='xyz@example.com')
+@dataset
+class UserLocation:
+    uid: int
+    city: str
+    country: str
+    update_time: datetime
+# /docsnip

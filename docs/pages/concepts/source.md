@@ -6,51 +6,47 @@ status: 'published'
 
 # Source
 
-Source is the ONLY way to get data into Fennel. There are two ways to source data into Fennel:
+Data gets into Fennel datasets via Sources - in fact, sources are the only 
+mechanism for data to reach a Fennel dataset.
 
-You can either log data into Fennel using a Webhook source or you can source data from your external datastores.
+Fennel ships with data connectors to all [common datastores](/api-reference/sources) 
+so that you can 'source' your Fennel datasets from your external datasets. In 
+addition to the pull based sources that read from external data sources, Fennel
+also ships with a push based source called `Webhook` for you to manually push
+data into Fennel datasets. 
 
-Fennel ships with data connectors to all [common datastores](/api-reference/sources) so that you can
-'source' your Fennel datasets from your external datasets. Let's see an example:
+Let's first see an example with postgres connector:
 
 ### **Example**
 
-```python
-from fennel.sources import source, Postgres
-
-postgres = Postgres(host=...<credentials>..)
-
-@source(postgres.table('user'), cursor='update_time', every='1m', lateness='1d')
-@meta(owner='xyz@example.com')
-@dataset
-class UserLocation:
-    uid: int
-    city: str
-    country: str
-    update_time: datetime
-```
+<pre snippet="overview/concepts#source"></pre>
 
 In this example, line 3 creates an object that knows how to connect with your
-Postgres database. Line 6-12 describe a dataset that needs to be sourced from
-the Postgres. And line 5 declares that this dataset should be sourced from a
+Postgres database. Line 11-18 describe a dataset that needs to be sourced from
+the Postgres. And line 11 declares that this dataset should be sourced from a
 table named `user` within the Postgres database. And that's it - once this
 is written, `UserLocation` dataset will start mirroring your postgres table
 `user`and will update as the underlying Postgres table updates.&#x20;
 
-Most sources take a few additional parameters as described below:
+Some sources take a few additional parameters as described below:
 
 ### Every
-The frequency with which Fennel checks the external data source for new data.
-Needed for all sources except Kafka and Webhooks which are ingested continuously.
+The frequency with which Fennel checks the external data source for new data. 
+Fennel is built with continuous ingestion in mind so in most cases you can get 
+away without
+setting this value at all.
 
 ### Cursor
-Fennel uses a cursor to do incremental ingestion of data. It does so
-by remembering the last value of the cursor column (in this case `update_time`)
-and issuing a query of the form `SELECT * FROM user WHERE update_time > {last_update_time}`.
+For some (but not all) sources, Fennel uses a cursor to do incremental 
+ingestion of data. It does so by remembering the last value of the cursor 
+column (in this case `update_time`) and issuing a query of the 
+form `SELECT * FROM user WHERE update_time > {last_update_time}`.
+
 Clearly, this works only when the cursor field is monotonically increasing with
 row updates - which Fennel expects you to ensure. It is also advised to have
-an index of the cursor column so that this query is efficient. All data sources
-except Kafka, Webhooks & S3 require a cursor.
+an index of the cursor column so that this query is efficient. Most data sources
+don't need an explicit cursor and instead use other implicit mechanisms to track
+and save ingestion progress.
 
 ### Lateness
 Fennel, like many other streaming systems, is designed to robustly handle out
@@ -62,18 +58,20 @@ when all data before a timestamp has been seen.
 This is usually handled by a technique called [Watermarking](https://www.oreilly.com/radar/the-world-beyond-batch-streaming-102/)
 where max out of order delay is specified. This max out of order delay of a source
 is called `lateness` in Fennel, and once specified at source level, is respected
-automatically by each downstream pipeline. In this example, by setting `lateness`
-as `1d`, we are telling Fennel that once it sees a data with timestamp `t`, it
-will never see data with timestamp older than `t-1 day` and if it does see older
-data, it's free to discard it.
-
+automatically by each downstream pipeline. 
 
 ## Schema Matching
 
-Once Fennel obtains data from a source (usually as json string), the data needs to
-be parsed to extract and validate all the schema fields. Fennel expects the names
-of the fields in the dataset to match the schema of ingested json string. In this
-example, it is expected that the `user` table in Postgres will have at least four
+Fennel has a strong typing system and all ingested data is evaluated against
+declared types. See [Fennel types](/api-reference/data-types) to see the full list
+of types supported by Fennel. Once data has been parsed in the given type, from
+then onwards, there is no type casting/coercion anywhere else so downstream
+users can rely on all data to match the contract of the declared typed.
+
+Once Fennel obtains data from a source, the data is parsed to extract and 
+validate all the schema fields. Fennel expects the names of the fields in the 
+dataset to match the schema of ingested json string. In this example, it is 
+expected that the `user` table in Postgres will have at least four
 columns -`uid`, `city`, `country`, and `update_time` with appropriate types. Note
 that the postgres table could have many more columns too - they are simply ignored.
 If ingested data doesn't match with the schema of the Fennel dataset, the data
@@ -89,6 +87,8 @@ Here is how various types are matched from the sourced data:
 * `Dict[T]` matches any dictionary from strings to values of type T.
 * `Option[T]` matches if either the value is `null` or if its non-null value
   matches type T. Note that `null` is an invalid value for any non-Option types.
+* `struct` is similar to dataclass in Python or struct in compiled languages
+  and matches JSON data with appropriate types recursively.
 * `datetime` matching is a bit more flexible to support multiple common
   data formats to avoid bugs due to incompatible formats. Fennel is able to
   safely parse datetime from all the following formats.
@@ -110,7 +110,7 @@ In the above example, the credentials are defined in the code itself, which
 usually is not a good practice from a security point of view. Instead, Fennel
 recommends two ways of using Sources securely:
 
-1. Using environment variables on your local machines
+1. Using environment variables (see [CI/CD](/development/ci-cd-workflows)) for an example
 2. Defining credentials in Fennel's web console and referring to sources by
    their names in the Python definitions.
 
@@ -130,6 +130,10 @@ to be able to read the data.
 
 ### Change Data Capture (CDC)
 
-Fennel can also do CDC ingestion for Postgres and MySQL. However, that requires
-setting some permissions on your Postgres/MySQL instances. Please talk to Fennel
-team if you want this enabled.
+Fennel can also do CDC ingestion for Postgres and MySQL, which is even cheaper
+from a load point of view because all Fennel does is consume the binlog. However,
+that requires setting some permissions on your Postgres/MySQL instances. Please 
+talk to Fennel team if you want this enabled.
+
+Fennel can also ingest debezium format CDC data via many other sources like Kafka,
+Kinesis, S3, Webhook etc. 
