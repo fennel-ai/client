@@ -184,6 +184,7 @@ def test_simple_source_with_pre_proc():
         lateness="20h",
         preproc={
             "age": 10,
+            "gender": "male",
             "timestamp": datetime(1970, 1, 1, 0, 0, 0),
             "country": ref("upstream.country"),
         },
@@ -303,6 +304,11 @@ def test_simple_source_with_pre_proc():
             },
             "country": {
                 "ref": "upstream.country",
+            },
+            "gender": {
+                "value": {
+                    "string": "male",
+                }
             },
             "timestamp": {
                 "value": {"timestamp": "1970-01-01T00:00:00Z"},
