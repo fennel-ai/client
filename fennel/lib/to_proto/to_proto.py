@@ -546,11 +546,11 @@ def _pre_proc_value_to_proto(
     dtype = get_datatype(type(pre_proc_value))
     if dtype == schema_proto.DataType(string_type=schema_proto.StringType()):
         return connector_proto.PreProcValue(
-            value=schema_proto.Value(string=StringValue(value=pre_proc_value))
+            value=schema_proto.Value(string=pre_proc_value)
         )
     elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
         return connector_proto.PreProcValue(
-            value=schema_proto.Value(bool=BoolValue(value=pre_proc_value))
+            value=schema_proto.Value(bool=pre_proc_value)
         )
     elif dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
         return connector_proto.PreProcValue(

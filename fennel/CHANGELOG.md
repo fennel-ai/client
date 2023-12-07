@@ -1,4 +1,6 @@
 # Changelog
+## [0.19.4] - 2023-12-06
+- Bug fix for `preproc` on `@sources` for string and bool data types.
 
 ## [0.19.3] - 2023-12-06
 - Rename `pre_proc` to `preproc` on `@sources`. 
