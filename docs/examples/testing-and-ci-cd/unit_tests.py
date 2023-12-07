@@ -39,13 +39,9 @@ class MovieRating:
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
-            [
-                Count(window=Window("7d"), into_field="num_ratings"),
-                Sum(
-                    window=Window("28d"), of="rating", into_field="sum_ratings"
-                ),
-                Average(window=Window("12h"), of="rating", into_field="rating"),
-            ]
+            Count(window=Window("7d"), into_field="num_ratings"),
+            Sum(window=Window("28d"), of="rating", into_field="sum_ratings"),
+            Average(window=Window("12h"), of="rating", into_field="rating"),
         )
 
 
@@ -62,9 +58,7 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_dataset(self, client):
         # Sync the dataset
-        client.sync(
-            datasets=[MovieRating, RatingActivity],
-        )
+        client.sync(datasets=[MovieRating, RatingActivity])
         now = datetime.now()
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
@@ -92,10 +86,7 @@ class TestDataset(unittest.TestCase):
         # is working as expected
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
-        df, _ = MovieRating.lookup(
-            ts,
-            movie=names,
-        )
+        df, _ = MovieRating.lookup(ts, movie=names)
         assert df.shape == (2, 5)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]

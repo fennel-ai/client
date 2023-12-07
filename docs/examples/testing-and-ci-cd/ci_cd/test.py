@@ -1,0 +1,29 @@
+from datetime import datetime
+import pandas as pd
+from fennel.test_lib import mock
+from ci_cd.datasets import Ticket
+from ci_cd.featuresets import TicketFeatures
+
+@mock
+def test_featureset_metaflags(client):
+    client.sync(datasets=[Ticket], featuresets=[TicketFeatures])
+
+    df = pd.DataFrame(
+        data=[
+            ["123", 100, datetime(2020, 1, 1)],
+            ["456", 200, datetime(2020, 1, 2)],
+        ],
+        columns=["ticket_id", "price", "at"],
+    )
+    client.log("example", "ticket_sale", df)
+    feature_df = client.extract_features(
+        input_feature_list=[TicketFeatures.ticket_id],
+        output_feature_list=[TicketFeatures.price, TicketFeatures.ticket_id],
+        input_dataframe=pd.DataFrame(data={
+            "TicketFeatures.ticket_id": ["123", "456"]
+        }),
+    )
+    assert feature_df.to_dict(orient="records") == [
+        {"TicketFeatures.ticket_id": "123", "TicketFeatures.price": 100},
+        {"TicketFeatures.ticket_id": "456", "TicketFeatures.price": 200},
+    ]
