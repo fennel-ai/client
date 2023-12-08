@@ -44,8 +44,15 @@ sidebar:
     pages:
       - "development/unit-testing"
       - "development/ci-cd-workflows"
-      - "development/monitoring-alerting"
       - "development/console"
+
+  - slug: "monitoring"
+    title: "Monitoring"
+    pages:
+      - "monitoring/prometheus"
+      - "monitoring/grafana"
+      - "monitoring/newrelic"
+      - "monitoring/alerting"
 
   - slug: "guides"
     title: "Guides"

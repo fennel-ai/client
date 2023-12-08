@@ -1,16 +1,16 @@
 ---
-title: Monitoring & Alerting
-order: 3
+title: Prometheus
+order: 1
 status: 'published'
 ---
 
-# Monitoring & Alerting
+# Prometheus Metrics
 
 For monitoring/alerting, Fennel exposes all relevant metrics behind a Prometheus
-endpoint. You can point Grafana, Datadog, or any other metric system that speaks
-the Prometheus protocol towards this endpoint. Once your metric system is
-connected to Fennel's Prometheus endpoint, you can seamlessly use your existing
-monitoring/alerting stack.
+endpoint. You can point [Grafana](/monitoring/prometheus), [New Relic](/monitoring/newrelic), 
+or any other metric system that speaks the Prometheus protocol towards this endpoint. 
+Once your metric system is connected to Fennel's Prometheus endpoint, you can 
+seamlessly use your existing monitoring/alerting stack.
 
 The following metrics are exposed via the Prometheus endpoint:
 
@@ -169,10 +169,3 @@ The following metrics are exposed via the Prometheus endpoint:
 </li>
 </ol>
 
-
-## Incident Management & PagerDuty
-Since Fennel is completely managed, you don't need to be on PagerDuty for incidents affecting the Fennel system itself - Fennel engineers get paged for those via internal systems.
-
-However, if you wanted to set your own PagerDuty alerting for application 
-metrics, you can do so on your own on top of the metrics exposed behind the 
-Prometheus endpoint.
