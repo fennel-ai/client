@@ -741,6 +741,29 @@ def _s3_conn_to_source_proto(
     return (ext_db, source)
 
 
+# Converts the S3Connector to an S3Table proto but does not wrap in a Source
+# This is used for non-source S3 buckets (e.g extract historical)
+def s3_conn_to_s3_table_proto(
+    connector: sources.S3Connector,
+) -> connector_proto.S3Table:
+    data_source = connector.data_source
+    if not isinstance(data_source, sources.S3):
+        raise ValueError("S3Connector must have S3 as data_source")
+    ext_db = _s3_to_ext_db_proto(
+        data_source.name,
+        data_source.aws_access_key_id,
+        data_source.aws_secret_access_key,
+    )
+    return _s3_to_s3_table_proto(
+        ext_db,
+        bucket=connector.bucket_name,
+        path_prefix=connector.path_prefix,
+        delimiter=connector.delimiter,
+        format=connector.format,
+        presorted=connector.presorted,
+    )
+
+
 def _s3_to_ext_db_proto(
     name: str,
     aws_access_key_id: Optional[str],
@@ -755,6 +778,7 @@ def _s3_to_ext_db_proto(
     )
 
 
+# Wraps the S3Table proto as an ExtTable
 def _s3_to_ext_table_proto(
     db: connector_proto.ExtDatabase,
     bucket: Optional[str],
@@ -763,20 +787,33 @@ def _s3_to_ext_table_proto(
     format: str,
     presorted: bool,
 ) -> connector_proto.ExtTable:
+    return connector_proto.ExtTable(
+        s3_table=_s3_to_s3_table_proto(
+            db, bucket, path_prefix, delimiter, format, presorted
+        )
+    )
+
+
+def _s3_to_s3_table_proto(
+    db: connector_proto.ExtDatabase,
+    bucket: Optional[str],
+    path_prefix: Optional[str],
+    delimiter: str,
+    format: str,
+    presorted: bool,
+) -> connector_proto.S3Table:
     if bucket is None:
         raise ValueError("bucket must be specified")
     if path_prefix is None:
         raise ValueError("path_prefix must be specified")
 
-    return connector_proto.ExtTable(
-        s3_table=connector_proto.S3Table(
-            db=db,
-            bucket=bucket,
-            path_prefix=path_prefix,
-            delimiter=delimiter,
-            format=format,
-            pre_sorted=presorted,
-        )
+    return connector_proto.S3Table(
+        db=db,
+        bucket=bucket,
+        path_prefix=path_prefix,
+        delimiter=delimiter,
+        format=format,
+        pre_sorted=presorted,
     )
 
 

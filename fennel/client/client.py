@@ -12,6 +12,7 @@ from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature, is_valid_feature
 from fennel.lib.schema import parse_json
 from fennel.lib.to_proto import to_sync_request_proto
+from fennel.lib.to_proto.to_proto import s3_conn_to_s3_table_proto
 from fennel.utils import check_response, to_columnar_json
 from fennel.sources import S3Connector
 
@@ -513,20 +514,10 @@ class Client:
                     "Input bucket and prefix not found in input dictionary. "
                     "Please provide a bucket name as value for the key 'input_bucket'."
                 )
-            input_info["input_bucket"] = input_s3.bucket_name
-            input_info["input_prefix"] = input_s3.path_prefix
-            access_key_id, secret_access_key = input_s3.creds()
-            if access_key_id is not None:
-                input_info["input_access_key_id"] = access_key_id
-                if secret_access_key is None:
-                    raise Exception(
-                        "Input acess key id specified but secret key not found."
-                    )
-                input_info["input_secret_access_key"] = secret_access_key
-
-            input_info["format"] = format.upper()
+            input_info["s3_table"] = s3_conn_to_s3_table_proto(
+                input_s3
+            ).SerializeToString()
             input_info["compression"] = "None"
-
             if feature_to_column_map is not None:
                 if len(feature_to_column_map) != len(input_feature_names):
                     raise Exception(
@@ -540,9 +531,7 @@ class Client:
                             f"Column mapping does not contain all the required features. Feature: {input_feature_name},"
                             f" not found in column mapping: {feature_to_column_map}"
                         )
-
                 input_info["column_mapping"] = feature_to_column_map  # type: ignore
-
             extract_historical_input["S3"] = input_info
 
         output_feature_names = []
@@ -561,25 +550,18 @@ class Client:
                     [f.fqn() for f in output_feature.features]
                 )
 
-        output_info = {}
-        if output_s3 is not None:
-            output_info["output_bucket"] = output_s3.bucket_name
-            output_info["output_prefix"] = output_s3.path_prefix
-            access_key_id, secret_access_key = output_s3.creds()
-            if access_key_id is not None:
-                output_info["output_access_key_id"] = access_key_id
-                if secret_access_key is None:
-                    raise Exception(
-                        "Output access key id specified but secret key not found."
-                    )
-                output_info["output_secret_access_key"] = secret_access_key
+        output_info = (
+            ""
+            if output_s3 is None
+            else s3_conn_to_s3_table_proto(output_s3).SerializeToString()
+        )
 
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
             "input": extract_historical_input,
             "timestamp_column": timestamp_column,
-            "s3_output": output_info if len(output_info) > 0 else None,
+            "s3_output": output_info,
         }
         return self._post_json(
             "{}/extract_historical_features".format(V1_API), req
