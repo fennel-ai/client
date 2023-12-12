@@ -188,12 +188,15 @@ postgres = Postgres(
     password="password",
 )
 
-@source(postgres.table('user', cursor='update_time'), every='1m')
-@meta(owner='xyz@example.com')
+
+@source(postgres.table("user", cursor="update_time"), every="1m")
+@meta(owner="xyz@example.com")
 @dataset
 class UserLocation:
     uid: int
     city: str
     country: str
     update_time: datetime
+
+
 # /docsnip
