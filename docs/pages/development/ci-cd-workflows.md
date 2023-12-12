@@ -13,11 +13,11 @@ connecting with the chosen Fennel servers.
 
 ## Example: Github Actions
 
-Say we have a single dataset as follows in a file called datasets.py:
+Say we have a single dataset as follows in a file called `datasets.py`:
 
 <pre snippet="testing-and-ci-cd/ci_cd/datasets#gh_action_dataset"></pre>
 
-And a single featureset as follows in a file called featuresets.py:
+And a single featureset as follows in a file called `featuresets.py`:
 <pre snippet="testing-and-ci-cd/ci_cd/featuresets#gh_action_featureset"></pre>
 
 A simple Python script could be written that imports both the dataset & featureset
@@ -80,7 +80,7 @@ jobs:
    resolved (e.g. changing the step or branch name)
 5. **Disabling prod deployment outside of CI/CD** - Fennel supports fined-grained
    RBAC using which you can control permissions of tokens. For instance, you can
-   specify that only the tokens of a particular role (say superadmin) can deploy
+   specify that only the tokens of a particular role (say super admin) can deploy
    to Prod and all other tokens can only read feature values. With this, as long
    as that token is only available in your CI/CD environment, your team members
    can still see/query prod Fennel but not modify it without having gone through 
