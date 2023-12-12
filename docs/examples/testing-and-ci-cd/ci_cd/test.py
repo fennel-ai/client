@@ -4,6 +4,7 @@ from fennel.test_lib import mock
 from ci_cd.datasets import Ticket
 from ci_cd.featuresets import TicketFeatures
 
+
 @mock
 def test_featureset_metaflags(client):
     client.sync(datasets=[Ticket], featuresets=[TicketFeatures])
@@ -19,9 +20,9 @@ def test_featureset_metaflags(client):
     feature_df = client.extract_features(
         input_feature_list=[TicketFeatures.ticket_id],
         output_feature_list=[TicketFeatures.price, TicketFeatures.ticket_id],
-        input_dataframe=pd.DataFrame(data={
-            "TicketFeatures.ticket_id": ["123", "456"]
-        }),
+        input_dataframe=pd.DataFrame(
+            data={"TicketFeatures.ticket_id": ["123", "456"]}
+        ),
     )
     assert feature_df.to_dict(orient="records") == [
         {"TicketFeatures.ticket_id": "123", "TicketFeatures.price": 100},

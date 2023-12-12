@@ -13,6 +13,7 @@ class User:
     age: float
     signup_at: datetime
 
+
 @dataset
 class Transaction:
     uid: int
@@ -20,4 +21,6 @@ class Transaction:
     payment_country: str
     merchant_id: int
     timestamp: datetime
+
+
 # /docsnip
