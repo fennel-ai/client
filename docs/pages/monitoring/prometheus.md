@@ -31,7 +31,7 @@ The following metrics are exposed via the Prometheus endpoint:
     - `dataset_name` - name of the dataset
     - `metric` - metric to report. Possible value are `backlog` & `event_timestamp_seconds`. 
         `backlog` reports the number of events ingested by the source but yet to be applied to the dataset.
-        `event_timestamp_seconds` reports the event timestamp of the last message procssed (this is sampled and hence approximate).
+        `event_timestamp_seconds` reports the event timestamp of the last message processed (this is sampled and hence approximate).
    </details>
 </li>
 
@@ -39,7 +39,7 @@ The following metrics are exposed via the Prometheus endpoint:
 <details>
    <summary><b> `fennel_source_dataset_counter` </b></summary>
 
-    Reports the count of schema errors encounted by a data source
+    Reports the count of schema errors encountered by the data source
 
     Type: Counter
 
@@ -69,8 +69,8 @@ The following metrics are exposed via the Prometheus endpoint:
     - `pipeline_name` - the name of the pipeline
     - `dataset_name` - the name of the dataset
     - `metric` - metric to report. Possible values are  `backlog`, `event_timestamp_seconds`, `error`.
-     `backlog` reports the number of events in the input datasets that haven't been procssed by the pipeline.
-     `event_timestamp_seconds` reports the event timestamp of the last message procssed (this is sampled and hence approximate).
+     `backlog` reports the number of events in the input datasets that haven't been processed by the pipeline.
+     `event_timestamp_seconds` reports the event timestamp of the last message processed (this is sampled and hence approximate).
      `error` is the number of messages for which the pipeline encountered an error.
    </details>
 </li>
