@@ -1,4 +1,6 @@
 # Changelog
+## [0.20.7] - 2023-12-13
+- Add support for diff summaries and printing detailed diffs on error.
 
 ## [0.20.8] - 2024-01-22
 - Do data casting in log only and do schema validation in assign
