@@ -12,16 +12,13 @@ database
 5. This whole module is called connector.
 """
 import builtins
-import collections.abc
 import google.protobuf.descriptor
 import google.protobuf.duration_pb2
-import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import google.protobuf.timestamp_pb2
 import google.protobuf.wrappers_pb2
 import kinesis_pb2
-import schema_pb2
 import schema_registry_pb2
 import sys
 import typing
@@ -677,6 +674,7 @@ global___KinesisStream = KinesisStream
 
 @typing_extensions.final
 class RedshiftTable(google.protobuf.message.Message):
+<<<<<<< HEAD
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     DB_FIELD_NUMBER: builtins.int
@@ -697,24 +695,25 @@ global___RedshiftTable = RedshiftTable
 
 @typing_extensions.final
 class PreProcValue(google.protobuf.message.Message):
+=======
+>>>>>>> bcdda1e (generate protos with jsonl)
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    REF_FIELD_NUMBER: builtins.int
-    VALUE_FIELD_NUMBER: builtins.int
-    ref: builtins.str
+    DB_FIELD_NUMBER: builtins.int
+    TABLE_NAME_FIELD_NUMBER: builtins.int
     @property
-    def value(self) -> schema_pb2.Value: ...
+    def db(self) -> global___ExtDatabase: ...
+    table_name: builtins.str
     def __init__(
         self,
         *,
-        ref: builtins.str = ...,
-        value: schema_pb2.Value | None = ...,
+        db: global___ExtDatabase | None = ...,
+        table_name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["ref", b"ref", "value", b"value", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["ref", b"ref", "value", b"value", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["ref", "value"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "table_name", b"table_name"]) -> None: ...
 
-global___PreProcValue = PreProcValue
+global___RedshiftTable = RedshiftTable
 
 @typing_extensions.final
 class Source(google.protobuf.message.Message):
@@ -725,33 +724,14 @@ class Source(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
-    class PreProcEntry(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-        KEY_FIELD_NUMBER: builtins.int
-        VALUE_FIELD_NUMBER: builtins.int
-        key: builtins.str
-        @property
-        def value(self) -> global___PreProcValue: ...
-        def __init__(
-            self,
-            *,
-            key: builtins.str = ...,
-            value: global___PreProcValue | None = ...,
-        ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
-
     TABLE_FIELD_NUMBER: builtins.int
     DATASET_FIELD_NUMBER: builtins.int
     EVERY_FIELD_NUMBER: builtins.int
     CURSOR_FIELD_NUMBER: builtins.int
-    LATENESS_FIELD_NUMBER: builtins.int
+    DISORDER_FIELD_NUMBER: builtins.int
     TIMESTAMP_FIELD_FIELD_NUMBER: builtins.int
     CDC_FIELD_NUMBER: builtins.int
     STARTING_FROM_FIELD_NUMBER: builtins.int
-    PRE_PROC_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
@@ -759,13 +739,11 @@ class Source(google.protobuf.message.Message):
     def every(self) -> google.protobuf.duration_pb2.Duration: ...
     cursor: builtins.str
     @property
-    def lateness(self) -> google.protobuf.duration_pb2.Duration: ...
+    def disorder(self) -> google.protobuf.duration_pb2.Duration: ...
     timestamp_field: builtins.str
     cdc: global___CDCStrategy.ValueType
     @property
     def starting_from(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
-    @property
-    def pre_proc(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___PreProcValue]: ...
     def __init__(
         self,
         *,
@@ -773,14 +751,13 @@ class Source(google.protobuf.message.Message):
         dataset: builtins.str = ...,
         every: google.protobuf.duration_pb2.Duration | None = ...,
         cursor: builtins.str | None = ...,
-        lateness: google.protobuf.duration_pb2.Duration | None = ...,
+        disorder: google.protobuf.duration_pb2.Duration | None = ...,
         timestamp_field: builtins.str = ...,
         cdc: global___CDCStrategy.ValueType = ...,
         starting_from: google.protobuf.timestamp_pb2.Timestamp | None = ...,
-        pre_proc: collections.abc.Mapping[builtins.str, global___PreProcValue] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "every", b"every", "lateness", b"lateness", "starting_from", b"starting_from", "table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "disorder", b"disorder", "every", b"every", "starting_from", b"starting_from", "table", b"table"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "disorder", b"disorder", "every", b"every", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
 
 global___Source = Source
