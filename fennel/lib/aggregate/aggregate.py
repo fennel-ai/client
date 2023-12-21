@@ -8,7 +8,7 @@ ItemType = Union[str, List[str]]
 
 
 class AggregateType(BaseModel):
-    window: Union[Window, str]
+    window: Window
     # Name of the field the aggregate will  be assigned to
     into_field: str
 
