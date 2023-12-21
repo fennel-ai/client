@@ -350,3 +350,88 @@ def test_multiple_pipelines(client):
     )
     assert df.shape == (4, 4)
     assert found.sum() == 4
+
+
+# docsnip aggregate_with_str_window
+@meta(owner="data-eng-oncall@fennel.ai")
+@dataset
+class ActivityGroupedDataset:
+    timestamp: datetime
+    user_id: int = field(key=True)
+    amount_forever: float
+    amount_1d: float
+
+    @pipeline(version=1)
+    @inputs(Activity)
+    def create_grouped_dataset(cls, activity: Dataset):
+        return activity.dropnull(
+            columns=["amount"]
+        ).groupby(
+            "user_id"
+        ).aggregate(
+            [
+                Sum(of="amount", window="forever", into_field="amount_forever"),
+                Sum(of="amount", window="1d", into_field="amount_1d"),
+            ]
+        )
+
+
+# /docsnip
+
+
+@mock
+def test_str_window_aggregates(client):
+    # # Sync the dataset
+    client.sync(datasets=[Activity, ActivityGroupedDataset])
+    now = datetime.now()
+    minute_ago = now - timedelta(minutes=1)
+    one_day_ago = minute_ago - timedelta(days=1)
+    data = [
+        [
+            14325,
+            "report",
+            49,
+            '{"transaction_amount": 49, "merchant_id": 1322}',
+            minute_ago,
+        ],
+        [
+            14325,
+            "report",
+            None,
+            '{"transaction_amount": 49, "merchant_id": 1322}',
+            minute_ago,
+        ],
+        [
+            14325,
+            "atm_withdrawal",
+            99,
+            '{"location": "mumbai"}',
+            minute_ago,
+        ],
+        [
+            14325,
+            "report",
+            99,
+            '{"transaction_amount": 99, "merchant_id": 1422}',
+            one_day_ago,
+        ],
+        [
+            14326,
+            "report",
+            99,
+            '{"transaction_amount": 99, "merchant_id": 1422}',
+            one_day_ago,
+        ],
+
+    ]
+    columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
+    df = pd.DataFrame(data, columns=columns)
+    response = client.log("fennel_webhook", "Activity", df)
+    assert response.status_code == requests.codes.OK, response.json()
+    # Only the mock client keyed datasets contains the lookup parameter to access the data.
+    user_ids = pd.Series([14325, 14326])
+    ts = pd.Series([now, now])
+    data, found = ActivityGroupedDataset.lookup(ts, user_id=user_ids)
+    assert data.shape == (2, 4)
+    assert data["amount_forever"].tolist() == [247.0, 99.0]
+    assert data["amount_1d"].tolist() == [148.0, 0.0]
