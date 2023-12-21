@@ -364,15 +364,19 @@ class ActivityGroupedDataset:
     @pipeline(version=1)
     @inputs(Activity)
     def create_grouped_dataset(cls, activity: Dataset):
-        return activity.dropnull(
-            columns=["amount"]
-        ).groupby(
-            "user_id"
-        ).aggregate(
-            [
-                Sum(of="amount", window="forever", into_field="amount_forever"),
-                Sum(of="amount", window="1d", into_field="amount_1d"),
-            ]
+        return (
+            activity.dropnull(columns=["amount"])
+            .groupby("user_id")
+            .aggregate(
+                [
+                    Sum(
+                        of="amount",
+                        window="forever",
+                        into_field="amount_forever",
+                    ),
+                    Sum(of="amount", window="1d", into_field="amount_1d"),
+                ]
+            )
         )
 
 
