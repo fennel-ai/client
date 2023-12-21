@@ -426,7 +426,6 @@ def test_str_window_aggregates(client):
             '{"transaction_amount": 99, "merchant_id": 1422}',
             one_day_ago,
         ],
-
     ]
     columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
     df = pd.DataFrame(data, columns=columns)
