@@ -12,6 +12,14 @@ class AggregateType(BaseModel):
     # Name of the field the aggregate will  be assigned to
     into_field: str
 
+    @validator("window", pre=True)
+    # Converting the window into Window object if str is passed
+    def validate_window(cls, value):
+        if isinstance(value, str):
+            return Window(value)
+        else:
+            return value
+
     def to_proto(self) -> spec_proto.PreSpec:
         raise NotImplementedError
 

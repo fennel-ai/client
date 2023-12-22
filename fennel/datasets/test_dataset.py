@@ -2580,3 +2580,58 @@ def test_pipeline_with_tier_selector():
     sync_request = view._get_sync_request_proto(tier="prod")
     pipelines = sync_request.pipelines
     assert len(pipelines) == 1
+
+
+def test_dataset_with_str_window_aggregate():
+    @meta(owner="test@test.com")
+    @dataset
+    class UserAggregatesDataset:
+        gender: str = field(key=True)
+        timestamp: datetime = field(timestamp=True)
+        count: int
+        avg_age: float
+
+        @pipeline(version=1)
+        @inputs(UserInfoDataset)
+        def create_aggregated_dataset(cls, user_info: Dataset):
+            return user_info.groupby("gender").aggregate(
+                Count(window="forever", into_field="count"),
+                Average(of="age", window="forever", into_field="avg_age"),
+            )
+
+    view = InternalTestClient()
+    view.add(UserAggregatesDataset)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "UserAggregatesDataset",
+        "metadata": {"owner": "test@test.com"},
+        "dsschema": {
+            "keys": {
+                "fields": [{"name": "gender", "dtype": {"stringType": {}}}]
+            },
+            "values": {
+                "fields": [
+                    {"name": "count", "dtype": {"intType": {}}},
+                    {"name": "avg_age", "dtype": {"doubleType": {}}},
+                ]
+            },
+            "timestamp": "timestamp",
+        },
+        "history": "63072000s",
+        "retention": "63072000s",
+        "fieldMetadata": {
+            "avg_age": {},
+            "count": {},
+            "gender": {},
+            "timestamp": {},
+        },
+        "pycode": {},
+    }
+    # Ignoring schema validation since they are bytes and not human readable
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )

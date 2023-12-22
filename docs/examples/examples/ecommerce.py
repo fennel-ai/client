@@ -10,7 +10,6 @@ from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.lib.window import Window
 from fennel.sources import Postgres, source, Webhook
 from fennel.test_lib import mock
 
@@ -59,10 +58,8 @@ class UserSellerOrders:
     @inputs(Order)
     def my_pipeline(cls, orders: Dataset):
         return orders.groupby("uid", "seller_id").aggregate(
-            [
-                Count(window=Window("1d"), into_field="num_orders_1d"),
-                Count(window=Window("1w"), into_field="num_orders_1w"),
-            ]
+            Count(window="1d", into_field="num_orders_1d"),
+            Count(window="1w", into_field="num_orders_1w"),
         )
 
 

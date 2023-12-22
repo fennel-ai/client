@@ -1114,14 +1114,14 @@ class MovieRatingWindowed:
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
-            Count(window=Window("3d"), into_field=str(cls.num_ratings_3d)),
+            Count(window="3d", into_field=str(cls.num_ratings_3d)),
             Sum(
-                window=Window("7d"),
+                window="7d",
                 of="rating",
                 into_field=str(cls.sum_ratings_7d),
             ),
             Average(
-                window=Window("6h"),
+                window="6h",
                 of="rating",
                 into_field=str(cls.avg_rating_6h),
             ),
@@ -1132,7 +1132,7 @@ class MovieRatingWindowed:
                 into_field=str(cls.std_rating_3d),
             ),
             Stddev(
-                window=Window("7d"),
+                window="7d",
                 of="rating",
                 into_field=str(cls.std_rating_7d),
             ),

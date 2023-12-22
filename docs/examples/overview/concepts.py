@@ -79,9 +79,9 @@ class UserTransactionsAbroad:
             lambda df: df["country"] != df["payment_country"]
         )
         return abroad.groupby("uid").aggregate(
-            Count(window=Window("forever"), into_field="count"),
-            Sum(of="amount", window=Window("1d"), into_field="amount_1d"),
-            Sum(of="amount", window=Window("1d"), into_field="amount_1w"),
+            Count(window="forever", into_field="count"),
+            Sum(of="amount", window="1d", into_field="amount_1d"),
+            Sum(of="amount", window="1d", into_field="amount_1w"),
         )
 
 

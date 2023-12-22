@@ -14,7 +14,6 @@ from fennel.lib.expectations import (
 )
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.lib.window import Window
 from fennel.sources import source, Postgres, Snowflake, Kafka, Webhook
 
 # /docsnip
@@ -83,8 +82,8 @@ class UserSellerOrders:
         orders = orders.drop("product_id", "desc", "price")
         orders = orders.dropnull()
         return orders.groupby("uid", "seller_id").aggregate(
-            Count(window=Window("1d"), into_field="num_orders_1d"),
-            Count(window=Window("1w"), into_field="num_orders_1w"),
+            Count(window="1d", into_field="num_orders_1d"),
+            Count(window="1w", into_field="num_orders_1w"),
         )
 
 

@@ -10,7 +10,6 @@ from fennel.lib.aggregate import Count, Sum, Average
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 
 webhook = Webhook(name="fennel_webhook")
@@ -39,9 +38,9 @@ class MovieRating:
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
-            Count(window=Window("7d"), into_field="num_ratings"),
-            Sum(window=Window("28d"), of="rating", into_field="sum_ratings"),
-            Average(window=Window("12h"), of="rating", into_field="rating"),
+            Count(window="7d", into_field="num_ratings"),
+            Sum(window="28d", of="rating", into_field="sum_ratings"),
+            Average(window="12h", of="rating", into_field="rating"),
         )
 
 

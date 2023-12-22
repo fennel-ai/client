@@ -11,7 +11,6 @@ from fennel.lib.aggregate import Count, Sum, LastK
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
-from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 
@@ -63,18 +62,16 @@ class UserTransactionsAbroad:
             lambda df: df["country"] != df["payment_country"]
         )
         return abroad.groupby("uid").aggregate(
-            [
-                Count(window=Window("forever"), into_field="count"),
-                Sum(of="amount", window=Window("1d"), into_field="amount_1d"),
-                Sum(of="amount", window=Window("1w"), into_field="amount_1w"),
-                LastK(
-                    of="merchant_id",
-                    window=Window("1d"),
-                    into_field="recent_merchant_ids",
-                    limit=5,
-                    dedup=True,
-                ),
-            ]
+            Count(window="forever", into_field="count"),
+            Sum(of="amount", window="1d", into_field="amount_1d"),
+            Sum(of="amount", window="1w", into_field="amount_1w"),
+            LastK(
+                of="merchant_id",
+                window="1d",
+                into_field="recent_merchant_ids",
+                limit=5,
+                dedup=True,
+            ),
         )
 
 
@@ -310,9 +307,7 @@ class LoginStats:
         )
         union = with_ios_platform + with_android_platform
         return union.groupby(["uid", "platform"]).aggregate(
-            [
-                Count(window=Window("1d"), into_field="num_logins_1d"),
-            ]
+            Count(window="1d", into_field="num_logins_1d"),
         )
 
 
