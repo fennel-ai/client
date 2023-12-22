@@ -190,8 +190,8 @@ class UserAdStats:
     def aggregate_ad_clicks(cls, ad_clicks: Dataset):
         return ad_clicks.groupby("uid").aggregate(
             [
-                Count(window=Window("forever"), into_field="num_clicks"),
-                Count(window=Window("1w"), into_field="num_clicks_1w"),
+                Count(window="forever", into_field="num_clicks"),
+                Count(window="1w", into_field="num_clicks_1w"),
             ]
         )
 

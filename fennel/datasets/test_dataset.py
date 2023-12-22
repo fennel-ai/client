@@ -2595,17 +2595,8 @@ def test_dataset_with_str_window_aggregate():
         @inputs(UserInfoDataset)
         def create_aggregated_dataset(cls, user_info: Dataset):
             return user_info.groupby("gender").aggregate(
-                [
-                    Count(
-                        window="forever",
-                        into_field=str(cls.count),
-                    ),
-                    Average(
-                        of="age",
-                        window=Window("forever"),
-                        into_field=str(cls.avg_age),
-                    ),
-                ]
+                Count(window="forever", into_field="count"),
+                Average(of="age", window="forever", into_field="avg_age"),
             )
 
     view = InternalTestClient()
