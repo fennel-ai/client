@@ -73,6 +73,7 @@ class ExtDatabase(google.protobuf.message.Message):
     KAFKA_FIELD_NUMBER: builtins.int
     WEBHOOK_FIELD_NUMBER: builtins.int
     KINESIS_FIELD_NUMBER: builtins.int
+    REDSHIFT_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def mysql(self) -> global___MySQL: ...
@@ -95,6 +96,8 @@ class ExtDatabase(google.protobuf.message.Message):
     def webhook(self) -> global___Webhook: ...
     @property
     def kinesis(self) -> global___Kinesis: ...
+    @property
+    def redshift(self) -> global___Redshift: ...
     def __init__(
         self,
         *,
@@ -108,10 +111,11 @@ class ExtDatabase(google.protobuf.message.Message):
         kafka: global___Kafka | None = ...,
         webhook: global___Webhook | None = ...,
         kinesis: global___Kinesis | None = ...,
+        redshift: global___Redshift | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "kafka", b"kafka", "kinesis", b"kinesis", "mysql", b"mysql", "postgres", b"postgres", "reference", b"reference", "s3", b"s3", "snowflake", b"snowflake", "variant", b"variant", "webhook", b"webhook"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "kafka", b"kafka", "kinesis", b"kinesis", "mysql", b"mysql", "name", b"name", "postgres", b"postgres", "reference", b"reference", "s3", b"s3", "snowflake", b"snowflake", "variant", b"variant", "webhook", b"webhook"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql", "postgres", "reference", "s3", "bigquery", "snowflake", "kafka", "webhook", "kinesis"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "kafka", b"kafka", "kinesis", b"kinesis", "mysql", b"mysql", "postgres", b"postgres", "redshift", b"redshift", "reference", b"reference", "s3", b"s3", "snowflake", b"snowflake", "variant", b"variant", "webhook", b"webhook"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "kafka", b"kafka", "kinesis", b"kinesis", "mysql", b"mysql", "name", b"name", "postgres", b"postgres", "redshift", b"redshift", "reference", b"reference", "s3", b"s3", "snowflake", b"snowflake", "variant", b"variant", "webhook", b"webhook"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql", "postgres", "reference", "s3", "bigquery", "snowflake", "kafka", "webhook", "kinesis", "redshift"] | None: ...
 
 global___ExtDatabase = ExtDatabase
 
@@ -182,6 +186,7 @@ class Reference(google.protobuf.message.Message):
         SNOWFLAKE: Reference._ExtDBType.ValueType  # 5
         WEBHOOK: Reference._ExtDBType.ValueType  # 6
         KINESIS: Reference._ExtDBType.ValueType  # 7
+        REDSHIFT: Reference._ExtDBType.ValueType  # 8
 
     class ExtDBType(_ExtDBType, metaclass=_ExtDBTypeEnumTypeWrapper): ...
     MYSQL: Reference.ExtDBType.ValueType  # 0
@@ -192,6 +197,7 @@ class Reference(google.protobuf.message.Message):
     SNOWFLAKE: Reference.ExtDBType.ValueType  # 5
     WEBHOOK: Reference.ExtDBType.ValueType  # 6
     KINESIS: Reference.ExtDBType.ValueType  # 7
+    REDSHIFT: Reference.ExtDBType.ValueType  # 8
 
     DBTYPE_FIELD_NUMBER: builtins.int
     dbtype: global___Reference.ExtDBType.ValueType
@@ -408,6 +414,27 @@ class Kinesis(google.protobuf.message.Message):
 global___Kinesis = Kinesis
 
 @typing_extensions.final
+class Redshift(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DATABASE_FIELD_NUMBER: builtins.int
+    HOST_FIELD_NUMBER: builtins.int
+    PORT_FIELD_NUMBER: builtins.int
+    database: builtins.str
+    host: builtins.str
+    port: builtins.int
+    def __init__(
+        self,
+        *,
+        database: builtins.str = ...,
+        host: builtins.str = ...,
+        port: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "port", b"port"]) -> None: ...
+
+global___Redshift = Redshift
+
+@typing_extensions.final
 class ExtTable(google.protobuf.message.Message):
     """-----------------------------------------
     Next, all the tables
@@ -424,6 +451,7 @@ class ExtTable(google.protobuf.message.Message):
     BIGQUERY_TABLE_FIELD_NUMBER: builtins.int
     ENDPOINT_FIELD_NUMBER: builtins.int
     KINESIS_STREAM_FIELD_NUMBER: builtins.int
+    REDSHIFT_TABLE_FIELD_NUMBER: builtins.int
     @property
     def mysql_table(self) -> global___MySQLTable: ...
     @property
@@ -440,6 +468,8 @@ class ExtTable(google.protobuf.message.Message):
     def endpoint(self) -> global___WebhookEndpoint: ...
     @property
     def kinesis_stream(self) -> global___KinesisStream: ...
+    @property
+    def redshift_table(self) -> global___RedshiftTable: ...
     def __init__(
         self,
         *,
@@ -451,10 +481,11 @@ class ExtTable(google.protobuf.message.Message):
         bigquery_table: global___BigqueryTable | None = ...,
         endpoint: global___WebhookEndpoint | None = ...,
         kinesis_stream: global___KinesisStream | None = ...,
+        redshift_table: global___RedshiftTable | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bigquery_table", b"bigquery_table", "endpoint", b"endpoint", "kafka_topic", b"kafka_topic", "kinesis_stream", b"kinesis_stream", "mysql_table", b"mysql_table", "pg_table", b"pg_table", "s3_table", b"s3_table", "snowflake_table", b"snowflake_table", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bigquery_table", b"bigquery_table", "endpoint", b"endpoint", "kafka_topic", b"kafka_topic", "kinesis_stream", b"kinesis_stream", "mysql_table", b"mysql_table", "pg_table", b"pg_table", "s3_table", b"s3_table", "snowflake_table", b"snowflake_table", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql_table", "pg_table", "s3_table", "kafka_topic", "snowflake_table", "bigquery_table", "endpoint", "kinesis_stream"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bigquery_table", b"bigquery_table", "endpoint", b"endpoint", "kafka_topic", b"kafka_topic", "kinesis_stream", b"kinesis_stream", "mysql_table", b"mysql_table", "pg_table", b"pg_table", "redshift_table", b"redshift_table", "s3_table", b"s3_table", "snowflake_table", b"snowflake_table", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bigquery_table", b"bigquery_table", "endpoint", b"endpoint", "kafka_topic", b"kafka_topic", "kinesis_stream", b"kinesis_stream", "mysql_table", b"mysql_table", "pg_table", b"pg_table", "redshift_table", b"redshift_table", "s3_table", b"s3_table", "snowflake_table", b"snowflake_table", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql_table", "pg_table", "s3_table", "kafka_topic", "snowflake_table", "bigquery_table", "endpoint", "kinesis_stream", "redshift_table"] | None: ...
 
 global___ExtTable = ExtTable
 
@@ -643,6 +674,26 @@ class KinesisStream(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "format", b"format", "init_position", b"init_position", "init_timestamp", b"init_timestamp", "stream_arn", b"stream_arn"]) -> None: ...
 
 global___KinesisStream = KinesisStream
+
+@typing_extensions.final
+class RedshiftTable(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DB_FIELD_NUMBER: builtins.int
+    TABLE_NAME_FIELD_NUMBER: builtins.int
+    @property
+    def db(self) -> global___ExtDatabase: ...
+    table_name: builtins.str
+    def __init__(
+        self,
+        *,
+        db: global___ExtDatabase | None = ...,
+        table_name: builtins.str = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "table_name", b"table_name"]) -> None: ...
+
+global___RedshiftTable = RedshiftTable
 
 @typing_extensions.final
 class PreProcValue(google.protobuf.message.Message):
