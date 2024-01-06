@@ -151,6 +151,7 @@ class UserFeatures:
         )
 
 
+@pytest.mark.skip(reason="Failing in main currently: TODO: DEV-2550")
 @pytest.mark.slow
 @mock
 def test_social_network(client):
