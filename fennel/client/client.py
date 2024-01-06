@@ -550,14 +550,12 @@ class Client:
                     [f.fqn() for f in output_feature.features]
                 )
 
-        output_s3_table = _s3_connector_dict(output_s3) if output_s3 else None
-
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
             "input": extract_historical_input,
             "timestamp_column": timestamp_column,
-            "s3_output": output_s3_table,
+            "s3_output": _s3_connector_dict(output_s3) if output_s3 else None,
         }
         return self._post_json(
             "{}/extract_historical_features".format(V1_API), req
@@ -720,25 +718,24 @@ class Client:
 
 
 def _s3_connector_dict(s3: S3Connector) -> Dict[str, Any]:
-    creds_json = {}
+    creds_json = None
     access_key_id, secret_access_key = s3.creds()
-    if access_key_id is not None:
-        if secret_access_key is None:
+    if access_key_id is not None and len(access_key_id) > 0:
+        if secret_access_key is None or len(secret_access_key) == 0:
             raise Exception("Access key id specified but secret key not found.")
         creds_json = {
             "access_key": access_key_id,
             "secret_key": secret_access_key,
         }
-    elif secret_access_key is not None:
+    elif secret_access_key is not None and len(secret_access_key) > 0:
         raise Exception("Secret key specified but access key id not found.")
 
     s3_table: Dict[str, Any] = {}
     s3_table["bucket"] = s3.bucket_name
     s3_table["path_prefix"] = s3.path_prefix
-    s3_table["pre_sorted"] = False
+    s3_table["pre_sorted"] = s3.presorted
     if s3.format == "csv":
-        # 44 is the ascii code for ","
-        s3_table["format"] = {"csv": {"delimiter": 44}}
+        s3_table["format"] = {"csv": {"delimiter": ord(s3.delimiter)}}
     else:
         s3_table["format"] = s3.format.lower()
     s3_table["db"] = {
