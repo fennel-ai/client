@@ -514,7 +514,7 @@ class Client:
                     "Please provide a bucket name as value for the key 'input_bucket'."
                 )
 
-            input_info["s3_table"] = _s3_connector_json(input_s3)
+            input_info["s3_table"] = _s3_connector_dict(input_s3)
             input_info["compression"] = "None"
 
             if feature_to_column_map is not None:
@@ -550,7 +550,7 @@ class Client:
                     [f.fqn() for f in output_feature.features]
                 )
 
-        output_s3_table = _s3_connector_json(output_s3) if output_s3 else None
+        output_s3_table = _s3_connector_dict(output_s3) if output_s3 else None
 
         req = {
             "input_features": input_feature_names,
@@ -719,7 +719,7 @@ class Client:
         return response
 
 
-def _s3_connector_json(s3: S3Connector) -> Dict[str, Any]:
+def _s3_connector_dict(s3: S3Connector) -> Dict[str, Any]:
     creds_json = {}
     access_key_id, secret_access_key = s3.creds()
     if access_key_id is not None:
