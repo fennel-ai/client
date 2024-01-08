@@ -334,7 +334,9 @@ def test_complex_auto_gen_extractors(client):
     )
     assert extracted_df["RiderFeatures.dl_state"].to_list() == ["US", "Unknown"]
     assert extracted_df["RiderFeatures.is_us_dl"].to_list() == [True, False]
-    assert extracted_df["RiderFeatures.age_years"].to_list() == [30, 23]
+
+    age_years = datetime.now().year - 2000
+    assert extracted_df["RiderFeatures.age_years"].to_list() == [30, age_years]
     assert extracted_df["RiderFeatures.dl_state_population"].to_list() == [
         328200000,
         9999999,

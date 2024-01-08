@@ -466,7 +466,7 @@ class Client:
                     f"List the features instead. {[f.fqn() for f in input_feature.features]}."
                 )
 
-        input_info = {}
+        input_info: Dict[str, Any] = {}
         extract_historical_input = {}
         if format == "pandas":
             if input_dataframe is None:
@@ -513,18 +513,8 @@ class Client:
                     "Input bucket and prefix not found in input dictionary. "
                     "Please provide a bucket name as value for the key 'input_bucket'."
                 )
-            input_info["input_bucket"] = input_s3.bucket_name
-            input_info["input_prefix"] = input_s3.path_prefix
-            access_key_id, secret_access_key = input_s3.creds()
-            if access_key_id is not None:
-                input_info["input_access_key_id"] = access_key_id
-                if secret_access_key is None:
-                    raise Exception(
-                        "Input acess key id specified but secret key not found."
-                    )
-                input_info["input_secret_access_key"] = secret_access_key
 
-            input_info["format"] = format.upper()
+            input_info["s3_table"] = _s3_connector_dict(input_s3)
             input_info["compression"] = "None"
 
             if feature_to_column_map is not None:
@@ -540,7 +530,6 @@ class Client:
                             f"Column mapping does not contain all the required features. Feature: {input_feature_name},"
                             f" not found in column mapping: {feature_to_column_map}"
                         )
-
                 input_info["column_mapping"] = feature_to_column_map  # type: ignore
 
             extract_historical_input["S3"] = input_info
@@ -561,25 +550,12 @@ class Client:
                     [f.fqn() for f in output_feature.features]
                 )
 
-        output_info = {}
-        if output_s3 is not None:
-            output_info["output_bucket"] = output_s3.bucket_name
-            output_info["output_prefix"] = output_s3.path_prefix
-            access_key_id, secret_access_key = output_s3.creds()
-            if access_key_id is not None:
-                output_info["output_access_key_id"] = access_key_id
-                if secret_access_key is None:
-                    raise Exception(
-                        "Output access key id specified but secret key not found."
-                    )
-                output_info["output_secret_access_key"] = secret_access_key
-
         req = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
             "input": extract_historical_input,
             "timestamp_column": timestamp_column,
-            "s3_output": output_info if len(output_info) > 0 else None,
+            "s3_output": _s3_connector_dict(output_s3) if output_s3 else None,
         }
         return self._post_json(
             "{}/extract_historical_features".format(V1_API), req
@@ -739,3 +715,31 @@ class Client:
         )
         check_response(response)
         return response
+
+
+def _s3_connector_dict(s3: S3Connector) -> Dict[str, Any]:
+    creds_json = None
+    access_key_id, secret_access_key = s3.creds()
+    if access_key_id is not None and len(access_key_id) > 0:
+        if secret_access_key is None or len(secret_access_key) == 0:
+            raise Exception("Access key id specified but secret key not found.")
+        creds_json = {
+            "access_key": access_key_id,
+            "secret_key": secret_access_key,
+        }
+    elif secret_access_key is not None and len(secret_access_key) > 0:
+        raise Exception("Secret key specified but access key id not found.")
+
+    s3_table: Dict[str, Any] = {}
+    s3_table["bucket"] = s3.bucket_name
+    s3_table["path_prefix"] = s3.path_prefix
+    s3_table["pre_sorted"] = s3.presorted
+    if s3.format == "csv":
+        s3_table["format"] = {"csv": {"delimiter": ord(s3.delimiter)}}
+    else:
+        s3_table["format"] = s3.format.lower()
+    s3_table["db"] = {
+        "name": "extract_historical_s3_input",
+        "db": {"S3": {"creds": creds_json}},
+    }
+    return s3_table

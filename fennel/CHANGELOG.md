@@ -1,4 +1,7 @@
 # Changelog
+## [0.19.5] - 2024-01-03
+- Updates the contract between client and the server for `extract_historical_features` s3 buckets
+
 ## [0.19.4] - 2023-12-06
 - Bug fix for `preproc` on `@sources` for string and bool data types.
 
