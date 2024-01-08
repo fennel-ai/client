@@ -39,6 +39,13 @@ class User:
     age: float = feature(id=2)
 
 
+@struct
+class UserProfile:
+    user_id: int
+    name: str
+    age: int
+
+
 def test_simple_featureset():
     @meta(owner="test@test.com")
     @featureset
@@ -423,12 +430,6 @@ def test_extractor_tier_selector():
 
 @mock
 def test_featureset_with_struct(client):
-    @struct
-    class UserProfile:
-        user_id: int
-        name: str
-        age: int
-
     @meta(owner="test@test.com")
     @featureset
     class UserProfileFeatures:

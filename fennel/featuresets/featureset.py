@@ -583,7 +583,8 @@ class Featureset:
                 if hasattr(feature.dtype, FENNEL_STRUCT):
                     if getattr(feature.dtype, FENNEL_STRUCT):
                         included_modules = extractor.get_included_modules()
-                        included_modules.append(feature.dtype)
+                        fennel_struct = cast(Callable, feature.dtype)
+                        included_modules.append(fennel_struct)
                         setattr(
                             extractor.func,
                             FENNEL_INCLUDED_MOD,
