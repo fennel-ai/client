@@ -9,7 +9,7 @@ import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs, struct  # type: ignore
+from fennel.lib.schema import inputs, outputs, struct
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
@@ -442,7 +442,7 @@ def test_featureset_with_struct(client):
         def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
             dataframe = pd.DataFrame(
                 {
-                    "profile": UserProfile(user_id=idx, name="test", age=15)
+                    "profile": UserProfile(user_id=idx, name="test", age=15)  # type: ignore
                     for idx in user_id.values
                 }
             )
