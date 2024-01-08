@@ -9,7 +9,7 @@ import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib.schema import inputs, outputs, struct
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
@@ -419,3 +419,43 @@ def test_extractor_tier_selector():
 
     extractor_req = sync_request.extractors[1]
     assert extractor_req.name == "_fennel_lookup_avg_income"
+
+
+@mock
+def test_featureset_with_struct(client):
+    @struct
+    class UserProfile:
+        user_id: int
+        name: str
+        age: int
+
+    @meta(owner="test@test.com")
+    @featureset
+    class UserProfileFeatures:
+        user_id: int = feature(id=1)
+        profile: UserProfile = feature(id=2)
+
+        @extractor(version=1)
+        @inputs(user_id)
+        @outputs(profile)
+        def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
+            dataframe = pd.DataFrame(
+                {
+                    "profile": UserProfile(user_id=idx, name="test", age=15)
+                    for idx in user_id.values
+                }
+            )
+            return dataframe[["profile"]]  # type: ignore
+
+    view = InternalTestClient()
+    view.add(UserProfileFeatures)
+    sync_request = view._get_sync_request_proto()
+
+    assert len(sync_request.features) == 2
+    assert len(sync_request.extractors) == 1
+    assert len(sync_request.datasets) == 0
+    assert len(sync_request.extractors[0].pycode.includes) == 1
+    assert (
+        sync_request.extractors[0].pycode.includes[0].entry_point
+        == "UserProfile"
+    )

@@ -37,6 +37,7 @@ from fennel.lib.schema import (
     FENNEL_OUTPUTS,
     validate_value_matches_type,
     fennel_get_optional_inner,
+    FENNEL_STRUCT,
 )
 
 from fennel.lib import FENNEL_GEN_CODE_MARKER
@@ -573,10 +574,22 @@ class Featureset:
                     feature.id for feature in self._features
                 ]
             # Set name of the features which the extractor sets values for.
-            extractor.output_features = [
-                f"{self._id_to_feature[fid].name}"
-                for fid in extractor.output_feature_ids
-            ]
+            # Including the struct in includes of the extractor if dtype of feature is fennel_struct
+            output_feature_names = []
+            for fid in extractor.output_feature_ids:
+                feature = self._id_to_feature[fid]
+                output_feature_names.append(f"{feature.name}")
+
+                if hasattr(feature.dtype, FENNEL_STRUCT):
+                    if getattr(feature.dtype, FENNEL_STRUCT):
+                        included_modules = extractor.get_included_modules()
+                        included_modules.append(feature.dtype)
+                        setattr(
+                            extractor.func,
+                            FENNEL_INCLUDED_MOD,
+                            included_modules,
+                        )
+            extractor.output_features = output_feature_names
             extractor.featureset = self._name
             extractors.append(extractor)
         return extractors
