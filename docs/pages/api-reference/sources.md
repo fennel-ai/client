@@ -184,8 +184,8 @@ The following fields need to be defined for the source:
 
 1. **`name`** - A name to identify the source. The name should be unique across all sources.
 1. `role_arn` - The role that Fennel should use to access the Kinesis stream
-2. `stream_arn` - AWS ARN of the stream
-3. `init_position` - The Kinesis ShardIterator type used to begin ingestion. One of `LATEST`, `TRIM_HORIZON` or `AT_TIMESTAMP`
+2. `stream_arn` - AWS `ARN` of the stream
+3. `init_position` - The Kinesis `ShardIterator` type used to begin ingestion. One of `LATEST`, `TRIM_HORIZON` or `AT_TIMESTAMP`
 4. `init_timestamp` - If the `init_position` is `AT_TIMESTAMP` this is the datetime at which to begin ingestion
 5. `format` - The format of the incoming data. Currently only JSON is supported and `"json"` is specified by default
 

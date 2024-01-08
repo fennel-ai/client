@@ -87,6 +87,8 @@ JSX
 JVM
 kafka
 Kaggle
+Kinesis
+kinesis
 Kubernetes
 kwarg
 kwargs
