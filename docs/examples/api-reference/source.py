@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -168,7 +168,7 @@ kinesis = sources.Kinesis(
 stream = kinesis.stream(
     stream_arn="<SOME_STREAM_ARN>",
     init_position=InitPosition.AT_TIMESTAMP,
-    init_timestamp=datetime.now() - datetime.timedelta(days=14),
+    init_timestamp=datetime.now() - timedelta(days=14),
 )
 
 
