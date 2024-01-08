@@ -158,6 +158,31 @@ class UserKafkaSourcedDataset:
 
 # /docsnip
 
+# docsnip kinesis_source
+from fennel.sources import InitPosition
+
+kinesis = sources.Kinesis(
+    name="kinesis_src",
+    role_arn="<SOME_ROLE_ARN>",
+)
+stream = kinesis.stream(
+    stream_arn="<SOME_STREAM_ARN>",
+    init_position=InitPosition.AT_TIMESTAMP,
+    init_timestamp=datetime.now() - datetime.timedelta(days=14),
+)
+
+
+@source(stream)
+@meta(owner="abc@email.com")
+@dataset
+class UserKinesisSourcedDataset:
+    uid: int = field(key=True)
+    email: str
+    timestamp: datetime
+    ...
+
+
+# /docsnip
 
 # docsnip s3_delta_lake_source
 s3 = sources.S3(
