@@ -163,9 +163,9 @@ def test_social_network(client):
         ],
         featuresets=[Request, UserFeatures],
     )
-    user_data_df = pd.read_csv("data/user_data.csv")
-    post_data_df = pd.read_csv("data/post_data.csv")
-    view_data_df = pd.read_csv("data/view_data_sampled.csv")
+    user_data_df = pd.read_csv("fennel/client_tests/data/user_data.csv")
+    post_data_df = pd.read_csv("fennel/client_tests/data/post_data.csv")
+    view_data_df = pd.read_csv("fennel/client_tests/data/view_data_sampled.csv")
     ts = "2018-01-01 00:00:00"
     user_data_df["timestamp"] = ts
     post_data_df["timestamp"] = ts
