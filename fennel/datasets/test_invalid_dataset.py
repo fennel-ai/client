@@ -1,10 +1,9 @@
 from datetime import datetime
-
-import pytest
 from typing import Optional, List, Union
-import pandas as pd
 
-from fennel import Min, Max
+import pandas as pd
+import pytest
+
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.lib.aggregate import Count, Average, Stddev, Distinct
 from fennel.lib.expectations import (
@@ -669,7 +668,7 @@ def test_dataset_incorrect_join():
             timestamp: datetime
 
         @dataset
-        class ABCDataset:
+        class XYZJoinedABC:
             user_id: int
             name: str
             age: int
