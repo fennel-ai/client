@@ -361,6 +361,7 @@ class Client:
         sampling_rate: Optional[float] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         """
+        Going to be deprecated and will be removed in a future.
         Extract features for a given output feature list from an input
         feature list. The features are computed for the current time.
 
@@ -497,6 +498,7 @@ class Client:
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Dict[str, Any]:
         """
+        Going to be deprecated and will be removed in a future.
         Extract point in time correct features from a dataframe, where the
         timestamps are provided by the timestamps parameter.
 
