@@ -1924,6 +1924,11 @@ class SchemaValidator(Visitor):
                 )
             # Check the schemas of the keys
             for key in obj.on:
+                if fennel_is_optional(left_schema.get_type(key)):
+                    raise TypeError(
+                        f"Optional typed fields are not allowed as Key field in left schema got `{key}` "
+                        f"as type `{dtype_to_string(left_schema.get_type(key))}` for `{output_schema_name}`"
+                    )
                 if left_schema.get_type(key) != right_schema.get_type(key):
                     raise TypeError(
                         f"Key field `{key}` has type `{dtype_to_string(left_schema.get_type(key))}` "
@@ -1947,6 +1952,13 @@ class SchemaValidator(Visitor):
                 )
             # Check the schemas of the keys
             for lkey, rkey in zip(obj.left_on, obj.right_on):
+                if fennel_is_optional(left_schema.get_type(lkey)):
+                    raise TypeError(
+                        f"Optional typed fields are not allowed as "
+                        f"Key field in left schema got `{lkey}` "
+                        f"as type `{dtype_to_string(left_schema.get_type(lkey))}` "
+                        f"for `{output_schema_name}`"
+                    )
                 if left_schema.get_type(lkey) != right_schema.get_type(rkey):
                     raise TypeError(
                         f"Key field `{lkey}` has type"

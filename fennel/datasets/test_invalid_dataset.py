@@ -652,6 +652,41 @@ def test_dataset_incorrect_join():
         == "Cannot join with an intermediate dataset, i.e something defined inside a pipeline. Only joining against keyed datasets is permitted."
     )
 
+    with pytest.raises(TypeError) as e:
+
+        @dataset
+        class XYZ:
+            user_id: Optional[int]
+            agent_id: int
+            name: str
+            timestamp: datetime
+
+        @dataset
+        class ABC:
+            user_id: int = field(key=True)
+            agent_id: int = field(key=True)
+            age: int
+            timestamp: datetime
+
+        @dataset
+        class ABCDataset:
+            user_id: int
+            name: str
+            age: int
+            timestamp: datetime
+
+            @pipeline(version=1)
+            @inputs(XYZ, ABC)
+            def create_pipeline(cls, a: Dataset, b: Dataset):
+                c = a.join(b, how="inner", on=["user_id", "agent_id"])  # type: ignore
+                return c
+
+    assert (
+        str(e.value)
+        == "Optional typed fields are not allowed as Key field in left schema got `user_id` as "
+        "type `Optional[int]` for `'[Pipeline:create_pipeline]->join node'`"
+    )
+
 
 def test_dataset_incorrect_join_bounds():
     with pytest.raises(ValueError) as e:
