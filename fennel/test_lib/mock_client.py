@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import os
 import sys
 import types
@@ -9,13 +10,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-import logging
-from fennel.sources.sources import S3Connector
+from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import numpy as np
 import pandas as pd
 from frozendict import frozendict
-from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import fennel.datasets.datasets
 import fennel.sources as sources
@@ -24,7 +23,6 @@ from fennel.client import Client
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.datasets.datasets import sync_validation_for_pipelines
 from fennel.featuresets import Featureset, Feature, Extractor, is_valid_feature
-from fennel.featuresets.featureset import sync_validation_for_extractors
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.gen.featureset_pb2 import CoreFeatureset
 from fennel.gen.featureset_pb2 import (
@@ -45,6 +43,7 @@ from fennel.lib.to_proto import (
     extractors_from_fs,
     featureset_to_proto,
 )
+from fennel.sources.sources import S3Connector
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.integration_client import IntegrationClient
 from fennel.test_lib.test_utils import cast_col_to_dtype
@@ -473,6 +472,24 @@ class MockClient(Client):
             raise Exception("Cyclic graph detected in extractors")
         return FakeResponse(200, "OK")
 
+    def extract(
+        self,
+        inputs: List[Union[Feature, Featureset, str]],
+        outputs: List[Union[Feature, Featureset, str]],
+        input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: Optional[str] = None,
+        sampling_rate: Optional[float] = None,
+    ) -> pd.DataFrame:
+        return self.extract_features(
+            input_feature_list=inputs,
+            output_feature_list=outputs,
+            input_dataframe=input_dataframe,
+            log=log,
+            workflow=workflow,
+            sampling_rate=sampling_rate,
+        )
+
     def extract_features(
         self,
         input_feature_list: List[Union[Feature, Featureset, str]],
@@ -522,6 +539,28 @@ class MockClient(Client):
         timestamps = pd.Series([datetime.utcnow()] * len(input_dataframe))
         return self._run_extractors(
             extractors, input_dataframe, output_feature_list, timestamps
+        )
+
+    def extract_historical(
+        self,
+        inputs: List[Union[Feature, Featureset, str]],
+        outputs: List[Union[Feature, Featureset, str]],
+        timestamp_column: str,
+        format: str = "pandas",
+        input_dataframe: Optional[pd.DataFrame] = None,
+        input_s3: Optional[S3Connector] = None,
+        output_s3: Optional[S3Connector] = None,
+        feature_to_column_map: Optional[Dict[Feature, str]] = None,
+    ) -> Union[pd.DataFrame, pd.Series]:
+        return self.extract_historical_features(
+            input_feature_list=inputs,
+            output_feature_list=outputs,
+            timestamp_column=timestamp_column,
+            format=format,
+            input_dataframe=input_dataframe,
+            input_s3=input_s3,
+            output_s3=output_s3,
+            feature_to_column_map=feature_to_column_map,
         )
 
     def extract_historical_features(
