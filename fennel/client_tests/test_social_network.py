@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+import pytest
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, Dataset, pipeline
@@ -9,7 +10,6 @@ from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.schema import regex, oneof
-from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 
@@ -61,7 +61,7 @@ class CityInfo:
     @inputs(UserInfo)
     def count_city_gender(cls, user_info: Dataset):
         return user_info.groupby(["city", "gender"]).aggregate(
-            [Count(window=Window("6y 8s"), into_field="count")]
+            [Count(window="6y 8s", into_field="count")]
         )
 
 
@@ -76,7 +76,7 @@ class UserViewsDataset:
     @inputs(ViewData)
     def count_user_views(cls, view_data: Dataset):
         return view_data.groupby("user_id").aggregate(
-            [Count(window=Window("6y 8s"), into_field="num_views")]
+            [Count(window="6y 8s", into_field="num_views")]
         )
 
 
@@ -95,7 +95,7 @@ class UserCategoryDataset:
             post_info, how="inner", on=["post_id"]
         )
         return post_info_enriched.groupby("user_id", "category").aggregate(
-            [Count(window=Window("6y 8s"), into_field="num_views")]
+            [Count(window="6y 8s", into_field="num_views")]
         )
 
 
@@ -150,6 +150,7 @@ class UserFeatures:
         )
 
 
+@pytest.mark.slow
 @mock
 def test_social_network(client):
     client.sync(
