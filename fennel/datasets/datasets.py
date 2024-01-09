@@ -4,13 +4,9 @@ import copy
 import datetime
 import functools
 import inspect
+import logging
 import sys
 from dataclasses import dataclass
-import typing
-import logging
-
-import numpy as np
-import pandas as pd
 from typing import (
     cast,
     Any,
@@ -27,9 +23,11 @@ from typing import (
     get_args,
 )
 
+import numpy as np
+import pandas as pd
+
 import fennel.sources as sources
 from fennel.lib.aggregate import AggregateType
-
 from fennel.lib.aggregate.aggregate import (
     Average,
     Count,
@@ -66,7 +64,6 @@ from fennel.lib.schema import (
     FENNEL_STRUCT_SRC_CODE,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
 )
-
 from fennel.sources.sources import DataConnector, source, PreProcValue
 from fennel.utils import (
     fhash,
@@ -1926,8 +1923,9 @@ class SchemaValidator(Visitor):
             for key in obj.on:
                 if fennel_is_optional(left_schema.get_type(key)):
                     raise TypeError(
-                        f"Optional typed fields are not allowed as Key field in left schema got `{key}` "
-                        f"as type `{dtype_to_string(left_schema.get_type(key))}` for `{output_schema_name}`"
+                        f"Fields used in a join operation must not be optional in left schema, "
+                        f"found `{key}` of type `{dtype_to_string(left_schema.get_type(key))}` "
+                        f"in `{output_schema_name}`"
                     )
                 if left_schema.get_type(key) != right_schema.get_type(key):
                     raise TypeError(
@@ -1954,10 +1952,10 @@ class SchemaValidator(Visitor):
             for lkey, rkey in zip(obj.left_on, obj.right_on):
                 if fennel_is_optional(left_schema.get_type(lkey)):
                     raise TypeError(
-                        f"Optional typed fields are not allowed as "
-                        f"Key field in left schema got `{lkey}` "
-                        f"as type `{dtype_to_string(left_schema.get_type(lkey))}` "
-                        f"for `{output_schema_name}`"
+                        f"Fields used in a join operation must not be optional "
+                        f"in left schema, found `{lkey}` of type "
+                        f"`{dtype_to_string(left_schema.get_type(lkey))}` "
+                        f"in `{output_schema_name}`"
                     )
                 if left_schema.get_type(lkey) != right_schema.get_type(rkey):
                     raise TypeError(
