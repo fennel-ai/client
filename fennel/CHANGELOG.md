@@ -1,4 +1,10 @@
 # Changelog
+## [0.19.7] - 2024-01-09
+- Add jsonl file format support in pb2 file, introduce disorder for Sources
+
+## [0.19.6] - 2024-01-08
+- Add default format json for Kinesis Source
+
 ## [0.19.5] - 2024-01-03
 - Updates the contract between client and the server for `extract_historical_features` s3 buckets
 

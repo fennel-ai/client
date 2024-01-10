@@ -241,7 +241,7 @@ def test_multiple_sources(client):
                 prefix="prod/apac/",
             ),
             every="1h",
-            lateness="2d",
+            disorder="2d",
         )
         @dataset
         class UserInfoDataset:
@@ -300,7 +300,7 @@ def test_invalid_starting_from():
         @source(
             bigquery.table("users_bq", cursor="added_on"),
             every="1h",
-            lateness="2h",
+            disorder="2h",
             since=datetime.now(),
         )
         @dataset

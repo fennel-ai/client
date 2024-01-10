@@ -40,7 +40,7 @@ def test_simple_source():
             cursor="added_on",
         ),
         every="1h",
-        lateness="20h",
+        disorder="20h",
     )
     @meta(owner="test@test.com")
     @dataset
@@ -146,7 +146,7 @@ def test_simple_source():
         },
         "dataset": "UserInfoDataset",
         "every": "3600s",
-        "lateness": "72000s",
+        "disorder": "72000s",
         "cursor": "added_on",
         "timestamp_field": "timestamp",
     }
@@ -181,7 +181,7 @@ def test_simple_source_with_pre_proc():
             cursor="added_on",
         ),
         every="1h",
-        lateness="20h",
+        disorder="20h",
         preproc={
             "age": 10,
             "gender": "male",
@@ -293,7 +293,7 @@ def test_simple_source_with_pre_proc():
         },
         "dataset": "UserInfoDataset",
         "every": "3600s",
-        "lateness": "72000s",
+        "disorder": "72000s",
         "cursor": "added_on",
         "timestamp_field": "timestamp",
         "pre_proc": {
@@ -410,7 +410,7 @@ def test_tier_selector_on_source():
             prefix="prod/apac/",
         ),
         every="1h",
-        lateness="2d",
+        disorder="2d",
         tier=["dev"],
     )
     @dataset
@@ -457,7 +457,7 @@ def test_tier_selector_on_source():
         "dataset": "UserInfoDataset",
         "every": "3600s",
         "cursor": "added_on",
-        "lateness": "3600s",
+        "disorder": "1209600s",
         "timestampField": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
@@ -490,7 +490,7 @@ def test_tier_selector_on_source():
         "dataset": "UserInfoDataset",
         "every": "3600s",
         "cursor": "added_on",
-        "lateness": "3600s",
+        "disorder": "1209600s",
         "timestampField": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
@@ -509,7 +509,7 @@ def test_multiple_sources():
             format="delta",
         ),
         every="1h",
-        lateness="2d",
+        disorder="2d",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -552,7 +552,7 @@ def test_multiple_sources():
         },
         "dataset": "UserInfoDatasetS3",
         "every": "3600s",
-        "lateness": "172800s",
+        "disorder": "172800s",
         "startingFrom": "2021-08-10T00:00:00Z",
         "timestamp_field": "timestamp",
     }
@@ -612,7 +612,7 @@ def test_multiple_sources():
         },
         "dataset": "UserInfoDatasetSnowFlake",
         "every": "3600s",
-        "lateness": "3600s",
+        "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
     }
@@ -640,7 +640,7 @@ def test_multiple_sources():
 
     @meta(owner="test@test.com")
     @source(
-        bigquery.table("users_bq", cursor="added_on"), every="1h", lateness="2h"
+        bigquery.table("users_bq", cursor="added_on"), every="1h", disorder="2h"
     )
     @dataset
     class UserInfoDatasetBigQuery:
@@ -675,7 +675,7 @@ def test_multiple_sources():
         },
         "dataset": "UserInfoDatasetBigQuery",
         "every": "3600s",
-        "lateness": "7200s",
+        "disorder": "7200s",
         "cursor": "added_on",
         "timestampField": "timestamp",
     }
@@ -734,7 +734,7 @@ def test_multiple_sources():
         },
         "dataset": "UserInfoDatasetMySql",
         "every": "3600s",
-        "lateness": "3600s",
+        "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
     }
@@ -851,7 +851,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetKafka",
-        "lateness": "3600s",
+        "disorder": "1209600s",
         "cdc": "Debezium",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
@@ -935,7 +935,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetKinesis",
-        "lateness": "3600s",
+        "disorder": "1209600s",
     }
     expected_source = ParseDict(e, connector_proto.Source())
     assert source_req == expected_source, error_message(
@@ -978,7 +978,7 @@ def test_console_source():
         },
         "dataset": "UserInfoDataset",
         "every": "3600s",
-        "lateness": "3600s",
+        "disorder": "1209600s",
         "timestampField": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
