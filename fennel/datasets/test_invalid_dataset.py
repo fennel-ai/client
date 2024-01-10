@@ -682,7 +682,7 @@ def test_dataset_incorrect_join():
 
     assert (
         str(e.value)
-        == "Fields used in a join operation must not be optional in left schema, found `user_id` of "
+        == "Fields used in a join operator must not be optional in left schema, found `user_id` of "
         "type `Optional[int]` in `'[Pipeline:create_pipeline]->join node'`"
     )
 
