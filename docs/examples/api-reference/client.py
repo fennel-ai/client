@@ -115,7 +115,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
 
         # docsnip extract_historical_api
         response = client.extract_historical(
-            outpus=[UserFeatures],
+            outputs=[UserFeatures],
             inputs=[UserFeatures.userid],
             format="pandas",
             input_dataframe=pd.DataFrame(
