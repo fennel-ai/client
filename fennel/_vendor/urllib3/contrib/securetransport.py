@@ -19,8 +19,8 @@ contrib module. So...here we are.
 
 To use this module, simply import and inject it::
 
-    import urllib3.contrib.securetransport
-    urllib3.contrib.securetransport.inject_into_urllib3()
+    import fennel._vendor.urllib3.contrib.securetransport as urllib3_securetransport
+    urllib3_securetransport.inject_into_urllib3()
 
 Happy TLSing!
 
@@ -64,7 +64,7 @@ import struct
 import threading
 import weakref
 
-import six
+from fennel._vendor import six
 
 from .. import util
 from ..util.ssl_ import PROTOCOL_TLS_CLIENT
