@@ -48,4 +48,3 @@ versions runnings and lead to unexpected behavior/bugs.
 a patch.
 3. See - https://github.com/pypa/pip/blob/main/src/pip/_vendor/README.rst, which also lists some interesting
 cases (not applicable to us right now e.g. security or debundling).
-
