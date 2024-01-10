@@ -457,7 +457,7 @@ def test_tier_selector_on_source():
         "dataset": "UserInfoDataset",
         "every": "3600s",
         "cursor": "added_on",
-        "disorder": "3600s",
+        "disorder": "1209600s",
         "timestampField": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
@@ -490,7 +490,7 @@ def test_tier_selector_on_source():
         "dataset": "UserInfoDataset",
         "every": "3600s",
         "cursor": "added_on",
-        "disorder": "3600s",
+        "disorder": "1209600s",
         "timestampField": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
@@ -612,7 +612,7 @@ def test_multiple_sources():
         },
         "dataset": "UserInfoDatasetSnowFlake",
         "every": "3600s",
-        "disorder": "3600s",
+        "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
     }
@@ -734,7 +734,7 @@ def test_multiple_sources():
         },
         "dataset": "UserInfoDatasetMySql",
         "every": "3600s",
-        "disorder": "3600s",
+        "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
     }
@@ -851,7 +851,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetKafka",
-        "disorder": "3600s",
+        "disorder": "1209600s",
         "cdc": "Debezium",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
@@ -935,7 +935,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetKinesis",
-        "disorder": "3600s",
+        "disorder": "1209600s",
     }
     expected_source = ParseDict(e, connector_proto.Source())
     assert source_req == expected_source, error_message(
@@ -978,7 +978,7 @@ def test_console_source():
         },
         "dataset": "UserInfoDataset",
         "every": "3600s",
-        "disorder": "3600s",
+        "disorder": "1209600s",
         "timestampField": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
