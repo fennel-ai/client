@@ -1,0 +1,30 @@
+diff --git a/fennel/_vendor/urllib3/contrib/securetransport.py b/fennel/_vendor/urllib3/contrib/securetransport.py
+index 6c46a3b..f2d3b2b 100644
+--- a/fennel/_vendor/urllib3/contrib/securetransport.py
++++ b/fennel/_vendor/urllib3/contrib/securetransport.py
+@@ -19,8 +19,8 @@ contrib module. So...here we are.
+ 
+ To use this module, simply import and inject it::
+ 
+-    import urllib3.contrib.securetransport
+-    urllib3.contrib.securetransport.inject_into_urllib3()
++    import urllib3.contrib.securetransport as urllib3_securetransport
++    urllib3_securetransport.inject_into_urllib3()
+ 
+ Happy TLSing!
+ 
+diff --git a/fennel/_vendor/urllib3/contrib/pyopenssl.py b/fennel/_vendor/urllib3/contrib/pyopenssl.py
+index 1ed214b..c46ac9c 100644
+--- a/fennel/_vendor/urllib3/contrib/pyopenssl.py
++++ b/fennel/_vendor/urllib3/contrib/pyopenssl.py
+@@ -28,8 +28,8 @@ like this:
+ .. code-block:: python
+ 
+     try:
+-        import urllib3.contrib.pyopenssl
+-        urllib3.contrib.pyopenssl.inject_into_urllib3()
++        import fennel._vendor.urllib3.contrib.pyopenssl as urllib3_pyopenssl
++        urllib3_pyopenssl.inject_into_urllib3()
+     except ImportError:
+         pass
+ 
