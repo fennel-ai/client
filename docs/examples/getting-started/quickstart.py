@@ -1,9 +1,9 @@
 # docsnip imports
 from datetime import datetime, timedelta
+from typing import Optional
 
 import pandas as pd
 import requests
-from typing import Optional
 
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import feature, featureset, extractor
@@ -145,12 +145,12 @@ assert response.status_code == requests.codes.OK, response.json()
 # /docsnip
 
 # docsnip query
-feature_df = client.extract_features(
-    output_feature_list=[
+feature_df = client.extract(
+    outputs=[
         UserSellerFeatures.num_orders_1d,
         UserSellerFeatures.num_orders_1w,
     ],
-    input_feature_list=[
+    inputs=[
         UserSellerFeatures.uid,
         UserSellerFeatures.seller_id,
     ],
@@ -170,12 +170,12 @@ assert feature_df["UserSellerFeatures.num_orders_1w"].tolist() == [2, 1]
 # /docsnip
 
 # docsnip historical
-feature_df = client.extract_historical_features(
-    output_feature_list=[
+feature_df = client.extract_historical(
+    outputs=[
         UserSellerFeatures.num_orders_1d,
         UserSellerFeatures.num_orders_1w,
     ],
-    input_feature_list=[
+    inputs=[
         UserSellerFeatures.uid,
         UserSellerFeatures.seller_id,
     ],

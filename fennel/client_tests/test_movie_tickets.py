@@ -1,22 +1,20 @@
 import unittest
 from datetime import datetime, timedelta
+from typing import List, Optional
 
 import pandas as pd
-
 import requests
 
 from fennel import featureset, extractor, feature
 from fennel.datasets import dataset, field
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs, between
-from fennel.sources import source
 from fennel.datasets import pipeline, Dataset
 from fennel.lib.aggregate import Sum, LastK, Distinct
+from fennel.lib.metadata import meta
+from fennel.lib.schema import inputs, outputs
 from fennel.lib.window import Window
 from fennel.sources import Webhook
+from fennel.sources import source
 from fennel.test_lib import mock, MockClient
-
-from typing import List, Optional
 
 client = MockClient()
 
@@ -219,9 +217,9 @@ class TestMovieTicketSale(unittest.TestCase):
             response.status_code == requests.codes.OK
         ), response.json()  # noqa
 
-        features = client.extract_features(
-            input_feature_list=[RequestFeatures.name],  # type: ignore
-            output_feature_list=[ActorFeatures.revenue],  # type: ignore
+        features = client.extract(
+            inputs=[RequestFeatures.name],  # type: ignore
+            outputs=[ActorFeatures.revenue],  # type: ignore
             input_dataframe=pd.DataFrame(
                 {
                     "RequestFeatures.name": [

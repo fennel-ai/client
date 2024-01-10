@@ -220,9 +220,9 @@ def test_multiple_features_extracted(client):
     res = client.log("fennel_webhook", "UserInfo", df)
     assert res.status_code == 200
 
-    df = client.extract_features(
-        output_feature_list=[UserLocationFeatures],
-        input_feature_list=[UserLocationFeatures.uid],
+    df = client.extract(
+        outputs=[UserLocationFeatures],
+        inputs=[UserLocationFeatures.uid],
         input_dataframe=pd.DataFrame(
             {"UserLocationFeatures.uid": [1, 2, 3]},
         ),
@@ -292,9 +292,9 @@ def test_extractors_across_featuresets(client):
     res = client.log("fennel_webhook", "UserInfo", df)
     assert res.status_code == 200
 
-    df = client.extract_features(
-        output_feature_list=[UserLocationFeaturesRefactored],
-        input_feature_list=[Request.uid],
+    df = client.extract(
+        outputs=[UserLocationFeaturesRefactored],
+        inputs=[Request.uid],
         input_dataframe=pd.DataFrame(
             {"Request.uid": [1, 2, 3]},
         ),

@@ -193,9 +193,9 @@ def test_social_network(client):
     )
     assert found.to_list() == [True, True, True]
 
-    feature_df = client.extract_features(
-        output_feature_list=[UserFeatures],
-        input_feature_list=[Request.user_id, Request.category],
+    feature_df = client.extract(
+        outputs=[UserFeatures],
+        inputs=[Request.user_id, Request.category],
         input_dataframe=pd.DataFrame(
             {
                 "Request.user_id": [

@@ -1,8 +1,8 @@
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 import pytest
-from typing import Optional
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
@@ -92,9 +92,9 @@ def test_simple_invalid_extractor(client):
         client.sleep()
 
     with pytest.raises(Exception) as e:
-        client.extract_features(
-            output_feature_list=[UserInfoExtractor],
-            input_feature_list=[UserInfoExtractor.userid],
+        client.extract(
+            outputs=[UserInfoExtractor],
+            inputs=[UserInfoExtractor.userid],
             input_dataframe=pd.DataFrame(
                 {"UserInfoExtractor.userid": [18232, 18234]}
             ),

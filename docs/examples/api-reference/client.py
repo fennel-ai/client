@@ -1,9 +1,9 @@
 import unittest
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 import requests
-from typing import Optional
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import feature, featureset, extractor
@@ -102,12 +102,10 @@ class TestExtractorDAGResolution(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
         # /docsnip
 
-        # docsnip extract_features_api
-        feature_df = client.extract_features(
-            output_feature_list=[
-                UserFeatures,
-            ],
-            input_feature_list=[UserFeatures.userid],
+        # docsnip extract_api
+        feature_df = client.extract(
+            outputs=[UserFeatures],
+            inputs=[UserFeatures.userid],
             input_dataframe=pd.DataFrame(
                 {"UserFeatures.userid": [18232, 18234]}
             ),
@@ -115,12 +113,10 @@ class TestExtractorDAGResolution(unittest.TestCase):
         self.assertEqual(feature_df.shape, (2, 7))
         # /docsnip
 
-        # docsnip extract_historical_features_api
-        response = client.extract_historical_features(
-            output_feature_list=[
-                UserFeatures,
-            ],
-            input_feature_list=[UserFeatures.userid],
+        # docsnip extract_historical_api
+        response = client.extract_historical(
+            outpus=[UserFeatures],
+            inputs=[UserFeatures.userid],
             format="pandas",
             input_dataframe=pd.DataFrame(
                 {"UserFeatures.userid": [18232, 18234], "timestamp": [now, now]}
@@ -130,7 +126,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
         # /docsnip
 
         with self.assertRaises(NotImplementedError) as e:
-            # docsnip extract_historical_features_s3
+            # docsnip extract_historical_s3
             from fennel.sources import S3
 
             s3 = S3(
@@ -143,11 +139,9 @@ class TestExtractorDAGResolution(unittest.TestCase):
             )
             s3_output_connection = s3.bucket("bucket", prefix="output")
 
-            response = client.extract_historical_features(
-                output_feature_list=[
-                    UserFeatures,
-                ],
-                input_feature_list=[UserFeatures.userid],
+            response = client.extract_historical(
+                outputs=[UserFeatures],
+                inputs=[UserFeatures.userid],
                 format="csv",
                 timestamp_column="timestamp",
                 input_s3=s3_input_connection,

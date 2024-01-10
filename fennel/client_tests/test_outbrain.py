@@ -140,12 +140,12 @@ def test_outbrain(client):
         inplace=True,
     )
     input_df = input_df.reset_index(drop=True)
-    feature_df = client.extract_features(
-        output_feature_list=[
+    feature_df = client.extract(
+        outputs=[
             Request,
             UserPageViewFeatures,
         ],
-        input_feature_list=[Request.uuid, Request.document_id],
+        inputs=[Request.uuid, Request.document_id],
         input_dataframe=input_df,
     )
     assert feature_df.shape[0] == 347

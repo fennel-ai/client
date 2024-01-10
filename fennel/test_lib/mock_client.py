@@ -630,6 +630,9 @@ class MockClient(Client):
         output_df[timestamp_column] = timestamps
         return output_df
 
+    def extract_historical_progress(self, request_id):
+        return FakeResponse(404, "Extract historical features not supported")
+
     def extract_historical_features_progress(self, request_id):
         return FakeResponse(404, "Extract historical features not supported")
 

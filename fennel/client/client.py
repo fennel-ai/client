@@ -361,7 +361,7 @@ class Client:
         sampling_rate: Optional[float] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         """
-        Going to be deprecated and will be removed in a future.
+        Going to be deprecated in favor of extract and will be removed in the future.
         Extract features for a given output feature list from an input
         feature list. The features are computed for the current time.
 
@@ -498,7 +498,7 @@ class Client:
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Dict[str, Any]:
         """
-        Going to be deprecated and will be removed in a future.
+        Going to be deprecated in favor of extract_historical and will be removed in the future.
         Extract point in time correct features from a dataframe, where the
         timestamps are provided by the timestamps parameter.
 
@@ -645,11 +645,28 @@ class Client:
             "{}/extract_historical_features".format(V1_API), req
         )
 
-    def extract_historical_features_progress(self, request_id):
+    def extract_historical_progress(self, request_id):
         """
         Get the status of extract historical features request.
 
-        :param request_id: The request id returned by extract_historical_features.
+        :param request_id: The request id returned by extract_historical.
+
+        Returns:
+        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
+                        A completion rate of 1.0 indicates that all processing has been completed.
+                        A failure rate of 0.0 indicates that all processing has been completed successfully.
+                        The status of the request.
+        """
+        return self._get(
+            f"{V1_API}/extract_historical_request/status?request_id={request_id}"
+        )
+
+    def extract_historical_features_progress(self, request_id):
+        """
+        Going to be deprecated in favor of extract_historical_progress and will be removed in the future.
+        Get the status of extract historical features request.
+
+        :param request_id: The request id returned by extract_historical.
 
         Returns:
         Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
@@ -665,7 +682,7 @@ class Client:
         """
         Cancel the extract historical features request.
 
-        :param request_id: The request id returned by extract_historical_features.
+        :param request_id: The request id returned by extract_historical.
 
         Returns:
         Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.

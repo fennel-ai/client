@@ -186,10 +186,10 @@ def test_fraud_detection_pipeline(client):
         "UserTransactionSumsFeatures.cc_num": 99
     }
 
-    df = client.extract_features(
-        input_feature_list=[UserTransactionSumsFeatures.cc_num],
+    df = client.extract(
+        inputs=[UserTransactionSumsFeatures.cc_num],
         # Input from featureset,
-        output_feature_list=[
+        outputs=[
             UserTransactionSumsFeatures.cc_num,
             UserTransactionSumsFeatures.sum_amt_1d,
             UserTransactionSumsFeatures.sum_amt_7d,

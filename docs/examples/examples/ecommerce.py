@@ -113,12 +113,12 @@ class TestUserLivestreamFeatures(unittest.TestCase):
         response = client.log("fennel_webhook", "Order", df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        feature_df = client.extract_features(
-            output_feature_list=[
+        feature_df = client.extract(
+            outputs=[
                 "UserSeller.num_orders_1d",
                 "UserSeller.num_orders_1w",
             ],
-            input_feature_list=[
+            inputs=[
                 "UserSeller.uid",
                 "UserSeller.seller_id",
             ],
