@@ -100,7 +100,7 @@ def test_simple_dataset():
                     }
                 },
                 "dataset": "UserInfoDataset",
-                "disorder": "3600s",
+                "disorder": "1209600s",
             }
         ],
         "extdbs": [
@@ -250,7 +250,7 @@ def test_dataset_with_retention():
                     }
                 },
                 "dataset": "Activity",
-                "disorder": "3600s",
+                "disorder": "1209600s",
             }
         ],
         "extdbs": [
@@ -393,7 +393,7 @@ def test_nested_dataset():
                     }
                 },
                 "dataset": "Dealer",
-                "disorder": "3600s",
+                "disorder": "1209600s",
             }
         ],
         "extdbs": [
