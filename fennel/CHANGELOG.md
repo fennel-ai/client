@@ -1,8 +1,12 @@
 # Changelog
-## [0.19.6] - 2024-01-11
-- Adds functions `extract`, `extract_historical` and `extract_historical_progress` to the client.
-- Deprecating functions `extract_features`, `extract_historical_features` and `extract_historical_features_progress` from the client.
+## [0.19.8] - 2024-01-11
 - Improved error reporting in case of joint operator failure in Mock Client.
+
+## [0.19.7] - 2024-01-09
+- Add jsonl file format support in pb2 file, introduce disorder for Sources
+
+## [0.19.6] - 2024-01-08
+- Add default format json for Kinesis Source
 
 ## [0.19.5] - 2024-01-03
 - Updates the contract between client and the server for `extract_historical_features` s3 buckets

@@ -48,7 +48,7 @@ an index of the cursor column so that this query is efficient. Most data sources
 don't need an explicit cursor and instead use other implicit mechanisms to track
 and save ingestion progress.
 
-### Lateness
+### Disorder
 Fennel, like many other streaming systems, is designed to robustly handle out
 of order data. If there are no bounds on how out of order data can get, the state
 can blow up. Unlike some other systems, Fennel keeps this state on disk which
@@ -57,7 +57,7 @@ when all data before a timestamp has been seen.
 
 This is usually handled by a technique called [Watermarking](https://www.oreilly.com/radar/the-world-beyond-batch-streaming-102/)
 where max out of order delay is specified. This max out of order delay of a source
-is called `lateness` in Fennel, and once specified at source level, is respected
+is called `disorder` in Fennel, and once specified at source level, is respected
 automatically by each downstream pipeline. 
 
 ## Schema Matching

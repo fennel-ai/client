@@ -1187,7 +1187,7 @@ class Dataset(_Node[T]):
         conn: DataConnector,
         every: Optional[Duration] = None,
         starting_from: Optional[datetime.datetime] = None,
-        lateness: Optional[Duration] = None,
+        disorder: Optional[Duration] = None,
         pre_proc: Optional[Dict[str, PreProcValue]] = None,
         tiers: Optional[Union[str, List[str]]] = None,
     ):
@@ -1204,7 +1204,7 @@ class Dataset(_Node[T]):
         if hasattr(ds_copy, sources.SOURCE_FIELD):
             delattr(ds_copy, sources.SOURCE_FIELD)
         src_fn = source(
-            conn, every, starting_from, lateness, None, tiers, pre_proc
+            conn, every, starting_from, disorder, None, tiers, pre_proc
         )
         return src_fn(ds_copy)
 
