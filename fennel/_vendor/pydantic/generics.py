@@ -17,7 +17,7 @@ from typing import (
     cast,
 )
 
-from typing_extensions import Annotated
+from fennel._vendor.typing_extensions import Annotated
 
 from .class_validators import gather_all_validators
 from .fields import DeferredType

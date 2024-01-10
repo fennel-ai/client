@@ -28,8 +28,8 @@ like this:
 .. code-block:: python
 
     try:
-        import urllib3.contrib.pyopenssl
-        urllib3.contrib.pyopenssl.inject_into_urllib3()
+        import fennel._vendor.urllib3.contrib.pyopenssl as urllib3_pyopenssl
+        urllib3_pyopenssl.inject_into_urllib3()
     except ImportError:
         pass
 
@@ -197,7 +197,7 @@ def _dnsname_to_stdlib(name):
         that we can't just safely call `idna.encode`: it can explode for
         wildcard names. This avoids that problem.
         """
-        import idna
+        from fennel._vendor import idna
 
         try:
             for prefix in [u"*.", u"."]:

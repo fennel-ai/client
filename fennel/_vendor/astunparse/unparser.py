@@ -1,11 +1,11 @@
 "Usage: unparse.py <path to source file>"
 from __future__ import print_function, unicode_literals
-import six
+from fennel._vendor import six
 import sys
 import ast
 import os
 import tokenize
-from six import StringIO
+from fennel._vendor.six import StringIO
 
 # Large float and imaginary literals get turned into infinities in the AST.
 # We unparse those infinities to INFSTR.
