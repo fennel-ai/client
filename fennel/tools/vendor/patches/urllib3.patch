@@ -1,5 +1,5 @@
 diff --git a/fennel/_vendor/urllib3/contrib/securetransport.py b/fennel/_vendor/urllib3/contrib/securetransport.py
-index 4dc4848..1ae6901 100644
+index 6c46a3b..f2d3b2b 100644
 --- a/fennel/_vendor/urllib3/contrib/securetransport.py
 +++ b/fennel/_vendor/urllib3/contrib/securetransport.py
 @@ -19,8 +19,8 @@ contrib module. So...here we are.
@@ -14,16 +14,16 @@ index 4dc4848..1ae6901 100644
  Happy TLSing!
  
 diff --git a/fennel/_vendor/urllib3/contrib/pyopenssl.py b/fennel/_vendor/urllib3/contrib/pyopenssl.py
-index 821c174..87229f6 100644
+index 1ed214b..c46ac9c 100644
 --- a/fennel/_vendor/urllib3/contrib/pyopenssl.py
 +++ b/fennel/_vendor/urllib3/contrib/pyopenssl.py
-@@ -24,8 +24,8 @@ module, or at any other time before your application begins using ``urllib3``,
- like this::
+@@ -28,8 +28,8 @@ like this:
+ .. code-block:: python
  
      try:
 -        import urllib3.contrib.pyopenssl
 -        urllib3.contrib.pyopenssl.inject_into_urllib3()
-+        import urllib3.contrib.pyopenssl as urllib3_pyopenssl
++        import fennel._vendor.urllib3.contrib.pyopenssl as urllib3_pyopenssl
 +        urllib3_pyopenssl.inject_into_urllib3()
      except ImportError:
          pass
