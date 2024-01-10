@@ -474,7 +474,7 @@ class MockClient(Client):
 
     def extract(
         self,
-        inputs: List[Union[Feature, Featureset, str]],
+        inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
@@ -492,7 +492,7 @@ class MockClient(Client):
 
     def extract_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset, str]],
+        input_feature_list: List[Union[Feature, str]],
         output_feature_list: List[Union[Feature, Featureset, str]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
@@ -543,7 +543,7 @@ class MockClient(Client):
 
     def extract_historical(
         self,
-        inputs: List[Union[Feature, Featureset, str]],
+        inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
         format: str = "pandas",
@@ -565,7 +565,7 @@ class MockClient(Client):
 
     def extract_historical_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset, str]],
+        input_feature_list: List[Union[Feature, str]],
         output_feature_list: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
         format: str = "pandas",
