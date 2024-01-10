@@ -1923,7 +1923,7 @@ class SchemaValidator(Visitor):
             for key in obj.on:
                 if fennel_is_optional(left_schema.get_type(key)):
                     raise TypeError(
-                        f"Fields used in a join operation must not be optional in left schema, "
+                        f"Fields used in a join operator must not be optional in left schema, "
                         f"found `{key}` of type `{dtype_to_string(left_schema.get_type(key))}` "
                         f"in `{output_schema_name}`"
                     )
@@ -1952,7 +1952,7 @@ class SchemaValidator(Visitor):
             for lkey, rkey in zip(obj.left_on, obj.right_on):
                 if fennel_is_optional(left_schema.get_type(lkey)):
                     raise TypeError(
-                        f"Fields used in a join operation must not be optional "
+                        f"Fields used in a join operator must not be optional "
                         f"in left schema, found `{lkey}` of type "
                         f"`{dtype_to_string(left_schema.get_type(lkey))}` "
                         f"in `{output_schema_name}`"

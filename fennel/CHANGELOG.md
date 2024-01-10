@@ -1,4 +1,9 @@
 # Changelog
+## [0.19.6] - 2024-01-11
+- Adds functions `extract`, `extract_historical` and `extract_historical_progress` to the client.
+- Deprecating functions `extract_features`, `extract_historical_features` and `extract_historical_features_progress` from the client.
+- Improved error reporting in case of joint operator failure in Mock Client.
+
 ## [0.19.5] - 2024-01-03
 - Updates the contract between client and the server for `extract_historical_features` s3 buckets
 
