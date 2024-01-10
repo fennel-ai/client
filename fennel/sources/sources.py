@@ -17,7 +17,7 @@ T = TypeVar("T")
 SOURCE_FIELD = "__fennel_data_sources__"
 SINK_FIELD = "__fennel_data_sinks__"
 DEFAULT_EVERY = Duration("30m")
-DEFAULT_LATENESS = Duration("1h")
+DEFAULT_DISORDER = Duration("14d")
 DEFAULT_CDC = "append"
 
 
@@ -39,7 +39,7 @@ def source(
     conn: DataConnector,
     every: Optional[Duration] = None,
     since: Optional[datetime] = None,
-    lateness: Optional[Duration] = None,
+    disorder: Optional[Duration] = None,
     cdc: Optional[str] = None,
     tier: Optional[Union[str, List[str]]] = None,
     preproc: Optional[Dict[str, PreProcValue]] = None,
@@ -57,7 +57,7 @@ def source(
 
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY
-        conn.lateness = lateness if lateness is not None else DEFAULT_LATENESS
+        conn.disorder = disorder if disorder is not None else DEFAULT_DISORDER
         conn.cdc = cdc if cdc is not None else DEFAULT_CDC
         conn.starting_from = since
         conn.tiers = TierSelector(tier)
@@ -373,7 +373,7 @@ class DataConnector:
 
     data_source: DataSource
     every: Duration
-    lateness: Duration
+    disorder: Duration
     cdc: str
     starting_from: Optional[datetime] = None
     tiers: TierSelector
@@ -490,7 +490,7 @@ class KinesisConnector(DataConnector):
         stream_arn: str,
         init_position: InitPosition,
         init_timestamp: Optional[datetime],
-        format: str,
+        format: str = "json",
     ):
         self.data_source = data_source
         self.init_position = init_position

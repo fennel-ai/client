@@ -100,7 +100,7 @@ def test_simple_dataset():
                     }
                 },
                 "dataset": "UserInfoDataset",
-                "lateness": "3600s",
+                "disorder": "1209600s",
             }
         ],
         "extdbs": [
@@ -250,7 +250,7 @@ def test_dataset_with_retention():
                     }
                 },
                 "dataset": "Activity",
-                "lateness": "3600s",
+                "disorder": "1209600s",
             }
         ],
         "extdbs": [
@@ -393,7 +393,7 @@ def test_nested_dataset():
                     }
                 },
                 "dataset": "Dealer",
-                "lateness": "3600s",
+                "disorder": "1209600s",
             }
         ],
         "extdbs": [
@@ -2534,14 +2534,14 @@ def test_pipeline_with_tier_selector():
     kafka = Kafka.get(name="my_kafka")
 
     @meta(owner="test@test.com")
-    @source(kafka.topic("orders"), lateness="1h")
+    @source(kafka.topic("orders"), disorder="1h")
     @dataset
     class A:
         a1: int = field(key=True)
         t: datetime
 
     @meta(owner="test@test.com")
-    @source(kafka.topic("orders2"), lateness="1h")
+    @source(kafka.topic("orders2"), disorder="1h")
     @dataset
     class B:
         b1: int = field(key=True)

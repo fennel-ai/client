@@ -154,6 +154,12 @@ configuring the S3 bucket.
 
 <pre snippet="api-reference/source#s3_hudi_source"></pre>
 
+### Delta Lake
+
+Similar to Hudi, Fennel integrates with Delta Lake via its S3 connector. To use delta lake, simply set the `format` field to "delta" when configuring the S3 bucket.
+
+<pre snippet="api-reference/source#s3_delta_lake_source"></pre>
+
 ### Kafka
 
 The following fields need to be defined for the source:
@@ -172,8 +178,74 @@ The following fields need to be defined on the topic:
 
 <pre snippet="api-reference/source#kafka_source"></pre>
 
-### Delta Lake
+### Kinesis
 
-Similar to Hudi, Fennel integrates with Delta Lake via its S3 connector. To use delta lake, simply set the `format` field to "delta" when configuring the S3 bucket.
+The following fields need to be defined for the source:
 
-<pre snippet="api-reference/source#s3_delta_lake_source"></pre>
+1. **`name`** - A name to identify the source. The name should be unique across all sources.
+1. `role_arn` - The role that Fennel should use to access the Kinesis stream
+2. `stream_arn` - AWS `ARN` of the stream
+3. `init_position` - The Kinesis `ShardIterator` type used to begin ingestion. One of `LATEST`, `TRIM_HORIZON` or `AT_TIMESTAMP`
+4. `init_timestamp` - If the `init_position` is `AT_TIMESTAMP` this is the datetime at which to begin ingestion
+5. `format` - The format of the incoming data. Currently only JSON is supported and `"json"` is specified by default
+
+:::info
+Fennel creates a special role with name prefixed by `FennelDataAccessRole-` in your AWS account for role-based access. The `role_arn` specified should have a trust policy allowing this role to assume the kinesis role.
+:::
+
+
+<details>
+
+<summary>What permissions are needed on the Kinesis role? </summary>
+
+The role should have the following trust policy
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [
+                    "arn:aws:iam::<data-plane-account-id>:role/FennelDataAccessRole-*"
+                ]
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+```
+
+Also attach the following permission policy. Add more streams to the Resource field if more than one streams need to be consumed via this role.
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowKinesisAccess",
+      "Effect": "Allow",
+      "Action": [
+        "kinesis:DescribeStream",
+        "kinesis:DescribeStreamSummary",
+        "kinesis:DescribeStreamConsumer",
+        "kinesis:RegisterStreamConsumer"
+        "kinesis:ListShards",
+        "kinesis:GetShardIterator",
+        "kinesis:SubscribeToShard",
+        "kinesis:GetRecords"
+      ],
+      "Resource": [
+        "arn:aws:kinesis:<region>:<account-id>:stream/<stream-name>",
+        "arn:aws:kinesis:<region>:<account-id>:stream/<stream-name>/*"
+      ]
+    }
+  ]
+}
+```
+
+</details>
+
+
+<pre snippet="api-reference/source#kinesis_source"></pre>
