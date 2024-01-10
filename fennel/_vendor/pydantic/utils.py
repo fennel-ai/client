@@ -27,7 +27,7 @@ from typing import (
     Union,
 )
 
-from fennel._vendor.typing_extensions import Annotated
+from typing_extensions import Annotated
 
 from .errors import ConfigError
 from .typing import (

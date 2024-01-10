@@ -32,10 +32,10 @@ from typing import Callable, Dict, Type, Union, cast, overload
 
 import hypothesis.strategies as st
 
-from fennel._vendor import pydantic
-from fennel._vendor.pydantic import color as pydantic_color
-from fennel._vendor.pydantic import types as pydantic_types
-from fennel._vendor.pydantic.utils import lenient_issubclass
+import pydantic
+from pydantic import color as pydantic_color
+from pydantic import types as pydantic_types
+from pydantic.utils import lenient_issubclass
 
 # FilePath and DirectoryPath are explicitly unsupported, as we'd have to create
 # them on-disk, and that's unsafe in general without being told *where* to do so.
