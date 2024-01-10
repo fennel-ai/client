@@ -320,7 +320,7 @@ class Client:
 
     def extract(
         self,
-        inputs: List[Union[Feature, Featureset, str]],
+        inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
@@ -332,7 +332,7 @@ class Client:
         feature list. The features are computed for the current time.
 
         Parameters:
-        inputs (List[Union[Feature, Featureset]]): List of features or featuresets to use as input.
+        inputs (List[Feature]): List of features or featuresets to use as input.
         outputs (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
         input_dataframe (pd.DataFrame): Dataframe containing the input features.
         log (bool): Boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False.
@@ -353,7 +353,7 @@ class Client:
 
     def extract_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset, str]],
+        input_feature_list: List[Union[Feature, str]],
         output_feature_list: List[Union[Feature, Featureset, str]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
@@ -366,7 +366,7 @@ class Client:
         feature list. The features are computed for the current time.
 
         Parameters:
-        input_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to use as input.
+        input_feature_list (List[Feature]): List of features or featuresets to use as input.
         output_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
         input_dataframe (pd.DataFrame): Dataframe containing the input features.
         log (bool): Boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False.
@@ -439,7 +439,7 @@ class Client:
 
     def extract_historical(
         self,
-        inputs: List[Union[Feature, Featureset, str]],
+        inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
         format: str = "pandas",
@@ -453,7 +453,7 @@ class Client:
         timestamps are provided by the timestamps parameter.
 
         Parameters:
-        inputs (List[Union[Feature, Featureset]]): List of features or featuresets to use as input.
+        inputs (List[Feature]): List of features or featuresets to use as input.
         outputs (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
         timestamp_column (str): The name of the column containing the timestamps.
         format (str): The format of the input data. Can be either "pandas",
@@ -488,7 +488,7 @@ class Client:
 
     def extract_historical_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset, str]],
+        input_feature_list: List[Union[Feature, str]],
         output_feature_list: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
         format: str = "pandas",
@@ -503,7 +503,7 @@ class Client:
         timestamps are provided by the timestamps parameter.
 
         Parameters:
-        input_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to use as input.
+        input_feature_list (List[Feature]): List of features or featuresets to use as input.
         output_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
         timestamp_column (str): The name of the column containing the timestamps.
         format (str): The format of the input data. Can be either "pandas",
