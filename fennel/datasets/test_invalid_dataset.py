@@ -1,10 +1,9 @@
 from datetime import datetime
-
-import pytest
 from typing import Optional, List, Union
-import pandas as pd
 
-from fennel import Min, Max
+import pandas as pd
+import pytest
+
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.lib.aggregate import Count, Average, Stddev, Distinct
 from fennel.lib.expectations import (
@@ -650,6 +649,41 @@ def test_dataset_incorrect_join():
     assert (
         str(e.value)
         == "Cannot join with an intermediate dataset, i.e something defined inside a pipeline. Only joining against keyed datasets is permitted."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @dataset
+        class XYZ:
+            user_id: Optional[int]
+            agent_id: int
+            name: str
+            timestamp: datetime
+
+        @dataset
+        class ABC:
+            user_id: int = field(key=True)
+            agent_id: int = field(key=True)
+            age: int
+            timestamp: datetime
+
+        @dataset
+        class XYZJoinedABC:
+            user_id: int
+            name: str
+            age: int
+            timestamp: datetime
+
+            @pipeline(version=1)
+            @inputs(XYZ, ABC)
+            def create_pipeline(cls, a: Dataset, b: Dataset):
+                c = a.join(b, how="inner", on=["user_id", "agent_id"])  # type: ignore
+                return c
+
+    assert (
+        str(e.value)
+        == "Fields used in a join operator must not be optional in left schema, found `user_id` of "
+        "type `Optional[int]` in `'[Pipeline:create_pipeline]->join node'`"
     )
 
 

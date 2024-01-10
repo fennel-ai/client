@@ -1,4 +1,7 @@
 # Changelog
+## [0.19.8] - 2024-01-11
+- Improved error reporting in case of joint operator failure in Mock Client.
+
 ## [0.19.7] - 2024-01-09
 - Add jsonl file format support in pb2 file, introduce disorder for Sources
 
