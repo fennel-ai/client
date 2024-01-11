@@ -202,7 +202,7 @@ stream = kinesis.stream(
 @source(stream)
 @meta(owner="abc@email.com")
 @dataset
-class UserKinesisSourcedDataset:
+class UserKinesisSourcedDataset2:
     uid: int = field(key=True)
     email: str
     timestamp: datetime
