@@ -32,7 +32,7 @@ postgres = Postgres(
 @source(
     postgres.table("orders", cursor="timestamp"),
     every="1m",
-    lateness="1d",
+    disorder="1d",
     tier="prod",
 )
 @source(Webhook(name="fennel_webhook").endpoint("Order"), tier="dev")

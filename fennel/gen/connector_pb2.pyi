@@ -747,7 +747,7 @@ class Source(google.protobuf.message.Message):
     DATASET_FIELD_NUMBER: builtins.int
     EVERY_FIELD_NUMBER: builtins.int
     CURSOR_FIELD_NUMBER: builtins.int
-    LATENESS_FIELD_NUMBER: builtins.int
+    DISORDER_FIELD_NUMBER: builtins.int
     TIMESTAMP_FIELD_FIELD_NUMBER: builtins.int
     CDC_FIELD_NUMBER: builtins.int
     STARTING_FROM_FIELD_NUMBER: builtins.int
@@ -759,7 +759,7 @@ class Source(google.protobuf.message.Message):
     def every(self) -> google.protobuf.duration_pb2.Duration: ...
     cursor: builtins.str
     @property
-    def lateness(self) -> google.protobuf.duration_pb2.Duration: ...
+    def disorder(self) -> google.protobuf.duration_pb2.Duration: ...
     timestamp_field: builtins.str
     cdc: global___CDCStrategy.ValueType
     @property
@@ -773,14 +773,14 @@ class Source(google.protobuf.message.Message):
         dataset: builtins.str = ...,
         every: google.protobuf.duration_pb2.Duration | None = ...,
         cursor: builtins.str | None = ...,
-        lateness: google.protobuf.duration_pb2.Duration | None = ...,
+        disorder: google.protobuf.duration_pb2.Duration | None = ...,
         timestamp_field: builtins.str = ...,
         cdc: global___CDCStrategy.ValueType = ...,
         starting_from: google.protobuf.timestamp_pb2.Timestamp | None = ...,
         pre_proc: collections.abc.Mapping[builtins.str, global___PreProcValue] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "every", b"every", "lateness", b"lateness", "starting_from", b"starting_from", "table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "disorder", b"disorder", "every", b"every", "starting_from", b"starting_from", "table", b"table"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "disorder", b"disorder", "every", b"every", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
 
 global___Source = Source

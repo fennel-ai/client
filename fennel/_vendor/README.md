@@ -47,4 +47,4 @@ versions runnings and lead to unexpected behavior/bugs.
 2. A vendored dependnecy should never be edited directly. If a change is required, it should be done via
 a patch.
 3. See - https://github.com/pypa/pip/blob/main/src/pip/_vendor/README.rst, which also lists some interesting
-cases (not applicable to us right now e.g. security or debundling).
+cases (not applicable to us right now e.g. security or debundling). 
