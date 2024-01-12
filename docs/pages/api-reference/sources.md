@@ -185,7 +185,7 @@ The following fields need to be defined for the source:
 1. `name: str` - A name to identify the source. The name should be unique across all sources.
 1. `role_arn: str` - The role that Fennel should use to access the Kinesis stream
 2. `stream_arn: str` - AWS `ARN` of the stream
-3. `init_position: fennel.souces.InitPosition` - The Kinesis `ShardIterator` type used to begin ingestion. One of `LATEST`, `TRIM_HORIZON` or `AT_TIMESTAMP`. 
+3. `init_position: fennel.sources.InitPosition` - The Kinesis `ShardIterator` type used to begin ingestion. One of `LATEST`, `TRIM_HORIZON` or `AT_TIMESTAMP`. 
 Note that for `LATEST`, Fennel will begin consuming records that come into Kinesis a few minutes after `sync()` is called. For a completely deterministic position, use `AT_TIMESTAMP`
 See [Kinesis ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html#API_GetShardIterator_RequestSyntax) for more info. 
 4. `init_timestamp: Optional[datetime]` - If the `init_position` is `AT_TIMESTAMP` this is the datetime at which to begin ingestion. Do not specify this for `LATEST` or `TRIM_HORIZON`
@@ -208,7 +208,7 @@ Fennel creates a special role with name prefixed by `FennelDataAccessRole-` in y
 
 <summary>What permissions are needed on the Kinesis role? </summary>
 
-The role should have the following trust policy. Specify the exact `role_arn`m in the form
+The role should have the following trust policy. Specify the exact `role_arn` in the form
 `arn:aws:iam::<fennel-data-plane-account-id>:role/<FennelDataAccessRole-...>` without any wildcards.
 ```
 {
