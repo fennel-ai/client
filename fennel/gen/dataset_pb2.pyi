@@ -204,6 +204,7 @@ class Operator(google.protobuf.message.Message):
     FIRST_FIELD_NUMBER: builtins.int
     ASSIGN_FIELD_NUMBER: builtins.int
     DROPNULL_FIELD_NUMBER: builtins.int
+    WINDOW_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
     id: builtins.str
     """Every operator has an ID assigned by the client"""
@@ -241,6 +242,8 @@ class Operator(google.protobuf.message.Message):
     def assign(self) -> global___Assign: ...
     @property
     def dropnull(self) -> global___Dropnull: ...
+    @property
+    def window(self) -> global___Window: ...
     name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -267,11 +270,12 @@ class Operator(google.protobuf.message.Message):
         first: global___First | None = ...,
         assign: global___Assign | None = ...,
         dropnull: global___Dropnull | None = ...,
+        window: global___Window | None = ...,
         name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "explode", b"explode", "filter", b"filter", "first", b"first", "join", b"join", "kind", b"kind", "rename", b"rename", "transform", b"transform", "union", b"union"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_name", b"dataset_name", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "explode", b"explode", "filter", b"filter", "first", b"first", "id", b"id", "is_root", b"is_root", "join", b"join", "kind", b"kind", "name", b"name", "pipeline_name", b"pipeline_name", "rename", b"rename", "transform", b"transform", "union", b"union"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union", "filter", "dataset_ref", "rename", "drop", "explode", "dedup", "first", "assign", "dropnull"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "explode", b"explode", "filter", b"filter", "first", b"first", "join", b"join", "kind", b"kind", "rename", b"rename", "transform", b"transform", "union", b"union", "window", b"window"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_name", b"dataset_name", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "explode", b"explode", "filter", b"filter", "first", b"first", "id", b"id", "is_root", b"is_root", "join", b"join", "kind", b"kind", "name", b"name", "pipeline_name", b"pipeline_name", "rename", b"rename", "transform", b"transform", "union", b"union", "window", b"window"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union", "filter", "dataset_ref", "rename", "drop", "explode", "dedup", "first", "assign", "dropnull", "window"] | None: ...
 
 global___Operator = Operator
 
@@ -677,6 +681,51 @@ class First(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["by", b"by", "operand_id", b"operand_id", "operand_name", b"operand_name"]) -> None: ...
 
 global___First = First
+
+@typing_extensions.final
+class Window(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    class _Type:
+        ValueType = typing.NewType("ValueType", builtins.int)
+        V: typing_extensions.TypeAlias = ValueType
+
+    class _TypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Window._Type.ValueType], builtins.type):
+        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+        Session: Window._Type.ValueType  # 0
+        Tumble: Window._Type.ValueType  # 1
+        Sliding: Window._Type.ValueType  # 2
+
+    class Type(_Type, metaclass=_TypeEnumTypeWrapper): ...
+    Session: Window.Type.ValueType  # 0
+    Tumble: Window.Type.ValueType  # 1
+    Sliding: Window.Type.ValueType  # 2
+
+    OPERAND_ID_FIELD_NUMBER: builtins.int
+    TYPE_FIELD_NUMBER: builtins.int
+    GAP_FIELD_NUMBER: builtins.int
+    OPERAND_NAME_FIELD_NUMBER: builtins.int
+    operand_id: builtins.str
+    type: global___Window.Type.ValueType
+    @property
+    def gap(self) -> google.protobuf.duration_pb2.Duration: ...
+    operand_name: builtins.str
+    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
+    THE CLIENT
+    """
+    def __init__(
+        self,
+        *,
+        operand_id: builtins.str = ...,
+        type: global___Window.Type.ValueType = ...,
+        gap: google.protobuf.duration_pb2.Duration | None = ...,
+        operand_name: builtins.str = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_gap", b"_gap", "gap", b"gap"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_gap", b"_gap", "gap", b"gap", "operand_id", b"operand_id", "operand_name", b"operand_name", "type", b"type"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_gap", b"_gap"]) -> typing_extensions.Literal["gap"] | None: ...
+
+global___Window = Window
 
 @typing_extensions.final
 class DatasetRef(google.protobuf.message.Message):
