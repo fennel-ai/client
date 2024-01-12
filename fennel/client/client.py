@@ -384,8 +384,8 @@ class Client:
                     output_feature_name_to_type[f.fqn()] = f.dtype
 
         req = {
-            "input_features": input_feature_names,
-            "output_features": output_feature_names,
+            "inputs": input_feature_names,
+            "outputs": output_feature_names,
             "data": to_columnar_json(input_dataframe),
             "log": log,
         }  # type: Dict[str, Any]
