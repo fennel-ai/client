@@ -45,8 +45,8 @@ class TestRestAPI(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
         # /docsnip
 
-        # docsnip rest_extract_features_api
-        url = "{}/api/v1/extract_features".format(SERVER)
+        # docsnip rest_extract_api
+        url = "{}/api/v1/extract".format(SERVER)
         headers = {"Content-Type": "application/json"}
         data = [
             {"UserFeatures.userid": 1},
@@ -54,8 +54,8 @@ class TestRestAPI(unittest.TestCase):
             {"UserFeatures.userid": 3},
         ]
         req = {
-            "output_features": ["UserFeatures"],
-            "input_features": ["UserFeatures.userid"],
+            "outputs": ["UserFeatures"],
+            "inputs": ["UserFeatures.userid"],
             "data": data,
             "log": True,
             "workflow": "test",
@@ -65,13 +65,13 @@ class TestRestAPI(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
         # /docsnip
 
-        # docsnip rest_extract_features_api_columnar
-        url = "{}/api/v1/extract_features".format(SERVER)
+        # docsnip rest_extract_api_columnar
+        url = "{}/api/v1/extract".format(SERVER)
         headers = {"Content-Type": "application/json"}
         data = {"UserFeatures.userid": [1, 2, 3]}
         req = {
-            "output_features": ["UserFeatures"],
-            "input_features": ["UserFeatures.userid"],
+            "outputs": ["UserFeatures"],
+            "inputs": ["UserFeatures.userid"],
             "data": data,
             "log": True,
             "workflow": "test",

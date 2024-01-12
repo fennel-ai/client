@@ -332,8 +332,8 @@ class Client:
         feature list. The features are computed for the current time.
 
         Parameters:
-        inputs (List[Feature]): List of features or featuresets to use as input.
-        outputs (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
+        inputs (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
+        outputs (List[Union[Feature, Featureset, str]]): List of feature objects or featuresets or fully qualified feature names (when providing a str) to compute.
         input_dataframe (pd.DataFrame): Dataframe containing the input features.
         log (bool): Boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False.
         workflow (Optional[str]): The name of the workflow associated with the feature extraction. Only relevant when log is set to True.
@@ -342,45 +342,11 @@ class Client:
         Returns:
         Union[pd.DataFrame, pd.Series]: Pandas dataframe or series containing the output features.
         """
-        return self.extract_features(
-            input_feature_list=inputs,
-            output_feature_list=outputs,
-            input_dataframe=input_dataframe,
-            log=log,
-            workflow=workflow,
-            sampling_rate=sampling_rate,
-        )
-
-    def extract_features(
-        self,
-        input_feature_list: List[Union[Feature, str]],
-        output_feature_list: List[Union[Feature, Featureset, str]],
-        input_dataframe: pd.DataFrame,
-        log: bool = False,
-        workflow: Optional[str] = None,
-        sampling_rate: Optional[float] = None,
-    ) -> Union[pd.DataFrame, pd.Series]:
-        """
-        Going to be deprecated in favor of extract and will be removed in the future.
-        Extract features for a given output feature list from an input
-        feature list. The features are computed for the current time.
-
-        Parameters:
-        input_feature_list (List[Feature]): List of features or featuresets to use as input.
-        output_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
-        input_dataframe (pd.DataFrame): Dataframe containing the input features.
-        log (bool): Boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False.
-        workflow (Optional[str]): The name of the workflow associated with the feature extraction. Only relevant when log is set to True.
-        sampling_rate (float): The rate at which feature data should be sampled before logging. Only relevant when log is set to True. The default value is 1.0.
-
-        Returns:
-        Union[pd.DataFrame, pd.Series]: Pandas dataframe or series containing the output features.
-        """
-        if input_dataframe.empty or len(output_feature_list) == 0:
+        if input_dataframe.empty or len(outputs) == 0:
             return pd.DataFrame()
 
         input_feature_names = []
-        for inp_feature in input_feature_list:
+        for inp_feature in inputs:
             if isinstance(inp_feature, Feature):
                 input_feature_names.append(inp_feature.fqn())
             elif isinstance(inp_feature, str) and is_valid_feature(inp_feature):
@@ -401,7 +367,7 @@ class Client:
 
         output_feature_names = []
         output_feature_name_to_type: Dict[str, Any] = {}
-        for out_feature in output_feature_list:
+        for out_feature in outputs:
             if isinstance(out_feature, Feature):
                 output_feature_names.append(out_feature.fqn())
                 output_feature_name_to_type[
@@ -428,7 +394,7 @@ class Client:
         if sampling_rate is not None:
             req["sampling_rate"] = sampling_rate
 
-        response = self._post_json("{}/extract_features".format(V1_API), req)
+        response = self._post_json("{}/extract".format(V1_API), req)
         df = pd.DataFrame(response.json())
         for col in df.columns:
             if df[col].dtype == "object":
@@ -436,6 +402,40 @@ class Client:
                     lambda x: parse_json(output_feature_name_to_type[col], x)
                 )
         return df
+
+    def extract_features(
+        self,
+        input_feature_list: List[Union[Feature, str]],
+        output_feature_list: List[Union[Feature, Featureset, str]],
+        input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: Optional[str] = None,
+        sampling_rate: Optional[float] = None,
+    ) -> Union[pd.DataFrame, pd.Series]:
+        """
+        Going to be deprecated in favor of extract and will be removed in the future.
+        Extract features for a given output feature list from an input
+        feature list. The features are computed for the current time.
+
+        Parameters:
+        input_feature_list (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
+        output_feature_list (List[Union[Feature, Featureset, str]]): List of feature objects or featuresets or fully qualified feature names (when providing a str) to compute.
+        input_dataframe (pd.DataFrame): Dataframe containing the input features.
+        log (bool): Boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False.
+        workflow (Optional[str]): The name of the workflow associated with the feature extraction. Only relevant when log is set to True.
+        sampling_rate (float): The rate at which feature data should be sampled before logging. Only relevant when log is set to True. The default value is 1.0.
+
+        Returns:
+        Union[pd.DataFrame, pd.Series]: Pandas dataframe or series containing the output features.
+        """
+        return self.extract(
+            inputs=input_feature_list,
+            outputs=output_feature_list,
+            input_dataframe=input_dataframe,
+            log=log,
+            workflow=workflow,
+            sampling_rate=sampling_rate,
+        )
 
     def extract_historical(
         self,
@@ -453,8 +453,8 @@ class Client:
         timestamps are provided by the timestamps parameter.
 
         Parameters:
-        inputs (List[Feature]): List of features or featuresets to use as input.
-        outputs (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
+        inputs (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
+        outputs (List[Union[Feature, Featureset, str]]): List of feature objects or featuresets or fully qualified feature names (when providing a str) to compute.
         timestamp_column (str): The name of the column containing the timestamps.
         format (str): The format of the input data. Can be either "pandas",
             "csv", "json" or "parquet". Default is "pandas".
@@ -475,57 +475,6 @@ class Client:
                         A failure rate of 0.0 indicates that all processing has been completed successfully.
                         The status of the request.
         """
-        return self.extract_historical_features(
-            input_feature_list=inputs,
-            output_feature_list=outputs,
-            timestamp_column=timestamp_column,
-            format=format,
-            input_dataframe=input_dataframe,
-            input_s3=input_s3,
-            output_s3=output_s3,
-            feature_to_column_map=feature_to_column_map,
-        )
-
-    def extract_historical_features(
-        self,
-        input_feature_list: List[Union[Feature, str]],
-        output_feature_list: List[Union[Feature, Featureset, str]],
-        timestamp_column: str,
-        format: str = "pandas",
-        input_dataframe: Optional[pd.DataFrame] = None,
-        input_s3: Optional[S3Connector] = None,
-        output_s3: Optional[S3Connector] = None,
-        feature_to_column_map: Optional[Dict[Feature, str]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Going to be deprecated in favor of extract_historical and will be removed in the future.
-        Extract point in time correct features from a dataframe, where the
-        timestamps are provided by the timestamps parameter.
-
-        Parameters:
-        input_feature_list (List[Feature]): List of features or featuresets to use as input.
-        output_feature_list (List[Union[Feature, Featureset]]): List of features or featuresets to compute.
-        timestamp_column (str): The name of the column containing the timestamps.
-        format (str): The format of the input data. Can be either "pandas",
-            "csv", "json" or "parquet". Default is "pandas".
-        input_dataframe (Optional[pd.DataFrame]): Dataframe containing the input features. Only relevant when format is "pandas".
-        output_s3 (Optional[S3Connector]): Contains the S3 info -- bucket, prefix, and optional access key id
-            and secret key -- used for storing the output of the extract historical request
-
-        The following parameters are only relevant when format is "csv", "json" or "parquet".
-
-        input_s3 (Optional[sources.S3Connector]): The info for the input S3 data, containing bucket, prefix, and optional access key id
-            and secret key
-        feature_to_column_map (Optional[Dict[Feature, str]]): A dictionary that maps columns in the S3 data to the required features.
-
-
-        Returns:
-        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
-                        A completion rate of 1.0 indicates that all processing has been completed.
-                        A failure rate of 0.0 indicates that all processing has been completed successfully.
-                        The status of the request.
-        """
-
         if format not in ["pandas", "csv", "json", "parquet"]:
             raise Exception(
                 "Invalid input format. "
@@ -534,7 +483,7 @@ class Client:
             )
 
         input_feature_names = []
-        for input_feature in input_feature_list:
+        for input_feature in inputs:
             if isinstance(input_feature, Feature):
                 input_feature_names.append(input_feature.fqn())
             elif isinstance(input_feature, str):
@@ -619,7 +568,7 @@ class Client:
             extract_historical_input["S3"] = input_info
 
         output_feature_names = []
-        for output_feature in output_feature_list:
+        for output_feature in outputs:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, str):
@@ -642,7 +591,57 @@ class Client:
             "s3_output": _s3_connector_dict(output_s3) if output_s3 else None,
         }
         return self._post_json(
-            "{}/extract_historical_features".format(V1_API), req
+            "{}/extract_historical".format(V1_API), req
+        )
+
+    def extract_historical_features(
+        self,
+        input_feature_list: List[Union[Feature, str]],
+        output_feature_list: List[Union[Feature, Featureset, str]],
+        timestamp_column: str,
+        format: str = "pandas",
+        input_dataframe: Optional[pd.DataFrame] = None,
+        input_s3: Optional[S3Connector] = None,
+        output_s3: Optional[S3Connector] = None,
+        feature_to_column_map: Optional[Dict[Feature, str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Going to be deprecated in favor of extract_historical and will be removed in the future.
+        Extract point in time correct features from a dataframe, where the
+        timestamps are provided by the timestamps parameter.
+
+        Parameters:
+        input_feature_list (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
+        output_feature_list (List[Union[Feature, Featureset, str]]): List of feature objects or featuresets or fully qualified feature names (when providing a str) to compute.
+        timestamp_column (str): The name of the column containing the timestamps.
+        format (str): The format of the input data. Can be either "pandas",
+            "csv", "json" or "parquet". Default is "pandas".
+        input_dataframe (Optional[pd.DataFrame]): Dataframe containing the input features. Only relevant when format is "pandas".
+        output_s3 (Optional[S3Connector]): Contains the S3 info -- bucket, prefix, and optional access key id
+            and secret key -- used for storing the output of the extract historical request
+
+        The following parameters are only relevant when format is "csv", "json" or "parquet".
+
+        input_s3 (Optional[sources.S3Connector]): The info for the input S3 data, containing bucket, prefix, and optional access key id
+            and secret key
+        feature_to_column_map (Optional[Dict[Feature, str]]): A dictionary that maps columns in the S3 data to the required features.
+
+
+        Returns:
+        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
+                        A completion rate of 1.0 indicates that all processing has been completed.
+                        A failure rate of 0.0 indicates that all processing has been completed successfully.
+                        The status of the request.
+        """
+        return self.extract_historical(
+            inputs=input_feature_list,
+            outputs=output_feature_list,
+            timestamp_column=timestamp_column,
+            format=format,
+            input_dataframe=input_dataframe,
+            input_s3=input_s3,
+            output_s3=output_s3,
+            feature_to_column_map=feature_to_column_map,
         )
 
     def extract_historical_progress(self, request_id):
