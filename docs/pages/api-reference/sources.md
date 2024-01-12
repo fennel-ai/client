@@ -200,7 +200,7 @@ See [Kinesis ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIRe
 <pre snippet="api-reference/source#kinesis_source_latest"></pre>
 
 :::info
-Fennel creates a special role with name prefixed by `FennelDataAccessRole-` in your AWS account for role-based access. The `role_arn` specified should have a trust policy allowing this role to assume the kinesis role.
+Fennel creates a special role with name prefixed by `FennelDataAccessRole-` in your AWS account for role-based access. The role with access to the kinesis stream should have a trust policy allowing this role to assume the kinesis role. See the section below for details
 :::
 
 
@@ -208,7 +208,8 @@ Fennel creates a special role with name prefixed by `FennelDataAccessRole-` in y
 
 <summary>What permissions are needed on the Kinesis role? </summary>
 
-The role should have the following trust policy
+The role should have the following trust policy. Specify the exact `role_arn` in the form
+`arn:aws:iam::<fennel-data-plane-account-id>:role/<FennelDataAccessRole-...>` without any wildcards.
 ```
 {
     "Version": "2012-10-17",
@@ -218,7 +219,7 @@ The role should have the following trust policy
             "Effect": "Allow",
             "Principal": {
                 "AWS": [
-                    "arn:aws:iam::<data-plane-account-id>:role/FennelDataAccessRole-*"
+                    "<role_arn>"
                 ]
             },
             "Action": "sts:AssumeRole"
@@ -227,7 +228,7 @@ The role should have the following trust policy
 }
 ```
 
-Also attach the following permission policy. Add more streams to the Resource field if more than one streams need to be consumed via this role.
+Also attach the following permission policy. Add more streams to the Resource field if more than one streams need to be consumed via this role. Here the `account-id` is your account where the stream lives.
 
 ```
 {
@@ -240,7 +241,7 @@ Also attach the following permission policy. Add more streams to the Resource fi
         "kinesis:DescribeStream",
         "kinesis:DescribeStreamSummary",
         "kinesis:DescribeStreamConsumer",
-        "kinesis:RegisterStreamConsumer"
+        "kinesis:RegisterStreamConsumer",
         "kinesis:ListShards",
         "kinesis:GetShardIterator",
         "kinesis:SubscribeToShard",
