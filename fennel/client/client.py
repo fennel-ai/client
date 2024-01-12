@@ -590,9 +590,7 @@ class Client:
             "timestamp_column": timestamp_column,
             "s3_output": _s3_connector_dict(output_s3) if output_s3 else None,
         }
-        return self._post_json(
-            "{}/extract_historical".format(V1_API), req
-        )
+        return self._post_json("{}/extract_historical".format(V1_API), req)
 
     def extract_historical_features(
         self,
