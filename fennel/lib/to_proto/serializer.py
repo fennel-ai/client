@@ -340,8 +340,10 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             window=proto.Window(
                 operand_id=self.visit(obj.node),
                 type=proto.Window.Type.Session
-                if obj.type == "session" else proto.Window.Type.Tumble
-                if obj.type == "tumble" else proto.Window.Type.Sliding,
+                if obj.type == "session"
+                else proto.Window.Type.Tumble
+                if obj.type == "tumble"
+                else proto.Window.Type.Sliding,
                 gap=gap,
                 field=obj.field,
             ),

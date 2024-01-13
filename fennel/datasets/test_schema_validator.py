@@ -1083,14 +1083,9 @@ def test_window_without_key_fails():
             @pipeline(version=1)
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby().window(
-                    type="session", gap="10m"
-                )
+                return app_event.groupby().window(type="session", gap="10m")
 
-    assert (
-        str(e.value)
-        == """Must specify at least one key"""
-    )
+    assert str(e.value) == """Must specify at least one key"""
 
 
 def test_window_incorrect_schema_nokey():
@@ -1266,7 +1261,4 @@ def test_window_invalid_gap():
                     type="session", gap="10m 5yy"
                 )
 
-    assert (
-        str(e.value)
-        == """Invalid character `y` in duration `10m 5yy`"""
-    )
+    assert str(e.value) == """Invalid character `y` in duration `10m 5yy`"""
