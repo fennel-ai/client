@@ -23,4 +23,5 @@ from fennel.lib.schema.schema import (
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
     FENNEL_STRUCT_SRC_CODE,
     validate_value_matches_type,
+    WindowStruct,
 )

@@ -12,7 +12,7 @@ from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count, Average, Stddev
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, inputs, oneof
+from fennel.lib.schema import Embedding, inputs, oneof, WindowStruct
 from fennel.lib.window import Window
 from fennel.sources import source, Webhook, Kafka
 from fennel.test_lib import *
@@ -2634,4 +2634,137 @@ def test_dataset_with_str_window_aggregate():
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
+    )
+
+
+def test_window_operator():
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class PageViewEvent:
+        user_id: str
+        page_id: str
+        t: datetime
+
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class Sessions:
+        user_id: str = field(key=True)
+        window: WindowStruct = field(key=True)
+        t: datetime
+
+        @pipeline(version=1)
+        @inputs(PageViewEvent)
+        def pipeline_window(cls, app_event: Dataset):
+            return app_event.groupby("user_id").window(
+                type="session", gap="10m"
+            )
+
+    view = InternalTestClient()
+    view.add(Sessions)  # type: ignore
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "Sessions",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "user_id",
+                        "dtype": {"stringType": {}},
+                    },
+                    {
+                        "name": "window",
+                        "dtype": {
+                            "structType": {
+                                "name": "WindowStruct",
+                                "fields": [
+                                    {
+                                        "name": "begin",
+                                        "dtype": {"timestampType": {}},
+                                    },
+                                    {
+                                        "name": "end",
+                                        "dtype": {"timestampType": {}},
+                                    },
+                                    {
+                                        "name": "count",
+                                        "dtype": {"intType": {}},
+                                    },
+                                ],
+                            }
+                        },
+                    },
+                ]
+            },
+            "values": {},
+            "timestamp": "t",
+        },
+        "metadata": {"owner": "nitin@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "user_id": {},
+            "window": {},
+            "t": {},
+        },
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+    # Only one pipeline
+    assert len(sync_request.pipelines) == 1
+    pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
+    p = {
+        "name": "pipeline_window",
+        "dataset_name": "Sessions",
+        "signature": "pipeline_window",
+        "metadata": {},
+        "input_dataset_names": ["PageViewEvent"],
+        "version": 1,
+        "active": True,
+        "pycode": {},
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert pipeline_req == expected_pipeline_request, error_message(
+        pipeline_req, expected_pipeline_request
+    )
+
+    # 1 operators
+    assert len(sync_request.operators) == 2
+    operator_req = sync_request.operators[0]
+    o = {
+        "id": "PageViewEvent",
+        "is_root": False,
+        "pipeline_name": "pipeline_window",
+        "dataset_name": "Sessions",
+        "dataset_ref": {
+            "referring_dataset_name": "PageViewEvent",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = sync_request.operators[1]
+    o = {
+        "id": "d0de9c559071d64c9f1454d32538db10",
+        "is_root": True,
+        "pipelineName": "pipeline_window",
+        "datasetName": "Sessions",
+        "window": {
+            "field": "window",
+            "gap": "600s",
+            "operandId": "PageViewEvent",
+        },
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
     )

@@ -387,6 +387,13 @@ class regex:
         )
 
 
+@struct
+class WindowStruct:
+    begin: datetime
+    end: datetime
+    count: int
+
+
 def fennel_is_optional(type_):
     return (
         typing.get_origin(type_) is Union

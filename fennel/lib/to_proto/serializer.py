@@ -328,3 +328,21 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 by=obj.keys,
             ),
         )
+
+    def visitWindow(self, obj):
+        gap = duration_proto.Duration()
+        gap.FromTimedelta(obj.gap_timedelta)
+        return proto.Operator(
+            id=obj.signature(),
+            is_root=obj == self.terminal_node,
+            pipeline_name=self.pipeline_name,
+            dataset_name=self.dataset_name,
+            window=proto.Window(
+                operand_id=self.visit(obj.node),
+                type=proto.Window.Type.Session
+                if obj.type == "session" else proto.Window.Type.Tumble
+                if obj.type == "tumble" else proto.Window.Type.Sliding,
+                gap=gap,
+                field=obj.field,
+            ),
+        )
