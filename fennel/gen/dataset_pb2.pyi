@@ -704,11 +704,13 @@ class Window(google.protobuf.message.Message):
     OPERAND_ID_FIELD_NUMBER: builtins.int
     TYPE_FIELD_NUMBER: builtins.int
     GAP_FIELD_NUMBER: builtins.int
+    FIELD_FIELD_NUMBER: builtins.int
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
     type: global___Window.Type.ValueType
     @property
     def gap(self) -> google.protobuf.duration_pb2.Duration: ...
+    field: builtins.str
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -719,10 +721,11 @@ class Window(google.protobuf.message.Message):
         operand_id: builtins.str = ...,
         type: global___Window.Type.ValueType = ...,
         gap: google.protobuf.duration_pb2.Duration | None = ...,
+        field: builtins.str = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_gap", b"_gap", "gap", b"gap"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_gap", b"_gap", "gap", b"gap", "operand_id", b"operand_id", "operand_name", b"operand_name", "type", b"type"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_gap", b"_gap", "field", b"field", "gap", b"gap", "operand_id", b"operand_id", "operand_name", b"operand_name", "type", b"type"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_gap", b"_gap"]) -> typing_extensions.Literal["gap"] | None: ...
 
 global___Window = Window
