@@ -477,7 +477,7 @@ class GroupBy:
     def window(self, type: str, gap: str, field: str = "window") -> _Node:
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
-        return Window(self.node, list(self.keys), type, gap, field)
+        return WindowOperator(self.node, list(self.keys), type, gap, field)
 
     def dsschema(self):
         raise NotImplementedError
@@ -729,7 +729,7 @@ class DropNull(_Node):
         return input_schema
 
 
-class Window(_Node):
+class WindowOperator(_Node):
     def __init__(
         self,
         node: _Node,
@@ -1567,7 +1567,7 @@ class Visitor:
             return self.visitDropNull(obj)
         elif isinstance(obj, Assign):
             return self.visitAssign(obj)
-        elif isinstance(obj, Window):
+        elif isinstance(obj, WindowOperator):
             return self.visitWindow(obj)
         else:
             raise Exception("invalid node type: %s" % obj)
