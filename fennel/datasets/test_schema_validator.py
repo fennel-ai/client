@@ -8,8 +8,7 @@ import pytest
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Sum, Min, Max
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, WindowStruct
-from fennel.lib.window import Window
+from fennel.lib.schema import inputs, Window
 
 
 @meta(owner="test@test.com")
@@ -285,7 +284,7 @@ def test_aggregation_sum():
                 return ds.groupby("category").aggregate(
                     [
                         Sum(
-                            window=Window("1w"),
+                            window="1w",
                             of="transaction_amount",
                             into_field=str(
                                 cls.sum_categ_fraudulent_transactions_7d
@@ -325,7 +324,7 @@ def test_aggregation_min_max():
                         Min(
                             of="b",
                             into_field="b_min",
-                            window=Window("1d"),
+                            window="1d",
                             default=0.91,
                         ),
                     ]
@@ -359,7 +358,7 @@ def test_aggregation_min_max():
                         Max(
                             of="b",
                             into_field="b_max",
-                            window=Window("1d"),
+                            window="1d",
                             default=1.91,
                         ),
                     ]
@@ -393,7 +392,7 @@ def test_aggregation_min_max():
                         Max(
                             of="b",
                             into_field="b_max",
-                            window=Window("1d"),
+                            window="1d",
                             default=2.91,
                         ),
                     ]
@@ -1077,7 +1076,7 @@ def test_window_without_key_fails():
         @dataset
         class Sessions:
             user_id: str
-            window: WindowStruct
+            window: Window
             t: datetime
 
             @pipeline(version=1)
@@ -1102,7 +1101,7 @@ def test_window_incorrect_schema_nokey():
         @dataset
         class Sessions:
             user_id: str
-            window: WindowStruct
+            window: Window
             t: datetime
 
             @pipeline(version=1)
@@ -1161,7 +1160,7 @@ def test_window_wrong_field():
         @dataset
         class Sessions:
             u_id: str = field(key=True)
-            window: WindowStruct = field(key=True)
+            window: Window = field(key=True)
             t: datetime
 
             @pipeline(version=1)
@@ -1191,7 +1190,7 @@ def test_window_wrong_type():
         @dataset
         class Sessions:
             user_id: str = field(key=True)
-            window: WindowStruct = field(key=True)
+            window: Window = field(key=True)
             t: datetime
 
             @pipeline(version=1)
@@ -1221,7 +1220,7 @@ def test_window_not_implemented_type():
         @dataset
         class Sessions:
             user_id: str = field(key=True)
-            window: WindowStruct = field(key=True)
+            window: Window = field(key=True)
             t: datetime
 
             @pipeline(version=1)
@@ -1251,7 +1250,7 @@ def test_window_invalid_gap():
         @dataset
         class Sessions:
             user_id: str = field(key=True)
-            window: WindowStruct = field(key=True)
+            window: Window = field(key=True)
             t: datetime
 
             @pipeline(version=1)

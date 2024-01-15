@@ -4,10 +4,10 @@ import time
 import unittest
 from datetime import datetime, timedelta
 from math import sqrt
+from typing import Optional, List, Dict
 
 import pandas as pd
 import pytest
-from typing import Optional, List, Dict
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -16,7 +16,6 @@ from fennel.lib.aggregate import Sum, Average, Count, Stddev, Distinct
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import between, oneof, inputs, struct
-from fennel.lib.window import Window
 from fennel.sources import source, Webhook, ref
 from fennel.test_lib import almost_equal, mock, InternalTestClient
 
@@ -524,38 +523,36 @@ class MovieRatingCalculated:
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
             [
-                Count(
-                    window=Window("forever"), into_field=str(cls.num_ratings)
-                ),
+                Count(window="forever", into_field=str(cls.num_ratings)),
                 Sum(
-                    window=Window("forever"),
+                    window="forever",
                     of="rating",
                     into_field=str(cls.sum_ratings),
                 ),
                 Average(
-                    window=Window("forever"),
+                    window="forever",
                     of="rating",
                     into_field=str(cls.rating),
                 ),
                 Min(
-                    window=Window("forever"),
+                    window="forever",
                     of="rating",
                     into_field=str(cls.min_ratings),
                     default=5.0,
                 ),
                 Max(
-                    window=Window("forever"),
+                    window="forever",
                     of="rating",
                     into_field=str(cls.max_ratings),
                     default=0.0,
                 ),
                 Stddev(
-                    window=Window("forever"),
+                    window="forever",
                     of="rating",
                     into_field=str(cls.stddev_ratings),
                 ),
                 Distinct(
-                    window=Window("forever"),
+                    window="forever",
                     of="userid",
                     into_field=str(cls.distinct_users),
                     unordered=True,
@@ -894,7 +891,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
                 return c.groupby("name").aggregate(
                     [
                         Sum(
-                            window=Window("forever"),
+                            window="forever",
                             of="price",
                             into_field="revenue",
                         ),
@@ -1125,9 +1122,9 @@ class MovieRatingWindowed:
                 of="rating",
                 into_field=str(cls.avg_rating_6h),
             ),
-            Count(window=Window("forever"), into_field=str(cls.total_ratings)),
+            Count(window="forever", into_field=str(cls.total_ratings)),
             Stddev(
-                window=Window("3d"),
+                window="3d",
                 of="rating",
                 into_field=str(cls.std_rating_3d),
             ),
@@ -1137,12 +1134,12 @@ class MovieRatingWindowed:
                 into_field=str(cls.std_rating_7d),
             ),
             Stddev(
-                window=Window("10m"),
+                window="10m",
                 of="rating",
                 into_field=str(cls.std_rating_10m),
             ),
             Stddev(
-                window=Window("10m"),
+                window="10m",
                 of="rating",
                 default=-3.14159,
                 into_field=str(cls.std_rating_10m_other_default),
@@ -1295,7 +1292,7 @@ class PositiveRatingActivity:
         )
         return filter2.groupby("movie").aggregate(
             [
-                Count(window=Window("forever"), into_field=str(cls.cnt_rating)),
+                Count(window="forever", into_field=str(cls.cnt_rating)),
             ],
         )
 
@@ -1385,14 +1382,14 @@ class UniqueMoviesSeen:
         return rating_with_static_col.groupby("static").aggregate(
             [
                 Count(
-                    window=Window("forever"),
+                    window="forever",
                     into_field=str(cls.unique_movies),
                     of="movie",
                     unique=True,
                     approx=True,
                 ),
                 Count(
-                    window=Window("2h"),
+                    window="2h",
                     into_field=str(cls.unique_movies_2h),
                     of="movie",
                     unique=True,
@@ -1480,13 +1477,13 @@ class UserUniqueMoviesSeen:
         return rating_t.groupby("userid").aggregate(
             [
                 Distinct(
-                    window=Window("forever"),
+                    window="forever",
                     into_field=str(cls.unique_movies),
                     of="movie",
                     unordered=True,
                 ),
                 Distinct(
-                    window=Window("2h"),
+                    window="2h",
                     into_field=str(cls.unique_movies_2h),
                     of="movie",
                     unordered=True,
@@ -1580,7 +1577,7 @@ class NumTimesFirstMovie:
         return first_movies.groupby("movie").aggregate(
             [
                 Count(
-                    window=Window("forever"),
+                    window="forever",
                     into_field=str(cls.count),
                 )
             ]
@@ -1991,15 +1988,15 @@ class FraudReportAggregatedDataset:
         return ds.groupby("category").aggregate(
             [
                 Count(
-                    window=Window("forever"),
+                    window="forever",
                     into_field=str(cls.num_categ_fraudulent_transactions),
                 ),
                 Count(
-                    window=Window("1w"),
+                    window="1w",
                     into_field=str(cls.num_categ_fraudulent_transactions_7d),
                 ),
                 Sum(
-                    window=Window("1w"),
+                    window="1w",
                     of="transaction_amount",
                     into_field=str(cls.sum_categ_fraudulent_transactions_7d),
                 ),
@@ -2169,7 +2166,7 @@ class UserAgeAggregated:
         return union.groupby("city").aggregate(
             [
                 Sum(
-                    window=Window("1w"),
+                    window="1w",
                     of="age",
                     into_field="sum_age",
                 )
@@ -2689,11 +2686,11 @@ class LocationLatLong:
 
         return data.groupby("latlng2").aggregate(
             [
-                Count(window=Window("1d"), into_field="onb_velocity_l1_2"),
-                Count(window=Window("7d"), into_field="onb_velocity_l7_2"),
-                Count(window=Window("30d"), into_field="onb_velocity_l30_2"),
-                Count(window=Window("90d"), into_field="onb_velocity_l90_2"),
-                Count(window=Window("forever"), into_field="onb_total_2"),
+                Count(window="1d", into_field="onb_velocity_l1_2"),
+                Count(window="7d", into_field="onb_velocity_l7_2"),
+                Count(window="30d", into_field="onb_velocity_l30_2"),
+                Count(window="90d", into_field="onb_velocity_l90_2"),
+                Count(window="forever", into_field="onb_total_2"),
             ]
         )
 
@@ -2858,33 +2855,33 @@ class TransactionsCreditInternetBanking:
                 [
                     Sum(
                         of="computed_amount",
-                        window=Window("forever"),
+                        window="forever",
                         into_field="sum_credit_internet_banking",
                     ),
                     Min(
                         of="computed_amount",
-                        window=Window("forever"),
+                        window="forever",
                         into_field="min_credit_internet_banking",
                         default=float("inf"),
                     ),
                     Max(
                         of="computed_amount",
-                        window=Window("forever"),
+                        window="forever",
                         into_field="max_credit_internet_banking",
                         default=float("-inf"),
                     ),
                     Average(
                         of="computed_amount",
-                        window=Window("forever"),
+                        window="forever",
                         into_field="mean_credit_internet_banking",
                     ),
                     Count(
-                        window=Window("forever"),
+                        window="forever",
                         into_field="number_credit_internet_banking",
                     ),
                     Stddev(
                         of="computed_amount",
-                        window=Window("forever"),
+                        window="forever",
                         into_field="stddev_credit_internet_banking",
                     ),
                 ]
@@ -3009,13 +3006,13 @@ def test_inner_join_column_name_collision(client):
                 .aggregate(
                     Max(
                         of="outcome_risk_score",
-                        window=Window("forever"),
+                        window="forever",
                         into_field="max_risk_score",
                         default=-1.0,
                     ),
                     Min(
                         of="outcome_risk_score",
-                        window=Window("forever"),
+                        window="forever",
                         into_field="min_risk_score",
                         default=-1.0,
                     ),

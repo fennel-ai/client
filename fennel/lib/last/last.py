@@ -2,9 +2,9 @@ from datetime import timedelta
 from typing import List, Union
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
-from fennel._vendor.pydantic import BaseModel  # type: ignore
 
 import fennel.gen.window_pb2 as window_proto
+from fennel._vendor.pydantic import BaseModel  # type: ignore
 from fennel.lib.duration import (
     Duration,
     duration_to_timedelta,
@@ -19,7 +19,7 @@ ItemType = Union[str, List[str]]
 # ------------------------------------------------------------------------------
 
 
-class Window(BaseModel):
+class Last(BaseModel):
     start: Duration
     end: Duration
 

@@ -12,7 +12,6 @@ from fennel.lib.expectations import (
 )
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, struct
-from fennel.lib.window import Window
 from fennel.sources import Webhook, source
 from fennel.test_lib import *
 
@@ -231,11 +230,11 @@ def test_incorrect_aggregate():
                 return filter2.groupby("movie").aggregate(
                     [
                         Count(
-                            window=Window("forever"),
+                            window="forever",
                             into_field=str(cls.cnt_rating),
                         ),
                         Count(
-                            window=Window("forever"),
+                            window="forever",
                             into_field=str(cls.unique_ratings),
                             of="rating",
                             unique=True,
@@ -268,11 +267,11 @@ def test_incorrect_aggregate():
                 return filter2.groupby("movie").aggregate(
                     [
                         Count(
-                            window=Window("forever"),
+                            window="forever",
                             into_field=str(cls.cnt_rating),
                         ),
                         Distinct(
-                            window=Window("forever"),
+                            window="forever",
                             into_field=str(cls.unique_ratings),
                             of="rating",
                             unordered=True,
@@ -305,11 +304,11 @@ def test_incorrect_aggregate():
                 return filter2.groupby("movie").aggregate(
                     [
                         Count(
-                            window=Window("forever"),
+                            window="forever",
                             into_field=str(cls.cnt_rating),
                         ),
                         Distinct(
-                            window=Window("forever"),
+                            window="forever",
                             into_field=str(cls.unique_users),
                             of="userid",
                             unordered=False,
@@ -339,17 +338,17 @@ def test_incorrect_aggregate():
                 return rating.groupby("movie").aggregate(
                     [
                         Count(
-                            window=Window("forever"),
+                            window="forever",
                             into_field=str(cls.cnt_rating),
                         ),
                         Average(
-                            window=Window("forever"),
+                            window="forever",
                             into_field=str(cls.avg_rating),
                             of="rating",
                             default=0,
                         ),
                         Stddev(
-                            window=Window("forever"),
+                            window="forever",
                             into_field=str(cls.stddev),
                             of="movie",  # invalid type for ratings
                         ),

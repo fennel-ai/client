@@ -1,10 +1,10 @@
 import json
 from datetime import datetime, timedelta
+from typing import Optional, List
 
 import pandas as pd
 import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
-from typing import Optional, List
 
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset
@@ -12,8 +12,7 @@ from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib.aggregate import Count, Average, Stddev
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, inputs, oneof, WindowStruct
-from fennel.lib.window import Window
+from fennel.lib.schema import Embedding, inputs, Window
 from fennel.sources import source, Webhook, Kafka
 from fennel.test_lib import *
 
@@ -131,17 +130,17 @@ def test_dataset_with_aggregates():
             return user_info.groupby("gender").aggregate(
                 [
                     Count(
-                        window=Window("forever"),
+                        window="forever",
                         into_field=str(cls.count),
                     ),
                     Average(
                         of="age",
-                        window=Window("forever"),
+                        window="forever",
                         into_field=str(cls.avg_age),
                     ),
                     Stddev(
                         of="age",
-                        window=Window("forever"),
+                        window="forever",
                         into_field=str(cls.stddev_age),
                     ),
                 ]
@@ -1264,13 +1263,13 @@ def test_dataset_with_complex_pipe():
             return ds_deduped.groupby("merchant_id").aggregate(
                 [
                     Count(
-                        window=Window("forever"),
+                        window="forever",
                         into_field=str(
                             cls.num_merchant_fraudulent_transactions
                         ),
                     ),
                     Count(
-                        window=Window("1w"),
+                        window="1w",
                         into_field=str(
                             cls.num_merchant_fraudulent_transactions_7d
                         ),
@@ -2649,7 +2648,7 @@ def test_window_operator():
     @dataset
     class Sessions:
         user_id: str = field(key=True)
-        window: WindowStruct = field(key=True)
+        window: Window = field(key=True)
         t: datetime
 
         @pipeline(version=1)
@@ -2676,7 +2675,7 @@ def test_window_operator():
                         "name": "window",
                         "dtype": {
                             "structType": {
-                                "name": "WindowStruct",
+                                "name": "Window",
                                 "fields": [
                                     {
                                         "name": "begin",

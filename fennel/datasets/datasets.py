@@ -63,7 +63,7 @@ from fennel.lib.schema import (
     get_python_type_from_pd,
     FENNEL_STRUCT_SRC_CODE,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
-    WindowStruct,
+    Window,
 )
 from fennel.sources.sources import DataConnector, source, PreProcValue
 from fennel.utils import (
@@ -764,7 +764,7 @@ class Window(_Node):
         keys = {
             f: input_schema.get_type(f) for f in self.keys if f != self.field
         }
-        keys[self.field] = WindowStruct
+        keys[self.field] = Window
         values = {}
         return DSSchema(
             keys=keys,

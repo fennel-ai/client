@@ -57,7 +57,6 @@ class Transaction:
 
 from fennel.datasets import pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum
-from fennel.lib.window import Window
 from fennel.lib.schema import inputs
 
 

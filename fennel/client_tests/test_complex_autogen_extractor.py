@@ -1,21 +1,15 @@
-import sys
-
 from datetime import datetime, timedelta
 from typing import Optional
 
 import pandas as pd
 import pytest
 
-import fennel
-
-from fennel import meta, Count, Window, featureset, feature, extractor
-from fennel.client import Client
-from fennel.lib.schema import inputs, oneof, outputs
-from fennel.lib.aggregate import Max, Min
-from fennel.sources import Webhook, S3, MySQL
+from fennel import meta, Count, featureset, feature, extractor
 from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.lib.schema import inputs, outputs
+from fennel.sources import Webhook
 from fennel.sources import source
-from fennel.test_lib import MockClient, mock
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -72,7 +66,7 @@ class NumCompletedTripsDataset:
                 of="vehicle_id",
                 unique=True,
                 approx=True,
-                window=Window("forever"),
+                window="forever",
                 into_field="count_num_completed_trips",
             ),
         )
