@@ -1082,9 +1082,44 @@ def test_window_without_key_fails():
             @pipeline(version=1)
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby().window(type="session", gap="10m")
+                return app_event.groupby().window(
+                    type="session", gap="10m", field="window"
+                )
 
-    assert str(e.value) == """Must specify at least one key"""
+    assert (
+        str(e.value)
+        == """'group_by' before 'window' must specify at least one key"""
+    )
+
+
+def test_window_incorrect_schema_optional_key():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: Optional[str]
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m", field="window"
+                )
+
+    assert (
+        str(e.value)
+        == """[TypeError('Field `user_id` has type `Optional[str]` in `pipeline pipeline_window output key` schema but type `str` in `Sessions key` schema.')]"""
+    )
 
 
 def test_window_incorrect_schema_nokey():
@@ -1108,7 +1143,7 @@ def test_window_incorrect_schema_nokey():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", gap="10m"
+                    type="session", gap="10m", field="window"
                 )
 
     assert (
@@ -1137,12 +1172,42 @@ def test_window_incorrect_schema_missing_field():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", gap="10m"
+                    type="session", gap="10m", field="window_struct"
                 )
 
     assert (
         str(e.value)
-        == """[TypeError('Field `window` is present in `pipeline pipeline_window output` `key` schema but not present in `Sessions key` schema.')]"""
+        == """[TypeError('Field `window_struct` is present in `pipeline pipeline_window output` `key` schema but not present in `Sessions key` schema.')]"""
+    )
+
+
+def test_window_incorrect_schema_dtype_field():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window_struct: str = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m", field="window_struct"
+                )
+
+    assert (
+        str(e.value)
+        == """[TypeError('Field `window_struct` has type `Window` in `pipeline pipeline_window output key` schema but type `str` in `Sessions key` schema.')]"""
     )
 
 
@@ -1167,7 +1232,7 @@ def test_window_wrong_field():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("u_id").window(
-                    type="session", gap="10m"
+                    type="session", gap="10m", field="window"
                 )
 
     assert (
@@ -1197,12 +1262,12 @@ def test_window_wrong_type():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="tumbling", gap="10m"
+                    type="tumblegg", gap="10m", field="window"
                 )
 
     assert (
         str(e.value)
-        == """`type` in '[Pipeline:pipeline_window]->window node' must be either `session` or `tumble` or `sliding` for `'[Pipeline:pipeline_window]->window node'`"""
+        == """`tumblegg` is not a valid 'type' in 'window' operator. 'type' in window operator must be one of ['session', 'tumble', 'sliding']"""
     )
 
 
@@ -1227,7 +1292,7 @@ def test_window_not_implemented_type():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="tumble", gap="10m"
+                    type="tumble", gap="10m", field="window"
                 )
 
     assert (
@@ -1257,7 +1322,7 @@ def test_window_invalid_gap():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", gap="10m 5yy"
+                    type="session", gap="10m 5yy", field="window"
                 )
 
     assert str(e.value) == """Invalid character `y` in duration `10m 5yy`"""

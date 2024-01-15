@@ -7,6 +7,7 @@ import inspect
 import logging
 import sys
 from dataclasses import dataclass
+from enum import Enum
 from typing import (
     cast,
     Any,
@@ -474,10 +475,12 @@ class GroupBy:
             self.keys = self.keys[0]  # type: ignore
         return First(self.node, list(self.keys))  # type: ignore
 
-    def window(self, type: str, gap: str, field: str = "window") -> _Node:
+    def window(self, type: str, gap: str, field: str) -> _Node:
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
-        return WindowOperator(self.node, list(self.keys), type, gap, field)
+        return WindowOperator(
+            self.node, list(self.keys), WindowType(type), gap, field
+        )
 
     def dsschema(self):
         raise NotImplementedError
@@ -729,22 +732,37 @@ class DropNull(_Node):
         return input_schema
 
 
+class WindowType(str, Enum):
+    Sessionize = "session"
+    Tumbling = "tumble"
+    Sliding = "sliding"
+
+    @classmethod
+    def _missing_(cls, value):
+        valid_types = [m.value for m in cls]
+        raise ValueError(
+            f"`{value}` is not a valid 'type' in 'window' operator. "
+            f"'type' in window operator must be one of {valid_types}"
+        )
+
+
 class WindowOperator(_Node):
     def __init__(
         self,
         node: _Node,
         keys: List[str],
-        type: str,
+        type: WindowType,
         gap: Duration,
         field: str,
     ):
         super().__init__()
         if len(keys) == 0:
-            raise ValueError("Must specify at least one key")
+            raise ValueError(
+                "'group_by' before 'window' must specify at least one key"
+            )
         keys.append(field)
         self.keys = keys
         self.type = type
-        self.gap = gap
         self.gap_timedelta = duration_to_timedelta(gap)
         self.field = field
         self.node = node
@@ -755,7 +773,7 @@ class WindowOperator(_Node):
             self.node.signature(),
             self.keys,
             self.type,
-            self.gap,
+            self.gap_timedelta,
             self.field,
         )
 
@@ -765,10 +783,9 @@ class WindowOperator(_Node):
             f: input_schema.get_type(f) for f in self.keys if f != self.field
         }
         keys[self.field] = Window
-        values = {}
         return DSSchema(
             keys=keys,
-            values=values,  # type: ignore
+            values={},  # type: ignore
             timestamp=input_schema.timestamp,
         )
 
@@ -2206,16 +2223,11 @@ class SchemaValidator(Visitor):
 
         if len(output_schema.keys) == 0:
             raise ValueError(
-                f"`group_by` before `window` in {self.pipeline_name} must specify at least one key"
+                f"'group_by' before 'window' in `{self.pipeline_name}` must specify at least one key"
             )
-        if obj.type not in ["session", "tumble", "sliding"]:
-            raise ValueError(
-                f"`type` in {output_schema_name} must be either `session` or "
-                f"`tumble` or `sliding` for `{output_schema_name}`"
-            )
-        if obj.type in ["tumble", "sliding"]:
+        if obj.type in [WindowType.Tumbling, WindowType.Sliding]:
             raise NotImplementedError(
-                f"`{obj.type}` type not yet implemented in the window operator"
+                f"`{obj.type.value}` type not yet implemented in the window operator"
             )
         output_schema.name = output_schema_name
         return output_schema
