@@ -2,6 +2,7 @@ import functools
 import gzip
 import json
 import math
+import warnings
 from typing import Dict, Optional, Any, Set, List, Union, Tuple
 from urllib.parse import urljoin
 
@@ -333,7 +334,7 @@ class Client:
 
         Parameters:
         inputs (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-        outputs (List[Union[Feature, Featureset, str]]): List of feature objects or featuresets or fully qualified feature names (when providing a str) to compute.
+        outputs (List[Union[Feature, Featureset, str]]): List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
         input_dataframe (pd.DataFrame): Dataframe containing the input features.
         log (bool): Boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False.
         workflow (Optional[str]): The name of the workflow associated with the feature extraction. Only relevant when log is set to True.
@@ -419,7 +420,7 @@ class Client:
 
         Parameters:
         input_feature_list (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-        output_feature_list (List[Union[Feature, Featureset, str]]): List of feature objects or featuresets or fully qualified feature names (when providing a str) to compute.
+        output_feature_list (List[Union[Feature, Featureset, str]]): List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
         input_dataframe (pd.DataFrame): Dataframe containing the input features.
         log (bool): Boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False.
         workflow (Optional[str]): The name of the workflow associated with the feature extraction. Only relevant when log is set to True.
@@ -428,6 +429,9 @@ class Client:
         Returns:
         Union[pd.DataFrame, pd.Series]: Pandas dataframe or series containing the output features.
         """
+        warnings.warn(
+            "This method is going to be deprecated in favor of extract."
+        )
         return self.extract(
             inputs=input_feature_list,
             outputs=output_feature_list,
@@ -454,7 +458,7 @@ class Client:
 
         Parameters:
         inputs (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-        outputs (List[Union[Feature, Featureset, str]]): List of feature objects or featuresets or fully qualified feature names (when providing a str) to compute.
+        outputs (List[Union[Feature, Featureset, str]]): List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
         timestamp_column (str): The name of the column containing the timestamps.
         format (str): The format of the input data. Can be either "pandas",
             "csv", "json" or "parquet". Default is "pandas".
@@ -610,7 +614,7 @@ class Client:
 
         Parameters:
         input_feature_list (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-        output_feature_list (List[Union[Feature, Featureset, str]]): List of feature objects or featuresets or fully qualified feature names (when providing a str) to compute.
+        output_feature_list (List[Union[Feature, Featureset, str]]): List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
         timestamp_column (str): The name of the column containing the timestamps.
         format (str): The format of the input data. Can be either "pandas",
             "csv", "json" or "parquet". Default is "pandas".
@@ -631,6 +635,9 @@ class Client:
                         A failure rate of 0.0 indicates that all processing has been completed successfully.
                         The status of the request.
         """
+        warnings.warn(
+            "This method is going to be deprecated in favor of extract_historical."
+        )
         return self.extract_historical(
             inputs=input_feature_list,
             outputs=output_feature_list,

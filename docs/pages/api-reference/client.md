@@ -15,7 +15,7 @@ Given some input and output features, extracts the current value of all the outp
 **Arguments:**
 
 * `inputs: List[Union[Feature, str]]`: List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-* `outputs: List[Union[Feature, Featureset, str]]` : List of feature objects or featuresets or fully qualified feature names (when providing a str) to compute.
+* `outputs: List[Union[Feature, Featureset, str]]` : List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
 * `input_df: Dataframe`: a pandas dataframe object that contains the values of all features in the input feature list. Each row of the dataframe can be thought of as one entity for which features are desired.
 * `log: bool` - boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False
 * `workflow: str` - the name of the workflow associated with the feature extraction. Only relevant when `log` is set to True
@@ -84,7 +84,7 @@ This api is an asynchronous api that returns a request id and the path to the ou
 
 
 * `inputs: List[Union[Feature, str]]`: List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-* `outputs: List[Union[Feature, Featureset, str]]` : List of feature objects or featuresets or fully qualified feature names (when providing a str) to compute.
+* `outputs: List[Union[Feature, Featureset, str]]` : List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
 * `timestamp_column: str` - The name of the column containing the timestamps.
 * `format: str` - The format of the input data. Can be either "pandas", "csv", "json" or "parquet". Default is "pandas".
 * `input_dataframe: Optional[pd.DataFrame]` - Dataframe containing the input features. Only relevant when format is "pandas".
