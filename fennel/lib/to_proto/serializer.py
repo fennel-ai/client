@@ -10,6 +10,7 @@ import google.protobuf.duration_pb2 as duration_proto
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
+from fennel.datasets.datasets import WindowType
 from fennel.lib.duration import (
     duration_to_timedelta,
 )
@@ -340,9 +341,9 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             window=proto.Window(
                 operand_id=self.visit(obj.node),
                 type=proto.Window.Type.Session
-                if obj.type == "session"
+                if obj.type == WindowType.Sessionize
                 else proto.Window.Type.Tumble
-                if obj.type == "tumble"
+                if obj.type == WindowType.Tumbling
                 else proto.Window.Type.Sliding,
                 gap=gap,
                 field=obj.field,
