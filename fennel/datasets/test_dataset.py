@@ -9,10 +9,12 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
-from fennel.lib.aggregate import Count, Average, Stddev
+from fennel.lib.aggregate import Count, Average, Stddev, Sum
 from fennel.lib.includes import includes
+from fennel.lib.last import Last
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, Window
+from fennel.lib.window import Window as InternalWindow
 from fennel.sources import source, Webhook, Kafka
 from fennel.test_lib import *
 
@@ -2588,14 +2590,22 @@ def test_dataset_with_str_window_aggregate():
         gender: str = field(key=True)
         timestamp: datetime = field(timestamp=True)
         count: int
-        avg_age: float
+        sum_age: int
+        stddev_age: float
 
         @pipeline(version=1)
         @inputs(UserInfoDataset)
         def create_aggregated_dataset(cls, user_info: Dataset):
             return user_info.groupby("gender").aggregate(
                 Count(window="forever", into_field="count"),
-                Average(of="age", window="forever", into_field="avg_age"),
+                Sum(
+                    of="age",
+                    window=InternalWindow("forever"),
+                    into_field="sum_age",
+                ),
+                Stddev(
+                    of="age", window=Last("forever"), into_field="stddev_age"
+                ),
             )
 
     view = InternalTestClient()
@@ -2612,7 +2622,8 @@ def test_dataset_with_str_window_aggregate():
             "values": {
                 "fields": [
                     {"name": "count", "dtype": {"intType": {}}},
-                    {"name": "avg_age", "dtype": {"doubleType": {}}},
+                    {"name": "sum_age", "dtype": {"intType": {}}},
+                    {"name": "stddev_age", "dtype": {"doubleType": {}}},
                 ]
             },
             "timestamp": "timestamp",
@@ -2620,7 +2631,8 @@ def test_dataset_with_str_window_aggregate():
         "history": "63072000s",
         "retention": "63072000s",
         "fieldMetadata": {
-            "avg_age": {},
+            "sum_age": {},
+            "stddev_age": {},
             "count": {},
             "gender": {},
             "timestamp": {},
