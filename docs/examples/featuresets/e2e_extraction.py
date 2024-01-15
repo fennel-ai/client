@@ -51,14 +51,14 @@ class Request:
 def test_e2e_extraction(client):
     client.sync(featuresets=[User, UserPost, Request])
     # docsnip e2e_extraction
-    feature_df = client.extract_features(
-        output_feature_list=[
+    feature_df = client.extract(
+        outputs=[
             "User.age",
             "UserPost.score",
             "UserPost.affinity"
             # there are 10 features in this list
         ],
-        input_feature_list=[
+        inputs=[
             "User.id",
             "UserPost.uid",
             "UserPost.pid",

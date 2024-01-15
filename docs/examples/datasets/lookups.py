@@ -61,9 +61,9 @@ def test_user_dataset_lookup(client):
 
     res = client.log("fennel_webhook", "User", df)
     assert res.status_code == 200, res.json()
-    feature_df = client.extract_features(
-        output_feature_list=[UserFeature.in_home_city],
-        input_feature_list=[UserFeature.uid],
+    feature_df = client.extract(
+        outputs=[UserFeature.in_home_city],
+        inputs=[UserFeature.uid],
         input_dataframe=pd.DataFrame({"UserFeature.uid": [1, 2, 3]}),
     )
     assert feature_df["UserFeature.in_home_city"].tolist() == [

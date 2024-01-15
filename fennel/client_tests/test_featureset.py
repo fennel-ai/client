@@ -1,10 +1,10 @@
 import unittest
 from datetime import datetime, timedelta
+from typing import Optional, Dict, List
 
 import numpy as np
 import pandas as pd
 import pytest
-from typing import Optional, Dict, List
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
@@ -340,8 +340,8 @@ class TestDerivedExtractor(unittest.TestCase):
         response = client.log("fennel_webhook", "FlightDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
-        feature_df = client.extract_features(
-            output_feature_list=[
+        feature_df = client.extract(
+            outputs=[
                 UserInfoSingleExtractor.userid,
                 GeneratedFeatures.user_id,
                 GeneratedFeatures.country,
@@ -350,7 +350,7 @@ class TestDerivedExtractor(unittest.TestCase):
                 GeneratedFeatures.pilots,
                 GeneratedFeatures.base_region,
             ],
-            input_feature_list=[
+            inputs=[
                 UserInfoSingleExtractor.userid,
                 FlightRequest.id,
                 FlightCrewRequest.id,
@@ -416,8 +416,8 @@ class TestExtractorDAGResolution(unittest.TestCase):
         response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
-        feature_df = client.extract_features(
-            output_feature_list=[
+        feature_df = client.extract(
+            outputs=[
                 UserInfoMultipleExtractor.userid,
                 UserInfoMultipleExtractor.name,
                 UserInfoMultipleExtractor.country_geoid,
@@ -426,18 +426,16 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 UserInfoMultipleExtractor.age_cubed,
                 UserInfoMultipleExtractor.is_name_common,
             ],
-            input_feature_list=[UserInfoMultipleExtractor.userid],
+            inputs=[UserInfoMultipleExtractor.userid],
             input_dataframe=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
         self.assertEqual(feature_df.shape, (2, 7))
 
-        feature_df = client.extract_features(
-            output_feature_list=[
-                UserInfoMultipleExtractor,
-            ],
-            input_feature_list=[UserInfoMultipleExtractor.userid],
+        feature_df = client.extract(
+            outputs=[UserInfoMultipleExtractor],
+            inputs=[UserInfoMultipleExtractor.userid],
             input_dataframe=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
@@ -503,13 +501,13 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
 
-        feature_df = client.extract_features(
-            output_feature_list=[
+        feature_df = client.extract(
+            outputs=[
                 UserInfoTransformedFeatures.age_power_four,
                 UserInfoTransformedFeatures.is_name_common,
                 UserInfoTransformedFeatures.country_geoid_square,
             ],
-            input_feature_list=[UserInfoMultipleExtractor.userid],
+            inputs=[UserInfoMultipleExtractor.userid],
             input_dataframe=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
@@ -534,13 +532,13 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
         if client.is_integration_client():
             return
 
-        feature_df = client.extract_historical_features(
-            output_feature_list=[
+        feature_df = client.extract_historical(
+            outputs=[
                 "UserInfoTransformedFeatures.age_power_four",
                 "UserInfoTransformedFeatures.is_name_common",
                 "UserInfoTransformedFeatures.country_geoid_square",
             ],
-            input_feature_list=["UserInfoMultipleExtractor.userid"],
+            inputs=["UserInfoMultipleExtractor.userid"],
             input_dataframe=pd.DataFrame(
                 {
                     "UserInfoMultipleExtractor.userid": [18232, 18234],
@@ -641,11 +639,9 @@ class TestDocumentDataset(unittest.TestCase):
         response = client.log("fennel_webhook", "DocumentContentDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
-        feature_df = client.extract_features(
-            output_feature_list=[
-                DocumentFeatures,
-            ],
-            input_feature_list=[DocumentFeatures.doc_id],
+        feature_df = client.extract(
+            outputs=[DocumentFeatures],
+            inputs=[DocumentFeatures.doc_id],
             input_dataframe=pd.DataFrame(
                 {"DocumentFeatures.doc_id": [18232, 18234]}
             ),
@@ -675,11 +671,9 @@ class TestDocumentDataset(unittest.TestCase):
         if client.is_integration_client():
             return
 
-        feature_df = client.extract_historical_features(
-            output_feature_list=[
-                DocumentFeatures,
-            ],
-            input_feature_list=[DocumentFeatures.doc_id],
+        feature_df = client.extract_historical(
+            outputs=[DocumentFeatures],
+            inputs=[DocumentFeatures.doc_id],
             input_dataframe=pd.DataFrame(
                 {
                     "DocumentFeatures.doc_id": [18232, 18234],

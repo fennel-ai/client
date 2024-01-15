@@ -1,9 +1,9 @@
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
-from typing import Optional
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
@@ -117,9 +117,9 @@ def test_simple_extractor(client):
     assert response.status_code == requests.codes.OK, response.json()
     if client.is_integration_client():
         client.sleep()
-    feature_df = client.extract_features(
-        output_feature_list=[UserInfoSingleExtractor],
-        input_feature_list=[UserInfoSingleExtractor.userid],
+    feature_df = client.extract(
+        outputs=[UserInfoSingleExtractor],
+        inputs=[UserInfoSingleExtractor.userid],
         input_dataframe=pd.DataFrame(
             {"UserInfoSingleExtractor.userid": [18232, 18234]}
         ),

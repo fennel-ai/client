@@ -1,4 +1,8 @@
 # Changelog
+## [0.20.0] - 2024-01-12
+- Adding functions in the client -> `extract`, `extract_historical` and `extract_historical_progress`.
+- Deprecating functions in the client -> `extract_features`, `extract_historical_features` and `extract_historical_progress_features`.
+
 ## [0.19.8] - 2024-01-11
 - Improved error reporting in case of joint operator failure in Mock Client.
 

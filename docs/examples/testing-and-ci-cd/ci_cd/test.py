@@ -1,8 +1,10 @@
 from datetime import datetime
+
 import pandas as pd
-from fennel.test_lib import mock
 from ci_cd.datasets import Ticket
 from ci_cd.featuresets import TicketFeatures
+
+from fennel.test_lib import mock
 
 
 @mock
@@ -17,9 +19,9 @@ def test_featureset_metaflags(client):
         columns=["ticket_id", "price", "at"],
     )
     client.log("example", "ticket_sale", df)
-    feature_df = client.extract_features(
-        input_feature_list=[TicketFeatures.ticket_id],
-        output_feature_list=[TicketFeatures.price, TicketFeatures.ticket_id],
+    feature_df = client.extract(
+        inputs=[TicketFeatures.ticket_id],
+        outputs=[TicketFeatures.price, TicketFeatures.ticket_id],
         input_dataframe=pd.DataFrame(
             data={"TicketFeatures.ticket_id": ["123", "456"]}
         ),

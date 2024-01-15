@@ -92,9 +92,9 @@ def test_lookup_in_extractor(client):
     res = client.log("fennel_webhook", "User", data)
     assert res.status_code == 200, res.json()
 
-    feature_df = client.extract_features(
-        output_feature_list=[UserFeatures.name],
-        input_feature_list=[UserFeatures.uid],
+    feature_df = client.extract(
+        outputs=[UserFeatures.name],
+        inputs=[UserFeatures.uid],
         input_dataframe=pd.DataFrame(
             {
                 "UserFeatures.uid": [1, 2, 3, 4],
@@ -105,9 +105,9 @@ def test_lookup_in_extractor(client):
     expected = ["Alice", "Bob", "Charlie", "Unknown"]
     assert feature_df["UserFeatures.name"].tolist() == expected
 
-    feature_df = client.extract_features(
-        output_feature_list=[UserFeaturesDerived.name],
-        input_feature_list=[Request.user_id],
+    feature_df = client.extract(
+        outputs=[UserFeaturesDerived.name],
+        inputs=[Request.user_id],
         input_dataframe=pd.DataFrame(
             {
                 "Request.user_id": [1, 2, 3, 4],
@@ -116,9 +116,9 @@ def test_lookup_in_extractor(client):
     )
     assert feature_df["UserFeaturesDerived.name"].tolist() == expected
 
-    feature_df = client.extract_features(
-        output_feature_list=[UserFeaturesDerived2.name],
-        input_feature_list=[Request2.uid],
+    feature_df = client.extract(
+        outputs=[UserFeaturesDerived2.name],
+        inputs=[Request2.uid],
         input_dataframe=pd.DataFrame(
             {
                 "Request2.uid": [1, 2, 3, 4],

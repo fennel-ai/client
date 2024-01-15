@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
+from typing import Optional
 
 import pandas as pd
 import requests
-from typing import Optional
 
 # docsnip datasets
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -234,11 +234,9 @@ class TestExtractorDAGResolution(unittest.TestCase):
         response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        feature_df = client.extract_features(
-            output_feature_list=[
-                UserInfoMultipleExtractor,
-            ],
-            input_feature_list=[UserInfoMultipleExtractor.userid],
+        feature_df = client.extract(
+            outputs=[UserInfoMultipleExtractor],
+            inputs=[UserInfoMultipleExtractor.userid],
             input_dataframe=pd.DataFrame(
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),

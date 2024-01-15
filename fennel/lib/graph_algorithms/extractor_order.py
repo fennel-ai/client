@@ -112,7 +112,7 @@ def get_vertices_and_eges(
 
 
 def get_extractor_order(
-    input_features: List[Union[Feature, Featureset, str]],
+    input_features: List[Union[Feature, str]],
     output_features: List[Union[Feature, Featureset, str]],
     extractors: List[Extractor],
 ) -> List[Extractor]:
@@ -129,7 +129,7 @@ def get_extractor_order(
     for f in input_features:
         resolved_features.update(_get_features(f))
     to_find: Set[str] = set()
-    for f in output_features:
+    for f in output_features:  # type: ignore
         to_find.update(_get_features(f))
     # Find the extractors that need to be run to produce the output features.
     extractor_names: Set[str] = set()

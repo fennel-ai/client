@@ -1,21 +1,15 @@
-import sys
-
 from datetime import datetime, timedelta
 from typing import Optional
 
 import pandas as pd
 import pytest
 
-import fennel
-
 from fennel import meta, Count, Window, featureset, feature, extractor
-from fennel.client import Client
-from fennel.lib.schema import inputs, oneof, outputs
-from fennel.lib.aggregate import Max, Min
-from fennel.sources import Webhook, S3, MySQL
 from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.lib.schema import inputs, outputs
+from fennel.sources import Webhook
 from fennel.sources import source
-from fennel.test_lib import MockClient, mock
+from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -322,9 +316,9 @@ def test_complex_auto_gen_extractors(client):
     )
     assert log_response.status_code == 200
 
-    extracted_df = client.extract_features(
-        input_feature_list=[RequestFeatures0.rider_id],
-        output_feature_list=[RiderFeatures],
+    extracted_df = client.extract(
+        inputs=[RequestFeatures0.rider_id],
+        outputs=[RiderFeatures],
         input_dataframe=pd.DataFrame({"RequestFeatures0.rider_id": [1, 2]}),
     )
     assert extracted_df.shape[0] == 2

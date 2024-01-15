@@ -1,11 +1,11 @@
 import unittest
 from collections import defaultdict
 from datetime import datetime
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 import pytest
-from typing import Dict, List, Optional
 
 import fennel._vendor.requests as requests
 from fennel import sources
@@ -579,13 +579,13 @@ class TestSearchExample(unittest.TestCase):
                 "Query.doc_id": [31234, 33234],
             }
         )
-        df = client.extract_features(
-            output_feature_list=[
+        df = client.extract(
+            outputs=[
                 UserBehaviorFeatures,
                 DocumentFeatures,
                 DocumentContentFeatures,
             ],
-            input_feature_list=[Query.doc_id, Query.user_id],
+            inputs=[Query.doc_id, Query.user_id],
             input_dataframe=input_df,
         )
         assert df.shape == (2, 15)
@@ -634,9 +634,9 @@ class TestSearchExample(unittest.TestCase):
                 "TopWordsFeatures.word": ["This", "Coda"],
             }
         )
-        df = client.extract_features(
-            output_feature_list=[TopWordsFeatures.count],
-            input_feature_list=[TopWordsFeatures.word],
+        df = client.extract(
+            outputs=[TopWordsFeatures.count],
+            inputs=[TopWordsFeatures.word],
             input_dataframe=input_df,
         )
         assert df.shape == (2, 1)
