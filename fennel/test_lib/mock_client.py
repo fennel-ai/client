@@ -317,7 +317,8 @@ class MockClient(Client):
             subset_df = data[required_fields]
             key_dfs = pd.concat([key_dfs, subset_df], ignore_index=True)
             key_dfs.drop_duplicates(inplace=True)
-
+        # Sort key_dfs by timestamp
+        key_dfs.sort_values(ts_field, inplace=True)
         # Find the values for all columns as of the timestamp in key_dfs
         extrapolated_dfs = []
         for col, data in column_wise_df.items():

@@ -1,4 +1,7 @@
 # Changelog
+## [0.20.1] - 2024-01-16
+- Add validations for the explode operator 
+
 ## [0.20.0] - 2024-01-12
 - Adding functions in the client -> `extract`, `extract_historical` and `extract_historical_progress`.
 - Deprecating functions in the client -> `extract_features`, `extract_historical_features` and `extract_historical_progress_features`.
