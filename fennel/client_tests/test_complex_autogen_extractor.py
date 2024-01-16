@@ -3,6 +3,7 @@ from typing import Optional
 
 import pandas as pd
 import pytest
+from dateutil.relativedelta import relativedelta  # type: ignore
 
 from fennel import meta, Count, Window, featureset, feature, extractor
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -277,7 +278,7 @@ def test_complex_auto_gen_extractors(client):
         {
             "rider_id": [1],
             "created": [datetime.utcnow()],
-            "birthdate": [datetime.utcnow() - timedelta(days=365 * 30)],
+            "birthdate": [datetime.utcnow() - relativedelta(years=30)],
             "country_code": ["US"],
         }
     )
