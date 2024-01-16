@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import os
 import sys
 import types
@@ -9,13 +10,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-import logging
-from fennel.sources.sources import S3Connector
+from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import numpy as np
 import pandas as pd
 from frozendict import frozendict
-from typing import Callable, Dict, List, Tuple, Optional, Union
 
 import fennel.datasets.datasets
 import fennel.sources as sources
@@ -24,7 +23,6 @@ from fennel.client import Client
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.datasets.datasets import sync_validation_for_pipelines
 from fennel.featuresets import Featureset, Feature, Extractor, is_valid_feature
-from fennel.featuresets.featureset import sync_validation_for_extractors
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.gen.featureset_pb2 import CoreFeatureset
 from fennel.gen.featureset_pb2 import (
@@ -45,6 +43,7 @@ from fennel.lib.to_proto import (
     extractors_from_fs,
     featureset_to_proto,
 )
+from fennel.sources.sources import S3Connector
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.integration_client import IntegrationClient
 from fennel.test_lib.test_utils import cast_col_to_dtype
@@ -150,18 +149,40 @@ def dataset_lookup_impl(
         for col, right_df in data_dict.items():
             right_df[FENNEL_LOOKUP] = True
             right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
+            cols_to_replace = []
             # Cast the column in keys to the same dtype as the column in right_df
             for col in keys:
                 if col in right_df and keys[col].dtype != right_df[col].dtype:
                     keys[col] = keys[col].astype(right_df[col].dtype)
+                # Changing dtype of Struct to str for making it hashable
+                if col in right_df and right_df[col].dtype == object:
+                    cols_to_replace.append(col)
+                    right_df[f"{col}__internal"] = right_df[col].apply(
+                        lambda x: str(dict(x))
+                    )
+                    keys[f"{col}__internal"] = keys[col].apply(
+                        lambda x: str(dict(x))
+                    )
+            right_df = right_df.drop(columns=cols_to_replace)
+            new_join_columns = []
+            for col in join_columns:
+                if col in cols_to_replace:
+                    new_join_columns.append(f"{col}__internal")
+                else:
+                    new_join_columns.append(col)
             try:
                 df = pd.merge_asof(
                     left=keys,
                     right=right_df,
                     on=timestamp_field,
-                    by=join_columns,
+                    by=new_join_columns,
                     direction="backward",
                     suffixes=("", "_right"),
+                )
+                df.drop(
+                    [f"{col}__internal" for col in cols_to_replace],
+                    axis=1,
+                    inplace=True,
                 )
             except Exception as e:
                 raise ValueError(
@@ -188,17 +209,39 @@ def dataset_lookup_impl(
         right_df = data[cls_name]
         right_df[FENNEL_LOOKUP] = True
         right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
+        cols_to_replace = []
         for col in keys:
             if col in right_df and keys[col].dtype != right_df[col].dtype:
                 keys[col] = keys[col].astype(right_df[col].dtype)
+            # Changing dtype of Struct to str for making it hashable
+            if col in right_df and right_df[col].dtype == object:
+                cols_to_replace.append(col)
+                right_df[f"{col}__internal"] = right_df[col].apply(
+                    lambda x: str(dict(x))
+                )
+                keys[f"{col}__internal"] = keys[col].apply(
+                    lambda x: str(dict(x))
+                )
+        right_df = right_df.drop(columns=cols_to_replace)
+        new_join_columns = []
+        for col in join_columns:
+            if col in cols_to_replace:
+                new_join_columns.append(f"{col}__internal")
+            else:
+                new_join_columns.append(col)
         try:
             df = pd.merge_asof(
                 left=keys,
                 right=right_df,
                 on=timestamp_field,
-                by=join_columns,
+                by=new_join_columns,
                 direction="backward",
                 suffixes=("", "_right"),
+            )
+            df.drop(
+                [f"{col}__internal" for col in cols_to_replace],
+                axis=1,
+                inplace=True,
             )
         except Exception as e:
             raise ValueError(

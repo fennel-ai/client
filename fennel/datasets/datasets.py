@@ -760,6 +760,7 @@ class WindowOperator(_Node):
             raise ValueError(
                 "'group_by' before 'window' must specify at least one key"
             )
+        self.input_keys = keys.copy()
         keys.append(field)
         self.keys = keys
         self.type = type

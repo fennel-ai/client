@@ -2,19 +2,20 @@ import copy
 import types
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Optional, Dict, List
 
 import numpy as np
 import pandas as pd
-from typing import Any, Optional, Dict, List
 
 from fennel.datasets import Pipeline, Visitor, Dataset
+from fennel.datasets.datasets import WindowType
 from fennel.lib.aggregate import Count
 from fennel.lib.duration import duration_to_timedelta
+from fennel.lib.schema import get_datatype
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import to_includes_proto
 from fennel.test_lib.execute_aggregation import get_aggregated_df
 from fennel.test_lib.test_utils import cast_col_to_dtype
-from fennel.lib.schema import get_datatype
 
 pd.set_option("display.max_columns", None)
 
@@ -458,3 +459,99 @@ class Executor(Visitor):
         df = df.sort_values(input_ret.timestamp_field)
         df = df.groupby(obj.keys).first().reset_index()
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+
+    def visitWindow(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None or input_ret.df.shape[0] == 0:
+            return None
+
+        input_df = copy.deepcopy(input_ret.df)
+        input_df = input_df.sort_values(input_ret.timestamp_field)
+
+        def generate_sessions_for_df(
+            df: pd.DataFrame, timestamp_col: str, gap: int, field: str
+        ):
+            # Sort the DataFrame by timestamp_col
+            df = df.sort_values(by=timestamp_col)
+
+            # Initialize lists to store session information
+            session_list: List[dict] = []
+            timestamp_list = []
+            current_session_start_time = None
+            current_session_end_time = None
+            event_count = 0
+
+            # Iterate through the rows of the DataFrame
+            for index, row in df.iterrows():
+                # Check if it's the first event for this user
+                if current_session_start_time is None:
+                    current_session_start_time = row[timestamp_col]
+                    current_session_end_time = row[timestamp_col]
+                    event_count = 1
+                else:
+                    # Check if the event is within the time threshold of the previous one
+                    if (
+                        row[timestamp_col] - current_session_end_time
+                    ).total_seconds() <= gap:
+                        current_session_end_time = row[timestamp_col]
+                        event_count += 1
+                    else:
+                        # Save session information and reset for a new session
+                        session_list.append(
+                            {
+                                "begin": current_session_start_time,
+                                "end": current_session_end_time,
+                                "count": event_count,
+                            }
+                        )
+                        timestamp_list.append(current_session_end_time)
+                        current_session_start_time = row[timestamp_col]
+                        current_session_end_time = row[timestamp_col]
+                        event_count = 1
+
+            # Save the last session information
+            session_list.append(
+                {
+                    "begin": current_session_start_time,
+                    "end": current_session_end_time,
+                    "count": event_count,
+                }
+            )
+            timestamp_list.append(current_session_end_time)
+
+            # Create a new DataFrame with session information
+            return pd.DataFrame(
+                {field: session_list, timestamp_col: timestamp_list}
+            )
+
+        if obj.type == WindowType.Sessionize:
+            window_dataframe = (
+                input_df.groupby(obj.input_keys)
+                .apply(
+                    generate_sessions_for_df,
+                    timestamp_col=input_ret.timestamp_field,
+                    gap=obj.gap_timedelta.total_seconds(),
+                    field=obj.field,
+                )
+                .reset_index()
+                .loc[:, obj.keys + [input_ret.timestamp_field]]
+            )
+
+            sorted_df = window_dataframe.sort_values(input_ret.timestamp_field)
+            # Cast sorted_df to obj.schema()
+            for col_name, col_type in obj.schema().items():
+                if col_type in [
+                    pd.BooleanDtype,
+                    pd.Int64Dtype,
+                    pd.Float64Dtype,
+                    pd.StringDtype,
+                ]:
+                    sorted_df[col_name] = sorted_df[col_name].astype(col_type())
+                elif col_type in [int, float, bool, str]:
+                    sorted_df[col_name] = sorted_df[col_name].astype(col_type)
+
+            return NodeRet(sorted_df, input_ret.timestamp_field, obj.keys)
+        else:
+            raise Exception(
+                f"Implementation of `{obj.type.value}` in window operator not yet implemented in Mock Client"
+            )
