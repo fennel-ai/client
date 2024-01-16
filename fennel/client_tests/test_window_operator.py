@@ -50,7 +50,7 @@ class SessionStats:
     @pipeline(version=1)
     @inputs(Sessions)
     def get_session_stats(cls, sessions: Dataset):
-        sessions = (
+        stats = (
             sessions.assign(
                 "length",
                 int,
@@ -77,7 +77,7 @@ class SessionStats:
                 ),
             )
         )
-        return sessions
+        return stats
 
 
 @meta(owner="test@test.com")
