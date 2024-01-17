@@ -8,8 +8,7 @@ import pytest
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Sum, Min, Max
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs
-from fennel.lib.window import Window
+from fennel.lib.schema import inputs, Window
 
 
 @meta(owner="test@test.com")
@@ -285,7 +284,7 @@ def test_aggregation_sum():
                 return ds.groupby("category").aggregate(
                     [
                         Sum(
-                            window=Window("1w"),
+                            window="1w",
                             of="transaction_amount",
                             into_field=str(
                                 cls.sum_categ_fraudulent_transactions_7d
@@ -325,7 +324,7 @@ def test_aggregation_min_max():
                         Min(
                             of="b",
                             into_field="b_min",
-                            window=Window("1d"),
+                            window="1d",
                             default=0.91,
                         ),
                     ]
@@ -359,7 +358,7 @@ def test_aggregation_min_max():
                         Max(
                             of="b",
                             into_field="b_max",
-                            window=Window("1d"),
+                            window="1d",
                             default=1.91,
                         ),
                     ]
@@ -393,7 +392,7 @@ def test_aggregation_min_max():
                         Max(
                             of="b",
                             into_field="b_max",
-                            window=Window("1d"),
+                            window="1d",
                             default=2.91,
                         ),
                     ]
@@ -1060,4 +1059,332 @@ def test_assign():
     assert (
         str(e.value)
         == "Field `userid` is a key or timestamp field in schema of assign node input '[Dataset:RatingActivity]'. Value fields are: ['rating', 'movie']"
+    )
+
+
+def test_window_without_key_fails():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str
+            window: Window
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby().window(
+                    type="session", gap="10m", field="window"
+                )
+
+    assert (
+        str(e.value)
+        == """'group_by' before 'window' must specify at least one key"""
+    )
+
+
+def test_window_incorrect_schema_optional_key():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: Optional[str]
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m", field="window"
+                )
+
+    assert (
+        str(e.value)
+        == """[TypeError('Field `user_id` has type `Optional[str]` in `pipeline pipeline_window output key` schema but type `str` in `Sessions key` schema.')]"""
+    )
+
+
+def test_window_incorrect_schema_nokey():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str
+            window: Window
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m", field="window"
+                )
+
+    assert (
+        str(e.value)
+        == """[TypeError('Field `user_id` is present in `pipeline pipeline_window output` `key` schema but not present in `Sessions key` schema.'), TypeError('Field `user_id` is present in `Sessions` `value` schema but not present in `pipeline pipeline_window output value` schema.')]"""
+    )
+
+
+def test_window_incorrect_schema_missing_field():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m", field="window_struct"
+                )
+
+    assert (
+        str(e.value)
+        == """[TypeError('Field `window_struct` is present in `pipeline pipeline_window output` `key` schema but not present in `Sessions key` schema.')]"""
+    )
+
+
+def test_window_incorrect_schema_dtype_field():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window_struct: str = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m", field="window_struct"
+                )
+
+    assert (
+        str(e.value)
+        == """[TypeError('Field `window_struct` has type `Window` in `pipeline pipeline_window output key` schema but type `str` in `Sessions key` schema.')]"""
+    )
+
+
+def test_window_wrong_field():
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            u_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("u_id").window(
+                    type="session", gap="10m", field="window"
+                )
+
+    assert (
+        str(e.value)
+        == """field `u_id` not found in schema of `'[Dataset:PageViewEvent]'`"""
+    )
+
+
+def test_window_wrong_type():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="tumblegg", gap="10m", field="window"
+                )
+
+    assert (
+        str(e.value)
+        == """`tumblegg` is not a valid 'type' in 'window' operator. 'type' in window operator must be one of ['session', 'tumble', 'sliding']"""
+    )
+
+
+def test_window_not_implemented_type():
+    with pytest.raises(NotImplementedError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="tumble", gap="10m", field="window"
+                )
+
+    assert (
+        str(e.value)
+        == """`tumble` type not yet implemented in the window operator"""
+    )
+
+
+def test_window_invalid_gap():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m 5yy", field="window"
+                )
+
+    assert str(e.value) == """Invalid character `y` in duration `10m 5yy`"""
+
+
+def test_window_field_invalid_name():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+            uuid: str = field(key=True)
+            page_id: str
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions1:
+            user_id: str = field(key=True)
+            uuid: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m", field="uuid"
+                )
+
+    assert (
+        str(e.value)
+        == """Window field name `uuid` in `'[Pipeline:pipeline_window]->window node'` must be different from keyed fields in `'[Dataset:PageViewEvent]'`"""
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+            uuid: str = field(key=True)
+            page_id: str
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions2:
+            user_id: str = field(key=True)
+            page_id: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m", field="page_id"
+                )
+
+    assert (
+        str(e.value)
+        == """Window field name `page_id` in `'[Pipeline:pipeline_window]->window node'` must be different from non keyed fields in `'[Dataset:PageViewEvent]'`"""
     )

@@ -1,11 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 import pandas as pd
 import pytest
 from dateutil.relativedelta import relativedelta  # type: ignore
 
-from fennel import meta, Count, Window, featureset, feature, extractor
+from fennel import meta, Count, featureset, feature, extractor
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import Webhook
@@ -67,7 +67,7 @@ class NumCompletedTripsDataset:
                 of="vehicle_id",
                 unique=True,
                 approx=True,
-                window=Window("forever"),
+                window="forever",
                 into_field="count_num_completed_trips",
             ),
         )

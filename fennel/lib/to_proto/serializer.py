@@ -10,6 +10,7 @@ import google.protobuf.duration_pb2 as duration_proto
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
+from fennel.datasets.datasets import WindowType
 from fennel.lib.duration import (
     duration_to_timedelta,
 )
@@ -326,5 +327,25 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             first=proto.First(
                 operand_id=self.visit(obj.node),
                 by=obj.keys,
+            ),
+        )
+
+    def visitWindow(self, obj):
+        gap = duration_proto.Duration()
+        gap.FromTimedelta(obj.gap_timedelta)
+        return proto.Operator(
+            id=obj.signature(),
+            is_root=obj == self.terminal_node,
+            pipeline_name=self.pipeline_name,
+            dataset_name=self.dataset_name,
+            window=proto.Window(
+                operand_id=self.visit(obj.node),
+                type=proto.Window.Type.Session
+                if obj.type == WindowType.Sessionize
+                else proto.Window.Type.Tumble
+                if obj.type == WindowType.Tumbling
+                else proto.Window.Type.Sliding,
+                gap=gap,
+                field=obj.field,
             ),
         )

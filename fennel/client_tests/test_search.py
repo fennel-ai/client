@@ -16,7 +16,6 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, oneof
 from fennel.lib.schema import inputs, outputs
-from fennel.lib.window import Window
 from fennel.sources import source
 from fennel.test_lib import mock
 
@@ -202,7 +201,7 @@ class TopWordsCount:
         ds = ds.transform(lambda df: df, schema)  # type: ignore
         return ds.groupby(["word"]).aggregate(
             [
-                Count(window=Window("forever"), into_field="count"),
+                Count(window="forever", into_field="count"),
             ]
         )  # type: ignore
 
@@ -251,14 +250,14 @@ class UserEngagementDataset:
         )
         return click_type.groupby("user_id").aggregate(
             [
-                Count(window=Window("forever"), into_field=str(cls.num_views)),
+                Count(window="forever", into_field=str(cls.num_views)),
                 Sum(
-                    window=Window("7d"),
+                    window="7d",
                     of="is_short_click",
                     into_field=str(cls.num_short_views_7d),
                 ),
                 Sum(
-                    window=Window("forever"),
+                    window="forever",
                     of="is_long_click",
                     into_field=str(cls.num_long_views),
                 ),
@@ -283,17 +282,11 @@ class DocumentEngagementDataset:
             .groupby("doc_id")
             .aggregate(
                 [
-                    Count(
-                        window=Window("forever"), into_field=str(cls.num_views)
-                    ),
-                    Count(
-                        window=Window("7d"), into_field=str(cls.num_views_7d)
-                    ),
-                    Count(
-                        window=Window("28d"), into_field=str(cls.num_views_28d)
-                    ),
+                    Count(window="forever", into_field=str(cls.num_views)),
+                    Count(window="7d", into_field=str(cls.num_views_7d)),
+                    Count(window="28d", into_field=str(cls.num_views_28d)),
                     Sum(
-                        window=Window("forever"),
+                        window="forever",
                         of="view_time",
                         into_field=str(cls.total_timespent),
                     ),

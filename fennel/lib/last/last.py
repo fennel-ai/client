@@ -1,5 +1,3 @@
-# Going to Deprected in favour of Last
-import warnings
 from datetime import timedelta
 from typing import List, Union
 
@@ -17,16 +15,15 @@ ItemType = Union[str, List[str]]
 
 
 # ------------------------------------------------------------------------------
-# Windows (Going to Deprecated in favour of Last)
+# Windows
 # ------------------------------------------------------------------------------
 
 
-class Window(BaseModel):
+class Last(BaseModel):
     start: Duration
     end: Duration
 
     def __init__(self, start: Duration, end: Duration = "0s"):
-        warnings.warn("Window is going to be deprecated in favour of Last.")
         if start == "forever" and end != "0s":
             raise ValueError("Cannot specify an end for a forever window")
         if start != "forever":
