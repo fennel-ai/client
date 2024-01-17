@@ -512,11 +512,9 @@ class KinesisConnector(DataConnector):
             init_position == InitPosition.AT_TIMESTAMP
             and init_timestamp is not None
         ):
-            # Check if init_timestamp is in the past and is of type datetime
+            # Check if init_timestamp is of type datetime
             if not isinstance(init_timestamp, datetime):
                 raise AttributeError("init_timestamp must be of type datetime")
-            if init_timestamp > datetime.now():
-                raise AttributeError("init_timestamp must be in the past")
 
         self.init_timestamp = init_timestamp
         if format not in ["json"]:
