@@ -490,7 +490,7 @@ class KinesisConnector(DataConnector):
         stream_arn: str,
         init_position: InitPosition,
         init_timestamp: Optional[datetime],
-        format: str = "json",
+        format: str,
     ):
         self.data_source = data_source
         self.init_position = init_position
