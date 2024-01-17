@@ -14,7 +14,6 @@ from typing import (
     List,
     TYPE_CHECKING,
     get_type_hints,
-    get_origin,
     get_args,
     ForwardRef,
     Type,
@@ -40,13 +39,13 @@ def _get_args(type_: Any) -> Any:
     return getattr(type_, "__args__", None)
 
 
-def _get_origin(type_: Any) -> Any:
+def get_origin(type_: Any) -> Any:
     """Get the origin of a type."""
     return getattr(type_, "__origin__", None)
 
 
 def _is_optional(field):
-    return _get_origin(field) is Union and type(None) in _get_args(field)
+    return get_origin(field) is Union and type(None) in _get_args(field)
 
 
 def _optional_inner(type_):
@@ -423,13 +422,13 @@ def get_datatype(type_: Any) -> schema_proto.DataType:
         )
     elif type_ is bool or type_ == pd.BooleanDtype:
         return schema_proto.DataType(bool_type=schema_proto.BoolType())
-    elif _get_origin(type_) is list:
+    elif get_origin(type_) is list:
         return schema_proto.DataType(
             array_type=schema_proto.ArrayType(
                 of=get_datatype(_get_args(type_)[0])
             )
         )
-    elif _get_origin(type_) is dict:
+    elif get_origin(type_) is dict:
         if _get_args(type_)[0] is not str:
             raise ValueError("Dict keys must be strings.")
         return schema_proto.DataType(
@@ -779,7 +778,7 @@ def is_hashable(dtype: Any) -> bool:
     primitive_type = get_primitive_dtype(dtype)
     # typing.Optional[x] is an alias for typing.Union[x, None]
     if (
-        _get_origin(primitive_type) is Union
+        get_origin(primitive_type) is Union
         and type(None) is _get_args(primitive_type)[1]
     ):
         return is_hashable(_get_args(primitive_type)[0])
@@ -792,9 +791,9 @@ def is_hashable(dtype: Any) -> bool:
         pd.BooleanDtype,
     ]:
         return True
-    elif _get_origin(primitive_type) is list:
+    elif get_origin(primitive_type) is list:
         return is_hashable(_get_args(primitive_type)[0])
-    elif _get_origin(primitive_type) is dict:
+    elif get_origin(primitive_type) is dict:
         if _get_args(primitive_type)[0] is not str:
             raise ValueError("Dict keys must be strings.")
         return is_hashable(_get_args(primitive_type)[1])

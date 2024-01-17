@@ -63,6 +63,7 @@ from fennel.lib.schema import (
     get_fennel_struct,
     get_python_type_from_pd,
     FENNEL_STRUCT_SRC_CODE,
+    get_origin,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
     Window,
 )
@@ -274,6 +275,8 @@ class _Node(Generic[T]):
         return Dedup(self, by)
 
     def explode(self, columns: List[str]) -> _Node:
+        if not isinstance(columns, list):
+            columns = [columns]
         return Explode(self, columns)
 
     def isignature(self):
@@ -516,7 +519,16 @@ class Explode(_Node):
 
     def dsschema(self):
         dsschema = copy.deepcopy(self.node.dsschema())
+        if not isinstance(self.columns, list):
+            raise TypeError(
+                f"Columns argument to explode must be a list, found {type(self.columns)}"
+            )
         for c in self.columns:
+            # Check that List[t] is a list type
+            if not get_origin(dsschema.values[c]) is list:
+                raise TypeError(
+                    f"Cannot explode column `{c}` of type `{dsschema.values[c]}`, explode expects columns of List type"
+                )
             # extract type T from List[t]
             dsschema.values[c] = Optional[get_args(dsschema.values[c])[0]]
             dsschema.values[c] = get_pd_dtype(dsschema.values[c])

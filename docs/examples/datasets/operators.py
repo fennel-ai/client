@@ -236,9 +236,9 @@ def test_aggregate(client):
     three_days_ago = dt - timedelta(days=3)
     ts_series = pd.Series([dt, yes, dt, three_days_ago, yes])
     uids = pd.Series([1, 1, 2, 2, 2])
-    df = client.extract_historical_features(
-        input_feature_list=[UserAdStatsFeatures.uid],
-        output_feature_list=[UserAdStatsFeatures],
+    df = client.extract_historical(
+        inputs=[UserAdStatsFeatures.uid],
+        outputs=[UserAdStatsFeatures],
         input_dataframe=pd.DataFrame(
             {"UserAdStatsFeatures.uid": uids, "timestamps": ts_series}
         ),

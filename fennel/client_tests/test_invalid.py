@@ -186,9 +186,9 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 ],
                 featuresets=[DomainFeatures, Query],
             )
-            client.extract_features(
-                output_feature_list=[DomainFeatures2],
-                input_feature_list=[Query.member_id],
+            client.extract(
+                outputs=[DomainFeatures2],
+                inputs=[Query.member_id],
                 input_dataframe=pd.DataFrame(
                     {
                         "Query.domain": [
@@ -210,9 +210,9 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             datasets=[MemberDataset], featuresets=[DomainFeatures2, Query]
         )
         with pytest.raises(Exception) as e:
-            client.extract_features(
-                output_feature_list=[DomainFeatures2],
-                input_feature_list=[Query.domain],
+            client.extract(
+                outputs=[DomainFeatures2],
+                inputs=[Query.domain],
                 input_dataframe=pd.DataFrame(
                     {
                         "Query.domain": [
@@ -242,9 +242,9 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 datasets=[MemberDataset, MemberActivityDatasetCopy],
                 featuresets=[DomainFeatures2, Query],
             )
-            client.extract_features(
-                output_feature_list=[DomainFeatures2],
-                input_feature_list=[Query.domain],
+            client.extract(
+                outputs=[DomainFeatures2],
+                inputs=[Query.domain],
                 input_dataframe=pd.DataFrame(
                     {
                         "Query.domain": [

@@ -216,9 +216,9 @@ class TestMovieTicketSale(unittest.TestCase):
             response.status_code == requests.codes.OK
         ), response.json()  # noqa
 
-        features = client.extract_features(
-            input_feature_list=[RequestFeatures.name],  # type: ignore
-            output_feature_list=[ActorFeatures.revenue],  # type: ignore
+        features = client.extract(
+            inputs=[RequestFeatures.name],  # type: ignore
+            outputs=[ActorFeatures.revenue],  # type: ignore
             input_dataframe=pd.DataFrame(
                 {
                     "RequestFeatures.name": [

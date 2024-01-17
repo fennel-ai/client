@@ -139,12 +139,12 @@ def test_struct_type(client):
             ],
         }
     )
-    df = client.extract_features(
-        output_feature_list=[
+    df = client.extract(
+        outputs=[
             MovieFeatures.cast_list,
             MovieFeatures.average_cast_age,
         ],
-        input_feature_list=[MovieFeatures.movie],
+        inputs=[MovieFeatures.movie],
         input_dataframe=input_df,
     )
 

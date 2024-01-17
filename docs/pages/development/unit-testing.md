@@ -33,7 +33,7 @@ class TestDataset(unittest.TestCase):
         # ... some other stuff
         client.log("fennel_webhook", 'User', pd.Dataframe(...))
         # ... some other stuff
-        found = client.extract_features(...)
+        found = client.extract(...)
         self.assertEqual(found, expected)    
 ```
 

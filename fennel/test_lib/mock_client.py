@@ -352,7 +352,8 @@ class MockClient(Client):
             subset_df = data[required_fields]
             key_dfs = pd.concat([key_dfs, subset_df], ignore_index=True)
             key_dfs.drop_duplicates(inplace=True)
-
+        # Sort key_dfs by timestamp
+        key_dfs.sort_values(ts_field, inplace=True)
         # Find the values for all columns as of the timestamp in key_dfs
         extrapolated_dfs = []
         for col, data in column_wise_df.items():
@@ -507,9 +508,27 @@ class MockClient(Client):
             raise Exception("Cyclic graph detected in extractors")
         return FakeResponse(200, "OK")
 
+    def extract(
+        self,
+        inputs: List[Union[Feature, str]],
+        outputs: List[Union[Feature, Featureset, str]],
+        input_dataframe: pd.DataFrame,
+        log: bool = False,
+        workflow: Optional[str] = None,
+        sampling_rate: Optional[float] = None,
+    ) -> pd.DataFrame:
+        return self.extract_features(
+            input_feature_list=inputs,
+            output_feature_list=outputs,
+            input_dataframe=input_dataframe,
+            log=log,
+            workflow=workflow,
+            sampling_rate=sampling_rate,
+        )
+
     def extract_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset, str]],
+        input_feature_list: List[Union[Feature, str]],
         output_feature_list: List[Union[Feature, Featureset, str]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
@@ -558,9 +577,31 @@ class MockClient(Client):
             extractors, input_dataframe, output_feature_list, timestamps
         )
 
+    def extract_historical(
+        self,
+        inputs: List[Union[Feature, str]],
+        outputs: List[Union[Feature, Featureset, str]],
+        timestamp_column: str,
+        format: str = "pandas",
+        input_dataframe: Optional[pd.DataFrame] = None,
+        input_s3: Optional[S3Connector] = None,
+        output_s3: Optional[S3Connector] = None,
+        feature_to_column_map: Optional[Dict[Feature, str]] = None,
+    ) -> Union[pd.DataFrame, pd.Series]:
+        return self.extract_historical_features(
+            input_feature_list=inputs,
+            output_feature_list=outputs,
+            timestamp_column=timestamp_column,
+            format=format,
+            input_dataframe=input_dataframe,
+            input_s3=input_s3,
+            output_s3=output_s3,
+            feature_to_column_map=feature_to_column_map,
+        )
+
     def extract_historical_features(
         self,
-        input_feature_list: List[Union[Feature, Featureset, str]],
+        input_feature_list: List[Union[Feature, str]],
         output_feature_list: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
         format: str = "pandas",
@@ -624,6 +665,9 @@ class MockClient(Client):
         )
         output_df[timestamp_column] = timestamps
         return output_df
+
+    def extract_historical_progress(self, request_id):
+        return FakeResponse(404, "Extract historical features not supported")
 
     def extract_historical_features_progress(self, request_id):
         return FakeResponse(404, "Extract historical features not supported")
