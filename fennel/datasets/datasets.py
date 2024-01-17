@@ -2218,9 +2218,21 @@ class SchemaValidator(Visitor):
         return output_schema
 
     def visitWindow(self, obj) -> DSSchema:
+        input_schema = copy.deepcopy(self.visit(obj.node))
+
         output_schema = copy.deepcopy(obj.dsschema())
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->window node'"
 
+        if obj.field in input_schema.keys.keys():
+            raise ValueError(
+                f"Window field name `{obj.field}` in `{output_schema_name}` must be "
+                f"different from keyed fields in `{input_schema.name}`"
+            )
+        if obj.field in input_schema.values.keys():
+            raise ValueError(
+                f"Window field name `{obj.field}` in `{output_schema_name}` must be "
+                f"different from non keyed fields in `{input_schema.name}`"
+            )
         if len(output_schema.keys) == 0:
             raise ValueError(
                 f"'group_by' before 'window' in `{self.pipeline_name}` must specify at least one key"

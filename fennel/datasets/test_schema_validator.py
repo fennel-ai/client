@@ -1326,3 +1326,65 @@ def test_window_invalid_gap():
                 )
 
     assert str(e.value) == """Invalid character `y` in duration `10m 5yy`"""
+
+
+def test_window_field_invalid_name():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+            uuid: str = field(key=True)
+            page_id: str
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            uuid: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m", field="uuid"
+                )
+
+    assert (
+        str(e.value)
+        == """Window field name `uuid` in `'[Pipeline:pipeline_window]->window node'` must be different from keyed fields in `'[Dataset:PageViewEvent]'`"""
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+            uuid: str = field(key=True)
+            page_id: str
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            page_id: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", gap="10m", field="page_id"
+                )
+
+    assert (
+        str(e.value)
+        == """Window field name `page_id` in `'[Pipeline:pipeline_window]->window node'` must be different from non keyed fields in `'[Dataset:PageViewEvent]'`"""
+    )
