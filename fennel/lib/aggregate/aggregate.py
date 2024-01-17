@@ -2,13 +2,14 @@ from typing import List, Union, Optional
 
 import fennel.gen.spec_pb2 as spec_proto
 from fennel._vendor.pydantic import BaseModel, Extra, validator  # type: ignore
+from fennel.lib.last import Last
 from fennel.lib.window import Window
 
 ItemType = Union[str, List[str]]
 
 
 class AggregateType(BaseModel):
-    window: Window
+    window: Union[Last, Window]
     # Name of the field the aggregate will  be assigned to
     into_field: str
 
@@ -16,7 +17,7 @@ class AggregateType(BaseModel):
     # Converting the window into Window object if str is passed
     def validate_window(cls, value):
         if isinstance(value, str):
-            return Window(value)
+            return Last(value)
         else:
             return value
 

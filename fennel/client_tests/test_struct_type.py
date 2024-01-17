@@ -1,8 +1,8 @@
 from datetime import datetime
+from typing import List
 
 import pandas as pd
 import pytest
-from typing import List
 
 import fennel._vendor.requests as requests
 from fennel import sources
@@ -12,7 +12,6 @@ from fennel.lib.aggregate import LastK
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.schema import struct
-from fennel.lib.window import Window
 from fennel.sources import source
 from fennel.test_lib import mock
 
@@ -56,7 +55,7 @@ class MovieInfo:
                 LastK(
                     into_field="cast_list",
                     of="cast",
-                    window=Window("forever"),
+                    window="forever",
                     limit=3,
                     dedup=False,
                 ),

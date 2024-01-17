@@ -1,16 +1,15 @@
-from fennel import Sum
-from fennel.featuresets import featureset, extractor, feature
-from fennel.lib.schema import outputs
 from datetime import datetime
+from typing import List
 
 import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
-from typing import List
 
+from fennel import Sum
 from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
-from fennel.lib.window import Window
+from fennel.lib.schema import outputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import *
 
@@ -58,7 +57,7 @@ class ActorStats:
         return c.groupby("name").aggregate(
             [
                 Sum(
-                    window=Window("forever"),
+                    window="forever",
                     of="price",
                     into_field="revenue",
                 ),
@@ -82,7 +81,7 @@ class ActorStats:
         return c.groupby("name").aggregate(
             [
                 Sum(
-                    window=Window("forever"),
+                    window="forever",
                     of="price",
                     into_field="revenue",
                 ),

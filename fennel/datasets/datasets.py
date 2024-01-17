@@ -7,6 +7,7 @@ import inspect
 import logging
 import sys
 from dataclasses import dataclass
+from enum import Enum
 from typing import (
     cast,
     Any,
@@ -63,6 +64,7 @@ from fennel.lib.schema import (
     get_python_type_from_pd,
     FENNEL_STRUCT_SRC_CODE,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
+    Window,
 )
 from fennel.sources.sources import DataConnector, source, PreProcValue
 from fennel.utils import (
@@ -473,6 +475,13 @@ class GroupBy:
             self.keys = self.keys[0]  # type: ignore
         return First(self.node, list(self.keys))  # type: ignore
 
+    def window(self, type: str, gap: str, field: str) -> _Node:
+        if len(self.keys) == 1 and isinstance(self.keys[0], list):
+            self.keys = self.keys[0]  # type: ignore
+        return WindowOperator(
+            self.node, list(self.keys), WindowType(type), gap, field
+        )
+
     def dsschema(self):
         raise NotImplementedError
 
@@ -721,6 +730,65 @@ class DropNull(_Node):
         for field in self.columns:
             input_schema.drop_null_column(field)
         return input_schema
+
+
+class WindowType(str, Enum):
+    Sessionize = "session"
+    Tumbling = "tumble"
+    Sliding = "sliding"
+
+    @classmethod
+    def _missing_(cls, value):
+        valid_types = [m.value for m in cls]
+        raise ValueError(
+            f"`{value}` is not a valid 'type' in 'window' operator. "
+            f"'type' in window operator must be one of {valid_types}"
+        )
+
+
+class WindowOperator(_Node):
+    def __init__(
+        self,
+        node: _Node,
+        keys: List[str],
+        type: WindowType,
+        gap: Duration,
+        field: str,
+    ):
+        super().__init__()
+        if len(keys) == 0:
+            raise ValueError(
+                "'group_by' before 'window' must specify at least one key"
+            )
+        self.input_keys = keys.copy()
+        keys.append(field)
+        self.keys = keys
+        self.type = type
+        self.gap_timedelta = duration_to_timedelta(gap)
+        self.field = field
+        self.node = node
+        self.node.out_edges.append(self)
+
+    def signature(self):
+        return fhash(
+            self.node.signature(),
+            self.keys,
+            self.type,
+            self.gap_timedelta,
+            self.field,
+        )
+
+    def dsschema(self):
+        input_schema = self.node.dsschema()
+        keys = {
+            f: input_schema.get_type(f) for f in self.keys if f != self.field
+        }
+        keys[self.field] = Window
+        return DSSchema(
+            keys=keys,
+            values={},  # type: ignore
+            timestamp=input_schema.timestamp,
+        )
 
 
 # ---------------------------------------------------------------------
@@ -1517,6 +1585,8 @@ class Visitor:
             return self.visitDropNull(obj)
         elif isinstance(obj, Assign):
             return self.visitAssign(obj)
+        elif isinstance(obj, WindowOperator):
+            return self.visitWindow(obj)
         else:
             raise Exception("invalid node type: %s" % obj)
 
@@ -1560,6 +1630,9 @@ class Visitor:
         raise NotImplementedError()
 
     def visitAssign(self, obj):
+        raise NotImplementedError()
+
+    def visitWindow(self, obj):
         raise NotImplementedError()
 
 
@@ -2143,4 +2216,31 @@ class SchemaValidator(Visitor):
                 f"'group_by' before 'first' in {self.pipeline_name} must specify at least one key"
             )
         output_schema.name = f"'[Pipeline:{self.pipeline_name}]->first node'"
+        return output_schema
+
+    def visitWindow(self, obj) -> DSSchema:
+        input_schema = copy.deepcopy(self.visit(obj.node))
+
+        output_schema = copy.deepcopy(obj.dsschema())
+        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->window node'"
+
+        if obj.field in input_schema.keys.keys():
+            raise ValueError(
+                f"Window field name `{obj.field}` in `{output_schema_name}` must be "
+                f"different from keyed fields in `{input_schema.name}`"
+            )
+        if obj.field in input_schema.values.keys():
+            raise ValueError(
+                f"Window field name `{obj.field}` in `{output_schema_name}` must be "
+                f"different from non keyed fields in `{input_schema.name}`"
+            )
+        if len(output_schema.keys) == 0:
+            raise ValueError(
+                f"'group_by' before 'window' in `{self.pipeline_name}` must specify at least one key"
+            )
+        if obj.type in [WindowType.Tumbling, WindowType.Sliding]:
+            raise NotImplementedError(
+                f"`{obj.type.value}` type not yet implemented in the window operator"
+            )
+        output_schema.name = output_schema_name
         return output_schema

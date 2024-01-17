@@ -8,10 +8,6 @@ import typing
 from dataclasses import dataclass
 from datetime import datetime
 from textwrap import dedent
-
-import numpy as np
-import pandas as pd
-from frozendict import frozendict
 from typing import (
     Union,
     Any,
@@ -24,6 +20,10 @@ from typing import (
     Type,
     Optional,
 )
+
+import numpy as np
+import pandas as pd
+from frozendict import frozendict
 
 import fennel.gen.schema_pb2 as schema_proto
 from fennel.lib.metadata.metadata import META_FIELD
@@ -385,6 +385,13 @@ class regex:
         return schema_proto.DataType(
             regex_type=schema_proto.RegexType(pattern=self.regex)
         )
+
+
+@struct
+class Window:
+    begin: datetime
+    end: datetime
+    count: int
 
 
 def fennel_is_optional(type_):

@@ -9,7 +9,6 @@ from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.lib.window import Window
 from fennel.sources import S3, Webhook
 from fennel.sources import source
 from fennel.test_lib import mock
@@ -58,10 +57,10 @@ class PageViewsByUser:
             .groupby("uuid")
             .aggregate(
                 [
-                    Count(window=Window("28d"), into_field="page_views"),
-                    Count(window=Window("1d"), into_field="page_views_1d"),
-                    Count(window=Window("3d"), into_field="page_views_3d"),
-                    Count(window=Window("9d"), into_field="page_views_9d"),
+                    Count(window="28d", into_field="page_views"),
+                    Count(window="1d", into_field="page_views_1d"),
+                    Count(window="3d", into_field="page_views_3d"),
+                    Count(window="9d", into_field="page_views_9d"),
                 ]
             )
         )

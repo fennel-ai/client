@@ -1,7 +1,7 @@
 from datetime import datetime
+from typing import Optional, List
 
 import pandas as pd
-from typing import Optional, List
 
 from fennel.datasets import dataset, field, Dataset, pipeline
 from fennel.featuresets import featureset, feature, extractor
@@ -15,7 +15,6 @@ from fennel.lib.to_proto.source_code import (
     lambda_to_python_regular_func,
     remove_source_decorator,
 )
-from fennel.lib.window import Window
 
 
 @meta(owner="me@fennel.ai")
@@ -48,7 +47,7 @@ class UserAgeAggregated:
         return user_age.groupby("city").aggregate(
             [
                 Sum(
-                    window=Window("1w"),
+                    window="1w",
                     of="age",
                     into_field="sum_age",
                 )
@@ -61,7 +60,7 @@ class UserAgeAggregated:
         return user_age.groupby("city").aggregate(
             [
                 Sum(
-                    window=Window("1w"),
+                    window="1w",
                     of="age",
                     into_field="sum_age",
                 )

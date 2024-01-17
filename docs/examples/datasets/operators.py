@@ -1,14 +1,13 @@
 from datetime import datetime
 from datetime import timedelta
+from typing import Optional
 
 import pandas as pd
-from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.aggregate import Count
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.lib.window import Window
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 
