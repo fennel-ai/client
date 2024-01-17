@@ -78,6 +78,19 @@ def _dataframe_lookup(
     join_columns: List[str],
     timestamp_field: str,
 ) -> pd.DataFrame:
+    """
+    This function does as-of lookup on the right dataframe using keys dataframe.
+    The as-of lookup is done on join_columns and using timestamps in timestamp_field.
+    Args:
+        dataset_name: (str) - Name of the Dataset on which we have to do the lookup.
+        keys: (pd.DataFrame) - Dataframe containing the keys on which lookup will be done.
+        right_df: (pd.DataFrame) - Dataframe of the Dataset.
+        join_columns: (List[str]) - Columns on which we have to do the join.
+        timestamp_field: str - Name of the timestamp column present in keys.
+
+    Returns:
+        pd.DataFrame - Dataset
+    """
     right_df[FENNEL_LOOKUP] = True
     right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
     cols_to_replace = []
