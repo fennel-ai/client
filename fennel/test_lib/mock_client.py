@@ -71,6 +71,61 @@ class FakeResponse(Response):
         )
 
 
+def _dataframe_lookup(
+    dataset_name: str,
+    keys: pd.DataFrame,
+    right_df: pd.DataFrame,
+    join_columns: List[str],
+    timestamp_field: str,
+) -> pd.DataFrame:
+    right_df[FENNEL_LOOKUP] = True
+    right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
+    cols_to_replace = []
+    for col in keys:
+        # Cast the column in keys to the same dtype as the column in right_df
+        if col in right_df and keys[col].dtype != right_df[col].dtype:
+            keys[col] = keys[col].astype(right_df[col].dtype)
+
+        # Changing dtype of Struct to str for making it hashable
+        if col in right_df and right_df[col].dtype == object:
+            cols_to_replace.append(col)
+            right_df[f"{col}__internal"] = right_df[col].apply(
+                lambda x: str(dict(x))
+            )
+            keys[f"{col}__internal"] = keys[col].apply(lambda x: str(dict(x)))
+
+    right_df = right_df.drop(columns=cols_to_replace)
+    new_join_columns = []
+    for col in join_columns:
+        if col in cols_to_replace:
+            new_join_columns.append(f"{col}__internal")
+        else:
+            new_join_columns.append(col)
+    try:
+        df = pd.merge_asof(
+            left=keys,
+            right=right_df,
+            on=timestamp_field,
+            by=new_join_columns,
+            direction="backward",
+            suffixes=("", "_right"),
+        )
+        df.drop(
+            [f"{col}__internal" for col in cols_to_replace],
+            axis=1,
+            inplace=True,
+        )
+    except Exception as e:
+        raise ValueError(
+            f"Error while performing lookup on dataset {dataset_name} "
+            f"with key fields {join_columns}, key length "
+            f"{keys.shape}, and shape of dataset being "
+            f"looked up {right_df.shape}: {e} "
+        )
+    df.drop(timestamp_field, axis=1, inplace=True)
+    return df
+
+
 def dataset_lookup_impl(
     data: Dict[str, pd.DataFrame],
     aggregated_datasets: Dict,
@@ -147,51 +202,12 @@ def dataset_lookup_impl(
         # Gather all the columns that are needed from data_dict to create a df.
         result_dfs = []
         for col, right_df in data_dict.items():
-            right_df[FENNEL_LOOKUP] = True
-            right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
-            cols_to_replace = []
-            # Cast the column in keys to the same dtype as the column in right_df
-            for col in keys:
-                if col in right_df and keys[col].dtype != right_df[col].dtype:
-                    keys[col] = keys[col].astype(right_df[col].dtype)
-                # Changing dtype of Struct to str for making it hashable
-                if col in right_df and right_df[col].dtype == object:
-                    cols_to_replace.append(col)
-                    right_df[f"{col}__internal"] = right_df[col].apply(
-                        lambda x: str(dict(x))
-                    )
-                    keys[f"{col}__internal"] = keys[col].apply(
-                        lambda x: str(dict(x))
-                    )
-            right_df = right_df.drop(columns=cols_to_replace)
-            new_join_columns = []
-            for col in join_columns:
-                if col in cols_to_replace:
-                    new_join_columns.append(f"{col}__internal")
-                else:
-                    new_join_columns.append(col)
             try:
-                df = pd.merge_asof(
-                    left=keys,
-                    right=right_df,
-                    on=timestamp_field,
-                    by=new_join_columns,
-                    direction="backward",
-                    suffixes=("", "_right"),
+                df = _dataframe_lookup(
+                    cls_name, keys, right_df, join_columns, timestamp_field
                 )
-                df.drop(
-                    [f"{col}__internal" for col in cols_to_replace],
-                    axis=1,
-                    inplace=True,
-                )
-            except Exception as e:
-                raise ValueError(
-                    f"Error while performing lookup on dataset {cls_name} "
-                    f"with key fields {join_columns}, key length "
-                    f"{keys.shape}, and shape of dataset being "
-                    f"looked up {right_df.shape}: {e} "
-                )
-            df.drop(timestamp_field, axis=1, inplace=True)
+            except ValueError as err:
+                raise ValueError(err)
             df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
             result_dfs.append(df)
         # Get common columns
@@ -207,50 +223,12 @@ def dataset_lookup_impl(
         df = pd.concat(result_dfs, axis=1)
     else:
         right_df = data[cls_name]
-        right_df[FENNEL_LOOKUP] = True
-        right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
-        cols_to_replace = []
-        for col in keys:
-            if col in right_df and keys[col].dtype != right_df[col].dtype:
-                keys[col] = keys[col].astype(right_df[col].dtype)
-            # Changing dtype of Struct to str for making it hashable
-            if col in right_df and right_df[col].dtype == object:
-                cols_to_replace.append(col)
-                right_df[f"{col}__internal"] = right_df[col].apply(
-                    lambda x: str(dict(x))
-                )
-                keys[f"{col}__internal"] = keys[col].apply(
-                    lambda x: str(dict(x))
-                )
-        right_df = right_df.drop(columns=cols_to_replace)
-        new_join_columns = []
-        for col in join_columns:
-            if col in cols_to_replace:
-                new_join_columns.append(f"{col}__internal")
-            else:
-                new_join_columns.append(col)
         try:
-            df = pd.merge_asof(
-                left=keys,
-                right=right_df,
-                on=timestamp_field,
-                by=new_join_columns,
-                direction="backward",
-                suffixes=("", "_right"),
+            df = _dataframe_lookup(
+                cls_name, keys, right_df, join_columns, timestamp_field
             )
-            df.drop(
-                [f"{col}__internal" for col in cols_to_replace],
-                axis=1,
-                inplace=True,
-            )
-        except Exception as e:
-            raise ValueError(
-                f"Error while performing lookup on dataset {cls_name} "
-                f"with key fields {join_columns}, key length "
-                f"{keys.shape}, and shape of dataset being"
-                f"looked up{right_df.shape}: {e} "
-            )
-        df.drop(timestamp_field, axis=1, inplace=True)
+        except ValueError as err:
+            raise ValueError(err)
         df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
         df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
     found = df[FENNEL_LOOKUP].apply(lambda x: x is not np.nan)

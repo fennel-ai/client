@@ -164,28 +164,6 @@ def test_window_operator(client):
     df_session, _ = Sessions.lookup(
         ts, user_id=user_id_keys, window=window_keys
     )
-    df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
-    df_featureset = client.extract_features(
-        input_feature_list=[
-            UserSessionStats.user_id,
-        ],
-        output_feature_list=[
-            UserSessionStats.avg_count,
-            UserSessionStats.avg_length,
-        ],
-        input_dataframe=input_df,
-    )
-    df_historical = client.extract_historical_features(
-        input_dataframe=input_extract_historical_df,
-        input_feature_list=["UserSessionStats.user_id"],
-        output_feature_list=[
-            "UserSessionStats.avg_count",
-            "UserSessionStats.avg_length",
-        ],
-        timestamp_column="timestamp",
-        format="pandas",
-    )
-
     assert df_session.shape[0] == 1
     assert df_session["user_id"].values == [1]
     assert df_session["window"].values[0].begin == datetime(
@@ -196,15 +174,36 @@ def test_window_operator(client):
     )
     assert df_session["window"].values[0].count == 8
 
+    df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
     assert df_stats.shape[0] == 1
     assert df_stats["user_id"].values == [1]
     assert df_stats["avg_length"].values == [2.5]
     assert df_stats["avg_count"].values == [3.333333]
 
+    df_featureset = client.extract_features(
+        input_feature_list=[
+            UserSessionStats.user_id,
+        ],
+        output_feature_list=[
+            UserSessionStats.avg_count,
+            UserSessionStats.avg_length,
+        ],
+        input_dataframe=input_df,
+    )
     assert df_featureset.shape[0] == 1
     assert df_featureset["UserSessionStats.avg_length"].values == [2.5]
     assert df_featureset["UserSessionStats.avg_count"].values == [3.333333]
 
+    df_historical = client.extract_historical_features(
+        input_dataframe=input_extract_historical_df,
+        input_feature_list=["UserSessionStats.user_id"],
+        output_feature_list=[
+            "UserSessionStats.avg_count",
+            "UserSessionStats.avg_length",
+        ],
+        timestamp_column="timestamp",
+        format="pandas",
+    )
     assert df_historical.shape[0] == 1
     assert df_historical["UserSessionStats.avg_length"].values == [3]
     assert df_historical["UserSessionStats.avg_count"].values == [4]

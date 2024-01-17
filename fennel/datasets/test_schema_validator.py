@@ -1342,7 +1342,7 @@ def test_window_field_invalid_name():
 
         @meta(owner="nitin@fennel.ai")
         @dataset
-        class Sessions:
+        class Sessions1:
             user_id: str = field(key=True)
             uuid: Window = field(key=True)
             t: datetime
@@ -1372,7 +1372,7 @@ def test_window_field_invalid_name():
 
         @meta(owner="nitin@fennel.ai")
         @dataset
-        class Sessions:
+        class Sessions2:
             user_id: str = field(key=True)
             page_id: Window = field(key=True)
             t: datetime

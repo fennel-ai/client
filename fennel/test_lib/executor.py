@@ -468,6 +468,23 @@ class Executor(Visitor):
         input_df = copy.deepcopy(input_ret.df)
         input_df = input_df.sort_values(input_ret.timestamp_field)
 
+        class WindowStruct:
+            def __init__(self, event_time: datetime):
+                self.begin_time = event_time
+                self.end_time = event_time
+                self.count = 1
+
+            def add_event(self, event_time: datetime):
+                self.count += 1
+                self.end_time = event_time
+
+            def to_dict(self) -> dict:
+                return {
+                    "begin": self.begin_time,
+                    "end": self.end_time,
+                    "count": self.count,
+                }
+
         def generate_sessions_for_df(
             df: pd.DataFrame, timestamp_col: str, gap: int, field: str
         ):
@@ -475,53 +492,34 @@ class Executor(Visitor):
             df = df.sort_values(by=timestamp_col)
 
             # Initialize lists to store session information
-            session_list: List[dict] = []
-            timestamp_list = []
-            current_session_start_time = None
-            current_session_end_time = None
-            event_count = 0
+            window_list: List[dict] = []
+            timestamp_list: List[datetime] = []
+            current_window: Optional[WindowStruct] = None
 
             # Iterate through the rows of the DataFrame
             for index, row in df.iterrows():
-                # Check if it's the first event for this user
-                if current_session_start_time is None:
-                    current_session_start_time = row[timestamp_col]
-                    current_session_end_time = row[timestamp_col]
-                    event_count = 1
+                # Check if it's the first event
+                if current_window is None:
+                    current_window = WindowStruct(row[timestamp_col])
                 else:
                     # Check if the event is within the time threshold of the previous one
                     if (
-                        row[timestamp_col] - current_session_end_time
+                        row[timestamp_col] - current_window.end_time
                     ).total_seconds() <= gap:
-                        current_session_end_time = row[timestamp_col]
-                        event_count += 1
+                        current_window.add_event(row[timestamp_col])
                     else:
-                        # Save session information and reset for a new session
-                        session_list.append(
-                            {
-                                "begin": current_session_start_time,
-                                "end": current_session_end_time,
-                                "count": event_count,
-                            }
-                        )
-                        timestamp_list.append(current_session_end_time)
-                        current_session_start_time = row[timestamp_col]
-                        current_session_end_time = row[timestamp_col]
-                        event_count = 1
+                        # Save window information and reset for a new window
+                        window_list.append(current_window.to_dict())
+                        timestamp_list.append(current_window.end_time)
+                        current_window = WindowStruct(row[timestamp_col])
 
-            # Save the last session information
-            session_list.append(
-                {
-                    "begin": current_session_start_time,
-                    "end": current_session_end_time,
-                    "count": event_count,
-                }
-            )
-            timestamp_list.append(current_session_end_time)
+            # Save the last window information
+            window_list.append(current_window.to_dict())  # type: ignore
+            timestamp_list.append(current_window.end_time)  # type: ignore
 
             # Create a new DataFrame with session information
             return pd.DataFrame(
-                {field: session_list, timestamp_col: timestamp_list}
+                {field: window_list, timestamp_col: timestamp_list}
             )
 
         if obj.type == WindowType.Sessionize:
