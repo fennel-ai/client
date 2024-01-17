@@ -9,7 +9,7 @@ ItemType = Union[str, List[str]]
 
 
 class AggregateType(BaseModel):
-    window: Union[Last, Window]
+    window: Last
     # Name of the field the aggregate will  be assigned to
     into_field: str
 
@@ -18,6 +18,8 @@ class AggregateType(BaseModel):
     def validate_window(cls, value):
         if isinstance(value, str):
             return Last(value)
+        elif isinstance(value, Window):
+            return Last(value.start, value.end)
         else:
             return value
 
