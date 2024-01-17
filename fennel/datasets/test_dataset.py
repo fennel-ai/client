@@ -2765,7 +2765,7 @@ def test_window_operator():
 
     operator_req = sync_request.operators[1]
     o = {
-        "id": "d0de9c559071d64c9f1454d32538db10",
+        "id": "323a0ba6a3d62cd0b96b987323fb17a9",
         "is_root": True,
         "pipelineName": "pipeline_window",
         "datasetName": "Sessions",
