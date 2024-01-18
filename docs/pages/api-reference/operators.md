@@ -238,9 +238,8 @@ Fennel does not allow you to assign keys or timestamp columns from a dataset.
 
 ### Groupby/ Window
 
-Fennel allows you to groupby and get a stream of windowed events for each group using the `window` operator.
-A great example of windowed events are sessions, where in we create window of events occurring together.
-The `window` operator must be preceded by `groupby` to identify the grouping fields.
+In Fennel, the `window` operator enables grouping events into windowed streams based on specified criteria. A common application of this operator is in creating sessions, where it forms a window comprising events that occur in a session.
+The `window` operator must be preceded by `groupby` to identify the fields that will be used for grouping the events before they are windowed.
 
 `groupby` takes the following parameters:
 
@@ -256,5 +255,5 @@ The `window` operator takes the following parameters:
 <pre snippet="api-reference/operators_ref#window"></pre>
 
 :::info
-The `tumble` and `sliding` window type in the `window` operator are still in development phase.
+The `tumble` and `sliding` window type are still in development phase.
 :::
