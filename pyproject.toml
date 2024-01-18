@@ -67,6 +67,7 @@ testpaths = [
     "fennel/featureset",
     "fennel/sources",
     "docs/examples",
+    "examples"
 ]
 python_files = [
     "docs/examples/*/*.py",
@@ -89,6 +90,7 @@ exclude = [
     'pb2\.py$',
     '.*_pb2.pyi',
     'docs/examples',
+    'examples',
     'fennel/_vendor', # ignore vendored packages
 ]
 
