@@ -214,7 +214,7 @@ across rows.
 :::
 
 :::info
-The `explode` operator does not support exploding on key columns of datasets>
+The `explode` operator does not support exploding on key columns of datasets.
 :::
 
 <pre snippet="api-reference/operators_ref#rename"></pre>
@@ -236,4 +236,24 @@ The `assign` operator has the following parameters:
 Fennel does not allow you to assign keys or timestamp columns from a dataset.
 :::
 
+### Groupby/ Window
 
+In Fennel, the `window` operator enables grouping events into windowed streams based on specified criteria. A common application of this operator is in creating sessions, where it forms a window comprising events that occur in a session.
+The `window` operator must be preceded by `groupby` to identify the fields that will be used for grouping the events before they are windowed.
+
+`groupby` takes the following parameters:
+
+1. `*args: str` - positional arguments that specify the list of fields to group by.
+
+The `window` operator takes the following parameters:
+
+1. ``type: str``: positional argument, that specifies the type of windows to create. Allowed types
+   are `session`, `tumble` and `sliding`.
+2. ``gap: str``: positional argument, that specifies the maximum time gap between two consecutive events for clubbing them into a single window.
+3. ``field: str``: positional argument, that specifies the name of the keyed window field. The window field will contain following information: begin time, end time and number of events in a particular window.
+
+<pre snippet="api-reference/operators_ref#window"></pre>
+
+:::info
+The `tumble` and `sliding` window type are still in development phase.
+:::
