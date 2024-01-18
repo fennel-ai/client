@@ -1174,7 +1174,7 @@ def _kinesis_to_ext_table_proto(
     db: connector_proto.ExtDatabase,
     stream_arn: str,
     init_position: str | kinesis.at_timestamp,
-    format: str = "json",
+    format: str,
 ) -> connector_proto.ExtTable:
     timestamp = None
     if init_position == "trim_horizon":

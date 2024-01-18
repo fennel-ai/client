@@ -342,7 +342,7 @@ class Kinesis(DataSource):
         self,
         stream_arn: str,
         init_position: str | at_timestamp,
-        format: str = "json",
+        format: str,
     ) -> KinesisConnector:
         return KinesisConnector(self, stream_arn, init_position, format)
 
