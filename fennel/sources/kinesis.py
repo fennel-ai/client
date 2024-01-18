@@ -1,5 +1,8 @@
 from datetime import datetime
 
+# Union is needed pre Python 3.10
+from typing import Union
+
 
 # This class represents the AT_TIMESTAMP init position for a Kinesis stream.
 # Valid timestamps values are:
@@ -15,7 +18,7 @@ from datetime import datetime
 class at_timestamp(object):
     timestamp: datetime
 
-    def __init__(self, timestamp: datetime | int | float | str):
+    def __init__(self, timestamp: Union[datetime, int, float, str]):
         if isinstance(timestamp, datetime):
             self.timestamp = timestamp
         elif isinstance(timestamp, (int, float)):
