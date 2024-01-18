@@ -17,10 +17,11 @@ from fennel.sources.sources import (
     TableConnector,
     WebhookConnector,
     Kinesis,
-    InitPosition,
     KinesisConnector,
     Avro,
     Ref,
     ref,
     PreProcValue,
 )
+
+import fennel.sources.kinesis as kinesis

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.20.3] - 2024-01-17
+
+- Upddated the Kinesis source interface for specifying the initial ShardIterator type
+
 ## [0.20.2] - 2024-01-17
 
 - Added window operator
