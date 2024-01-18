@@ -169,6 +169,7 @@ stream = kinesis.stream(
     stream_arn="<SOME_STREAM_ARN>",
     # Start ingesting from Nov 5, 2023
     init_position=at_timestamp(datetime(2023, 11, 5)),
+    format="json",
 )
 
 
@@ -193,6 +194,7 @@ stream = kinesis.stream(
     stream_arn="<SOME_STREAM_ARN>",
     # Ingest all new records from now
     init_position="latest",
+    format="json",
 )
 
 
