@@ -1,6 +1,6 @@
 import pandas as pd
 from fraud.datasets.vehicle import MarketAreaDS
-from fraud.featuresets.driver import Request
+from fraud.featuresets.request import Request
 
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.schema import inputs, outputs

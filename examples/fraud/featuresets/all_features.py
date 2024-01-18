@@ -6,13 +6,13 @@ from fennel.lib.schema import oneof
 __owner__ = "eng@app.com"
 
 from fraud.featuresets.driver import (
-    Request,
     AgeFS,
     ReservationLevelFS,
 )
 from fraud.featuresets.payment import PaymentFS
 from fraud.featuresets.vehicle import VehicleFS
 from fraud.featuresets.velocity import DriverVelocityFS
+from fraud.featuresets.request import Request
 
 
 @featureset
