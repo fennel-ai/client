@@ -3,7 +3,7 @@ from fraud.datasets.payment import (
     TransactionsDS,
     LastPaymentDS,
 )
-from fraud.featuresets.driver import Request
+from fraud.featuresets.request import Request
 
 from fennel.featuresets import featureset, feature
 

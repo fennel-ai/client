@@ -6,7 +6,7 @@ from fraud.datasets.velocity import (
     PastApprovedDS,
     LoginsLastDayDS,
 )
-from fraud.featuresets.driver import Request
+from fraud.featuresets.request import Request
 
 from fennel import extractor
 from fennel.featuresets import featureset, feature
