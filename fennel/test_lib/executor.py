@@ -421,7 +421,13 @@ class Executor(Visitor):
         if input_ret is None or input_ret.df.shape[0] == 0:
             return None
         df = input_ret.df
-        df[obj.column] = obj.func(df)
+        try:
+            df[obj.column] = obj.func(df)
+        except Exception as e:
+            raise Exception(
+                f"Error in assign node for column `{obj.column}` for pipeline "
+                f"`{self.cur_pipeline_name}`, {e}"
+            )
         try:
             df[obj.column] = cast_col_to_dtype(
                 df[obj.column], get_datatype(obj.output_type)

@@ -714,7 +714,7 @@ class MockClient(Client):
             return FakeResponse(200, "OK")
 
         if dataset_name not in self.dataset_requests:
-            return FakeResponse(404, f"Dataset `{dataset_name}` not found")
+            raise Exception(f"Dataset `{dataset_name}` not found")
 
         for col in df.columns:
             # If any of the columns is a dictionary, convert it to a frozen dict
@@ -727,16 +727,14 @@ class MockClient(Client):
             try:
                 df = _transform_df(df, pre_proc)
             except Exception as e:
-                return FakeResponse(
-                    400,
+                raise Exception(
                     f"Error using pre_proc for dataset `{dataset_name}`: {str(e)}",
                 )
 
         dataset_req = self.dataset_requests[dataset_name]
         timestamp_field = self.dataset_info[dataset_name].timestamp_field
         if timestamp_field not in df.columns:
-            return FakeResponse(
-                400,
+            raise Exception(
                 f"Timestamp field `{timestamp_field}` not found in dataframe "
                 f"while logging to dataset `{dataset_name}`",
             )
@@ -746,12 +744,11 @@ class MockClient(Client):
         try:
             df = cast_df_to_schema(df, schema)
         except Exception as e:
-            return FakeResponse(
-                400,
+            raise Exception(
                 f"Schema validation failed during data insertion to `{dataset_name}`: {str(e)}",
             )
         if str(df[timestamp_field].dtype) != "datetime64[ns]":
-            return FakeResponse(
+            raise Exception(
                 400,
                 f"Timestamp field {timestamp_field} is not of type "
                 f"datetime64[ns] but found {df[timestamp_field].dtype} in "
@@ -759,8 +756,7 @@ class MockClient(Client):
             )
         exceptions = data_schema_check(schema, df, dataset_name)
         if len(exceptions) > 0:
-            return FakeResponse(
-                400,
+            raise Exception(
                 f"Schema validation failed during data insertion to `{dataset_name}`"
                 f" {str(exceptions)}",
             )
@@ -772,10 +768,9 @@ class MockClient(Client):
                     pipeline, self.datasets[pipeline._dataset_name]
                 )
             except Exception as e:
-                return FakeResponse(
-                    400,
-                    f"Error while executing pipeline {pipeline.name} "
-                    f"in dataset {dataset_name}: {str(e)}",
+                raise Exception(
+                    f"Error while executing pipeline `{pipeline.name}` "
+                    f"in dataset `{dataset_name}`: {str(e)}",
                 )
             if ret is None:
                 continue
