@@ -92,7 +92,7 @@ snowflake = sources.Snowflake(
 )
 @meta(owner="abc@email.com")
 @dataset
-class UserDataset:
+class UserSnowflakeDataset:
     uid: int = field(key=True)
     email: str
     timestamp: datetime
