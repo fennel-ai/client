@@ -8,7 +8,7 @@ from fennel.datasets import dataset, field
 from fennel.datasets import pipeline, Dataset
 from fennel.lib.aggregate import Sum, Count
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs
+from fennel.lib.schema import inputs, Window
 from fennel.sources import source, Webhook
 
 webhook = Webhook(name="fennel_webhook")
@@ -167,3 +167,21 @@ class FraudActivityDataset:
         )
         # /docsnip
         return aggregated_ds
+
+
+@meta(owner="nitin@fennel.ai")
+@dataset
+class ActivitySession:
+    user_id: int = field(key=True)
+    window: Window = field(key=True)
+    timestamp: datetime
+
+    @pipeline(version=1)
+    @inputs(Activity)
+    def create_sessions_dataset(cls, activity: Dataset):
+        # docsnip window
+        sessions = activity.groupby("user_id").window(
+            type="session", gap="60m", field="window"
+        )
+        # /docsnip
+        return sessions
