@@ -959,10 +959,10 @@ def test_invalid_assign_schema(client):
             ],
         }
     )
-    res = client.log("fennel_webhook", "mysql_relayrides.location", df)
 
-    assert res.status_code == 400, res.json()
+    with pytest.raises(Exception) as e:
+        client.log("fennel_webhook", "mysql_relayrides.location", df)
     assert (
-        res.json()["error"]
-        == "Error while executing pipeline location_ds in dataset LocationDS: Error in assign node for column `latitude_int` for pipeline `LocationDS2.location_ds`, cannot safely cast non-equivalent float64 to int64"
+        str(e.value)
+        == "Error while executing pipeline `location_ds` in dataset `LocationDS`: Error in assign node for column `latitude_int` for pipeline `LocationDS2.location_ds`, cannot safely cast non-equivalent float64 to int64"
     )

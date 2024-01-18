@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
-
+import pytest
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof, between, regex, struct
@@ -84,5 +84,5 @@ def test_restrictions(client):
             "timestamp": now,
         },
     ]
-    res = client.log("fennel_webhook", "UserInfoDataset", pd.DataFrame(data))
-    assert res.status_code == 400, res.json()
+    with pytest.raises(Exception):
+        client.log("fennel_webhook", "UserInfoDataset", pd.DataFrame(data))

@@ -69,17 +69,16 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data)
         if client.is_integration_client():
             response = client.log_to_dataset("UserInfoDataset", df)
-        else:
-            response = client.log("fennel_webhook", "UserInfoDataset", df)
-        assert response.status_code == requests.codes.BAD
-        if client.is_integration_client():
+            assert response.status_code == requests.codes.BAD
             assert (
                 response.json()["error"]
                 == """error: input parse error: value 123 does not match between type Between(Between { dtype: Int, min: Int(0), max: Int(100), strict_min: false, strict_max: false })"""
             )
         else:
+            with pytest.raises(Exception) as e:
+                response = client.log("fennel_webhook", "UserInfoDataset", df)
             assert (
-                response.json()["error"]
+                str(e.value)
                 == "Schema validation failed during data insertion to "
                 "`UserInfoDataset` [ValueError('Field `age` is of type "
                 "between, but the value `123` is out of bounds. Error found during checking schema for `UserInfoDataset`.')]"
@@ -100,18 +99,17 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data)
         if client.is_integration_client():
             response = client.log_to_dataset("UserInfoDataset", df)
-        else:
-            response = client.log("fennel_webhook", "UserInfoDataset", df)
-        assert response.status_code == requests.codes.BAD
-        if client.is_integration_client():
+            assert response.status_code == requests.codes.BAD
             assert (
                 response.json()["error"]
                 == """error: input parse error: expected string in [String("male"), String("female")], but got transgender"""
             )
         else:
+            with pytest.raises(Exception) as e:
+                response = client.log("fennel_webhook", "UserInfoDataset", df)
             assert (
                 """Schema validation failed during data insertion to `UserInfoDataset` [ValueError("Field 'gender' is of type oneof, but the value 'transgender' is not found in the set of options ['female', 'male']. Error found during checking schema for `UserInfoDataset`."), ValueError("Field 'country_code' is of type oneof, but the value '11' is not found in the set of options [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]. Error found during checking schema for `UserInfoDataset`.")]"""
-                == response.json()["error"]
+                == str(e.value)
             )
 
         now = datetime.now()
@@ -129,16 +127,15 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data)
         if client.is_integration_client():
             response = client.log_to_dataset("UserInfoDataset", df)
-        else:
-            response = client.log("fennel_webhook", "UserInfoDataset", df)
-        assert response.status_code == requests.codes.BAD
-        if client.is_integration_client():
+            assert response.status_code == requests.codes.BAD
             assert (
                 response.json()["error"]
                 == """error: input parse error: expected regex string [a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+ to match, but got johnfennel"""
             )
         else:
+            with pytest.raises(Exception) as e:
+                response = client.log("fennel_webhook", "UserInfoDataset", df)
             assert (
                 """[ValueError('Field `email` is of type regex, but the value `johnfennel` does not match the regex `[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]"""
-                in response.json()["error"]
+                in str(e.value)
             )

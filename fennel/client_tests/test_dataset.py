@@ -285,19 +285,17 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         if client.is_integration_client():
             response = client.log_to_dataset("UserInfoDataset", df)
-        else:
-            response = client.log("fennel_webhook", "UserInfoDataset", df)
-        assert response.status_code == requests.codes.BAD_REQUEST
-        if client.is_integration_client():
+            assert response.status_code == requests.codes.BAD_REQUEST
             assert (
                 response.json()["error"].strip()
                 == """error: input parse error: trailing characters at line 1 column 3""".strip()
             )
         else:
+            with pytest.raises(Exception) as e:
+                response = client.log("fennel_webhook", "UserInfoDataset", df)
             assert (
-                response.json()["error"]
-                == "Schema validation failed during data insertion to "
-                """`UserInfoDataset`: Failed to cast data logged to column `age` of type `optional(int)`: Unable to parse string "32yrs" at position 0"""
+                str(e.value)
+                == """Schema validation failed during data insertion to `UserInfoDataset`: Failed to cast data logged to column `age` of type `optional(int)`: Unable to parse string "32yrs" at position 0"""
             )
         client.sleep(10)
         # Do some lookups
@@ -386,10 +384,11 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         if client.is_integration_client():
             response = client.log_to_dataset("UserInfoDataset", df)
+            assert response.status_code == requests.codes.BAD_REQUEST
+            assert len(response.json()["error"]) > 0
         else:
-            response = client.log("fennel_webhook", "UserInfoDataset", df)
-        assert response.status_code == requests.codes.BAD_REQUEST
-        assert len(response.json()["error"]) > 0
+            with pytest.raises(Exception):
+                response = client.log("fennel_webhook", "UserInfoDataset", df)
 
     @pytest.mark.integration
     @mock

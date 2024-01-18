@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.20.3] - 2024-01-18
+- Mock client raises an exception rather than returning 400 response in case of a failure.
+
 ## [0.20.3] - 2024-01-17
 
 - Upddated the Kinesis source interface for specifying the initial ShardIterator type
