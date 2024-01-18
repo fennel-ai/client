@@ -73,7 +73,7 @@ class UserS3SourcedDataset:
 # /docsnip
 
 # docsnip snowflake_source
-sf_src = sources.Snowflake(
+snowflake = sources.Snowflake(
     name="snowflake_src",
     account="nhb38793.us-west-2.snowflakecomputing.com",
     warehouse="TEST",
@@ -84,6 +84,22 @@ sf_src = sources.Snowflake(
     username="<username>",
     password="<password>",
 )
+
+
+@source(
+    snowflake.table(table_name="user_dataset", cursor="update_time"),
+    every="24h",
+)
+@meta(owner="abc@email.com")
+@dataset
+class UserDataset:
+    uid: int = field(key=True)
+    email: str
+    timestamp: datetime
+    update_time: datetime
+    ...
+
+
 # /docsnip
 
 
