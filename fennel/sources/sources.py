@@ -12,6 +12,7 @@ from fennel.lib.duration import (
     Duration,
 )
 from fennel.lib.includes import TierSelector
+from fennel.sources.kinesis import at_timestamp
 
 T = TypeVar("T")
 SOURCE_FIELD = "__fennel_data_sources__"
@@ -340,13 +341,10 @@ class Kinesis(DataSource):
     def stream(
         self,
         stream_arn: str,
-        init_position: InitPosition,
-        init_timestamp: Optional[datetime] = None,
+        init_position: str | at_timestamp,
         format: str = "json",
     ) -> KinesisConnector:
-        return KinesisConnector(
-            self, stream_arn, init_position, init_timestamp, format
-        )
+        return KinesisConnector(self, stream_arn, init_position, format)
 
     @staticmethod
     def get(name: str) -> Kinesis:
@@ -477,52 +475,31 @@ class S3Connector(DataConnector):
         )
 
 
-class InitPosition(Enum):
-    LATEST = "LATEST"
-    TRIM_HORIZON = "TRIM_HORIZON"
-    AT_TIMESTAMP = "AT_TIMESTAMP"
-
-
 class KinesisConnector(DataConnector):
     def __init__(
         self,
         data_source,
         stream_arn: str,
-        init_position: InitPosition,
-        init_timestamp: Optional[datetime],
+        init_position: str | at_timestamp,
         format: str,
     ):
         self.data_source = data_source
-        self.init_position = init_position
-        if (
-            init_position == InitPosition.AT_TIMESTAMP
-            and init_timestamp is None
-        ):
-            raise AttributeError(
-                "init_timestamp must be specified for AT_TIMESTAMP init_position"
-            )
-        elif (
-            init_position != InitPosition.AT_TIMESTAMP
-            and init_timestamp is not None
-        ):
-            raise AttributeError(
-                "init_timestamp must not be specified for LATEST or TRIM_HORIZON init_position"
-            )
-        elif (
-            init_position == InitPosition.AT_TIMESTAMP
-            and init_timestamp is not None
-        ):
-            # Check if init_timestamp is of type datetime
-            if not isinstance(init_timestamp, datetime):
-                raise AttributeError("init_timestamp must be of type datetime")
 
-        self.init_timestamp = init_timestamp
+        if isinstance(init_position, str):
+            if init_position.lower() not in ["latest", "trim_horizon"]:
+                raise AttributeError(
+                    "Kinesis init position must be 'latest', 'trim_horizon' or at_timestamp(ts)"
+                )
+            self.init_position = init_position.lower()
+        else:
+            self.init_position = init_position
+
         if format not in ["json"]:
             raise AttributeError("Kinesis format must be json")
         self.format = format
         self.stream_arn = stream_arn
 
     stream_arn: str
-    init_position: InitPosition
+    init_position: str | at_timestamp
     init_timestamp: Optional[datetime]
-    format: str = "json"
+    format: str

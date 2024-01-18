@@ -1,4 +1,5 @@
 from datetime import datetime
+from fennel.sources.kinesis import at_timestamp
 
 import pytest
 from typing import Optional
@@ -12,7 +13,6 @@ from fennel.sources import (
     Snowflake,
     Kafka,
     Kinesis,
-    InitPosition,
 )
 from fennel.sources.sources import BigQuery
 
@@ -148,10 +148,12 @@ def test_invalid_s3_source():
 
 
 def test_invalid_kinesis_source():
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(ValueError) as e:
 
         @meta(owner="test@test.com")
-        @source(kinesis.stream("test_stream", InitPosition.AT_TIMESTAMP))
+        @source(
+            kinesis.stream("test_stream", init_position=at_timestamp("today"))
+        )
         @dataset
         class UserInfoDatasetKinesis1:
             user_id: int = field(key=True)
@@ -159,21 +161,12 @@ def test_invalid_kinesis_source():
             gender: str
             timestamp: datetime = field(timestamp=True)
 
-    assert (
-        str(e.value)
-        == "init_timestamp must be specified for AT_TIMESTAMP init_position"
-    )
+    assert str(e.value) == "Invalid isoformat string: 'today'"
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(TypeError) as e:
 
         @meta(owner="test@test.com")
-        @source(
-            kinesis.stream(
-                "test_stream",
-                InitPosition.AT_TIMESTAMP,
-                init_timestamp="2020-01-01T00:00:00Z",
-            )
-        )
+        @source(kinesis.stream("test_stream", init_position=at_timestamp(None)))
         @dataset
         class UserInfoDatasetKinesis2:
             user_id: int = field(key=True)
@@ -181,7 +174,7 @@ def test_invalid_kinesis_source():
             gender: str
             timestamp: datetime = field(timestamp=True)
 
-    assert str(e.value) == "init_timestamp must be of type datetime"
+    assert str(e.value) == "Invalid timestamp type <class 'NoneType'>"
 
     with pytest.raises(AttributeError) as e:
 
@@ -189,8 +182,7 @@ def test_invalid_kinesis_source():
         @source(
             kinesis.stream(
                 "test_stream",
-                InitPosition.AT_TIMESTAMP,
-                init_timestamp=datetime.now(),
+                at_timestamp(datetime.now()),
                 format="csv",
             )
         )
@@ -209,8 +201,7 @@ def test_invalid_kinesis_source():
         @source(
             kinesis.stream(
                 "test_stream",
-                InitPosition.LATEST,
-                init_timestamp=datetime.now(),
+                "latest(2024-01-01T00:00:00Z)",
                 format="csv",
             )
         )
@@ -223,7 +214,7 @@ def test_invalid_kinesis_source():
 
     assert (
         str(e.value)
-        == "init_timestamp must not be specified for LATEST or TRIM_HORIZON init_position"
+        == "Kinesis init position must be 'latest', 'trim_horizon' or at_timestamp(ts)"
     )
 
 

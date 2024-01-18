@@ -159,7 +159,7 @@ class UserKafkaSourcedDataset:
 # /docsnip
 
 # docsnip kinesis_source
-from fennel.sources import InitPosition
+from fennel.sources.kinesis import at_timestamp
 
 kinesis = sources.Kinesis(
     name="kinesis_src",
@@ -168,8 +168,7 @@ kinesis = sources.Kinesis(
 stream = kinesis.stream(
     stream_arn="<SOME_STREAM_ARN>",
     # Start ingesting from Nov 5, 2023
-    init_position=InitPosition.AT_TIMESTAMP,
-    init_timestamp=datetime(2023, 11, 5),
+    init_position=at_timestamp(datetime(2023, 11, 5)),
 )
 
 
@@ -186,8 +185,6 @@ class UserKinesisSourcedDataset:
 # /docsnip
 
 # docsnip kinesis_source_latest
-from fennel.sources import InitPosition
-
 kinesis = sources.Kinesis(
     name="kinesis_src",
     role_arn="<SOME_ROLE_ARN>",
@@ -195,7 +192,7 @@ kinesis = sources.Kinesis(
 stream = kinesis.stream(
     stream_arn="<SOME_STREAM_ARN>",
     # Ingest all new records from now
-    init_position=InitPosition.LATEST,
+    init_position="latest",
 )
 
 

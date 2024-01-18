@@ -41,6 +41,7 @@ from fennel.lib.to_proto.source_code import (
     get_featureset_gen_code,
 )
 from fennel.lib.to_proto.source_code import to_includes_proto
+from fennel.sources import kinesis
 from fennel.utils import fennel_get_source
 
 
@@ -1131,7 +1132,6 @@ def _kinesis_conn_to_source_proto(
         db=ext_db,
         stream_arn=connector.stream_arn,
         init_position=connector.init_position,
-        init_timestamp=connector.init_timestamp,
         format=connector.format,
     )
     if connector.starting_from is not None:
@@ -1173,25 +1173,21 @@ def _kinesis_to_ext_db_proto(
 def _kinesis_to_ext_table_proto(
     db: connector_proto.ExtDatabase,
     stream_arn: str,
-    init_position: sources.InitPosition,
-    init_timestamp: Optional[datetime] = None,
+    init_position: str | kinesis.at_timestamp,
     format: str = "json",
 ) -> connector_proto.ExtTable:
-    if init_position == sources.InitPosition.TRIM_HORIZON:
+    timestamp = None
+    if init_position == "trim_horizon":
         ip = kinesis_proto.InitPosition.TRIM_HORIZON
-    elif init_position == sources.InitPosition.LATEST:
+    elif init_position == "latest":
         ip = kinesis_proto.InitPosition.LATEST
-    elif init_position == sources.InitPosition.AT_TIMESTAMP:
+    elif isinstance(init_position, kinesis.at_timestamp):
         ip = kinesis_proto.InitPosition.AT_TIMESTAMP
+        timestamp = Timestamp()
+        timestamp.FromDatetime(init_position())
     else:
         raise ValueError(f"Unknown init position: {init_position}")
 
-    # Convert init_timestamp to timestamp proto
-    if init_timestamp is not None:
-        timestamp = Timestamp()
-        timestamp.FromDatetime(init_timestamp)
-    else:
-        timestamp = None
     return connector_proto.ExtTable(
         kinesis_stream=connector_proto.KinesisStream(
             db=db,

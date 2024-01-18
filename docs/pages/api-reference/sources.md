@@ -185,17 +185,22 @@ The following fields need to be defined for the source:
 1. `name: str` - A name to identify the source. The name should be unique across all sources.
 1. `role_arn: str` - The role that Fennel should use to access the Kinesis stream
 2. `stream_arn: str` - AWS `ARN` of the stream
-3. `init_position: fennel.sources.InitPosition` - The Kinesis `ShardIterator` type used to begin ingestion. One of `LATEST`, `TRIM_HORIZON` or `AT_TIMESTAMP`. 
-Note that for `LATEST`, Fennel will begin consuming records that come into Kinesis a few minutes after `sync()` is called. For a completely deterministic position, use `AT_TIMESTAMP`
+3. `init_position: str | fennel.sources.kinesis.at_timestamp` - The Kinesis `ShardIterator` type used to begin ingestion. One of `'latest'`, `'trim_horizon'` or `at_timestamp(ts)`.
+   - For `at_timestamp(ts)`, `ts` can be any of the following: 
+      - a `datetime` object
+      - an `int` representing seconds since the epoch
+      - a `float` representing `{seconds}.{microseconds}` since the epoch
+      - an [ISO-8601](https://docs.python.org/3/library/datetime.html#datetime.date.fromisoformat) formatted `str`.
+   - The timestamp supplied should be no older than the retention window of the stream.
+   - For `latest`, Fennel will begin consuming records that come into Kinesis a few minutes after `sync()` is called. For a completely deterministic position, use `at_timestamp`.
 See [Kinesis ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html#API_GetShardIterator_RequestSyntax) for more info. 
-4. `init_timestamp: Optional[datetime]` - If the `init_position` is `AT_TIMESTAMP` this is the datetime at which to begin ingestion. Do not specify this for `LATEST` or `TRIM_HORIZON`
-5. `format: Optional[str]` - The format of the incoming data. Currently only JSON is supported and `"json"` is specified by default
+4. `format: Optional[str]` - The format of the incoming data. Currently only `"json"` is supported
 
-**Example Using AT_TIMESTAMP**
+**Example Using `at_timestamp`**
 
 <pre snippet="api-reference/source#kinesis_source"></pre>
 
-**Example Using LATEST** (TRIM_HORIZON is used the same way)
+**Example Using `latest`** (`trim_horizon` is used the same way)
 
 <pre snippet="api-reference/source#kinesis_source_latest"></pre>
 

@@ -1,4 +1,6 @@
 from datetime import datetime
+from fennel import sources
+from fennel.sources.kinesis import at_timestamp
 
 import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
@@ -16,7 +18,6 @@ from fennel.sources import (
     BigQuery,
     Kafka,
     Kinesis,
-    InitPosition,
     Avro,
     ref,
 )
@@ -860,7 +861,9 @@ def test_multiple_sources():
     )
 
     @meta(owner="test@test.com")
-    @source(kinesis.stream("test_stream", InitPosition.LATEST))
+    @source(
+        kinesis.stream("test_stream", init_position="latest", format="json")
+    )
     @dataset
     class UserInfoDatasetKinesis:
         user_id: int = field(key=True)
@@ -891,8 +894,7 @@ def test_multiple_sources():
     @source(
         kinesis.stream(
             "test_stream",
-            InitPosition.AT_TIMESTAMP,
-            init_timestamp=datetime(2023, 5, 31, 15, 30),
+            init_position=at_timestamp("2023-05-31 15:30:00"),
             format="json",
         )
     )
