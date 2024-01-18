@@ -105,7 +105,7 @@ class UserFeature:
     @outputs(age)
     def get_age(cls, ts: pd.Series, uids: pd.Series):
         dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])
-        ages = [dob - datetime.now() for dob in dobs]
+        ages = ts - dobs
         return pd.Series(ages)
 
     @extractor
