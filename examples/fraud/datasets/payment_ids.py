@@ -63,18 +63,19 @@ class PaymentIdentifierDS:
         paa: Dataset,
         account: Dataset,
     ):
-        ds = payment_account.join(
-            paa,
-            left_on=["id"],
-            right_on=["payment_account_id"],
-            how="inner",
+        return (
+            payment_account.join(
+                paa,
+                left_on=["id"],
+                right_on=["payment_account_id"],
+                how="inner",
+            )
+            .join(
+                account,
+                left_on=["account_id"],
+                right_on=["id"],
+                how="inner",
+                within=("forever", "1d"),
+            )
+            .rename({"primary_driver_id": "driver_id"})
         )
-        # For some reason paa timestamps are in the future, so we need to join in the future by 1d.
-        ds = ds.join(
-            account,
-            left_on=["account_id"],
-            right_on=["id"],
-            how="inner",
-            within=("forever", "1d"),
-        )
-        return ds.rename({"primary_driver_id": "driver_id"})

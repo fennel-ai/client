@@ -20,7 +20,7 @@ from fennel.test_lib import mock
 
 def log_payment_identifier_datasets(client):
     df = (
-        pd.read_csv("examples/fraud/data/tbd/payment_account.csv")
+        pd.read_csv("examples/fraud/data/payment/payment_account.csv")
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)
@@ -36,7 +36,9 @@ def log_payment_identifier_datasets(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = (
-        pd.read_csv("examples/fraud/data/tbd/payment_account_association.csv")
+        pd.read_csv(
+            "examples/fraud/data/payment/payment_account_association.csv"
+        )
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)
@@ -55,7 +57,7 @@ def log_payment_identifier_datasets(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = (
-        pd.read_csv("examples/fraud/data/tbd/account.csv")
+        pd.read_csv("examples/fraud/data/payment/account.csv")
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)
@@ -129,7 +131,7 @@ def test_min_max_radar_score(client):
     log_payment_identifier_datasets(client)
 
     df = (
-        pd.read_csv("examples/fraud/data/tbd/charges.csv")
+        pd.read_csv("examples/fraud/data/payment/charges.csv")
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)
@@ -171,7 +173,7 @@ def test_last_payment(client):
     log_payment_identifier_datasets(client)
 
     df = (
-        pd.read_csv("examples/fraud/data/tbd/payment_event.csv")
+        pd.read_csv("examples/fraud/data/payment/payment_event.csv")
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)
@@ -212,7 +214,7 @@ def test_payment(client):
     log_payment_identifier_datasets(client)
 
     df = (
-        pd.read_csv("examples/fraud/data/tbd/payment_event.csv")
+        pd.read_csv("examples/fraud/data/payment/payment_event.csv")
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)
@@ -228,7 +230,7 @@ def test_payment(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = (
-        pd.read_csv("examples/fraud/data/tbd/charges.csv")
+        pd.read_csv("examples/fraud/data/payment/charges.csv")
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)

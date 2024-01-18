@@ -30,7 +30,7 @@ class LocationDS2:
     @pipeline(version=1)
     @inputs(LocationDS)
     def location_ds(cls, location: Dataset):
-        ds = (
+        return (
             location.assign(
                 "latitude_int",
                 int,
@@ -45,7 +45,6 @@ class LocationDS2:
             .groupby(["latitude_int", "longitude_int"])
             .first()
         )
-        return ds
 
 
 @source(webhook.endpoint("LocationToNewMarketArea"), tier="local")
@@ -66,7 +65,7 @@ class IdToMarketAreaDS:
     @pipeline(version=1)
     @inputs(LocationToNewMarketArea, LocationDS2)
     def id_to_market_area(cls, nma: Dataset, location: Dataset):
-        ds = (
+        return (
             nma.assign(
                 "latitude_int",
                 int,
@@ -88,7 +87,6 @@ class IdToMarketAreaDS:
             .groupby(["id"])
             .first()
         )
-        return ds
 
 
 @source(webhook.endpoint("VehicleSummary"), tier="local")
@@ -114,7 +112,7 @@ class MarketAreaDS:
     def market_area_ds(
         cls, vehicle_summary: Dataset, id_to_market_area: Dataset
     ):
-        ds = (
+        return (
             vehicle_summary.join(
                 id_to_market_area,
                 left_on=["location_id"],
@@ -140,4 +138,3 @@ class MarketAreaDS:
                 ),
             )
         )
-        return ds

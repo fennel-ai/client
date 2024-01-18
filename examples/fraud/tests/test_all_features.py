@@ -137,7 +137,7 @@ def test_all_features(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = (
-        pd.read_csv("examples/fraud/data/tbd/payment_event.csv")
+        pd.read_csv("examples/fraud/data/payment/payment_event.csv")
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)
@@ -153,7 +153,7 @@ def test_all_features(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = (
-        pd.read_csv("examples/fraud/data/tbd/charges.csv")
+        pd.read_csv("examples/fraud/data/payment/charges.csv")
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)
@@ -247,7 +247,7 @@ def test_all_features(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = (
-        pd.read_csv("examples/fraud/data/tbd/location.csv")
+        pd.read_csv("examples/fraud/data/payment/location.csv")
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)
@@ -264,7 +264,9 @@ def test_all_features(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = (
-        pd.read_csv("examples/fraud/data/tbd/location_to_new_market_area.csv")
+        pd.read_csv(
+            "examples/fraud/data/payment/location_to_new_market_area.csv"
+        )
         .assign(
             created=lambda x: pd.to_datetime(x["created"]).apply(
                 lambda y: y.tz_localize(None)

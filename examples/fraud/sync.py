@@ -53,15 +53,6 @@ from fraud.featuresets.velocity import DriverVelocityFS
 
 from fennel.client import Client
 
-
-def main(url, preview):
-    print(f"URL: {url}")
-    print(f"Preview Mode: {'ON' if preview else 'OFF'}")
-
-    # Your synchronization logic goes here
-    # Use the URL and preview values as needed
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sync Script")
     # URL parameter (string)

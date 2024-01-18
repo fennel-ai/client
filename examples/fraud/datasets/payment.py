@@ -43,25 +43,28 @@ class TransactionsDS:
     @pipeline(version=1)
     @inputs(ChargesDS, PaymentIdentifierDS)
     def transactions(cls, charges: Dataset, payment_identifier: Dataset):
-        ds = charges.join(
-            payment_identifier,
-            left_on=["customer"],
-            right_on=["customer_id"],
-            how="inner",
-        )
-        return ds.groupby("driver_id").aggregate(
-            Min(
-                of="risk_score",
-                window="forever",
-                default=0.0,
-                into_field="min_radar_score",
-            ),
-            Max(
-                of="risk_score",
-                window="forever",
-                default=0.0,
-                into_field="max_radar_score",
-            ),
+        return (
+            charges.join(
+                payment_identifier,
+                left_on=["customer"],
+                right_on=["customer_id"],
+                how="inner",
+            )
+            .groupby("driver_id")
+            .aggregate(
+                Min(
+                    of="risk_score",
+                    window="forever",
+                    default=0.0,
+                    into_field="min_radar_score",
+                ),
+                Max(
+                    of="risk_score",
+                    window="forever",
+                    default=0.0,
+                    into_field="max_radar_score",
+                ),
+            )
         )
 
 
@@ -92,13 +95,12 @@ class LastPaymentDS:
     @pipeline(version=1)
     @inputs(PaymentEventDS, PaymentIdentifierDS)
     def last_payment(cls, payment_event: Dataset, payment_identifier: Dataset):
-        ds = (
+        return (
             payment_event.join(
                 payment_identifier,
                 on=["customer_id"],
                 how="inner",
             )
-            .drop("account_id", "id")
             .assign(
                 "is_debit_card",
                 bool,
@@ -106,12 +108,10 @@ class LastPaymentDS:
                     lambda x: 1 if pd.notna(x) else 0
                 ),
             )
-            .drop("debit_card")
-            .drop("customer_id")
+            .drop("debit_card", "customer_id", "account_id", "id")
             .groupby("driver_id")
             .first()
         )
-        return ds
 
 
 @dataset
