@@ -96,7 +96,6 @@ class UserSnowflakeDataset:
     uid: int = field(key=True)
     email: str
     timestamp: datetime
-    update_time: datetime
     ...
 
 
