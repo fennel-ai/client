@@ -4,7 +4,7 @@ import pandas as pd
 
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
-from fennel.sources import Webhook
+from fennel.sources import Webhook, ref
 from fennel.test_lib import mock
 
 
@@ -189,7 +189,11 @@ postgres = Postgres(
 )
 
 
-@source(postgres.table("user", cursor="update_time"), every="1m")
+@source(
+    postgres.table("user", cursor="update_time"),
+    every="1m",
+    preproc={"city": "San Francisco", "country": ref("processed_country")},
+)
 @meta(owner="xyz@example.com")
 @dataset
 class UserLocation:

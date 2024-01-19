@@ -60,6 +60,12 @@ where max out of order delay is specified. This max out of order delay of a sour
 is called `disorder` in Fennel, and once specified at source level, is respected
 automatically by each downstream pipeline. 
 
+### Pre-processing
+The `preproc` field in the source provides a way to ingest a column that doesn't exist with a default value or to base the value of that column on another column (or aliasing a column). The Fennel ingestion engine will pre-process the data based on the `preproc` map during the ingestion time of the source, ensuring that the data lands in the correct field.
+
+In the example above, since the `city` column is not available at ingestion time, we would fill it with `"San Francisco"` During ingestion, we aim to rename a few columns for clarity and conciseness, adding a reference from `country` to `processed_country`.
+
+
 ## Schema Matching
 
 Fennel has a strong typing system and all ingested data is evaluated against
