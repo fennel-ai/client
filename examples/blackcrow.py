@@ -1,5 +1,7 @@
+import argparse
 from datetime import datetime
 import sys
+from typing import Optional
 from fennel.client.client import Client
 
 sys.path.insert(0, "/Users/adityanambiar/fennel-ai/client")
@@ -42,37 +44,36 @@ __owner__ = "blackcrow@fennel.ai"
     snowflake.table(table_name="PAGE_VIEWS", cursor="TIMESTAMP"),
     every="24h",
 )
+@meta(deleted=True)
 @dataset
 class PageViewsSnowFlake:
     uuid: str
     document_id: int
     timestamp: datetime
     platform: int
-    geo_location: str
+    geo_location: Optional[str]
     traffic_source: int
 
 
-@source(
-    snowflake.table(table_name="user_dataset", cursor="update_time"),
-    every="24h",
-)
+@source(stream)
 @dataset
 class PageViewsKinesis:
     uuid: str
     document_id: int
     timestamp: datetime
     platform: int
-    geo_location: str
+    geo_location: Optional[str]
     traffic_source: int
 
 
+@meta(deleted=True)
 @dataset
 class PageViewsUnion:
     uuid: str
     document_id: int
     timestamp: datetime
     platform: int
-    geo_location: str
+    geo_location: Optional[str]
     traffic_source: int
 
     @pipeline(version=1)
@@ -85,7 +86,7 @@ class PageViewsUnion:
         return a + b
 
 
-@meta(owner="xiao@fennel.ai")
+@meta(deleted=True)
 @dataset
 class PageViewsByDocument:
     document_id: int = field(key=True)
@@ -118,7 +119,8 @@ class PageViewsByUser:
     timestamp: datetime = field(timestamp=True)
 
     @pipeline(version=1)
-    @inputs(PageViewsUnion)
+    #@inputs(PageViewsUnion)
+    @inputs(PageViewsKinesis)
     def group_by_user(cls, page_views: Dataset):
         return page_views.groupby("uuid").aggregate(
             [
@@ -130,14 +132,12 @@ class PageViewsByUser:
         )
 
 
-@meta(owner="aditya@fennel.ai")
 @featureset
 class Request:
     uuid: str = feature(id=1)
     document_id: int = feature(id=2)
 
 
-@meta(owner="aditya@fennel.ai")
 @featureset
 class UserPageViewFeatures:
     page_views: int = feature(id=1)
@@ -162,13 +162,38 @@ class UserPageViewFeatures:
 
 
 client = Client("https://main.fe-moh5jg8f2v.aws.fennel.ai")
-client.sync(
-    datasets=[
-        PageViewsSnowFlake,
-        PageViewsKinesis,
-        PageViewsUnion,
-        PageViewsByDocument,
-        PageViewsByUser,
-    ],
-    featuresets=[Request, UserPageViewFeatures],
-)
+
+parser = argparse.ArgumentParser(description="A minimal example for fennel")
+parser.add_argument("-s", action="store_true")
+parser.add_argument("-e")
+parser.add_argument("-k", action="store_true") # kinesis only
+args = parser.parse_args()
+
+if args.s:
+    client.sync(
+        datasets=[
+            PageViewsSnowFlake,
+            PageViewsKinesis,
+            PageViewsUnion,
+            PageViewsByDocument,
+            PageViewsByUser,
+        ],
+        featuresets=[Request, UserPageViewFeatures],
+    )
+elif args.k:
+    client.sync(
+        datasets=[
+            PageViewsKinesis,
+            PageViewsByUser,
+        ],
+        featuresets=[Request, UserPageViewFeatures],
+    )
+elif args.e:
+    df = client.extract_features(
+        input_feature_list=[Request.uuid], 
+        input_dataframe=pd.DataFrame({"Request.uuid": [str(args.e)]}),
+        output_feature_list=[UserPageViewFeatures.page_views, UserPageViewFeatures.page_views_1d]
+    )
+    print(df)
+else:
+    print("Please specify -s or -e or -k")
