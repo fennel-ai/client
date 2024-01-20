@@ -26,11 +26,11 @@ snowflake = sources.Snowflake(
 
 kinesis = Kinesis(
     name="kinesis_src",
-    role_arn="arn:aws:iam::852537873043:user/users/camelia.hssaine",
+    role_arn="arn:aws:iam::824489454832:role/admin",
 )
 stream = kinesis.stream(
-    stream_arn="arn:aws:kinesis:us-east-1:852537873043:stream/json-pipeline-page_view",
-    init_position="latest",
+    stream_arn="arn:aws:kinesis:us-west-2:824489454832:stream/outbrain_test",
+    init_position="trim_horizon",
     format="json",
 )
 
