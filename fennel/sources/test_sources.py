@@ -641,6 +641,76 @@ def test_multiple_sources():
 
     @meta(owner="test@test.com")
     @source(
+        snowflake.table("users_Sf", cursor="added_on"),
+        every="1h",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetSnowFlakeStartingFrom:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # snowflake source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetSnowFlakeStartingFrom)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "snowflakeTable": {
+                "db": {
+                    "snowflake": {
+                        "account": "nhb38793.us-west-2.snowflakecomputing.com",
+                        "user": "<username>",
+                        "password": "<password>",
+                        "schema": "PUBLIC",
+                        "warehouse": "TEST",
+                        "role": "ACCOUNTADMIN",
+                        "database": "MOVIELENS",
+                    },
+                    "name": "snowflake_src",
+                },
+                "tableName": "users_Sf",
+            }
+        },
+        "dataset": "UserInfoDatasetSnowFlakeStartingFrom",
+        "every": "3600s",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "snowflake_src",
+        "snowflake": {
+            "account": "nhb38793.us-west-2.snowflakecomputing.com",
+            "user": "<username>",
+            "password": "<password>",
+            "schema": "PUBLIC",
+            "warehouse": "TEST",
+            "role": "ACCOUNTADMIN",
+            "database": "MOVIELENS",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
         bigquery.table("users_bq", cursor="added_on"), every="1h", disorder="2h"
     )
     @dataset
