@@ -1,5 +1,6 @@
 from datetime import datetime
 import sys
+from fennel.client.client import Client
 
 sys.path.insert(0, "/Users/adityanambiar/fennel-ai/client")
 
@@ -160,7 +161,7 @@ class UserPageViewFeatures:
         return ret
 
 
-client = MockClient()
+client = Client("https://main.fe-moh5jg8f2v.aws.fennel.ai")
 client.sync(
     datasets=[
         PageViewsSnowFlake,
