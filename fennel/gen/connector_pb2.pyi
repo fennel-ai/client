@@ -334,7 +334,6 @@ class Snowflake(google.protobuf.message.Message):
     SCHEMA_FIELD_NUMBER: builtins.int
     WAREHOUSE_FIELD_NUMBER: builtins.int
     ROLE_FIELD_NUMBER: builtins.int
-    JDBC_PARAMS_FIELD_NUMBER: builtins.int
     DATABASE_FIELD_NUMBER: builtins.int
     account: builtins.str
     user: builtins.str
@@ -342,7 +341,6 @@ class Snowflake(google.protobuf.message.Message):
     schema: builtins.str
     warehouse: builtins.str
     role: builtins.str
-    jdbc_params: builtins.str
     database: builtins.str
     def __init__(
         self,
@@ -353,10 +351,9 @@ class Snowflake(google.protobuf.message.Message):
         schema: builtins.str = ...,
         warehouse: builtins.str = ...,
         role: builtins.str = ...,
-        jdbc_params: builtins.str = ...,
         database: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["account", b"account", "database", b"database", "jdbc_params", b"jdbc_params", "password", b"password", "role", b"role", "schema", b"schema", "user", b"user", "warehouse", b"warehouse"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["account", b"account", "database", b"database", "password", b"password", "role", b"role", "schema", b"schema", "user", b"user", "warehouse", b"warehouse"]) -> None: ...
 
 global___Snowflake = Snowflake
 
