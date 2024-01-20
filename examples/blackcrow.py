@@ -9,21 +9,19 @@ from fennel.sources import sources, Snowflake, Kinesis
 from fennel.lib.aggregate import Count, Sum
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.lib.window import Window
 from fennel.featuresets import featureset, extractor, feature
 import pandas as pd
 from fennel.test_lib import MockClient
 
 snowflake = sources.Snowflake(
     name="snowflake_src",
-    account="nhb38793.us-west-2.snowflakecomputing.com",
-    warehouse="TEST",
-    schema="PUBLIC",
-    db_name="TEST_DB",
-    src_schema="PUBLIC",
+    account="VPECCVJ-MUB03765",
+    warehouse="FENNEL_TEST_WH",
+    db_name="BLACKCROW_POC",
+    src_schema="ORDERS",
     role="ACCOUNTADMIN",
-    username="<username>",
-    password="<password>",
+    username="LOCAL_DEV_UT_USER",
+    password="FennelLocalDev1",
 )
 
 kinesis = Kinesis(
@@ -40,7 +38,7 @@ __owner__ = "blackcrow@fennel.ai"
 
 
 @source(
-    snowflake.table(table_name="user_dataset", cursor="update_time"),
+    snowflake.table(table_name="PAGE_VIEWS", cursor="TIMESTAMP"),
     every="24h",
 )
 @dataset
