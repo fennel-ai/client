@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.20.5] - 2024-01-19
+- Support `starting_from` on Snowflake data source
+
 ## [0.20.3] - 2024-01-18
 - Mock client raises an exception rather than returning 400 response in case of a failure.
 

@@ -882,15 +882,14 @@ def _snowflake_conn_to_source_proto(
         warehouse=data_source.warehouse,
         role=data_source.role,
         database=data_source.db_name,
-        jbdc_params=data_source.jdbc_params,
     )
     ext_table = _snowflake_to_ext_table_proto(
         db=ext_db, table_name=connector.table_name
     )
-    if connector.starting_from is not None:
-        raise ValueError(
-            "Snowflake connector does not support starting_from parameter"
-        )
+    starting_from = None
+    if connector.starting_from:
+        starting_from = Timestamp()
+        starting_from.FromDatetime(connector.starting_from)
     return (
         ext_db,
         connector_proto.Source(
@@ -902,6 +901,7 @@ def _snowflake_conn_to_source_proto(
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            starting_from=starting_from,
         ),
     )
 
@@ -915,11 +915,7 @@ def _snowflake_to_ext_db_proto(
     warehouse: str,
     role: str,
     database: str,
-    jbdc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
-    if jbdc_params is None:
-        jbdc_params = ""
-
     return connector_proto.ExtDatabase(
         name=name,
         snowflake=connector_proto.Snowflake(
@@ -929,7 +925,6 @@ def _snowflake_to_ext_db_proto(
             schema=schema,
             warehouse=warehouse,
             role=role,
-            jdbc_params=jbdc_params,
             database=database,
         ),
     )

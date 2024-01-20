@@ -308,7 +308,6 @@ class Snowflake(DataSource):
     warehouse: str
     src_schema: str
     role: str
-    jdbc_params: Optional[str] = None
 
     def table(self, table_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name, cursor)
