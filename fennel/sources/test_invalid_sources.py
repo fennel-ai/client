@@ -333,7 +333,9 @@ def test_invalid_starting_from():
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-    assert "'since' must be of type datetime - got <class 'str'>" == str(e.value)
+    assert "'since' must be of type datetime - got <class 'str'>" == str(
+        e.value
+    )
 
 
 def test_invalid_s3_format():
