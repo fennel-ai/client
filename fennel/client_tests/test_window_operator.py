@@ -55,7 +55,7 @@ class SessionStats:
                 "length",
                 int,
                 lambda df: df["window"].apply(
-                    lambda x: (x["end"] - x["begin"]).total_seconds()
+                    lambda x: int((x["end"] - x["begin"]).total_seconds())
                 ),
             )
             .assign(

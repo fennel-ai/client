@@ -180,7 +180,7 @@ def test_last_payment(client):
             )
         )
         .assign(invoice_id=lambda x: x["invoice_id"].astype("Int64"))
-        .assign(debit_card=lambda x: x["debit_card"].astype("Int64"))
+        .assign(debit_card=lambda x: x["debit_card"].astype("bool"))
         .assign(postal_code="123")
     )
 

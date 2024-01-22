@@ -394,6 +394,19 @@ class MockClient(Client):
                 404, f"Webhook endpoint {webhook_endpoint} not " f"found"
             )
         for ds in self.webhook_to_dataset_map[webhook_endpoint]:
+            try:
+                schema = self.dataset_requests[ds].dsschema
+                if self.dataset_to_pre_proc_map[ds] is not None:
+                    pre_proc_cols = list(
+                        self.dataset_to_pre_proc_map[ds].keys()  # type: ignore
+                    )
+                else:
+                    pre_proc_cols = []
+                df = cast_df_to_schema(df, schema, pre_proc_cols)
+            except Exception as e:
+                raise Exception(
+                    f"Schema validation failed during data insertion to `{ds}`: {str(e)}",
+                )
             resp = self._internal_log(ds, df)
             if resp.status_code != 200:
                 return resp
@@ -741,12 +754,6 @@ class MockClient(Client):
 
         # Check if the dataframe has the same schema as the dataset
         schema = dataset_req.dsschema
-        try:
-            df = cast_df_to_schema(df, schema)
-        except Exception as e:
-            raise Exception(
-                f"Schema validation failed during data insertion to `{dataset_name}`: {str(e)}",
-            )
         if str(df[timestamp_field].dtype) != "datetime64[ns]":
             raise Exception(
                 400,
@@ -1141,13 +1148,17 @@ def proto_to_dtype(proto_dtype) -> str:
         return str(proto_dtype)
 
 
-def cast_df_to_schema(df: pd.DataFrame, dsschema: DSSchema) -> pd.DataFrame:
+def cast_df_to_schema(
+    df: pd.DataFrame, dsschema: DSSchema, pre_proc_cols: List[str] = []
+) -> pd.DataFrame:
     # Handle fields in keys and values
     fields = list(dsschema.keys.fields) + list(dsschema.values.fields)
     df = df.copy()
     df = df.reset_index(drop=True)
     for f in fields:
         if f.name not in df.columns:
+            if f.name in pre_proc_cols:
+                continue
             raise ValueError(
                 f"Field `{f.name}` not found in dataframe while logging to dataset"
             )
@@ -1160,6 +1171,8 @@ def cast_df_to_schema(df: pd.DataFrame, dsschema: DSSchema) -> pd.DataFrame:
                 f"Failed to cast data logged to column `{f.name}` of type `{proto_to_dtype(f.dtype)}`: {e}"
             )
     if dsschema.timestamp not in df.columns:
+        if dsschema.timestamp in pre_proc_cols:
+            return df
         raise ValueError(
             f"Timestamp column `{dsschema.timestamp}` not found in dataframe while logging to dataset"
         )

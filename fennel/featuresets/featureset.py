@@ -35,7 +35,7 @@ from fennel.lib.includes import TierSelector
 from fennel.lib.schema import (
     FENNEL_INPUTS,
     FENNEL_OUTPUTS,
-    validate_value_matches_type,
+    validate_val_with_dtype,
     fennel_get_optional_inner,
 )
 
@@ -627,9 +627,9 @@ class Featureset:
                     # Check that the default value has the right type
                     if extractor.derived_extractor_info.default is not None:
                         try:
-                            validate_value_matches_type(
-                                extractor.derived_extractor_info.default,
+                            validate_val_with_dtype(
                                 extractor.derived_extractor_info.field.dtype,
+                                extractor.derived_extractor_info.default,
                             )
                         except ValueError as e:
                             raise ValueError(

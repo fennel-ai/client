@@ -26,8 +26,8 @@ class PaymentFS:
         field=LastPaymentDS.is_debit_card, default=False
     )
     max_radar_score: float = feature(id=6).extract(
-        field=TransactionsDS.max_radar_score, default=0
+        field=TransactionsDS.max_radar_score, default=0.0
     )
     min_radar_score: float = feature(id=7).extract(
-        field=TransactionsDS.min_radar_score, default=0
+        field=TransactionsDS.min_radar_score, default=0.0
     )

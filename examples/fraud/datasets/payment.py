@@ -105,7 +105,7 @@ class LastPaymentDS:
                 "is_debit_card",
                 bool,
                 lambda df: df["debit_card"].apply(
-                    lambda x: 1 if pd.notna(x) else 0
+                    lambda x: True if pd.notna(x) else False
                 ),
             )
             .drop("debit_card", "customer_id", "account_id", "id")
@@ -131,7 +131,11 @@ class PaymentDS:
                 how="inner",
             )
             .drop("account_id", "id")
-            .assign("result_val", int, lambda df: df["result"] != "SUCCESS")
+            .assign(
+                "result_val",
+                int,
+                lambda df: (df["result"] != "SUCCESS").astype(int),
+            )
             .groupby("driver_id")
             .aggregate(
                 Count(
