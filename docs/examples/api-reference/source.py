@@ -75,7 +75,7 @@ class UserS3SourcedDataset:
 # docsnip snowflake_source
 snowflake = sources.Snowflake(
     name="snowflake_src",
-    account="nhb38793.us-west-2.snowflakecomputing.com",
+    account="VPECCVJ-MUB03765",
     warehouse="TEST",
     schema="PUBLIC",
     db_name="TEST_DB",
@@ -87,7 +87,7 @@ snowflake = sources.Snowflake(
 
 
 @source(
-    snowflake.table(table_name="user_dataset", cursor="update_time"),
+    snowflake.table(table_name="USER_DATASET", cursor="update_time"),
     every="24h",
 )
 @meta(owner="abc@email.com")
