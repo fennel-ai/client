@@ -128,13 +128,13 @@ Cloud [Service Account Key in JSON format](https://cloud.google.com/iam/docs/cre
 The following fields need to be defined:
 
 1. **`name`** - A name to identify the source. The name should be unique across all sources.
-2. **`host`** - The host domain of the Snowflake instance (must include the account, region and cloud environment, and
-   end with snowflakecomputing.com). Example: `accountname.us-east-2.aws.snowflakecomputing.com`.
+2. **`account`** - Snowflake account identifier. This is the first part of the URL used to access Snowflake. For example,
+   if the URL is `https://<account>.snowflakecomputing.com`, then the account is `<account>`. This is usually of the form
+   `<ORG_ID>-<ACCOUNT_ID>`. Refer to the [Snowflake documentation](https://docs.snowflake.com/en/user-guide/admin-account-identifier#finding-the-organization-and-account-name-for-an-account) to find the account identifier.
 3. **`role`** - The role that Fennel should use to access Snowflake.
 4. **`warehouse`** - The warehouse that Fennel should use to access Snowflake
 5. **`db_name`** - The database where the required data resides.
-6. **`schema`** - The default schema used as the target schema for all statements issued from the connection that do not
-   explicitly specify a schema name.
+6. **`src_schema`** - The schema where the required data table resides.
 7. **`username`**  - The username that should be used to access Snowflake. Please note that the username should have the
    required permissions to assume the role provided.
 8. **`password`** - The password associated with the username.
