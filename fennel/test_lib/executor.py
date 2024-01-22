@@ -454,7 +454,10 @@ class Executor(Visitor):
         if input_ret is None:
             return None
         df = input_ret.df
-        df = df.explode(obj.columns)
+        # Ignore the index when exploding the dataframe. This is because the index is not unique after exploding and
+        # we should reset it. This is the behavior in our engine (where we don't have an index) and the operations
+        # on the dataframe are not affected/associated by the index.
+        df = df.explode(obj.columns, ignore_index=True)
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
 
     def visitFirst(self, obj):
