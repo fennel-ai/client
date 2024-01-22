@@ -705,10 +705,25 @@ class Client:
         )
 
     def lookup(
-        self, dataset_name: str, keys: List[Dict[str, Any]], fields: List[str]
+        self,
+        dataset_name: str,
+        keys: List[Dict[str, Any]],
+        fields: List[str],
+        timestamps: List[Union[int, str]] = None,
     ) -> Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
         """
         Look up values of fields in a dataset given keys.
+        Example:
+              We have a dataset named Test which has two keyed fields named A and B,
+              other fields are timestamp and C. Suppose we want to lookup this dataset against
+              two values as of some time and now.
+
+              keys = [
+                {"A": "valueA1", "B": "valueB1"},
+                {"A": "valueA2", "B": "valueB2"}
+              ]
+              fields = ["C"]
+              timestamp = ["2019-02-01T00:00:00Z", "2019-02-01T00:00:00Z"] if want to do as of else None
 
         Parameters:
         dataset_name (str): The name of the dataset.
@@ -722,6 +737,8 @@ class Client:
             "keys": keys,
             "fields": fields,
         }
+        if timestamps:
+            req["timestamp"] = timestamps
         response = self._post_json(
             "{}/inspect/datasets/{}/lookup".format(V1_API, dataset_name), req
         )

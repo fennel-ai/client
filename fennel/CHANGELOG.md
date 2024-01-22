@@ -1,4 +1,7 @@
 # Changelog
+## [0.20.10] - 2024-01-22
+- Added capability in lookup method in client to support as-of lookups on keyed datasets.
+
 ## [0.20.9] - 2024-01-22
 - Add support for diff summaries and printing detailed diffs on error.
 
