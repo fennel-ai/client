@@ -1,8 +1,7 @@
 from datetime import datetime
-from fennel.sources.kinesis import at_timestamp
+from typing import Optional
 
 import pytest
-from typing import Optional
 
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
@@ -14,6 +13,7 @@ from fennel.sources import (
     Kafka,
     Kinesis,
 )
+from fennel.sources.kinesis import at_timestamp
 from fennel.sources.sources import BigQuery
 
 # noinspection PyUnresolvedReferences
@@ -334,7 +334,9 @@ def test_invalid_starting_from():
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-    assert "starting_from must be of type datetime" in str(e.value)
+    assert "'since' must be of type datetime - got <class 'str'>" == str(
+        e.value
+    )
 
 
 def test_invalid_s3_format():

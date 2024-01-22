@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.20.6] - 2024-01-22
+- Improved error reporting in case of invalid sources.
+
 ## [0.20.5] - 2024-01-19
 - Support `starting_from` on Snowflake data source
 

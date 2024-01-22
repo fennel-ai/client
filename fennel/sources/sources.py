@@ -54,7 +54,7 @@ def source(
         )
 
     if since is not None and not isinstance(since, datetime):
-        raise TypeError("starting_from must be of type datetime")
+        raise TypeError(f"'since' must be of type datetime - got {type(since)}")
 
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY
