@@ -105,9 +105,14 @@ class Client:
         )
         if response.headers.get("content-type") == "application/json":
             res_json = response.json()
-            if "diffs" in res_json:
-                diffs = res_json["diffs"]
-                for line in diffs:
+            if response.status_code != 200:
+                if "diffs" in res_json:
+                    diffs = res_json["diffs"]
+                    for line in diffs:
+                        print(line, end="")
+            elif "summary" in res_json:
+                summary = res_json["summary"]
+                for line in summary:
                     print(line, end="")
 
     def log(
