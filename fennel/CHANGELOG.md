@@ -1,5 +1,5 @@
 # Changelog
-## [0.20.8] - 2024-01-22
+## [0.20.9] - 2024-01-22
 - Add support for diff summaries and printing detailed diffs on error.
 
 ## [0.20.8] - 2024-01-22
