@@ -15,6 +15,7 @@ from fennel.sources import (
 )
 from fennel.sources.kinesis import at_timestamp
 from fennel.sources.sources import BigQuery
+
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
 
