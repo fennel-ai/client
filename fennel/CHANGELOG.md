@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.20.7] - 2024-01-22
+- Fix bug in explode operator in the mock client to ignore index of the dataframe. This mimics the behavior of our
+    backend engine.
+
 ## [0.20.6] - 2024-01-22
 - Improved error reporting in case of invalid sources.
 
