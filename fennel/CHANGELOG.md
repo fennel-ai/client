@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.20.8] - 2024-01-22
+- Do data casting in log only and do schema validation in assign
+
 ## [0.20.7] - 2024-01-22
 - Fix bug in explode operator in the mock client to ignore index of the dataframe. This mimics the behavior of our
     backend engine.

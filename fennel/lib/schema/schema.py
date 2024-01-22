@@ -500,8 +500,154 @@ def get_python_type_from_pd(type):
     return type
 
 
+def validate_val_with_dtype(dtype: Type, val):
+    proto_dtype = get_datatype(dtype)
+    validate_val_with_proto_dtype(proto_dtype, val)
+
+
+def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
+    """
+    The function validates that the value is of the correct type for the given dtype.
+
+    :param dtype:
+    :param val:
+    :return:
+    """
+    if dtype.optional_type != schema_proto.OptionalType():
+        return validate_val_with_proto_dtype(dtype.optional_type.of, val)
+    if dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
+        if type(val) is not int:
+            raise ValueError(
+                f"Expected type int, got {type(val)} for value {val}"
+            )
+    elif dtype == schema_proto.DataType(double_type=schema_proto.DoubleType()):
+        if type(val) is not float:
+            raise ValueError(
+                f"Expected type float, got {type(val)} for value {val}"
+            )
+    elif dtype == schema_proto.DataType(string_type=schema_proto.StringType()):
+        if type(val) is not str:
+            raise ValueError(
+                f"Expected type str, got {type(val)} for value {val}"
+            )
+    elif dtype == schema_proto.DataType(
+        timestamp_type=schema_proto.TimestampType()
+    ):
+        if type(val) is not datetime:
+            raise ValueError(
+                f"Expected type datetime, got {type(val)} for value {val}"
+            )
+    elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
+        if type(val) is not bool:
+            raise ValueError(
+                f"Expected type bool, got {type(val)} for value {val}"
+            )
+    elif dtype.embedding_type.embedding_size > 0:
+        if type(val) is not np.ndarray:
+            raise ValueError(
+                f"Expected type np.ndarray, got {type(val)} for value {val}"
+            )
+        if len(val) != dtype.embedding_type.embedding_size:
+            raise ValueError(
+                f"Expected embedding of size {dtype.embedding_type.embedding_size}, got {len(val)} for value {val}"
+            )
+    elif dtype.array_type.of != schema_proto.DataType():
+        if type(val) is not list and not isinstance(val, np.ndarray):
+            raise ValueError(
+                f"Expected type list, got {type(val)} for value {val}"
+            )
+        # Recursively check the type of each element in the list
+        for v in val:
+            validate_val_with_proto_dtype(dtype.array_type.of, v)
+    elif dtype.map_type.key != schema_proto.DataType():
+        if type(val) is not dict:
+            raise ValueError(
+                f"Expected type dict, got {type(val)} for value {val}"
+            )
+        # Recursively check the type of each element in the dict
+        # Check that all keys are strings
+        for k in val.keys():
+            if type(k) is not str:
+                raise ValueError(
+                    f"Expected type str, got {type(k)} for key {k}"
+                )
+        for v in val.values():
+            validate_val_with_proto_dtype(dtype.map_type.value, v)
+    elif dtype.between_type != schema_proto.Between():
+        bw_type = dtype.between_type
+        min_bound = None
+        max_bound = None
+        if bw_type.dtype == schema_proto.DataType(
+            int_type=schema_proto.IntType()
+        ):
+            if type(val) is not int:
+                raise ValueError(
+                    f"Expected type int, got {type(val)} for value {val}"
+                )
+            min_bound = bw_type.min.int
+            max_bound = bw_type.max.int
+        elif bw_type.dtype == schema_proto.DataType(
+            double_type=schema_proto.DoubleType()
+        ):
+            if type(val) is not float:
+                raise ValueError(
+                    f"Expected type float, got {type(val)} for value {val}"
+                )
+            min_bound = bw_type.min.float
+            max_bound = bw_type.max.float
+        if min_bound > val or max_bound < val:
+            raise ValueError(
+                f"Value {val} is out of bounds for between type {dtype}, bounds are"
+                f"[{min_bound}, {max_bound}]"
+            )
+    elif dtype.one_of_type != schema_proto.OneOf():
+        of_type = dtype.one_of_type
+        if of_type.of == schema_proto.DataType(int_type=schema_proto.IntType()):
+            if type(val) is not int:
+                raise ValueError(
+                    f"Expected type int, got {type(val)} for value {val}"
+                )
+            if val not in [int(x.int) for x in of_type.options]:
+                raise ValueError(
+                    f"Value {val} is not in options {of_type.options} for oneof type {dtype}"
+                )
+        elif of_type.of == schema_proto.DataType(
+            string_type=schema_proto.StringType()
+        ):
+            if type(val) is not str:
+                raise ValueError(
+                    f"Expected type str, got {type(val)} for value {val}"
+                )
+            if val not in [str(x.string) for x in of_type.options]:
+                raise ValueError(
+                    f"Value {val} is not in options {of_type.options} for oneof type {dtype}"
+                )
+    elif dtype.regex_type != schema_proto.RegexType():
+        if type(val) is not str:
+            raise ValueError(
+                f"Expected type str, got {type(val)} for value {val}"
+            )
+        if not re.match(dtype.regex_type.pattern, val):
+            raise ValueError(
+                f"Value {val} does not match regex {dtype.regex_type.pattern}"
+            )
+    elif dtype.struct_type != schema_proto.StructType():
+        if type(val) is not dict:
+            # TODO(Aditya): Actually compare the structs
+            return
+        # Recursively check the type of each element in the dict
+        for field in dtype.struct_type.fields:
+            if field.name not in val:
+                raise ValueError(
+                    f"Field {field.name} not found in struct {dtype}"
+                )
+            validate_val_with_proto_dtype(field.dtype, val[field.name])
+    else:
+        raise ValueError(f"Unsupported dtype {dtype}")
+
+
 # TODO(Aditya): Add support for nested schema checks for arrays and maps and structs
-def _validate_field_in_df(
+def validate_field_in_df(
     field: schema_proto.Field,
     df: pd.DataFrame,
     entity_name: str,
@@ -511,7 +657,6 @@ def _validate_field_in_df(
     dtype = field.dtype
     if df.shape[0] == 0:
         return
-
     if name not in df.columns:
         raise ValueError(
             f"Field `{name}` not found in dataframe during checking schema for "
@@ -521,7 +666,7 @@ def _validate_field_in_df(
 
     # Check for the optional type
     if dtype.optional_type != schema_proto.OptionalType():
-        return _validate_field_in_df(
+        return validate_field_in_df(
             field=schema_proto.Field(name=name, dtype=dtype.optional_type.of),
             df=df,
             entity_name=entity_name,
@@ -639,6 +784,7 @@ def _validate_field_in_df(
                     f"column in the dataframe is not a list. Error found during "
                     f"checking schema for `{entity_name}`."
                 )
+            validate_val_with_proto_dtype(dtype, row)
     elif dtype.map_type.key != schema_proto.DataType():
         if df[name].dtype != object:
             raise ValueError(
@@ -656,6 +802,7 @@ def _validate_field_in_df(
                     f"column in the dataframe is not a dict. (type = {type(row)}). "
                     f"Error found during checking schema for `{entity_name}`."
                 )
+
     elif dtype.between_type != schema_proto.Between():
         bw_type = dtype.between_type
         if bw_type.dtype == schema_proto.DataType(
@@ -770,6 +917,11 @@ def _validate_field_in_df(
                 f"column in the dataframe is not a dict. Error found during "
                 f"checking schema for `{entity_name}`."
             )
+        for i, row in df[name].items():
+            # Recursively check the type of each element in the dict
+            if type(row) is dict:
+                validate_val_with_proto_dtype(field.dtype, row)
+            # TODO(Aditya) : Fix the non dict case
     else:
         raise ValueError(f"Field `{name}` has unknown data type `{dtype}`.")
 
@@ -806,19 +958,6 @@ def is_hashable(dtype: Any) -> bool:
     return False
 
 
-def validate_value_matches_type(value: Any, dtype: Any) -> None:
-    # Create a dataframe with a single row and check the schema
-    # If the schema check fails, then the value does not match the type
-    df = pd.DataFrame({"0": [value]})
-    field = schema_proto.Field(name="0", dtype=get_datatype(dtype))
-    try:
-        _validate_field_in_df(field, df, "value")
-    except ValueError:
-        raise ValueError(
-            f"Value `{value}` does not match type `{dtype_to_string(dtype)}`"
-        )
-
-
 def data_schema_check(
     schema: schema_proto.DSSchema, df: pd.DataFrame, dataset_name=""
 ) -> List[ValueError]:
@@ -843,7 +982,7 @@ def data_schema_check(
     # Check schema of fields with the dataframe
     for field in fields:
         try:
-            _validate_field_in_df(field, df, dataset_name)
+            validate_field_in_df(field, df, dataset_name)
         except ValueError as e:
             exceptions.append(e)
         except Exception as e:

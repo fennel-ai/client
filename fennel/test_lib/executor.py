@@ -16,6 +16,8 @@ from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import to_includes_proto
 from fennel.test_lib.execute_aggregation import get_aggregated_df
 from fennel.test_lib.test_utils import cast_col_to_dtype
+from fennel.lib.schema.schema import validate_field_in_df
+import fennel.gen.schema_pb2 as schema_proto
 
 pd.set_option("display.max_columns", None)
 
@@ -428,10 +430,12 @@ class Executor(Visitor):
                 f"Error in assign node for column `{obj.column}` for pipeline "
                 f"`{self.cur_pipeline_name}`, {e}"
             )
+        # Check the schema of the column
         try:
-            df[obj.column] = cast_col_to_dtype(
-                df[obj.column], get_datatype(obj.output_type)
+            field = schema_proto.Field(
+                name=obj.column, dtype=get_datatype(obj.output_type)
             )
+            validate_field_in_df(field, df, self.cur_pipeline_name)
         except Exception as e:
             raise Exception(
                 f"Error in assign node for column `{obj.column}` for pipeline "

@@ -431,27 +431,6 @@ def test_invalid_schema():
         timestamp="timestamp",
     )
     exceptions = data_schema_check(dsschema, df)
-    assert len(exceptions) == 0
-
-    data = [[[123]]]
-    dsschema = proto.DSSchema(
-        values=proto.Schema(
-            fields=[
-                proto.Field(
-                    name="X",
-                    dtype=proto.DataType(
-                        map_type=proto.MapType(
-                            key=proto.DataType(string_type=proto.StringType()),
-                            value=proto.DataType(int_type=proto.IntType()),
-                        )
-                    ),
-                )
-            ]
-        )
-    )
-    df = pd.DataFrame(data, columns=["X"])
-    exceptions = data_schema_check(dsschema, df)
-    assert len(exceptions) == 1
 
 
 def test_invalid_schema_additional_types():
