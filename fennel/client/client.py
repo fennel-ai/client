@@ -3,6 +3,7 @@ import gzip
 import json
 import math
 import warnings
+from datetime import datetime
 from typing import Dict, Optional, Any, Set, List, Union, Tuple
 from urllib.parse import urljoin
 
@@ -709,7 +710,7 @@ class Client:
         dataset_name: str,
         keys: List[Dict[str, Any]],
         fields: List[str],
-        timestamps: List[Union[int, str]] = None,
+        timestamps: List[Union[int, str, datetime]] = None,
     ) -> Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
         """
         Look up values of fields in a dataset given keys.
@@ -738,6 +739,9 @@ class Client:
             "fields": fields,
         }
         if timestamps:
+            for idx in range(len(timestamps)):
+                if isinstance(timestamps[idx], datetime):
+                    timestamps[idx] = str(timestamps[idx])
             req["timestamp"] = timestamps
         response = self._post_json(
             "{}/inspect/datasets/{}/lookup".format(V1_API, dataset_name), req
