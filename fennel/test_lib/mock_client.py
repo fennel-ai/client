@@ -701,9 +701,9 @@ class MockClient(Client):
         except KeyError:
             raise KeyError(f"Dataset: {dataset_name} not found")
 
-        for field in fields:
-            if field not in dataset_info.fields:
-                raise ValueError(f"Field: {field} not in dataset")
+        for field_name in fields:
+            if field_name not in dataset_info.fields:
+                raise ValueError(f"Field: {field_name} not in dataset")
 
         fennel.datasets.datasets.dataset_lookup = partial(
             dataset_lookup_impl,

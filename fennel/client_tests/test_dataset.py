@@ -3175,5 +3175,5 @@ def test_lookup_as_of_time(client):
     assert len(found.tolist()) == 2
     assert found.tolist() == [False, True]
     assert len(data) == 2
-    assert data[0]["name"] == None
+    assert data[0]["name"] is None
     assert data[1]["name"] == "Monica"
