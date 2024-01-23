@@ -1,7 +1,7 @@
 # Changelog
 
 ## [0.20.15] - 2024-01-24
-- Make disorder and cdc non optional 
+- Make disorder and cdc non optional on a data source with reasonable defaults
 
 ## [0.20.14] - 2024-01-29
 - Support `since` for all source types in the client
