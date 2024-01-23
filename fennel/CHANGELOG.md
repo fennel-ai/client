@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.20.20] - 2024-02-14
+- Make `cdc` and `disorder` non-optional fields on a data source with reasonable default values.
+- remove `with_source` on the `@sources` decorator. This has been deprecated in favor using `tier=` on the data source
+  itself.
+
 ## [0.20.19] - 2024-01-30
 - Accept datetime as a valid value for fields in struct type
 
