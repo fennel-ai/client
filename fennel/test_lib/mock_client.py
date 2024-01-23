@@ -10,7 +10,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from typing import Callable, Dict, List, Tuple, Optional, Union
+from typing import Callable, Dict, List, Tuple, Optional, Union, Any
 
 import numpy as np
 import pandas as pd
@@ -688,6 +688,58 @@ class MockClient(Client):
     def extract_historical_cancel_request(self, request_id):
         return FakeResponse(404, "Extract historical features not supported")
 
+    def lookup(
+        self,
+        dataset_name: str,
+        keys: List[Dict[str, Any]],
+        fields: List[str],
+        timestamps: List[Union[int, str, datetime]] = None,
+    ):
+        try:
+            dataset = self.datasets[dataset_name]
+            dataset_info = self.dataset_info[dataset_name]
+        except KeyError:
+            raise KeyError(f"Dataset: {dataset_name} not found")
+
+        for field in fields:
+            if field not in dataset_info.fields:
+                raise ValueError(f"Field: {field} not in dataset")
+
+        fennel.datasets.datasets.dataset_lookup = partial(
+            dataset_lookup_impl,
+            self.data,
+            self.aggregated_datasets,
+            self.dataset_info,
+            [dataset_name],
+            None,
+        )
+
+        timestamps = (
+            pd.Series(timestamps).apply(lambda x: self._parse_datetime(x))
+            if timestamps
+            else pd.Series([datetime.now() for _ in range(len(keys))])
+        )
+
+        keys_dict = defaultdict(list)
+        for key in keys:
+            for key_name in key.keys():
+                keys_dict[key_name].append(key[key_name])
+
+        data, found = dataset.lookup(
+            timestamps,
+            **{name: pd.Series(value) for name, value in keys_dict.items()},
+        )
+
+        fennel.datasets.datasets.dataset_lookup = partial(
+            dataset_lookup_impl,
+            self.data,
+            self.aggregated_datasets,
+            self.dataset_info,
+            None,
+            None,
+        )
+        return data[fields].to_dict(orient="records"), found
+
     # --------------- Public MockClient Specific methods -------------------
 
     def sleep(self, seconds: float = 0):
@@ -700,6 +752,18 @@ class MockClient(Client):
         return False
 
     # ----------------- Private methods --------------------------------------
+    def _parse_datetime(self, value: Union[int, str, datetime]) -> datetime:
+        if isinstance(value, int):
+            try:
+                return pd.to_datetime(value, unit="s")
+            except ValueError:
+                try:
+                    return pd.to_datetime(value, unit="ms")
+                except ValueError:
+                    return pd.to_datetime(value, unit="us")
+        if isinstance(value, str):
+            return pd.to_datetime(value)
+        return value
 
     def _process_data_connector(self, dataset: Dataset, tier):
         connector = getattr(dataset, sources.SOURCE_FIELD)

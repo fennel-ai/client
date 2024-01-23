@@ -3123,3 +3123,57 @@ def test_dataset_with_pre_proc_log(client):
     assert df["country"].tolist() == ["USA", "Chile"]
     epoch = datetime(1970, 1, 1, 0, 0, 0)
     assert df["timestamp"].tolist() == [epoch, epoch]
+
+
+@pytest.mark.integration
+@mock
+def test_lookup_as_of_now(client):
+    client.sync(datasets=[UserInfoDataset])
+    data = [
+        [18232, "Ross", 24, "USA", 1668475993],
+        [18234, "Monica", 24, "USA", 1668475343],
+    ]
+    columns = ["user_id", "name", "age", "country", "timestamp"]
+    df = pd.DataFrame(data, columns=columns)
+
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
+    assert response.status_code == requests.codes.OK, response.json()
+
+    data, found = client.lookup(
+        "UserInfoDataset",
+        [{"user_id": 18232}],
+        fields=["name"],
+    )
+    assert len(found.tolist()) == 1
+    assert found.tolist() == [True]
+    assert len(data) == 1
+    assert data[0]["name"] == "Ross"
+
+
+@pytest.mark.integration
+@mock
+def test_lookup_as_of_time(client):
+    client.sync(datasets=[UserInfoDataset])
+    data = [
+        [18232, "Ross", 24, "USA", "2022-11-10 01:22:23"],
+        [18233, "Monica", 24, "USA", "2022-11-15 01:33:13"],
+        [18234, "Chandler", 24, "USA", "2022-11-16 01:22:23"],
+        [18235, "Rachel", 24, "USA", "2022-11-17 01:33:13"],
+    ]
+    columns = ["user_id", "name", "age", "country", "timestamp"]
+    df = pd.DataFrame(data, columns=columns)
+
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
+    assert response.status_code == requests.codes.OK, response.json()
+
+    data, found = client.lookup(
+        "UserInfoDataset",
+        [{"user_id": 18232}, {"user_id": 18233}],
+        fields=["name"],
+        timestamps=["2022-11-09 01:22:23", "2022-11-16 01:33:13"],
+    )
+    assert len(found.tolist()) == 2
+    assert found.tolist() == [False, True]
+    assert len(data) == 2
+    assert data[0]["name"] == None
+    assert data[1]["name"] == "Monica"
