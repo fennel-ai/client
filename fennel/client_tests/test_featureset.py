@@ -327,7 +327,7 @@ class TestDerivedExtractor(unittest.TestCase):
         flight_data = {
             "id": [4032, 555],
             "ts": [now, now],
-            "v_cruising": [Velocity(400, 180), Velocity(550, 90)],
+            "v_cruising": [Velocity(400.0, 180), Velocity(550.0, 90)],
             "layout": [
                 {"economy": 180},
                 {"first": 8, "business": 24, "economy": 300},

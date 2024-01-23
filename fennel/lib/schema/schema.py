@@ -516,7 +516,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
     if dtype.optional_type != schema_proto.OptionalType():
         return validate_val_with_proto_dtype(dtype.optional_type.of, val)
     if dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
-        if type(val) is not int:
+        if type(val) is not int and type(val) is not np.int64:
             raise ValueError(
                 f"Expected type int, got {type(val)} for value {val}"
             )
@@ -533,7 +533,11 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
     elif dtype == schema_proto.DataType(
         timestamp_type=schema_proto.TimestampType()
     ):
-        if type(val) is not datetime:
+        if (
+            type(val) is not datetime
+            and type(val) is not np.datetime64
+            and type(val) is not pd.Timestamp
+        ):
             raise ValueError(
                 f"Expected type datetime, got {type(val)} for value {val}"
             )
@@ -543,7 +547,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
                 f"Expected type bool, got {type(val)} for value {val}"
             )
     elif dtype.embedding_type.embedding_size > 0:
-        if type(val) is not np.ndarray:
+        if not isinstance(val, np.ndarray) and not isinstance(val, list):
             raise ValueError(
                 f"Expected type np.ndarray, got {type(val)} for value {val}"
             )
@@ -560,7 +564,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
         for v in val:
             validate_val_with_proto_dtype(dtype.array_type.of, v)
     elif dtype.map_type.key != schema_proto.DataType():
-        if type(val) is not dict:
+        if type(val) is not dict and type(val) is not frozendict:
             raise ValueError(
                 f"Expected type dict, got {type(val)} for value {val}"
             )
@@ -580,7 +584,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
         if bw_type.dtype == schema_proto.DataType(
             int_type=schema_proto.IntType()
         ):
-            if type(val) is not int:
+            if type(val) is not int and type(val) is not np.int64:
                 raise ValueError(
                     f"Expected type int, got {type(val)} for value {val}"
                 )
@@ -603,7 +607,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
     elif dtype.one_of_type != schema_proto.OneOf():
         of_type = dtype.one_of_type
         if of_type.of == schema_proto.DataType(int_type=schema_proto.IntType()):
-            if type(val) is not int:
+            if type(val) is not int and type(val) is not np.int64:
                 raise ValueError(
                     f"Expected type int, got {type(val)} for value {val}"
                 )
@@ -632,8 +636,15 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
                 f"Value {val} does not match regex {dtype.regex_type.pattern}"
             )
     elif dtype.struct_type != schema_proto.StructType():
-        if type(val) is not dict:
-            # TODO(Aditya): Actually compare the structs
+        if type(val) is not dict and type(val) is not frozendict:
+            for field in dtype.struct_type.fields:
+                if not hasattr(val, field.name):
+                    raise ValueError(
+                        f"Field {field.name} not found in struct {dtype}"
+                    )
+                validate_val_with_proto_dtype(
+                    field.dtype, getattr(val, field.name)
+                )
             return
         # Recursively check the type of each element in the dict
         for field in dtype.struct_type.fields:
@@ -646,7 +657,6 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
         raise ValueError(f"Unsupported dtype {dtype}")
 
 
-# TODO(Aditya): Add support for nested schema checks for arrays and maps and structs
 def validate_field_in_df(
     field: schema_proto.Field,
     df: pd.DataFrame,
@@ -802,6 +812,7 @@ def validate_field_in_df(
                     f"column in the dataframe is not a dict. (type = {type(row)}). "
                     f"Error found during checking schema for `{entity_name}`."
                 )
+            validate_val_with_proto_dtype(dtype, row)
 
     elif dtype.between_type != schema_proto.Between():
         bw_type = dtype.between_type
@@ -918,10 +929,7 @@ def validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
-            # Recursively check the type of each element in the dict
-            if type(row) is dict:
-                validate_val_with_proto_dtype(field.dtype, row)
-            # TODO(Aditya) : Fix the non dict case
+            validate_val_with_proto_dtype(dtype, row)
     else:
         raise ValueError(f"Field `{name}` has unknown data type `{dtype}`.")
 

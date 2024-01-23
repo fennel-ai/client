@@ -431,6 +431,113 @@ def test_invalid_schema():
         timestamp="timestamp",
     )
     exceptions = data_schema_check(dsschema, df)
+    assert len(exceptions) == 2
+
+    @struct
+    class Profile:
+        name: str
+        age: int
+
+    data = [
+        [
+            18232,
+            np.array([1, 2, 3]),
+            1,
+            ["aa", "bb"],
+            {"name": "young_guy", "age": 10},
+            now,
+        ],
+        [
+            18234,
+            np.array([1, 2.2, 0.213, 0.343]),
+            9,
+            ["aa", "bb"],
+            {"name": "old_guy", "age": 90},
+            now,
+        ],
+        [
+            18934,
+            [1, 2.2, 0.213, 0.343],
+            2,
+            ["aa", "bb", 1],
+            Profile(name="ghost", age="11"),
+            now,
+        ],
+    ]
+    columns = [
+        "doc_id",
+        "bert_embedding",
+        "num_words",
+        "words",
+        "profile",
+        "timestamp",
+    ]
+    dsschema = proto.DSSchema(
+        keys=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="doc_id",
+                    dtype=proto.DataType(int_type=proto.IntType()),
+                )
+            ]
+        ),
+        values=proto.Schema(
+            fields=[
+                proto.Field(
+                    name="bert_embedding",
+                    dtype=proto.DataType(
+                        embedding_type=proto.EmbeddingType(embedding_size=4)
+                    ),
+                ),
+                proto.Field(
+                    name="num_words",
+                    dtype=proto.DataType(
+                        one_of_type=proto.OneOf(
+                            of=proto.DataType(int_type=proto.IntType()),
+                            options=[
+                                proto.Value(int=1),
+                                proto.Value(int=2),
+                            ],
+                        )
+                    ),
+                ),
+                proto.Field(
+                    name="words",
+                    dtype=proto.DataType(
+                        array_type=proto.ArrayType(
+                            of=proto.DataType(string_type=proto.StringType())
+                        )
+                    ),
+                ),
+                proto.Field(
+                    name="profile",
+                    dtype=proto.DataType(
+                        struct_type=proto.StructType(
+                            name="Profile",
+                            fields=[
+                                proto.Field(
+                                    name="name",
+                                    dtype=proto.DataType(
+                                        string_type=proto.StringType()
+                                    ),
+                                ),
+                                proto.Field(
+                                    name="age",
+                                    dtype=proto.DataType(
+                                        int_type=proto.IntType()
+                                    ),
+                                ),
+                            ],
+                        )
+                    ),
+                ),
+            ]
+        ),
+        timestamp="timestamp",
+    )
+    df = pd.DataFrame(data, columns=columns)
+    exceptions = data_schema_check(dsschema, df)
+    assert len(exceptions) == 4
 
 
 def test_invalid_schema_additional_types():
