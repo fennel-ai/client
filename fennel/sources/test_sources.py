@@ -711,7 +711,10 @@ def test_multiple_sources():
 
     @meta(owner="test@test.com")
     @source(
-        bigquery.table("users_bq", cursor="added_on"), every="1h", disorder="2h"
+        bigquery.table("users_bq", cursor="added_on"),
+        every="1h",
+        disorder="2h",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
     class UserInfoDatasetBigQuery:
@@ -749,6 +752,7 @@ def test_multiple_sources():
         "disorder": "7200s",
         "cursor": "added_on",
         "timestampField": "timestamp",
+        "startingFrom": "2021-08-10T00:00:00Z",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -769,7 +773,11 @@ def test_multiple_sources():
     )
 
     @meta(owner="test@test.com")
-    @source(mysql.table("users_mysql", cursor="added_on"), every="1h")
+    @source(
+        mysql.table("users_mysql", cursor="added_on"),
+        every="1h",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
     @dataset
     class UserInfoDatasetMySql:
         user_id: int = field(key=True)
@@ -808,6 +816,7 @@ def test_multiple_sources():
         "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
+        "startingFrom": "2021-08-10T00:00:00Z",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -830,7 +839,10 @@ def test_multiple_sources():
     )
 
     @meta(owner="test@test.com")
-    @source(kafka.topic("test_topic"))
+    @source(
+        kafka.topic("test_topic"),
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
     @dataset
     class UserInfoDatasetKafka:
         user_id: int = field(key=True)
@@ -846,21 +858,34 @@ def test_multiple_sources():
     view = InternalTestClient()
     view.add(UserInfoDatasetKafka)
     sync_request = view._get_sync_request_proto()
-    extdb_request = sync_request.extdbs[0]
-    e = {
-        "name": "kafka_src",
-        "kafka": {
-            "bootstrap_servers": "localhost:9092",
-            "security_protocol": "PLAINTEXT",
-            "sasl_mechanism": "PLAIN",
-            "sasl_plain_username": "test",
-            "sasl_plain_password": "test",
-            "enable_ssl_certificate_verification": False,
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "kafkaTopic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrapServers": "localhost:9092",
+                        "securityProtocol": "PLAINTEXT",
+                        "saslMechanism": "PLAIN",
+                        "saslPlainUsername": "test",
+                        "saslPlainPassword": "test",
+                        "enableSslCertificateVerification": False,
+                    },
+                },
+                "topic": "test_topic",
+                "format": {
+                    "json": {},
+                },
+            }
         },
+        "dataset": "UserInfoDatasetKafka",
+        "disorder": "1209600s",
+        "startingFrom": "2021-08-10T00:00:00Z",
     }
-    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
     )
 
     avro = Avro(
@@ -877,6 +902,7 @@ def test_multiple_sources():
             format=avro,
         ),
         cdc="debezium",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
     class UserInfoDatasetKafka:
@@ -924,6 +950,7 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetKafka",
         "disorder": "1209600s",
         "cdc": "Debezium",
+        "startingFrom": "2021-08-10T00:00:00Z",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -932,7 +959,8 @@ def test_multiple_sources():
 
     @meta(owner="test@test.com")
     @source(
-        kinesis.stream("test_stream", init_position="latest", format="json")
+        kinesis.stream("test_stream", init_position="latest", format="json"),
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
     class UserInfoDatasetKinesis:
@@ -949,15 +977,28 @@ def test_multiple_sources():
     view = InternalTestClient()
     view.add(UserInfoDatasetKinesis)
     sync_request = view._get_sync_request_proto()
-    extdb_request = sync_request.extdbs[0]
-    e = {
-        "name": "kinesis_src",
-        "kinesis": {"roleArn": "arn:aws:iam::123456789012:role/test-role"},
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "kinesisStream": {
+                "streamArn": "test_stream",
+                "initPosition": "LATEST",
+                "format": "json",
+                "db": {
+                    "name": "kinesis_src",
+                    "kinesis": {
+                        "roleArn": "arn:aws:iam::123456789012:role/test-role"
+                    },
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetKinesis",
+        "disorder": "1209600s",
+        "startingFrom": "2021-08-10T00:00:00Z",
     }
-
-    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
     )
 
     @meta(owner="test@test.com")

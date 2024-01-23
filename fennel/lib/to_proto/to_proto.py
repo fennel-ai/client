@@ -817,9 +817,9 @@ def _bigquery_conn_to_source_proto(
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
-            starting_from=_to_starting_from_proto(connector.since),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
+            starting_from=_to_starting_from_proto(connector.since),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
