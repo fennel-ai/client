@@ -1260,32 +1260,6 @@ class Dataset(_Node[T]):
     def signature(self):
         return self._sign
 
-    def with_source(
-        self,
-        conn: DataConnector,
-        every: Optional[Duration] = None,
-        starting_from: Optional[datetime.datetime] = None,
-        disorder: Optional[Duration] = None,
-        pre_proc: Optional[Dict[str, PreProcValue]] = None,
-        tiers: Optional[Union[str, List[str]]] = None,
-    ):
-        logger = logging.getLogger(__name__)
-        logger.warning(
-            "with_source is deprecated. Please use tier selector instead."
-        )
-        if len(self._pipelines) > 0:
-            raise Exception(
-                f"Dataset {self._name} is contains a pipeline. "
-                f"Cannot upsert source for a dataset with pipelines."
-            )
-        ds_copy = copy.deepcopy(self)
-        if hasattr(ds_copy, sources.SOURCE_FIELD):
-            delattr(ds_copy, sources.SOURCE_FIELD)
-        src_fn = source(
-            conn, every, starting_from, disorder, None, tiers, pre_proc
-        )
-        return src_fn(ds_copy)
-
     def dsschema(self):
         return DSSchema(
             keys={f.name: get_pd_dtype(f.dtype) for f in self._fields if f.key},

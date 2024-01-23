@@ -2,6 +2,8 @@
 
 ## [0.20.15] - 2024-01-24
 - Make disorder and cdc non optional on a data source with reasonable defaults
+- remove `with_source` on the `@sources` decorator. This has been deprecated in favor using `tier=` on the data source
+  itself.
 
 ## [0.20.14] - 2024-01-29
 - Support `since` for all source types in the client

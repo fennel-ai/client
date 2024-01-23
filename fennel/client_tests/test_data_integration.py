@@ -21,12 +21,14 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="xiao@fennel.ai")
+@source(webhook.endpoint("MovieInfo"), tier="dev")
 @source(
     s3.bucket(
         bucket_name="fennel-demo-data",
         prefix="movielens_sampled/movies_timestamped.csv",
     ),
     every="1h",
+    tier="prod",
 )
 @dataset
 class MovieInfo103:
@@ -46,12 +48,8 @@ class TestMovieInfo103(unittest.TestCase):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
-        mock_MovieInfo103 = MovieInfo103.with_source(
-            webhook.endpoint("MovieInfo103")
-        )
-
         # Sync the dataset
-        client.sync(datasets=[mock_MovieInfo103])
+        client.sync(datasets=[MovieInfo103], tier="dev")
         client.sleep()
         t = datetime.fromtimestamp(1672858163)
         data = [
@@ -68,7 +66,7 @@ class TestMovieInfo103(unittest.TestCase):
         columns = ["movieId", "title", "genres", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
 
-        response = client.log("fennel_webhook", "MovieInfo103", df)
+        response = client.log("fennel_webhook", "MovieInfo", df)
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do some lookups
@@ -107,7 +105,7 @@ class TestMovieInfo103(unittest.TestCase):
     def test_s3_data_integration_source(self, client):
         """Same test as test_log_to_MovieInfo103 but with an S3 source."""
         # Sync the dataset
-        client.sync(datasets=[MovieInfo103])
+        client.sync(datasets=[MovieInfo103], tier="dev")
         client.sleep()
 
         # Time for data_integration to do its magic
