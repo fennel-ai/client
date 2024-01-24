@@ -60,6 +60,14 @@ where max out of order delay is specified. This max out of order delay of a sour
 is called `disorder` in Fennel, and once specified at source level, is respected
 automatically by each downstream pipeline. 
 
+### Since
+The `since` field in the source provides a way to ingest data from a specific time onwards from the source. 
+
+Typically, the data sources could contain data from a long time ago, but based on the use case, we may only want to 
+ingest data from a specific time onwards. The `since` field allows us to do that. 
+
+The `since` field is a `datetime` instance.
+
 ### Pre-processing
 The `preproc` field in the source provides a way to ingest a column that doesn't exist with a default value or to base the value of that column on another column (or aliasing a column). The Fennel ingestion engine will pre-process the data based on the `preproc` map during the ingestion time of the source, ensuring that the data lands in the correct field.
 
