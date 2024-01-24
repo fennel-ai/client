@@ -97,6 +97,8 @@ ith
 jdbc
 JSON
 json
+JSONL
+jsonl
 JSX
 JVM
 kafka

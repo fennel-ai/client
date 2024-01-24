@@ -452,10 +452,17 @@ class S3Connector(DataConnector):
         self.format = format
         self.presorted = presorted
 
-        if self.format not in ["csv", "json", "parquet", "hudi", "delta"]:
+        if self.format not in [
+            "csv",
+            "json",
+            "jsonl",
+            "parquet",
+            "hudi",
+            "delta",
+        ]:
             raise (
                 ValueError(
-                    "format must be either csv, json, parquet, hudi, delta"
+                    "format must be either csv, json, jsonl, parquet, hudi, delta"
                 )
             )
         if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
