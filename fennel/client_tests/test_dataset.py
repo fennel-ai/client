@@ -159,7 +159,8 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_simple_drop_null(self, client):
         # Sync the dataset
-        client.sync(datasets=[UserInfoDataset, UserInfoDatasetDerivedDropnull])
+        response = client.sync(datasets=[UserInfoDataset, UserInfoDatasetDerivedDropnull])
+        assert response.status_code == requests.codes.OK, response.json()
         now = datetime.now()
         data = [
             [18232, "Ross", 32, "USA", now],
@@ -284,8 +285,8 @@ class TestDataset(unittest.TestCase):
         ]
         df = pd.DataFrame(data, columns=columns)
         if client.is_integration_client():
-            response = client.log_to_dataset("UserInfoDataset", df)
-            assert response.status_code == requests.codes.BAD_REQUEST
+            response = client.log("fennel_webhook", "UserInfoDataset", df)
+            assert response.status_code == requests.codes.SERVER_ERROR
             assert (
                 response.json()["error"].strip()
                 == """error: input parse error: trailing characters at line 1 column 3""".strip()
@@ -383,8 +384,8 @@ class TestDataset(unittest.TestCase):
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
         if client.is_integration_client():
-            response = client.log_to_dataset("UserInfoDataset", df)
-            assert response.status_code == requests.codes.BAD_REQUEST
+            response = client.log("fennel_webhook", "UserInfoDataset", df)
+            assert response.status_code == requests.codes.SERVER_ERROR
             assert len(response.json()["error"]) > 0
         else:
             with pytest.raises(Exception):
