@@ -1,4 +1,7 @@
 # Changelog
+## [0.20.11] - 2024-01-24
+- Enable JSONL (newline-delimitted json) as an allowed format for S3 
+
 ## [0.20.10] - 2024-01-22
 - Added capability in lookup method in client to support as-of lookups on keyed datasets.
 
