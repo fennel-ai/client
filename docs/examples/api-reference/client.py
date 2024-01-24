@@ -125,6 +125,14 @@ class TestExtractorDAGResolution(unittest.TestCase):
         )
         # /docsnip
 
+        # docsnip lookup
+        response = client.lookup(
+            dataset_name="UserInfoDataset",
+            keys=[{"user_id": 18232}],
+            fields=["name"],
+        )
+        # /docsnip
+
         with self.assertRaises(NotImplementedError) as e:
             # docsnip extract_historical_s3
             from fennel.sources import S3
