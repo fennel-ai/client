@@ -1199,7 +1199,7 @@ def mock(test_func):
         ):
             mode = os.environ.get("FENNEL_TEST_MODE", "inmemory")
             print("Running rust client tests in mode:", mode)
-            client = IntegrationClient(mode)
+            client = IntegrationClient()
             f = test_func(*args, **kwargs, client=client)
         return f
 

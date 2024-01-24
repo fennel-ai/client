@@ -68,11 +68,11 @@ class TestDataset(unittest.TestCase):
         ]
         df = pd.DataFrame(data)
         if client.is_integration_client():
-            response = client.log_to_dataset("UserInfoDataset", df)
-            assert response.status_code == requests.codes.BAD
+            response = client.log("fennel_webhook", "UserInfoDataset", df)
+            assert response.status_code == requests.codes.SERVER_ERROR
             assert (
                 response.json()["error"]
-                == """error: input parse error: value 123 does not match between type Between(Between { dtype: Int, min: Int(0), max: Int(100), strict_min: false, strict_max: false })"""
+                == """error: value Int(123) does not match between type Between(Between { dtype: Int, min: Int(0), max: Int(100), strict_min: false, strict_max: false })"""
             )
         else:
             with pytest.raises(Exception) as e:
@@ -98,11 +98,11 @@ class TestDataset(unittest.TestCase):
         ]
         df = pd.DataFrame(data)
         if client.is_integration_client():
-            response = client.log_to_dataset("UserInfoDataset", df)
-            assert response.status_code == requests.codes.BAD
+            response = client.log("fennel_webhook", "UserInfoDataset", df)
+            assert response.status_code == requests.codes.SERVER_ERROR
             assert (
                 response.json()["error"]
-                == """error: input parse error: expected string in [String("male"), String("female")], but got transgender"""
+                == """error: expected string in [String("male"), String("female")], but got transgender"""
             )
         else:
             with pytest.raises(Exception) as e:
@@ -126,11 +126,11 @@ class TestDataset(unittest.TestCase):
         ]
         df = pd.DataFrame(data)
         if client.is_integration_client():
-            response = client.log_to_dataset("UserInfoDataset", df)
-            assert response.status_code == requests.codes.BAD
+            response = client.log("fennel_webhook", "UserInfoDataset", df)
+            assert response.status_code == requests.codes.SERVER_ERROR
             assert (
                 response.json()["error"]
-                == """error: input parse error: expected regex string [a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+ to match, but got johnfennel"""
+                == """error: expected regex string "[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+" to match, but got johnfennel"""
             )
         else:
             with pytest.raises(Exception) as e:
