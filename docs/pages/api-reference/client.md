@@ -175,3 +175,35 @@ The response format of this function and the `extract_historical` function are i
   * completion rate.
   * failure rate.
   * status
+
+
+### **lookup**
+
+The `lookup` method allows users to lookup values from keyed datasets.&#x20;
+
+**Arguments:**
+
+* `dataset_name: str`: The name of the dataset against which we want to lookup values.
+* `keys: List[Dict[str, Any]]` : List of dict where each dict can be thought of as one entity for which we want to lookup. 
+* `fields: List[str]`: List of field names in the dataset that we want to lookup.
+* `timestamps: List[Union[int, str, datetime]]` - Pass this argument if we want to lookup as of a specific time. The length of this list should be exactly equal to length of keys argument. Here string can be representation of datetime supported by pd.to_datetime() and int can be epoch in either seconds, milliseconds or microseconds.
+
+**Example:**
+
+```python
+client = Client(<URL>)
+
+@meta(owner="test@test.com")
+@source(webhook.endpoint("UserInfoDataset"))
+@dataset
+class UserInfoDataset:
+    user_id: int = field(key=True)
+    timestamp: datetime = field(timestamp=True)
+    name: str
+    .. few more fields
+```
+
+<pre snippet="api-reference/client#lookup"></pre>
+
+
+****
