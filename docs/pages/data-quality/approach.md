@@ -6,10 +6,10 @@ status: 'published'
 
 # Approach
 
-Maintaining correctness of data and features is a top three [design goal](/) for
+Maintaining correctness of data and features is a top level [design goal](/) for
 Fennel. 
 
-While Fennel has several diagnostic and monitoring levers too, unlike many other
+While Fennel has best-in-class diagnostic and monitoring levers too, unlike many other
 systems out there, Fennel's approach leans heavily on preventive measures
 that prevent failures from happening in the first places.
 
