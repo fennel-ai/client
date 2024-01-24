@@ -77,7 +77,6 @@ snowflake = sources.Snowflake(
     name="snowflake_src",
     account="VPECCVJ-MUB03765",
     warehouse="TEST",
-    schema="PUBLIC",
     db_name="TEST_DB",
     src_schema="PUBLIC",
     role="ACCOUNTADMIN",
