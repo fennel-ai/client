@@ -109,17 +109,22 @@ class Client:
             False,
             300,
         )
+        code = response.status_code
         if response.headers.get("content-type") == "application/json":
             res_json = response.json()
-            if response.status_code != 200:
-                if "diffs" in res_json:
-                    diffs = res_json["diffs"]
-                    for line in diffs:
-                        print(line, end="")
-            elif "summary" in res_json:
+        else:
+            res_json = {}
+        if code == requests.codes.OK:
+            if "summary" in res_json:
                 summary = res_json["summary"]
                 for line in summary:
                     print(line, end="")
+        else:
+            if "diff" in res_json:
+                diff = res_json["diff"]
+                for line in diff:
+                    print(line, end="")
+            raise Exception("sync failed: {}".format(response.text))
 
     def log(
         self,
