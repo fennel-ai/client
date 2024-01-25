@@ -10,12 +10,21 @@ from typing import List, Optional, Set, Tuple, Union
 from fennel.lib.schema import parse_json
 from fennel.utils import to_columnar_json
 from fennel.client import Client
-from fennel_client_lib import HttpServer  # type: ignore
+
+try:
+    from fennel_client_lib import HttpServer  # type: ignore
+except ImportError:
+    pass
 from fennel._vendor.requests import Response  # type: ignore
 
 
 class IntegrationClient(Client):
-    def __init__(self, url: str | None = None, branch: str | None = None, token: str | None = None):
+    def __init__(
+        self,
+        url: str | None = None,
+        branch: str | None = None,
+        token: str | None = None,
+    ):
         url = url or "dummy"
         token = token or "test-token"
         super().__init__(url, branch, token)
@@ -70,6 +79,6 @@ class FakeResponse(Response):
             self.headers = {"Content-Type": "application/json"}
         else:
             self._ok = False
-            self._content = json.dumps({"error": f"{content}"}, indent=2).encode(
-                "utf-8"
-            )
+            self._content = json.dumps(
+                {"error": f"{content}"}, indent=2
+            ).encode("utf-8")

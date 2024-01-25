@@ -300,11 +300,9 @@ def _transform_df(
 
 class MockClient(Client):
     def __init__(self):
-        map of branch -> BRanch
-
-
         self.dataset_requests: Dict[str, CoreDataset] = {}
         self.features_for_fs: Dict[str, List[ProtoFeature]]
+        self.featureset_requests: Dict[str, CoreFeatureset] = {}
         self.extractor_funcs: Dict[str, Callable] = {}
         self.dataset_info: Dict[str, _DatasetInfo] = {}
         self.datasets: Dict[str, Dataset] = {}
@@ -1270,9 +1268,3 @@ def mock(test_func):
         return f
 
     return wrapper
-
-
-Rahul 26 t = 1 t = 5
-Rahul 30 t = 5
-Rahul 30 t = 12
-
