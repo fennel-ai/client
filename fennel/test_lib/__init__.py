@@ -1,5 +1,8 @@
-from fennel.test_lib.integration_client import IntegrationClient
-from fennel.test_lib.local_client import LocalClient
+try:
+    from fennel.test_lib.integration_client import IntegrationClient
+    from fennel.test_lib.local_client import LocalClient
+except ImportError:
+    pass
 from fennel.test_lib.mock_client import (
     mock,
     MockClient,
