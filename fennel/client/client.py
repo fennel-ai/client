@@ -251,15 +251,13 @@ class Client:
 
     # ----------------------- Branch API's -----------------------------------
 
-    def empty_branch(self, name: str):
+    def init_branch(self, name: str):
         """
         Create a new empty branch.
 
         Parameters:
         name (str): The name of the branch to create.
 
-        Returns:
-        Dict[str, Any]: A dictionary containing the branch name and the status of the request.
         """
         req = {"branch_name": name}
         return self._post_json("{}/branch/create".format(V1_API), req)
@@ -271,9 +269,6 @@ class Client:
         Parameters:
         name (str): The name of the branch to create.
         from_branch (str): The name of the branch to clone from.
-
-        Returns:
-        Dict[str, Any]: A dictionary containing the branch name and the status of the request.
         """
         req = {"branch_name": name, "from_branch": from_branch}
         return self._post_json("{}/branch/clone".format(V1_API), req)
@@ -284,22 +279,16 @@ class Client:
 
         Parameters:
         name (str): The name of the branch to delete.
-
-        Returns:
-        Dict[str, Any]: A dictionary containing the branch name and the status of the request.
         """
         req = {"branch_name": name}
         return self._post_json("{}/branch/delete".format(V1_API), req)
 
-    def list_branches(self, user: Optional[str] = None):
+    def list_branches(self) -> List[str]:
         """
         List all branches that the user has access to.
 
-        Parameters:
-        user (Optional[str]): The name of the user to list branches for. If not provided, the branches for all users will be listed.
-
         Returns:
-        Dict[str, Any]: A dictionary containing the branch name and the status of the request.
+        List[str]: A list of branch names.
         """
         req = {"user": user}
         return self._get("{}/branches".format(V1_API), req)
