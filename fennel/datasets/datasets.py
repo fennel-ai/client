@@ -809,16 +809,14 @@ class WindowOperator(_Node):
 
 
 @overload
-def dataset(
+def dataset(  # noqa: E704
     *,
     history: Optional[Duration] = DEFAULT_RETENTION,
-) -> Callable[[Type[T]], Dataset]:
-    ...
+) -> Callable[[Type[T]], Dataset]: ...
 
 
 @overload
-def dataset(cls: Type[T]) -> Dataset:
-    ...
+def dataset(cls: Type[T]) -> Dataset: ...  # noqa: E704
 
 
 def dataset(

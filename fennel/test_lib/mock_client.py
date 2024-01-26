@@ -922,9 +922,9 @@ class MockClient(Client):
             features = self.features_for_fs[extractor.featureset]
             feature_schema = {}
             for feature in features:
-                feature_schema[
-                    f"{extractor.featureset}.{feature.name}"
-                ] = feature.dtype
+                feature_schema[f"{extractor.featureset}.{feature.name}"] = (
+                    feature.dtype
+                )
             fields = []
             for feature_str in extractor.output_features:
                 feature_str = f"{extractor.featureset}.{feature_str}"
