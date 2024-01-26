@@ -1,5 +1,5 @@
 # Changelog
-## [0.20.12] - 2024-01-26
+## [0.20.13] - 2024-01-26
 - Deprecate JSONL as a standalone format. format=json should be used for
   newline-delimitted json
 
