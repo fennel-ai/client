@@ -119,9 +119,9 @@ class IntegrationClient:
         for output_feature in output_feature_list:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn_)
-                output_feature_name_to_type[
-                    output_feature.fqn()
-                ] = output_feature.dtype
+                output_feature_name_to_type[output_feature.fqn()] = (
+                    output_feature.dtype
+                )
             elif isinstance(output_feature, Featureset):
                 output_feature_names.extend(
                     [f.fqn_ for f in output_feature.features]
