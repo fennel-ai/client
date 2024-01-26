@@ -1,4 +1,8 @@
 # Changelog
+## [0.20.12] - 2024-01-26
+- Deprecate JSONL as a standalone format. format=json should be used for
+  newline-delimitted json
+
 ## [0.20.11] - 2024-01-24
 - Enable JSONL (newline-delimitted json) as an allowed format for S3 
 
