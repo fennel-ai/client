@@ -92,3 +92,14 @@ single field level. To ensure code ownership, Fennel requires every dataset to
 have an owner. Here is an example:
 
 <pre snippet="datasets/datasets#metaflags_dataset"></pre>
+
+Typing the same owner name again and again for each dataset can get somewhat
+repetitive. To prevent that, you can also specify an owner at the module level
+by specifying `__owner__` and all the datasets in that module inherit
+this owner. Example:
+
+<pre snippet="datasets/datasets#metaflags_dataset_default_owners"></pre>
+
+In this example, datasets `UserBMI` and `UserLocation` both inherit the owner
+from the module level `__owner__` whereas dataset `UserName` overrides it by
+providing an explicit meta flag.

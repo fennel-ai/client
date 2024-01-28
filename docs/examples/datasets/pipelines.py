@@ -16,9 +16,10 @@ from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
 
+__owner__ = "data-eng@fennel.ai"
+
 
 # docsnip data_sets
-@meta(owner="data-eng-oncall@fennel.ai")
 @source(webhook.endpoint("User"))
 @dataset
 class User:
@@ -28,7 +29,6 @@ class User:
     signup_time: datetime = field(timestamp=True)
 
 
-@meta(owner="data-eng-oncall@fennel.ai")
 @source(webhook.endpoint("Transaction"))
 @dataset
 class Transaction:
@@ -43,14 +43,15 @@ class Transaction:
 
 
 # docsnip pipeline
-@meta(owner="ahmed@fennel.ai")
+from fennel.datasets import pipeline, Dataset
+from fennel.lib.aggregate import Count, Sum
+
 @dataset
 class UserTransactionsAbroad:
     uid: int = field(key=True)
     count: int
     amount_1d: float
     amount_1w: float
-    recent_merchant_ids: List[int]
     timestamp: datetime
 
     @classmethod
@@ -65,13 +66,6 @@ class UserTransactionsAbroad:
             Count(window="forever", into_field="count"),
             Sum(of="amount", window="1d", into_field="amount_1d"),
             Sum(of="amount", window="1w", into_field="amount_1w"),
-            LastK(
-                of="merchant_id",
-                window="1d",
-                into_field="recent_merchant_ids",
-                limit=5,
-                dedup=True,
-            ),
         )
 
 
@@ -127,55 +121,35 @@ def test_transaction_aggregation_example(client):
     assert data["uid"].tolist() == [1, 2, 3, 4]
     assert data["count"].tolist() == [2, 2, 3, None]
     assert data["amount_1d"].tolist() == [500, 400, 600, None]
-    assert data["recent_merchant_ids"].tolist() == [
-        [3, 2],
-        [3, 1],
-        [3, 2, 1],
-        None,
-    ]
     assert found.to_list() == [True, True, True, False]
 
 
-@meta(owner="me@fennel.ai")
 @source(webhook.endpoint("Activity"))
-@dataset(history="4m")
+@dataset
 class Activity:
-    user_id: int
+    uid: int
     action_type: str
-    amount: Optional[float]
-    metadata: str
+    merchant_id: int
+    amount: str = field().meta(description="amount in dollars as str")
     timestamp: datetime
 
 
 # docsnip transform_pipeline
-@meta(owner="data-eng-oncall@fennel.ai")
 @dataset
-class FraudActivityDataset:
-    timestamp: datetime
-    user_id: int
+class FraudActivity:
+    uid: int
     merchant_id: int
-    transaction_amount: float
+    amount_cents: float
+    timestamp: datetime
 
     @pipeline(version=1)
     @inputs(Activity)
     def create_fraud_dataset(cls, activity: Dataset):
-        def extract_info(df: pd.DataFrame) -> pd.DataFrame:
-            df_json = df["metadata"].apply(json.loads).apply(pd.Series)
-            df = pd.concat([df_json, df[["user_id", "timestamp"]]], axis=1)
-            df["transaction_amount"] = df["transaction_amount"] / 100
-            return df[
-                ["merchant_id", "transaction_amount", "user_id", "timestamp"]
-            ]
-
-        filtered_ds = activity.filter(lambda df: df["action_type"] == "report")
-        return filtered_ds.transform(
-            extract_info,
-            schema={
-                "transaction_amount": float,
-                "merchant_id": int,
-                "user_id": int,
-                "timestamp": datetime,
-            },
+        return (
+            activity
+                .filter(lambda df: df["action_type"] == "report")
+                .assign("amount_cents", float, lambda df: df["amount"].astype(float) / 100)
+                .drop("action_type", "amount")
         )
 
 
@@ -185,7 +159,7 @@ class FraudActivityDataset:
 @mock
 def test_fraud(client):
     # # Sync the dataset
-    client.sync(datasets=[Activity, FraudActivityDataset])
+    client.sync(datasets=[Activity, FraudActivity])
     now = datetime.now()
     minute_ago = now - timedelta(minutes=1)
     data = [
@@ -193,66 +167,45 @@ def test_fraud(client):
             18232,
             "report",
             49,
-            '{"transaction_amount": 49, "merchant_id": 1322}',
+            "11.91",
             minute_ago,
         ],
         [
             13423,
             "atm_withdrawal",
             99,
-            '{"location": "mumbai"}',
+            "12.13",
             minute_ago,
         ],
         [
             14325,
             "report",
             99,
-            '{"transaction_amount": 99, "merchant_id": 1422}',
+            "5",
             minute_ago,
         ],
         [
             18347,
             "atm_withdrawal",
             209,
-            '{"location": "delhi"}',
+            "7.45",
             minute_ago,
         ],
         [
             18232,
             "report",
             49,
-            '{"transaction_amount": 49, "merchant_id": 1322}',
-            minute_ago,
-        ],
-        [
-            18232,
-            "report",
-            149,
-            '{"transaction_amount": 149, "merchant_id": 1422}',
-            minute_ago,
-        ],
-        [
-            18232,
-            "report",
-            999,
-            '{"transaction_amount": 999, "merchant_id": 1322}',
-            minute_ago,
-        ],
-        [
-            18232,
-            "report",
-            199,
-            '{"transaction_amount": 199, "merchant_id": 1322}',
+            "131.58",
             minute_ago,
         ],
     ]
-    columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
+    columns = ["uid", "action_type", "merchant_id", "amount", "timestamp"]
     df = pd.DataFrame(data, columns=columns)
     response = client.log("fennel_webhook", "Activity", df)
     assert response.status_code == requests.codes.OK, response.json()
     # Only the mock client contains the data parameter to access the data
     # directly for all datasets.
-    assert client.data["FraudActivityDataset"].shape == (6, 4)
+    assert client.data["FraudActivity"].shape == (3, 4)
 
 
 # docsnip multiple_pipelines

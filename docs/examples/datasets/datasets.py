@@ -57,6 +57,32 @@ def test_valid_user_dataset():
 
         # /docsnip
 
+        # docsnip metaflags_dataset_default_owners
+        __owner__ = "hoang@fennel.ai"
+
+        @dataset
+        class UserBMI:
+            uid: int = field(key=True)
+            height: float 
+            weight: float
+            bmi: float
+            updated: datetime
+
+        @meta(owner='luke@fennel.ai')
+        @dataset
+        class UserName:
+            uid: int = field(key=True)
+            name: str
+            updated: datetime
+
+        @dataset
+        class UserLocation:
+            uid: int = field(key=True)
+            city: str
+            updated: datetime
+
+        # /docsnip
+
 
 # invalid - key fields can not have an optional type
 def test_optional_key_field():

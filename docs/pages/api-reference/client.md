@@ -8,10 +8,12 @@ status: WIP
 
 Fennel Client has the following methods on it:
 
+<APIGrid>
 ### extract
 
 Given some input and output features, extracts the current value of all the output features given the values of the input features.
 
+<InfoGrid>
 **Arguments:**
 
 * `inputs: List[Union[Feature, str]]`: List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
@@ -20,7 +22,8 @@ Given some input and output features, extracts the current value of all the outp
 * `log: bool` - boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False
 * `workflow: str` - the name of the workflow associated with the feature extraction. Only relevant when `log` is set to True
 * `sampling_rate: float` - the rate at which feature data should be sampled before logging. Only relevant when log is set to True. The default value is 1.0
-
+</InfoGrid>
+<CodeBlock>
 **Example:**
 
 ```python
@@ -33,6 +36,8 @@ class UserFeatures:
 ```
 
 <pre snippet="api-reference/client#extract_api"></pre>
+</CodeBlock>
+</APIGrid>
 
 
 ****

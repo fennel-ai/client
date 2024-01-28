@@ -10,10 +10,10 @@ from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 
 webhook = Webhook(name="fennel_webhook")
+__owner__ = "ml-team@fennel.ai"
 
 
 # docsnip featuresets_reading_datasets
-@meta(owner="data-eng-team@fennel.ai")
 @source(webhook.endpoint("User"))
 @dataset
 class User:
@@ -22,7 +22,6 @@ class User:
     timestamp: datetime
 
 
-@meta(owner="data-science-team@fennel.ai")
 @featureset
 class UserFeatures:
     uid: int = feature(id=1)

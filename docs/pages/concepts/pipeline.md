@@ -6,7 +6,7 @@ status: 'published'
 
 # Pipeline
 
-A pipeline is a functions defined on a dataset that describes how a dataset can
+A pipeline is a function defined on a dataset that describes how it can
 be derived from one or more existing datasets. Let's look at an example:
 
 ### Example
@@ -18,31 +18,30 @@ Imagine we have the following datasets defined in the system:
 
 And we want to create a dataset which represents some stats about the
 transactions made by a user in a country different from their home country.
-We'd write that dataset as follows:
+We will write that dataset as follows:
 
 <pre snippet="datasets/pipelines#pipeline"></pre>
 
 There is a lot happening here so let's break it down line by line:
 
-* Lines 1-9 are defining a regular dataset. Just note that this dataset has the
+* Lines 4-10 are defining a regular dataset. Note that this dataset has the
  schema that we desire to create via the pipeline.
-* Lines 14-32 describe the actual pipeline code - we'd come to that in a second.
-* Line 11 declares that this is a classmethod - all pipelines are classmethods.
+* Lines 13-32 describe the actual pipeline code - we will come to that in a second.
+* Line 12 declares that this is a classmethod - all pipelines are classmethods.
 `pipeline` decorator itself wraps `classmethod` decorator so you can omit
 `classmethod` in practice - here it is shown for just describing the concept.
-* Line 12 declares that the decorated function represents a pipeline.
-* Line 13 declares all the input datasets that are needed for this pipeline to
+* Line 13 declares that the decorated function represents a pipeline.
+* Line 14 declares all the input datasets that are needed for this pipeline to
  derive the output dataset. In this case, this pipeline is declaring that it
  starts from `User` and `Transaction` datasets.
-* Notice the signature of the pipeline function in line 14 - it takes 2 arguments
+* Notice the signature of the pipeline function in line 15 - it takes 2 arguments
 besides `cls` - they are essentially symbols for `User` dataset and `Transaction`
 dataset respectively.
 * Pipeline's function body is able to manipulate these symbols and create other dataset
-objects. For instance, line 15 joins these two datasets and the resulting dataset
-is stored in variable `joined`. Line 16 does a `filter` operation on `joined` and
-stores the result in another dataset called `abroad`. Finally lines 19-32
-aggregate the `abroad` dataset and create a dataset matching the schema defined
-in lines 1-9.
+objects. For instance, line 16 joins these two datasets and the resulting dataset
+is stored in variable `joined`. Line 18 does a `filter` operation on `joined` and
+stores the result in another dataset called `abroad`. Finally lines 20-24
+aggregate the `abroad` dataset and create a dataset matching the intended schema.
 
 That's it - your first Fennel pipeline! Now let's look at a few more related
 ideas.
@@ -51,20 +50,27 @@ ideas.
 
 Fennel pipelines are built out of a few general purpose operators like `filter`,
 `transform`, `join` etc which can be composed together to write any pipeline.
-You can read about all the operators [here](/api-reference/operators). Further,
-a few operators (e.g. `transform`, `filter`) take free-form Python using which
-arbitrary computation can be done (including making calls into external services
-if needed). For all such operators, input/outputs variables are Pandas DataFrames
-or Pandas Series. Here is an example with `transform` operator demonstrating this:
+You can read about all the operators [here](/api-reference/operators). 
+
+
+### Native Python Interop
+
+Some of the operators (e.g. `transform`, `filter`) accept free-form Python 
+lambdas and can be used to do arbitrary computation (including making calls into 
+external services if needed). You can also import/use your favorite Python 
+libraries inside these lambdas - thereby extending interop to the full Python
+ecosystem. For such Python based operators, input/outputs variables 
+are Pandas DataFrames or Pandas Series. Here is an example with `filter` and
+`assign` operator:
 
 <pre snippet="datasets/pipelines#transform_pipeline"></pre>
 
 
-The ONLY constraint on the pipeline topology is that `aggregate` has to be the
+The only constraint on the pipeline topology is that `aggregate` has to be the
 terminal node i.e. it's not allowed to compose any other operator on the output
 of `aggregate` operator. This constraint allows Fennel to
-significantly reduce costs/performance of pipelines. And it's possible that even this
-constraint will be removed in the future.
+significantly reduce costs/performance of doing continuous sliding aggregations. 
+And it's possible that even this constraint will be removed in the future.
 
 
 ### Power of Fennel Pipelines
@@ -76,8 +82,7 @@ Fennel pipelines have a bunch of really desirable properties:
     are too big etc.
 
 2. **Python Native** - as mentioned above, it's possible to run arbitrary Python
-   computation in pipelines. You can even import your favorite packages to use
-   and/or make external API calls.
+   computation using any Python libraries.
 
 3. **Realtime** - as soon as new data arrives in any input dataset, pipeline
    propagates the derived data downstream. The same mechanism works whether

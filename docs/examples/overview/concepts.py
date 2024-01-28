@@ -1,15 +1,17 @@
 from datetime import datetime
 
+import os
 import pandas as pd
 
-from fennel.datasets import dataset, field
-from fennel.lib.metadata import meta
-from fennel.sources import Webhook, ref
+from fennel.sources import Webhook 
 from fennel.test_lib import mock
+from fennel.lib.metadata import meta
+from fennel.datasets import dataset, field
+
+__owner__ = "owner@example.com"
 
 
 # docsnip user_dataset
-@meta(owner="data-eng-oncall@fennel.ai")
 @dataset
 class UserDataset:
     uid: int = field(key=True)
@@ -24,15 +26,13 @@ class UserDataset:
 # since docs requires not compilable credentials.
 from fennel.sources import source, Postgres, Kafka
 
-pg = Postgres.get(name="postgres")
+postgres = Postgres.get(name="postgres")
 kafka = Kafka.get(name="kafka")
 webhook = Webhook(name="fennel_webhook")
 
 
 # docsnip external_data_sources
-@meta(owner="data-eng-oncall@fennel.ai")
-@source(pg.table("user", cursor="update_timestamp"), every="1m", tier="prod")
-@source(webhook.endpoint("User"), tier="dev")
+@source(postgres.table("user", cursor="update_timestamp"), every="1m")
 @dataset
 class User:
     uid: int = field(key=True)
@@ -41,9 +41,7 @@ class User:
     signup_time: datetime = field(timestamp=True)
 
 
-@meta(owner="data-eng-oncall@fennel.ai")
-@source(kafka.topic("transactions"), tier="prod")
-@source(webhook.endpoint("Transaction"), tier="dev")
+@source(kafka.topic("transactions"))
 @dataset
 class Transaction:
     uid: int
@@ -61,7 +59,6 @@ from fennel.lib.schema import inputs
 
 
 # docsnip pipeline
-@meta(owner="data-eng-oncall@fennel.ai")
 @dataset
 class UserTransactionsAbroad:
     uid: int = field(key=True)
@@ -80,7 +77,7 @@ class UserTransactionsAbroad:
         return abroad.groupby("uid").aggregate(
             Count(window="forever", into_field="count"),
             Sum(of="amount", window="1d", into_field="amount_1d"),
-            Sum(of="amount", window="1d", into_field="amount_1w"),
+            Sum(of="amount", window="1w", into_field="amount_1w"),
         )
 
 
@@ -105,8 +102,7 @@ class UserFeature:
     @outputs(age)
     def get_age(cls, ts: pd.Series, uids: pd.Series):
         dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])
-        # Using ts instead of datetime.now() to make extract_historical work as of for the extractor
-        ages = ts - dobs
+        ages = ts - dobs # note: age is calculated as of `ts`
         return pd.Series(ages)
 
     @extractor
@@ -176,25 +172,25 @@ def test_overview(client):
     assert found.to_list() == [True, True, True, False]
 
 
+os.environ["POSTGRES_HOST"] = "some-host"
+os.environ["POSTGRES_DB_NAME"] = "some-db-name"
+os.environ["POSTGRES_USERNAME"] = "some-username"
+os.environ["POSTGRES_PASSWORD"] = "some-password"
+
 # docsnip source
 from fennel.sources import source, Postgres
 
 postgres = Postgres(
     name="my-postgres",
-    host="localhost",
-    db_name="my_db",
+    host=os.environ["POSTGRES_HOST"],
+    db_name=os.environ["POSTGRES_DB_NAME"],
     port=5432,
-    username="admin",
-    password="password",
+    username=os.environ["POSTGRES_USERNAME"],
+    password=os.environ["POSTGRES_PASSWORD"],
 )
 
 
-@source(
-    postgres.table("user", cursor="update_time"),
-    every="1m",
-    preproc={"city": "San Francisco", "country": ref("processed_country")},
-)
-@meta(owner="xyz@example.com")
+@source(postgres.table("user", cursor="update_time"), every="1m")
 @dataset
 class UserLocation:
     uid: int
@@ -203,4 +199,55 @@ class UserLocation:
     update_time: datetime
 
 
+# /docsnip
+
+
+os.environ["FENNEL_SERVER_URL"] = "http://localhost:8080"
+os.environ["FENNEL_TOKEN"] = "my-secret-token"
+
+# docsnip client
+from fennel.client import Client
+
+client = Client(os.environ["FENNEL_SERVER_URL"], token=os.environ["FENNEL_TOKEN"])
+# /docsnip
+
+@mock
+def test_overview(client):
+    # docsnip sync
+    client.sync(
+        datasets=[User, Transaction, UserTransactionsAbroad],
+        featuresets=[UserFeature],
+    )
+    # /docsnip
+
+
+# docsnip query
+
+feature_df = client.extract(
+    outputs=[
+        UserFeature.age,
+        UserFeature.country,
+    ],
+    inputs=[
+        UserFeature.uid,
+    ],
+    input_dataframe=pd.DataFrame({"UserFeature.uid": [1, 3]}),
+)
+# /docsnip
+
+# docsnip query_historical
+feature_df = client.extract_historical(
+    outputs=[
+        UserFeature.age,
+        UserFeature.country,
+    ],
+    inputs=[
+        UserFeature.uid,
+    ],
+    input_dataframe=pd.DataFrame({
+        "UserFeature.uid": [1, 3],
+        "timestamp": [datetime.now(), datetime.now() - timedelta(days=1)],
+    }),
+    timestamp_column="timestamp",
+)
 # /docsnip
