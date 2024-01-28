@@ -142,9 +142,7 @@ def test_remote_feature_as_output():
 
             @extractor
             @inputs(limit_secs, duration)
-            @outputs(
-                Request.too_long
-            )  # can not output feature of another featureset
+            @outputs(Request.too_long)  # error: outputting feature of another featureset # noqa
             def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
                 return pd.Series(name="movie_too_long", data=durations > limits)
 

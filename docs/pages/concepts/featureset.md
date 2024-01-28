@@ -20,11 +20,10 @@ Above example defines a featureset called `Movie` with two features - `duration`
 `over_2hrs`. Each feature has a [type](/api-reference/data-types) and is given
 a monotonically increasing `id` that is unique within the featureset. This
 featureset has one extractor - `my_extractor` that when given the `duration`
-feature, knows how to extract the `over_2hrs` feature. Let's look at extractors in
-a bit more detail.
+feature, knows how to extract the `over_2hrs` feature. 
 
 
-### Extractors
+## Extractors
 
 Extractors are stateless Python functions in a featureset that are annotated
 by `@extractor` decorator. Each extractor accepts zero or more inputs
@@ -86,6 +85,20 @@ Valid - input feature of extractor coming from another featureset.
 Invalid - output feature of extractor from another featureset
 <pre snippet="featuresets/overview#remote_feature_as_output"></pre>
 
+### Extractor Resolution
+
+Support you have an extractor `A` that takes feature `f1` as input and outputs `f2`
+and there is another extractor `B` that takes `f2` as input and returns `f3` as 
+output. Further, suppose that the value of `f1` is available and you're interested
+in computing the value of `f3`.
+
+Fennel can automatically deduce that in order to go from `f1` to `f3`, it 
+must first run extractor `A` to get to `f2` and then run `B` on `f2` to get `f3`. 
+
+More generally, Fennel is able is able to do recursive resolution of feature 
+extractors and find a path via extractors to go from a set of input features
+to a set of output features. This allows you to reuse feature logic and not have
+every feature depend on root level inputs like uid.
 
 ### Dataset Lookups
 
@@ -106,3 +119,6 @@ of things:
  pass the extractor's timestamp list to this function as it is. In addition, all the
  key fields in the dataset become kwarg to the lookup function.
 * It's not possible to do lookups on dataset without keys.
+
+
+### Auto-generated Extractors

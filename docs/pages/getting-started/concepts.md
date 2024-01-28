@@ -1,14 +1,14 @@
 ---
-title: 'Introduction'
-order: 0
+title: 'Concepts'
+order: 5
 status: 'published'
 ---
 
-# Introduction
+# Concepts
 
-Fennel has two main concepts -- datasets and featuresets. Let's look at both one by one
+Fennel has two core concepts -- datasets and featuresets. Let's look at both one by one
 
-## 1. Dataset
+## Dataset
 
 Dataset refers to a "table" of data with typed columns. Here is how a dataset is defined.&#x20;
 
@@ -23,7 +23,7 @@ First we define the external sources by providing the required credentials:
 ```python
 from fennel.sources import source, Postgres, Kafka
 
-pg = Postgres(host=...<credentials>..)
+postgres = Postgres(host=...<credentials>..)
 kafka = Kafka(...<credentials>..)
 ```
 
@@ -36,43 +36,19 @@ hydrate itself with new data. The second dataset hydrates itself from a kafka
 topic. Fennel supports connectors with all main sources - check 
 [here](/concepts/source) for details.
 
-You might have also noticed another source with `webhook` on both the datasets
-with tier value set to `dev`. This is the case because in dev/testing scenarios,
-we don't want to hit production postgres. Here we are telling Fennel that postgres
-should only be used for prod. And for dev, we will be manually pushing data
-into the dataset (aka webhook in Fennel vocabulary). Note that there is no special
-connection between `dev` and `webhook` - you could have also configured the 
-dataset in the `dev` mode to be read from a different postgres 
-(or really another source). And similarly, sometimes you will have production 
-datasets sourced from a `webhook`.
 
-Hydrating datasets this way from external sources already looks somewhat cool 
-because it allows you to bring data from multiple places in the same abstraction 
-layer. But what to do with these datasets?
-
-Fennel lets you derive new datasets from existing datasets by writing simple 
-declarative Python code - it's unimaginatively called a pipeline. Let's look at 
-one such pipeline:
+Once you have one or more "sourced" datasets, you can derive new datasets from 
+existing datasets by writing simple declarative Python code - it's 
+unimaginatively called a pipeline. Let's look at one such pipeline:
 
 <pre snippet="overview/concepts#pipeline"></pre>
 
 
-This is a dataset that will keep rolling stats about transactions made by a user
-abroad and we want to derive it from `User` dataset and `Transaction` dataset. 
-Lines 16-27 define this pipeline. You'd note that this pipeline is written using
-native Python and Pandas so you can unleash the full power of Python. But more 
-importantly, this pipeline is operating on two datasets, one of which is 
-streaming (i.e. `Transaction` ) and comes from Kafka and the other is static-ish 
-dataset (i.e. `User`) coming from Postgres. And you can do joins and aggregations
-across them both. Wow! Now this is beginning to look powerful. What else can you 
-do with the datasets?
-
-It's also possible to do low latency lookups on these datasets using dataset keys. 
+It's possible to do low latency lookups on these datasets using dataset keys. 
 Earlier you were asked to ignore the field descriptors -- it's time to revisit 
 those. If you look carefully, line 4 with `field(key=True)` above defines `uid` 
 to be a key (dataset can have multi-column keys too). If we know the uid of a 
-user, we can ask this dataset for the value of the rest of the columns. 
-Something (but not exactly) like this:
+user, we can ask this dataset for the value of the rest of the columns:
 
 <pre snippet="overview/concepts#dataset_lookup"></pre>
 
@@ -86,18 +62,18 @@ fact, this ability to track time evolution enables Fennel to use the same code
 to generate both online and offline features.
 
 
-Okay so we can define datasets, source them from external datasets, derive them 
-via pipelines, and do complex temporal lookups on them. What has all this to do 
+So we can define datasets, source them from external datasets, derive them 
+via pipelines, and do temporal primary key lookups on them. What has all this to do 
 with features? How to write a feature in Fennel? Well, this is where we have to 
 talk about the second main concept - featureset.
 
-## 2. Featureset
+## Featureset
 
 A featureset, as the name implies, is just a collection of features. Features in 
 Fennel, however, are different from features in many other systems - they don't 
-represent stored data but instead are backed by a Python function that knows how 
-to extract it - called an _extractor_. Let's define a feature that computes user's
-age using the datasets we defined above.
+represent stored data but instead are backed by a stateless Python function that 
+knows how to extract it - called an _extractor_. Let's define a feature that 
+computes user's age using the datasets we defined above.
 
 Here is how a really simple featureset looks:
 
@@ -105,43 +81,25 @@ Here is how a really simple featureset looks:
 
 This is a featureset with 3 features --- `uid`, `country`, and `age`. Lines 8-14 
 describe an extractor that given the value of the feature `uid`, knows how to 
-define the feature `age` (this input/output information is encoded in the typing
-signature, not function names). Inside the extractor function, you are welcome 
+define the feature `age`. Inside the extractor function, you are welcome 
 to do arbitrary Python computation. Similarly, lines 16-21 define another 
 extractor function, this time which knows how to compute `country` given the 
 input `uid`.
 
 
 More crucially, these extractors are able to do lookup on `User` dataset that 
-we defined earlier to read the data computed by datasets. And that's it about 
-the basic anatomy of a featureset - one or more typed features with some 
-extractors that know how to extract those features. These features extractors 
-can recursively depend on other features (whether in the same featureset or 
-across) and know how to compute the output features.
+we defined earlier to read the data computed by datasets. 
 
+Datasets & featuresets have a complimentary relationship. Datasets are updated 
+on the write path -- as the new data arrives, it goes to datasets from which it 
+goes to other datasets via pipelines. All of this is happening asynchronously 
+and results in data being stored in datasets. 
 
-At this point, you may have questions about the relationship between 
-featuresets and datasets and more specifically pipeline and extractor.
-
-
-The main difference is that datasets are updated on the write path -- as the 
-new data arrives, it goes to datasets from which it goes to other datasets via 
-pipelines. All of this is happening asynchronously and results in data being 
-stored in datasets. Features, however, are a purely 'read side' concept - 
-feature is extracted while the request is waiting (this could be online feature 
-serving request or offline training data generation request). Features can 
-recursively depend on other features. And the bridge between them is `lookup` 
+Features, however, are a purely 'read side' concept - feature is extracted while 
+the request is waiting (this could be online feature serving request or offline 
+training data generation request). And the bridge between them is `lookup` 
 functionality of the dataset.
 
-
-Here is a diagram of how the concepts fit together:
-
-![Diagram](/assets/readwritepath.png)
-
-This provides a relatively simplified bird's eye view of the main concepts. 
-But there is more to both datasets and featuresets and how they come together. 
-You can read in more detail about [datasets here](/concepts/dataset) and about 
-[featuresets here](/concepts/featureset).
 
 ## Syncing Datasets and Features with Fennel
 
@@ -163,10 +121,6 @@ may reject this sync request if there is any error with any dataset or
 featureset e.g. if a dataset already exists with this name or somehow this 
 dataset is malformed.
 
-Note that we passed `tier="dev"` in the last line - this tells Fennel to only
-apply behaviors where tier matches `dev`. As a result, the User dataset will be
-sourced via push based webhook vs postgres.
-
 
 Overtime, you'd have many more datasets and featuresets - you'd send all of them
 in a sync call. And with that, the validation can become lot more complex e.g 
@@ -174,15 +128,37 @@ schema compatibility validation across the whole graph of datasets/featuresets.
 
 Assuming the call succeeds, any datasets/featuresets that don't yet exist will 
 be created, any datasets/featuresets that exist but are not provided in the sync 
-call are deleted and rest are left unchanged. See the 
-[section on CI/CD](/development/ci-cd-workflows) to learn how the end to end 
-deployment could work in a production environment.
+call are deleted and rest are left unchanged. 
+
+## Feature Extraction Requests
+
+Once a few datasets/featuresets have been defiend, you'd want to read the value 
+of these features for particular inputs (say uids). That can be accomplished via
+`extract` API which reads the 'latest' value of features or `extract_historical`
+API which reads historical values of features for training data generation
+purposes. Here is how they look:
+
+<pre snippet="overview/concepts#query"></pre>
+
+Here, we are trying to read two features of the `UserFeature` featureset - `age` 
+and `country` (as defined in `outputs`). We are providing the value of one
+feature `uid` (as defined in `inputs`) and the actual values of `uid` are 
+provided in `input_dataframe` object. Note that even though this snippet shows
+Python, this is a REST endpoint and can be queried via any other language as well.
+
+There is a parallel function to get historical values of features called 
+`extract_historical`:
+
+<pre snippet="overview/concepts#query_historical"></pre>
+
+This is almost identical as before except we are also passing row-level timestamps
+as of which we want features to be extracted. `extract_historical` is the mechanism
+to generate point-in-time correct training datasets or do large scale batch inference.
 
 
 ### Learn more
 
-Datasets and Featuresets, despite being very simple abstraction, together pack a
-punch in terms of power. Here are a few topics to read next to learn more:
+Here are a few topics to read next to learn more:
 
 <Grid>
 	<PageReference href="/concepts/source/" illustration="/assets/illustrations/sources.svg" title="Sources">
