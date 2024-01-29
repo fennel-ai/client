@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from math import isnan
-from typing import Any
+from typing import Any, Union
 import pandas as pd
 import numpy as np
 from fennel._vendor import jsondiff  # type: ignore
@@ -128,3 +130,17 @@ def cast_col_to_dtype(series: pd.Series, dtype) -> pd.Series:
     elif dtype.HasField("between_type"):
         return cast_col_to_dtype(series, dtype.between_type.dtype)
     return series
+
+
+def parse_datetime(value: Union[int, str, datetime]) -> datetime:
+    if isinstance(value, int):
+        try:
+            return pd.to_datetime(value, unit="s")
+        except ValueError:
+            try:
+                return pd.to_datetime(value, unit="ms")
+            except ValueError:
+                return pd.to_datetime(value, unit="us")
+    if isinstance(value, str):
+        return pd.to_datetime(value)
+    return value
