@@ -83,6 +83,15 @@ class DataEngine(object):
     def get_dataset(self, dataset_name: str) -> Dataset:
         return self.datasets[dataset_name].dataset
 
+    def list_datasets(self):
+        return [
+            {
+                "name": dataset_name,
+                "dataset": self.datasets[dataset_name].dataset,
+            }
+            for dataset_name in self.datasets
+        ]
+
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
         if dataset_name not in self.datasets:
             raise ValueError(f"Dataset `{dataset_name}` not found")
@@ -96,10 +105,10 @@ class DataEngine(object):
 
         if isinstance(self.datasets[dataset_name].data, pd.DataFrame):
             df = copy.deepcopy(self.datasets[dataset_name].data)
-            if FENNEL_LOOKUP in df.columns:
-                df.drop(columns=[FENNEL_LOOKUP], inplace=True)
-            if FENNEL_TIMESTAMP in df.columns:
-                df.drop(columns=[FENNEL_TIMESTAMP], inplace=True)
+            if FENNEL_LOOKUP in df.columns:  # type: ignore
+                df.drop(columns=[FENNEL_LOOKUP], inplace=True)  # type: ignore
+            if FENNEL_TIMESTAMP in df.columns:  # type: ignore
+                df.drop(columns=[FENNEL_TIMESTAMP], inplace=True)  # type: ignore
             return df
 
         # This must be an aggregated dataset
