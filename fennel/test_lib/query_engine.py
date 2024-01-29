@@ -1,5 +1,7 @@
+from collections import defaultdict
+from datetime import datetime
 from functools import partial
-from typing import Dict, List, Union, Optional
+from typing import Dict, List, Union, Optional, Any
 
 import numpy as np
 import pandas as pd
@@ -14,12 +16,55 @@ from fennel.gen.schema_pb2 import Field, DSSchema, Schema
 from fennel.lib.schema import data_schema_check, get_datatype
 from fennel.test_lib.branch import Entities
 from fennel.test_lib.data_engine import DataEngine
-from fennel.test_lib.test_utils import cast_col_to_dtype
+from fennel.test_lib.test_utils import cast_col_to_dtype, parse_datetime
 
 
 class QueryEngine:
     def __init__(self):
         ...
+
+    def lookup(
+        self,
+        data_engine: DataEngine,
+        dataset_name: str,
+        keys: List[Dict[str, Any]],
+        fields: List[str],
+        timestamps: List[Union[int, str, datetime]] = None,
+    ):
+        if dataset_name not in data_engine.get_dataset_names():
+            raise KeyError(f"Dataset: {dataset_name} not found")
+
+        dataset_fields = data_engine.get_dataset_fields(dataset_name)
+        dataset = data_engine.get_dataset(dataset_name)
+
+        for field_name in fields:
+            if field_name not in dataset_fields:
+                raise ValueError(f"Field: {field_name} not in dataset")
+
+        fennel.datasets.datasets.dataset_lookup = partial(
+            data_engine.get_dataset_lookup_impl(None, [dataset_name]),
+        )
+
+        timestamps = (
+            pd.Series(timestamps).apply(lambda x: parse_datetime(x))
+            if timestamps
+            else pd.Series([datetime.now() for _ in range(len(keys))])
+        )
+
+        keys_dict = defaultdict(list)
+        for key in keys:
+            for key_name in key.keys():
+                keys_dict[key_name].append(key[key_name])
+
+        data, found = dataset.lookup(
+            timestamps,
+            **{name: pd.Series(value) for name, value in keys_dict.items()},
+        )
+
+        fennel.datasets.datasets.dataset_lookup = partial(
+            data_engine.get_dataset_lookup_impl(None, None),
+        )
+        return data[fields].to_dict(orient="records"), found
 
     def run_extractors(
         self,

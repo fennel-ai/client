@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import json
 import logging
 import os
-import sys
-import types
 from datetime import datetime
-from typing import Callable, Dict, List, Optional, Union, Any
+from typing import Dict, List, Optional, Union, Any
 
 import pandas as pd
 
@@ -14,10 +11,6 @@ from fennel._vendor.requests import Response  # type: ignore
 from fennel.client import Client
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.featuresets import Featureset, Feature, is_valid_feature
-from fennel.gen.featureset_pb2 import (
-    Extractor as ProtoExtractor,
-)
-from fennel.gen.schema_pb2 import DSSchema
 from fennel.lib.graph_algorithms import (
     get_extractor_order,
 )
@@ -27,7 +20,7 @@ from fennel.sources.sources import S3Connector
 from fennel.test_lib.branch import Branch
 from fennel.test_lib.integration_client import IntegrationClient
 from fennel.test_lib.query_engine import QueryEngine
-from fennel.test_lib.test_utils import cast_col_to_dtype
+from fennel.test_lib.test_utils import cast_col_to_dtype, FakeResponse
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -38,40 +31,13 @@ FENNEL_TIMESTAMP = "__fennel_timestamp__"
 logger = logging.getLogger(__name__)
 
 
-class FakeResponse(Response):
-    def __init__(self, status_code: int, content: str):
-        self.status_code = status_code
-
-        self.encoding = "utf-8"
-        if status_code == 200:
-            self._ok = True
-            self._content = json.dumps({}).encode("utf-8")
-            return
-        self._content = json.dumps({"error": f"{content}"}, indent=2).encode(
-            "utf-8"
-        )
-
-
-def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
-    fqn = f"{extractor_proto.feature_set_name}.{extractor_proto.name}"
-    mod = types.ModuleType(fqn)
-    code = (
-        extractor_proto.pycode.imports + extractor_proto.pycode.generated_code
-    )
-    try:
-        sys.modules[fqn] = mod
-        exec(code, mod.__dict__)
-    except Exception as e:
-        raise Exception(
-            f"Error while executing code for {fqn}:\n {code} \n: {str(e)}"
-        )
-    return mod.__dict__[extractor_proto.pycode.entry_point]
-
-
 class MockClient(Client):
     def __init__(self):
         self.branches_map: Dict[str, Branch] = {}
         self.query_engine: QueryEngine = QueryEngine()
+
+        # Adding main branch
+        self.branches_map["main"] = Branch("main")
 
     # ----------------- Debug methods -----------------------------------------
 
@@ -90,7 +56,22 @@ class MockClient(Client):
         branch: str = "main",
         _batch_size: int = 1000,
     ):
-        return self._get_branch(branch).log(webhook, endpoint, df, _batch_size)
+        at_least_one_ok = False
+        for branch in self.branches_map:
+            response = self._get_branch(branch).log(
+                webhook, endpoint, df, _batch_size
+            )
+            if response.status_code == 200:
+                at_least_one_ok = True
+
+        if at_least_one_ok:
+            return FakeResponse(200, "OK")
+        else:
+            FakeResponse(
+                404,
+                f"Webhook endpoint {webhook}_{endpoint} not "
+                f"found in any branch",
+            )
 
     def sync(
         self,
@@ -203,51 +184,13 @@ class MockClient(Client):
         keys: List[Dict[str, Any]],
         fields: List[str],
         timestamps: List[Union[int, str, datetime]] = None,
+        branch: str = "main",
     ):
-        try:
-            dataset = self.datasets[dataset_name]
-            dataset_info = self.dataset_info[dataset_name]
-        except KeyError:
-            raise KeyError(f"Dataset: {dataset_name} not found")
-
-        for field_name in fields:
-            if field_name not in dataset_info.fields:
-                raise ValueError(f"Field: {field_name} not in dataset")
-
-        fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl,
-            self.data,
-            self.aggregated_datasets,
-            self.dataset_info,
-            [dataset_name],
-            None,
+        branch_class = self._get_branch(branch)
+        data_engine = branch_class.get_data_engine()
+        return self.query_engine.lookup(
+            data_engine, dataset_name, keys, fields, timestamps
         )
-
-        timestamps = (
-            pd.Series(timestamps).apply(lambda x: self._parse_datetime(x))
-            if timestamps
-            else pd.Series([datetime.now() for _ in range(len(keys))])
-        )
-
-        keys_dict = defaultdict(list)
-        for key in keys:
-            for key_name in key.keys():
-                keys_dict[key_name].append(key[key_name])
-
-        data, found = dataset.lookup(
-            timestamps,
-            **{name: pd.Series(value) for name, value in keys_dict.items()},
-        )
-
-        fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl,
-            self.data,
-            self.aggregated_datasets,
-            self.dataset_info,
-            None,
-            None,
-        )
-        return data[fields].to_dict(orient="records"), found
 
     # --------------- Public MockClient Specific methods -------------------
 
@@ -325,62 +268,6 @@ class MockClient(Client):
 
     def _reset(self):
         self.branches_map: Dict[str, Branch] = {}
-
-
-def proto_to_dtype(proto_dtype) -> str:
-    if proto_dtype.HasField("int_type"):
-        return "int"
-    elif proto_dtype.HasField("double_type"):
-        return "float"
-    elif proto_dtype.HasField("string_type"):
-        return "string"
-    elif proto_dtype.HasField("bool_type"):
-        return "bool"
-    elif proto_dtype.HasField("timestamp_type"):
-        return "timestamp"
-    elif proto_dtype.HasField("optional_type"):
-        return f"optional({proto_to_dtype(proto_dtype.optional_type.of)})"
-    else:
-        return str(proto_dtype)
-
-
-def cast_df_to_schema(
-    df: pd.DataFrame, dsschema: DSSchema, pre_proc_cols: List[str] = []
-) -> pd.DataFrame:
-    # Handle fields in keys and values
-    fields = list(dsschema.keys.fields) + list(dsschema.values.fields)
-    df = df.copy()
-    df = df.reset_index(drop=True)
-    for f in fields:
-        if f.name not in df.columns:
-            if f.name in pre_proc_cols:
-                continue
-            raise ValueError(
-                f"Field `{f.name}` not found in dataframe while logging to dataset"
-            )
-        try:
-            series = cast_col_to_dtype(df[f.name], f.dtype)
-            series.name = f.name
-            df[f.name] = series
-        except Exception as e:
-            raise ValueError(
-                f"Failed to cast data logged to column `{f.name}` of type `{proto_to_dtype(f.dtype)}`: {e}"
-            )
-    if dsschema.timestamp not in df.columns:
-        if dsschema.timestamp in pre_proc_cols:
-            return df
-        raise ValueError(
-            f"Timestamp column `{dsschema.timestamp}` not found in dataframe while logging to dataset"
-        )
-    try:
-        df[dsschema.timestamp] = pd.to_datetime(df[dsschema.timestamp]).astype(
-            "datetime64[ns]"
-        )
-    except Exception as e:
-        raise ValueError(
-            f"Failed to cast data logged to timestamp column {dsschema.timestamp}: {e}"
-        )
-    return df
 
 
 def mock(test_func):

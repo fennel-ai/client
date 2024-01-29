@@ -18,8 +18,11 @@ from fennel.lib.schema import data_schema_check
 from fennel.lib.to_proto import dataset_to_proto
 from fennel.sources import sources, PreProcValue
 from fennel.test_lib.executor import Executor
-from fennel.test_lib.mock_client import FakeResponse, cast_df_to_schema
-from fennel.test_lib.test_utils import parse_datetime
+from fennel.test_lib.test_utils import (
+    FakeResponse,
+    parse_datetime,
+    cast_df_to_schema,
+)
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -54,7 +57,6 @@ class _Dataset:
     on_demand: OnDemand
     core_dataset: CoreDataset
     dataset: Dataset
-    listeners: List[Pipeline] = field(default_factory=list)
     data: Optional[pd.DataFrame] = None
     pre_proc: Optional[Dict[str, sources.PreProcValue]] = None
     aggregated_datasets: Optional[Dict[str, Any]] = None
@@ -67,6 +69,7 @@ class DataEngine(object):
     def __init__(self):
         self.datasets: Dict[str, _Dataset] = {}
         self.webhook_to_dataset_map: Dict[str, List[str]] = defaultdict(list)
+        self.dataset_listeners: Dict[str, List[Pipeline]] = defaultdict(list)
 
         fennel.datasets.datasets.dataset_lookup = partial(
             self._dataset_lookup_impl,
@@ -74,19 +77,30 @@ class DataEngine(object):
             None,
         )
 
+    def get_dataset_fields(self, dataset_name: str) -> List[str]:
+        return self.datasets[dataset_name].fields
+
+    def get_dataset(self, dataset_name: str) -> Dataset:
+        return self.datasets[dataset_name].dataset
+
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
         if dataset_name not in self.datasets:
             raise ValueError(f"Dataset `{dataset_name}` not found")
 
         # If we haven't seen any values for this dataset, return an empty df with the right schema.
         if (
-            not self.datasets[dataset_name].data
+            not isinstance(self.datasets[dataset_name].data, pd.DataFrame)
             and not self.datasets[dataset_name].aggregated_datasets
         ):
             return self.datasets[dataset_name].empty_df()
 
-        if self.datasets[dataset_name].data:
-            return copy.deepcopy(self.datasets[dataset_name].data)
+        if isinstance(self.datasets[dataset_name].data, pd.DataFrame):
+            df = copy.deepcopy(self.datasets[dataset_name].data)
+            if FENNEL_LOOKUP in df.columns:
+                df.drop(columns=[FENNEL_LOOKUP], inplace=True)
+            if FENNEL_TIMESTAMP in df.columns:
+                df.drop(columns=[FENNEL_TIMESTAMP], inplace=True)
+            return df
 
         # This must be an aggregated dataset
         key_fields = self.datasets[dataset_name].dataset.key_fields
@@ -143,6 +157,15 @@ class DataEngine(object):
             is_source_dataset = hasattr(dataset, sources.SOURCE_FIELD)
             fields = [f.name for f in dataset.fields]
 
+            self.datasets[dataset._name] = _Dataset(
+                fields=fields,
+                is_source_dataset=is_source_dataset,
+                on_demand=dataset.on_demand,
+                core_dataset=core_dataset,
+                dataset=dataset,
+                pre_proc=pre_proc,
+            )
+
             if (
                 not core_dataset.is_source_dataset
                 and len(dataset._pipelines) == 0
@@ -157,30 +180,19 @@ class DataEngine(object):
             ]
             sync_validation_for_pipelines(selected_pipelines, dataset._name)
 
-            listeners: List[Pipeline] = []
             for pipeline in selected_pipelines:
                 for input in pipeline.inputs:
                     input_datasets_for_pipelines[input._name].append(
                         f"{pipeline._dataset_name}.{pipeline.name}"
                     )
-                    listeners.append(pipeline)
+                    self.dataset_listeners[input._name].append(pipeline)
 
-            # Check that input_datasets_for_pipelines is a subset of self.datasets.
-            for ds, pipelines in input_datasets_for_pipelines.items():
-                if ds not in self.datasets:
-                    raise ValueError(
-                        f"Dataset `{ds}` is an input to the pipelines: `{pipelines}` but is not synced. Please add it to the sync call."
-                    )
-
-            self.datasets[dataset._name] = _Dataset(
-                fields=fields,
-                is_source_dataset=is_source_dataset,
-                on_demand=dataset.on_demand,
-                core_dataset=core_dataset,
-                dataset=dataset,
-                listeners=listeners,
-                pre_proc=pre_proc,
-            )
+        # Check that input_datasets_for_pipelines is a subset of self.datasets.
+        for ds, pipelines in input_datasets_for_pipelines.items():
+            if ds not in self.datasets:
+                raise ValueError(
+                    f"Dataset `{ds}` is an input to the pipelines: `{pipelines}` but is not synced. Please add it to the sync call."
+                )
 
     def get_dataset_names(self) -> List[str]:
         return list(self.datasets.keys())
@@ -206,7 +218,7 @@ class DataEngine(object):
                 schema = self.datasets[ds].core_dataset.dsschema
                 if self.datasets[ds].pre_proc is not None:
                     pre_proc_cols = list(
-                        self.dataset_to_pre_proc_map[ds].keys()  # type: ignore
+                        self.datasets[ds].pre_proc.keys()  # type: ignore
                     )
                 else:
                     pre_proc_cols = []
@@ -294,7 +306,7 @@ class DataEngine(object):
                 f"but {len(keys.columns)} key fields were provided."
             )
         if (
-            not self.datasets[cls_name].data
+            not isinstance(self.datasets[cls_name].data, pd.DataFrame)
             and not self.datasets[cls_name].aggregated_datasets
         ):
             logger.warning(
@@ -489,8 +501,14 @@ class DataEngine(object):
                 f" {str(exceptions)}",
             )
         self._merge_df(df, dataset_name)
-        for pipeline in self.datasets[dataset_name].listeners:
-            executor = Executor(self.datasets[dataset_name].data)
+        for pipeline in self.dataset_listeners[dataset_name]:
+            executor = Executor(
+                {
+                    name: self.datasets[name].data
+                    for name in self.datasets
+                    if isinstance(self.datasets[name].data, pd.DataFrame)
+                }
+            )
             try:
                 ret = executor.execute(
                     pipeline, self.datasets[pipeline._dataset_name].dataset
@@ -556,7 +574,7 @@ class DataEngine(object):
                 df = df.drop(columns="__fennel__key__")
             df = df.reset_index(drop=True)
 
-        if self.datasets[dataset_name].data:
+        if isinstance(self.datasets[dataset_name].data, pd.DataFrame):
             df = pd.concat([self.datasets[dataset_name].data, df])
 
         # Sort by timestamp

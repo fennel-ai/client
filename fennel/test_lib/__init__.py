@@ -6,8 +6,8 @@ except ImportError:
 from fennel.test_lib.mock_client import (
     mock,
     MockClient,
-    get_extractor_func,
 )
+from fennel.test_lib.branch import get_extractor_func
 from fennel.test_lib.test_client import (
     InternalTestClient,
 )
