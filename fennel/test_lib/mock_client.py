@@ -45,21 +45,25 @@ class MockClient(Client):
 
     # ----------------- Public methods -----------------------------------------
 
-    def log(  # type: ignore
+    def log(
         self,
         webhook: str,
         endpoint: str,
         df: pd.DataFrame,
-        branch: str = MAIN_BRANCH,
         _batch_size: int = 1000,
     ):
         at_least_one_ok = False
         for branch in self.branches_map:
-            response = self._get_branch(branch).log(
-                webhook, endpoint, df, _batch_size
-            )
-            if response.status_code == 200:
-                at_least_one_ok = True
+            try:
+                response = self._get_branch(branch).log(
+                    webhook, endpoint, df, _batch_size
+                )
+                if response.status_code == 200:
+                    at_least_one_ok = True
+            except Exception as e:
+                raise Exception(
+                    f"Error occurred while logging to branch: {branch} error: {e}"
+                ) from e
 
         if at_least_one_ok:
             return FakeResponse(200, "OK")
@@ -222,7 +226,8 @@ class MockClient(Client):
                 f"New Branch name cannot be same ass the branch that needs to be cloned",
             )
         self.branches_map[name] = copy.deepcopy(self.branches_map[from_branch])
-        self.branches_map[name].name = name
+        self.branches_map[name].change_name(name)
+        self.branches_map[name].clean_data()
         return FakeResponse(200, "Ok")
 
     def delete_branch(self, name: str):

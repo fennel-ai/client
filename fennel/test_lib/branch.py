@@ -67,6 +67,12 @@ class Branch:
             extractors=[],
         )
 
+    def change_name(self, name: str):
+        self.name = name
+
+    def clean_data(self):
+        self.data_engine.clean_data()
+
     def get_entities(self) -> Entities:
         return self.entities
 

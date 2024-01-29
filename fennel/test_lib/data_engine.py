@@ -1,7 +1,7 @@
 import copy
 import logging
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import partial
 from typing import Dict, List, Optional, Tuple, Callable, Any
 
@@ -76,6 +76,11 @@ class DataEngine(object):
             None,
             None,
         )
+
+    def clean_data(self):
+        for dataset in self.datasets:
+            self.datasets[dataset].data = None
+            self.datasets[dataset].aggregated_datasets = None
 
     def get_dataset_fields(self, dataset_name: str) -> List[str]:
         return self.datasets[dataset_name].fields
