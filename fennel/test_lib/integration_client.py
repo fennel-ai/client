@@ -1,14 +1,7 @@
 import json
 import gzip
-import time
-from fennel.utils import check_response
-from typing import Dict, Optional, Any, Set, List, Union, Tuple
+from typing import Dict, Any
 
-import pandas as pd
-from typing import List, Optional, Set, Tuple, Union
-
-from fennel.lib.schema import parse_json
-from fennel.utils import to_columnar_json
 from fennel.client import Client
 
 try:
