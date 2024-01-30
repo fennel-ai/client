@@ -517,7 +517,8 @@ class Executor(Visitor):
                 else:
                     # Check if the event is within the time threshold of the previous one
                     if (
-                        row[timestamp_col] - (current_window.end_time - timedelta(microseconds=1))
+                        row[timestamp_col]
+                        - (current_window.end_time - timedelta(microseconds=1))
                     ).total_seconds() <= gap:
                         current_window.add_event(row[timestamp_col])
                     else:

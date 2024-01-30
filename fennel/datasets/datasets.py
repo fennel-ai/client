@@ -790,16 +790,14 @@ class WindowOperator(_Node):
         if type == WindowType.Hopping:
             if stride is None:
                 raise ValueError("'hopping window' must specify stride")
-            
 
             if duration is None:
                 raise ValueError("'hopping window' must specify duration")
-            
-        
+
         if type == WindowType.Sessionize:
             if gap is None:
                 raise ValueError("'sessionize window' must specify gap")
-        
+
         if type == WindowType.Tumbling:
             if duration is None:
                 raise ValueError("'tumbling window' must specify duration")
@@ -851,11 +849,13 @@ class WindowOperator(_Node):
 def dataset(  # noqa: E704
     *,
     history: Optional[Duration] = DEFAULT_RETENTION,
-) -> Callable[[Type[T]], Dataset]: ...
+) -> Callable[[Type[T]], Dataset]:
+    ...
 
 
 @overload
-def dataset(cls: Type[T]) -> Dataset: ...  # noqa: E704
+def dataset(cls: Type[T]) -> Dataset:
+    ...  # noqa: E704
 
 
 def dataset(

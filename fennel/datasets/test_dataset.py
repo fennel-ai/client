@@ -2773,7 +2773,7 @@ def test_window_operator():
             "field": "window",
             "windowType": {"session": {"gap": "600s"}},
             "operandId": "PageViewEvent",
-            "by": ['user_id']
+            "by": ["user_id"],
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -2904,7 +2904,7 @@ def test_window_operator_with_aggregation():
             "field": "window",
             "windowType": {"session": {"gap": "600s"}},
             "operandId": "PageViewEvent",
-            "by": ['user_id']
+            "by": ["user_id"],
         },
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())

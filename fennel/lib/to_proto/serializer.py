@@ -345,7 +345,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             duration = duration_proto.Duration()
             duration.FromTimedelta(obj.duration_timedelta)
             window_type = window_proto.Window(
-                tumbling = window_proto.Tumbling(duration=duration)
+                tumbling=window_proto.Tumbling(duration=duration)
             )
         elif obj.type == WindowType.Hopping:
             duration = duration_proto.Duration()
@@ -364,6 +364,6 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 operand_id=self.visit(obj.node),
                 window_type=window_type,
                 field=obj.field,
-                by=obj.by
+                by=obj.by,
             ),
         )

@@ -1389,6 +1389,7 @@ def test_window_field_invalid_name():
         == """Window field name `page_id` in `'[Pipeline:pipeline_window]->window node'` must be different from non keyed fields in `'[Dataset:PageViewEvent]'`"""
     )
 
+
 def test_window_field_without_valid_parameters():
     with pytest.raises(ValueError) as e:
 

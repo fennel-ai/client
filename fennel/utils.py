@@ -202,9 +202,9 @@ def parse_annotation_comments(cls: Any) -> Dict[str, str]:
                         line -= 1
 
                     if len(comments) > 0:
-                        comments_for_annotations[stmt.target.id] = (
-                            textwrap.dedent("\n".join(comments))
-                        )
+                        comments_for_annotations[
+                            stmt.target.id
+                        ] = textwrap.dedent("\n".join(comments))
 
         return comments_for_annotations
     except Exception:

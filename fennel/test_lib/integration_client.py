@@ -7,7 +7,11 @@ from typing import List, Set, Tuple, Union
 from fennel.lib.schema import parse_json
 from fennel.utils import to_columnar_json
 import sys
-sys.path.insert(0, '/nix/store/ml9qdg9hf0j5xb6awh3nj16imxnfngqy-python3-3.11.7-env/lib/python3.11/site-packages')
+
+sys.path.insert(
+    0,
+    "/nix/store/ml9qdg9hf0j5xb6awh3nj16imxnfngqy-python3-3.11.7-env/lib/python3.11/site-packages",
+)
 
 try:
     import pyarrow as pa
@@ -121,9 +125,9 @@ class IntegrationClient:
         for output_feature in output_feature_list:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn_)
-                output_feature_name_to_type[output_feature.fqn()] = (
-                    output_feature.dtype
-                )
+                output_feature_name_to_type[
+                    output_feature.fqn()
+                ] = output_feature.dtype
             elif isinstance(output_feature, Featureset):
                 output_feature_names.extend(
                     [f.fqn_ for f in output_feature.features]
