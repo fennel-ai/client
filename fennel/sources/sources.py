@@ -434,7 +434,7 @@ class KafkaConnector(DataConnector):
 
 class S3Connector(DataConnector):
     bucket_name: Optional[str]
-    path_prefix: Optional[str] = None
+    path_prefix: str
     path_suffix: Optional[str] = None
     delimiter: str = ","
     format: str = "csv"
@@ -473,13 +473,14 @@ class S3Connector(DataConnector):
 
         # Only one of a prefix or path pattern can be specified. If a path is specified,
         # the prefix and suffix are parsed and validated from it
-        self.path_prefix = path_prefix
         if path and path_prefix:
             raise AttributeError("path and prefix cannot be specified together")
         elif path_prefix:
             self.path_prefix = path_prefix
         elif path:
             self.path_prefix, self.path_suffix = S3Connector.parse_path(path)
+        else:
+            raise AttributeError("either path or prefix must be specified")
 
     def identifier(self) -> str:
         return (
@@ -517,7 +518,7 @@ class S3Connector(DataConnector):
                 pattern = r"^\*\.[a-zA-Z0-9.]+$"
                 if not re.match(pattern, part):
                     raise ValueError(
-                        f"Invalid path part {part}. The ending path part must be the * wildcard, of the form *.file-extension, or a static string"
+                        f"Invalid path part {part}. The ending path part must be the * wildcard, of the form *.file-extension, a strftime format string, or static string"
                     )
                 suffix_portion = True
                 suffix.append(part)
@@ -530,13 +531,13 @@ class S3Connector(DataConnector):
                     suffix.append(part)
                 except ValueError:
                     raise ValueError(
-                        f"Invalid datetime format specifier in path part {part}"
+                        f"Invalid path part {part}. Invalid datetime format specifier"
                     )
             else:
                 pattern = r"^[a-zA-Z0-9_-]+$"
                 if not re.match(pattern, part):
                     raise ValueError(
-                        f"Invalid path part {part}. All path parts must contain alphanumberic characters, hyphens, underscores, the * or ** wildcard, or strftime format specifiers."
+                        f"Invalid path part {part}. All path parts must contain alphanumeric characters, hyphens, underscores, the * or ** wildcard, or strftime format specifiers."
                     )
                 # static part. Can be part of prefix until we see a wildcard
                 if suffix_portion:

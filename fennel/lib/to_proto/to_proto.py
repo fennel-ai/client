@@ -757,7 +757,9 @@ def _s3_to_ext_table_proto(
     if bucket is None:
         raise ValueError("bucket must be specified")
     if path_prefix is None:
-        raise ValueError("path_prefix must be specified")
+        raise ValueError("prefix or path must be specified")
+    if not path_suffix:
+        path_suffix = ""
 
     return connector_proto.ExtTable(
         s3_table=connector_proto.S3Table(

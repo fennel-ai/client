@@ -1160,6 +1160,7 @@ def test_s3_source_with_path():
         extdb_request, expected_extdb_request
     )
 
+    # see test_invalid_sources for invalid examples
     valid_path_cases = [
         ("fixed/foo/bar/", "fixed/foo/bar/", ""),
         ("foo/", "foo/", ""),
@@ -1189,6 +1190,9 @@ def test_s3_source_with_path():
             "foo/bar/",
             "year=%Y/*/*/day=%d/*/*.csv.bz2",
         ),
+        ("foo/bar/baz.json", "foo/bar/baz.json", ""),
+        ("*/year=%Y", "", "*/year=%Y"),
+        ("%Y%m%d/*", "", "%Y%m%d/*"),
     ]
 
     for path, expected_prefix, expected_suffix in valid_path_cases:
