@@ -343,7 +343,7 @@ class Kinesis(DataSource):
     def stream(
         self,
         stream_arn: str,
-        init_position: str | at_timestamp,
+        init_position: str | at_timestamp | datetime | int | float,
         format: str,
     ) -> KinesisConnector:
         return KinesisConnector(self, stream_arn, init_position, format)

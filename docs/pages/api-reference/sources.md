@@ -71,14 +71,26 @@ Fennel creates a special role with name prefixed by `FennelDataAccessRole-` in y
 The following fields need to be defined on the bucket:
 
 1. **`bucket`** - Name of the S3 bucket where the file(s) exist.
-2. **`prefix`** (optional) - By providing a path-like prefix (e.g., `myFolder/thisTable/`) under which all the relevant
-   files sit, we can optimize finding these in S3. This is optional but recommended if your bucket contains many
-   folders/files&#x20;
-3. **`format`** (optional) - The format of the files you'd like to replicate. You can choose between CSV (default),
-   Avro, Hudi, Parquet, and JSON &#x20;
-4. **`delimiter`** (optional) - the character delimiting individual cells in the CSV data. The default value is `","`
+2. **`path`** (optional) - **At most 1 of `prefix` or `path` should be specified.** A pattern describing the path structure
+   of the objects in S3. When such structure exists in your bucket, this is highly recommended. From this, Fennel can infer 
+   the partitioning scheme within the buckets, which the system uses to optimize ingestion. The pattern specified is a 
+   path-like string consisting of parts separated by `/`. The valid path parts are:
+   - a static string (of alphanumeric characters, underscores, hyphens or dots)
+   - the `*` wild card (note this must be the entire path part: `*/*` is valid but `foo*/` is not)
+   - a string with a [strftime format specifier](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes) (e.g `yyyymmdd=%Y%m%d`)
+
+   
+   For example if your bucket has the structure `orders/country={country}/date={date}/store={store}/{file}.json`, provide the
+   path `orders/*/date=%Y%m%d/*/*`   
+3. **`prefix`** (optional) - **At most 1 of `prefix` or `path` should be specified.** By providing a path-like prefix 
+   (e.g., `myFolder/thisTable/`) under which all the relevant files sit, we can optimize finding these in S3. 
+   This is optional but recommended if your bucket contains many folders/files&#x20;
+4. **`format`** (optional) - The format of the files you'd like to replicate. You can choose between CSV (default),
+   Avro, Hudi, Parquet, and JSON &#x20; 
+5. **`delimiter`** (optional) - the character delimiting individual cells in the CSV data. The default value is `","`
    and if overridden, this can only be a 1-character string. For example, to use tab-delimited data enter `"\t"`.
 
+Here are 2 examples, one using path and the other using prefix
 <pre snippet="api-reference/source#s3_source"></pre>
 
 
