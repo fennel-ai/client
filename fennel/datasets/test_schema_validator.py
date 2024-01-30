@@ -1267,7 +1267,7 @@ def test_window_wrong_type():
 
     assert (
         str(e.value)
-        == """`tumblegg` is not a valid 'type' in 'window' operator. 'type' in window operator must be one of ['session', 'tumble', 'sliding']"""
+        == """`tumblegg` is not a valid 'type' in 'window' operator. 'type' in window operator must be one of ['session', 'tumbling', 'hopping']"""
     )
 
 
@@ -1292,12 +1292,12 @@ def test_window_not_implemented_type():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="tumble", gap="10m", field="window"
+                    type="tumbling", duration="10m", field="window"
                 )
 
     assert (
         str(e.value)
-        == """`tumble` type not yet implemented in the window operator"""
+        == """`tumbling` type not yet implemented in the window operator"""
     )
 
 

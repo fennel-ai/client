@@ -478,11 +478,24 @@ class GroupBy:
             self.keys = self.keys[0]  # type: ignore
         return First(self.node, list(self.keys))  # type: ignore
 
-    def window(self, type: str, gap: str, field: str) -> _Node:
+    def window(
+        self,
+        type: str,
+        field: str,
+        gap: Optional[str] = None,
+        duration: Optional[str] = None,
+        stride: Optional[str] = None,
+    ) -> _Node:
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
         return WindowOperator(
-            self.node, list(self.keys), WindowType(type), gap, field
+            self.node,
+            list(self.keys),
+            WindowType(type),
+            field,
+            gap,
+            duration,
+            stride,
         )
 
     def dsschema(self):
@@ -746,8 +759,8 @@ class DropNull(_Node):
 
 class WindowType(str, Enum):
     Sessionize = "session"
-    Tumbling = "tumble"
-    Sliding = "sliding"
+    Tumbling = "tumbling"
+    Hopping = "hopping"
 
     @classmethod
     def _missing_(cls, value):
@@ -764,19 +777,41 @@ class WindowOperator(_Node):
         node: _Node,
         keys: List[str],
         type: WindowType,
-        gap: Duration,
         field: str,
+        gap: Optional[Duration],
+        duration: Optional[Duration],
+        stride: Optional[Duration],
     ):
         super().__init__()
         if len(keys) == 0:
             raise ValueError(
                 "'group_by' before 'window' must specify at least one key"
             )
+        if stride is None:
+            if type == WindowType.Hopping:
+                raise ValueError("'hopping window' must specify stride")
+
+        if duration is None:
+            if type == WindowType.Hopping or type == WindowType.Tumbling:
+                raise ValueError(
+                    "'hopping window' or 'tumbling window' must specify duration"
+                )
+
+        if gap is None:
+            if type == WindowType.Sessionize:
+                raise ValueError("'sessionize window' must specify gap")
+
         self.input_keys = keys.copy()
         keys.append(field)
         self.keys = keys
         self.type = type
-        self.gap_timedelta = duration_to_timedelta(gap)
+        self.gap_timedelta = gap if gap is None else duration_to_timedelta(gap)
+        self.duration_timedelta = (
+            duration if duration is None else duration_to_timedelta(duration)
+        )
+        self.stride_timedelta = (
+            stride if stride is None else duration_to_timedelta(stride)
+        )
         self.field = field
         self.node = node
         self.node.out_edges.append(self)
@@ -2248,7 +2283,7 @@ class SchemaValidator(Visitor):
             raise ValueError(
                 f"'group_by' before 'window' in `{self.pipeline_name}` must specify at least one key"
             )
-        if obj.type in [WindowType.Tumbling, WindowType.Sliding]:
+        if obj.type in [WindowType.Hopping, WindowType.Tumbling]:
             raise NotImplementedError(
                 f"`{obj.type.value}` type not yet implemented in the window operator"
             )

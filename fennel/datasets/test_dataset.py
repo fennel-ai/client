@@ -2771,7 +2771,7 @@ def test_window_operator():
         "datasetName": "Sessions",
         "window": {
             "field": "window",
-            "gap": "600s",
+            "windowType": {"session": {"gap": "600s"}},
             "operandId": "PageViewEvent",
         },
     }
@@ -2901,7 +2901,7 @@ def test_window_operator_with_aggregation():
         "datasetName": "Sessions",
         "window": {
             "field": "window",
-            "gap": "600s",
+            "windowType": {"session": {"gap": "600s"}},
             "operandId": "PageViewEvent",
         },
     }

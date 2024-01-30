@@ -15,6 +15,7 @@ import schema_pb2
 import spec_pb2
 import sys
 import typing
+import window_pb2
 
 if sys.version_info >= (3, 10):
     import typing as typing_extensions
@@ -243,7 +244,7 @@ class Operator(google.protobuf.message.Message):
     @property
     def dropnull(self) -> global___Dropnull: ...
     @property
-    def window(self) -> global___Window: ...
+    def window(self) -> global___WindowOperatorKind: ...
     name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -270,7 +271,7 @@ class Operator(google.protobuf.message.Message):
         first: global___First | None = ...,
         assign: global___Assign | None = ...,
         dropnull: global___Dropnull | None = ...,
-        window: global___Window | None = ...,
+        window: global___WindowOperatorKind | None = ...,
         name: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "explode", b"explode", "filter", b"filter", "first", b"first", "join", b"join", "kind", b"kind", "rename", b"rename", "transform", b"transform", "union", b"union", "window", b"window"]) -> builtins.bool: ...
@@ -683,33 +684,19 @@ class First(google.protobuf.message.Message):
 global___First = First
 
 @typing_extensions.final
-class Window(google.protobuf.message.Message):
+class WindowOperatorKind(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    class _Type:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
-
-    class _TypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Window._Type.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
-        Session: Window._Type.ValueType  # 0
-        Tumble: Window._Type.ValueType  # 1
-        Sliding: Window._Type.ValueType  # 2
-
-    class Type(_Type, metaclass=_TypeEnumTypeWrapper): ...
-    Session: Window.Type.ValueType  # 0
-    Tumble: Window.Type.ValueType  # 1
-    Sliding: Window.Type.ValueType  # 2
-
     OPERAND_ID_FIELD_NUMBER: builtins.int
-    TYPE_FIELD_NUMBER: builtins.int
-    GAP_FIELD_NUMBER: builtins.int
+    WINDOW_TYPE_FIELD_NUMBER: builtins.int
+    BY_FIELD_NUMBER: builtins.int
     FIELD_FIELD_NUMBER: builtins.int
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
-    type: global___Window.Type.ValueType
     @property
-    def gap(self) -> google.protobuf.duration_pb2.Duration: ...
+    def window_type(self) -> window_pb2.Window: ...
+    @property
+    def by(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     field: builtins.str
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
@@ -719,16 +706,15 @@ class Window(google.protobuf.message.Message):
         self,
         *,
         operand_id: builtins.str = ...,
-        type: global___Window.Type.ValueType = ...,
-        gap: google.protobuf.duration_pb2.Duration | None = ...,
+        window_type: window_pb2.Window | None = ...,
+        by: collections.abc.Iterable[builtins.str] | None = ...,
         field: builtins.str = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_gap", b"_gap", "gap", b"gap"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_gap", b"_gap", "field", b"field", "gap", b"gap", "operand_id", b"operand_id", "operand_name", b"operand_name", "type", b"type"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_gap", b"_gap"]) -> typing_extensions.Literal["gap"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["window_type", b"window_type"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["by", b"by", "field", b"field", "operand_id", b"operand_id", "operand_name", b"operand_name", "window_type", b"window_type"]) -> None: ...
 
-global___Window = Window
+global___WindowOperatorKind = WindowOperatorKind
 
 @typing_extensions.final
 class DatasetRef(google.protobuf.message.Message):
