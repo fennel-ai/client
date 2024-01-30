@@ -185,8 +185,8 @@ The following fields need to be defined for the source:
 1. `name: str` - A name to identify the source. The name should be unique across all sources.
 1. `role_arn: str` - The role that Fennel should use to access the Kinesis stream
 2. `stream_arn: str` - AWS `ARN` of the stream
-3. `init_position: str | fennel.sources.kinesis.at_timestamp` - The Kinesis `ShardIterator` type used to begin ingestion. One of `'latest'`, `'trim_horizon'` or `at_timestamp(ts)`.
-   - For `at_timestamp(ts)`, `ts` can be any of the following: 
+3. `init_position: str | datetime | int | float` - The Kinesis `ShardIterator` type used to begin ingestion. One of `'latest'`, `'trim_horizon'` or a timestamp.
+   - The timestamp can be any of the following:
       - a `datetime` object
       - an `int` representing seconds since the epoch
       - a `float` representing `{seconds}.{microseconds}` since the epoch

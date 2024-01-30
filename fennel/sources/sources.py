@@ -60,7 +60,7 @@ def source(
         conn.every = every if every is not None else DEFAULT_EVERY
         conn.disorder = disorder if disorder is not None else DEFAULT_DISORDER
         conn.cdc = cdc if cdc is not None else DEFAULT_CDC
-        conn.starting_from = since
+        conn.since = since
         conn.tiers = TierSelector(tier)
         conn.pre_proc = preproc
         connectors = getattr(dataset_cls, SOURCE_FIELD, [])
@@ -372,7 +372,7 @@ class DataConnector:
     every: Duration
     disorder: Duration
     cdc: str
-    starting_from: Optional[datetime] = None
+    since: Optional[datetime] = None
     tiers: TierSelector
     pre_proc: Optional[Dict[str, PreProcValue]] = None
 
@@ -485,19 +485,21 @@ class KinesisConnector(DataConnector):
         self,
         data_source,
         stream_arn: str,
-        init_position: str | at_timestamp,
+        init_position: str | at_timestamp | datetime | int | float,
         format: str,
     ):
         self.data_source = data_source
 
-        if isinstance(init_position, str):
-            if init_position.lower() not in ["latest", "trim_horizon"]:
-                raise AttributeError(
-                    "Kinesis init position must be 'latest', 'trim_horizon' or at_timestamp(ts)"
-                )
+        if isinstance(init_position, str) and init_position.lower() in [
+            "latest",
+            "trim_horizon",
+        ]:
+            # Except for "latest" and "trim_horizon", all other positions are assumed to be timestamps
             self.init_position = init_position.lower()
-        else:
+        elif isinstance(init_position, at_timestamp):
             self.init_position = init_position
+        else:
+            self.init_position = at_timestamp(init_position)
 
         if format not in ["json"]:
             raise AttributeError("Kinesis format must be json")
@@ -506,5 +508,4 @@ class KinesisConnector(DataConnector):
 
     stream_arn: str
     init_position: str | at_timestamp
-    init_timestamp: Optional[datetime]
     format: str

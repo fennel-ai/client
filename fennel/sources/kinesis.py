@@ -26,7 +26,9 @@ class at_timestamp(object):
         elif isinstance(timestamp, str):
             self.timestamp = datetime.fromisoformat(timestamp)
         else:
-            raise TypeError(f"Invalid timestamp type {type(timestamp)}")
+            raise TypeError(
+                f"Kinesis init_position must be 'latest', 'trim_horizon' or a timestamp. Invalid timestamp type {type(timestamp)}"
+            )
 
     def __call__(self) -> datetime:
         return self.timestamp

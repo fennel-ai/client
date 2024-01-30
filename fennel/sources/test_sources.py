@@ -964,9 +964,10 @@ def test_multiple_sources():
     @source(
         kinesis.stream(
             "test_stream",
-            init_position=at_timestamp("2023-05-31 15:30:00"),
+            init_position="2023-05-31 15:30:00",
             format="json",
-        )
+        ),
+        since=datetime(2023, 5, 31),
     )
     @dataset
     class UserInfoDatasetKinesis:
@@ -975,8 +976,24 @@ def test_multiple_sources():
         gender: str
         timestamp: datetime = field(timestamp=True)
 
+    @meta(owner="test@test.com")
+    @source(
+        kinesis.stream(
+            "test_stream2",
+            init_position=datetime(2023, 5, 31),
+            format="json",
+        ),
+    )
+    @dataset
+    class UserInfoDatasetKinesis2:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        timestamp: datetime = field(timestamp=True)
+
     view = InternalTestClient()
     view.add(UserInfoDatasetKinesis)
+    view.add(UserInfoDatasetKinesis2)
     sync_request = view._get_sync_request_proto()
 
     extdb_request = sync_request.extdbs[0]
@@ -1007,6 +1024,31 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetKinesis",
+        "disorder": "1209600s",
+        "startingFrom": "2023-05-31T00:00:00Z",
+    }
+    expected_source = ParseDict(e, connector_proto.Source())
+    assert source_req == expected_source, error_message(
+        source_req, expected_source
+    )
+
+    source_req = sync_request.sources[1]
+    e = {
+        "table": {
+            "kinesisStream": {
+                "streamArn": "test_stream2",
+                "initPosition": "AT_TIMESTAMP",
+                "initTimestamp": "2023-05-31T00:00:00Z",
+                "format": "json",
+                "db": {
+                    "name": "kinesis_src",
+                    "kinesis": {
+                        "roleArn": "arn:aws:iam::123456789012:role/test-role"
+                    },
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetKinesis2",
         "disorder": "1209600s",
     }
     expected_source = ParseDict(e, connector_proto.Source())
