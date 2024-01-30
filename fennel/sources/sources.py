@@ -494,6 +494,7 @@ class S3Connector(DataConnector):
             self.data_source.aws_secret_access_key,
         )
 
+    @staticmethod
     def parse_path(path: str) -> Tuple[str, str]:
         """Parse a path of form "foo/bar/date=%Y-%m-%d/*" into a prefix and a suffix"""
 
@@ -528,7 +529,7 @@ class S3Connector(DataConnector):
                 # ensure we have a valid strftime format specifier
                 try:
                     formatted = datetime.now().strftime(part)
-                    _parsed = datetime.strptime(formatted, part)
+                    datetime.strptime(formatted, part)
                     suffix.append(part)
                 except ValueError:
                     raise ValueError(
@@ -545,11 +546,11 @@ class S3Connector(DataConnector):
                     suffix.append(part)
                 else:
                     prefix.append(part)
-        prefix, suffix = "/".join(prefix), "/".join(suffix)
+        prefix_str, suffix_str = "/".join(prefix), "/".join(suffix)
         # Add the slash to the end of the prefix if it originally had a slash
-        if len(prefix) > 0 and (len(suffix) > 0 or ends_with_slash):
-            prefix = prefix + "/"
-        return prefix, suffix
+        if len(prefix_str) > 0 and (len(suffix_str) > 0 or ends_with_slash):
+            prefix_str = prefix_str + "/"
+        return prefix_str, suffix_str
 
 
 class KinesisConnector(DataConnector):
