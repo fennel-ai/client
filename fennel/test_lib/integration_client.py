@@ -1,17 +1,12 @@
+from fennel.lib.schema import parse_json
+from fennel.utils import to_columnar_json
+
 import json
 import time
 
 import pandas as pd
 from typing import List, Set, Tuple, Union
-
-from fennel.lib.schema import parse_json
-from fennel.utils import to_columnar_json
 import sys
-
-sys.path.insert(
-    0,
-    "/nix/store/ml9qdg9hf0j5xb6awh3nj16imxnfngqy-python3-3.11.7-env/lib/python3.11/site-packages",
-)
 
 try:
     import pyarrow as pa

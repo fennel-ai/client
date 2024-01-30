@@ -1402,7 +1402,7 @@ def test_window_field_without_valid_parameters():
 
         @meta(owner="nitin@fennel.ai")
         @dataset
-        class Sessions:
+        class Sessions1:
             user_id: str = field(key=True)
             window: Window = field(key=True)
             t: datetime
@@ -1427,7 +1427,7 @@ def test_window_field_without_valid_parameters():
 
         @meta(owner="nitin@fennel.ai")
         @dataset
-        class Sessions:
+        class Sessions2:
             user_id: str = field(key=True)
             window: Window = field(key=True)
             t: datetime
@@ -1452,7 +1452,7 @@ def test_window_field_without_valid_parameters():
 
         @meta(owner="nitin@fennel.ai")
         @dataset
-        class Sessions:
+        class Sessions3:
             user_id: str = field(key=True)
             window: Window = field(key=True)
             t: datetime
@@ -1477,7 +1477,7 @@ def test_window_field_without_valid_parameters():
 
         @meta(owner="nitin@fennel.ai")
         @dataset
-        class Sessions:
+        class Sessions4:
             user_id: str = field(key=True)
             window: Window = field(key=True)
             t: datetime
@@ -1489,4 +1489,4 @@ def test_window_field_without_valid_parameters():
                     type="hopping", field="window", duration="5s"
                 )
 
-    assert str(e.value) == """'hopping window' must specify stride"""
+    assert str(e.value) == """'hopping window' must specify duration"""
