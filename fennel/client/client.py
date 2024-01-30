@@ -377,9 +377,9 @@ class Client:
         for out_feature in outputs:
             if isinstance(out_feature, Feature):
                 output_feature_names.append(out_feature.fqn())
-                output_feature_name_to_type[out_feature.fqn()] = (
-                    out_feature.dtype
-                )
+                output_feature_name_to_type[
+                    out_feature.fqn()
+                ] = out_feature.dtype
             elif isinstance(out_feature, str) and is_valid_feature(out_feature):
                 output_feature_names.append(out_feature)
                 output_feature_name_to_type[out_feature] = Any
