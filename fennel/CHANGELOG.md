@@ -1,4 +1,8 @@
 # Changelog
+
+## [0.20.15] - 2024-01-30
+- Improved casting to timestamp in case of epoch
+
 ## [0.20.14] - 2024-01-29
 - Support `since` for all source types in the client
 - Allow directly specifying a timestamp kinesis init_position instead of forcing the
