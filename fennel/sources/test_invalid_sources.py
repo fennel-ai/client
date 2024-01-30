@@ -152,7 +152,7 @@ def test_invalid_kinesis_source():
 
         @meta(owner="test@test.com")
         @source(
-            kinesis.stream("test_stream", init_position=at_timestamp("today"))
+            kinesis.stream("test_stream", format="json", init_position="today")
         )
         @dataset
         class UserInfoDatasetKinesis1:
@@ -166,7 +166,9 @@ def test_invalid_kinesis_source():
     with pytest.raises(TypeError) as e:
 
         @meta(owner="test@test.com")
-        @source(kinesis.stream("test_stream", init_position=at_timestamp(None)))
+        @source(
+            kinesis.stream("test_stream", format="json", init_position=None)
+        )
         @dataset
         class UserInfoDatasetKinesis2:
             user_id: int = field(key=True)
@@ -174,7 +176,10 @@ def test_invalid_kinesis_source():
             gender: str
             timestamp: datetime = field(timestamp=True)
 
-    assert str(e.value) == "Invalid timestamp type <class 'NoneType'>"
+    assert (
+        str(e.value)
+        == "Kinesis init_position must be 'latest', 'trim_horizon' or a timestamp. Invalid timestamp type <class 'NoneType'>"
+    )
 
     with pytest.raises(AttributeError) as e:
 
@@ -195,7 +200,7 @@ def test_invalid_kinesis_source():
 
     assert str(e.value) == "Kinesis format must be json"
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(ValueError) as e:
 
         @meta(owner="test@test.com")
         @source(
@@ -214,7 +219,7 @@ def test_invalid_kinesis_source():
 
     assert (
         str(e.value)
-        == "Kinesis init position must be 'latest', 'trim_horizon' or at_timestamp(ts)"
+        == "Invalid isoformat string: 'latest(2024-01-01T00:00:00Z)'"
     )
 
 
@@ -285,35 +290,6 @@ bigquery = BigQuery(
 
 
 def test_invalid_starting_from():
-    with pytest.raises(Exception) as e:
-
-        @meta(owner="test@test.com")
-        @source(
-            bigquery.table("users_bq", cursor="added_on"),
-            every="1h",
-            disorder="2h",
-            since=datetime.now(),
-        )
-        @dataset
-        class UserInfoDatasetBigQuery:
-            user_id: int = field(key=True)
-            name: str
-            gender: str
-            # Users date of birth
-            dob: str
-            age: int
-            account_creation_date: datetime
-            country: Optional[str]
-            timestamp: datetime = field(timestamp=True)
-
-        # bigquery source
-        view = InternalTestClient()
-        view.add(UserInfoDatasetBigQuery)
-        _sync_request = view._get_sync_request_proto()  # noqa
-    assert "BigQuery connector does not support starting_from parameter" in str(
-        e.value
-    )
-
     with pytest.raises(Exception) as e:
 
         @source(

@@ -1140,7 +1140,7 @@ def _kinesis_to_ext_table_proto(
     db: connector_proto.ExtDatabase,
     stream_arn: str,
     # init_position is one of "latest", "trim_horizon" or a timestamp
-    init_position: str | kinesis.at_timestamp | datetime | int | float,
+    init_position: str | kinesis.at_timestamp,
     format: str,
 ) -> connector_proto.ExtTable:
     timestamp = None
