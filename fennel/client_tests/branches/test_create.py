@@ -39,35 +39,50 @@ class UserInfoFeatureset:
 @mock
 def test_simple_create(client):
     client.init_branch("test-branch")
-    client.sync(branch="test-branch")
+    client.switch_branch("test-branch")
+    client.sync()
+
+
+@pytest.mark.integration
+@mock
+def test_duplicate_create(client):
+    """
+    Creating a branch with the name that already exists throws 400
+    """
+    response = client.init_branch("test-branch")
+    assert response.status_code == 200
+    response = client.init_branch("test-branch")
+    assert response.status_code == 400
 
 
 @pytest.mark.integration
 @mock
 def test_complex_create(client):
-    client.init_branch("test-branch-1")
-    client.sync(branch="test-branch-1")
-
-    client.init_branch("test-branch-2")
+    """
+    Syncing zero datasets in main and few in a branch. The change should be reflected in that branch only.
+    """
+    client.sync()
+    client.init_branch("test-branch")
+    client.switch_branch("test-branch")
     client.sync(
-        branch="test-branch-2",
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
 
-    assert len(client.list_datasets(branch="test-branch-1")) == 0
-    assert len(client.list_featuresets(branch="test-branch-1")) == 0
+    assert len(client.list_datasets()) == 1
+    assert len(client.list_featuresets()) == 1
 
-    assert len(client.list_datasets(branch="test-branch-2")) == 1
-    assert len(client.list_featuresets(branch="test-branch-2")) == 1
+    client.switch_branch("main")
+    assert len(client.list_datasets()) == 0
+    assert len(client.list_featuresets()) == 0
 
 
 @pytest.mark.integration
 @mock
 def test_log(client):
     client.init_branch("test-branch")
+    client.switch_branch("test-branch")
     client.sync(
-        branch="test-branch",
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
@@ -85,10 +100,8 @@ def test_log(client):
         },
     ]
     df = pd.DataFrame(data)
-    response = client.log(
-        "fennel_webhook", "UserInfoDataset", df, branch="test-branch"
-    )
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
 
-    output = client.get_dataset_df("UserInfoDataset", branch="test-branch")
+    output = client.get_dataset_df("UserInfoDataset")
     assert output.shape == (1, 7)

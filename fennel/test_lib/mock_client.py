@@ -29,19 +29,21 @@ logger = logging.getLogger(__name__)
 
 
 class MockClient(Client):
-    def __init__(self):
+    def __init__(self, branch: Optional[str] = None):
+        if branch is None:
+            branch = MAIN_BRANCH
+
+        self.branch: str = branch
         self.branches_map: Dict[str, Branch] = {}
         self.query_engine: QueryEngine = QueryEngine()
 
-        # Adding main branch
-        self.branches_map[MAIN_BRANCH] = Branch(MAIN_BRANCH)
+        # Adding branch
+        self.branches_map[branch] = Branch(branch)
 
     # ----------------- Debug methods -----------------------------------------
 
-    def get_dataset_df(
-        self, dataset_name: str, branch: str = MAIN_BRANCH
-    ) -> pd.DataFrame:
-        return self._get_branch(branch).get_dataset_df(dataset_name)
+    def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
+        return self._get_branch(self.branch).get_dataset_df(dataset_name)
 
     # ----------------- Public methods -----------------------------------------
 
@@ -54,17 +56,11 @@ class MockClient(Client):
     ):
         at_least_one_ok = False
         for branch in self.branches_map:
-            try:
-                response = self._get_branch(branch).log(
-                    webhook, endpoint, df, _batch_size
-                )
-                if response.status_code == 200:
-                    at_least_one_ok = True
-            except Exception as e:
-                raise Exception(
-                    f"Error occurred while logging to branch: {branch} error: {e}"
-                ) from e
-
+            response = self._get_branch(branch).log(
+                webhook, endpoint, df, _batch_size
+            )
+            if response.status_code == 200:
+                at_least_one_ok = True
         if at_least_one_ok:
             return FakeResponse(200, "OK")
         else:
@@ -80,9 +76,8 @@ class MockClient(Client):
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
         tier: Optional[str] = None,
-        branch: str = MAIN_BRANCH,
     ):
-        return self._get_branch(branch).sync(
+        return self._get_branch(self.branch).sync(
             datasets, featuresets, preview, tier
         )
 
@@ -94,13 +89,12 @@ class MockClient(Client):
         log: bool = False,
         workflow: Optional[str] = "default",
         sampling_rate: Optional[float] = 1.0,
-        branch: str = MAIN_BRANCH,
     ) -> pd.DataFrame:
         if log:
             raise NotImplementedError("log is not supported in MockClient")
         if input_dataframe.empty:
             return pd.DataFrame()
-        branch_class = self._get_branch(branch)
+        branch_class = self._get_branch(self.branch)
         entities = branch_class.get_entities()
         data_engine = branch_class.get_data_engine()
         input_feature_names = self._get_feature_name_from_inputs(inputs)
@@ -130,7 +124,6 @@ class MockClient(Client):
         input_s3: Optional[S3Connector] = None,
         output_s3: Optional[S3Connector] = None,
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
-        branch: str = MAIN_BRANCH,
     ) -> Union[pd.DataFrame, pd.Series]:
         if format != "pandas":
             raise NotImplementedError(
@@ -146,7 +139,7 @@ class MockClient(Client):
 
         if input_dataframe.empty:
             return pd.DataFrame()
-        branch_class = self._get_branch(branch)
+        branch_class = self._get_branch(self.branch)
         entities = branch_class.get_entities()
         data_engine = branch_class.get_data_engine()
         timestamps = input_dataframe[timestamp_column]
@@ -185,29 +178,30 @@ class MockClient(Client):
         keys: List[Dict[str, Any]],
         fields: List[str],
         timestamps: List[Union[int, str, datetime]] = None,
-        branch: str = MAIN_BRANCH,
     ):
-        branch_class = self._get_branch(branch)
+        branch_class = self._get_branch(self.branch)
         data_engine = branch_class.get_data_engine()
         return self.query_engine.lookup(
             data_engine, dataset_name, keys, fields, timestamps
         )
 
     def inspect_lastn(
-        self, dataset_name: str, n: int = 10, branch: str = MAIN_BRANCH
+        self,
+        dataset_name: str,
+        n: int = 10,
     ) -> List[Dict[str, Any]]:
-        branch_class = self._get_branch(branch)
+        branch_class = self._get_branch(self.branch)
         return (
             branch_class.get_dataset_df(dataset_name)
             .last(n)
             .to_dict(orient="records")
         )
 
-    def list_datasets(self, branch: str = MAIN_BRANCH):
-        return self._get_branch(branch).list_datasets()
+    def list_datasets(self):
+        return self._get_branch(self.branch).list_datasets()
 
-    def list_featuresets(self, branch: str = MAIN_BRANCH):
-        return self._get_branch(branch).list_datasets()
+    def list_featuresets(self):
+        return self._get_branch(self.branch).list_datasets()
 
     # ----------------------- Branch API's -----------------------------------
 
@@ -223,20 +217,18 @@ class MockClient(Client):
         if name == from_branch:
             return FakeResponse(
                 400,
-                f"New Branch name cannot be same ass the branch that needs to be cloned",
+                f"New Branch name cannot be same as the branch that needs to be cloned",
             )
         self.branches_map[name] = copy.deepcopy(self.branches_map[from_branch])
         self.branches_map[name].change_name(name)
-        self.branches_map[name].clean_data()
         return FakeResponse(200, "Ok")
 
     def delete_branch(self, name: str):
         if name not in self.branches_map:
             return FakeResponse(400, f"Branch name: {name} does not exist")
-        if name == MAIN_BRANCH:
-            del self.branches_map[name]
-            self.branches_map[name] = Branch(name)
         del self.branches_map[name]
+        if name == MAIN_BRANCH:
+            self.branches_map[name] = Branch(name)
         return FakeResponse(200, "Ok")
 
     def list_branches(self) -> List[str]:
@@ -252,6 +244,9 @@ class MockClient(Client):
 
     def is_integration_client(self) -> bool:
         return False
+
+    def switch_branch(self, name: str):
+        self.branch = name
 
     # ----------------- Private methods --------------------------------------
     def _parse_datetime(self, value: Union[int, str, datetime]) -> datetime:
@@ -272,8 +267,8 @@ class MockClient(Client):
             return self.branches_map[branch]
         except KeyError:
             raise KeyError(
-                f"Branch: {branch} not found, please sync this branch and try again. "
-                f"Available branches: {self.branches_map.keys()}"
+                f"Branch: `{branch}` not found, please sync this branch and try again. "
+                f"Available branches: {str(list(self.branches_map.keys()))}"
             )
 
     def _get_feature_name_from_inputs(
