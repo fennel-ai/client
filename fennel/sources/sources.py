@@ -471,6 +471,8 @@ class S3Connector(DataConnector):
         if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
             raise (ValueError("delimiter must be one of [',', '\t', '|']"))
 
+        # Only one of a prefix or path pattern can be specified. If a path is specified,
+        # the prefix and suffix are parsed and validated from it
         self.path_prefix = path_prefix
         if path and path_prefix:
             raise AttributeError("path and prefix cannot be specified together")
