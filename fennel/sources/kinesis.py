@@ -22,7 +22,7 @@ class at_timestamp(object):
         if isinstance(timestamp, datetime):
             self.timestamp = timestamp
         elif isinstance(timestamp, (int, float)):
-            self.timestamp = datetime.fromtimestamp(timestamp)
+            self.timestamp = datetime.utcfromtimestamp(timestamp)
         elif isinstance(timestamp, str):
             self.timestamp = datetime.fromisoformat(timestamp)
         else:
