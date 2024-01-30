@@ -1191,6 +1191,7 @@ def test_s3_source_with_path():
             "year=%Y/*/*/day=%d/*/*.csv.bz2",
         ),
         ("foo/bar/baz.json", "foo/bar/baz.json", ""),
+        ("foo-bar/baz-fun.json", "foo-bar/baz-fun.json", ""),
         ("*/year=%Y", "", "*/year=%Y"),
         ("%Y%m%d/*", "", "%Y%m%d/*"),
     ]

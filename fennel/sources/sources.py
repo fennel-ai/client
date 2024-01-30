@@ -497,8 +497,9 @@ class S3Connector(DataConnector):
     def parse_path(path: str) -> Tuple[str, str]:
         """Parse a path of form "foo/bar/date=%Y-%m-%d/*" into a prefix and a suffix"""
 
+        ends_with_slash = path.endswith("/")
         # Strip out the ending slash
-        if path.endswith("/"):
+        if ends_with_slash:
             path = path[:-1]
         parts = path.split("/")
         suffix_portion = False
@@ -534,10 +535,10 @@ class S3Connector(DataConnector):
                         f"Invalid path part {part}. Invalid datetime format specifier"
                     )
             else:
-                pattern = r"^[a-zA-Z0-9_-]+$"
+                pattern = r"^[a-zA-Z0-9._\-]+$"
                 if not re.match(pattern, part):
                     raise ValueError(
-                        f"Invalid path part {part}. All path parts must contain alphanumeric characters, hyphens, underscores, the * or ** wildcard, or strftime format specifiers."
+                        f"Invalid path part {part}. All path parts must contain alphanumeric characters, hyphens, underscores, dots, the * or ** wildcards, or strftime format specifiers."
                     )
                 # static part. Can be part of prefix until we see a wildcard
                 if suffix_portion:
@@ -545,7 +546,8 @@ class S3Connector(DataConnector):
                 else:
                     prefix.append(part)
         prefix, suffix = "/".join(prefix), "/".join(suffix)
-        if len(prefix) > 0 and prefix[-1] != "/":
+        # Add the slash to the end of the prefix if it originally had a slash
+        if len(prefix) > 0 and (len(suffix) > 0 or ends_with_slash):
             prefix = prefix + "/"
         return prefix, suffix
 
