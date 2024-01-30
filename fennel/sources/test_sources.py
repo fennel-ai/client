@@ -1,6 +1,7 @@
 from datetime import datetime
 from fennel import sources
 from fennel.sources.kinesis import at_timestamp
+from fennel.sources.sources import S3Connector
 
 import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
@@ -539,6 +540,7 @@ def test_multiple_sources():
             "s3Table": {
                 "bucket": "all_ratings",
                 "pathPrefix": "prod/apac/",
+                "pathSuffix": {},
                 "delimiter": ",",
                 "format": "delta",
                 "preSorted": True,
@@ -1085,6 +1087,7 @@ def test_console_source():
             "s3Table": {
                 "bucket": "all_ratings",
                 "pathPrefix": "prod/apac/",
+                "pathSuffix": {},
                 "delimiter": ",",
                 "format": "csv",
                 "db": {"s3": {}, "name": "s3_test"},
@@ -1105,3 +1108,93 @@ def test_console_source():
     assert extdb_request == expected_extdb_request, error_message(
         extdb_request, expected_extdb_request
     )
+
+
+def test_s3_source_with_path():
+    @source(
+        s3_console.bucket(
+            bucket_name="all_ratings",
+            path="prod/*/date=%Y%m%d/hour=%H/*/*.csv",
+        ),
+        every="1h",
+    )
+    @meta(owner="test@test.com", tags=["test", "yolo"])
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDataset)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.extdbs) == 1
+
+    # last source
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "s3Table": {
+                "bucket": "all_ratings",
+                "pathPrefix": "prod/apac/",
+                "pathSuffix": {},
+                "delimiter": ",",
+                "format": "csv",
+                "db": {"s3": {}, "name": "s3_test"},
+            }
+        },
+        "dataset": "UserInfoDataset",
+        "every": "3600s",
+        "disorder": "1209600s",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {"s3": {}, "name": "s3_test"}
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    valid_path_cases = [
+        ("fixed/foo/bar/", "fixed/foo/bar/", None),
+        ("foo/", "foo/", None)("foo/*/*/*", "foo/", "*/*/*"),
+        ("foo/*/*.json", "foo/", "*/*.json"),
+        ("*/*.json", None, "*/*.json"),
+        ("foo/%Y/%m/%d/*.json", "foo/", "%Y/%m/%d/*.json"),
+        (
+            "foo/bar/baz/*/%Y-%m-%d/%H/*/*.csv",
+            "foo/bar/baz",
+            "*/%Y-%m-%d/%H/*/*.csv",
+        ),
+        (
+            "*/year=%Y/month=%m/day=%d/hour=%H/*/*",
+            None,
+            "*/year=%Y/month=%m/day=%d/hour=%H/*/*",
+        ),
+        ("foo/**", "foo/", "**"),
+        ("**/*", None, "**/*"),
+        (
+            "*/year-%Y/weel-%W/%d/hour-%H/*/*",
+            None,
+            "*/year-%Y/weel-%W/%d/hour-%H/*/*",
+        ),
+        (
+            "foo/bar/year=%Y/*/*/day=%d/*/*.csv.gz",
+            "foo/bar",
+            "year=%Y/*/*/day=%d/*/*",
+        ),
+    ]
+
+    for path, expected_prefix, expected_suffix in valid_path_cases:
+        prefix, suffix = S3Connector.parse_path(path)
+        assert (
+            prefix == expected_prefix
+        ), f"Expected prefix: {expected_prefix}, got: {prefix}"
+        assert (
+            suffix == expected_suffix
+        ), f"Expected suffix: {expected_suffix}, got: {suffix}"
