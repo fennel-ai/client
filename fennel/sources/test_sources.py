@@ -1194,6 +1194,7 @@ def test_s3_source_with_path():
         ("foo-bar/baz-fun.json", "foo-bar/baz-fun.json", ""),
         ("*/year=%Y", "", "*/year=%Y"),
         ("%Y%m%d/*", "", "%Y%m%d/*"),
+        ("foo/**/hh=%H/*", "foo/", "**/hh=%H/*"),
     ]
 
     for path, expected_prefix, expected_suffix in valid_path_cases:
