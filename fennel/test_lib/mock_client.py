@@ -46,7 +46,7 @@ from fennel.lib.to_proto import (
 from fennel.sources.sources import S3Connector
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.integration_client import IntegrationClient
-from fennel.test_lib.test_utils import cast_col_to_dtype
+from fennel.test_lib.test_utils import cast_col_to_dtype, parse_datetime
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -715,7 +715,7 @@ class MockClient(Client):
         )
 
         timestamps = (
-            pd.Series(timestamps).apply(lambda x: self._parse_datetime(x))
+            pd.Series(timestamps).apply(lambda x: parse_datetime(x))
             if timestamps
             else pd.Series([datetime.now() for _ in range(len(keys))])
         )
@@ -752,18 +752,6 @@ class MockClient(Client):
         return False
 
     # ----------------- Private methods --------------------------------------
-    def _parse_datetime(self, value: Union[int, str, datetime]) -> datetime:
-        if isinstance(value, int):
-            try:
-                return pd.to_datetime(value, unit="s")
-            except ValueError:
-                try:
-                    return pd.to_datetime(value, unit="ms")
-                except ValueError:
-                    return pd.to_datetime(value, unit="us")
-        if isinstance(value, str):
-            return pd.to_datetime(value)
-        return value
 
     def _process_data_connector(self, dataset: Dataset, tier):
         connector = getattr(dataset, sources.SOURCE_FIELD)
@@ -922,9 +910,9 @@ class MockClient(Client):
             features = self.features_for_fs[extractor.featureset]
             feature_schema = {}
             for feature in features:
-                feature_schema[f"{extractor.featureset}.{feature.name}"] = (
-                    feature.dtype
-                )
+                feature_schema[
+                    f"{extractor.featureset}.{feature.name}"
+                ] = feature.dtype
             fields = []
             for feature_str in extractor.output_features:
                 feature_str = f"{extractor.featureset}.{feature_str}"
@@ -1241,9 +1229,9 @@ def cast_df_to_schema(
             f"Timestamp column `{dsschema.timestamp}` not found in dataframe while logging to dataset"
         )
     try:
-        df[dsschema.timestamp] = pd.to_datetime(df[dsschema.timestamp]).astype(
-            "datetime64[ns]"
-        )
+        df[dsschema.timestamp] = pd.to_datetime(
+            df[dsschema.timestamp].apply(lambda x: parse_datetime(x))
+        ).astype("datetime64[ns]")
     except Exception as e:
         raise ValueError(
             f"Failed to cast data logged to timestamp column {dsschema.timestamp}: {e}"

@@ -31,7 +31,7 @@ class UserInfoDataset:
 def fake_func(
     cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame
 ):
-    now = datetime.fromtimestamp(1668368655)
+    now = datetime.utcfromtimestamp(1668368655)
     if len(fields) > 0:
         assert ts.equals(pd.Series([now, now, now]))
         assert fields == ["age", "gender"]
@@ -107,7 +107,7 @@ def test_dataset_lookup():
     assert user_sq_extractor.name == "user_age_sq"
 
     user_sq_extractor_func = get_extractor_func(sync_request.extractors[1])
-    now = datetime.fromtimestamp(1668368655)
+    now = datetime.utcfromtimestamp(1668368655)
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a", "b", "c"])

@@ -53,7 +53,7 @@ class TestMovieInfo103(unittest.TestCase):
         # Sync the dataset
         client.sync(datasets=[mock_MovieInfo103])
         client.sleep()
-        t = datetime.fromtimestamp(1672858163)
+        t = datetime.utcfromtimestamp(1672858163)
         data = [
             [
                 1,
@@ -94,7 +94,7 @@ class TestMovieInfo103(unittest.TestCase):
         ]
 
         # Do some lookups with a timestamp
-        past = datetime.fromtimestamp(1672858160)
+        past = datetime.utcfromtimestamp(1672858160)
         ts = pd.Series([past, past, now, past])
         df, found = MovieInfo103.lookup(
             ts,
@@ -136,10 +136,60 @@ class TestMovieInfo103(unittest.TestCase):
         ]
 
         # Do some lookups with a timestamp
-        past = datetime.fromtimestamp(1672858160)
+        past = datetime.utcfromtimestamp(1672858160)
         ts = pd.Series([past, past, now, past])
         df, found = MovieInfo103.lookup(
             ts,
             movieId=movie_ids,
         )
         assert found.tolist() == [False, False, True, False]
+
+    @pytest.mark.integration
+    @mock
+    def test_epoch_log_to_MovieInfo103(self, client):
+        """Log some data to the dataset with epoch time and check if it is logged correctly."""
+        if client.integration_mode() == "local":
+            pytest.skip("Skipping integration test in local mode")
+
+        mock_MovieInfo103 = MovieInfo103.with_source(
+            webhook.endpoint("MovieInfo103")
+        )
+
+        # Sync the dataset
+        client.sync(datasets=[mock_MovieInfo103])
+        client.sleep()
+        data = [
+            [
+                1,
+                "Toy Story (1995)",
+                "Adventure|Animation|Children|Comedy|Fantasy",
+                1672858163,
+            ],
+            [2, "Jumanji (1995)", "Adventure|Children|Fantasy", 1672858163000],
+            [23, "Assassins (1995)", "Action|Crime|Thriller", 1672858163000000],
+            [
+                24,
+                "Powder (1995)",
+                "Drama|Sci-Fi",
+                datetime.utcfromtimestamp(1672858163),
+            ],
+        ]
+        columns = ["movieId", "title", "genres", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+
+        response = client.log("fennel_webhook", "MovieInfo103", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        df = client.get_dataset_df("MovieInfo103")
+        assert df["title"].tolist() == [
+            "Toy Story (1995)",
+            "Jumanji (1995)",
+            "Assassins (1995)",
+            "Powder (1995)",
+        ]
+        assert df["timestamp"].tolist() == [
+            datetime.utcfromtimestamp(1672858163),
+            datetime.utcfromtimestamp(1672858163),
+            datetime.utcfromtimestamp(1672858163),
+            datetime.utcfromtimestamp(1672858163),
+        ]
