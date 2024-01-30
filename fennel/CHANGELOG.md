@@ -1,4 +1,9 @@
 # Changelog
+## [0.20.14] - 2024-01-29
+- Support `since` for all source types in the client
+- Allow directly specifying a timestamp kinesis init_position instead of forcing the
+  user to type `at_timestamp`
+
 ## [0.20.13] - 2024-01-26
 - Deprecate JSONL as a standalone format. format=json should be used for
   newline-delimitted json
