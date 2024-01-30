@@ -1139,7 +1139,8 @@ def _kinesis_to_ext_db_proto(
 def _kinesis_to_ext_table_proto(
     db: connector_proto.ExtDatabase,
     stream_arn: str,
-    init_position: str | kinesis.at_timestamp,
+    # init_position is one of "latest", "trim_horizon" or a timestamp
+    init_position: str | kinesis.at_timestamp | datetime | int | float,
     format: str,
 ) -> connector_proto.ExtTable:
     timestamp = None
@@ -1147,12 +1148,16 @@ def _kinesis_to_ext_table_proto(
         ip = kinesis_proto.InitPosition.TRIM_HORIZON
     elif init_position == "latest":
         ip = kinesis_proto.InitPosition.LATEST
-    elif isinstance(init_position, kinesis.at_timestamp):
+    else:
+        # Maintain the `at_timestamp` function for backward compatibility but it's unnecessary
+        at_ts = (
+            init_position
+            if isinstance(init_position, kinesis.at_timestamp)
+            else kinesis.at_timestamp(init_position)
+        )
         ip = kinesis_proto.InitPosition.AT_TIMESTAMP
         timestamp = Timestamp()
-        timestamp.FromDatetime(init_position())
-    else:
-        raise ValueError(f"Unknown init position: {init_position}")
+        timestamp.FromDatetime(at_ts())
 
     return connector_proto.ExtTable(
         kinesis_stream=connector_proto.KinesisStream(
