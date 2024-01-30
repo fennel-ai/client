@@ -493,6 +493,10 @@ class S3Connector(DataConnector):
 
     def parse_path(path: str) -> Tuple[str, str]:
         """Parse a path of form "foo/bar/date=%Y-%m-%d/*" into a prefix and a suffix"""
+
+        # Strip out the ending slash
+        if path.endswith("/"):
+            path = path[:-1]
         parts = path.split("/")
         suffix_portion = False
         prefix = []
@@ -508,7 +512,7 @@ class S3Connector(DataConnector):
                     raise ValueError(
                         f"Invalid path part {part}. The * wildcard must be a complete path part except for an ending file extension."
                     )
-                pattern = r"^\*\.[a-zA-Z]+$"
+                pattern = r"^\*\.[a-zA-Z0-9.]+$"
                 if not re.match(pattern, part):
                     raise ValueError(
                         f"Invalid path part {part}. The ending path part must be the * wildcard, of the form *.file-extension, or a static string"
@@ -538,12 +542,8 @@ class S3Connector(DataConnector):
                 else:
                     prefix.append(part)
         prefix, suffix = "/".join(prefix), "/".join(suffix)
-        if len(prefix) == 0:
-            prefix = None
-        else:
+        if len(prefix) > 0 and prefix[-1] != "/":
             prefix = prefix + "/"
-        if len(suffix) == 0:
-            suffix = None
         return prefix, suffix
 
 

@@ -540,7 +540,7 @@ def test_multiple_sources():
             "s3Table": {
                 "bucket": "all_ratings",
                 "pathPrefix": "prod/apac/",
-                "pathSuffix": {},
+                "pathSuffix": "",
                 "delimiter": ",",
                 "format": "delta",
                 "preSorted": True,
@@ -1087,7 +1087,7 @@ def test_console_source():
             "s3Table": {
                 "bucket": "all_ratings",
                 "pathPrefix": "prod/apac/",
-                "pathSuffix": {},
+                "pathSuffix": "",
                 "delimiter": ",",
                 "format": "csv",
                 "db": {"s3": {}, "name": "s3_test"},
@@ -1137,8 +1137,8 @@ def test_s3_source_with_path():
         "table": {
             "s3Table": {
                 "bucket": "all_ratings",
-                "pathPrefix": "prod/apac/",
-                "pathSuffix": {},
+                "pathPrefix": "prod/",
+                "pathSuffix": "*/date=%Y%m%d/hour=%H/*/*.csv",
                 "delimiter": ",",
                 "format": "csv",
                 "db": {"s3": {}, "name": "s3_test"},
@@ -1161,32 +1161,33 @@ def test_s3_source_with_path():
     )
 
     valid_path_cases = [
-        ("fixed/foo/bar/", "fixed/foo/bar/", None),
-        ("foo/", "foo/", None)("foo/*/*/*", "foo/", "*/*/*"),
+        ("fixed/foo/bar/", "fixed/foo/bar/", ""),
+        ("foo/", "foo/", ""),
+        ("foo/*/*/*", "foo/", "*/*/*"),
         ("foo/*/*.json", "foo/", "*/*.json"),
-        ("*/*.json", None, "*/*.json"),
+        ("*/*.json", "", "*/*.json"),
         ("foo/%Y/%m/%d/*.json", "foo/", "%Y/%m/%d/*.json"),
         (
             "foo/bar/baz/*/%Y-%m-%d/%H/*/*.csv",
-            "foo/bar/baz",
+            "foo/bar/baz/",
             "*/%Y-%m-%d/%H/*/*.csv",
         ),
         (
             "*/year=%Y/month=%m/day=%d/hour=%H/*/*",
-            None,
+            "",
             "*/year=%Y/month=%m/day=%d/hour=%H/*/*",
         ),
         ("foo/**", "foo/", "**"),
-        ("**/*", None, "**/*"),
+        ("**/*", "", "**/*"),
         (
             "*/year-%Y/weel-%W/%d/hour-%H/*/*",
-            None,
+            "",
             "*/year-%Y/weel-%W/%d/hour-%H/*/*",
         ),
         (
-            "foo/bar/year=%Y/*/*/day=%d/*/*.csv.gz",
-            "foo/bar",
-            "year=%Y/*/*/day=%d/*/*",
+            "foo/bar/year=%Y/*/*/day=%d/*/*.csv.bz2",
+            "foo/bar/",
+            "year=%Y/*/*/day=%d/*/*.csv.bz2",
         ),
     ]
 
