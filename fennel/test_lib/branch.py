@@ -76,12 +76,6 @@ class Branch:
     def get_entities(self) -> Entities:
         return self.entities
 
-    def list_datasets(self):
-        return self.data_engine.list_datasets()
-
-    def list_featuresets(self):
-        return self.entities.featureset_requests
-
     def get_data_engine(self) -> DataEngine:
         return self.data_engine
 

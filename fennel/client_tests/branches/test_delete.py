@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pandas as pd
 import pytest
@@ -54,14 +54,22 @@ def test_delete_branch(client):
 
 @pytest.mark.integration
 @mock
-def test_complex_branch(client):
+def test_complex_delete(client):
+    """
+    Clone B from A, test extract working from both, then delete B, test extract working only from A.
+    Args:
+        client:
+
+    Returns:
+
+    """
     client.sync(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
     client.clone_branch(name="test-branch", from_branch="main")
 
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         {
             "user_id": 1,
@@ -70,7 +78,7 @@ def test_complex_branch(client):
             "gender": "male",
             "country_code": 1,
             "email": "john@fennel",
-            "timestamp": now - timedelta(days=1),
+            "timestamp": now,
         },
         {
             "user_id": 2,
@@ -79,7 +87,7 @@ def test_complex_branch(client):
             "gender": "female",
             "country_code": 1,
             "email": "rachel@fennel",
-            "timestamp": now - timedelta(days=1),
+            "timestamp": now,
         },
         {
             "user_id": 3,
@@ -88,7 +96,7 @@ def test_complex_branch(client):
             "gender": "male",
             "country_code": 1,
             "email": "john@fennel",
-            "timestamp": now - timedelta(days=1),
+            "timestamp": now,
         },
     ]
     df = pd.DataFrame(data)
@@ -111,7 +119,7 @@ def test_complex_branch(client):
         "None",
     ]
 
-    client.switch_branch(name="test-branch")
+    client.checkout(name="test-branch")
     output = client.extract(
         inputs=["Request.user_id"],
         outputs=[UserInfoFeatureset],

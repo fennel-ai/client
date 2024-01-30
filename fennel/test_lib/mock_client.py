@@ -197,18 +197,13 @@ class MockClient(Client):
             .to_dict(orient="records")
         )
 
-    def list_datasets(self):
-        return self._get_branch(self.branch).list_datasets()
-
-    def list_featuresets(self):
-        return self._get_branch(self.branch).list_datasets()
-
     # ----------------------- Branch API's -----------------------------------
 
     def init_branch(self, name: str):
         if name in self.branches_map:
-            return FakeResponse(400, f"Branch name: {name} already exists")
+            raise ValueError(f"Branch name: `{name}` already exists")
         self.branches_map[name] = Branch(name)
+        self.checkout(name)
         return FakeResponse(200, "Ok")
 
     def clone_branch(self, name: str, from_branch: str):
@@ -221,6 +216,7 @@ class MockClient(Client):
             )
         self.branches_map[name] = copy.deepcopy(self.branches_map[from_branch])
         self.branches_map[name].change_name(name)
+        self.checkout(name)
         return FakeResponse(200, "Ok")
 
     def delete_branch(self, name: str):
@@ -234,6 +230,9 @@ class MockClient(Client):
     def list_branches(self) -> List[str]:
         return list(self.branches_map.keys())
 
+    def checkout(self, name: str):
+        self.branch = name
+
     # --------------- Public MockClient Specific methods -------------------
 
     def sleep(self, seconds: float = 0):
@@ -244,9 +243,6 @@ class MockClient(Client):
 
     def is_integration_client(self) -> bool:
         return False
-
-    def switch_branch(self, name: str):
-        self.branch = name
 
     # ----------------- Private methods --------------------------------------
     def _parse_datetime(self, value: Union[int, str, datetime]) -> datetime:

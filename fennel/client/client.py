@@ -292,6 +292,14 @@ class Client:
         req = {"user": user}
         return self._get("{}/branches".format(V1_API), req)
 
+    def checkout(self, name: str):
+        """
+        Checkouts the client to another branch.
+        Parameters:
+        name (str): The name of the branch to delete.
+        """
+        self.branch = name
+
     # ----------------------- Extract historical API's -----------------------
 
     def extract_historical(

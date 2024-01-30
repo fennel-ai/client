@@ -107,9 +107,7 @@ def test_simple_clone(client):
     )
 
     client.clone_branch("test-branch", from_branch="main")
-    client.switch_branch("test-branch")
-    assert len(client.list_datasets()) == 1
-    assert len(client.list_featuresets()) == 1
+    assert client.branch == "test-branch"
 
 
 @pytest.mark.integration
@@ -141,13 +139,9 @@ def test_clone_after_log(client):
 
     output = client.get_dataset_df("UserInfoDataset")
     assert output.shape == (1, 7)
-    assert len(client.list_datasets()) == 1
-    assert len(client.list_featuresets()) == 1
 
     client.clone_branch("test-branch", from_branch="main")
-    client.switch_branch("test-branch")
-    assert len(client.list_datasets()) == 1
-    assert len(client.list_featuresets()) == 1
+    assert client.branch == "test-branch"
     output = client.get_dataset_df("UserInfoDataset")
     assert output.shape == (1, 7)
 
@@ -188,12 +182,14 @@ def test_webhook_log_to_both_clone_parent(client):
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
 
+    assert client.branch == "test-branch"
     output = client.get_dataset_df(
         "GenderStats",
     )
     assert output.shape == (2, 3)
 
-    client.switch_branch("test-branch")
+    client.checkout("main")
+    assert client.branch == "main"
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 
@@ -209,7 +205,6 @@ def test_add_dataset_clone_branch(client):
     )
     client.clone_branch("test-branch", from_branch="main")
 
-    client.switch_branch("test-branch")
     client.sync(
         datasets=[UserInfoDataset, GenderStats, CountryStats],
     )
@@ -245,7 +240,7 @@ def test_add_dataset_clone_branch(client):
     output = client.get_dataset_df("CountryStats")
     assert output.shape == (2, 3)
 
-    client.switch_branch("main")
+    client.checkout("main")
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 
@@ -290,18 +285,17 @@ def test_change_dataset_clone_branch(client):
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
 
-    client.clone_branch("test-branch", from_branch="main")
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 
-    client.switch_branch("test-branch")
+    client.clone_branch("test-branch", from_branch="main")
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 
     client.sync(
         datasets=_get_changed_datasets(lambda x: x["gender"].isin(["M", "F"])),
     )
-    client.switch_branch("main")
+    client.checkout("main")
     client.sync(
         datasets=[UserInfoDataset, GenderStats],
     )
@@ -312,7 +306,7 @@ def test_change_dataset_clone_branch(client):
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 
-    client.switch_branch("test-branch")
+    client.checkout("test-branch")
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (1, 3)
 
@@ -359,38 +353,38 @@ def test_multiple_clone_branch(client):
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 
-    client.switch_branch("test-branch-1")
+    client.checkout("test-branch-1")
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 
-    client.switch_branch("test-branch-2")
+    client.checkout("main")
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 
+    client.sync(
+        datasets=[UserInfoDataset, GenderStats],
+    )
+
+    client.checkout("test-branch-2")
     client.sync(
         datasets=_get_changed_datasets(lambda x: x["gender"].isin(["M", "F"])),
     )
-    client.switch_branch("test-branch-1")
 
+    client.checkout("test-branch-1")
     client.sync(
         datasets=_get_changed_datasets(lambda x: x["gender"].isin(["m", "f"])),
-    )
-
-    client.switch_branch("main")
-    client.sync(
-        datasets=[UserInfoDataset, GenderStats],
     )
 
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
 
     output = client.get_dataset_df("GenderStats")
-    assert output.shape == (2, 3)
-
-    client.switch_branch("test-branch-1")
-    output = client.get_dataset_df("GenderStats")
     assert output.shape == (0, 3)
 
-    client.switch_branch("test-branch-2")
+    client.checkout("main")
+    output = client.get_dataset_df("GenderStats")
+    assert output.shape == (2, 3)
+
+    client.checkout("test-branch-2")
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (1, 3)

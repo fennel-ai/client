@@ -88,15 +88,6 @@ class DataEngine(object):
     def get_dataset(self, dataset_name: str) -> Dataset:
         return self.datasets[dataset_name].dataset
 
-    def list_datasets(self):
-        return [
-            {
-                "name": dataset_name,
-                "dataset": self.datasets[dataset_name].dataset,
-            }
-            for dataset_name in self.datasets
-        ]
-
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
         if dataset_name not in self.datasets:
             raise ValueError(f"Dataset `{dataset_name}` not found")

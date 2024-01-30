@@ -39,7 +39,7 @@ class UserInfoFeatureset:
 @mock
 def test_simple_create(client):
     client.init_branch("test-branch")
-    client.switch_branch("test-branch")
+    assert client.branch == "test-branch"
     client.sync()
 
 
@@ -51,8 +51,10 @@ def test_duplicate_create(client):
     """
     response = client.init_branch("test-branch")
     assert response.status_code == 200
-    response = client.init_branch("test-branch")
-    assert response.status_code == 400
+
+    with pytest.raises(ValueError) as error:
+        client.init_branch("test-branch")
+    assert str(error.value) == "Branch name: `test-branch` already exists"
 
 
 @pytest.mark.integration
@@ -63,25 +65,23 @@ def test_complex_create(client):
     """
     client.sync()
     client.init_branch("test-branch")
-    client.switch_branch("test-branch")
     client.sync(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
 
-    assert len(client.list_datasets()) == 1
-    assert len(client.list_featuresets()) == 1
+    assert client.get_dataset_df("UserInfoDataset").shape == (0, 7)
 
-    client.switch_branch("main")
-    assert len(client.list_datasets()) == 0
-    assert len(client.list_featuresets()) == 0
+    client.checkout("main")
+    with pytest.raises(ValueError) as error:
+        print(client.get_dataset_df("UserInfoDataset").shape)
+    assert str(error.value) == "Dataset `UserInfoDataset` not found"
 
 
 @pytest.mark.integration
 @mock
 def test_log(client):
     client.init_branch("test-branch")
-    client.switch_branch("test-branch")
     client.sync(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
