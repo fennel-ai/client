@@ -649,10 +649,6 @@ def _kafka_conn_to_source_proto(
         data_source.sasl_plain_password,
         data_source.verify_cert,
     )
-    if connector.starting_from is not None:
-        raise ValueError(
-            "KafkaConnector does not support starting_from parameter"
-        )
     source = connector_proto.Source(
         table=connector_proto.ExtTable(
             kafka_topic=connector_proto.KafkaTopic(
@@ -665,6 +661,7 @@ def _kafka_conn_to_source_proto(
         dataset=dataset_name,
         cdc=to_cdc_proto(connector.cdc),
         pre_proc=_pre_proc_to_proto(connector.pre_proc),
+        starting_from=_to_starting_from_proto(connector.since),
     )
     return (ext_db, source)
 
@@ -719,21 +716,12 @@ def _s3_conn_to_source_proto(
         format=connector.format,
         presorted=connector.presorted,
     )
-    if connector.starting_from is not None:
-        if connector.format != "delta":
-            raise ValueError(
-                "Only delta format supports starting_from parameter"
-            )
-        starting_from = Timestamp()
-        starting_from.FromDatetime(connector.starting_from)
-    else:
-        starting_from = None
     source = connector_proto.Source(
         table=ext_table,
         dataset=dataset_name,
         every=to_duration_proto(connector.every),
         disorder=to_duration_proto(connector.disorder),
-        starting_from=starting_from,
+        starting_from=_to_starting_from_proto(connector.since),
         cursor=None,
         timestamp_field=timestamp_field,
         cdc=to_cdc_proto(connector.cdc),
@@ -821,10 +809,6 @@ def _bigquery_conn_to_source_proto(
         ext_db,
         table_name=connector.table_name,
     )
-    if connector.starting_from is not None:
-        raise ValueError(
-            "BigQuery connector does not support starting_from parameter"
-        )
     return (
         ext_db,
         connector_proto.Source(
@@ -833,6 +817,7 @@ def _bigquery_conn_to_source_proto(
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
+            starting_from=_to_starting_from_proto(connector.since),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
@@ -886,10 +871,6 @@ def _snowflake_conn_to_source_proto(
     ext_table = _snowflake_to_ext_table_proto(
         db=ext_db, table_name=connector.table_name
     )
-    starting_from = None
-    if connector.starting_from:
-        starting_from = Timestamp()
-        starting_from.FromDatetime(connector.starting_from)
     return (
         ext_db,
         connector_proto.Source(
@@ -901,7 +882,7 @@ def _snowflake_conn_to_source_proto(
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
-            starting_from=starting_from,
+            starting_from=_to_starting_from_proto(connector.since),
         ),
     )
 
@@ -962,11 +943,6 @@ def _mysql_conn_to_source_proto(
     ext_table = _mysql_to_ext_table_proto(
         db=ext_db, table_name=connector.table_name
     )
-
-    if connector.starting_from is not None:
-        raise ValueError(
-            "MySQL connector does not support starting_from parameter"
-        )
     return (
         ext_db,
         connector_proto.Source(
@@ -977,6 +953,7 @@ def _mysql_conn_to_source_proto(
             disorder=to_duration_proto(connector.disorder),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
+            starting_from=_to_starting_from_proto(connector.since),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
@@ -1047,10 +1024,6 @@ def _pg_conn_to_source_proto(
     ext_table = _pg_to_ext_table_proto(
         db=ext_db, table_name=connector.table_name
     )
-    if connector.starting_from is not None:
-        raise ValueError(
-            "Postgres connector does not support starting_from parameter"
-        )
     return (
         ext_db,
         connector_proto.Source(
@@ -1061,6 +1034,7 @@ def _pg_conn_to_source_proto(
             disorder=to_duration_proto(connector.disorder),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
+            starting_from=_to_starting_from_proto(connector.since),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
@@ -1129,10 +1103,6 @@ def _kinesis_conn_to_source_proto(
         init_position=connector.init_position,
         format=connector.format,
     )
-    if connector.starting_from is not None:
-        raise ValueError(
-            "Kinesis connector does not support starting_from parameter"
-        )
     return (
         ext_db,
         connector_proto.Source(
@@ -1140,6 +1110,7 @@ def _kinesis_conn_to_source_proto(
             dataset=dataset_name,
             disorder=to_duration_proto(connector.disorder),
             cdc=to_cdc_proto(connector.cdc),
+            starting_from=_to_starting_from_proto(connector.since),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
@@ -1347,3 +1318,16 @@ def {featureset._name}_{extractor.name}(*args, **kwargs):
         ref_includes=ref_includes,
         imports=get_all_imports(),
     )
+
+
+# ------------------------------------------------------------------------------
+# Since
+# ------------------------------------------------------------------------------
+
+
+def _to_starting_from_proto(since: Optional[datetime]) -> Optional[Timestamp]:
+    if since is None:
+        return None
+    ts = Timestamp()
+    ts.FromDatetime(since)
+    return ts

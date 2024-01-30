@@ -60,7 +60,7 @@ def source(
         conn.every = every if every is not None else DEFAULT_EVERY
         conn.disorder = disorder if disorder is not None else DEFAULT_DISORDER
         conn.cdc = cdc if cdc is not None else DEFAULT_CDC
-        conn.starting_from = since
+        conn.since = since
         conn.tiers = TierSelector(tier)
         conn.pre_proc = preproc
         connectors = getattr(dataset_cls, SOURCE_FIELD, [])
@@ -372,7 +372,7 @@ class DataConnector:
     every: Duration
     disorder: Duration
     cdc: str
-    starting_from: Optional[datetime] = None
+    since: Optional[datetime] = None
     tiers: TierSelector
     pre_proc: Optional[Dict[str, PreProcValue]] = None
 
