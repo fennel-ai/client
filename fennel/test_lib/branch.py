@@ -115,9 +115,9 @@ class Branch:
             self.entities.features_for_fs[featureset._name] = features_from_fs(
                 featureset
             )
-            self.entities.featureset_requests[
-                featureset._name
-            ] = featureset_to_proto(featureset)
+            self.entities.featureset_requests[featureset._name] = (
+                featureset_to_proto(featureset)
+            )
             # Check if the dataset used by the extractor is registered
             for extractor in featureset.extractors:
                 if not extractor.tiers.is_entity_selected(tier):
@@ -147,9 +147,9 @@ class Branch:
                 if extractor.extractor_type != ProtoExtractorType.PY_FUNC:
                     continue
                 extractor_fqn = f"{featureset._name}.{extractor.name}"
-                self.entities.extractor_funcs[
-                    extractor_fqn
-                ] = get_extractor_func(extractor)
+                self.entities.extractor_funcs[extractor_fqn] = (
+                    get_extractor_func(extractor)
+                )
 
         if is_extractor_graph_cyclic(self.entities.extractors):
             raise Exception("Cyclic graph detected in extractors")

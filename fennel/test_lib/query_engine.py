@@ -20,8 +20,7 @@ from fennel.test_lib.test_utils import cast_col_to_dtype, parse_datetime
 
 
 class QueryEngine:
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     def lookup(
         self,
@@ -90,9 +89,9 @@ class QueryEngine:
             features = entities.features_for_fs[extractor.featureset]
             feature_schema = {}
             for feature in features:
-                feature_schema[
-                    f"{extractor.featureset}.{feature.name}"
-                ] = feature.dtype
+                feature_schema[f"{extractor.featureset}.{feature.name}"] = (
+                    feature.dtype
+                )
             fields = []
             for feature_str in extractor.output_features:
                 feature_str = f"{extractor.featureset}.{feature_str}"

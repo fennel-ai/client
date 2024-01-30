@@ -55,7 +55,7 @@ def test_e2e_extraction(client):
         outputs=[
             "User.age",
             "UserPost.score",
-            "UserPost.affinity"
+            "UserPost.affinity",
             # there are 10 features in this list
         ],
         inputs=[
