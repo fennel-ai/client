@@ -1388,3 +1388,104 @@ def test_window_field_invalid_name():
         str(e.value)
         == """Window field name `page_id` in `'[Pipeline:pipeline_window]->window node'` must be different from non keyed fields in `'[Dataset:PageViewEvent]'`"""
     )
+
+def test_window_field_without_valid_parameters():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", duration="2s", field="window"
+                )
+
+    assert str(e.value) == """'sessionize window' must specify gap"""
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="tumbling", field="window", gap="5s"
+                )
+
+    assert str(e.value) == """'tumbling window' must specify duration"""
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="hopping", field="window", stride="5s"
+                )
+
+    assert str(e.value) == """'hopping window' must specify duration"""
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="hopping", field="window", duration="5s"
+                )
+
+    assert str(e.value) == """'hopping window' must specify stride"""

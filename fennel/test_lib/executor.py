@@ -1,7 +1,7 @@
 import copy
 import types
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Optional, Dict, List
 
 import numpy as np
@@ -484,12 +484,12 @@ class Executor(Visitor):
         class WindowStruct:
             def __init__(self, event_time: datetime):
                 self.begin_time = event_time
-                self.end_time = event_time
+                self.end_time = event_time + timedelta(microseconds=1)
                 self.count = 1
 
             def add_event(self, event_time: datetime):
                 self.count += 1
-                self.end_time = event_time
+                self.end_time = event_time + timedelta(microseconds=1)
 
             def to_dict(self) -> dict:
                 return {
@@ -517,7 +517,7 @@ class Executor(Visitor):
                 else:
                     # Check if the event is within the time threshold of the previous one
                     if (
-                        row[timestamp_col] - current_window.end_time
+                        row[timestamp_col] - (current_window.end_time - timedelta(microseconds=1))
                     ).total_seconds() <= gap:
                         current_window.add_event(row[timestamp_col])
                     else:

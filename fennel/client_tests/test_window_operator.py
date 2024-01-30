@@ -148,7 +148,7 @@ def test_window_operator(client):
         [
             {
                 "begin": datetime(2023, 1, 16, 11, 0, 25),
-                "end": datetime(2023, 1, 16, 11, 0, 33),
+                "end": datetime(2023, 1, 16, 11, 0, 34),
                 "count": 8,
             }
         ]
@@ -170,7 +170,7 @@ def test_window_operator(client):
         2023, 1, 16, 11, 0, 25
     )
     assert df_session["window"].values[0].end == datetime(
-        2023, 1, 16, 11, 0, 33
+        2023, 1, 16, 11, 0, 34
     )
     assert df_session["window"].values[0].count == 8
 

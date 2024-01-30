@@ -490,12 +490,12 @@ class GroupBy:
             self.keys = self.keys[0]  # type: ignore
         return WindowOperator(
             self.node,
-            list(self.keys),
-            WindowType(type),
-            field,
-            gap,
-            duration,
-            stride,
+            keys=list(self.keys),
+            type=WindowType(type),
+            field=field,
+            gap=gap,
+            duration=duration,
+            stride=stride,
         )
 
     def dsschema(self):
@@ -787,21 +787,25 @@ class WindowOperator(_Node):
             raise ValueError(
                 "'group_by' before 'window' must specify at least one key"
             )
-        if stride is None:
-            if type == WindowType.Hopping:
+        if type == WindowType.Hopping:
+            if stride is None:
                 raise ValueError("'hopping window' must specify stride")
+            
 
-        if duration is None:
-            if type == WindowType.Hopping or type == WindowType.Tumbling:
-                raise ValueError(
-                    "'hopping window' or 'tumbling window' must specify duration"
-                )
-
-        if gap is None:
-            if type == WindowType.Sessionize:
+            if duration is None:
+                raise ValueError("'hopping window' must specify duration")
+            
+        
+        if type == WindowType.Sessionize:
+            if gap is None:
                 raise ValueError("'sessionize window' must specify gap")
+        
+        if type == WindowType.Tumbling:
+            if duration is None:
+                raise ValueError("'tumbling window' must specify duration")
 
         self.input_keys = keys.copy()
+        self.by = keys.copy()
         keys.append(field)
         self.keys = keys
         self.type = type

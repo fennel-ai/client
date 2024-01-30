@@ -385,7 +385,8 @@ class regex:
             regex_type=schema_proto.RegexType(pattern=self.regex)
         )
 
-
+# Window represent a time window that encapsulates event in [begin, end)
+# (e.g x in w if w.begin <= x < w.end)
 @struct
 class Window:
     begin: datetime
