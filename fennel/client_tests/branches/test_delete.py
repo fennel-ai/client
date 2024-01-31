@@ -57,11 +57,6 @@ def test_delete_branch(client):
 def test_complex_delete(client):
     """
     Clone B from A, test extract working from both, then delete B, test extract working only from A.
-    Args:
-        client:
-
-    Returns:
-
     """
     client.sync(
         datasets=[UserInfoDataset],
