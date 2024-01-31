@@ -1,11 +1,12 @@
+from fennel.lib.schema import parse_json
+from fennel.utils import to_columnar_json
+
 import json
 import time
 
 import pandas as pd
 from typing import List, Set, Tuple, Union
-
-from fennel.lib.schema import parse_json
-from fennel.utils import to_columnar_json
+import sys
 
 try:
     import pyarrow as pa

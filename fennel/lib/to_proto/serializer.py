@@ -8,6 +8,7 @@ from typing import Dict, Any, List, Optional
 import google.protobuf.duration_pb2 as duration_proto
 
 import fennel.gen.dataset_pb2 as proto
+import fennel.gen.window_pb2 as window_proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
 from fennel.datasets.datasets import WindowType
@@ -333,25 +334,36 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
         )
 
     def visitWindow(self, obj):
-        gap = duration_proto.Duration()
-        gap.FromTimedelta(obj.gap_timedelta)
+        window_type = None
+        if obj.type == WindowType.Sessionize:
+            gap = duration_proto.Duration()
+            gap.FromTimedelta(obj.gap_timedelta)
+            window_type = window_proto.Window(
+                session=window_proto.Session(gap=gap)
+            )
+        elif obj.type == WindowType.Tumbling:
+            duration = duration_proto.Duration()
+            duration.FromTimedelta(obj.duration_timedelta)
+            window_type = window_proto.Window(
+                tumbling=window_proto.Tumbling(duration=duration)
+            )
+        elif obj.type == WindowType.Hopping:
+            duration = duration_proto.Duration()
+            duration.FromTimedelta(obj.duration_timedelta)
+            stride = duration_proto.Duration()
+            stride.FromTimedelta(obj.stride_timedelta)
+            window_type = window_proto.Window(
+                hopping=window_proto.Hopping(duration=duration, stride=stride)
+            )
         return proto.Operator(
             id=obj.signature(),
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
-            window=proto.Window(
+            window=proto.WindowOperatorKind(
                 operand_id=self.visit(obj.node),
-                type=(
-                    proto.Window.Type.Session
-                    if obj.type == WindowType.Sessionize
-                    else (
-                        proto.Window.Type.Tumble
-                        if obj.type == WindowType.Tumbling
-                        else proto.Window.Type.Sliding
-                    )
-                ),
-                gap=gap,
+                window_type=window_type,
                 field=obj.field,
+                by=obj.by,
             ),
         )
