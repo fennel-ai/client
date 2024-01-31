@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.20.17] - 2024-01-30
+- Allow `=` in the `path` parameter to the S3 source
+
 ## [0.20.16] - 2024-01-30
 - Introduce `path` parameter to the S3 source
 
