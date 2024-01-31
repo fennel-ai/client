@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from enum import Enum
+import re
 
 from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
 
@@ -141,7 +142,8 @@ class S3(DataSource):
     def bucket(
         self,
         bucket_name: str,
-        prefix: str,
+        prefix: Optional[str] = None,
+        path: Optional[str] = None,
         delimiter: str = ",",
         format: str = "csv",
         presorted: bool = False,
@@ -150,13 +152,14 @@ class S3(DataSource):
             self,
             bucket_name,
             prefix,
+            path,
             delimiter,
             format,
             presorted,
         )
 
     def required_fields(self) -> List[str]:
-        return ["bucket", "prefix"]
+        return ["bucket"]
 
     @staticmethod
     def get(name: str) -> S3:
@@ -340,7 +343,7 @@ class Kinesis(DataSource):
     def stream(
         self,
         stream_arn: str,
-        init_position: str | at_timestamp,
+        init_position: str | at_timestamp | datetime | int | float,
         format: str,
     ) -> KinesisConnector:
         return KinesisConnector(self, stream_arn, init_position, format)
@@ -431,7 +434,8 @@ class KafkaConnector(DataConnector):
 
 class S3Connector(DataConnector):
     bucket_name: Optional[str]
-    path_prefix: Optional[str]
+    path_prefix: str
+    path_suffix: Optional[str] = None
     delimiter: str = ","
     format: str = "csv"
     presorted: bool = False
@@ -441,13 +445,13 @@ class S3Connector(DataConnector):
         data_source,
         bucket_name,
         path_prefix,
+        path,
         delimiter,
         format,
         presorted,
     ):
         self.data_source = data_source
         self.bucket_name = bucket_name
-        self.path_prefix = path_prefix
         self.delimiter = delimiter
         self.format = format
         self.presorted = presorted
@@ -467,6 +471,17 @@ class S3Connector(DataConnector):
         if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
             raise (ValueError("delimiter must be one of [',', '\t', '|']"))
 
+        # Only one of a prefix or path pattern can be specified. If a path is specified,
+        # the prefix and suffix are parsed and validated from it
+        if path and path_prefix:
+            raise AttributeError("path and prefix cannot be specified together")
+        elif path_prefix:
+            self.path_prefix = path_prefix
+        elif path:
+            self.path_prefix, self.path_suffix = S3Connector.parse_path(path)
+        else:
+            raise AttributeError("either path or prefix must be specified")
+
     def identifier(self) -> str:
         return (
             f"{self.data_source.identifier()}(bucket={self.bucket_name}"
@@ -478,6 +493,64 @@ class S3Connector(DataConnector):
             self.data_source.aws_access_key_id,
             self.data_source.aws_secret_access_key,
         )
+
+    @staticmethod
+    def parse_path(path: str) -> Tuple[str, str]:
+        """Parse a path of form "foo/bar/date=%Y-%m-%d/*" into a prefix and a suffix"""
+
+        ends_with_slash = path.endswith("/")
+        # Strip out the ending slash
+        if ends_with_slash:
+            path = path[:-1]
+        parts = path.split("/")
+        suffix_portion = False
+        prefix = []
+        suffix = []
+        for i, part in enumerate(parts):
+            if part == "*" or part == "**":
+                # Wildcard
+                suffix_portion = True
+                suffix.append(part)
+            elif "*" in part:
+                # *.file-extension is allowed in the last path part only
+                if i != len(parts) - 1:
+                    raise ValueError(
+                        f"Invalid path part {part}. The * wildcard must be a complete path part except for an ending file extension."
+                    )
+                pattern = r"^\*\.[a-zA-Z0-9.]+$"
+                if not re.match(pattern, part):
+                    raise ValueError(
+                        f"Invalid path part {part}. The ending path part must be the * wildcard, of the form *.file-extension, a strftime format string, or static string"
+                    )
+                suffix_portion = True
+                suffix.append(part)
+            elif "%" in part:
+                suffix_portion = True
+                # ensure we have a valid strftime format specifier
+                try:
+                    formatted = datetime.now().strftime(part)
+                    datetime.strptime(formatted, part)
+                    suffix.append(part)
+                except ValueError:
+                    raise ValueError(
+                        f"Invalid path part {part}. Invalid datetime format specifier"
+                    )
+            else:
+                pattern = r"^[a-zA-Z0-9._\-]+$"
+                if not re.match(pattern, part):
+                    raise ValueError(
+                        f"Invalid path part {part}. All path parts must contain alphanumeric characters, hyphens, underscores, dots, the * or ** wildcards, or strftime format specifiers."
+                    )
+                # static part. Can be part of prefix until we see a wildcard
+                if suffix_portion:
+                    suffix.append(part)
+                else:
+                    prefix.append(part)
+        prefix_str, suffix_str = "/".join(prefix), "/".join(suffix)
+        # Add the slash to the end of the prefix if it originally had a slash
+        if len(prefix_str) > 0 and (len(suffix_str) > 0 or ends_with_slash):
+            prefix_str = prefix_str + "/"
+        return prefix_str, suffix_str
 
 
 class KinesisConnector(DataConnector):

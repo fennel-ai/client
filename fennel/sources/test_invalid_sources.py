@@ -14,7 +14,7 @@ from fennel.sources import (
     Kinesis,
 )
 from fennel.sources.kinesis import at_timestamp
-from fennel.sources.sources import BigQuery
+from fennel.sources.sources import BigQuery, S3Connector
 
 # noinspection PyUnresolvedReferences
 from fennel.test_lib import *
@@ -325,6 +325,36 @@ def test_invalid_s3_format():
             bucket_name="bucket", prefix="prefix", format="csv", delimiter="  "
         )
     assert "delimiter must be one of" in str(e.value)
+
+
+def test_invalid_s3_path():
+    # Exactly one of path and prefix are allowed
+    with pytest.raises(AttributeError) as e:
+        s3.bucket(
+            bucket_name="bucket", prefix="prefix", path="prefix/suffix/*.json"
+        )
+    assert "path and prefix cannot be specified together" == str(e.value)
+
+    with pytest.raises(AttributeError) as e:
+        s3.bucket(bucket_name="bucket")
+    assert "either path or prefix must be specified" == str(e.value)
+
+    invalid_path_cases = [
+        ("foo*/bar*/", "* wildcard must be a complete path part"),
+        ("foo/bar*", "of the form *.file-extension"),
+        ("foo/*-file.csv", "of the form *.file-extension"),
+        ("foo$/bar1/*", "alphanumeric characters, hyphens,"),
+        ("date-%q/*", "Invalid datetime"),
+        ("//foo/bar", "alphanumeric characters, hyphens,"),
+        ("*year=%Y/*", "* wildcard must be a complete path part"),
+        ("year=%*/*", "* wildcard must be a complete path part"),
+    ]
+
+    for path, error_str in invalid_path_cases:
+        with pytest.raises(ValueError) as e:
+            S3Connector.parse_path(path)
+        assert "Invalid path part" in str(e.value)
+        assert error_str in str(e.value)
 
 
 def test_invalid_pre_proc():

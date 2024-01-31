@@ -60,10 +60,25 @@ s3 = sources.S3(
 )
 
 
-@source(s3.bucket("engagement", prefix="notion"), every="30m")
+@source(
+    s3.bucket(
+        "engagement", path="notion/*/%Y/%m/%d/hour=%H/*/*", format="json"
+    ),
+    every="30m",
+)
 @meta(owner="abc@email.com")
 @dataset
 class UserS3SourcedDataset:
+    uid: int = field(key=True)
+    email: str
+    timestamp: datetime
+    ...
+
+
+@source(s3.bucket("engagement", prefix="notion"), every="30m")
+@meta(owner="abc@email.com")
+@dataset
+class UserS3SourcedDatasetWithPrefix:
     uid: int = field(key=True)
     email: str
     timestamp: datetime

@@ -712,6 +712,7 @@ def _s3_conn_to_source_proto(
         ext_db,
         bucket=connector.bucket_name,
         path_prefix=connector.path_prefix,
+        path_suffix=connector.path_suffix,
         delimiter=connector.delimiter,
         format=connector.format,
         presorted=connector.presorted,
@@ -748,6 +749,7 @@ def _s3_to_ext_table_proto(
     db: connector_proto.ExtDatabase,
     bucket: Optional[str],
     path_prefix: Optional[str],
+    path_suffix: Optional[str],
     delimiter: str,
     format: str,
     presorted: bool,
@@ -755,7 +757,9 @@ def _s3_to_ext_table_proto(
     if bucket is None:
         raise ValueError("bucket must be specified")
     if path_prefix is None:
-        raise ValueError("path_prefix must be specified")
+        raise ValueError("prefix or path must be specified")
+    if not path_suffix:
+        path_suffix = ""
 
     return connector_proto.ExtTable(
         s3_table=connector_proto.S3Table(
@@ -765,6 +769,7 @@ def _s3_to_ext_table_proto(
             delimiter=delimiter,
             format=format,
             pre_sorted=presorted,
+            path_suffix=path_suffix,
         )
     )
 
