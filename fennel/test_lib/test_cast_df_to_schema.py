@@ -179,7 +179,7 @@ def test_cast_invalid_timestamp():
         cast_df_to_schema(df, schema)
     assert (
         str(e.value)
-        == """Failed to cast data logged to timestamp column created_ts: Unknown string format: not a timestamp present at position 3"""
+        == """Failed to cast data logged to timestamp column created_ts: Unknown string format: not a timestamp present at position 0"""
     )
 
 

@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 from functools import partial
-from typing import Dict, List, Union, Optional, Any
+from typing import Dict, List, Union, Optional, Any, Tuple
 
 import numpy as np
 import pandas as pd
@@ -20,7 +20,9 @@ from fennel.test_lib.test_utils import cast_col_to_dtype, parse_datetime
 
 
 class QueryEngine:
-    def __init__(self): ...
+    """
+    Query engine handles all things related to lookups and extract.
+    """
 
     def lookup(
         self,
@@ -29,7 +31,18 @@ class QueryEngine:
         keys: List[Dict[str, Any]],
         fields: List[str],
         timestamps: List[Union[int, str, datetime]] = None,
-    ):
+    ) -> Tuple[List[dict], pd.Series]:
+        """
+        This function does a lookup on a dataset given data_engine containing the dataset.
+        Args:
+            data_engine: (DataEngine) - Data Engine containing the datasets and corresponding pandas dataframes
+            dataset_name: (str) - Name of the dataset on which lookup is performed
+            keys: (List[Dict[str, Any]]) - List of keys against which lookup is performed
+            fields: (List[str]) - List of output fields
+            timestamps: (List[Union[int, str, datetime]]) - Time as of which lookup is performed, in case of null, as of now lookup is performed.
+        Returns:
+
+        """
         if dataset_name not in data_engine.get_dataset_names():
             raise KeyError(f"Dataset: {dataset_name} not found")
 
@@ -47,7 +60,7 @@ class QueryEngine:
         timestamps = (
             pd.Series(timestamps).apply(lambda x: parse_datetime(x))
             if timestamps
-            else pd.Series([datetime.now() for _ in range(len(keys))])
+            else pd.Series([datetime.utcnow() for _ in range(len(keys))])
         )
 
         keys_dict = defaultdict(list)
@@ -74,14 +87,20 @@ class QueryEngine:
         outputs: List[Union[Feature, Featureset, str]],
         timestamps: pd.Series,
     ):
-        # Map of feature name to the pandas series
-        intermediate_data: Dict[str, pd.Series] = {}
-        for col in input_dataframe.columns:
-            if input_dataframe[col].apply(lambda x: isinstance(x, dict)).any():
-                input_dataframe[col] = input_dataframe[col].apply(
-                    lambda x: frozendict(x)
-                )
-            intermediate_data[col] = input_dataframe[col].reset_index(drop=True)
+        """
+        Runs list of extractors on data engine.
+        Args:
+            extractors_to_run: (List[Extractor]) - List of extractors to run.
+            data_engine: (DataEngine) - DataEngine containing datasets and corresponding pandas dataframes.
+            entities: (Entities) - Containing features, featuresets and extractors.
+            input_dataframe: (pd.DataFrame) - Keys against extractors will extract data from data engine.
+            outputs: (List[Union[Feature, Featureset, str]]) - Output features.
+            timestamps: (pd.Series) - Timestamp as of which extractors will extract data from data engine.
+        Returns:
+            pandas dataframe
+        """
+        # Map of input name to the pandas series
+        intermediate_data = self._get_input_dataframe_map(input_dataframe)
         for extractor in extractors_to_run:
             prepare_args = self._prepare_extractor_args(
                 extractor, intermediate_data
@@ -165,10 +184,50 @@ class QueryEngine:
                     f"Extractor {extractor.name} returned "
                     f"invalid type {type(output)}"
                 )
+
+        self._validate_extractor_output(intermediate_data)
+        return self._prepare_output_df(intermediate_data, outputs)
+
+    def _prepare_output_df(
+        self,
+        data: Dict[str, pd.Series],
+        outputs: List[Union[Feature, Featureset, str]],
+    ) -> pd.DataFrame:
+        """
+        Prepares the output dataframe using outputs and extractor outputs.
+        Args:
+            data: (Dict[str, pd.Series]) - Dict with input names and extractor output name mapped to corresponding pd.Series.
+            outputs: (List[Union[Feature, Featureset, str]]) - List of output from user
+        Returns:
+            Pandas DataFrame
+        """
+        output_df = pd.DataFrame()
+        for out_feature in outputs:
+            if isinstance(out_feature, Feature):
+                output_df[out_feature.fqn_] = data[out_feature.fqn_]
+            elif isinstance(out_feature, str) and is_valid_feature(out_feature):
+                output_df[out_feature] = data[out_feature]
+            elif isinstance(out_feature, Featureset):
+                for f in out_feature.features:
+                    output_df[f.fqn_] = data[f.fqn_]
+            elif type(out_feature) is tuple:
+                for f in out_feature:
+                    output_df[f.fqn_] = data[f.fqn_]
+            else:
+                raise Exception(
+                    f"Unknown feature {out_feature} of type {type(out_feature)} found "
+                    f"during feature extraction."
+                )
+        return output_df
+
+    def _validate_extractor_output(self, data: Dict[str, pd.Series]):
+        """
+        Ensure the  number of rows in each column is the same
+        Args:
+            data: (Dict[str, pd.Series]) - Dict with input names and extractor output name mapped to corresponding pd.Series.
+        """
         # Ensure the  number of rows in each column is the same
-        num_rows_per_col = {
-            col: len(intermediate_data[col]) for col in intermediate_data
-        }
+        num_rows_per_col = {col: len(data[col]) for col in data}
         first_col = list(num_rows_per_col.keys())[0]
         for col, num_rows in num_rows_per_col.items():
             if num_rows != num_rows_per_col[first_col]:
@@ -177,27 +236,25 @@ class QueryEngine:
                     f"but {num_rows_per_col[first_col]} in feature {first_col}. "
                 )
 
-        # Prepare the output dataframe
-        output_df = pd.DataFrame()
-        for out_feature in outputs:
-            if isinstance(out_feature, Feature):
-                output_df[out_feature.fqn_] = intermediate_data[
-                    out_feature.fqn_
-                ]
-            elif isinstance(out_feature, str) and is_valid_feature(out_feature):
-                output_df[out_feature] = intermediate_data[out_feature]
-            elif isinstance(out_feature, Featureset):
-                for f in out_feature.features:
-                    output_df[f.fqn_] = intermediate_data[f.fqn_]
-            elif type(out_feature) is tuple:
-                for f in out_feature:
-                    output_df[f.fqn_] = intermediate_data[f.fqn_]
-            else:
-                raise Exception(
-                    f"Unknown feature {out_feature} of type {type(out_feature)} found "
-                    f"during feature extraction."
+    def _get_input_dataframe_map(
+        self, input_dataframe: pd.DataFrame
+    ) -> Dict[str, pd.Series]:
+        """
+        Returns map of input name to pandas series
+        Args:
+            input_dataframe: (pd.DataFrame) - Input DataFrame
+        Returns:
+            Dict[str, pd.Series]
+        """
+        # Map of feature name to the pandas series
+        output: Dict[str, pd.Series] = {}
+        for col in input_dataframe.columns:
+            if input_dataframe[col].apply(lambda x: isinstance(x, dict)).any():
+                input_dataframe[col] = input_dataframe[col].apply(
+                    lambda x: frozendict(x)
                 )
-        return output_df
+            output[col] = input_dataframe[col].reset_index(drop=True)
+        return output
 
     def _prepare_extractor_args(
         self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]

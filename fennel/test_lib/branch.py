@@ -1,7 +1,7 @@
 import logging
 import sys
 import types
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Callable
 
 import pandas as pd
@@ -50,36 +50,45 @@ def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
 
 @dataclass
 class Entities:
-    featureset_requests: Dict[str, CoreFeatureset]
-    features_for_fs: Dict[str, List[ProtoFeature]]
-    extractor_funcs: Dict[str, Callable]
-    extractors: List[Extractor]
+    featureset_requests: Dict[str, CoreFeatureset] = field(default_factory=dict)
+    features_for_fs: Dict[str, List[ProtoFeature]] = field(default_factory=dict)
+    extractor_funcs: Dict[str, Callable] = field(default_factory=dict)
+    extractors: List[Extractor] = field(default_factory=list)
 
 
 class Branch:
+    """
+    Class for storing data and methods related to a branch:
+    1. Dataset Definition
+    2. Pandas dataframe wrt a dataset
+    3. Entities like features, featuresets, extractors
+    """
+
     def __init__(self, name: str):
         self.name = name
         self.data_engine = DataEngine()
-        self.entities: Entities = Entities(
-            featureset_requests={},
-            features_for_fs={},
-            extractor_funcs={},
-            extractors=[],
-        )
-
-    def change_name(self, name: str):
-        self.name = name
-
-    def clean_data(self):
-        self.data_engine.clean_data()
+        self.entities: Entities = Entities()
 
     def get_entities(self) -> Entities:
+        """
+        Get entities apart datasets.
+        """
         return self.entities
 
     def get_data_engine(self) -> DataEngine:
+        """
+        Get definitions and data related to datasets.
+        """
         return self.data_engine
 
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
+        """
+        Get pandas dataframe corresponding to a dataset
+        Args:
+            dataset_name: (str) - Name of the dataset
+        Returns:
+            Pandas dataframe
+        """
         return self.data_engine.get_dataset_df(dataset_name)
 
     def log(
@@ -131,11 +140,12 @@ class Branch:
                             f"Dataset `{dataset}` not found in sync call"
                         )
             self.entities.extractors.extend(
-                [
-                    x
-                    for x in featureset.extractors
-                    if x.tiers.is_entity_selected(tier)
-                ]
+                list(
+                    filter(
+                        lambda x: x.tiers.is_entity_selected(tier),
+                        featureset.extractors,
+                    )
+                )
             )
         fs_obj_map = {
             featureset._name: featureset for featureset in featuresets
@@ -157,9 +167,4 @@ class Branch:
 
     def _reset(self):
         self.data_engine = DataEngine()
-        self.entities: Entities = Entities(
-            featureset_requests={},
-            features_for_fs={},
-            extractor_funcs={},
-            extractors=[],
-        )
+        self.entities: Entities = Entities()

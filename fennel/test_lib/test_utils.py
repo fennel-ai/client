@@ -121,7 +121,7 @@ def cast_col_to_dtype(series: pd.Series, dtype) -> pd.Series:
     elif dtype.HasField("bool_type"):
         return series.astype(pd.BooleanDtype())
     elif dtype.HasField("timestamp_type"):
-        return pd.to_datetime(series)
+        return pd.to_datetime(series.apply(lambda x: parse_datetime(x)))
     elif dtype.HasField("optional_type"):
         # Those fields which are not null should be casted to the right type
         if series.notnull().any():
@@ -157,9 +157,7 @@ def parse_datetime(value: Union[int, str, datetime]) -> datetime:
                 return pd.to_datetime(value, unit="ms")
             except ValueError:
                 return pd.to_datetime(value, unit="us")
-    if isinstance(value, str):
-        return pd.to_datetime(value)
-    return value
+    return pd.to_datetime(value)
 
 
 def proto_to_dtype(proto_dtype) -> str:
@@ -208,9 +206,9 @@ def cast_df_to_schema(
             f"Timestamp column `{dsschema.timestamp}` not found in dataframe while logging to dataset"
         )
     try:
-        df[dsschema.timestamp] = pd.to_datetime(df[dsschema.timestamp]).astype(
-            "datetime64[ns]"
-        )
+        df[dsschema.timestamp] = pd.to_datetime(
+            df[dsschema.timestamp].apply(lambda x: parse_datetime(x))
+        ).astype("datetime64[ns]")
     except Exception as e:
         raise ValueError(
             f"Failed to cast data logged to timestamp column {dsschema.timestamp}: {e}"

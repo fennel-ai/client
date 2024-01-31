@@ -10,8 +10,7 @@ import pandas as pd
 from frozendict import frozendict
 
 import fennel.datasets.datasets
-
-from fennel.datasets import Dataset, OnDemand, Pipeline
+from fennel.datasets import Dataset, Pipeline
 from fennel.datasets.datasets import sync_validation_for_pipelines
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.lib.schema import data_schema_check
@@ -20,9 +19,10 @@ from fennel.sources import sources, PreProcValue
 from fennel.test_lib.executor import Executor
 from fennel.test_lib.test_utils import (
     FakeResponse,
-    parse_datetime,
     cast_df_to_schema,
+    cast_col_to_dtype,
 )
+import fennel.gen.schema_pb2 as schema_proto
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -54,7 +54,6 @@ def _transform_df(
 class _Dataset:
     fields: List[str]
     is_source_dataset: bool
-    on_demand: OnDemand
     core_dataset: CoreDataset
     dataset: Dataset
     data: Optional[pd.DataFrame] = None
@@ -77,18 +76,34 @@ class DataEngine(object):
             None,
         )
 
-    def clean_data(self):
-        for dataset in self.datasets:
-            self.datasets[dataset].data = None
-            self.datasets[dataset].aggregated_datasets = None
-
     def get_dataset_fields(self, dataset_name: str) -> List[str]:
+        """
+        Returns list of dataset fields apart from keyed fields and timestamp field.
+        Args:
+            dataset_name: (str) - Name of the dataset.
+        Returns:
+            List[str] - List of names of the fields
+        """
         return self.datasets[dataset_name].fields
 
     def get_dataset(self, dataset_name: str) -> Dataset:
+        """
+        Get Dataset object from dataset name.
+        Args:
+            dataset_name: (str) - Name of the dataset.
+        Returns:
+            Dataset - Dataset object
+        """
         return self.datasets[dataset_name].dataset
 
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
+        """
+        Return pandas dataframe from dataset name
+        Args:
+            dataset_name: (str) - Name of the dataset
+        Returns:
+            Pandas dataframe
+        """
         if dataset_name not in self.datasets:
             raise ValueError(f"Dataset `{dataset_name}` not found")
 
@@ -146,6 +161,14 @@ class DataEngine(object):
         datasets: List[Dataset],
         tier: Optional[str] = None,
     ):
+        """
+        This method is used during sync to add datasets to the data engine.
+        Args:
+            datasets: List[Datasets] - List of datasets to add to the data engine
+            tier: Optional[str] - Tier against which datasets will be added.
+        Returns:
+            None
+        """
         input_datasets_for_pipelines = defaultdict(list)
         for dataset in datasets:
             if not isinstance(dataset, Dataset):
@@ -165,7 +188,6 @@ class DataEngine(object):
             self.datasets[dataset._name] = _Dataset(
                 fields=fields,
                 is_source_dataset=is_source_dataset,
-                on_demand=dataset.on_demand,
                 core_dataset=core_dataset,
                 dataset=dataset,
                 pre_proc=pre_proc,
@@ -200,6 +222,11 @@ class DataEngine(object):
                 )
 
     def get_dataset_names(self) -> List[str]:
+        """
+        Returns list of dataset names stored in the data engine.
+        Returns:
+            List[str]
+        """
         return list(self.datasets.keys())
 
     def log(
@@ -247,7 +274,10 @@ class DataEngine(object):
             None,
         )
 
-        timestamps = pd.to_datetime(ts.apply(lambda x: parse_datetime(x)))
+        timestamps = cast_col_to_dtype(
+            ts,
+            schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
+        )
 
         dataframe, found = self.datasets[dataset_name].dataset.lookup(
             timestamps,
@@ -267,6 +297,14 @@ class DataEngine(object):
         extractor_name: Optional[str],
         allowed_datasets: Optional[List[str]],
     ) -> Callable:
+        """
+        Return the lookup implementation function that be monkey-patched during lookup
+        Args:
+            extractor_name: (Optional[str]) - Name of the extractor calling the lookup function.
+            allowed_datasets: (Optional[List[str]]) - List of allowed datasets that an extractor can lookup from.
+        Returns:
+            Callable - The lookup implementation
+        """
         return partial(
             self._dataset_lookup_impl,
             extractor_name,

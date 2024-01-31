@@ -10,7 +10,7 @@ from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 
 wh = Webhook(name="fennel_webhook")
-__owner__ = "fennel <<EMAIL>>"
+__owner__ = "nitin@fennel.com"
 
 
 @source(wh.endpoint("UserInfoDataset"))

@@ -215,7 +215,7 @@ class MockClient(Client):
                 "New Branch name cannot be same as the branch that needs to be cloned",
             )
         self.branches_map[name] = copy.deepcopy(self.branches_map[from_branch])
-        self.branches_map[name].change_name(name)
+        self.branches_map[name].name = name
         self.checkout(name)
         return FakeResponse(200, "Ok")
 
