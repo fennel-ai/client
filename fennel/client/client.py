@@ -573,7 +573,7 @@ class Client:
                             f"Column mapping does not contain all the required features. Feature: {input_feature_name},"
                             f" not found in column mapping: {feature_to_column_map}"
                         )
-                input_info["column_mapping"] = feature_to_column_map  # type: ignore
+                input_info["feature_to_column_map"] = feature_to_column_map  # type: ignore
 
             extract_historical_input["S3"] = input_info
 
