@@ -1271,36 +1271,6 @@ def test_window_wrong_type():
     )
 
 
-def test_window_not_implemented_type():
-    with pytest.raises(NotImplementedError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline(version=1)
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="tumbling", duration="10m", field="window"
-                )
-
-    assert (
-        str(e.value)
-        == """`tumbling` type not yet implemented in the window operator"""
-    )
-
-
 def test_window_invalid_gap():
     with pytest.raises(ValueError) as e:
 
@@ -1490,3 +1460,85 @@ def test_window_field_without_valid_parameters():
                 )
 
     assert str(e.value) == """'hopping window' must specify stride"""
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions5:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="hopping",
+                    field="window",
+                    duration="5s",
+                    stride="5s",
+                    gap="1s",
+                )
+
+    assert str(e.value) == """'hopping window' doesn't allow gap parameter"""
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions6:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="session", field="window", gap="5s", duration="5s"
+                )
+
+    assert (
+        str(e.value)
+        == """'sessionize window' doesn't allow duration parameter"""
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions7:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="tumbling", field="window", gap="5s", duration="5s"
+                )
+
+    assert str(e.value) == """'tumbling window' doesn't allow gap parameter"""

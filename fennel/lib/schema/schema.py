@@ -386,10 +386,17 @@ class regex:
         )
 
 
-# Window represent a time window that encapsulates event in [begin, end)
-# (e.g x in w if w.begin <= x < w.end)
 @struct
 class Window:
+    """
+    Represents a time window that encapsulates events in [begin, end).
+
+    Attributes:
+        begin (datetime): The beginning of the time window.
+        end (datetime): The end of the time window.
+        count (int): The count of events within the time window.
+    """
+
     begin: datetime
     end: datetime
     count: int

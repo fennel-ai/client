@@ -794,13 +794,36 @@ class WindowOperator(_Node):
             if duration is None:
                 raise ValueError("'hopping window' must specify duration")
 
+            if gap is not None:
+                raise ValueError("'hopping window' doesn't allow gap parameter")
+
         if type == WindowType.Sessionize:
             if gap is None:
                 raise ValueError("'sessionize window' must specify gap")
 
+            if duration is not None:
+                raise ValueError(
+                    "'sessionize window' doesn't allow duration parameter"
+                )
+
+            if stride is not None:
+                raise ValueError(
+                    "'sessionize window' doesn't allow stride parameter"
+                )
+
         if type == WindowType.Tumbling:
             if duration is None:
                 raise ValueError("'tumbling window' must specify duration")
+
+            if gap is not None:
+                raise ValueError(
+                    "'tumbling window' doesn't allow gap parameter"
+                )
+
+            if stride is not None:
+                raise ValueError(
+                    "'tumbling window' doesn't allow stride parameter"
+                )
 
         self.input_keys = keys.copy()
         self.by = keys.copy()
@@ -2284,10 +2307,6 @@ class SchemaValidator(Visitor):
         if len(output_schema.keys) == 0:
             raise ValueError(
                 f"'group_by' before 'window' in `{self.pipeline_name}` must specify at least one key"
-            )
-        if obj.type in [WindowType.Hopping, WindowType.Tumbling]:
-            raise NotImplementedError(
-                f"`{obj.type.value}` type not yet implemented in the window operator"
             )
         output_schema.name = output_schema_name
         return output_schema
