@@ -1,7 +1,7 @@
 version: '3'
 services: 
   preview: 
-    build: "https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPO}.git#rk-new-docs"
+    build: "https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPO}.git#rk-new-docs-1"
     ports:
       - 3001:3001
     volumes: 
@@ -9,6 +9,7 @@ services:
       - ./pages:/app/apps/docs/_content/pages
       - ./examples:/app/apps/docs/_content/examples
       - ./index.yml:/app/apps/docs/_content/index.yml
+      - ./api.yml:/app/apps/docs/_content/api.yml
     environment:
       - MODE=EDIT
       - GITHUB_TOKEN=${GITHUB_TOKEN}
