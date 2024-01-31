@@ -1489,4 +1489,4 @@ def test_window_field_without_valid_parameters():
                     type="hopping", field="window", duration="5s"
                 )
 
-    assert str(e.value) == """'hopping window' must specify duration"""
+    assert str(e.value) == """'hopping window' must specify stride"""
