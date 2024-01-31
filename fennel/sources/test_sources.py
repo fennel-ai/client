@@ -1114,7 +1114,7 @@ def test_s3_source_with_path():
     @source(
         s3_console.bucket(
             bucket_name="all_ratings",
-            path="prod/*/date=%Y%m%d/hour=%H/*/*.csv",
+            path="prod/data_type=events/*/date=%Y%m%d/hour=%H/*/*.csv",
         ),
         every="1h",
     )
@@ -1137,7 +1137,7 @@ def test_s3_source_with_path():
         "table": {
             "s3Table": {
                 "bucket": "all_ratings",
-                "pathPrefix": "prod/",
+                "pathPrefix": "prod/data_type=events/",
                 "pathSuffix": "*/date=%Y%m%d/hour=%H/*/*.csv",
                 "delimiter": ",",
                 "format": "csv",
@@ -1168,6 +1168,7 @@ def test_s3_source_with_path():
         ("foo/*/*.json", "foo/", "*/*.json"),
         ("*/*.json", "", "*/*.json"),
         ("foo/%Y/%m/%d/*.json", "foo/", "%Y/%m/%d/*.json"),
+        ("foo/name=bar/%Y/%m/%d/*.json", "foo/name=bar/", "%Y/%m/%d/*.json"),
         (
             "foo/bar/baz/*/%Y-%m-%d/%H/*/*.csv",
             "foo/bar/baz/",

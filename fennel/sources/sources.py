@@ -536,10 +536,10 @@ class S3Connector(DataConnector):
                         f"Invalid path part {part}. Invalid datetime format specifier"
                     )
             else:
-                pattern = r"^[a-zA-Z0-9._\-]+$"
+                pattern = r"^[a-zA-Z0-9._=\-]+$"
                 if not re.match(pattern, part):
                     raise ValueError(
-                        f"Invalid path part {part}. All path parts must contain alphanumeric characters, hyphens, underscores, dots, the * or ** wildcards, or strftime format specifiers."
+                        f"Invalid path part {part}. All path parts must contain alphanumeric characters, hyphens, underscores, dots, `=`, the * or ** wildcards, or strftime format specifiers."
                     )
                 # static part. Can be part of prefix until we see a wildcard
                 if suffix_portion:
