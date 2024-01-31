@@ -1,0 +1,18 @@
+version: '0.0.0'
+sidebar:
+  - slug: "api-reference/client"
+    title: "Client"
+    pages:
+      - "api-reference/client"
+      - "api-reference/rest-api"
+      - "api-reference/duration"
+      - "api-reference/data-types"
+      - "api-reference/operators"
+      - "api-reference/sources"
+      - "api-reference/expectations"
+
+
+  - slug: "api-reference/aggregations"
+    title: "Aggregation
+    pages:
+      - "api-reference/aggregations"
