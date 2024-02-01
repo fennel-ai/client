@@ -56,7 +56,6 @@ class Sessions:
             )
         )
 
-
 @meta(owner="test@test.com")
 @dataset
 class SessionStats:
@@ -169,7 +168,7 @@ def log_app_events_data(client):
 
 @pytest.mark.integration
 @mock
-def test_window_operator(client):
+def test_session_window_operator(client):
     # Sync to mock client
     client.commit(
         datasets=[AppEvent, Sessions, SessionStats],
