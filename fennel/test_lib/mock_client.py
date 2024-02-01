@@ -45,6 +45,30 @@ class MockClient(Client):
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
         return self._get_branch(self.branch).get_dataset_df(dataset_name)
 
+    def get_branch(self) -> str:
+        """
+        Return branch name.
+        Returns:
+            str: branch name
+        """
+        return self.branch
+
+    def get_datasets(self) -> List[Dataset]:
+        """
+        Return list of datasets in the branch
+        Returns:
+            List[Dataset]
+        """
+        return self._get_branch(self.branch).get_datasets()
+
+    def get_featuresets(self) -> List[Featureset]:
+        """
+        Return list of datasets in the branch
+        Returns:
+            List[Dataset]
+        """
+        return self._get_branch(self.branch).get_featuresets()
+
     # ----------------- Public methods -----------------------------------------
 
     def log(

@@ -50,6 +50,7 @@ def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
 
 @dataclass
 class Entities:
+    featureset_map: Dict[str, Featureset] = field(default_factory=dict)
     featureset_requests: Dict[str, CoreFeatureset] = field(default_factory=dict)
     features_for_fs: Dict[str, List[ProtoFeature]] = field(default_factory=dict)
     extractor_funcs: Dict[str, Callable] = field(default_factory=dict)
@@ -91,6 +92,12 @@ class Branch:
         """
         return self.data_engine.get_dataset_df(dataset_name)
 
+    def get_datasets(self) -> List[Dataset]:
+        return self.data_engine.get_datasets()
+
+    def get_featuresets(self) -> List[Featureset]:
+        return list(self.entities.featureset_map.values())
+
     def log(
         self,
         webhook: str,
@@ -127,6 +134,7 @@ class Branch:
             self.entities.featureset_requests[featureset._name] = (
                 featureset_to_proto(featureset)
             )
+            self.entities.featureset_map[featureset._name] = featureset
             # Check if the dataset used by the extractor is registered
             for extractor in featureset.extractors:
                 if not extractor.tiers.is_entity_selected(tier):

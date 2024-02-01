@@ -5,8 +5,8 @@ import pytest
 
 from fennel._vendor import requests
 from fennel.datasets import Dataset, dataset, field, pipeline
-from fennel.featuresets import featureset, feature
-from fennel.lib.schema import inputs
+from fennel.featuresets import featureset, feature, extractor
+from fennel.lib.schema import inputs, outputs
 from fennel.lib.aggregate import Count
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock
@@ -65,18 +65,7 @@ class UserInfoFeatureset:
     email: str = feature(id=6).extract(field=UserInfoDataset.email, default="None")  # type: ignore
 
 
-def _get_changed_datasets(filter_condition):
-    @source(wh.endpoint("UserInfoDataset"))
-    @dataset
-    class UserInfoDataset:
-        user_id: int = field(key=True)
-        name: str
-        age: int
-        gender: str
-        country_code: int
-        email: str
-        timestamp: datetime = field(timestamp=True)
-
+def _get_changed_dataset(filter_condition):
     @dataset
     class GenderStats:
         gender: str = field(key=True)
@@ -92,7 +81,53 @@ def _get_changed_datasets(filter_condition):
                 .aggregate(Count(window="forever", into_field="count"))
             )
 
+    return GenderStats
+
+
+def _get_source_changed_datasets():
+    @source(wh.endpoint("UserInfoDataset2"))
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        gender: int
+        timestamp: datetime = field(timestamp=True)
+
+    @dataset
+    class GenderStats:
+        gender: int = field(key=True)
+        count: int
+        timestamp: datetime = field(timestamp=True)
+
+        @pipeline(version=1)
+        @inputs(UserInfoDataset)
+        def my_pipeline(cls, user_info: Dataset):
+            return user_info.groupby("gender").aggregate(
+                Count(window="forever", into_field="count")
+            )
+
     return UserInfoDataset, GenderStats
+
+
+def _get_changed_featureset():
+    @featureset
+    class UserInfoFeatureset:
+        user_id: str = feature(id=1)
+        name: str = feature(id=2).extract(field=UserInfoDataset.name, default="None")  # type: ignore
+        age: int = feature(id=3)
+        gender: str = feature(id=4).extract(field=UserInfoDataset.gender, default="None")  # type: ignore
+        country_code: int = feature(id=5)
+        email: str = feature(id=6).extract(field=UserInfoDataset.email, default="None")  # type: ignore
+
+        @extractor(depends_on=[UserInfoDataset])
+        @inputs(user_id)
+        @outputs(age, country_code)
+        def my_extractor(cls, ts: pd.Series, user_id: pd.Series):
+            df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
+            df["age"] = df["age"].fillna(1) * 10
+            df["country_code"] = df["country_code"].fillna(100)
+            return df[["age", "country_code"]]
+
+    return UserInfoFeatureset
 
 
 @pytest.mark.integration
@@ -107,7 +142,17 @@ def test_simple_clone(client):
     )
 
     client.clone_branch("test-branch", from_branch="main")
-    assert client.branch == "test-branch"
+    assert client.get_branch() == "test-branch"
+
+    test_branch_datasets = client.get_datasets()
+    test_branch_featuresets = client.get_featuresets()
+
+    client.checkout("main")
+
+    for x, y in zip(client.get_datasets(), test_branch_datasets):
+        assert x._name == y._name
+    for x, y in zip(client.get_featuresets(), test_branch_featuresets):
+        assert x._name == y._name
 
 
 @pytest.mark.integration
@@ -121,7 +166,7 @@ def test_clone_after_log(client):
         featuresets=[UserInfoFeatureset],
     )
 
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         {
             "user_id": 1,
@@ -198,7 +243,7 @@ def test_webhook_log_to_both_clone_parent(client):
 @mock
 def test_add_dataset_clone_branch(client):
     """
-    Cling a branch, then adding one or more datasets in cloned branch. Change should be reflected in cloned branch only.
+    Clone a branch, then adding one or more datasets in cloned branch. Change should be reflected in cloned branch only.
     """
     client.sync(
         datasets=[UserInfoDataset, GenderStats],
@@ -209,7 +254,7 @@ def test_add_dataset_clone_branch(client):
         datasets=[UserInfoDataset, GenderStats, CountryStats],
     )
 
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         {
             "user_id": 1,
@@ -256,7 +301,7 @@ def test_change_dataset_clone_branch(client):
     Clone a branch A → B. Verify A & B both give the same answers.
     Then modify A. Ensure B keeps giving the same answers.
     """
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         {
             "user_id": 1,
@@ -293,7 +338,10 @@ def test_change_dataset_clone_branch(client):
     assert output.shape == (2, 3)
 
     client.sync(
-        datasets=_get_changed_datasets(lambda x: x["gender"].isin(["M", "F"])),
+        datasets=[
+            UserInfoDataset,
+            _get_changed_dataset(lambda x: x["gender"].isin(["M", "F"])),
+        ]
     )
     client.checkout("main")
     client.sync(
@@ -318,7 +366,7 @@ def test_multiple_clone_branch(client):
     Clone A → B and then again B → C — they are all the same.
     Now modify B and C in different ways - so all three of A, B, C have different graphs/data etc.
     """
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         {
             "user_id": 1,
@@ -367,12 +415,18 @@ def test_multiple_clone_branch(client):
 
     client.checkout("test-branch-2")
     client.sync(
-        datasets=_get_changed_datasets(lambda x: x["gender"].isin(["M", "F"])),
+        datasets=[
+            UserInfoDataset,
+            _get_changed_dataset(lambda x: x["gender"].isin(["M", "F"])),
+        ]
     )
 
     client.checkout("test-branch-1")
     client.sync(
-        datasets=_get_changed_datasets(lambda x: x["gender"].isin(["m", "f"])),
+        datasets=[
+            UserInfoDataset,
+            _get_changed_dataset(lambda x: x["gender"].isin(["m", "f"])),
+        ]
     )
 
     response = client.log("fennel_webhook", "UserInfoDataset", df)
@@ -388,3 +442,160 @@ def test_multiple_clone_branch(client):
     client.checkout("test-branch-2")
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (1, 3)
+
+
+@pytest.mark.integration
+@mock
+def test_change_source_dataset_clone_branch(client):
+    """
+    We have branch A, with src -> pipeline. Clone A -> B.
+    In B we modify the source dataset itself. ( different webhook ) now the derived pipelines give different answers.
+    """
+    client.sync(
+        datasets=[UserInfoDataset, GenderStats],
+    )
+    client.clone_branch("test-branch", from_branch="main")
+
+    client.sync(
+        datasets=_get_source_changed_datasets(),
+    )
+
+    now = datetime.utcnow()
+    data = [
+        {
+            "user_id": 1,
+            "name": "John",
+            "age": 30,
+            "gender": "M",
+            "country_code": 1,
+            "email": "john@fennel",
+            "timestamp": now,
+        },
+        {
+            "user_id": 2,
+            "name": "Rachel",
+            "age": 55,
+            "gender": "F",
+            "country_code": 2,
+            "email": "rachel@fennel",
+            "timestamp": now,
+        },
+    ]
+    df = pd.DataFrame(data)
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
+    assert response.status_code == requests.codes.OK, response.json()
+
+    now = datetime.utcnow()
+    data = [
+        {
+            "user_id": 1,
+            "gender": 0,
+            "timestamp": now,
+        },
+        {
+            "user_id": 2,
+            "gender": 1,
+            "timestamp": now,
+        },
+    ]
+    df = pd.DataFrame(data)
+    response = client.log("fennel_webhook", "UserInfoDataset2", df)
+    assert response.status_code == requests.codes.OK, response.json()
+
+    output = client.get_dataset_df("GenderStats")
+    assert output.shape == (2, 3)
+    assert output["gender"].tolist() == [0, 1]
+    assert output["count"].tolist() == [1, 1]
+
+    client.checkout("main")
+    output = client.get_dataset_df("GenderStats")
+    assert output.shape == (2, 3)
+    assert output["gender"].tolist() == ["M", "F"]
+    assert output["count"].tolist() == [1, 1]
+
+
+@pytest.mark.integration
+@mock
+def test_change_extractor_clone_branch(client):
+    """
+    We have branch A, with src -> pipeline -> extractor. Clone A -> B.
+    In B we modify extractor. Now the extract give different answers.
+    """
+    client.sync(
+        datasets=[UserInfoDataset],
+        featuresets=[UserInfoFeatureset],
+    )
+    client.clone_branch("test-branch", from_branch="main")
+
+    client.sync(
+        datasets=[UserInfoDataset],
+        featuresets=[_get_changed_featureset()],
+    )
+
+    now = datetime.utcnow()
+    data = [
+        {
+            "user_id": 1,
+            "name": "John",
+            "age": 30,
+            "gender": "M",
+            "country_code": 1,
+            "email": "john@fennel",
+            "timestamp": now,
+        },
+        {
+            "user_id": 2,
+            "name": "Rachel",
+            "age": 55,
+            "gender": "F",
+            "country_code": 2,
+            "email": "rachel@fennel",
+            "timestamp": now,
+        },
+    ]
+    df = pd.DataFrame(data)
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
+    assert response.status_code == requests.codes.OK, response.json()
+
+    output = client.extract(
+        inputs=["UserInfoFeatureset.user_id"],
+        outputs=[UserInfoFeatureset],
+        input_dataframe=pd.DataFrame({"UserInfoFeatureset.user_id": [1, 2, 3]}),
+    )
+    assert output.shape == (3, 6)
+    assert output["UserInfoFeatureset.user_id"].tolist() == [1, 2, 3]
+    assert output["UserInfoFeatureset.name"].tolist() == [
+        "John",
+        "Rachel",
+        "None",
+    ]
+    assert output["UserInfoFeatureset.age"].tolist() == [300, 550, 10]
+    assert output["UserInfoFeatureset.gender"].tolist() == ["M", "F", "None"]
+    assert output["UserInfoFeatureset.country_code"].tolist() == [1, 2, 100]
+    assert output["UserInfoFeatureset.email"].tolist() == [
+        "john@fennel",
+        "rachel@fennel",
+        "None",
+    ]
+
+    client.checkout("main")
+    output = client.extract(
+        inputs=["UserInfoFeatureset.user_id"],
+        outputs=[UserInfoFeatureset],
+        input_dataframe=pd.DataFrame({"UserInfoFeatureset.user_id": [1, 2, 3]}),
+    )
+    assert output.shape == (3, 6)
+    assert output["UserInfoFeatureset.user_id"].tolist() == [1, 2, 3]
+    assert output["UserInfoFeatureset.name"].tolist() == [
+        "John",
+        "Rachel",
+        "None",
+    ]
+    assert output["UserInfoFeatureset.age"].tolist() == [30, 55, 1]
+    assert output["UserInfoFeatureset.gender"].tolist() == ["M", "F", "None"]
+    assert output["UserInfoFeatureset.country_code"].tolist() == [1, 2, 1]
+    assert output["UserInfoFeatureset.email"].tolist() == [
+        "john@fennel",
+        "rachel@fennel",
+        "None",
+    ]

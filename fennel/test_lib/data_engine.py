@@ -76,6 +76,9 @@ class DataEngine(object):
             None,
         )
 
+    def get_datasets(self) -> List[Dataset]:
+        return [value.dataset for value in self.datasets.values()]
+
     def get_dataset_fields(self, dataset_name: str) -> List[str]:
         """
         Returns list of dataset fields apart from keyed fields and timestamp field.
@@ -389,7 +392,7 @@ class DataEngine(object):
             result_dfs = []
             for col, right_df in data_dict.items():  # type: ignore
                 try:
-                    df = self._dataframe_lookup(
+                    df = self._as_of_lookup(
                         cls_name, keys, right_df, join_columns, timestamp_field
                     )
                 except ValueError as err:
@@ -410,7 +413,7 @@ class DataEngine(object):
         else:
             right_df = self.datasets[cls_name].data
             try:
-                df = self._dataframe_lookup(
+                df = self._as_of_lookup(
                     cls_name, keys, right_df, join_columns, timestamp_field
                 )
             except ValueError as err:
@@ -425,7 +428,7 @@ class DataEngine(object):
         df = df.reset_index(drop=True)
         return df, found
 
-    def _dataframe_lookup(
+    def _as_of_lookup(
         self,
         dataset_name: str,
         keys: pd.DataFrame,

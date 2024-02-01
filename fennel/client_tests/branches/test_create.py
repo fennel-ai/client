@@ -74,7 +74,7 @@ def test_complex_create(client):
 
     client.checkout("main")
     with pytest.raises(ValueError) as error:
-        print(client.get_dataset_df("UserInfoDataset").shape)
+        _ = client.get_dataset_df("UserInfoDataset")
     assert str(error.value) == "Dataset `UserInfoDataset` not found"
 
 
