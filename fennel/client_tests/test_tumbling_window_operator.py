@@ -35,9 +35,8 @@ class Sessions:
     @inputs(AppEvent)
     def get_sessions(cls, app_event: Dataset):
         return app_event.groupby("user_id").window(
-            type="session", gap="3s", field="window"
+            type="tumbling", duration="10s", field="window"
         )
-
 
 @meta(owner="test@test.com")
 @dataset
@@ -129,7 +128,7 @@ def log_app_events_data(client):
 
 @pytest.mark.integration
 @mock
-def test_window_operator(client):
+def test_hopping_window_operator(client):
     # Sync to mock client
     client.sync(
         datasets=[AppEvent, Sessions, SessionStats],
@@ -147,9 +146,9 @@ def test_window_operator(client):
     window_keys = pd.Series(
         [
             {
-                "begin": datetime(2023, 1, 16, 11, 0, 25),
-                "end": datetime(2023, 1, 16, 11, 0, 34),
-                "count": 8,
+                "begin": datetime(2023, 1, 16, 11, 0, 0),
+                "end": datetime(2023, 1, 16, 11, 0, 10),
+                "count": 6,
             }
         ]
     )
@@ -166,19 +165,15 @@ def test_window_operator(client):
     )
     assert df_session.shape[0] == 1
     assert df_session["user_id"].values == [1]
-    assert df_session["window"].values[0].begin == datetime(
-        2023, 1, 16, 11, 0, 25
-    )
-    assert df_session["window"].values[0].end == datetime(
-        2023, 1, 16, 11, 0, 34
-    )
-    assert df_session["window"].values[0].count == 8
+    assert df_session["window"].values[0].begin == datetime(2023, 1, 16, 11, 0, 0)
+    assert df_session["window"].values[0].end == datetime(2023, 1, 16, 11, 0, 10)
+    assert df_session["window"].values[0].count == 6
 
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
     assert df_stats.shape[0] == 1
-    assert df_stats["user_id"].values == [1]
-    assert df_stats["avg_length"].values == [2.5]
-    assert df_stats["avg_count"].values == [3.333333]
+    assert list(df_stats["user_id"].values) == [1]
+    assert list(df_stats["avg_length"].values) == [10.0]
+    assert list(df_stats["avg_count"].values) == [5.0]
 
     df_featureset = client.extract_features(
         input_feature_list=[
@@ -191,8 +186,8 @@ def test_window_operator(client):
         input_dataframe=input_df,
     )
     assert df_featureset.shape[0] == 1
-    assert df_featureset["UserSessionStats.avg_length"].values == [2.5]
-    assert df_featureset["UserSessionStats.avg_count"].values == [3.333333]
+    assert list(df_featureset["UserSessionStats.avg_length"].values) == [10.0]
+    assert list(df_featureset["UserSessionStats.avg_count"].values) == [5.0]
 
     df_historical = client.extract_historical_features(
         input_dataframe=input_extract_historical_df,
@@ -205,5 +200,5 @@ def test_window_operator(client):
         format="pandas",
     )
     assert df_historical.shape[0] == 1
-    assert df_historical["UserSessionStats.avg_length"].values == [3]
-    assert df_historical["UserSessionStats.avg_count"].values == [4]
+    assert list(df_historical["UserSessionStats.avg_length"].values) == [10.0]
+    assert list(df_historical["UserSessionStats.avg_count"].values) == [6.0]

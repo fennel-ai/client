@@ -482,10 +482,15 @@ class Executor(Visitor):
         input_df = input_df.sort_values(input_ret.timestamp_field)
 
         class WindowStruct:
-            def __init__(self, event_time: datetime):
-                self.begin_time = event_time
-                self.end_time = event_time + timedelta(microseconds=1)
-                self.count = 1
+            def __init__(self, event_time: Optional[datetime] = None, event_start: Optional[datetime] = None, event_end: Optional[datetime] = None):
+                if event_time is not None:
+                    self.begin_time = event_time
+                    self.end_time = event_time + timedelta(microseconds=1)
+                    self.count = 1
+                else:
+                    self.begin_time = event_start
+                    self.end_time = event_end
+                    self.count = 0
 
             def add_event(self, event_time: datetime):
                 self.count += 1
@@ -510,10 +515,10 @@ class Executor(Visitor):
             current_window: Optional[WindowStruct] = None
 
             # Iterate through the rows of the DataFrame
-            for index, row in df.iterrows():
+            for _, row in df.iterrows():
                 # Check if it's the first event
                 if current_window is None:
-                    current_window = WindowStruct(row[timestamp_col])
+                    current_window = WindowStruct(event_time=row[timestamp_col])
                 else:
                     # Check if the event is within the time threshold of the previous one
                     if (
@@ -525,7 +530,7 @@ class Executor(Visitor):
                         # Save window information and reset for a new window
                         window_list.append(current_window.to_dict())
                         timestamp_list.append(current_window.end_time)
-                        current_window = WindowStruct(row[timestamp_col])
+                        current_window = WindowStruct(event_time=row[timestamp_col])
 
             # Save the last window information
             window_list.append(current_window.to_dict())  # type: ignore
@@ -535,7 +540,55 @@ class Executor(Visitor):
             return pd.DataFrame(
                 {field: window_list, timestamp_col: timestamp_list}
             )
+        
+        def generate_hopping_window_overlapped(
+            current_ts: int, duration: int, stride: int
+        ):
+            """Return window end for all windows that overlapped with current_ts"""
+            result = []
+            # First position of 
+            if current_ts < duration:
+                start_ts = 0
+            else:
+                start_ts = (((current_ts - duration) // stride) + 1) * stride
+            while start_ts <= current_ts:
+                result.append(start_ts + duration)
+                start_ts += stride
+            return result
+        
+        def generate_hopping_windows_for_df(df: pd.DataFrame, timestamp_col: str, duration: int, stride: int, field: str):
+            # Sort the DataFrame by timestamp_col
+            df = df.sort_values(by=timestamp_col)
 
+            # Initialize lists to store session information
+            windows_map: dict = dict()
+            window_list: List[dict] = []
+            timestamp_list: List[datetime] = []
+
+            # Iterate through the rows of the DataFrame
+            for index, row in df.iterrows():
+                ts = int(row[timestamp_col].timestamp())
+                windows_ends = generate_hopping_window_overlapped(
+                    ts, duration, stride
+                )
+                for end in windows_ends:
+                    if end not in windows_map:
+                        windows_map[end] = WindowStruct(event_start=pd.Timestamp(end - duration, unit='s'), event_end=pd.Timestamp(end, unit='s'))
+                    
+                    windows_map[end].count += 1
+                
+                    
+
+            # Save the last window information
+            for window in windows_map.values():
+                timestamp_list.append(window.end_time)  # type: ignore
+                window_list.append(window.to_dict())  # type: ignore
+
+            # Create a new DataFrame with session information
+            return pd.DataFrame(
+                {field: window_list, timestamp_col: timestamp_list}
+            )
+ 
         if obj.type == WindowType.Sessionize:
             window_dataframe = (
                 input_df.groupby(obj.input_keys)
@@ -548,22 +601,42 @@ class Executor(Visitor):
                 .reset_index()
                 .loc[:, obj.keys + [input_ret.timestamp_field]]
             )
+        elif obj.type == WindowType.Hopping or obj.type == WindowType.Tumbling:
+            duration = obj.duration_timedelta
+            if obj.type == WindowType.Hopping:
+                stride = obj.stride_timedelta
+            else:
+                stride = duration
+            
+            window_dataframe = (
+                input_df.groupby(obj.input_keys)
+                .apply(
+                    generate_hopping_windows_for_df,
+                    timestamp_col=input_ret.timestamp_field,
+                    duration=duration.total_seconds(),
+                    stride=stride.total_seconds(),
+                    field=obj.field,
+                )
+                .reset_index()
+                .loc[:, obj.keys + [input_ret.timestamp_field]]
+            )
 
-            sorted_df = window_dataframe.sort_values(input_ret.timestamp_field)
-            # Cast sorted_df to obj.schema()
-            for col_name, col_type in obj.schema().items():
-                if col_type in [
-                    pd.BooleanDtype,
-                    pd.Int64Dtype,
-                    pd.Float64Dtype,
-                    pd.StringDtype,
-                ]:
-                    sorted_df[col_name] = sorted_df[col_name].astype(col_type())
-                elif col_type in [int, float, bool, str]:
-                    sorted_df[col_name] = sorted_df[col_name].astype(col_type)
-
-            return NodeRet(sorted_df, input_ret.timestamp_field, obj.keys)
         else:
             raise Exception(
                 f"Implementation of `{obj.type.value}` in window operator not yet implemented in Mock Client"
             )
+        
+        sorted_df = window_dataframe.sort_values(input_ret.timestamp_field)
+        # Cast sorted_df to obj.schema()
+        for col_name, col_type in obj.schema().items():
+            if col_type in [
+                pd.BooleanDtype,
+                pd.Int64Dtype,
+                pd.Float64Dtype,
+                pd.StringDtype,
+            ]:
+                sorted_df[col_name] = sorted_df[col_name].astype(col_type())
+            elif col_type in [int, float, bool, str]:
+                sorted_df[col_name] = sorted_df[col_name].astype(col_type)
+
+        return NodeRet(sorted_df, input_ret.timestamp_field, obj.keys)
