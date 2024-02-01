@@ -56,6 +56,7 @@ class Sessions:
             )
         )
 
+
 @meta(owner="test@test.com")
 @dataset
 class SessionStats:

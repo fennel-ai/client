@@ -35,8 +35,9 @@ class Sessions:
     @inputs(AppEvent)
     def get_sessions(cls, app_event: Dataset):
         return app_event.groupby("user_id").window(
-            type="hopping", duration="10s", stride="5s",  field="window"
+            type="hopping", duration="10s", stride="5s", field="window"
         )
+
 
 @meta(owner="test@test.com")
 @dataset
@@ -165,8 +166,12 @@ def test_hopping_window_operator(client):
     )
     assert df_session.shape[0] == 1
     assert df_session["user_id"].values == [1]
-    assert df_session["window"].values[0].begin == datetime(2023, 1, 16, 11, 0, 0)
-    assert df_session["window"].values[0].end == datetime(2023, 1, 16, 11, 0, 10)
+    assert df_session["window"].values[0].begin == datetime(
+        2023, 1, 16, 11, 0, 0
+    )
+    assert df_session["window"].values[0].end == datetime(
+        2023, 1, 16, 11, 0, 10
+    )
     assert df_session["window"].values[0].count == 6
 
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
@@ -187,7 +192,9 @@ def test_hopping_window_operator(client):
     )
     assert df_featureset.shape[0] == 1
     assert list(df_featureset["UserSessionStats.avg_length"].values) == [10.0]
-    assert list(df_featureset["UserSessionStats.avg_count"].values) == [pytest.approx(4.444444)]
+    assert list(df_featureset["UserSessionStats.avg_count"].values) == [
+        pytest.approx(4.444444)
+    ]
 
     df_historical = client.extract_historical_features(
         input_dataframe=input_extract_historical_df,
@@ -201,4 +208,6 @@ def test_hopping_window_operator(client):
     )
     assert df_historical.shape[0] == 1
     assert list(df_historical["UserSessionStats.avg_length"].values) == [10.0]
-    assert list(df_historical["UserSessionStats.avg_count"].values) == [pytest.approx(4.5)]
+    assert list(df_historical["UserSessionStats.avg_count"].values) == [
+        pytest.approx(4.5)
+    ]

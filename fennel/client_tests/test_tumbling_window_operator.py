@@ -38,6 +38,7 @@ class Sessions:
             type="tumbling", duration="10s", field="window"
         )
 
+
 @meta(owner="test@test.com")
 @dataset
 class SessionStats:
@@ -165,8 +166,12 @@ def test_hopping_window_operator(client):
     )
     assert df_session.shape[0] == 1
     assert df_session["user_id"].values == [1]
-    assert df_session["window"].values[0].begin == datetime(2023, 1, 16, 11, 0, 0)
-    assert df_session["window"].values[0].end == datetime(2023, 1, 16, 11, 0, 10)
+    assert df_session["window"].values[0].begin == datetime(
+        2023, 1, 16, 11, 0, 0
+    )
+    assert df_session["window"].values[0].end == datetime(
+        2023, 1, 16, 11, 0, 10
+    )
     assert df_session["window"].values[0].count == 6
 
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
