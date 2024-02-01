@@ -641,6 +641,8 @@ def _webhook_to_source_proto(
             ds_version=ds_version,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            bounded=connector.bounded,
+            idleness=to_duration_proto(connector.idleness) if connector.idleness else None,
         ),
     )
 
@@ -676,6 +678,8 @@ def _kafka_conn_to_source_proto(
         pre_proc=_pre_proc_to_proto(connector.pre_proc),
         starting_from=_to_timestamp_proto(connector.since),
         until=_to_timestamp_proto(connector.until),
+        bounded=connector.bounded,
+        idleness=to_duration_proto(connector.idleness) if connector.idleness else None,
     )
     return (ext_db, source)
 
@@ -736,6 +740,8 @@ def _s3_conn_to_source_proto(
         timestamp_field=timestamp_field,
         cdc=to_cdc_proto(connector.cdc),
         pre_proc=_pre_proc_to_proto(connector.pre_proc),
+        bounded=connector.bounded,
+        idleness=to_duration_proto(connector.idleness) if connector.idleness else None,
     )
     return (ext_db, source)
 
@@ -841,6 +847,8 @@ def _bigquery_conn_to_source_proto(
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            bounded=connector.bounded,
+            idleness=to_duration_proto(connector.idleness) if connector.idleness else None,
         ),
     )
 
@@ -906,6 +914,8 @@ def _snowflake_conn_to_source_proto(
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
+            bounded=connector.bounded,
+            idleness=to_duration_proto(connector.idleness) if connector.idleness else None,
         ),
     )
 
@@ -981,6 +991,8 @@ def _mysql_conn_to_source_proto(
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            bounded=connector.bounded,
+            idleness=to_duration_proto(connector.idleness) if connector.idleness else None,
         ),
     )
 
@@ -1065,6 +1077,8 @@ def _pg_conn_to_source_proto(
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            bounded=connector.bounded,
+            idleness=to_duration_proto(connector.idleness) if connector.idleness else None,
         ),
     )
 
@@ -1144,6 +1158,8 @@ def _kinesis_conn_to_source_proto(
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            bounded=connector.bounded,
+            idleness=to_duration_proto(connector.idleness) if connector.idleness else None,
         ),
     )
 

@@ -28,6 +28,12 @@ And that's it - once this is written, `UserLocation` dataset will start
 mirroring your postgres table `user`and will update as the underlying Postgres 
 table updates.
 
+### Bounded
+The `bounded` attribute in the source indicates whether the source possesses a finite amount of data that does not expand. It is assigned a value of True when the source has limited data, with the default value being False.
+
+### Idleness
+The idleness parameter, when non-null, signifies that a bounded source is expected to be closed after a specified duration. For unbounded sources, it is advised not to set this parameter.
+
 ## Schema Matching
 
 Fennel has a strong typing system and all ingested data is evaluated against
