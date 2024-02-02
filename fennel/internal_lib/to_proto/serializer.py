@@ -369,13 +369,13 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             window_type = window_proto.Window(
                 hopping=window_proto.Hopping(duration=duration, stride=stride)
             )
-        if self.summary is not None:
-            assign_func_pycode = to_includes_proto(self.summary.summarize_func)
+        if obj.summary is not None:
+            assign_func_pycode = to_includes_proto(obj.summary.summarize_func)
             gen_pycode = self.wrap_function(assign_func_pycode)
             summary = window_proto.Summary(
-                column_name=self.summary.column_name,
+                column_name=obj.summary.column_name,
                 pycode=gen_pycode,
-                output_type=get_datatype(self.summary.output_type),
+                output_type=get_datatype(obj.summary.output_type),
             )
         else:
             summary = None
