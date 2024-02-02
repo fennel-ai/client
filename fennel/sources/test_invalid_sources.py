@@ -58,7 +58,6 @@ kinesis = Kinesis(
 
 def test_simple_source():
     with pytest.raises(TypeError) as e:
-
         @source(mysql.table("user"), every="1h")
         @dataset
         class UserInfoDataset:
@@ -92,11 +91,10 @@ def test_simple_source():
             timestamp: datetime = field(timestamp=True)
 
     assert (
-        str(e.value) == "mysql does not specify required fields table, cursor."
+            str(e.value) == "mysql does not specify required fields table, cursor."
     )
 
     with pytest.raises(TypeError) as e:
-
         @source(mysql.table(cursor="xyz"), every="1h")
         @dataset
         class UserInfoDataset3:
@@ -124,7 +122,6 @@ s3 = S3(
 
 def test_invalid_s3_source():
     with pytest.raises(AttributeError) as e:
-
         @source(s3.table("user"), every="1h")
         @dataset
         class UserInfoDataset:
@@ -150,7 +147,6 @@ def test_invalid_s3_source():
 
 def test_invalid_kinesis_source():
     with pytest.raises(ValueError) as e:
-
         @meta(owner="test@test.com")
         @source(
             kinesis.stream("test_stream", format="json", init_position="today")
@@ -165,7 +161,6 @@ def test_invalid_kinesis_source():
     assert str(e.value) == "Invalid isoformat string: 'today'"
 
     with pytest.raises(TypeError) as e:
-
         @meta(owner="test@test.com")
         @source(
             kinesis.stream("test_stream", format="json", init_position=None)
@@ -178,12 +173,11 @@ def test_invalid_kinesis_source():
             timestamp: datetime = field(timestamp=True)
 
     assert (
-        str(e.value)
-        == "Kinesis init_position must be 'latest', 'trim_horizon' or a timestamp. Invalid timestamp type <class 'NoneType'>"
+            str(e.value)
+            == "Kinesis init_position must be 'latest', 'trim_horizon' or a timestamp. Invalid timestamp type <class 'NoneType'>"
     )
 
     with pytest.raises(AttributeError) as e:
-
         @meta(owner="test@test.com")
         @source(
             kinesis.stream(
@@ -202,7 +196,6 @@ def test_invalid_kinesis_source():
     assert str(e.value) == "Kinesis format must be json"
 
     with pytest.raises(ValueError) as e:
-
         @meta(owner="test@test.com")
         @source(
             kinesis.stream(
@@ -219,15 +212,14 @@ def test_invalid_kinesis_source():
             timestamp: datetime = field(timestamp=True)
 
     assert (
-        str(e.value)
-        == "Invalid isoformat string: 'latest(2024-01-01T00:00:00Z)'"
+            str(e.value)
+            == "Invalid isoformat string: 'latest(2024-01-01T00:00:00Z)'"
     )
 
 
 @mock
 def test_multiple_sources(client):
     with pytest.raises(Exception) as e:
-
         @meta(owner="test@test.com")
         @source(kafka.topic("test_topic"), disorder="14d", cdc="append")
         @source(
@@ -266,8 +258,8 @@ def test_multiple_sources(client):
         client.commit(message="msg", datasets=[UserInfoDataset], featuresets=[])
 
     assert (
-        str(e.value)
-        == "Dataset `UserInfoDataset` has more than one source defined, found 4 sources."
+            str(e.value)
+            == "Dataset `UserInfoDataset` has more than one source defined, found 4 sources."
     )
 
 
@@ -302,7 +294,6 @@ bigquery = BigQuery(
 
 def test_invalid_starting_from():
     with pytest.raises(Exception) as e:
-
         @source(
             s3.bucket(bucket_name="bucket", prefix="prefix"),
             every="1h",
@@ -471,3 +462,31 @@ def test_invalid_pre_proc():
         view = InternalTestClient()
         view.add(UserInfoDataset2)
         view._get_sync_request_proto()
+
+
+def test_invalid_bounded_and_idleness():
+    # No idleness for bounded source
+    with pytest.raises(AttributeError) as e:
+        source(
+            s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+            ),
+            every="1h",
+            bounded=True,
+        )
+
+    assert "idleness parameter should always be passed when bounded is set as True" == str(e.value)
+
+    # Idleness for unbounded source
+    with pytest.raises(AttributeError) as e:
+        source(
+            s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+            ),
+            every="1h",
+            idleness="1h",
+        )
+
+    assert "idleness parameter should not be passed when bounded is set as False" == str(e.value)
