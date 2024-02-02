@@ -181,20 +181,17 @@ kinesis = sources.Kinesis(
 )
 stream = kinesis.stream(
     stream_arn="<SOME_STREAM_ARN>",
-    # Start ingesting from Nov 5, 2023
-    init_position=at_timestamp(datetime(2023, 11, 5)),
+    init_position=datetime(2023, 11, 5), # Ingest starting Nov 5, 2023
     format="json",
 )
 
 
 @source(stream)
-@meta(owner="abc@email.com")
 @dataset
 class UserKinesisSourcedDataset:
     uid: int = field(key=True)
     email: str
     timestamp: datetime
-    ...
 
 
 # /docsnip
@@ -206,20 +203,17 @@ kinesis = sources.Kinesis(
 )
 stream = kinesis.stream(
     stream_arn="<SOME_STREAM_ARN>",
-    # Ingest all new records from now
-    init_position="latest",
+    init_position="latest", # Ingest all new records from now
     format="json",
 )
 
 
 @source(stream)
-@meta(owner="abc@email.com")
 @dataset
 class UserKinesisSourcedDataset2:
     uid: int = field(key=True)
     email: str
     timestamp: datetime
-    ...
 
 
 # /docsnip

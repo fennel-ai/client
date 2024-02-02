@@ -1,10 +1,10 @@
 version: '3'
-services: 
-  preview: 
+services:
+  preview:
     build: "https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPO}.git#rk-new-docs-1"
     ports:
       - 3001:3001
-    volumes: 
+    volumes:
       - ./assets:/app/apps/docs/_content/assets
       - ./pages:/app/apps/docs/_content/pages
       - ./examples:/app/apps/docs/_content/examples

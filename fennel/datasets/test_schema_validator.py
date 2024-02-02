@@ -983,8 +983,8 @@ def test_assign():
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
                 return activity.assign(
-                    column="t",
-                    result_type=float,
+                    name="t",
+                    dtype=float,
                     func=lambda df: float(df["t"]),
                 )
 
@@ -1006,8 +1006,8 @@ def test_assign():
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
                 return activity.assign(
-                    column="",
-                    result_type=float,
+                    name="",
+                    dtype=float,
                     func=lambda df: float(df["t"]),
                 )
 
@@ -1029,8 +1029,8 @@ def test_assign():
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
                 return activity.assign(
-                    column="",
-                    result_type=float,
+                    name="",
+                    dtype=float,
                     func=lambda df: float(df["t"]),
                 )
 
@@ -1051,8 +1051,8 @@ def test_assign():
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
                 return activity.assign(
-                    column="userid",
-                    result_type=float,
+                    name="userid",
+                    dtype=float,
                     func=lambda df: float(df["userid"]),
                 )
 

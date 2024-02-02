@@ -609,8 +609,8 @@ class MovieRatingTransformed:
         )
 
         return x.assign(
-            column="rating_orig",
-            result_type=float,
+            name="rating_orig",
+            dtype=float,
             func=lambda df: df["rating_sq"] ** 0.5,
         )
 
