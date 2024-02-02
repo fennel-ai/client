@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing_extensions import Literal
 
 import copy
 import datetime
@@ -212,8 +213,8 @@ class _Node(Generic[T]):
     def filter(self, func: Callable) -> _Node:
         return Filter(self, func)
 
-    def assign(self, column: str, result_type: Type, func: Callable) -> _Node:
-        return Assign(self, column, result_type, func)
+    def assign(self, name: str, dtype: Type, func: Callable) -> _Node:
+        return Assign(self, name, dtype, func)
 
     def groupby(self, *args) -> GroupBy:
         return GroupBy(self, *args)
@@ -221,7 +222,7 @@ class _Node(Generic[T]):
     def join(
         self,
         other: Dataset,
-        how: str,
+        how: Literal["inner", "left"],
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
@@ -274,9 +275,8 @@ class _Node(Generic[T]):
             by = self.dsschema().values.keys()
         return Dedup(self, by)
 
-    def explode(self, columns: List[str]) -> _Node:
-        if not isinstance(columns, list):
-            columns = [columns]
+    def explode(self, *args, columns: List[str]) -> _Node:
+        columns = _Node.__get_drop_args(*args, columns=columns, name="explode")
         return Explode(self, columns)
 
     def isignature(self):
@@ -582,7 +582,7 @@ class Join(_Node):
         node: _Node,
         dataset: Dataset,
         within: Tuple[Duration, Duration],
-        how: str,
+        how: Literal["inner", "left"],
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
@@ -590,6 +590,10 @@ class Join(_Node):
         lsuffix: str = "",
         rsuffix: str = "",
     ):
+        if how not in ["inner", "left"]:
+            raise ValueError(
+                f"Join type {how} is not supported. Currently only 'inner' and 'left' joins are supported"
+            )
         if on is not None:
             if left_on is not None or right_on is not None:
                 raise ValueError("Cannot specify on and left_on/right_on")

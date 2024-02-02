@@ -192,38 +192,71 @@ The following fields need to be defined on the topic:
 
 ### Kinesis
 
-The following fields need to be defined for the source:
+#### PARAMETERS FOR DEFINING SOURCE
+----
+<Expandable title="name" type="str">
+A name to identify the source. The name should be unique across all Fennel sources
+across all branches.
+</Expandable>
 
-1. `name: str` - A name to identify the source. The name should be unique across all sources.
-1. `role_arn: str` - The role that Fennel should use to access the Kinesis stream
-2. `stream_arn: str` - AWS `ARN` of the stream
-3. `init_position: str | datetime | int | float` - The Kinesis `ShardIterator` type used to begin ingestion. One of `'latest'`, `'trim_horizon'` or a timestamp.
-   - The timestamp can be any of the following:
-      - a `datetime` object
-      - an `int` representing seconds since the epoch
-      - a `float` representing `{seconds}.{microseconds}` since the epoch
-      - an [ISO-8601](https://docs.python.org/3/library/datetime.html#datetime.date.fromisoformat) formatted `str`.
-   - The timestamp supplied should be no older than the retention window of the stream.
-   - For `latest`, Fennel will begin consuming records that come into Kinesis a few minutes after `sync()` is called. For a completely deterministic position, use `at_timestamp`.
-See [Kinesis ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html#API_GetShardIterator_RequestSyntax) for more info. 
-4. `format: Optional[str]` - The format of the incoming data. Currently only `"json"` is supported
+<Expandable title="role_arn" type="str">
+The arn of the role that Fennel should use to access the Kinesis stream. The role
+must already exist and Fennel's principal must have been given the permission to 
+assume this role - talk to Fennel support if you need help. Providing a role
+that Fennel is unable to assume will result in an error during the sync operation.
+</Expandable>
 
-**Example Using `at_timestamp`**
+#### PARAMETERS FOR CONNECTING WITH SOURCE
+---
+
+<Expandable title="stream_arn" type="str">
+The arn of the Kinesis stream that needs to be sourced. The corresponding 
+`role_arn` must have appropriate permissions for this stream. Providing a stream
+that either doesn't exist or can not be read using the given `role_arn` will
+result in an error during the sync operation.
+</Expandable>
+
+<Expandable title="init_position" type="str | datetime | float | int">
+The Kinesis `ShardIterator` type used to determine the initial position to start consuming
+from. Allowed values are:
+- `"latest"` - start streaming from the latest data (starting a few minutes after `sync`)
+- `"trim_horizon"`- start streaming at the last untrimmed record in the shard, 
+   which is the oldest data record in the shard.
+- datetime - start streaming from the position denoted by the time stamp 
+  specified in the Timestamp field (i.e. equivalent to AT_TIMESTAMP in Kinesis
+  vocabulary). The timestamp can be specified in any of the
+  following ways:
+   - a `datetime` object
+   - an `int` representing seconds since the epoch
+   - a `float` representing `{seconds}.{microseconds}` since the epoch
+   - an [ISO-8601](https://docs.python.org/3/library/datetime.html#datetime.date.fromisoformat) formatted `str`.
+
+See [Kinesis ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html#API_GetShardIterator_RequestSyntax) for more context. 
+</Expandable>
+
+<Expandable title="format" type='Literal["json"]'>
+The format of the incoming data. Currently only `json` is supported
+</Expandable>
+
+
+**Example Using Explicit Timestamp**
 
 <pre snippet="api-reference/source#kinesis_source"></pre>
 
-**Example Using `latest`** (`trim_horizon` is used the same way)
+**Example Using Latest**
 
 <pre snippet="api-reference/source#kinesis_source_latest"></pre>
 
-:::info
-Fennel creates a special role with name prefixed by `FennelDataAccessRole-` in your AWS account for role-based access. The role with access to the kinesis stream should have a trust policy allowing this role to assume the kinesis role. See the section below for details
-:::
+**Managing Kinesis Access**
 
+Fennel creates a special role with name prefixed by `FennelDataAccessRole-` in 
+your AWS account for role-based access. The role with access to the kinesis 
+stream should have the following trust policy allowing this role to assume the 
+kinesis role. 
 
 <details>
 
-<summary>What permissions are needed on the Kinesis role? </summary>
+<summary>See Trust Policy </summary>
 
 The role should have the following trust policy. Specify the exact `role_arn` in the form
 `arn:aws:iam::<fennel-data-plane-account-id>:role/<FennelDataAccessRole-...>` without any wildcards.
@@ -245,7 +278,9 @@ The role should have the following trust policy. Specify the exact `role_arn` in
 }
 ```
 
-Also attach the following permission policy. Add more streams to the Resource field if more than one streams need to be consumed via this role. Here the `account-id` is your account where the stream lives.
+Also attach the following permission policy. Add more streams to the Resource 
+field if more than one streams need to be consumed via this role. Here 
+the `account-id` is your account where the stream lives.
 
 ```
 {

@@ -12,6 +12,10 @@ Fennel has two main concepts -- datasets and featuresets. Let's look at both one
 
 Dataset refers to a "table" of data with typed columns. Here is how a dataset is defined.&#x20;
 
+<Expandable title="inputs" type="List[Union[Feature, str]]">
+List of features to be used as inputs to extract. Features should be provided 
+either as Feature objects or strings representing fully qualified feature names.
+</Expandable>
 <pre snippet="overview/concepts#user_dataset"></pre>
 
 This dataset has four columns -- `uid` (of type int), `dob` (of type datetime),`country` (of type string), and `signup_time` (of type datetime). For now, ignore the `field(...)` descriptors - they'd be explained soon.&#x20;

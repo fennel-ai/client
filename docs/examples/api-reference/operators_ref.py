@@ -12,9 +12,9 @@ from fennel.lib.schema import inputs, Window
 from fennel.sources import source, Webhook
 
 webhook = Webhook(name="fennel_webhook")
+__owner__ = "aditya@fennel.ai"
 
 
-@meta(owner="aditya@fennel.ai")
 @source(webhook.endpoint("Activity"))
 @dataset(history="4m")
 class Activity:
@@ -25,7 +25,6 @@ class Activity:
     timestamp: datetime
 
 
-@meta(owner="aditya@fennel.ai")
 @dataset
 class MerchantCategory:
     merchant: int = field(key=True)
@@ -33,7 +32,6 @@ class MerchantCategory:
     timestamp: datetime
 
 
-@meta(owner="abhay@fennel.ai")
 @dataset
 class UserTransactions:
     user_id: int
@@ -70,7 +68,6 @@ class UserTransactions:
         return transformed_ds
 
 
-@meta(owner="abhay@fennel.ai")
 @dataset
 class UserTransactionsV2:
     user_id: int
@@ -93,7 +90,6 @@ class UserTransactionsV2:
         return assign_ds
 
 
-@meta(owner="abhay@fennel.ai")
 @dataset
 class UserFirstAction:
     user_id: int = field(key=True)
@@ -109,7 +105,6 @@ class UserFirstAction:
         # /docsnip
 
 
-@meta(owner="aditya@fennel.ai")
 @dataset
 class FraudActivityDataset:
     merchant_category: str = field(key=True)
@@ -169,7 +164,6 @@ class FraudActivityDataset:
         return aggregated_ds
 
 
-@meta(owner="nitin@fennel.ai")
 @dataset
 class ActivitySession:
     user_id: int = field(key=True)

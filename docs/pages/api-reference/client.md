@@ -8,22 +8,56 @@ status: WIP
 
 Fennel Client has the following methods on it:
 
-<APIGrid>
 ### extract
 
 Given some input and output features, extracts the current value of all the output features given the values of the input features.
 
-<InfoBlock>
-**Arguments:**
+#### Parameters
 
-* `inputs: List[Union[Feature, str]]`: List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-* `outputs: List[Union[Feature, Featureset, str]]` : List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
-* `input_df: Dataframe`: a pandas dataframe object that contains the values of all features in the input feature list. Each row of the dataframe can be thought of as one entity for which features are desired.
-* `log: bool` - boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False
-* `workflow: str` - the name of the workflow associated with the feature extraction. Only relevant when `log` is set to True
-* `sampling_rate: float` - the rate at which feature data should be sampled before logging. Only relevant when log is set to True. The default value is 1.0
-</InfoBlock>
-<CodeBlock>
+<Expandable title="inputs" type="List[Union[Feature, str]]">
+List of features to be used as inputs to extract. Features should be provided 
+either as Feature objects or strings representing fully qualified feature names.
+</Expandable>
+
+<Expandable title="outputs" type="List[Union[Featureset, Feature, str]]">
+List of features that need to be extracted. Features should be provided 
+either as Feature objects, or Featureset objects (in which case all features under
+that featureset are extracted) or strings representing fully qualified feature names.
+</Expandable>
+
+<Expandable title="input_dataframe" type="pd.Dataframe">
+A pandas dataframe object that contains the values of all features in the inputs
+list. Each row of the dataframe can be thought of as one entity for which 
+features need to be extracted.
+</Expandable>
+
+<Expandable title="log" type="bool" defaultVal="False">
+Boolean which indicates if the extracted features should also be logged (for 
+log-and-wait approach to training data generation).
+</Expandable>
+
+<Expandable title="workflow" type="str" defaultVal="'default'">
+The name of the workflow associated with the feature extraction. Only relevant
+when `log` is set to True, in which case, features associated with the same workflow
+are collected together. Useful if you want to separate logged features between, say,
+feed ranking and ad-ranking.
+</Expandable>
+
+<Expandable title="sampling_rate" type="float" defaultVal="1.0">
+The rate at which feature data should be sampled before logging. Only relevant
+when `log` is set to True.
+</Expandable>
+
+
+#### Returns
+<Expandable title="type" type="Union[pd.Dataframe, pd.Series]">
+Returns the extracted features as dataframe with one column for each feature 
+in `outputs`. If a single output feature is requested, features are returned
+as a single pd.Series. Note that input features aren't returned back unless
+they are also present in the `outputs`
+</Expandable>
+
+
 **Example:**
 
 ```python
@@ -36,11 +70,9 @@ class UserFeatures:
 ```
 
 <pre snippet="api-reference/client#extract_api"></pre>
-</CodeBlock>
-</APIGrid>
 
 
-****
+----
 
 ### **sync**
 
