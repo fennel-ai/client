@@ -21,6 +21,7 @@ webhook = sources.Webhook(name="fennel_webhook")
 @dataset
 class AppEvent:
     user_id: int
+    star: int
     timestamp: datetime = field(timestamp=True)
 
 
@@ -30,12 +31,19 @@ class Sessions:
     user_id: int = field(key=True)
     window: Window = field(key=True)
     timestamp: datetime = field(timestamp=True)
+    avg_star: float
 
     @pipeline
     @inputs(AppEvent)
     def get_sessions(cls, app_event: Dataset):
-        return app_event.groupby("user_id").window(
-            type="session", gap="3s", field="window"
+        return (
+            app_event.groupby("user_id")
+            .window(type="session", gap="3s", field="window")
+            .summarize(
+                column="avg_star",
+                result_type=float,
+                func=lambda df: df["star"].mean(),
+            )
         )
 
 
@@ -47,6 +55,7 @@ class SessionStats:
     avg_count: float
     avg_length: float
     last_visitor_session: List[Window]
+    avg_star: float
 
     @pipeline
     @inputs(Sessions)
@@ -56,7 +65,7 @@ class SessionStats:
                 "length",
                 int,
                 lambda df: df["window"].apply(
-                    lambda x: int((x["end"] - x["begin"]).total_seconds())
+                    lambda x: int((x["end"] - x["begin"]).total_seconds() - 1)
                 ),
             )
             .assign(
@@ -82,6 +91,11 @@ class SessionStats:
                     limit=1,
                     dedup=False,
                     into_field="last_visitor_session",
+                )
+                Average(
+                    of="avg_star",
+                    window="forever",
+                    into_field="avg_star",
                 ),
             )
         )
@@ -100,7 +114,7 @@ class UserSessionStats:
     @inputs(user_id)
     @outputs(avg_count, avg_length, last_visitor_session)
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):
-        res, _ = SessionStats.lookup(ts, user_id=user_ids, fields=["avg_count", "avg_length", "last_visitor_session"])  # type: ignore
+        res, _ = SessionStats.lookup(ts, user_id=user_ids, fields=["avg_count", "avg_length", "last_visitor_session", "avg_star"])  # type: ignore
         return res
 
 
@@ -129,6 +143,7 @@ def log_app_events_data(client):
             datetime(2023, 1, 16, 11, 0, 37),
             datetime(2023, 1, 16, 11, 0, 38),
         ],
+        "star": [1, 2, 3, 2, 4, 5, 1, 4, 2, 3, 1, 5, 3, 1, 5, 2, 3, 5, 2, 4],
     }
     df = pd.DataFrame(data)
     response = client.log("fennel_webhook", "AppEvent", df)
@@ -156,8 +171,8 @@ def test_window_operator(client):
     window_keys = pd.Series(
         [
             {
-                "begin": datetime(2023, 1, 16, 11, 0, 25),
-                "end": datetime(2023, 1, 16, 11, 0, 34),
+                "begin": pd.Timestamp(datetime(2023, 1, 16, 11, 0, 25)),
+                "end": pd.Timestamp(datetime(2023, 1, 16, 11, 0, 34)),
                 "count": 8,
             }
         ]
@@ -169,12 +184,14 @@ def test_window_operator(client):
             "timestamp": [datetime(2023, 1, 16, 11, 0, 11)],
         }
     )
+    print("OOK")
 
     df_session, _ = Sessions.lookup(
         ts, user_id=user_id_keys, window=window_keys
     )
+    print(df_session)
     assert df_session.shape[0] == 1
-    assert df_session["user_id"].values == [1]
+    assert list(df_session["user_id"].values) == [1]
     assert df_session["window"].values[0].begin == datetime(
         2023, 1, 16, 11, 0, 25
     )
@@ -182,13 +199,14 @@ def test_window_operator(client):
         2023, 1, 16, 11, 0, 34
     )
     assert df_session["window"].values[0].count == 8
+    assert df_session["avg_star"].values[0] == 3.125
 
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
     assert df_stats.shape[0] == 1
-    assert df_stats["user_id"].values == [1]
-    assert df_stats["avg_length"].values == [2.5]
-    # Round to 3 places before comparing
-    assert round(df_stats["avg_count"].values[0], 3) == round(3.333333, 3)
+    assert list(df_stats["user_id"].values) == [1]
+    assert list(df_stats["avg_length"].values) == [2.5]
+    assert list(df_stats["avg_count"].values) == [pytest.approx(3.333333)]
+    assert list(df_stats["avg_star"].values) == [pytest.approx(2.72083333)]
 
     df_featureset = client.query(
         inputs=[
@@ -198,16 +216,19 @@ def test_window_operator(client):
             UserSessionStats.avg_count,
             UserSessionStats.avg_length,
             UserSessionStats.last_visitor_session,
+            UserSessionStats.avg_star,
         ],
         input_dataframe=input_df,
     )
     assert df_featureset.shape[0] == 1
-    assert df_featureset["UserSessionStats.avg_length"].values == [2.5]
-    assert round(
-        df_featureset["UserSessionStats.avg_count"].values[0], 3
-    ) == round(3.333333, 3)
+    assert list(df_featureset["UserSessionStats.avg_length"].values) == [2.5]
+    assert list(df_featureset["UserSessionStats.avg_count"].values) == [
+        pytest.approx(3.333333)
+    ]
+    assert list(df_featureset["UserSessionStats.avg_star"].values) == [
+        pytest.approx(2.720833333)
+    ]
     assert df_featureset["UserSessionStats.last_visitor_session"].size == 1
-
     if client.is_integration_client():
         return
 
@@ -218,11 +239,15 @@ def test_window_operator(client):
             "UserSessionStats.avg_count",
             "UserSessionStats.avg_length",
             "UserSessionStats.last_visitor_session",
+            "UserSessionStats.avg_star",
         ],
         timestamp_column="timestamp",
         format="pandas",
     )
     assert df_historical.shape[0] == 1
-    assert df_historical["UserSessionStats.avg_length"].values == [3]
-    assert df_historical["UserSessionStats.avg_count"].values == [4]
+    assert list(df_historical["UserSessionStats.avg_length"].values) == [2]
+    assert list(df_historical["UserSessionStats.avg_count"].values) == [3]
+    assert list(df_featureset["UserSessionStats.avg_star"].values) == [
+        pytest.approx(2.720833333)
+    ]
     assert df_featureset["UserSessionStats.last_visitor_session"].size == 1

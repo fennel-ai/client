@@ -28,4 +28,5 @@ from fennel.datasets.datasets import (
     Dedup,
     Explode,
     First,
+    Summary,
 )

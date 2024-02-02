@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 from typing_extensions import Literal
 
+import fennel.gen.window_pb2 as window_proto
 from fennel.datasets.aggregate import (
     AggregateType,
     Average,
@@ -500,7 +501,7 @@ class GroupBy:
         gap: Optional[str] = None,
         duration: Optional[str] = None,
         stride: Optional[str] = None,
-    ) -> _Node:
+    ) -> WindowOperator:
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
         return WindowOperator(
@@ -790,6 +791,13 @@ class WindowType(str, Enum):
         )
 
 
+@dataclass
+class Summary:
+    column_name: str
+    output_type: Type
+    summarize_func: Callable
+
+
 class WindowOperator(_Node):
     def __init__(
         self,
@@ -859,6 +867,7 @@ class WindowOperator(_Node):
         self.field = field
         self.node = node
         self.node.out_edges.append(self)
+        self.summary = None
 
     def signature(self):
         return fhash(
@@ -875,11 +884,27 @@ class WindowOperator(_Node):
             f: input_schema.get_type(f) for f in self.keys if f != self.field
         }
         keys[self.field] = Window
+        if self.summary is not None:
+            values = {
+                self.summary.column_name: get_pd_dtype(self.summary.output_type)
+            }
+        else:
+            values = {}
         return DSSchema(
             keys=keys,
-            values={},  # type: ignore
+            values=values,  # type: ignore
             timestamp=input_schema.timestamp,
         )
+
+    def summarize(self, column: str, result_type: Type, func: Callable):
+        if self.summary is not None:
+            raise ValueError("'window' operator already have a summary field")
+
+        new_window_op = copy.deepcopy(self)
+        new_window_op.summary = Summary(
+            column_name=column, output_type=result_type, summarize_func=func
+        )
+        return new_window_op
 
 
 # ---------------------------------------------------------------------

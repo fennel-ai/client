@@ -1541,3 +1541,45 @@ def test_window_field_without_valid_parameters():
                 )
 
     assert str(e.value) == """'tumbling window' doesn't allow gap parameter"""
+
+
+def test_double_summary():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions1:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline(version=1)
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return (
+                    app_event.groupby("user_id")
+                    .window(type="session", gap="2s", field="window")
+                    .summarize(
+                        column="concat_page_id",
+                        result_type=str,
+                        func=lambda df: ",".join(
+                            [str(x) for x in df["page_id"]]
+                        ),
+                    )
+                    .summarize(
+                        column="concat_page_id",
+                        result_type=str,
+                        func=lambda df: ",".join(
+                            [str(x) for x in df["page_id"]]
+                        ),
+                    )
+                )
+
+    assert str(e.value) == """'window' operator already have a summary field"""
