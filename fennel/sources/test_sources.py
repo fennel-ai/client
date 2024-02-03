@@ -1296,6 +1296,7 @@ def test_s3_source_with_path():
             suffix == expected_suffix
         ), f"Expected suffix: {expected_suffix}, got: {suffix}"
 
+
 def test_source_with_bounded_and_idleness():
     @source(
         mysql.table(

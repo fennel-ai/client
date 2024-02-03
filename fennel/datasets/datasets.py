@@ -1412,7 +1412,15 @@ class Dataset(_Node[T]):
         if hasattr(ds_copy, sources.SOURCE_FIELD):
             delattr(ds_copy, sources.SOURCE_FIELD)
         src_fn = source(
-            conn, every, starting_from, disorder, None, tiers, pre_proc, bounded, idleness
+            conn,
+            every,
+            starting_from,
+            disorder,
+            None,
+            tiers,
+            pre_proc,
+            bounded,
+            idleness,
         )
         return src_fn(ds_copy)
 

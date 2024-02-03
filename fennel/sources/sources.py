@@ -68,10 +68,14 @@ def source(
         )
 
     if bounded and not idleness:
-        raise AttributeError("idleness parameter should always be passed when bounded is set as True")
+        raise AttributeError(
+            "idleness parameter should always be passed when bounded is set as True"
+        )
 
     if not bounded and idleness:
-        raise AttributeError("idleness parameter should not be passed when bounded is set as False")
+        raise AttributeError(
+            "idleness parameter should not be passed when bounded is set as False"
+        )
 
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY
