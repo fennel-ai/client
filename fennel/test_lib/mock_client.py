@@ -33,7 +33,7 @@ class MockClient(Client):
         if branch is None:
             branch = MAIN_BRANCH
 
-        self.branch: str = branch
+        self._branch: str = branch
         self.branches_map: Dict[str, Branch] = {}
         self.query_engine: QueryEngine = QueryEngine()
 
@@ -43,7 +43,7 @@ class MockClient(Client):
     # ----------------- Debug methods -----------------------------------------
 
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
-        return self._get_branch(self.branch).get_dataset_df(dataset_name)
+        return self._get_branch().get_dataset_df(dataset_name)
 
     def get_branch(self) -> str:
         """
@@ -51,7 +51,7 @@ class MockClient(Client):
         Returns:
             str: branch name
         """
-        return self.branch
+        return self._branch
 
     def get_datasets(self) -> List[Dataset]:
         """
@@ -59,7 +59,7 @@ class MockClient(Client):
         Returns:
             List[Dataset]
         """
-        return self._get_branch(self.branch).get_datasets()
+        return self._get_branch().get_datasets()
 
     def get_featuresets(self) -> List[Featureset]:
         """
@@ -67,7 +67,7 @@ class MockClient(Client):
         Returns:
             List[Dataset]
         """
-        return self._get_branch(self.branch).get_featuresets()
+        return self._get_branch().get_featuresets()
 
     # ----------------- Public methods -----------------------------------------
 
@@ -80,7 +80,7 @@ class MockClient(Client):
     ):
         at_least_one_ok = False
         for branch in self.branches_map:
-            response = self._get_branch(branch).log(
+            response = self.branches_map[branch].log(
                 webhook, endpoint, df, _batch_size
             )
             if response.status_code == 200:
@@ -101,9 +101,7 @@ class MockClient(Client):
         preview=False,
         tier: Optional[str] = None,
     ):
-        return self._get_branch(self.branch).sync(
-            datasets, featuresets, preview, tier
-        )
+        return self._get_branch().sync(datasets, featuresets, preview, tier)
 
     def extract(
         self,
@@ -118,7 +116,7 @@ class MockClient(Client):
             raise NotImplementedError("log is not supported in MockClient")
         if input_dataframe.empty:
             return pd.DataFrame()
-        branch_class = self._get_branch(self.branch)
+        branch_class = self._get_branch()
         entities = branch_class.get_entities()
         data_engine = branch_class.get_data_engine()
         input_feature_names = self._get_feature_name_from_inputs(inputs)
@@ -163,7 +161,7 @@ class MockClient(Client):
 
         if input_dataframe.empty:
             return pd.DataFrame()
-        branch_class = self._get_branch(self.branch)
+        branch_class = self._get_branch()
         entities = branch_class.get_entities()
         data_engine = branch_class.get_data_engine()
         timestamps = input_dataframe[timestamp_column]
@@ -203,7 +201,7 @@ class MockClient(Client):
         fields: List[str],
         timestamps: List[Union[int, str, datetime]] = None,
     ):
-        branch_class = self._get_branch(self.branch)
+        branch_class = self._get_branch()
         data_engine = branch_class.get_data_engine()
         return self.query_engine.lookup(
             data_engine, dataset_name, keys, fields, timestamps
@@ -214,7 +212,7 @@ class MockClient(Client):
         dataset_name: str,
         n: int = 10,
     ) -> List[Dict[str, Any]]:
-        branch_class = self._get_branch(self.branch)
+        branch_class = self._get_branch()
         return (
             branch_class.get_dataset_df(dataset_name)
             .last(n)
@@ -255,7 +253,7 @@ class MockClient(Client):
         return list(self.branches_map.keys())
 
     def checkout(self, name: str):
-        self.branch = name
+        self._branch = name
 
     # --------------- Public MockClient Specific methods -------------------
 
@@ -282,12 +280,12 @@ class MockClient(Client):
             return pd.to_datetime(value)
         return value
 
-    def _get_branch(self, branch: str) -> Branch:
+    def _get_branch(self) -> Branch:
         try:
-            return self.branches_map[branch]
+            return self.branches_map[self._branch]
         except KeyError:
             raise KeyError(
-                f"Branch: `{branch}` not found, please sync this branch and try again. "
+                f"Branch: `{self._branch}` not found, please sync this branch and try again. "
                 f"Available branches: {str(list(self.branches_map.keys()))}"
             )
 

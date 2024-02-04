@@ -39,7 +39,7 @@ class UserInfoFeatureset:
 @mock
 def test_simple_create(client):
     client.init_branch("test-branch")
-    assert client.branch == "test-branch"
+    assert client.get_branch() == "test-branch"
     client.sync()
 
 

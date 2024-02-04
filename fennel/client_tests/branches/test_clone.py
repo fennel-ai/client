@@ -186,7 +186,7 @@ def test_clone_after_log(client):
     assert output.shape == (1, 7)
 
     client.clone_branch("test-branch", from_branch="main")
-    assert client.branch == "test-branch"
+    assert client.get_branch() == "test-branch"
     output = client.get_dataset_df("UserInfoDataset")
     assert output.shape == (1, 7)
 
@@ -227,14 +227,14 @@ def test_webhook_log_to_both_clone_parent(client):
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
 
-    assert client.branch == "test-branch"
+    assert client.get_branch() == "test-branch"
     output = client.get_dataset_df(
         "GenderStats",
     )
     assert output.shape == (2, 3)
 
     client.checkout("main")
-    assert client.branch == "main"
+    assert client.get_branch() == "main"
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 

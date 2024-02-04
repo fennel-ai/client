@@ -22,8 +22,7 @@ import fennel.gen.schema_pb2 as schema_proto
 
 class QueryEngine:
     """
-    Query engine is a stateless class that handles all things related to lookups and extract given
-    extractors to run and data engine.
+    The Query Engine is a stateless class responsible for managing all aspects of lookups, including the execution of specified extractors and interaction with the data engine.
     """
 
     def lookup(

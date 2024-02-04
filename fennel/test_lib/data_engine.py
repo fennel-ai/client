@@ -33,7 +33,7 @@ FENNEL_TIMESTAMP = "__fennel_timestamp__"
 logger = logging.getLogger(__name__)
 
 
-def _transform_df(
+def _preproc_df(
     df: pd.DataFrame, pre_proc: Dict[str, sources.PreProcValue]
 ) -> pd.DataFrame:
     new_df = df.copy()
@@ -517,7 +517,7 @@ class DataEngine(object):
         pre_proc = self.datasets[dataset_name].pre_proc
         if pre_proc is not None:
             try:
-                df = _transform_df(df, pre_proc)
+                df = _preproc_df(df, pre_proc)
             except ValueError as e:
                 raise ValueError(
                     f"Error using pre_proc for dataset `{dataset_name}`: {str(e)}",
