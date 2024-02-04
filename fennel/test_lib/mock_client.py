@@ -1,379 +1,73 @@
 from __future__ import annotations
 
 import copy
-import json
 import logging
 import os
-import sys
-import types
-from collections import defaultdict
-from dataclasses import dataclass
 from datetime import datetime
-from functools import partial
-from typing import Callable, Dict, List, Tuple, Optional, Union, Any
+from typing import Dict, List, Optional, Union, Any
 
-import numpy as np
 import pandas as pd
-from frozendict import frozendict
 
-import fennel.datasets.datasets
-import fennel.sources as sources
 from fennel._vendor.requests import Response  # type: ignore
 from fennel.client import Client
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
-from fennel.datasets.datasets import sync_validation_for_pipelines
-from fennel.featuresets import Featureset, Feature, Extractor, is_valid_feature
-from fennel.gen.dataset_pb2 import CoreDataset
-from fennel.gen.featureset_pb2 import CoreFeatureset
-from fennel.gen.featureset_pb2 import (
-    Feature as ProtoFeature,
-    Extractor as ProtoExtractor,
-    ExtractorType as ProtoExtractorType,
-)
-from fennel.gen.schema_pb2 import Field, DSSchema, Schema
+from fennel.featuresets import Featureset, Feature, is_valid_feature
 from fennel.lib.graph_algorithms import (
     get_extractor_order,
-    is_extractor_graph_cyclic,
 )
 from fennel.lib.includes import includes  # noqa
-from fennel.lib.schema import data_schema_check, get_datatype
-from fennel.lib.to_proto import (
-    dataset_to_proto,
-    features_from_fs,
-    extractors_from_fs,
-    featureset_to_proto,
-)
+from fennel.lib.schema import get_datatype
 from fennel.sources.sources import S3Connector
-from fennel.test_lib.executor import Executor
+from fennel.test_lib.branch import Branch
 from fennel.test_lib.integration_client import IntegrationClient
-from fennel.test_lib.test_utils import cast_col_to_dtype, parse_datetime
+from fennel.test_lib.query_engine import QueryEngine
+from fennel.test_lib.test_utils import cast_col_to_dtype, FakeResponse
 
-TEST_PORT = 50051
-TEST_DATA_PORT = 50052
-FENNEL_LOOKUP = "__fennel_lookup_exists__"
-FENNEL_ORDER = "__fennel_order__"
-FENNEL_TIMESTAMP = "__fennel_timestamp__"
+MAIN_BRANCH = "main"
 
 logger = logging.getLogger(__name__)
 
 
-class FakeResponse(Response):
-    def __init__(self, status_code: int, content: str):
-        self.status_code = status_code
-
-        self.encoding = "utf-8"
-        if status_code == 200:
-            self._ok = True
-            self._content = json.dumps({}).encode("utf-8")
-            return
-        self._content = json.dumps({"error": f"{content}"}, indent=2).encode(
-            "utf-8"
-        )
-
-
-def _dataframe_lookup(
-    dataset_name: str,
-    keys: pd.DataFrame,
-    right_df: pd.DataFrame,
-    join_columns: List[str],
-    timestamp_field: str,
-) -> pd.DataFrame:
-    """
-    This function does as-of lookup on the right dataframe using keys dataframe.
-    The as-of lookup is done on join_columns and using timestamps in timestamp_field.
-    Args:
-        dataset_name: (str) - Name of the Dataset on which we have to do the lookup.
-        keys: (pd.DataFrame) - Dataframe containing the keys on which lookup will be done.
-        right_df: (pd.DataFrame) - Dataframe of the Dataset.
-        join_columns: (List[str]) - Columns on which we have to do the join.
-        timestamp_field: str - Name of the timestamp column present in keys.
-
-    Returns:
-        pd.DataFrame - Dataset
-    """
-    right_df[FENNEL_LOOKUP] = True
-    right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
-    cols_to_replace = []
-    for col in keys:
-        # Cast the column in keys to the same dtype as the column in right_df
-        if col in right_df and keys[col].dtype != right_df[col].dtype:
-            keys[col] = keys[col].astype(right_df[col].dtype)
-
-        # Changing dtype of Struct to str for making it hashable
-        if col in right_df and right_df[col].dtype == object:
-            cols_to_replace.append(col)
-            right_df[f"{col}__internal"] = right_df[col].apply(
-                lambda x: str(dict(x))
-            )
-            keys[f"{col}__internal"] = keys[col].apply(lambda x: str(dict(x)))
-
-    right_df = right_df.drop(columns=cols_to_replace)
-    new_join_columns = []
-    for col in join_columns:
-        if col in cols_to_replace:
-            new_join_columns.append(f"{col}__internal")
-        else:
-            new_join_columns.append(col)
-    try:
-        df = pd.merge_asof(
-            left=keys,
-            right=right_df,
-            on=timestamp_field,
-            by=new_join_columns,
-            direction="backward",
-            suffixes=("", "_right"),
-        )
-        df.drop(
-            [f"{col}__internal" for col in cols_to_replace],
-            axis=1,
-            inplace=True,
-        )
-    except Exception as e:
-        raise ValueError(
-            f"Error while performing lookup on dataset {dataset_name} "
-            f"with key fields {join_columns}, key length "
-            f"{keys.shape}, and shape of dataset being "
-            f"looked up {right_df.shape}: {e} "
-        )
-    df.drop(timestamp_field, axis=1, inplace=True)
-    return df
-
-
-def dataset_lookup_impl(
-    data: Dict[str, pd.DataFrame],
-    aggregated_datasets: Dict,
-    datasets: Dict[str, _DatasetInfo],
-    allowed_datasets: Optional[List[str]],
-    extractor_name: Optional[str],
-    cls_name: str,
-    ts: pd.Series,
-    fields: List[str],
-    keys: pd.DataFrame,
-) -> Tuple[pd.DataFrame, pd.Series]:
-    if cls_name not in datasets:
-        raise ValueError(
-            f"Dataset `{cls_name}` not found, please ensure it is synced."
-        )
-    if allowed_datasets is not None and cls_name not in allowed_datasets:
-        raise ValueError(
-            f"Extractor `{extractor_name}` is not allowed to access dataset "
-            f"`{cls_name}`, enabled datasets are {allowed_datasets}. "
-            f"Use `depends_on` param in @extractor to specify dataset "
-            f"dependencies."
-        )
-    join_columns = keys.columns.tolist()
-    if keys.isnull().values.any():
-        null_rows = keys[keys.isnull().any(axis=1)]
-        raise ValueError(
-            f"Null values found in key fields {join_columns}\n. Eg {null_rows}"
-        )
-    right_key_fields = datasets[cls_name].key_fields
-    if len(right_key_fields) == 0:
-        raise ValueError(
-            f"Dataset {cls_name} does not have any key fields. "
-            f"Cannot perform lookup operation on it."
-        )
-    if len(right_key_fields) != len(keys.columns):
-        raise ValueError(
-            f"Dataset {cls_name} has {len(right_key_fields)} key fields, "
-            f"but {len(keys.columns)} key fields were provided."
-        )
-    if cls_name not in data and cls_name not in aggregated_datasets:
-        logger.warning(
-            f"Not data found for Dataset `{cls_name}` during lookup, returning an empty dataframe"
-        )
-        # Create a dataframe with all nulls
-        val_cols = datasets[cls_name].fields
-        if len(fields) > 0:
-            val_cols = [x for x in val_cols if x in fields]
-        empty_df = pd.DataFrame(
-            columns=val_cols, data=[[None] * len(val_cols)] * len(keys)
-        )
-        return empty_df, pd.Series(np.array([False] * len(keys)))
-
-    timestamp_field = datasets[cls_name].timestamp_field
-    timestamp_length = len(ts)
-    if timestamp_length != keys.shape[0]:
-        raise ValueError(
-            f"Length of timestamp array `{timestamp_length}` does not match ",
-            f"length of keys array {keys.shape[0]} for dataset {cls_name}.",
-        )
-    keys = keys.reset_index(drop=True)
-    ts = ts.reset_index(drop=True)
-    assert keys.shape[0] == len(
-        ts
-    ), "Length of keys and ts should be same " "found {} and {}".format(
-        keys.shape[0], len(ts)
-    )
-    keys[timestamp_field] = ts
-
-    keys[FENNEL_ORDER] = np.arange(len(keys))
-    # Sort the keys by timestamp
-    keys = keys.sort_values(timestamp_field)
-    if cls_name in aggregated_datasets:
-        data_dict = aggregated_datasets[cls_name]
-        # Gather all the columns that are needed from data_dict to create a df.
-        result_dfs = []
-        for col, right_df in data_dict.items():
-            try:
-                df = _dataframe_lookup(
-                    cls_name, keys, right_df, join_columns, timestamp_field
-                )
-            except ValueError as err:
-                raise ValueError(err)
-            df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
-            result_dfs.append(df)
-        # Get common columns
-        common_columns = set(result_dfs[0].columns)
-        for df in result_dfs[1:]:
-            common_columns.intersection_update(df.columns)
-
-        # Remove common columns from all DataFrames except the first one
-        for i in range(1, len(result_dfs)):
-            result_dfs[i] = result_dfs[i].drop(columns=common_columns)
-
-        # Concatenate the DataFrames column-wise
-        df = pd.concat(result_dfs, axis=1)
-    else:
-        right_df = data[cls_name]
-        try:
-            df = _dataframe_lookup(
-                cls_name, keys, right_df, join_columns, timestamp_field
-            )
-        except ValueError as err:
-            raise ValueError(err)
-        df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
-        df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
-    found = df[FENNEL_LOOKUP].apply(lambda x: x is not np.nan)
-    df.drop(columns=[FENNEL_LOOKUP], inplace=True)
-    right_df.drop(columns=[FENNEL_LOOKUP], inplace=True)
-    if len(fields) > 0:
-        df = df[fields]
-    df = df.reset_index(drop=True)
-    return df, found
-
-
-def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
-    fqn = f"{extractor_proto.feature_set_name}.{extractor_proto.name}"
-    mod = types.ModuleType(fqn)
-    code = (
-        extractor_proto.pycode.imports + extractor_proto.pycode.generated_code
-    )
-    try:
-        sys.modules[fqn] = mod
-        exec(code, mod.__dict__)
-    except Exception as e:
-        raise Exception(
-            f"Error while executing code for {fqn}:\n {code} \n: {str(e)}"
-        )
-    return mod.__dict__[extractor_proto.pycode.entry_point]
-
-
-@dataclass
-class _DatasetInfo:
-    fields: List[str]
-    key_fields: List[str]
-    timestamp_field: str
-    is_source_dataset: bool
-    on_demand: OnDemand
-
-    def empty_df(self):
-        return pd.DataFrame(columns=self.fields)
-
-
-def _transform_df(
-    df: pd.DataFrame, pre_proc: Dict[str, sources.PreProcValue]
-) -> pd.DataFrame:
-    new_df = df.copy()
-    for col, pre_proc_value in pre_proc.items():
-        if isinstance(pre_proc_value, sources.Ref):
-            col_name = pre_proc_value.name
-            if col_name not in df.columns:
-                raise ValueError(
-                    f"Referenced column {col_name} not found in dataframe"
-                )
-            new_df[col] = df[col_name]
-        else:
-            new_df[col] = pre_proc_value
-    return new_df
-
-
 class MockClient(Client):
-    def __init__(self):
-        self.dataset_requests: Dict[str, CoreDataset] = {}
-        self.features_for_fs: Dict[str, List[ProtoFeature]]
-        self.featureset_requests: Dict[str, CoreFeatureset] = {}
-        self.extractor_funcs: Dict[str, Callable] = {}
-        self.dataset_info: Dict[str, _DatasetInfo] = {}
-        self.datasets: Dict[str, Dataset] = {}
-        # Map of dataset name to the dataframe
-        self.data: Dict[str, pd.DataFrame] = {}
-        # Map of datasets to pipelines it is an input to
-        self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
-        self.aggregated_datasets: Dict = {}
-        fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl,
-            self.data,
-            self.aggregated_datasets,
-            self.dataset_info,
-            None,
-            None,
-        )
-        self.webhook_to_dataset_map: Dict[str, List[str]] = defaultdict(list)
-        self.dataset_to_pre_proc_map: Dict[
-            str, Optional[Dict[str, sources.PreProcValue]]
-        ] = defaultdict(lambda: None)
-        self.extractors: List[Extractor] = []
+    def __init__(self, branch: Optional[str] = None):
+        if branch is None:
+            branch = MAIN_BRANCH
+
+        self._branch: str = branch
+        self.branches_map: Dict[str, Branch] = {}
+        self.query_engine: QueryEngine = QueryEngine()
+
+        # Adding branch
+        self.branches_map[branch] = Branch(branch)
 
     # ----------------- Debug methods -----------------------------------------
 
     def get_dataset_df(self, dataset_name: str) -> pd.DataFrame:
-        if dataset_name not in self.dataset_info:
-            raise ValueError(f"Dataset `{dataset_name}` not found")
+        return self._get_branch().get_dataset_df(dataset_name)
 
-        # If we haven't seen any values for this dataset, return an empty df with the right schema.
-        if (
-            dataset_name not in self.data
-            and dataset_name not in self.aggregated_datasets
-        ):
-            return self.dataset_info[dataset_name].empty_df()
+    def get_branch(self) -> str:
+        """
+        Return branch name.
+        Returns:
+            str: branch name
+        """
+        return self._branch
 
-        if dataset_name in self.data:
-            return copy.deepcopy(self.data[dataset_name])
+    def get_datasets(self) -> List[Dataset]:
+        """
+        Return list of datasets in the branch
+        Returns:
+            List[Dataset]
+        """
+        return self._get_branch().get_datasets()
 
-        # This must be an aggregated dataset
-        key_fields = self.dataset_info[dataset_name].key_fields
-        ts_field = self.dataset_info[dataset_name].timestamp_field
-        required_fields = key_fields + [ts_field]
-        column_wise_df = self.aggregated_datasets[dataset_name]
-        key_dfs = pd.DataFrame()
-        # Collect all timestamps across all columns
-        for data in column_wise_df.values():
-            subset_df = data[required_fields]
-            key_dfs = pd.concat([key_dfs, subset_df], ignore_index=True)
-            key_dfs.drop_duplicates(inplace=True)
-        # Sort key_dfs by timestamp
-        key_dfs.sort_values(ts_field, inplace=True)
-        # Find the values for all columns as of the timestamp in key_dfs
-        extrapolated_dfs = []
-        for col, data in column_wise_df.items():
-            df = pd.merge_asof(
-                left=key_dfs,
-                right=data,
-                on=ts_field,
-                by=key_fields,
-                direction="backward",
-                suffixes=("", "_right"),
-            )
-            extrapolated_dfs.append(df)
-        # Merge all the extrapolated dfs, column wise and drop duplicate columns
-        df = pd.concat(extrapolated_dfs, axis=1)
-        df = df.loc[:, ~df.columns.duplicated()]
-        if FENNEL_LOOKUP in df.columns:
-            df.drop(columns=[FENNEL_LOOKUP], inplace=True)
-        if FENNEL_TIMESTAMP in df.columns:
-            df.drop(columns=[FENNEL_TIMESTAMP], inplace=True)
-        return df
+    def get_featuresets(self) -> List[Featureset]:
+        """
+        Return list of datasets in the branch
+        Returns:
+            List[Dataset]
+        """
+        return self._get_branch().get_featuresets()
 
     # ----------------- Public methods -----------------------------------------
 
@@ -387,29 +81,21 @@ class MockClient(Client):
         if df.shape[0] == 0:
             return FakeResponse(200, "OK")
 
-        webhook_endpoint = f"{webhook}:{endpoint}"
-        if webhook_endpoint not in self.webhook_to_dataset_map:
-            return FakeResponse(
-                404, f"Webhook endpoint {webhook_endpoint} not " f"found"
+        at_least_one_ok = False
+        for branch in self.branches_map:
+            response = self.branches_map[branch].log(
+                webhook, endpoint, df, _batch_size
             )
-        for ds in self.webhook_to_dataset_map[webhook_endpoint]:
-            try:
-                schema = self.dataset_requests[ds].dsschema
-                if self.dataset_to_pre_proc_map[ds] is not None:
-                    pre_proc_cols = list(
-                        self.dataset_to_pre_proc_map[ds].keys()  # type: ignore
-                    )
-                else:
-                    pre_proc_cols = []
-                df = cast_df_to_schema(df, schema, pre_proc_cols)
-            except Exception as e:
-                raise Exception(
-                    f"Schema validation failed during data insertion to `{ds}`: {str(e)}",
-                )
-            resp = self._internal_log(ds, df)
-            if resp.status_code != 200:
-                return resp
-        return FakeResponse(200, "OK")
+            if response.status_code == 200:
+                at_least_one_ok = True
+        if at_least_one_ok:
+            return FakeResponse(200, "OK")
+        else:
+            FakeResponse(
+                404,
+                f"Webhook endpoint {webhook}_{endpoint} not "
+                f"found in any branch",
+            )
 
     def sync(
         self,
@@ -418,130 +104,12 @@ class MockClient(Client):
         preview=False,
         tier: Optional[str] = None,
     ):
-        self._reset()
-        if datasets is None:
-            datasets = []
-        if featuresets is None:
-            featuresets = []
-
-        input_datasets_for_pipelines = defaultdict(list)
-        for dataset in datasets:
-            if not isinstance(dataset, Dataset):
-                raise TypeError(
-                    f"Expected a list of datasets, got `{dataset.__name__}`"
-                    f" of type `{type(dataset)}` instead."
-                )
-            self.dataset_requests[dataset._name] = dataset_to_proto(dataset)
-            if hasattr(dataset, sources.SOURCE_FIELD):
-                self._process_data_connector(dataset, tier)
-
-            self.datasets[dataset._name] = dataset
-            is_source_dataset = hasattr(dataset, sources.SOURCE_FIELD)
-            self.dataset_info[dataset._name] = _DatasetInfo(
-                [f.name for f in dataset.fields],
-                dataset.key_fields,
-                dataset.timestamp_field,
-                is_source_dataset,
-                dataset.on_demand,
-            )
-            if (
-                not self.dataset_requests[dataset._name].is_source_dataset
-                and len(dataset._pipelines) == 0
-            ):
-                raise ValueError(
-                    f"Dataset {dataset._name} has no pipelines and is not a source dataset"
-                )
-            selected_pipelines = [
-                x
-                for x in dataset._pipelines
-                if x.tier.is_entity_selected(tier) and x.active
-            ]
-            sync_validation_for_pipelines(selected_pipelines, dataset._name)
-
-            for pipeline in selected_pipelines:
-                for input in pipeline.inputs:
-                    input_datasets_for_pipelines[input._name].append(
-                        f"{pipeline._dataset_name}.{pipeline.name}"
-                    )
-                    self.listeners[input._name].append(pipeline)
-
-        # Check that input_datasets_for_pipelines is a subset of self.datasets.
-        for ds, pipelines in input_datasets_for_pipelines.items():
-            if ds not in self.datasets:
-                raise ValueError(
-                    f"Dataset `{ds}` is an input to the pipelines: `{pipelines}` but is not synced. Please add it to the sync call."
-                )
-        for featureset in featuresets:
-            if not isinstance(featureset, Featureset):
-                raise TypeError(
-                    f"Expected a list of featuresets, got `{featureset.__name__}`"
-                    f" of type `{type(featureset)}` instead."
-                )
-            self.features_for_fs[featureset._name] = features_from_fs(
-                featureset
-            )
-            self.featureset_requests[featureset._name] = featureset_to_proto(
-                featureset
-            )
-            # Check if the dataset used by the extractor is registered
-            for extractor in featureset.extractors:
-                if not extractor.tiers.is_entity_selected(tier):
-                    continue
-                datasets = [
-                    x._name for x in extractor.get_dataset_dependencies()
-                ]
-                for dataset in datasets:
-                    if dataset not in self.dataset_requests:
-                        raise ValueError(
-                            f"Dataset `{dataset}` not found in sync call"
-                        )
-            self.extractors.extend(
-                [
-                    x
-                    for x in featureset.extractors
-                    if x.tiers.is_entity_selected(tier)
-                ]
-            )
-        fs_obj_map = {
-            featureset._name: featureset for featureset in featuresets
-        }
-
-        for featureset in featuresets:
-            proto_extractors = extractors_from_fs(featureset, fs_obj_map, tier)
-            for extractor in proto_extractors:
-                if extractor.extractor_type != ProtoExtractorType.PY_FUNC:
-                    continue
-                extractor_fqn = f"{featureset._name}.{extractor.name}"
-                self.extractor_funcs[extractor_fqn] = get_extractor_func(
-                    extractor
-                )
-
-        if is_extractor_graph_cyclic(self.extractors):
-            raise Exception("Cyclic graph detected in extractors")
-        return FakeResponse(200, "OK")
+        return self._get_branch().sync(datasets, featuresets, preview, tier)
 
     def extract(
         self,
         inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
-        input_dataframe: pd.DataFrame,
-        log: bool = False,
-        workflow: Optional[str] = None,
-        sampling_rate: Optional[float] = None,
-    ) -> pd.DataFrame:
-        return self.extract_features(
-            input_feature_list=inputs,
-            output_feature_list=outputs,
-            input_dataframe=input_dataframe,
-            log=log,
-            workflow=workflow,
-            sampling_rate=sampling_rate,
-        )
-
-    def extract_features(
-        self,
-        input_feature_list: List[Union[Feature, str]],
-        output_feature_list: List[Union[Feature, Featureset, str]],
         input_dataframe: pd.DataFrame,
         log: bool = False,
         workflow: Optional[str] = "default",
@@ -551,70 +119,30 @@ class MockClient(Client):
             raise NotImplementedError("log is not supported in MockClient")
         if input_dataframe.empty:
             return pd.DataFrame()
-        input_feature_names = []
-        for input_feature in input_feature_list:
-            if isinstance(input_feature, Feature):
-                input_feature_names.append(input_feature.fqn_)
-            elif isinstance(input_feature, str) and is_valid_feature(
-                input_feature
-            ):
-                input_feature_names.append(input_feature)
-            elif isinstance(input_feature, Featureset):
-                raise Exception(
-                    "Providing a featureset as input is deprecated. "
-                    f"List the features instead. {[f.fqn() for f in input_feature.features]}."
-                )
-        # Check if the input dataframe has all the required features
-        if not set(input_feature_names).issubset(set(input_dataframe.columns)):
-            raise Exception(
-                f"Input dataframe does not contain all the required features. "
-                f"Required features: {input_feature_names}. "
-                f"Input dataframe columns: {input_dataframe.columns}"
-            )
-        for input_col, feature in zip(
-            input_dataframe.columns, input_feature_list
-        ):
-            if isinstance(feature, str):
-                continue
-            col_type = get_datatype(feature.dtype)  # type: ignore
-            input_dataframe[input_col] = cast_col_to_dtype(
-                input_dataframe[input_col], col_type
-            )
-
-        extractors = get_extractor_order(
-            input_feature_list, output_feature_list, self.extractors
+        branch_class = self._get_branch()
+        entities = branch_class.get_entities()
+        data_engine = branch_class.get_data_engine()
+        input_feature_names = self._get_feature_name_from_inputs(inputs)
+        input_dataframe = self._transform_input_dataframe_from_inputs(
+            input_dataframe, inputs, input_feature_names
+        )
+        extractors_to_run = get_extractor_order(
+            inputs, outputs, entities.extractors
         )
         timestamps = pd.Series([datetime.utcnow()] * len(input_dataframe))
-        return self._run_extractors(
-            extractors, input_dataframe, output_feature_list, timestamps
+        return self.query_engine.run_extractors(
+            extractors_to_run,
+            data_engine,
+            entities,
+            input_dataframe,
+            outputs,
+            timestamps,
         )
 
     def extract_historical(
         self,
         inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
-        timestamp_column: str,
-        format: str = "pandas",
-        input_dataframe: Optional[pd.DataFrame] = None,
-        input_s3: Optional[S3Connector] = None,
-        output_s3: Optional[S3Connector] = None,
-        feature_to_column_map: Optional[Dict[Feature, str]] = None,
-    ) -> Union[pd.DataFrame, pd.Series]:
-        return self.extract_historical_features(
-            input_feature_list=inputs,
-            output_feature_list=outputs,
-            timestamp_column=timestamp_column,
-            format=format,
-            input_dataframe=input_dataframe,
-            input_s3=input_s3,
-            output_s3=output_s3,
-            feature_to_column_map=feature_to_column_map,
-        )
-
-    def extract_historical_features(
-        self,
-        input_feature_list: List[Union[Feature, str]],
-        output_feature_list: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
         format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
@@ -636,40 +164,25 @@ class MockClient(Client):
 
         if input_dataframe.empty:
             return pd.DataFrame()
+        branch_class = self._get_branch()
+        entities = branch_class.get_entities()
+        data_engine = branch_class.get_data_engine()
         timestamps = input_dataframe[timestamp_column]
         timestamps = pd.to_datetime(timestamps)
-        input_feature_names = []
-        for inp_feature in input_feature_list:
-            if isinstance(inp_feature, Feature):
-                input_feature_names.append(inp_feature.fqn_)
-            elif isinstance(inp_feature, str) and is_valid_feature(inp_feature):
-                input_feature_names.append(inp_feature)
-            elif isinstance(inp_feature, Featureset):
-                raise Exception(
-                    "Providing a featureset as input is deprecated. "
-                    f"List the features instead. {[f.fqn() for f in inp_feature.features]}."
-                )
-        # Check if the input dataframe has all the required features
-        if not set(input_feature_names).issubset(set(input_dataframe.columns)):
-            raise Exception(
-                f"Input dataframe does not contain all the required features. "
-                f"Required features: {input_feature_names}. "
-                f"Input dataframe columns: {input_dataframe.columns}"
-            )
-        for input_col, feature in zip(
-            input_dataframe.columns, input_feature_list
-        ):
-            if isinstance(feature, str):
-                continue
-            col_type = get_datatype(feature.dtype)  # type: ignore
-            input_dataframe[input_col] = cast_col_to_dtype(
-                input_dataframe[input_col], col_type
-            )
-        extractors = get_extractor_order(
-            input_feature_list, output_feature_list, self.extractors
+        input_feature_names = self._get_feature_name_from_inputs(inputs)
+        input_dataframe = self._transform_input_dataframe_from_inputs(
+            input_dataframe, inputs, input_feature_names
         )
-        output_df = self._run_extractors(
-            extractors, input_dataframe, output_feature_list, timestamps
+        extractors_to_run = get_extractor_order(
+            inputs, outputs, entities.extractors
+        )
+        output_df = self.query_engine.run_extractors(
+            extractors_to_run,
+            data_engine,
+            entities,
+            input_dataframe,
+            outputs,
+            timestamps,
         )
         assert output_df.shape[0] == len(timestamps), (
             f"Output dataframe has {output_df.shape[0]} rows, but there are only {len(timestamps)} "
@@ -679,9 +192,6 @@ class MockClient(Client):
         return output_df
 
     def extract_historical_progress(self, request_id):
-        return FakeResponse(404, "Extract historical features not supported")
-
-    def extract_historical_features_progress(self, request_id):
         return FakeResponse(404, "Extract historical features not supported")
 
     def extract_historical_cancel_request(self, request_id):
@@ -694,50 +204,59 @@ class MockClient(Client):
         fields: List[str],
         timestamps: List[Union[int, str, datetime]] = None,
     ):
-        try:
-            dataset = self.datasets[dataset_name]
-            dataset_info = self.dataset_info[dataset_name]
-        except KeyError:
-            raise KeyError(f"Dataset: {dataset_name} not found")
-
-        for field_name in fields:
-            if field_name not in dataset_info.fields:
-                raise ValueError(f"Field: {field_name} not in dataset")
-
-        fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl,
-            self.data,
-            self.aggregated_datasets,
-            self.dataset_info,
-            [dataset_name],
-            None,
+        branch_class = self._get_branch()
+        data_engine = branch_class.get_data_engine()
+        return self.query_engine.lookup(
+            data_engine, dataset_name, keys, fields, timestamps
         )
 
-        timestamps = (
-            pd.Series(timestamps).apply(lambda x: parse_datetime(x))
-            if timestamps
-            else pd.Series([datetime.now() for _ in range(len(keys))])
+    def inspect_lastn(
+        self,
+        dataset_name: str,
+        n: int = 10,
+    ) -> List[Dict[str, Any]]:
+        branch_class = self._get_branch()
+        return (
+            branch_class.get_dataset_df(dataset_name)
+            .last(n)
+            .to_dict(orient="records")
         )
 
-        keys_dict = defaultdict(list)
-        for key in keys:
-            for key_name in key.keys():
-                keys_dict[key_name].append(key[key_name])
+    # ----------------------- Branch API's -----------------------------------
 
-        data, found = dataset.lookup(
-            timestamps,
-            **{name: pd.Series(value) for name, value in keys_dict.items()},
-        )
+    def init_branch(self, name: str):
+        if name in self.branches_map:
+            raise ValueError(f"Branch name: `{name}` already exists")
+        self.branches_map[name] = Branch(name)
+        self.checkout(name)
+        return FakeResponse(200, "Ok")
 
-        fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl,
-            self.data,
-            self.aggregated_datasets,
-            self.dataset_info,
-            None,
-            None,
-        )
-        return data[fields].to_dict(orient="records"), found
+    def clone_branch(self, name: str, from_branch: str):
+        if name in self.branches_map:
+            return FakeResponse(400, f"Branch name: {name} already exists")
+        if name == from_branch:
+            return FakeResponse(
+                400,
+                "New Branch name cannot be same as the branch that needs to be cloned",
+            )
+        self.branches_map[name] = copy.deepcopy(self.branches_map[from_branch])
+        self.branches_map[name].name = name
+        self.checkout(name)
+        return FakeResponse(200, "Ok")
+
+    def delete_branch(self, name: str):
+        if name not in self.branches_map:
+            return FakeResponse(400, f"Branch name: {name} does not exist")
+        del self.branches_map[name]
+        if name == MAIN_BRANCH:
+            self.branches_map[name] = Branch(name)
+        return FakeResponse(200, "Ok")
+
+    def list_branches(self) -> List[str]:
+        return list(self.branches_map.keys())
+
+    def checkout(self, name: str):
+        self._branch = name
 
     # --------------- Public MockClient Specific methods -------------------
 
@@ -751,491 +270,70 @@ class MockClient(Client):
         return False
 
     # ----------------- Private methods --------------------------------------
-
-    def _process_data_connector(self, dataset: Dataset, tier):
-        connector = getattr(dataset, sources.SOURCE_FIELD)
-        connector = connector if isinstance(connector, list) else [connector]
-        connector = [x for x in connector if x.tiers.is_entity_selected(tier)]
-        if len(connector) > 1:
-            raise ValueError(
-                f"Dataset `{dataset._name}` has more than one source defined, found {len(connector)} sources."
-            )
-        if len(connector) == 0:
-            return
-        connector = connector[0]
-        if isinstance(connector, sources.WebhookConnector):
-            src = connector.data_source
-            webhook_endpoint = f"{src.name}:{connector.endpoint}"
-            self.webhook_to_dataset_map[webhook_endpoint].append(dataset._name)
-            pre_proc = connector.pre_proc
-            self.dataset_to_pre_proc_map[dataset._name] = pre_proc
-
-    def _internal_log(self, dataset_name: str, df: pd.DataFrame):
-        if df.shape[0] == 0:
-            print(
-                f"Skipping log of empty dataframe for webhook `{dataset_name}`"
-            )
-            return FakeResponse(200, "OK")
-
-        if dataset_name not in self.dataset_requests:
-            raise Exception(f"Dataset `{dataset_name}` not found")
-
-        for col in df.columns:
-            # If any of the columns is a dictionary, convert it to a frozen dict
-            if df[col].apply(lambda x: isinstance(x, dict)).any():
-                df[col] = df[col].apply(lambda x: frozendict(x))
-
-        # If pre_proc for the dataset is set, transform the dataframe using it
-        pre_proc = self.dataset_to_pre_proc_map[dataset_name]
-        if pre_proc is not None:
+    def _parse_datetime(self, value: Union[int, str, datetime]) -> datetime:
+        if isinstance(value, int):
             try:
-                df = _transform_df(df, pre_proc)
-            except Exception as e:
-                raise Exception(
-                    f"Error using pre_proc for dataset `{dataset_name}`: {str(e)}",
-                )
+                return pd.to_datetime(value, unit="s")
+            except ValueError:
+                try:
+                    return pd.to_datetime(value, unit="ms")
+                except ValueError:
+                    return pd.to_datetime(value, unit="us")
+        if isinstance(value, str):
+            return pd.to_datetime(value)
+        return value
 
-        dataset_req = self.dataset_requests[dataset_name]
-        timestamp_field = self.dataset_info[dataset_name].timestamp_field
-        if timestamp_field not in df.columns:
-            raise Exception(
-                f"Timestamp field `{timestamp_field}` not found in dataframe "
-                f"while logging to dataset `{dataset_name}`",
+    def _get_branch(self) -> Branch:
+        try:
+            return self.branches_map[self._branch]
+        except KeyError:
+            raise KeyError(
+                f"Branch: `{self._branch}` not found, please sync this branch and try again. "
+                f"Available branches: {str(list(self.branches_map.keys()))}"
             )
 
-        # Check if the dataframe has the same schema as the dataset
-        schema = dataset_req.dsschema
-        if str(df[timestamp_field].dtype) != "datetime64[ns]":
-            raise Exception(
-                400,
-                f"Timestamp field {timestamp_field} is not of type "
-                f"datetime64[ns] but found {df[timestamp_field].dtype} in "
-                f"dataset {dataset_name}",
-            )
-        exceptions = data_schema_check(schema, df, dataset_name)
-        if len(exceptions) > 0:
-            raise Exception(
-                f"Schema validation failed during data insertion to `{dataset_name}`"
-                f" {str(exceptions)}",
-            )
-        self._merge_df(df, dataset_name)
-        for pipeline in self.listeners[dataset_name]:
-            executor = Executor(self.data)
-            try:
-                ret = executor.execute(
-                    pipeline, self.datasets[pipeline._dataset_name]
-                )
-            except Exception as e:
+    def _get_feature_name_from_inputs(
+        self, inputs: List[Union[Feature, str]]
+    ) -> List[str]:
+        input_feature_names = []
+        for input_feature in inputs:
+            if isinstance(input_feature, Feature):
+                input_feature_names.append(input_feature.fqn_)
+            elif isinstance(input_feature, str) and is_valid_feature(
+                input_feature
+            ):
+                input_feature_names.append(input_feature)
+            elif isinstance(input_feature, Featureset):
                 raise Exception(
-                    f"Error while executing pipeline `{pipeline.name}` "
-                    f"in dataset `{dataset_name}`: {str(e)}",
+                    "Providing a featureset as input is deprecated. "
+                    f"List the features instead. {[f.fqn() for f in input_feature.features]}."
                 )
-            if ret is None:
-                continue
-            if ret.is_aggregate:
-                # Aggregate pipelines are not logged
-                self.aggregated_datasets[pipeline.dataset_name] = ret.agg_result
-                continue
+        return input_feature_names
 
-            # Recursively log the output of the pipeline to the datasets
-            resp = self._internal_log(pipeline.dataset_name, ret.df)
-            if resp.status_code != 200:
-                return resp
-        return FakeResponse(200, "OK")
-
-    def _prepare_extractor_args(
-        self, extractor: Extractor, intermediate_data: Dict[str, pd.Series]
-    ):
-        args = []
-        for input in extractor.inputs:
-            if isinstance(input, Feature):
-                if input.fqn_ in intermediate_data:
-                    if (
-                        intermediate_data[input.fqn_]
-                        .apply(lambda x: isinstance(x, dict))
-                        .any()
-                    ):
-                        intermediate_data[input.fqn_] = intermediate_data[
-                            input.fqn_
-                        ].apply(lambda x: frozendict(x))
-                    args.append(intermediate_data[input.fqn_])
-                else:
-                    raise Exception(
-                        f"Feature `{input}` could not be "
-                        f"calculated by any extractor."
-                    )
-            elif isinstance(input, Featureset):
-                raise Exception(
-                    "Featureset is not supported as input to an "
-                    "extractor since they are mutable."
-                )
-            elif type(input) is tuple:
-                series = []
-                for feature in input:
-                    if feature.fqn_ in intermediate_data:
-                        series.append(intermediate_data[feature.fqn_])
-                    else:
-                        raise Exception(
-                            f"Feature {feature.fqn_} couldn't be "
-                            f"calculated by any extractor."
-                        )
-                if series.apply(lambda x: isinstance(x, dict)).any():
-                    series = series.apply(lambda x: frozendict(x))
-                args.append(pd.concat(series, axis=1))
-            else:
-                raise Exception(
-                    f"Unknown input type {type(input)} found "
-                    f"during feature extraction."
-                )
-        return args
-
-    def _run_extractors(
+    def _transform_input_dataframe_from_inputs(
         self,
-        extractors: List[Extractor],
-        input_df: pd.DataFrame,
-        output_feature_list: List[Union[Feature, Featureset, str]],
-        timestamps: pd.Series,
-    ):
-        # Map of feature name to the pandas series
-        intermediate_data: Dict[str, pd.Series] = {}
-        for col in input_df.columns:
-            if input_df[col].apply(lambda x: isinstance(x, dict)).any():
-                input_df[col] = input_df[col].apply(lambda x: frozendict(x))
-            intermediate_data[col] = input_df[col].reset_index(drop=True)
-        for extractor in extractors:
-            prepare_args = self._prepare_extractor_args(
-                extractor, intermediate_data
-            )
-            features = self.features_for_fs[extractor.featureset]
-            feature_schema = {}
-            for feature in features:
-                feature_schema[f"{extractor.featureset}.{feature.name}"] = (
-                    feature.dtype
-                )
-            fields = []
-            for feature_str in extractor.output_features:
-                feature_str = f"{extractor.featureset}.{feature_str}"
-                if feature_str not in feature_schema:
-                    raise ValueError(f"Feature `{feature_str}` not found")
-                dtype = feature_schema[feature_str]
-                fields.append(Field(name=feature_str, dtype=dtype))
-            dsschema = DSSchema(
-                values=Schema(fields=fields)
-            )  # stuff every field as value
-
-            if extractor.extractor_type == ProtoExtractorType.ALIAS:
-                feature_name = extractor.fqn_output_features()[0]
-                intermediate_data[feature_name] = intermediate_data[
-                    extractor.inputs[0].fqn()
-                ]
-                intermediate_data[feature_name].name = feature_name
-                self._check_schema_exceptions(
-                    intermediate_data[feature_name], dsschema, extractor.name
-                )
-                continue
-
-            if extractor.extractor_type == ProtoExtractorType.LOOKUP:
-                output = self._compute_lookup_extractor(
-                    extractor, timestamps.copy(), intermediate_data
-                )
-                self._check_schema_exceptions(output, dsschema, extractor.name)
-                continue
-
-            allowed_datasets = [
-                x._name for x in extractor.get_dataset_dependencies()
-            ]
-            fennel.datasets.datasets.dataset_lookup = partial(
-                dataset_lookup_impl,
-                self.data,
-                self.aggregated_datasets,
-                self.dataset_info,
-                allowed_datasets,
-                extractor.name,
-            )
-            extractor_fqn = f"{extractor.featureset}.{extractor.name}"
-            func = self.extractor_funcs[extractor_fqn]
-            try:
-                ts_clone = timestamps.copy()
-                output = func(ts_clone, *prepare_args)
-            except Exception as e:
-                raise Exception(
-                    f"Extractor `{extractor.name}` in `{extractor.featureset}` "
-                    f"failed to run with error: {e}. "
-                )
-            fennel.datasets.datasets.dataset_lookup = partial(
-                dataset_lookup_impl,
-                self.data,
-                self.aggregated_datasets,
-                self.dataset_info,
-                None,
-                None,
-            )
-            if not isinstance(output, (pd.Series, pd.DataFrame)):
-                raise Exception(
-                    f"Extractor `{extractor.name}` returned "
-                    f"invalid type `{type(output)}`, expected a pandas series or dataframe"
-                )
-            self._check_schema_exceptions(output, dsschema, extractor.name)
-            if isinstance(output, pd.Series):
-                if output.name in intermediate_data:
-                    continue
-                # If output is a dict, convert it to frozendict
-                if output.apply(lambda x: isinstance(x, dict)).any():
-                    output = frozendict(output)
-                intermediate_data[output.name] = output
-            elif isinstance(output, pd.DataFrame):
-                for col in output.columns:
-                    if col in intermediate_data:
-                        continue
-                    if output[col].apply(lambda x: isinstance(x, dict)).any():
-                        output[col] = output[col].apply(frozendict)
-                    intermediate_data[col] = output[col]
-            else:
-                raise Exception(
-                    f"Extractor {extractor.name} returned "
-                    f"invalid type {type(output)}"
-                )
-        # Ensure the  number of rows in each column is the same
-        num_rows_per_col = {
-            col: len(intermediate_data[col]) for col in intermediate_data
-        }
-        first_col = list(num_rows_per_col.keys())[0]
-        for col, num_rows in num_rows_per_col.items():
-            if num_rows != num_rows_per_col[first_col]:
-                raise Exception(
-                    f"Number of values in feature {col} is {num_rows}, "
-                    f"but {num_rows_per_col[first_col]} in feature {first_col}. "
-                )
-
-        # Prepare the output dataframe
-        output_df = pd.DataFrame()
-        for out_feature in output_feature_list:
-            if isinstance(out_feature, Feature):
-                output_df[out_feature.fqn_] = intermediate_data[
-                    out_feature.fqn_
-                ]
-            elif isinstance(out_feature, str) and is_valid_feature(out_feature):
-                output_df[out_feature] = intermediate_data[out_feature]
-            elif isinstance(out_feature, Featureset):
-                for f in out_feature.features:
-                    output_df[f.fqn_] = intermediate_data[f.fqn_]
-            elif type(out_feature) is tuple:
-                for f in out_feature:
-                    output_df[f.fqn_] = intermediate_data[f.fqn_]
-            else:
-                raise Exception(
-                    f"Unknown feature {out_feature} of type {type(out_feature)} found "
-                    f"during feature extraction."
-                )
-        return output_df
-
-    def _check_schema_exceptions(
-        self, output, dsschema: DSSchema, extractor_name: str
-    ):
-        if output is None or output.shape[0] == 0:
-            return
-        output_df = pd.DataFrame(output)
-        output_df.reset_index(inplace=True)
-        exceptions = data_schema_check(dsschema, output_df, extractor_name)
-        if len(exceptions) > 0:
+        input_dataframe: pd.DataFrame,
+        inputs: List[Union[Feature, str]],
+        input_feature_names: List[str],
+    ) -> pd.DataFrame:
+        # Check if the input dataframe has all the required features
+        if not set(input_feature_names).issubset(set(input_dataframe.columns)):
             raise Exception(
-                f"Extractor `{extractor_name}` returned "
-                f"invalid schema for data: {exceptions}"
+                f"Input dataframe does not contain all the required features. "
+                f"Required features: {input_feature_names}. "
+                f"Input dataframe columns: {input_dataframe.columns}"
             )
-
-    def _compute_lookup_extractor(
-        self,
-        extractor: Extractor,
-        timestamps: pd.Series,
-        intermediate_data: Dict[str, pd.Series],
-    ) -> pd.Series:
-        if len(extractor.output_features) != 1:
-            raise ValueError(
-                f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.output_features)}"
+        for input_col, feature in zip(input_dataframe.columns, inputs):
+            if isinstance(feature, str):
+                continue
+            col_type = get_datatype(feature.dtype)  # type: ignore
+            input_dataframe[input_col] = cast_col_to_dtype(
+                input_dataframe[input_col], col_type
             )
-        if len(extractor.depends_on) != 1:
-            raise ValueError(
-                f"Lookup extractor {extractor.name} must have exactly one dependent dataset, found {len(extractor.depends_on)}"
-            )
-
-        input_features = {
-            k.name: intermediate_data[k] for k in extractor.inputs  # type: ignore
-        }
-        allowed_datasets = [
-            x._name for x in extractor.get_dataset_dependencies()
-        ]
-        fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl,
-            self.data,
-            self.aggregated_datasets,
-            self.dataset_info,
-            allowed_datasets,
-            extractor.name,
-        )
-        results, _ = extractor.depends_on[0].lookup(
-            timestamps, **input_features
-        )
-        if (
-            not extractor.derived_extractor_info
-            or not extractor.derived_extractor_info.field
-            or not extractor.derived_extractor_info.field.name
-        ):
-            raise TypeError(
-                f"Field for lookup extractor {extractor.name} must have a named field"
-            )
-        results = results[extractor.derived_extractor_info.field.name]
-        if extractor.derived_extractor_info.default is not None:
-            if results.dtype != object:
-                results = results.fillna(
-                    extractor.derived_extractor_info.default
-                )
-            else:
-                # fillna doesn't work for list type or dict type :cols
-                for row in results.loc[results.isnull()].index:
-                    results[row] = extractor.derived_extractor_info.default
-            results = cast_col_to_dtype(
-                results,
-                get_datatype(extractor.derived_extractor_info.field.dtype),
-            )
-        else:
-            results = cast_col_to_dtype(
-                results,
-                get_datatype(
-                    Optional[extractor.derived_extractor_info.field.dtype]
-                ),
-            )
-            results.replace({np.nan: None}, inplace=True)
-
-        results.name = extractor.fqn_output_features()[0]
-        intermediate_data[extractor.fqn_output_features()[0]] = results
-        fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl,
-            self.data,
-            self.aggregated_datasets,
-            self.dataset_info,
-            None,
-            None,
-        )
-
-        return results
-
-    def _merge_df(self, df: pd.DataFrame, dataset_name: str):
-        if not self.dataset_info[dataset_name].is_source_dataset:
-            # If it's a derived dataset, just replace the data, since we
-            # recompute the entire pipeline on every run.
-            timestamp_field = self.dataset_info[dataset_name].timestamp_field
-            self.data[dataset_name] = df.sort_values(timestamp_field)
-            return
-
-        # Filter the dataframe to only include the columns in the schema
-        columns = self.dataset_info[dataset_name].fields
-        input_columns = df.columns.tolist()
-        # Check that input columns are a subset of the dataset columns
-        if not set(columns).issubset(set(input_columns)):
-            raise ValueError(
-                f"Dataset columns {columns} are not a subset of "
-                f"Input columns {input_columns}"
-            )
-        df = df[columns]
-
-        if len(self.dataset_info[dataset_name].key_fields) > 0:
-            df = df.sort_values(self.dataset_info[dataset_name].timestamp_field)
-            try:
-                df = df.groupby(
-                    self.dataset_info[dataset_name].key_fields, as_index=False
-                ).last()
-            except Exception:
-                # This happens when struct fields are present in the key fields
-                # Convert key fields to string, group by and then drop the key
-                # column
-                df["__fennel__key__"] = df[
-                    self.dataset_info[dataset_name].key_fields
-                ].apply(lambda x: str(dict(x)), axis=1)
-                df = df.groupby("__fennel__key__", as_index=False).last()
-                df = df.drop(columns="__fennel__key__")
-            df = df.reset_index(drop=True)
-
-        if dataset_name in self.data:
-            df = pd.concat([self.data[dataset_name], df])
-
-        # Sort by timestamp
-        timestamp_field = self.dataset_info[dataset_name].timestamp_field
-        self.data[dataset_name] = df.sort_values(timestamp_field)
+        return input_dataframe
 
     def _reset(self):
-        self.dataset_requests: Dict[str, CoreDataset] = {}
-        self.features_for_fs: Dict[str, List[ProtoFeature]] = {}
-        self.extractor_funcs: Dict[str, ProtoExtractor] = {}
-        self.dataset_info: Dict[str, _DatasetInfo] = {}
-        # Map of dataset name to the dataframe
-        self.data: Dict[str, pd.DataFrame] = {}
-        # Map of datasets to pipelines it is an input to
-        self.listeners: Dict[str, List[Pipeline]] = defaultdict(list)
-        fennel.datasets.datasets.dataset_lookup = partial(
-            dataset_lookup_impl,
-            self.data,
-            self.aggregated_datasets,
-            self.dataset_info,
-            None,
-            None,
-        )
-        self.extractors: List[Extractor] = []
-
-
-def proto_to_dtype(proto_dtype) -> str:
-    if proto_dtype.HasField("int_type"):
-        return "int"
-    elif proto_dtype.HasField("double_type"):
-        return "float"
-    elif proto_dtype.HasField("string_type"):
-        return "string"
-    elif proto_dtype.HasField("bool_type"):
-        return "bool"
-    elif proto_dtype.HasField("timestamp_type"):
-        return "timestamp"
-    elif proto_dtype.HasField("optional_type"):
-        return f"optional({proto_to_dtype(proto_dtype.optional_type.of)})"
-    else:
-        return str(proto_dtype)
-
-
-def cast_df_to_schema(
-    df: pd.DataFrame, dsschema: DSSchema, pre_proc_cols: List[str] = []
-) -> pd.DataFrame:
-    # Handle fields in keys and values
-    fields = list(dsschema.keys.fields) + list(dsschema.values.fields)
-    df = df.copy()
-    df = df.reset_index(drop=True)
-    for f in fields:
-        if f.name not in df.columns:
-            if f.name in pre_proc_cols:
-                continue
-            raise ValueError(
-                f"Field `{f.name}` not found in dataframe while logging to dataset"
-            )
-        try:
-            series = cast_col_to_dtype(df[f.name], f.dtype)
-            series.name = f.name
-            df[f.name] = series
-        except Exception as e:
-            raise ValueError(
-                f"Failed to cast data logged to column `{f.name}` of type `{proto_to_dtype(f.dtype)}`: {e}"
-            )
-    if dsschema.timestamp not in df.columns:
-        if dsschema.timestamp in pre_proc_cols:
-            return df
-        raise ValueError(
-            f"Timestamp column `{dsschema.timestamp}` not found in dataframe while logging to dataset"
-        )
-    try:
-        df[dsschema.timestamp] = pd.to_datetime(
-            df[dsschema.timestamp].apply(lambda x: parse_datetime(x))
-        ).astype("datetime64[ns]")
-    except Exception as e:
-        raise ValueError(
-            f"Failed to cast data logged to timestamp column {dsschema.timestamp}: {e}"
-        )
-    return df
+        self.branches_map: Dict[str, Branch] = {}
 
 
 def mock(test_func):

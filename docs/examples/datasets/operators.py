@@ -52,7 +52,7 @@ def test_filter(client):
     ]
     df = pd.DataFrame(data)
     client.log("fennel_webhook", "Action", df)
-    df = client.data["Likes"]
+    df = client.get_dataset_df("Likes")
     assert df.shape == (3, 3)
 
 
@@ -103,7 +103,7 @@ def test_transform(client):
     ]
     df = pd.DataFrame(data)
     client.log("fennel_webhook", "Rating", df)
-    df = client.data["RatingRescaled"]
+    df = client.get_dataset_df("RatingRescaled")
     assert df.shape == (3, 3)
     assert df["rescaled"].sum() == 2.4  # 3/5 + 4/5 + 5/5
 
@@ -161,7 +161,7 @@ def test_join(client):
     ]
     df = pd.DataFrame(data)
     client.log("fennel_webhook", "OrderActivity", df)
-    df = client.data["UserSellerActivity"]
+    df = client.get_dataset_df("UserSellerActivity")
     assert df.shape == (3, 4)
     assert df["seller_id"].tolist() == [1, 2, 13]
 

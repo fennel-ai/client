@@ -176,7 +176,7 @@ def test_fraud_detection_pipeline(client):
     response = client.log("fennel_webhook", "Regions", region_to_state)
     assert response.status_code == 200
 
-    assert len(client.aggregated_datasets["UserTransactionSums"]) == 2
+    assert len(client.get_dataset_df("UserTransactionSums")) == 30
     lookup_dataframe = transaction_data_sample[["cc_num"]].rename(
         columns={"cc_num": "UserTransactionSumsFeatures.cc_num"}
     )

@@ -635,4 +635,4 @@ class TestSearchExample(unittest.TestCase):
             return
 
         df = client.get_dataset_df("DocumentContentDataset")
-        assert df.shape == (8, 8)
+        assert df.shape == (8, 7)
