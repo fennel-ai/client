@@ -159,7 +159,9 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_simple_drop_null(self, client):
         # Sync the dataset
-        response = client.sync(datasets=[UserInfoDataset, UserInfoDatasetDerivedDropnull])
+        response = client.sync(
+            datasets=[UserInfoDataset, UserInfoDatasetDerivedDropnull]
+        )
         assert response.status_code == requests.codes.OK, response.json()
         now = datetime.now()
         data = [

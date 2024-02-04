@@ -240,9 +240,11 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 lhs_operand_id=self.visit(obj.node),
                 rhs_dsref_operand_id=rhs_operator_id,
                 on=on,
-                how=proto.Join.How.Left
-                if obj.how == "left"
-                else proto.Join.How.Inner,
+                how=(
+                    proto.Join.How.Left
+                    if obj.how == "left"
+                    else proto.Join.How.Inner
+                ),
                 within_low=within_low,
                 within_high=within_high,
             ),
@@ -340,11 +342,15 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             dataset_name=self.dataset_name,
             window=proto.Window(
                 operand_id=self.visit(obj.node),
-                type=proto.Window.Type.Session
-                if obj.type == WindowType.Sessionize
-                else proto.Window.Type.Tumble
-                if obj.type == WindowType.Tumbling
-                else proto.Window.Type.Sliding,
+                type=(
+                    proto.Window.Type.Session
+                    if obj.type == WindowType.Sessionize
+                    else (
+                        proto.Window.Type.Tumble
+                        if obj.type == WindowType.Tumbling
+                        else proto.Window.Type.Sliding
+                    )
+                ),
                 gap=gap,
                 field=obj.field,
             ),

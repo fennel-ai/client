@@ -57,9 +57,11 @@ class DriverVelocityFS:
         df["percent_past_guest_cancelled_trips"] = df[
             ["completed_trips", "cancelled_trips"]
         ].apply(
-            lambda row: round(row[1] / (row[0] + row[1]), 4)
-            if row[0] + row[1] > 0
-            else 0,
+            lambda row: (
+                round(row[1] / (row[0] + row[1]), 4)
+                if row[0] + row[1] > 0
+                else 0
+            ),
             axis=1,
         )
         return df[["percent_past_guest_cancelled_trips"]]

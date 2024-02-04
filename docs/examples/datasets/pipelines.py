@@ -252,7 +252,7 @@ def test_fraud(client):
     assert response.status_code == requests.codes.OK, response.json()
     # Only the mock client contains the data parameter to access the data
     # directly for all datasets.
-    assert client.data["FraudActivityDataset"].shape == (6, 4)
+    assert client.get_dataset_df("FraudActivityDataset").shape == (6, 4)
 
 
 # docsnip multiple_pipelines

@@ -16,7 +16,7 @@ from fennel.gen.schema_pb2 import (
 )
 from fennel.lib.schema import between, oneof, regex
 from fennel.lib.to_proto.to_proto import fields_to_dsschema
-from fennel.test_lib.mock_client import cast_df_to_schema
+from fennel.test_lib.test_utils import cast_df_to_schema
 
 
 # Example tests
@@ -179,7 +179,7 @@ def test_cast_invalid_timestamp():
         cast_df_to_schema(df, schema)
     assert (
         str(e.value)
-        == """Failed to cast data logged to timestamp column created_ts: Unknown string format: not a timestamp present at position 3"""
+        == """Failed to cast data logged to timestamp column created_ts: Unknown string format: not a timestamp present at position 0"""
     )
 
 

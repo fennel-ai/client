@@ -812,13 +812,11 @@ class WindowOperator(_Node):
 def dataset(
     *,
     history: Optional[Duration] = DEFAULT_RETENTION,
-) -> Callable[[Type[T]], Dataset]:
-    ...
+) -> Callable[[Type[T]], Dataset]: ...
 
 
 @overload
-def dataset(cls: Type[T]) -> Dataset:
-    ...
+def dataset(cls: Type[T]) -> Dataset: ...
 
 
 def dataset(
