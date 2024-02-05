@@ -3,7 +3,7 @@ title: Transform
 order: 0
 status: published
 ---
-# Transform
+### Transform
 
 <Divider>
 <LeftSection>
@@ -11,12 +11,10 @@ Catch all operator to add/remove/update columns.
 
 #### Parameters
 
-
 <Expandable title="func" type="Callable[pd.Dataframe, pd.Dataframe]">
-Positional argument specifying the transform function - the function takes a 
-pandas dataframe containing a batch of rows from the input dataset and is 
-expected to return an output dataframe of the same length, though potentially
-with different set of columns.
+The transform function that takes a pandas dataframe containing a batch of rows 
+from the input dataset and returns an output dataframe of the same length, 
+though potentially with different set of columns.
 </Expandable>
 
 <Expandable title="schema" type="Optional[Dict[str, Type]]" default="None">
@@ -24,14 +22,40 @@ The expected schema of the output dataset. If not specified, the schema of the
 input dataset is used.
 </Expandable>
 
-:::info
-If possible, it's recommended to use simpler operators like assign, drop, 
-select, dropnull, rename since they are easier to read/write.
-:::
+
+#### Returns
+
+<Expandable type="Dataset">
+Returns a dataset with the schema as specified in `schema` and rows as transformed
+by the transform function.
+</Expandable>
+
+
+#### Errors
+
+<Expandable title="Output dataframe doesn't match the schema">
+Runtime error if the dataframe returned by the transform function doesn't match
+the provided `schema`.
+</Expandable>
+
+<Expandable title="Modifying key/timestamp columns">
+Sync error if transform tries to modify key/timestamp columns.
+</Expandable>
+
 </LeftSection>
 
 <RightSection>
-<pre snippet="api-reference/operators_ref#transform"></pre>
+<pre snippet="api-reference/operators/transform#basic" status="success"
+    message="Adding column amount_sq">
+</pre>
+
+<pre snippet="api-reference/operators/transform#modifying_keys" status="error"
+    message="Modifying key or timestamp columns">
+</pre>
+
+<pre snippet="api-reference/operators/transform#incorrect_type" status="error"
+    message="Runtime error: amount_sq is of type int, not str">
+</pre>
 </RightSection>
 
 </Divider>

@@ -29,15 +29,12 @@ def test_overview(client):
 
     from fennel.sources import source, MySQL, Kafka, Postgres
 
-    postgres = MySQL.get(name="mysql")
-    postgres = Postgres.get(name="mysql")
+    pg = Postgres.get(name="postgres")
     kafka = Kafka.get(name="kafka")
     webhook = Webhook(name="fennel_webhook")
 
     # docsnip external_data_sources
-    @source(
-        postgres.table("user", cursor="modified_at"), every="1m", tier="prod"
-    )
+    @source(pg.table("user", cursor="modified_at"), every="1m", tier="prod")
     @dataset
     class User:
         uid: int = field(key=True)
@@ -188,6 +185,7 @@ def test_overview(client):
         ],
         input_dataframe=pd.DataFrame({"UserFeature.uid": [1, 3]}),
     )
+
     # /docsnip
 
     # docsnip query_historical
