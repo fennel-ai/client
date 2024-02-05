@@ -268,14 +268,25 @@ class _Node(Generic[T]):
             return self
         return self.__drop(drop_cols, name="select")
 
-    def dedup(self, by: Optional[List[str]] = None) -> _Node:
+    def dedup(self, *args, by: Optional[List[str]] = None) -> _Node:
         # If 'by' is not provided, dedup by all value fields.
         # Note: we don't use key fields because dedup cannot be applied on keyed datasets.
-        if by is None:
-            by = self.dsschema().values.keys()
+        if len(args) == 0 and by is None:
+            by = list(self.dsschema().values.keys())
+        elif len(args) > 0 and by is None:
+            by = args
+        elif len(args) == 0 and by is not None and isinstance(by, list):
+            by = by
+        elif len(args) == 0 and by is not None and isinstance(by, str):
+            by = [by]
+        else:
+            raise ValueError(
+                "Invalid arguments to dedup. Must specify either 'by' or positional arguments."
+            )
+            
         return Dedup(self, by)
 
-    def explode(self, *args, columns: List[str]) -> _Node:
+    def explode(self, *args, columns: List[str] = None) -> _Node:
         columns = _Node.__get_drop_args(*args, columns=columns, name="explode")
         return Explode(self, columns)
 

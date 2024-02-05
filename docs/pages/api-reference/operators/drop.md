@@ -3,7 +3,7 @@ title: Drop
 order: 0
 status: published
 ---
-# Drop
+### Drop
 
 <Divider>
 <LeftSection>
@@ -16,19 +16,36 @@ List of columns in the incoming dataset that should be dropped. This can be pass
 either as unpacked *args or as a Python list.
 </Expandable>
 
-:::info
-It is invalid to drop key or timestamp columns.
-:::
+
+#### Returns
+
+<Expandable type="Dataset">
+Returns a dataset with the same schema as the input dataset but with some columns
+(as specified by `columns`) removed.
+</Expandable>
+
+#### Errors
+<Expandable title="Dropping key/timestamp columns">
+Sync error on removing any key columns or the timestamp column.
+</Expandable>
+
+<Expandable title="Dropping non-existent columns">
+Sync error on removing any column that doesn't exist in the input dataset.
+</Expandable>
+
 </LeftSection>
 
 
 <RightSection>
-<pre snippet="api-reference/operators_ref#drop"></pre>
+<pre snippet="api-reference/operators/drop#basic" status="success"
+    message="Can pass names via *args or kwarg columns">
+</pre>
+<pre snippet="api-reference/operators/drop#incorrect_type" status="error"
+    message="Can not drop key or timestamp columns">
+</pre>
+<pre snippet="api-reference/operators/drop#missing_column" status="error"
+    message="Can not drop a non-existent column">
+</pre>
+
 </RightSection>
-
 </Divider>
-
-TODO:
-- one example with *args, one with list
-- one invalid example where using a column that doesn't exist
-- one invalid example when using key or timestamp column

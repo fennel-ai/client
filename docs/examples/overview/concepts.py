@@ -97,19 +97,21 @@ class UserFeature:
     age: float = feature(id=3)
     dob: datetime = feature(id=4)
 
-    @extractor
+    @extractor(depends_on=[User])
     @inputs(uid)
     @outputs(age)
     def get_age(cls, ts: pd.Series, uids: pd.Series):
-        dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])
+        dobs, _ = User.lookup(ts=ts, uid=uids, fields=["dob"])
+        dobs.fillna(pd.Timestamp("2020-01-01"), inplace=True)
         ages = ts - dobs # note: age is calculated as of `ts`
         return pd.Series(ages)
 
-    @extractor
+    @extractor(depends_on=[User])
     @inputs(uid)
     @outputs(country)
     def get_country(cls, ts: pd.Series, uids: pd.Series):
         countries, _ = User.lookup(ts=ts, uid=uids, fields=["country"])
+        countries = countries.fillna("unknown")
         return countries
 
 
@@ -205,11 +207,12 @@ class UserLocation:
 os.environ["FENNEL_SERVER_URL"] = "http://localhost:8080"
 os.environ["FENNEL_TOKEN"] = "my-secret-token"
 
-# docsnip client
-from fennel.client import Client
+def dummy_function():
+    # docsnip client
+    from fennel.client import Client
 
-client = Client(os.environ["FENNEL_SERVER_URL"], token=os.environ["FENNEL_TOKEN"])
-# /docsnip
+    client = Client(os.environ["FENNEL_SERVER_URL"], token=os.environ["FENNEL_TOKEN"])
+    # /docsnip
 
 @mock
 def test_overview(client):
@@ -219,35 +222,33 @@ def test_overview(client):
         featuresets=[UserFeature],
     )
     # /docsnip
+    # docsnip query
 
+    feature_df = client.extract(
+        outputs=[
+            UserFeature.age,
+            UserFeature.country,
+        ],
+        inputs=[
+            UserFeature.uid,
+        ],
+        input_dataframe=pd.DataFrame({"UserFeature.uid": [1, 3]}),
+    )
+    # /docsnip
 
-# docsnip query
-
-feature_df = client.extract(
-    outputs=[
-        UserFeature.age,
-        UserFeature.country,
-    ],
-    inputs=[
-        UserFeature.uid,
-    ],
-    input_dataframe=pd.DataFrame({"UserFeature.uid": [1, 3]}),
-)
-# /docsnip
-
-# docsnip query_historical
-feature_df = client.extract_historical(
-    outputs=[
-        UserFeature.age,
-        UserFeature.country,
-    ],
-    inputs=[
-        UserFeature.uid,
-    ],
-    input_dataframe=pd.DataFrame({
-        "UserFeature.uid": [1, 3],
-        "timestamp": [datetime.now(), datetime.now() - timedelta(days=1)],
-    }),
-    timestamp_column="timestamp",
-)
-# /docsnip
+    # docsnip query_historical
+    feature_df = client.extract_historical(
+        outputs=[
+            UserFeature.age,
+            UserFeature.country,
+        ],
+        inputs=[
+            UserFeature.uid,
+        ],
+        input_dataframe=pd.DataFrame({
+            "UserFeature.uid": [1, 3],
+            "timestamp": [datetime.now(), datetime.now() - timedelta(days=1)],
+        }),
+        timestamp_column="timestamp",
+    )
+    # /docsnip

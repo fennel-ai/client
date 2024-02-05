@@ -39,9 +39,17 @@ sidebar:
       - "api-reference/sources"
 
   - slug: "api-reference/aggregations"
-    title: "Aggregation"
+    title: "Aggregations"
     pages:
-      - "api-reference/aggregations"
+      - "api-reference/aggregations/count"
+      - "api-reference/aggregations/sum"
+      - "api-reference/aggregations/min"
+      - "api-reference/aggregations/max"
+      - "api-reference/aggregations/average"
+      - "api-reference/aggregations/stddev"
+      - "api-reference/aggregations/lastk"
+      - "api-reference/aggregations/distinct"
+
 
   - slug: "api-reference/expectations"
     title: "Expectations"

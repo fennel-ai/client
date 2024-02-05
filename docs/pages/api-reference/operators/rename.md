@@ -3,7 +3,7 @@ title: Rename
 order: 0
 status: published
 ---
-# Rename
+### Rename
 
 <Divider>
 <LeftSection>

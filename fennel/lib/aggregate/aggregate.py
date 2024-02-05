@@ -208,16 +208,3 @@ class Stddev(AggregateType):
     def signature(self):
         return f"stddev_{self.of}_{self.window.signature()}"
 
-
-class TopK(AggregateType):
-    item: ItemType
-    score: str
-    k: int
-    update_frequency: int = 60
-
-
-class CF(AggregateType):
-    context: ItemType
-    weight: str
-    limit: int
-    update_frequency: int = 60
