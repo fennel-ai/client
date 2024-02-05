@@ -213,14 +213,14 @@ class UserLocationFeatures:
 @pytest.mark.slow
 @mock
 def test_multiple_features_extracted(client):
-    client.sync(datasets=[UserInfo], featuresets=[UserLocationFeatures])
+    client.commit(datasets=[UserInfo], featuresets=[UserLocationFeatures])
     now = datetime.now()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
     df = pd.DataFrame(data, columns=["uid", "city", "update_time"])
     res = client.log("fennel_webhook", "UserInfo", df)
     assert res.status_code == 200
 
-    df = client.extract(
+    df = client.query(
         outputs=[UserLocationFeatures],
         inputs=[UserLocationFeatures.uid],
         input_dataframe=pd.DataFrame(
@@ -282,7 +282,7 @@ class UserLocationFeaturesRefactored:
 @pytest.mark.slow
 @mock
 def test_extractors_across_featuresets(client):
-    client.sync(
+    client.commit(
         datasets=[UserInfo],
         featuresets=[Request, UserLocationFeaturesRefactored],
     )
@@ -292,7 +292,7 @@ def test_extractors_across_featuresets(client):
     res = client.log("fennel_webhook", "UserInfo", df)
     assert res.status_code == 200
 
-    df = client.extract(
+    df = client.query(
         outputs=[UserLocationFeaturesRefactored],
         inputs=[Request.uid],
         input_dataframe=pd.DataFrame(

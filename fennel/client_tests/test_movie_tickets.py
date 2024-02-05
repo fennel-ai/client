@@ -170,7 +170,7 @@ class TestMovieTicketSale(unittest.TestCase):
     def test_movie_ticket_sale(self, client):
         datasets = [MovieInfo, TicketSale, ActorStats, ActorStatsList]  # type: ignore
         featuresets = [ActorFeatures, RequestFeatures]
-        client.sync(datasets=datasets, featuresets=featuresets, tier="prod")  # type: ignore
+        client.commit(datasets=datasets, featuresets=featuresets, tier="prod")  # type: ignore
         client.sleep()
         data = [
             [
@@ -216,7 +216,7 @@ class TestMovieTicketSale(unittest.TestCase):
             response.status_code == requests.codes.OK
         ), response.json()  # noqa
 
-        features = client.extract(
+        features = client.query(
             inputs=[RequestFeatures.name],  # type: ignore
             outputs=[ActorFeatures.revenue],  # type: ignore
             input_dataframe=pd.DataFrame(

@@ -8,7 +8,7 @@ status: WIP
 
 Fennel Client has the following methods on it:
 
-### extract
+### query
 
 Given some input and output features, extracts the current value of all the output features given the values of the input features.
 
@@ -32,14 +32,14 @@ class UserFeatures:
     ... 6 more features
 ```
 
-<pre snippet="api-reference/client#extract_api"></pre>
+<pre snippet="api-reference/client#query_api"></pre>
 
 
 ****
 
-### **sync**
+### **commit**
 
-Synchronizes the local dataset and featureset definitions with the server. This method should be called after all the datasets and featuresets definitions have been defined using the client SDK.
+Commits the local dataset and featureset definitions with the server. This method should be called after all the datasets and featuresets definitions have been defined using the client SDK.
 This method will create the resources required for the datasets and featuresets on the server. It will also update the resources / throw errors if the schema of the datasets and featuresets have changed.
 
 **Arguments:**
@@ -49,7 +49,7 @@ This method will create the resources required for the datasets and featuresets 
 
 **Example**
 
-<pre snippet="api-reference/client#sync_api"></pre>
+<pre snippet="api-reference/client#commit_api"></pre>
 
 ****
 
@@ -71,7 +71,7 @@ This method throws an error if the schema of the dataframe (i.e. column names an
 
 ****
 
-### **extract_historical**
+### **query_offline**
 
 For offline training of models, users often need to extract features for a large number of entities.
 This method allows users to extract features for a large number of entities in a single call while ensuring
@@ -115,25 +115,25 @@ A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing
 
 Here is an example with `format="pandas"` and the default output bucket
 
-<pre snippet="api-reference/client#extract_historical_api"></pre>
+<pre snippet="api-reference/client#query_offline_api"></pre>
 
 Here is an example specifying input and output S3 buckets
 
-<pre snippet="api-reference/client#extract_historical_s3"></pre>
+<pre snippet="api-reference/client#query_offline_s3"></pre>
 
 ****
 
-### **extract_historical_progress**
+### **progress_query_offline**
 
-This method allows users to monitor the progress of the extract_historical asynchronous operation.
-It accepts the request ID that was returned by the `extract_historical` method and returns the current status of that operation.
+This method allows users to monitor the progress of the query_offline asynchronous operation.
+It accepts the request ID that was returned by the `query_offline` method and returns the current status of that operation.
 
-The response format of this function and the `extract_historical` function are identical.&#x20;
+The response format of this function and the `query_offline` function are identical.&#x20;
 
 **Arguments:**
 
 
-* `request_id: str` - The request ID returned by the `extract_historical` method. This ID uniquely identifies the feature extraction operation
+* `request_id: str` - The request ID returned by the `query_offline` method. This ID uniquely identifies the feature extraction operation
 
 **Returns:**
 
@@ -151,20 +151,20 @@ A completion rate of 1.0 and a failure rate of 0.0 indicates that all processing
 **Example**
 
 ```
-client.extract_historical_features_progress(request_id='bf5dfe5d-0040-4405-a224-b82c7a5bf085')
+client.progress_query_offline(request_id='bf5dfe5d-0040-4405-a224-b82c7a5bf085')
 >>> {'request_id': 'bf5dfe5d-0040-4405-a224-b82c7a5bf085', 'output_bucket': <bucket_name>, 'output_prefix': <output_prefix>, 'completion_rate': 0.76, 'failure_rate': 0.0}
 ```
 
 
-### **extract_historical_cancel_request**
+### **cancel_query_offline**
 
-The `extract_historical_cancel_request` method allows users to cancel an extract_historical asynchronous operation.
-The response format of this function and the `extract_historical` function are identical.&#x20;
+The `cancel_query_offline` method allows users to cancel an query_offline asynchronous operation.
+The response format of this function and the `query_offline` function are identical.&#x20;
 
 **Arguments:**
 
 
-* `request_id: str` - The request ID returned by the `extract_historical` method. This ID uniquely identifies the feature extraction operation
+* `request_id: str` - The request ID returned by the `query_offline` method. This ID uniquely identifies the feature extraction operation
 
 **Returns:**
 

@@ -51,7 +51,7 @@ class UserInfoDataset:
 
 @mock
 def test_restrictions(client):
-    client.sync(datasets=[UserInfoDataset])
+    client.commit(datasets=[UserInfoDataset])
     now = datetime.now()
     data = [
         {

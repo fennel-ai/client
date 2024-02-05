@@ -9,7 +9,7 @@ from fennel.test_lib import mock
 
 @mock
 def test_featureset_metaflags(client):
-    client.sync(datasets=[Ticket], featuresets=[TicketFeatures])
+    client.commit(datasets=[Ticket], featuresets=[TicketFeatures])
 
     df = pd.DataFrame(
         data=[
@@ -19,7 +19,7 @@ def test_featureset_metaflags(client):
         columns=["ticket_id", "price", "at"],
     )
     client.log("example", "ticket_sale", df)
-    feature_df = client.extract(
+    feature_df = client.query(
         inputs=[TicketFeatures.ticket_id],
         outputs=[TicketFeatures.price, TicketFeatures.ticket_id],
         input_dataframe=pd.DataFrame(

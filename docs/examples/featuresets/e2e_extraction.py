@@ -49,9 +49,9 @@ class Request:
 
 @mock
 def test_e2e_extraction(client):
-    client.sync(featuresets=[User, UserPost, Request])
+    client.commit(featuresets=[User, UserPost, Request])
     # docsnip e2e_extraction
-    feature_df = client.extract(
+    feature_df = client.query(
         outputs=[
             "User.age",
             "UserPost.score",

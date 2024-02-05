@@ -15,7 +15,7 @@ from fennel.test_lib import mock
 
 @mock
 def test_vehicle_features(client):
-    sync_response = client.sync(
+    sync_response = client.commit(
         datasets=[
             IdToMarketAreaDS,
             LocationToNewMarketArea,
@@ -85,9 +85,9 @@ def test_vehicle_features(client):
     )
     assert log_response.status_code == 200, log_response.json()
 
-    feature_df = client.extract_features(
-        output_feature_list=[VehicleFS],
-        input_feature_list=[Request.vehicle_id],
+    feature_df = client.query(
+        outputs=[VehicleFS],
+        inputs=[Request.vehicle_id],
         input_dataframe=pd.DataFrame(
             {"Request.vehicle_id": [1027415, 1145620, 900208]}
         ),

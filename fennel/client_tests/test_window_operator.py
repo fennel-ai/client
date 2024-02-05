@@ -131,7 +131,7 @@ def log_app_events_data(client):
 @mock
 def test_window_operator(client):
     # Sync to mock client
-    client.sync(
+    client.commit(
         datasets=[AppEvent, Sessions, SessionStats],
         featuresets=[UserSessionStats],
     )
@@ -180,11 +180,11 @@ def test_window_operator(client):
     assert df_stats["avg_length"].values == [2.5]
     assert df_stats["avg_count"].values == [3.333333]
 
-    df_featureset = client.extract_features(
-        input_feature_list=[
+    df_featureset = client.query(
+        inputs=[
             UserSessionStats.user_id,
         ],
-        output_feature_list=[
+        outputs=[
             UserSessionStats.avg_count,
             UserSessionStats.avg_length,
         ],
@@ -194,10 +194,10 @@ def test_window_operator(client):
     assert df_featureset["UserSessionStats.avg_length"].values == [2.5]
     assert df_featureset["UserSessionStats.avg_count"].values == [3.333333]
 
-    df_historical = client.extract_historical_features(
+    df_historical = client.query_offline(
         input_dataframe=input_extract_historical_df,
-        input_feature_list=["UserSessionStats.user_id"],
-        output_feature_list=[
+        inputs=["UserSessionStats.user_id"],
+        outputs=[
             "UserSessionStats.avg_count",
             "UserSessionStats.avg_length",
         ],

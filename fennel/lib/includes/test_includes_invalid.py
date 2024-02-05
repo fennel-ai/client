@@ -75,7 +75,7 @@ def power_4_alt(x: int) -> int:
 @pytest.mark.integration
 @mock
 def test_simple_invalid_extractor(client):
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoExtractor],
     )
@@ -92,7 +92,7 @@ def test_simple_invalid_extractor(client):
         client.sleep()
 
     with pytest.raises(Exception) as e:
-        client.extract(
+        client.query(
             outputs=[UserInfoExtractor],
             inputs=[UserInfoExtractor.userid],
             input_dataframe=pd.DataFrame(
@@ -114,7 +114,7 @@ def test_simple_invalid_extractor(client):
 @pytest.mark.integration
 @mock
 def test_invalid_code_changes(client):
-    def sync():
+    def commit():
         @meta(owner="test@test.com")
         @featureset
         class UserInfoExtractorInvalid:
@@ -149,7 +149,7 @@ def test_invalid_code_changes(client):
                     ]
                 ]
 
-        client.sync(
+        client.commit(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoExtractorInvalid],
         )
@@ -190,7 +190,7 @@ def test_invalid_code_changes(client):
                 ]
 
         with pytest.raises(Exception) as e:
-            client.sync(
+            client.commit(
                 datasets=[UserInfoDataset],
                 featuresets=[UserInfoExtractorInvalid],
             )
@@ -235,12 +235,12 @@ def test_invalid_code_changes(client):
                     ]
                 ]
 
-        client.sync(
+        client.commit(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoExtractorInvalid],
         )
 
     if client.is_integration_client():
-        sync()
+        commit()
         failed_sync_with_new_include()
         successful_sync_with_new_feature()

@@ -77,7 +77,7 @@ class UserFeaturesDerived2:
 
 @mock
 def test_lookup_in_extractor(client):
-    client.sync(
+    client.commit(
         datasets=[User],
         featuresets=[UserFeatures, UserFeaturesDerived, UserFeaturesDerived2],
     )
@@ -92,7 +92,7 @@ def test_lookup_in_extractor(client):
     res = client.log("fennel_webhook", "User", data)
     assert res.status_code == 200, res.json()
 
-    feature_df = client.extract(
+    feature_df = client.query(
         outputs=[UserFeatures.name],
         inputs=[UserFeatures.uid],
         input_dataframe=pd.DataFrame(
@@ -105,7 +105,7 @@ def test_lookup_in_extractor(client):
     expected = ["Alice", "Bob", "Charlie", "Unknown"]
     assert feature_df["UserFeatures.name"].tolist() == expected
 
-    feature_df = client.extract(
+    feature_df = client.query(
         outputs=[UserFeaturesDerived.name],
         inputs=[Request.user_id],
         input_dataframe=pd.DataFrame(
@@ -116,7 +116,7 @@ def test_lookup_in_extractor(client):
     )
     assert feature_df["UserFeaturesDerived.name"].tolist() == expected
 
-    feature_df = client.extract(
+    feature_df = client.query(
         outputs=[UserFeaturesDerived2.name],
         inputs=[Request2.uid],
         input_dataframe=pd.DataFrame(

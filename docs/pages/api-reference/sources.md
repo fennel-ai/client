@@ -192,7 +192,7 @@ The following fields need to be defined for the source:
       - a `float` representing `{seconds}.{microseconds}` since the epoch
       - an [ISO-8601](https://docs.python.org/3/library/datetime.html#datetime.date.fromisoformat) formatted `str`.
    - The timestamp supplied should be no older than the retention window of the stream.
-   - For `latest`, Fennel will begin consuming records that come into Kinesis a few minutes after `sync()` is called. For a completely deterministic position, use `at_timestamp`.
+   - For `latest`, Fennel will begin consuming records that come into Kinesis a few minutes after `commit()` is called. For a completely deterministic position, use `at_timestamp`.
 See [Kinesis ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html#API_GetShardIterator_RequestSyntax) for more info. 
 4. `format: Optional[str]` - The format of the incoming data. Currently only `"json"` is supported
 

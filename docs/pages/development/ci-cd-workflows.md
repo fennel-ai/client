@@ -23,7 +23,7 @@ And a single featureset as follows in a file called `featuresets.py`:
 A simple Python script could be written that imports both the dataset & featureset
 modules, reads Fennel URL & Token as environment variables and makes a sync
 call.
-<pre snippet="testing-and-ci-cd/ci_cd/sync#gh_action_sync"></pre>
+<pre snippet="testing-and-ci-cd/ci_cd/sync#gh_action_commit"></pre>
 
 Given such a setup, here is a sample Github actions script to deploy changes to
 Fennel servers:

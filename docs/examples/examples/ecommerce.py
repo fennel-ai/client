@@ -96,7 +96,7 @@ class UserSeller:
 class TestUserLivestreamFeatures(unittest.TestCase):
     @mock
     def test_feature(self, client):
-        client.sync(
+        client.commit(
             datasets=[Order, UserSellerOrders],
             featuresets=[UserSeller],
             tier="dev",
@@ -113,7 +113,7 @@ class TestUserLivestreamFeatures(unittest.TestCase):
         response = client.log("fennel_webhook", "Order", df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        feature_df = client.extract(
+        feature_df = client.query(
             outputs=[
                 "UserSeller.num_orders_1d",
                 "UserSeller.num_orders_1w",

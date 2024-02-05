@@ -29,11 +29,11 @@ class TestDataset(unittest.TestCase):
         # client talks to the mock server
         # ... do any setup
         # Sync the dataset
-        client.sync(datasets=[User])
+        client.commit(datasets=[User])
         # ... some other stuff
         client.log("fennel_webhook", 'User', pd.Dataframe(...))
         # ... some other stuff
-        found = client.extract(...)
+        found = client.query(...)
         self.assertEqual(found, expected)    
 ```
 

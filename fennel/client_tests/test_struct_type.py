@@ -125,7 +125,7 @@ def log_movie_data(client):
 @pytest.mark.integration
 @mock
 def test_struct_type(client):
-    client.sync(datasets=[MovieCast, MovieInfo], featuresets=[MovieFeatures])
+    client.commit(datasets=[MovieCast, MovieInfo], featuresets=[MovieFeatures])
     # Log data to test the pipeline
     log_movie_data(client)
 
@@ -139,7 +139,7 @@ def test_struct_type(client):
             ],
         }
     )
-    df = client.extract(
+    df = client.query(
         outputs=[
             MovieFeatures.cast_list,
             MovieFeatures.average_cast_age,

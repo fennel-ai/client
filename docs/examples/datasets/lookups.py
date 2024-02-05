@@ -46,7 +46,7 @@ class UserFeature:
 
 @mock
 def test_user_dataset_lookup(client):
-    client.sync(datasets=[User], featuresets=[UserFeature])
+    client.commit(datasets=[User], featuresets=[UserFeature])
     now = datetime.now()
 
     data = [
@@ -61,7 +61,7 @@ def test_user_dataset_lookup(client):
 
     res = client.log("fennel_webhook", "User", df)
     assert res.status_code == 200, res.json()
-    feature_df = client.extract(
+    feature_df = client.query(
         outputs=[UserFeature.in_home_city],
         inputs=[UserFeature.uid],
         input_dataframe=pd.DataFrame({"UserFeature.uid": [1, 2, 3]}),

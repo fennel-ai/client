@@ -195,7 +195,7 @@ def test_complex_auto_gen_extractors(client):
     :return:
     """
     with pytest.raises(ValueError) as e:
-        _ = client.sync(
+        _ = client.commit(
             datasets=[
                 RiderDataset,
                 RiderCreditScoreDataset,
@@ -215,7 +215,7 @@ def test_complex_auto_gen_extractors(client):
     assert str(e.value) == error_msg1 or str(e.value) == error_msg2
 
     with pytest.raises(ValueError) as e:
-        _ = client.sync(
+        _ = client.commit(
             datasets=[
                 RiderDataset,
                 RiderCreditScoreDataset,
@@ -235,7 +235,7 @@ def test_complex_auto_gen_extractors(client):
     assert str(e.value) == error_msg1 or str(e.value) == error_msg2
 
     with pytest.raises(ValueError) as e:
-        _ = client.sync(
+        _ = client.commit(
             datasets=[
                 RiderDataset,
                 RiderCreditScoreDataset,
@@ -255,7 +255,7 @@ def test_complex_auto_gen_extractors(client):
         == "Dataset `NumCompletedTripsDataset` not found in sync call"
     )
 
-    resp = client.sync(
+    resp = client.commit(
         datasets=[
             RiderDataset,
             RiderCreditScoreDataset,
@@ -317,7 +317,7 @@ def test_complex_auto_gen_extractors(client):
     )
     assert log_response.status_code == 200
 
-    extracted_df = client.extract(
+    extracted_df = client.query(
         inputs=[RequestFeatures0.rider_id],
         outputs=[RiderFeatures],
         input_dataframe=pd.DataFrame({"RequestFeatures0.rider_id": [1, 2]}),

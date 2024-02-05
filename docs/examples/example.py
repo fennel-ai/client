@@ -39,7 +39,7 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_log_with_additional_schema(self, client):
         # Log correct data
-        client.sync(datasets=[UserInfoDataset])
+        client.commit(datasets=[UserInfoDataset])
         now = datetime.now()
         data = [
             {

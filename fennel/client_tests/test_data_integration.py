@@ -51,7 +51,7 @@ class TestMovieInfo103(unittest.TestCase):
         )
 
         # Sync the dataset
-        client.sync(datasets=[mock_MovieInfo103])
+        client.commit(datasets=[mock_MovieInfo103])
         client.sleep()
         t = datetime.fromtimestamp(1672858163)
         data = [
@@ -107,7 +107,7 @@ class TestMovieInfo103(unittest.TestCase):
     def test_s3_data_integration_source(self, client):
         """Same test as test_log_to_MovieInfo103 but with an S3 source."""
         # Sync the dataset
-        client.sync(datasets=[MovieInfo103])
+        client.commit(datasets=[MovieInfo103])
         client.sleep()
 
         # Time for data_integration to do its magic
