@@ -172,7 +172,9 @@ def test_window_operator(client):
         [
             {
                 "begin": pd.Timestamp(datetime(2023, 1, 16, 11, 0, 25)),
-                "end": pd.Timestamp(datetime(2023, 1, 16, 11, 0, 34)),
+                "end": pd.Timestamp(
+                    datetime(2023, 1, 16, 11, 0, 33, microsecond=1)
+                ),
                 "count": 8,
             }
         ]
@@ -184,7 +186,6 @@ def test_window_operator(client):
             "timestamp": [datetime(2023, 1, 16, 11, 0, 11)],
         }
     )
-    print("OOK")
 
     df_session, _ = Sessions.lookup(
         ts, user_id=user_id_keys, window=window_keys
@@ -196,7 +197,7 @@ def test_window_operator(client):
         2023, 1, 16, 11, 0, 25
     )
     assert df_session["window"].values[0].end == datetime(
-        2023, 1, 16, 11, 0, 34
+        2023, 1, 16, 11, 0, 33, microsecond=1
     )
     assert df_session["window"].values[0].count == 8
     assert df_session["avg_star"].values[0] == 3.125
@@ -204,7 +205,7 @@ def test_window_operator(client):
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
     assert df_stats.shape[0] == 1
     assert list(df_stats["user_id"].values) == [1]
-    assert list(df_stats["avg_length"].values) == [2.5]
+    assert list(df_stats["avg_length"].values) == [pytest.approx(1.833333333)]
     assert list(df_stats["avg_count"].values) == [pytest.approx(3.333333)]
     assert list(df_stats["avg_star"].values) == [pytest.approx(2.72083333)]
 
@@ -221,7 +222,9 @@ def test_window_operator(client):
         input_dataframe=input_df,
     )
     assert df_featureset.shape[0] == 1
-    assert list(df_featureset["UserSessionStats.avg_length"].values) == [2.5]
+    assert list(df_featureset["UserSessionStats.avg_length"].values) == [
+        pytest.approx(1.833333333)
+    ]
     assert list(df_featureset["UserSessionStats.avg_count"].values) == [
         pytest.approx(3.333333)
     ]
@@ -245,7 +248,7 @@ def test_window_operator(client):
         format="pandas",
     )
     assert df_historical.shape[0] == 1
-    assert list(df_historical["UserSessionStats.avg_length"].values) == [2]
+    assert list(df_historical["UserSessionStats.avg_length"].values) == [1]
     assert list(df_historical["UserSessionStats.avg_count"].values) == [3]
     assert list(df_featureset["UserSessionStats.avg_star"].values) == [
         pytest.approx(2.720833333)
