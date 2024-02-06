@@ -148,7 +148,14 @@ def parse_json(annotation, json) -> Any:
                 **{f: parse_json(t, json.get(f)) for f, t in fields.items()}
             )
         if annotation is datetime:
-            return datetime.fromisoformat(json)
+            if isinstance(json, str):
+                return datetime.fromisoformat(json)
+            elif isinstance(json, datetime):
+                return json
+            else:
+                raise TypeError(
+                    f"Expected datetime or str, got `{type(json).__name__}`"
+                )
         if annotation is np.ndarray:
             return np.array(json)
         if annotation is pd.DataFrame:
