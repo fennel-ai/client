@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 import pandas as pd
 import pytest
@@ -7,7 +8,7 @@ import fennel._vendor.requests as requests
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Average
+from fennel.lib.aggregate import Average, LastK
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs, Window
 from fennel.sources import source
@@ -46,6 +47,7 @@ class SessionStats:
     timestamp: datetime = field(timestamp=True)
     avg_count: float
     avg_length: float
+    last_visitor_session: List[Window]
 
     @pipeline(version=1)
     @inputs(Sessions)
@@ -75,6 +77,13 @@ class SessionStats:
                     window="forever",
                     into_field="avg_count",
                 ),
+                LastK(
+                    of="window",
+                    window="forever",
+                    limit=1,
+                    dedup=False,
+                    into_field="last_visitor_session",
+                ),
             )
         )
         return stats
@@ -86,12 +95,13 @@ class UserSessionStats:
     user_id: int = feature(id=1)
     avg_count: float = feature(id=2)
     avg_length: float = feature(id=3)
+    last_visitor_session: List[Window] = feature(id=4)
 
     @extractor(depends_on=[SessionStats])
     @inputs(user_id)
-    @outputs(avg_count, avg_length)
+    @outputs(avg_count, avg_length, last_visitor_session)
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):
-        res, _ = SessionStats.lookup(ts, user_id=user_ids, fields=["avg_count", "avg_length"])  # type: ignore
+        res, _ = SessionStats.lookup(ts, user_id=user_ids, fields=["avg_count", "avg_length", "last_visitor_session"])  # type: ignore
         return res
 
 
@@ -187,12 +197,14 @@ def test_window_operator(client):
         output_feature_list=[
             UserSessionStats.avg_count,
             UserSessionStats.avg_length,
+            UserSessionStats.last_visitor_session,
         ],
         input_dataframe=input_df,
     )
     assert df_featureset.shape[0] == 1
     assert df_featureset["UserSessionStats.avg_length"].values == [2.5]
     assert df_featureset["UserSessionStats.avg_count"].values == [3.333333]
+    assert df_featureset["UserSessionStats.last_visitor_session"].size == 1
 
     df_historical = client.extract_historical_features(
         input_dataframe=input_extract_historical_df,
@@ -200,6 +212,7 @@ def test_window_operator(client):
         output_feature_list=[
             "UserSessionStats.avg_count",
             "UserSessionStats.avg_length",
+            "UserSessionStats.last_visitor_session",
         ],
         timestamp_column="timestamp",
         format="pandas",
@@ -207,3 +220,4 @@ def test_window_operator(client):
     assert df_historical.shape[0] == 1
     assert df_historical["UserSessionStats.avg_length"].values == [3]
     assert df_historical["UserSessionStats.avg_count"].values == [4]
+    assert df_featureset["UserSessionStats.last_visitor_session"].size == 1

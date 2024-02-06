@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.20.19] - 2024-01-30
+- Accept datetime as a valid value for fields in struct type
+
 ## [0.20.17] - 2024-01-30
 - Allow `=` in the `path` parameter to the S3 source
 
