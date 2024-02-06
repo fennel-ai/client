@@ -8,8 +8,9 @@ import fennel._vendor.requests as requests
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field, Average, LastK
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib import meta, inputs, outputs
-from fennel.dtypes import Window, struct
+from fennel.lib.aggregate import Average, LastK
+from fennel.lib.metadata import meta
+from fennel.lib.schema import inputs, outputs, Window, struct
 from fennel.sources import source
 from fennel.testing import mock
 
@@ -213,8 +214,9 @@ def test_window_operator(client):
     assert df_session["window"].values[0].end == datetime(
         2023, 1, 16, 11, 0, 33, microsecond=1
     )
-    assert df_session["window"].values[0].count == 8
-    assert df_session["avg_star"].values[0] == 3.125
+    print(df_session["window_stats"])
+    assert df_session["window_stats"].values[0].count == 8
+    assert df_session["window_stats"].values[0].avg_star == 3.125
 
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
     assert df_stats.shape[0] == 1
