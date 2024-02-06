@@ -15,17 +15,17 @@ There are two options for pushing data into Fennel: utilizing the Fennel Python 
 
 The following fields need to be specified:
 
-1. **`name`** - A name to identify the source. The name should be unique across all sources.
+1. `name` - A name to identify the source. The name should be unique across all sources.
 
 And the following fields need to be defined on the webhook:
 
-1. **`endpoint`** - The endpoint for the given webhook to which the data will be sent.
+1. `endpoint` - The endpoint for the given webhook to which the data will be sent.
 
 <pre snippet="api-reference/source#webhook_source"></pre>
 
 To use the REST api check the [REST API](/api-reference/rest-api) documentation.
 
-### **MySQL**
+### MySQL
 
 The following fields need to be specified:
 
@@ -42,7 +42,7 @@ The following fields need to be specified:
 
 :::warning
 If you see a `Cannot create a PoolableConnectionFactory`error, try setting `jdbc_params`
-to `enabledTLSProtocols=TLSv1.2`&#x20;
+to `enabledTLSProtocols=TLSv1.2`
 :::
 
 ### Postgres
@@ -50,18 +50,18 @@ to `enabledTLSProtocols=TLSv1.2`&#x20;
 <pre snippet="api-reference/source#postgres_source"></pre>
 
 :::warning
-If you see a `Cannot create a PoolableConnectionFactory`error, try setting **`jdbc_params` **
-to **** `enabledTLSProtocols=TLSv1.2`&#x20;
+If you see a `Cannot create a PoolableConnectionFactory`error, try setting `jdbc_params`
+to `enabledTLSProtocols=TLSv1.2`
 :::
 
 ### S3
 
 The following fields need to be defined on the source:
 
-1. **`name`** - A name to identify the source. The name should be unique across all sources.
-2. **`aws_access_key_id`** (optional) - AWS Access Key ID. This field is not required if role-based access is used or if
+1. `name` - A name to identify the source. The name should be unique across all sources.
+2. `aws_access_key_id` (optional) - AWS Access Key ID. This field is not required if role-based access is used or if
    the bucket is public.
-3. **`aws_secret_access_key`** (optional) - AWS Secret Access Key. This field is not required if role-based access is
+3. `aws_secret_access_key` (optional) - AWS Secret Access Key. This field is not required if role-based access is
    used or if the bucket is public.
 
 :::info

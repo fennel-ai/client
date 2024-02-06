@@ -4,17 +4,18 @@ order: 2
 status: 'published'
 ---
 
-# Integrating Fennel with Grafana
+# Integrating Fennel With Grafana
 
-You can easily plot [metrics exposed by Fennel](/monitoring/prometheus) on your own
+You can easily plot [metrics exposed by Fennel](/observability/prometheus) on your own
 Grafana dashboards by adding it as a Metric Data Source in Grafana. Here is how
 to do it:
 
+## Setting up Grafana
   1. Choose a name for the data source (e.g. `Fennel Prod`).
 ![Diagram](/assets/grafana_0.png)
   2. Add the Prometheus Server URL as `https://<your-cluster-url>.fennel.ai/prometheus/`
-  3. Enable `Basic Auth`, set User as `username`. Contact your POC at Fennel to
-     get the password to use here.
+  3. Enable `Basic Auth`, set User as `username`. Contact Fennel support to
+     get the password.
   4. Save the data source
 
 

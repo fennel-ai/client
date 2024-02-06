@@ -7,6 +7,7 @@ from fennel.test_lib import mock
 
 __owner__ = "aditya@fennel.ai"
 
+
 class TestAssignSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
@@ -14,6 +15,7 @@ class TestAssignSnips(unittest.TestCase):
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib.schema import inputs
         from fennel.sources import source, Webhook
+
         webhook = Webhook(name="webhook")
 
         @source(webhook.endpoint("Transaction"))
@@ -34,21 +36,27 @@ class TestAssignSnips(unittest.TestCase):
             @inputs(Transaction)
             def my_pipeline(cls, ds: Dataset):
                 return ds.assign("amount_sq", int, lambda df: df["amount"] ** 2)
+
         # /docsnip
 
         client.sync(datasets=[Transaction, WithSquare])
         # log some rows to the transaction dataset
-        client.log("webhook", "Transaction", pd.DataFrame([{"uid": 1, "amount": 10, "timestamp": "2021-01-01T00:00:00"}]))
+        client.log(
+            "webhook",
+            "Transaction",
+            pd.DataFrame(
+                [{"uid": 1, "amount": 10, "timestamp": "2021-01-01T00:00:00"}]
+            ),
+        )
         # do lookup on the WithSquare dataset
         df, found = WithSquare.lookup(
-            pd.Series([datetime(2021, 1, 1, 0, 0, 0)]),
-            uid=pd.Series([1])
+            pd.Series([datetime(2021, 1, 1, 0, 0, 0)]), uid=pd.Series([1])
         )
-        assert(df["uid"].tolist() == [1])
-        assert(df["amount"].tolist() == [10])
-        assert(df["amount_sq"].tolist() == [100])
-        assert(df["timestamp"].tolist() == [datetime(2021, 1, 1, 0, 0, 0)])
-        assert(found.tolist() == [True])
+        assert df["uid"].tolist() == [1]
+        assert df["amount"].tolist() == [10]
+        assert df["amount_sq"].tolist() == [100]
+        assert df["timestamp"].tolist() == [datetime(2021, 1, 1, 0, 0, 0)]
+        assert found.tolist() == [True]
 
     @mock
     def test_invalid_type(self, client):
@@ -56,6 +64,7 @@ class TestAssignSnips(unittest.TestCase):
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib.schema import inputs
         from fennel.sources import source, Webhook
+
         webhook = Webhook(name="webhook")
 
         @source(webhook.endpoint("Transaction"))
@@ -75,10 +84,24 @@ class TestAssignSnips(unittest.TestCase):
             @pipeline(version=1)
             @inputs(Transaction)
             def my_pipeline(cls, ds: Dataset):
-                return ds.assign("amount_sq", int, lambda df: df["amount"] * 0.5)
+                return ds.assign(
+                    "amount_sq", int, lambda df: df["amount"] * 0.5
+                )
+
         # /docsnip
         client.sync(datasets=[Transaction, WithHalf])
         # log some rows to the transaction dataset
         with pytest.raises(Exception):
-            client.log("webhook", "Transaction", pd.DataFrame([{"uid": 1, "amount": 10, "timestamp": "2021-01-01T00:00:00"}]))
-        
+            client.log(
+                "webhook",
+                "Transaction",
+                pd.DataFrame(
+                    [
+                        {
+                            "uid": 1,
+                            "amount": 10,
+                            "timestamp": "2021-01-01T00:00:00",
+                        }
+                    ]
+                ),
+            )

@@ -13,7 +13,7 @@ all these validations pass at the compile time itself. These checks prevent
 data quality bugs of the following kind:
 
 
-**Missing Dependencies**
+## Missing Dependencies
 
 If any construct depends on something else (e.g. a pipeline takes another dataset
 as an input), Fennel validates that all such dependencies are available. This means
@@ -27,7 +27,7 @@ scenarios can not occur with Fennel because this missing dependency will be caug
 "compile time" itself
 
 
-**Typing Mismatch**
+## Typing Mismatch
 
 Fennel matches data types across dependencies to detect invalid relationships.
 For instance, if a dataset is supposed to have a field of certain type but the pipeline that produces
@@ -35,7 +35,7 @@ the dataset doesn't produce that field/type, the error will be caught during `sy
 only without ever going into the runtime phase.
 
 
-**Circular Dependencies**
+## Circular Dependencies
 
 Fennel is also able to detect circular dependencies in dataflow during sync.
 While these aren't that common in production, but when they do happen, can be

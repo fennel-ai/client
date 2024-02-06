@@ -181,6 +181,7 @@ os.environ["POSTGRES_PASSWORD"] = "some-password"
 
 # docsnip source
 from fennel.sources import source, Postgres
+from fennel.datasets import dataset
 
 postgres = Postgres(
     name="my-postgres",

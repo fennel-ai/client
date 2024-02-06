@@ -15,9 +15,7 @@ addition to the pull based sources that read from external data sources, Fennel
 also ships with a push based source called `Webhook` for you to manually push
 data into Fennel datasets. 
 
-Let's first see an example with postgres connector:
-
-### **Example**
+Let's see an example with postgres connector:
 
 <pre snippet="overview/concepts#source"></pre>
 
@@ -32,10 +30,10 @@ is written, `UserLocation` dataset will start mirroring your postgres table
 ## Schema Matching
 
 Fennel has a strong typing system and all ingested data is evaluated against
-the dataset schema. See [Fennel types](/api-reference/data-types) to see the 
-full list of types supported by Fennel. 
+the dataset schema. See [Fennel types](/api-reference/data-types/core-types) to 
+see the full list of types supported by Fennel. 
 
-### Fennel Schema As Subset of Source Data
+### Schema As Subset of Source
 All the fields defined in Fennel dataset must be present in your source dataset
 though it's okay if your external data source has additional fields - they are 
 imply ignored.  In this example, it is expected that the `user` table in 
@@ -60,10 +58,10 @@ else in Fennel)
 * `int`, `float`, `str`, `bool` respectively match with any integer types, float
  types, string types and boolean types. For instance, Fennel's `int` type
  matches with INT8 or UINT32 from Postgres.
-* `List[T]` matches a list of data of type T.
-* `Dict[T]` matches any dictionary from strings to values of type T.
-* `Option[T]` matches if either the value is `null` or if its non-null value
-  matches type T. Note that `null` is an invalid value for any non-Option types.
+* `List[T]` matches a list of data of type `T`.
+* `Dict[T]` matches any dictionary from strings to values of type `T`.
+* `Optional[T]` matches if either the value is `null` or if its non-null value
+  matches type `T`. Note that `null` is an invalid value for any non-Optional types.
 * `struct` is similar to dataclass in Python or struct in compiled languages
   and matches JSON data with appropriate types recursively.
 * `datetime` matching is a bit more flexible to support multiple common
@@ -93,19 +91,6 @@ The frequency with which you want Fennel to check the external data source for
 new data. Fennel is built with continuous ingestion in mind so you could set it 
 to small values and still be fine.
 
-### Cursor
-For some (but not all) sources, Fennel uses a cursor to do incremental 
-ingestion of data. It does so by remembering the last value of the cursor 
-column (in this case `update_time`) and issuing a query of the 
-form `SELECT * FROM user WHERE update_time > {last_update_time}`.
-
-Clearly, this works only when the cursor field is monotonically increasing with
-row updates - which Fennel expects you to ensure. It is also advised to have
-an index of the cursor column so that this query is efficient. 
-
-Many data sources don't need an explicit cursor and instead use other implicit 
-mechanisms to track and save ingestion progress.
-
 ### Disorder
 Fennel, like many other streaming systems, is designed to robustly handle out
 of order data. If there are no bounds on how out of order data can get, internal 
@@ -118,6 +103,20 @@ This is usually handled by a technique called [Watermarking](https://www.oreilly
 where max out of order delay is specified. This max out of order delay of a source
 is called `disorder` in Fennel, and once specified at source level, is respected
 automatically by each downstream pipeline. 
+
+### Cursor
+For some (but not all) sources, Fennel uses a cursor to do incremental 
+ingestion of data. It does so by remembering the last value of the cursor 
+column (in this case `update_time`) and issuing a query of the 
+form `SELECT * FROM user WHERE update_time > {last_seen_update_time - disorder}`.
+
+Clearly, this works only when the cursor field is monotonically increasing with
+row updates - which Fennel expects you to ensure. It is also advised to have
+an index of the cursor column so that this query is efficient. 
+
+Many data sources don't need an explicit cursor and instead use other implicit 
+mechanisms to track and save ingestion progress.
+
 
 ### Preproc
 The `preproc` field in the source provides a way to ingest a column that 

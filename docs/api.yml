@@ -14,8 +14,9 @@ sidebar:
   - slug: "api-reference/data-types"
     title: "Data Types"
     pages:
-      - "api-reference/data-types"
-      - "api-reference/duration"
+      - "api-reference/data-types/core-types"
+      - "api-reference/data-types/type-restrictions"
+      - "api-reference/data-types/duration"
 
   - slug: "api-reference/operators"
     title: "Operators"

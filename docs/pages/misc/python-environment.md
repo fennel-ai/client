@@ -34,6 +34,8 @@ typing-extensions==4.4.0
 yarl==1.8.2
 ```
 
-If you want to run on some other Python version and/or install any specific pip packages with specific versions, please talk to the Fennel team.&#x20;
+If you want to run on some other Python version and/or install any specific pip 
+packages with specific versions, please contact Fennel support.
 
-In the near future, Fennel will also allow you to configure your environment on your own using Fennel console without dependency on Fennel team.
+In the near future, Fennel will also allow you to configure your environment on 
+your own using Fennel console without dependency on Fennel team.

@@ -8,7 +8,7 @@ slug: '/'
 # Welcome to Fennel
 
 Fennel is a modern realtime feature engineering platform inspired by the ethos
-of PyTorch and is architected in service of the following four design goals:
+of PyTorch and is architected in the service of the following four design goals:
 
 ## Fennel's Four Design Goals
 1. **Easy to install, learn & use** - be approachable to data 
@@ -16,11 +16,11 @@ of PyTorch and is architected in service of the following four design goals:
    to end feature engineering workflows.
 2. **Maintain data/feature quality via best practices** - production ML systems
    often get plagued by data/feature quality issues. Prevention & detection 
-   of such issues (via best practices & tooling) is a cornerstone of Fennel's 
-   architecture, not an afterthought. (Read [more](/data-quality/approach))
+   of such issues (via best practices & tooling) should be a first-class citizen, 
+   not an afterthought. (Read [more](/data-quality/approach))
 3. **Work equally well for batch & realtime** - ML is transitioning from being
-   predominantly batch oriented today to being more realtime. Fennel is built 
-   in a way that the exact same code works equally well for any combination of batch, 
+   predominantly batch oriented today to being more realtime. Fennel should 
+   support the exact same code working equally well for any combination of batch, 
    streaming, & realtime computation.
 4. **Keep cloud costs low** - feature engineering often requires dealing with large
    volumes of data and gets very costly. For any workload, Fennel aims
@@ -41,6 +41,8 @@ cases. Here are some of the most common ones:
   content feeds, notifications, email marketing campaigns etc. 
 - **Search Ranking** - ordering available documents in response to a query
   based on relevance, personalization, or custom preferences
+- **Marketing Personalization** - choosing the right promotions/discounts to offer,
+  the right time to send a campaign email, the right products to include in the email etc.
 
 .. and lot more!
 

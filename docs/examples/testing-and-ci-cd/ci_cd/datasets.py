@@ -1,29 +1,38 @@
 from datetime import datetime
-from fennel.datasets import dataset, field
-from fennel.lib.metadata import meta
-from fennel.sources import source, Webhook
 from typing import List
 
 
-# docsnip dataset_deleted
-@meta(owner="mohit@fennel.ai", deleted=True)
-@source(Webhook(name="example").endpoint("ticket_sale"))
-@dataset
-class Ticket:
-    ticket_id: str = field(key=True)
-    price: int
-    at: datetime
+def test_dataset_deleted():
+    # docsnip dataset_deleted
+    from fennel.datasets import dataset, field
+    from fennel.lib.metadata import meta
+    from fennel.sources import source, Webhook
 
+    @meta(owner="mohit@fennel.ai", deleted=True)
+    @source(Webhook(name="example").endpoint("ticket_sale"))
+    @dataset
+    class Ticket:
+        ticket_id: str = field(key=True)
+        price: int
+        at: datetime
 
-# /docsnip
-# docsnip gh_action_dataset
-@meta(owner="mohit@fennel.ai")
-@source(Webhook(name="example").endpoint("ticket_sale"))
-@dataset
-class Ticket:  # noqa: F811
-    ticket_id: str = field(key=True)
-    price: int
-    at: datetime
+    # /docsnip
 
+def test_gh_actions_dataset():
+    # docsnip gh_action_dataset
+    from fennel.datasets import dataset, field
+    from fennel.lib.metadata import meta
+    from fennel.sources import source, Webhook
 
-# /docsnip
+    @meta(owner="mohit@fennel.ai")
+    @source(Webhook(name="example").endpoint("ticket_sale"))
+    @dataset
+    class Ticket:
+        ticket_id: str = field(key=True)
+        price: int
+        at: datetime
+
+    # /docsnip
+    return Ticket
+
+Ticket = test_gh_actions_dataset()

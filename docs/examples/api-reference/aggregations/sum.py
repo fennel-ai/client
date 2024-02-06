@@ -13,6 +13,7 @@ from fennel.test_lib import mock
 webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
+
 class TestSumSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
@@ -38,29 +39,68 @@ class TestSumSnips(unittest.TestCase):
                     Sum(of="amount", window="1w", into_field="amount_1w"),
                     Sum(of="amount", window="forever", into_field="total"),
                 )
+
         # /docsnip
         client.sync(datasets=[Transaction, Aggregated])
         # log some rows to the transaction dataset
-        client.log("webhook", "Transaction", pd.DataFrame([
-            {"uid": 1, "vendor": "A", "amount": 10, "timestamp": "2021-01-01T00:00:00"},
-            {"uid": 1, "vendor": "B", "amount": 20, "timestamp": "2021-01-02T00:00:00"},
-            {"uid": 2, "vendor": "A", "amount": 30, "timestamp": "2021-01-03T00:00:00"},
-            {"uid": 2, "vendor": "B", "amount": 40, "timestamp": "2021-01-04T00:00:00"},
-            {"uid": 3, "vendor": "A", "amount": 50, "timestamp": "2021-01-05T00:00:00"},
-            {"uid": 3, "vendor": "B", "amount": 60, "timestamp": "2021-01-06T00:00:00"},
-        ]))
+        client.log(
+            "webhook",
+            "Transaction",
+            pd.DataFrame(
+                [
+                    {
+                        "uid": 1,
+                        "vendor": "A",
+                        "amount": 10,
+                        "timestamp": "2021-01-01T00:00:00",
+                    },
+                    {
+                        "uid": 1,
+                        "vendor": "B",
+                        "amount": 20,
+                        "timestamp": "2021-01-02T00:00:00",
+                    },
+                    {
+                        "uid": 2,
+                        "vendor": "A",
+                        "amount": 30,
+                        "timestamp": "2021-01-03T00:00:00",
+                    },
+                    {
+                        "uid": 2,
+                        "vendor": "B",
+                        "amount": 40,
+                        "timestamp": "2021-01-04T00:00:00",
+                    },
+                    {
+                        "uid": 3,
+                        "vendor": "A",
+                        "amount": 50,
+                        "timestamp": "2021-01-05T00:00:00",
+                    },
+                    {
+                        "uid": 3,
+                        "vendor": "B",
+                        "amount": 60,
+                        "timestamp": "2021-01-06T00:00:00",
+                    },
+                ]
+            ),
+        )
 
         # do lookup on the Aggregated dataset
-        ts = pd.Series([
-            datetime(2021, 1, 6, 0, 0, 0),
-            datetime(2021, 1, 6, 0, 0, 0),
-            datetime(2021, 1, 6, 0, 0, 0),
-        ])
+        ts = pd.Series(
+            [
+                datetime(2021, 1, 6, 0, 0, 0),
+                datetime(2021, 1, 6, 0, 0, 0),
+                datetime(2021, 1, 6, 0, 0, 0),
+            ]
+        )
         df, found = Aggregated.lookup(ts, uid=pd.Series([1, 2, 3]))
-        assert(found.tolist() == [True, True, True])
-        assert(df["uid"].tolist() == [1, 2, 3])
-        assert(df["amount_1w"].tolist() == [30, 70, 110])
-        assert(df["total"].tolist() == [30, 70, 110])
+        assert found.tolist() == [True, True, True]
+        assert df["uid"].tolist() == [1, 2, 3]
+        assert df["amount_1w"].tolist() == [30, 70, 110]
+        assert df["total"].tolist() == [30, 70, 110]
 
     @mock
     def test_invalid_type(self, client):
@@ -72,7 +112,7 @@ class TestSumSnips(unittest.TestCase):
                 uid: int
                 amount: str
                 timestamp: datetime
-                
+
             @dataset
             class Aggregated:
                 uid: int = field(key=True)

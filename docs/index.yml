@@ -54,13 +54,6 @@ sidebar:
       - "observability/newrelic"
       - "observability/alerting"
 
-  - slug: "guides"
-    title: "Guides"
-    pages: 
-      - "guides/request-based-features"
-      - "guides/composite-features"
-      - "guides/out-of-order-data"
-
   - 
     slug: "misc"
     title: "Misc."

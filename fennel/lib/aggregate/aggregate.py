@@ -207,4 +207,3 @@ class Stddev(AggregateType):
 
     def signature(self):
         return f"stddev_{self.of}_{self.window.signature()}"
-

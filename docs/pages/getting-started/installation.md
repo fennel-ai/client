@@ -10,6 +10,8 @@ Fennel has a client/server model. A Python client is used to define the
 features, which are then synced with the server. The server is responsible for 
 computing, storing, and serving the actual features.
 
+## Installing Fennel's Python Client
+
 The client can simply be pip-installed like this:
 
 ```bash
@@ -19,11 +21,13 @@ pip install fennel-ai
 The client itself ships with an in-memory mock server which has near feature
 parity with the real server. All the code samples in the documentation can be 
 run just via the mock server. See [quickstart](/getting-started/quickstart) 
-for an example. In other words, once you have pip installed the client, you are 
-all setup to explore Fennel. 
+for an example. 
+
+In other words, once you have pip installed the client, you are all setup to 
+explore Fennel. 
 
 
-### Deploying Fennel Server
+## Deploying Fennel Server
 
 Fennel runs as a single tenant system inside your cloud so that your data and 
 code never leave your cloud perimeter. As an example, here are the steps for 

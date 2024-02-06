@@ -18,7 +18,7 @@ This field must either be of type `int` or `float`.
 
 <Expandable title="window" type="Window">
 The continuous window within which aggregation needs to be computed. Possible 
-values are `"forever"` or any [time duration](/api-references/data-types/duration).
+values are `"forever"` or any [time duration](/api-reference/data-types/duration).
 </Expandable>
 
 <Expandable title="into_field" type="str">

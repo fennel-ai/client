@@ -181,7 +181,7 @@ kinesis = sources.Kinesis(
 )
 stream = kinesis.stream(
     stream_arn="<SOME_STREAM_ARN>",
-    init_position=datetime(2023, 11, 5), # Ingest starting Nov 5, 2023
+    init_position=datetime(2023, 11, 5),  # Ingest starting Nov 5, 2023
     format="json",
 )
 
@@ -203,7 +203,7 @@ kinesis = sources.Kinesis(
 )
 stream = kinesis.stream(
     stream_arn="<SOME_STREAM_ARN>",
-    init_position="latest", # Ingest all new records from now
+    init_position="latest",  # Ingest all new records from now
     format="json",
 )
 
