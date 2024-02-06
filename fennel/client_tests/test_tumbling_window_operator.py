@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 import pandas as pd
 import pytest
@@ -7,9 +8,9 @@ import fennel._vendor.requests as requests
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Average
+from fennel.lib.aggregate import Average, LastK
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs, Window
+from fennel.lib.schema import inputs, outputs, Window, struct
 from fennel.sources import source
 from fennel.test_lib import mock
 
@@ -21,7 +22,14 @@ webhook = sources.Webhook(name="fennel_webhook")
 @dataset
 class AppEvent:
     user_id: int
+    star: int
     timestamp: datetime = field(timestamp=True)
+
+
+@struct
+class WindowStats:
+    avg_star: float
+    count: int
 
 
 @meta(owner="test@test.com")
@@ -30,12 +38,22 @@ class Sessions:
     user_id: int = field(key=True)
     window: Window = field(key=True)
     timestamp: datetime = field(timestamp=True)
+    window_stats: WindowStats
 
     @pipeline(version=1)
     @inputs(AppEvent)
     def get_sessions(cls, app_event: Dataset):
-        return app_event.groupby("user_id").window(
-            type="tumbling", duration="10s", field="window"
+        return (
+            app_event.groupby("user_id")
+            .window(type="tumbling", duration="10s", field="window")
+            .summarize(
+                column="window_stats",
+                result_type=WindowStats,
+                func=lambda df: {
+                    "avg_star": float(df["star"].mean()),
+                    "count": len(df),
+                },
+            )
         )
 
 
@@ -46,6 +64,8 @@ class SessionStats:
     timestamp: datetime = field(timestamp=True)
     avg_count: float
     avg_length: float
+    last_visitor_session: List[Window]
+    avg_star: float
 
     @pipeline(version=1)
     @inputs(Sessions)
@@ -61,7 +81,12 @@ class SessionStats:
             .assign(
                 "count",
                 int,
-                lambda df: df["window"].apply(lambda x: x["count"]),
+                lambda df: df["window_stats"].apply(lambda x: x["count"]),
+            )
+            .assign(
+                "avg_star",
+                float,
+                lambda df: df["window_stats"].apply(lambda x: x["avg_star"]),
             )
             .groupby("user_id")
             .aggregate(
@@ -75,6 +100,18 @@ class SessionStats:
                     window="forever",
                     into_field="avg_count",
                 ),
+                LastK(
+                    of="window",
+                    window="forever",
+                    limit=1,
+                    dedup=False,
+                    into_field="last_visitor_session",
+                ),
+                Average(
+                    of="avg_star",
+                    window="forever",
+                    into_field="avg_star",
+                ),
             )
         )
         return stats
@@ -86,12 +123,14 @@ class UserSessionStats:
     user_id: int = feature(id=1)
     avg_count: float = feature(id=2)
     avg_length: float = feature(id=3)
+    last_visitor_session: List[Window] = feature(id=4)
+    avg_star: float = feature(id=5)
 
     @extractor(depends_on=[SessionStats])
     @inputs(user_id)
-    @outputs(avg_count, avg_length)
+    @outputs(avg_count, avg_length, last_visitor_session, avg_star)
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):
-        res, _ = SessionStats.lookup(ts, user_id=user_ids, fields=["avg_count", "avg_length"])  # type: ignore
+        res, _ = SessionStats.lookup(ts, user_id=user_ids, fields=["avg_count", "avg_length", "last_visitor_session", "avg_star"])  # type: ignore
         return res
 
 
@@ -120,6 +159,7 @@ def log_app_events_data(client):
             datetime(2023, 1, 16, 11, 0, 37),
             datetime(2023, 1, 16, 11, 0, 38),
         ],
+        "star": [1, 2, 3, 2, 4, 5, 1, 4, 2, 3, 1, 5, 3, 1, 5, 2, 3, 5, 2, 4],
     }
     df = pd.DataFrame(data)
     response = client.log("fennel_webhook", "AppEvent", df)
@@ -129,7 +169,7 @@ def log_app_events_data(client):
 
 @pytest.mark.integration
 @mock
-def test_hopping_window_operator(client):
+def test_tumbling_window_operator(client):
     # Sync to mock client
     client.sync(
         datasets=[AppEvent, Sessions, SessionStats],
@@ -147,9 +187,8 @@ def test_hopping_window_operator(client):
     window_keys = pd.Series(
         [
             {
-                "begin": datetime(2023, 1, 16, 11, 0, 0),
-                "end": datetime(2023, 1, 16, 11, 0, 10),
-                "count": 6,
+                "begin": pd.Timestamp(datetime(2023, 1, 16, 11, 0, 0)),
+                "end": pd.Timestamp(datetime(2023, 1, 16, 11, 0, 10)),
             }
         ]
     )
@@ -172,7 +211,10 @@ def test_hopping_window_operator(client):
     assert df_session["window"].values[0].end == datetime(
         2023, 1, 16, 11, 0, 10
     )
-    assert df_session["window"].values[0].count == 6
+    assert df_session["window_stats"].values[0].count == 6
+    assert df_session["window_stats"].values[0].avg_star == pytest.approx(
+        2.8333333333
+    )
 
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
     assert df_stats.shape[0] == 1

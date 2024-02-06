@@ -75,7 +75,7 @@ class SessionStats:
                 "length",
                 int,
                 lambda df: df["window"].apply(
-                    lambda x: int((x["end"] - x["begin"]).total_seconds() - 1)
+                    lambda x: int((x["end"] - x["begin"]).total_seconds())
                 ),
             )
             .assign(
@@ -221,7 +221,7 @@ def test_session_window_operator(client):
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
     assert df_stats.shape[0] == 1
     assert list(df_stats["user_id"].values) == [1]
-    assert list(df_stats["avg_length"].values) == [pytest.approx(1.833333333)]
+    assert list(df_stats["avg_length"].values) == [2.5]
     assert list(df_stats["avg_count"].values) == [pytest.approx(3.333333)]
     assert list(df_stats["avg_star"].values) == [pytest.approx(2.72083333)]
 
@@ -238,9 +238,7 @@ def test_session_window_operator(client):
         input_dataframe=input_df,
     )
     assert df_featureset.shape[0] == 1
-    assert list(df_featureset["UserSessionStats.avg_length"].values) == [
-        pytest.approx(1.833333333)
-    ]
+    assert list(df_featureset["UserSessionStats.avg_length"].values) == [2.5]
     assert list(df_featureset["UserSessionStats.avg_count"].values) == [
         pytest.approx(3.333333)
     ]
@@ -264,7 +262,7 @@ def test_session_window_operator(client):
         format="pandas",
     )
     assert df_historical.shape[0] == 1
-    assert list(df_historical["UserSessionStats.avg_length"].values) == [1]
+    assert list(df_historical["UserSessionStats.avg_length"].values) == [2.0]
     assert list(df_historical["UserSessionStats.avg_count"].values) == [3]
     assert list(df_featureset["UserSessionStats.avg_star"].values) == [
         pytest.approx(2.720833333)
