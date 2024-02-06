@@ -867,7 +867,7 @@ class WindowOperator(_Node):
         self.field = field
         self.node = node
         self.node.out_edges.append(self)
-        self.summary = None
+        self.summary: Optional[Summary] = None
 
     def signature(self):
         return fhash(

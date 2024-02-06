@@ -482,17 +482,14 @@ class Executor(Visitor):
             def __init__(self, event_time: datetime):
                 self.begin_time = event_time
                 self.end_time = event_time + timedelta(microseconds=1)
-                self.count = 1
 
             def add_event(self, event_time: datetime):
-                self.count += 1
                 self.end_time = event_time + timedelta(microseconds=1)
 
             def to_dict(self) -> dict:
                 return {
                     "begin": self.begin_time,
                     "end": self.end_time,
-                    "count": self.count,
                 }
 
         def generate_sessions_for_df(

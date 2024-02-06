@@ -9,7 +9,7 @@ from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field, Average, LastK
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import meta, inputs, outputs
-from fennel.dtypes import Window
+from fennel.dtypes import Window, struct
 from fennel.sources import source
 from fennel.testing import mock
 
@@ -25,13 +25,19 @@ class AppEvent:
     timestamp: datetime = field(timestamp=True)
 
 
+@struct
+class WindowStats:
+    avg_star: float
+    count: int
+
+
 @meta(owner="test@test.com")
 @dataset
 class Sessions:
     user_id: int = field(key=True)
     window: Window = field(key=True)
     timestamp: datetime = field(timestamp=True)
-    avg_star: float
+    window_stats: WindowStats
 
     @pipeline
     @inputs(AppEvent)
@@ -40,9 +46,12 @@ class Sessions:
             app_event.groupby("user_id")
             .window(type="session", gap="3s", field="window")
             .summarize(
-                column="avg_star",
-                result_type=float,
-                func=lambda df: df["star"].mean(),
+                column="window_stats",
+                result_type=WindowStats,
+                func=lambda df: {
+                    "avg_star": float(df["star"].mean()),
+                    "count": len(df),
+                },
             )
         )
 
@@ -71,7 +80,12 @@ class SessionStats:
             .assign(
                 "count",
                 int,
-                lambda df: df["window"].apply(lambda x: x["count"]),
+                lambda df: df["window_stats"].apply(lambda x: x["count"]),
+            )
+            .assign(
+                "avg_star",
+                float,
+                lambda df: df["window_stats"].apply(lambda x: x["avg_star"]),
             )
             .groupby("user_id")
             .aggregate(
@@ -176,7 +190,6 @@ def test_window_operator(client):
                 "end": pd.Timestamp(
                     datetime(2023, 1, 16, 11, 0, 33, microsecond=1)
                 ),
-                "count": 8,
             }
         ]
     )
@@ -200,8 +213,9 @@ def test_window_operator(client):
     assert df_session["window"].values[0].end == datetime(
         2023, 1, 16, 11, 0, 33, microsecond=1
     )
-    assert df_session["window"].values[0].count == 8
-    assert df_session["avg_star"].values[0] == 3.125
+    print(df_session["window_stats"])
+    assert df_session["window_stats"].values[0].count == 8
+    assert df_session["window_stats"].values[0].avg_star == 3.125
 
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
     assert df_stats.shape[0] == 1
