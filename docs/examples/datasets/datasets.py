@@ -4,7 +4,6 @@ from typing import Optional
 import pytest
 
 
-
 def test_basic_dataset():
     # docsnip user_dataset
     from fennel.datasets import dataset, field
@@ -38,6 +37,7 @@ def test_valid_user_dataset():
 
     # /docsnip
 
+
 def test_valid_dataset_multiple_datetime_fields():
     # docsnip valid_dataset_multiple_datetime_fields
     from fennel.datasets import dataset, field
@@ -53,6 +53,7 @@ def test_valid_dataset_multiple_datetime_fields():
 
     # /docsnip
 
+
 def test_metaflags_dataset():
     # docsnip metaflags_dataset
     from fennel.datasets import dataset, field
@@ -67,6 +68,7 @@ def test_metaflags_dataset():
         updated: datetime
 
     # /docsnip
+
 
 def test_metaflags_dataset_default_owners():
     # docsnip metaflags_dataset_default_owners
@@ -97,6 +99,8 @@ def test_metaflags_dataset_default_owners():
         updated: datetime
 
     # /docsnip
+    # just something to use __owner__ to remove lint warning
+    assert len(__owner__) > 0
 
 
 # invalid - key fields can not have an optional type

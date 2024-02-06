@@ -18,6 +18,7 @@ def test_dataset_deleted():
 
     # /docsnip
 
+
 def test_gh_actions_dataset():
     # docsnip gh_action_dataset
     from fennel.datasets import dataset, field
@@ -34,5 +35,6 @@ def test_gh_actions_dataset():
 
     # /docsnip
     return Ticket
+
 
 Ticket = test_gh_actions_dataset()

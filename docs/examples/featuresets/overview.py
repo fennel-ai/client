@@ -42,6 +42,7 @@ def test_featureset_zero_extractors():
     class MoviesZeroExtractors:
         duration: int = feature(id=1)
         over_2hrs: bool = feature(id=2)
+
     # /docsnip
 
 
@@ -152,15 +153,11 @@ def test_remote_feature_as_output():
 
             @extractor
             @inputs(limit_secs, duration)
-            @outputs(Request.too_long)  
+            @outputs(Request.too_long)
             def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
                 return pd.Series(name="movie_too_long", data=durations > limits)
+
         # /docsnip
-
-
-
-
-
 
 
 @pytest.mark.slow
@@ -218,7 +215,6 @@ def test_multiple_features_extracted(client):
             df["longitude"] = coordinates.apply(lambda x: round(x[1], 1))
             return df[["latitude", "longitude"]]
 
-
     # /docsnip
 
     client.sync(datasets=[UserInfo], featuresets=[UserLocationFeatures])
@@ -244,7 +240,6 @@ def test_multiple_features_extracted(client):
         assert all(abs(df - expected) <= 1)
 
 
-
 @pytest.mark.slow
 @mock
 def test_extractors_across_featuresets(client):
@@ -257,7 +252,6 @@ def test_extractors_across_featuresets(client):
         uid: int = feature(id=1)
         request_timestamp: datetime = feature(id=2)
         ip: str = feature(id=3)
-
 
     @featureset
     class UserLocationFeaturesRefactored:
@@ -287,7 +281,6 @@ def test_extractors_across_featuresets(client):
             df["latitude"] = coordinates.apply(lambda x: round(x[0], 0))
             df["longitude"] = coordinates.apply(lambda x: round(x[1], 0))
             return df[["uid", "latitude", "longitude"]]
-
 
     # /docsnip
 

@@ -1,12 +1,12 @@
-
 import pandas as pd
 import pytest
 from fennel.test_lib import mock
 
+
 def test_func():
     # docsnip struct_type
     # imports for data types
-    from typing import List, Optional 
+    from typing import List, Optional
     from datetime import datetime
     from fennel.lib.schema import struct
 
@@ -21,17 +21,17 @@ def test_func():
         state: str
         zip_code: Optional[str]
 
-
     @meta(owner="test@test.com")
     @dataset
     class Student:
         id: int = field(key=True)
         name: str
-        grades: dict[float] = field().meta(description="map from class to grade")
+        grades: dict[float] = field().meta(description="map class to grade")
         honors: bool
         classes: List[str]
         address: Address  # Address is now a valid Fennel type
         signup_time: datetime
+
     # /docsnip
 
 
@@ -59,6 +59,7 @@ def test_restrictions(client):
         gender: oneof(str, ["male", "female", "non-binary"])
         email: regex(r"[^@]+@[^@]+\.[^@]+")
         timestamp: datetime
+
     # /docsnip
 
     client.sync(datasets=[UserInfoDataset])

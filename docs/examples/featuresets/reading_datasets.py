@@ -10,7 +10,9 @@ from fennel.datasets import dataset, field
 from fennel.sources import source, Webhook
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.schema import inputs, outputs
+
 webhook = Webhook(name="fennel_webhook")
+
 
 @source(webhook.endpoint("User"))
 @dataset

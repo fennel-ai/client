@@ -3,7 +3,7 @@ from datetime import datetime
 import os
 import pandas as pd
 
-from fennel.sources import Webhook 
+from fennel.sources import Webhook
 from fennel.test_lib import mock
 from fennel.datasets import dataset, field
 
