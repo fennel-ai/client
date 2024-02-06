@@ -91,7 +91,7 @@ class SessionStats:
                     limit=1,
                     dedup=False,
                     into_field="last_visitor_session",
-                )
+                ),
                 Average(
                     of="avg_star",
                     window="forever",
@@ -109,10 +109,11 @@ class UserSessionStats:
     avg_count: float = feature(id=2)
     avg_length: float = feature(id=3)
     last_visitor_session: List[Window] = feature(id=4)
+    avg_star: float = feature(id=5)
 
     @extractor(depends_on=[SessionStats])
     @inputs(user_id)
-    @outputs(avg_count, avg_length, last_visitor_session)
+    @outputs(avg_count, avg_length, last_visitor_session, avg_star)
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):
         res, _ = SessionStats.lookup(ts, user_id=user_ids, fields=["avg_count", "avg_length", "last_visitor_session", "avg_star"])  # type: ignore
         return res
