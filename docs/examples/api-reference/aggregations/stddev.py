@@ -5,7 +5,7 @@ import pandas as pd
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.schema import inputs
-from fennel.lib.aggregate import Min
+from fennel.lib.aggregate import Average, Stddev
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 
@@ -20,22 +20,24 @@ def test_basic(client):
     @dataset
     class Transaction:
         uid: int
-        amt: float
+        amt: int
         timestamp: datetime
 
     @dataset
     class Aggregated:
         uid: int = field(key=True)
-        min_1d: float
-        min_1w: float
+        mean: float
+        stddev: float
         timestamp: datetime
 
         @pipeline(version=1)
         @inputs(Transaction)
         def pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
-                Min(of="amt", window="1d", default=-1.0, into_field="min_1d"),
-                Min(of="amt", window="1w", default=-1.0, into_field="min_1w"),
+                Average(of="amt", window="1d", default=-1.0, into_field="mean"),
+                Stddev(
+                    of="amt", window="1d", default=-1.0, into_field="stddev"
+                ),
             )
 
     # /docsnip
@@ -97,8 +99,8 @@ def test_basic(client):
     df, found = Aggregated.lookup(ts, uid=pd.Series([1, 2, 3]))
     assert found.tolist() == [True, True, True]
     assert df["uid"].tolist() == [1, 2, 3]
-    assert df["min_1d"].tolist() == [None, None, 50]
-    assert df["min_1w"].tolist() == [10, 30, 50]
+    assert df["mean"].tolist() == [-1.0, -1.0, 55.0]
+    assert df["stddev"].tolist() == [-1.0, -1.0, 5.0]
 
 
 @mock
@@ -115,14 +117,16 @@ def test_invalid_type(client):
         @dataset
         class Aggregated:
             uid: int = field(key=True)
-            min_1d: str
+            var: str
             timestamp: datetime
 
             @pipeline(version=1)
             @inputs(Transaction)
             def pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
-                    Min(of="zip", window="1d", default="min", into_field="min"),
+                    Stddev(
+                        of="zip", window="1d", default="x", into_field="var"
+                    ),
                 )
 
         # /docsnip
@@ -142,14 +146,16 @@ def test_non_matching_types(client):
         @dataset
         class Aggregated:
             uid: int = field(key=True)
-            min_1d: int
+            ret: int
             timestamp: datetime
 
             @pipeline(version=1)
             @inputs(Transaction)
             def pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
-                    Min(of="amt", window="1d", default=1, into_field="min_1d"),
+                    Stddev(
+                        of="amt", window="1d", default=1.0, into_field="ret"
+                    ),
                 )
 
         # /docsnip

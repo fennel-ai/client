@@ -10,13 +10,17 @@ Most Fennel constructs (datasets, featuresets, extractors etc.) are immutable
 and can not be changed once created (unless explicitly versioned). So downstream
 users of any object can confidently rely on the object to be stable.
 
-**Enforcement of immutability**
+## Enforcement of immutability
 
 Fennel keeps track of state of all constructs. During any sync call, Fennel 
 verifies that constructs that were supposed to be immutable haven't changed.
 If it detects any such change, the whole sync call fails.
 
-**Preventive power of immutability**
+This ensures that all definitions are immutable unless explicitly updated by a 
+human by changing its version, at which point, the change is going via the code
+review system and can be quality conrolled appropriately.
+
+## Preventive power of immutability
 
 In the messy real world where pipelines & features are constantly evolving, this
 simple guarantee prevents many bugs. Some examples:

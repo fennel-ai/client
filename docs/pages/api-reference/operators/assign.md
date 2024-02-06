@@ -31,7 +31,7 @@ Fennel verifies at runtime that the returned series matches the declared `dtype`
 
 
 #### Returns
-<Expandable title="->" type="Dataset">
+<Expandable type="Dataset">
 Returns a dataset with one additional column of the given `name` and type same
 as `dtype`. This additional column is neither a key-column or the timestamp 
 column.
@@ -48,10 +48,12 @@ the declared type and the same length as the input dataframe.
 
 <RightSection>
 <pre snippet="api-reference/operators/assign#basic" status="success" 
-    message="Adding new column 'amount_sq' of type int">
+    message="Adding new column 'amount_sq' of type int" highlight="17, 23"
+>
 </pre>
 <pre snippet="api-reference/operators/assign#incorrect_type" status="error" 
-    message="Runtime error: returns float, not int">
+    message="Runtime error: returns float, not int" highlight="17, 23"
+>
 </pre>
 </RightSection>
 

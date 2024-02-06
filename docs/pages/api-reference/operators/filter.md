@@ -35,10 +35,10 @@ the bool and of the same length as the input dataframe.
 
 <RightSection>
 <pre snippet="api-reference/operators/filter#basic" status="success" 
-   message="Filtering out rows where city is London">
+   message="Filtering out rows where city is London" highlight="22">
 </pre>
-<pre snippet="api-reference/operators/filter#basic" status="error" 
-   message="Runtime Error: Lambda returns str, not bool">
+<pre snippet="api-reference/operators/filter#incorrect_type" status="error" 
+   message="Runtime Error: Lambda returns str, not bool" highlight="21">
 </pre>
 
 </RightSection>

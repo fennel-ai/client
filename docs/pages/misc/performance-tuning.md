@@ -24,7 +24,9 @@ the output to a single feature. Here's an example of a manually written extracto
 
 2. Aliases. These extractors unidirectionally map an input feature to an output feature. 
 
-### Examples
+Let's look at some examples:
+
+
 These extractors are derived by the `feature.extract()` function. Here is an example:
 <pre snippet="featuresets/reading_datasets#derived_extractors"></pre>
 

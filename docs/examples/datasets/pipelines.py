@@ -3,23 +3,25 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import requests
-from typing import Optional, List
+from typing import List
 
-from fennel.datasets import dataset, field
 from fennel.datasets import pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum, LastK
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
-from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 
-webhook = Webhook(name="fennel_webhook")
 
 __owner__ = "data-eng@fennel.ai"
 
 
-# docsnip data_sets
+# docsnip datasets
+from fennel.datasets import dataset, field
+from fennel.sources import source, Webhook
+
+webhook = Webhook(name="fennel_webhook")
+
 @source(webhook.endpoint("User"))
 @dataset
 class User:
@@ -45,6 +47,7 @@ class Transaction:
 # docsnip pipeline
 from fennel.datasets import pipeline, Dataset
 from fennel.lib.aggregate import Count, Sum
+
 
 @dataset
 class UserTransactionsAbroad:
@@ -146,10 +149,13 @@ class FraudActivity:
     @inputs(Activity)
     def create_fraud_dataset(cls, activity: Dataset):
         return (
-            activity
-                .filter(lambda df: df["action_type"] == "report")
-                .assign("amount_cents", float, lambda df: df["amount"].astype(float) / 100)
-                .drop("action_type", "amount")
+            activity.filter(lambda df: df["action_type"] == "report")
+            .assign(
+                "amount_cents",
+                float,
+                lambda df: df["amount"].astype(float) / 100,
+            )
+            .drop("action_type", "amount")
         )
 
 

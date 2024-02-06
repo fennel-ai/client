@@ -283,7 +283,7 @@ class _Node(Generic[T]):
             raise ValueError(
                 "Invalid arguments to dedup. Must specify either 'by' or positional arguments."
             )
-            
+
         return Dedup(self, by)
 
     def explode(self, *args, columns: List[str] = None) -> _Node:

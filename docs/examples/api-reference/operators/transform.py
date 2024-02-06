@@ -12,6 +12,7 @@ from fennel.test_lib import mock
 webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
+
 class TestAssignSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
@@ -35,22 +36,30 @@ class TestAssignSnips(unittest.TestCase):
             def pipeline(cls, ds: Dataset):
                 schema = ds.schema()
                 schema["amount_sq"] = int
-                return ds.transform(lambda df: df.assign(amount_sq=df["amount"] ** 2), schema) # noqa
+                return ds.transform(
+                    lambda df: df.assign(amount_sq=df["amount"] ** 2), schema
+                )  # noqa
+
         # /docsnip
 
         client.sync(datasets=[Transaction, WithSquare])
         # log some rows to the transaction dataset
-        client.log("webhook", "Transaction", pd.DataFrame([{"uid": 1, "amount": 10, "timestamp": "2021-01-01T00:00:00"}]))
+        client.log(
+            "webhook",
+            "Transaction",
+            pd.DataFrame(
+                [{"uid": 1, "amount": 10, "timestamp": "2021-01-01T00:00:00"}]
+            ),
+        )
         # do lookup on the WithSquare dataset
         df, found = WithSquare.lookup(
-            pd.Series([datetime(2021, 1, 1, 0, 0, 0)]),
-            uid=pd.Series([1])
+            pd.Series([datetime(2021, 1, 1, 0, 0, 0)]), uid=pd.Series([1])
         )
-        assert(df["uid"].tolist() == [1])
-        assert(df["amount"].tolist() == [10])
-        assert(df["amount_sq"].tolist() == [100])
-        assert(df["timestamp"].tolist() == [datetime(2021, 1, 1, 0, 0, 0)])
-        assert(found.tolist() == [True])
+        assert df["uid"].tolist() == [1]
+        assert df["amount"].tolist() == [10]
+        assert df["amount_sq"].tolist() == [100]
+        assert df["timestamp"].tolist() == [datetime(2021, 1, 1, 0, 0, 0)]
+        assert found.tolist() == [True]
 
     @mock
     def test_changing_keys(self, client):
@@ -64,8 +73,8 @@ class TestAssignSnips(unittest.TestCase):
                 timestamp: datetime
 
             def transform(df: pd.DataFrame) -> pd.DataFrame:
-                df['user'] = df['uid']
-                df.drop(columns=['uid'], inplace=True)
+                df["user"] = df["uid"]
+                df.drop(columns=["uid"], inplace=True)
                 return df
 
             @dataset
@@ -77,12 +86,9 @@ class TestAssignSnips(unittest.TestCase):
                 @pipeline(version=1)
                 @inputs(Transaction)
                 def pipeline(cls, ds: Dataset):
-                    schema = {
-                        "user": int,
-                        "amount": int,
-                        "timestamp": datetime
-                    }
+                    schema = {"user": int, "amount": int, "timestamp": datetime}
                     return ds.transform(transform, schema)
+
             # /docsnip
 
     @mock
@@ -107,10 +113,24 @@ class TestAssignSnips(unittest.TestCase):
             def pipeline(cls, ds: Dataset):
                 schema = ds.schema()
                 schema["amount_sq"] = int
-                return ds.transform(lambda df: df.assign(amount_sq=str(df["amount"])), schema) # noqa
+                return ds.transform(
+                    lambda df: df.assign(amount_sq=str(df["amount"])), schema
+                )  # noqa
+
         # /docsnip
         client.sync(datasets=[Transaction, WithHalf])
         # log some rows to the transaction dataset
         with pytest.raises(Exception):
-            client.log("webhook", "Transaction", pd.DataFrame([{"uid": 1, "amount": 10, "timestamp": "2021-01-01T00:00:00"}]))
-        
+            client.log(
+                "webhook",
+                "Transaction",
+                pd.DataFrame(
+                    [
+                        {
+                            "uid": 1,
+                            "amount": 10,
+                            "timestamp": "2021-01-01T00:00:00",
+                        }
+                    ]
+                ),
+            )

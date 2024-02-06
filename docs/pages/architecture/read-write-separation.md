@@ -6,7 +6,7 @@ status: 'published'
 
 # Read/Write Separation
 
-Unlike most (if not all?) other feature platforms out there, Fennel distinguishes between read and write path computation. This is so because these are very different from a performance perspective -&#x20;
+Unlike most (if not all?) other feature platforms out there, Fennel distinguishes between read and write path computation. This is so because these are very different from a performance perspective:
 
 * Write path is throughput bound but does not have latency pressure whereas Read path is very sensitive to latency but often operates on tiny batches.&#x20;
 * Write path creates data and so can end up taking lots of storage space, some of which may be wasted if the data isn't actually read in a request. That storage space may be traded off with CPU by moving that computation to the read path which may repeat the same computation for each request.

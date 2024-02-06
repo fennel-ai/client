@@ -18,7 +18,7 @@ This field can only either be `int` or `float.
 
 <Expandable title="window" type="Window">
 The continuous window within which something need to be counted. Possible values
-are `"forever"` or any [time duration](/api-references/data-types/duration).
+are `"forever"` or any [time duration](/api-reference/data-types/duration).
 </Expandable>
 
 <Expandable title="into_field" type="str">

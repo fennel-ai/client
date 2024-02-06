@@ -12,8 +12,8 @@ from fennel.test_lib import mock
 webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
-class TestSelectSnips(unittest.TestCase):
 
+class TestSelectSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
@@ -39,31 +39,64 @@ class TestSelectSnips(unittest.TestCase):
             @inputs(User)
             def pipeline(cls, user: Dataset):
                 return user.select("uid", "height", "weight")
+
         # /docsnip
 
         client.sync(datasets=[User, Selected])
         # log some rows
-        client.log("webhook", "User", pd.DataFrame([
-            {"uid": 1, "city": "London", "country": "UK", "weight": 150, 
-             "height": 63, "gender": "M", "timestamp": "2021-01-01T00:00:00"},
-            {"uid": 2, "city": "San Francisco", "country": "US", "weight": 140,
-                "height": 60, "gender": "F", "timestamp": "2021-01-01T00:00:00"},
-            {"uid": 3, "city": "New York", "country": "US", "weight": 160, 
-             "height": 58, "gender": "M", "timestamp": "2021-01-01T00:00:00"}
-        ]))
-              
+        client.log(
+            "webhook",
+            "User",
+            pd.DataFrame(
+                [
+                    {
+                        "uid": 1,
+                        "city": "London",
+                        "country": "UK",
+                        "weight": 150,
+                        "height": 63,
+                        "gender": "M",
+                        "timestamp": "2021-01-01T00:00:00",
+                    },
+                    {
+                        "uid": 2,
+                        "city": "San Francisco",
+                        "country": "US",
+                        "weight": 140,
+                        "height": 60,
+                        "gender": "F",
+                        "timestamp": "2021-01-01T00:00:00",
+                    },
+                    {
+                        "uid": 3,
+                        "city": "New York",
+                        "country": "US",
+                        "weight": 160,
+                        "height": 58,
+                        "gender": "M",
+                        "timestamp": "2021-01-01T00:00:00",
+                    },
+                ]
+            ),
+        )
+
         # do lookup on the output dataset
-        ts = pd.Series([
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 1, 0, 0, 0),
-        ])
+        ts = pd.Series(
+            [
+                datetime(2021, 1, 1, 0, 0, 0),
+                datetime(2021, 1, 1, 0, 0, 0),
+                datetime(2021, 1, 1, 0, 0, 0),
+            ]
+        )
         df, found = Selected.lookup(ts, uid=pd.Series([1, 2, 3]))
-        assert(found.tolist() == [True, True, True])
-        assert(df["uid"].tolist() == [1, 2, 3])
-        assert(df["weight"].tolist() == [150, 140, 160])
-        assert(df["height"].tolist() == [63, 60, 58])
-        assert(df["timestamp"].tolist()[1:] == [datetime(2021, 1, 1, 0, 0, 0), datetime(2021, 1, 1, 0, 0, 0)])
+        assert found.tolist() == [True, True, True]
+        assert df["uid"].tolist() == [1, 2, 3]
+        assert df["weight"].tolist() == [150, 140, 160]
+        assert df["height"].tolist() == [63, 60, 58]
+        assert df["timestamp"].tolist()[1:] == [
+            datetime(2021, 1, 1, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0),
+        ]
 
     @mock
     def test_invalid_drop_key_or_timestamp(self, client):
@@ -75,7 +108,7 @@ class TestSelectSnips(unittest.TestCase):
                 uid: int = field(key=True)
                 city: str
                 timestamp: datetime
-            
+
             @dataset
             class Selected:
                 city: str
@@ -85,6 +118,7 @@ class TestSelectSnips(unittest.TestCase):
                 @inputs(User)
                 def pipeline(cls, user: Dataset):
                     return user.select("height", "weight")
+
             # /docsnip
 
     @mock
@@ -97,7 +131,7 @@ class TestSelectSnips(unittest.TestCase):
                 uid: int = field(key=True)
                 city: str
                 timestamp: datetime
-            
+
             @dataset
             class Selected:
                 uid: int = field(key=True)
@@ -108,4 +142,5 @@ class TestSelectSnips(unittest.TestCase):
                 @inputs(User)
                 def pipeline(cls, user: Dataset):
                     return user.select("uid", "random")
+
             # /docsnip

@@ -217,7 +217,7 @@ kinesis = sources.Kinesis(
 )
 stream = kinesis.stream(
     stream_arn="<SOME_STREAM_ARN>",
-    init_position="latest", # Ingest all new records from now
+    init_position="latest",  # Ingest all new records from now
     format="json",
 )
 

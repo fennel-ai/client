@@ -65,7 +65,7 @@ jobs:
 ```
 
 
-### Deployment Variations
+## Deployment Variations
 
 1. **Separate environments for dev, staging, prod etc.** - you can create multiple
    Fennel deployments, one each for dev, staging, prod etc. Each of these will 
@@ -87,7 +87,7 @@ jobs:
    CI/CD first.
 
 
-### Stateful Rollbacks
+## Stateful Rollbacks
 
 Unlike Git, Fennel doesn't have a direct operation for reverting deployments. 
 This is the case because dataset/featureset changes create some state - for instance,
@@ -101,7 +101,6 @@ rather explicitly mark things as deprecated or deleted before syncing again.
 To prevent accidental deletions of entities, Fennel requires you to first do a
 sync with datasets/featuresets marked as deleted and then in subsequent syncs,
 you are free to omit the entities from the sync call itself. Here is a simple
-example showing how to mark dataset (or featureset) as deleted (pay attention 
-to the first line showing the meta decorator):
+example showing how to mark dataset (or featureset) as deleted.
 
-<pre snippet="testing-and-ci-cd/ci_cd/datasets#dataset_deleted"></pre>
+<pre snippet="testing-and-ci-cd/ci_cd/datasets#dataset_deleted" highlight="5"></pre>

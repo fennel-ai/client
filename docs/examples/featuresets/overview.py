@@ -4,30 +4,29 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, field
-from fennel.featuresets import extractor
-from fennel.featuresets import feature, featureset
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock, InternalTestClient
 
 webhook = Webhook(name="fennel_webhook")
 
 
-# docsnip featureset
-@featureset
-class Movies:
-    duration: int = feature(id=1)
-    over_2hrs: bool = feature(id=2)
+def test_featureset_overview():
+    # docsnip featureset
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
 
-    @extractor
-    @inputs(duration)
-    @outputs(over_2hrs)
-    def my_extractor(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
-        return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
+    @featureset
+    class Movie:
+        duration: int = feature(id=1)
+        over_2hrs: bool = feature(id=2)
 
+        @extractor
+        @inputs(duration)
+        @outputs(over_2hrs)
+        def my_extractor(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
-# /docsnip
+    # /docsnip
 
 
 def test_featureset():
@@ -37,42 +36,50 @@ def test_featureset():
     assert res.tolist() == [False, False, True, True]
 
 
-# docsnip featureset_zero_extractors
-@featureset
-class MoviesZeroExtractors:
-    duration: int = feature(id=1)
-    over_2hrs: bool = feature(id=2)
+def test_featureset_zero_extractors():
+    # docsnip featureset_zero_extractors
+    from fennel.featuresets import feature, featureset, extractor
+
+    @featureset
+    class MoviesZeroExtractors:
+        duration: int = feature(id=1)
+        over_2hrs: bool = feature(id=2)
+    # /docsnip
 
 
-# /docsnip
+def test_featureset_many_extractors():
+    # docsnip featureset_many_extractors
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
 
+    @featureset
+    class MoviesManyExtractors:
+        duration: int = feature(id=1)
+        over_2hrs: bool = feature(id=2)
+        over_3hrs: bool = feature(id=3)
 
-# docsnip featureset_many_extractors
-@featureset
-class MoviesManyExtractors:
-    duration: int = feature(id=1)
-    over_2hrs: bool = feature(id=2)
-    over_3hrs: bool = feature(id=3)
+        @extractor
+        @inputs(duration)
+        @outputs(over_2hrs)
+        def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
-    @extractor
-    @inputs(duration)
-    @outputs(over_2hrs)
-    def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
-        return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
+        @extractor
+        @inputs(duration)
+        @outputs(over_3hrs)
+        def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
 
-    @extractor
-    @inputs(duration)
-    @outputs(over_3hrs)
-    def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
-        return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
-
-
-# /docsnip
+    # /docsnip
 
 
 @mock
 def test_multiple_extractors_of_same_feature(client):
     # docsnip featureset_extractors_of_same_feature
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
+    from fennel.lib.metadata import meta
+
     @meta(owner="aditya@xyz.ai")
     @featureset
     class Movies:
@@ -107,30 +114,35 @@ def test_multiple_extractors_of_same_feature(client):
     )
 
 
-# docsnip remote_feature_as_input
-@featureset
-class Length:
-    limit_secs: int = feature(id=1)
+def test_remote_feature_as_input():
+    # docsnip remote_feature_as_input
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
 
+    @featureset
+    class Length:
+        limit_secs: int = feature(id=1)
 
-@featureset
-class MoviesForeignFeatureInput:
-    duration: int = feature(id=1)
-    over_limit: bool = feature(id=2)
+    @featureset
+    class MoviesForeignFeatureInput:
+        duration: int = feature(id=1)
+        over_limit: bool = feature(id=2)
 
-    @extractor
-    @inputs(Length.limit_secs, duration)
-    @outputs(over_limit)
-    def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
-        return pd.Series(name="over_limit", data=durations > limits)
+        @extractor
+        @inputs(Length.limit_secs, duration)
+        @outputs(over_limit)
+        def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
+            return pd.Series(name="over_limit", data=durations > limits)
 
-
-# /docsnip
+    # /docsnip
 
 
 def test_remote_feature_as_output():
     with pytest.raises(Exception):
         # docsnip remote_feature_as_output
+        from fennel.featuresets import feature, featureset, extractor
+        from fennel.lib.schema import inputs, outputs
+
         @featureset
         class Request:
             too_long: bool = feature(id=1)
@@ -142,12 +154,10 @@ def test_remote_feature_as_output():
 
             @extractor
             @inputs(limit_secs, duration)
-            @outputs(Request.too_long)  # error: outputting feature of another featureset # noqa
+            @outputs(Request.too_long)  
             def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
                 return pd.Series(name="movie_too_long", data=durations > limits)
-
-
-# /docsnip
+        # /docsnip
 
 
 @featureset

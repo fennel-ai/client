@@ -18,7 +18,7 @@ This field must either be of type `int` or `float`.
 
 <Expandable title="window" type="Window">
 The continuous window within which aggregation needs to be computed. Possible 
-values are `"forever"` or any [time duration](/api-references/data-types/duration).
+values are `"forever"` or any [time duration](/api-reference/data-types/duration).
 </Expandable>
 
 <Expandable title="into_field" type="str">
@@ -55,7 +55,7 @@ The type of the field denoted by `into_field` in the output dataset and that of
 </LeftSection>
 <RightSection>
 <pre snippet="api-reference/aggregations/avg#basic" status="success" 
-    message="Aveage in rolling window of 1 day & 1 week">
+    message="Average in rolling window of 1 day & 1 week">
 </pre>
 <pre snippet="api-reference/aggregations/avg#incorrect_type" status="error" 
     message="Can not take average over string, only int or float">

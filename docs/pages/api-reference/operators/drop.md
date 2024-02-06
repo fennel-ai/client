@@ -38,13 +38,13 @@ Sync error on removing any column that doesn't exist in the input dataset.
 
 <RightSection>
 <pre snippet="api-reference/operators/drop#basic" status="success"
-    message="Can pass names via *args or kwarg columns">
+    message="Can pass names via *args or kwarg columns" highlight="23, 24">
 </pre>
 <pre snippet="api-reference/operators/drop#incorrect_type" status="error"
-    message="Can not drop key or timestamp columns">
+    message="Can not drop key or timestamp columns" highlight="16">
 </pre>
 <pre snippet="api-reference/operators/drop#missing_column" status="error"
-    message="Can not drop a non-existent column">
+    message="Can not drop a non-existent column" highlight="17">
 </pre>
 
 </RightSection>

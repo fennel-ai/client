@@ -10,18 +10,16 @@ Datasets refer to a table like data with typed columns. Datasets can be
 [sourced](/concepts/source) from external datasets or derived from other
 datasets via [pipelines](/concepts/pipeline). Datasets are written as 
 [Pydantic](https://docs.pydantic.dev/) inspired Python classes decorated 
-with the `@dataset` decorator.
-
-### Example
+with the `@dataset` decorator. Let's look at an example:
 
 <pre snippet="datasets/datasets#user_dataset"></pre>
 
 ### Dataset Schema
 
-A dataset has few fields (interchangeably referred to as columns) with types and
-unique names. Each field must have has a pre-specified datatype. See the 
-[typing](/api-reference/data-types) section to learn the types supported by
-Fennel.
+A dataset has few fields (interchangeably referred to as columns throughout the
+documentation) with types and unique names. Each field must have has a 
+pre-specified datatype. See the [typing](/api-reference/data-types/core-types) 
+section to learn the types supported by Fennel.
 
 ### Field Descriptors
 
@@ -58,31 +56,31 @@ annotated to be the timestamp field.
 
 Here are some examples of valid and invalid datasets:
 
-Valid - has no key fields, which is fine. 
-No explicitly marked timestamp fields so update_time, which is of type
-datetime is automatically assumed to be the timestamp field
-
-<pre snippet="datasets/datasets#valid_user_dataset"></pre>
+<pre snippet="datasets/datasets#valid_user_dataset" status="success"
+    message="Sole datetime field as timestamp field, okay to have no keys">
+</pre>
 
 
-Invalid - key fields can not have an optional type
-
-<pre snippet="datasets/datasets#invalid_user_dataset_optional_key_field"></pre>
-
-
-Invalid - no field of `datetime` type
-
-<pre snippet="datasets/datasets#invalid_user_dataset_no_datetime_field"></pre>
+<pre snippet="datasets/datasets#invalid_user_dataset_optional_key_field"
+    status="error" message="Key fields can not have optional type"
+    highlight="7">
+</pre>
 
 
-Invalid - no explicitly marked `timestamp` field
-and multiple fields of type `datetime`, hence the timestamp 
-field is ambiguous
-<pre snippet="datasets/datasets#invalid_user_dataset_ambiguous_timestamp_field"></pre>
+<pre snippet="datasets/datasets#invalid_user_dataset_no_datetime_field"
+    status="error" message="No datetime field, so no timestamp field">
+</pre>
 
-Valid - even though there are multiple datetime fields, one of 
-them is explicitly annotated as timestamp field.
-<pre snippet="datasets/datasets#valid_dataset_multiple_datetime_fields"></pre>
+
+<pre snippet="datasets/datasets#invalid_user_dataset_ambiguous_timestamp_field"
+status="error" message="Multile datetime fields without explicit timestamp field"
+    highlight="9,10">
+</pre>
+
+<pre snippet="datasets/datasets#valid_dataset_multiple_datetime_fields"
+    status="success" message="Multiple datetime fields but one explicit timestamp field"
+    highlight="9">
+</pre>
 
 ### Meta Flags
 
@@ -91,14 +89,14 @@ Datasets can be annotated with useful meta information via
 single field level. To ensure code ownership, Fennel requires every dataset to
 have an owner. Here is an example:
 
-<pre snippet="datasets/datasets#metaflags_dataset"></pre>
+<pre snippet="datasets/datasets#metaflags_dataset" highlight="4"></pre>
 
 Typing the same owner name again and again for each dataset can get somewhat
 repetitive. To prevent that, you can also specify an owner at the module level
 by specifying `__owner__` and all the datasets in that module inherit
 this owner. Example:
 
-<pre snippet="datasets/datasets#metaflags_dataset_default_owners"></pre>
+<pre snippet="datasets/datasets#metaflags_dataset_default_owners" highlight="4"></pre>
 
 In this example, datasets `UserBMI` and `UserLocation` both inherit the owner
 from the module level `__owner__` whereas dataset `UserName` overrides it by
