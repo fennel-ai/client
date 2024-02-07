@@ -85,7 +85,7 @@ ON_DEMAND_ATTR = "__fennel_on_demand__"
 
 DEFAULT_RETENTION = Duration("2y")
 DEFAULT_EXPIRATION = Duration("30d")
-DEFAULT_VERSION = 0
+DEFAULT_VERSION = 1
 RESERVED_FIELD_NAMES = [
     "cls",
     "self",
