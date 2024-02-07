@@ -136,7 +136,7 @@ call are deleted and rest are left unchanged.
 
 ## Feature Extraction Requests
 
-Once a few datasets/featuresets have been defiend, you'd want to read the value 
+Once a few datasets/featuresets have been defined, you'd want to read the value 
 of these features for particular inputs (say uids). That can be accomplished via
 `extract` API which reads the 'latest' value of features or `extract_historical`
 API which reads historical values of features for training data generation

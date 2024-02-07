@@ -33,6 +33,7 @@ sidebar:
       - "api-reference/operators/aggregate"
       - "api-reference/operators/first"
       - "api-reference/operators/dedup"
+      - "api-reference/operators/rename"
 
   - slug: "api-reference/sources"
     title: "Sources"

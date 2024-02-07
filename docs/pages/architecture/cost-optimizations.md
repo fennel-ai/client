@@ -24,7 +24,7 @@ way, even if the cost per unit of computation is higher for streaming, Fennel is
 able to net reduce cost by simply doing lot less computation. 
 
 To accomplish this, Fennel uses in-house-built incremental data connectors to 
-all data sources. Once data has been ignested, computation is done incrementally via 
+all data sources. Once data has been ingested, computation is done incrementally via 
 Fennel's in-house streaming system written in Rust (see more below).
 
 As a result, even "batch computation" ends up being cheaper via Fennel's incremental

@@ -7,7 +7,7 @@ status: published
 
 <Divider>
 <LeftSection>
-Operator to explode lists in a sinlge row to form multiple rows, analogous to 
+Operator to explode lists in a single row to form multiple rows, analogous to 
 to the `explode`function in [Pandas](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.explode.html).
 
 Only applicable to keyless datasets.

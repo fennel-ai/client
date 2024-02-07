@@ -18,7 +18,7 @@ If it detects any such change, the whole sync call fails.
 
 This ensures that all definitions are immutable unless explicitly updated by a 
 human by changing its version, at which point, the change is going via the code
-review system and can be quality conrolled appropriately.
+review system and can be quality controlled appropriately.
 
 ## Preventive power of immutability
 

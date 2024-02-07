@@ -62,5 +62,5 @@ else in Fennel)
 
 Sometimes, the external data sources doesn't have the 'column' corresponding to
 the field in your Fennel dataset. Fennel allows you to handle these scenarios
-by specying `preproc` property on your sources (short for pre-processing). Let's
+by specifying `preproc` property on your sources (short for pre-processing). Let's
 look at an example: 
