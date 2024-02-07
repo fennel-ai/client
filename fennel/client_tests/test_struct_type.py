@@ -47,7 +47,7 @@ class MovieInfo:
     cast_list: List[Cast]
     timestamp: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(MovieCast)
     def movie_info(cls, movie_cast: Dataset):
         return movie_cast.groupby("movie").aggregate(

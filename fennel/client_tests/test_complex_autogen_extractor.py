@@ -58,7 +58,7 @@ class NumCompletedTripsDataset:
     count_num_completed_trips: int
     created: datetime
 
-    @pipeline()
+    @pipeline
     @inputs(ReservationsDataset)
     def my_pipeline(cls, reservations: Dataset):
         completed = reservations.filter(lambda df: df["is_completed_trip"] == 1)

@@ -49,7 +49,7 @@ class PageViewsByUser:
     page_views_9d: int
     timestamp: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(PageViews)
     def group_by_user(cls, page_views: Dataset):
         return (

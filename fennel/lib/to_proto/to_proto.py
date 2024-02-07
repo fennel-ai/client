@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import inspect
 import json
-from datetime import datetime
 from textwrap import dedent, indent
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, StringValue
-from typing import Any, Dict, List, Optional, Tuple, Set, Mapping
+from typing import Any, Dict, List, Optional, Tuple, Mapping
 
 import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.http_auth_pb2 as http_auth_proto
@@ -176,6 +175,7 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
     )
     return ds_proto.CoreDataset(
         name=ds.__name__,
+        version=ds._version,
         metadata=get_metadata_proto(ds),
         dsschema=fields_to_dsschema(ds.fields),
         history=history,
@@ -264,8 +264,6 @@ def _pipeline_to_proto(pipeline: Pipeline, ds: Dataset) -> ds_proto.Pipeline:
         signature=pipeline.name,
         metadata=get_metadata_proto(pipeline.func),
         input_dataset_names=[dataset._name for dataset in pipeline.inputs],
-        version=pipeline.version,
-        active=pipeline.active,
         pycode=pycode_proto.PyCode(
             source_code=pipeline_code,
             core_code=pipeline_code,

@@ -61,7 +61,7 @@ class MemberActivityDatasetCopy:
     hasShortcut: bool
     country: str
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(MemberActivityDataset)
     def copy(cls, ds: Dataset):
         return ds
@@ -158,7 +158,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             hasShortcut: bool
             country: str
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(MemberActivityDataset)
             def copy(cls, ds: Dataset):
                 return ds
@@ -280,7 +280,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 displayName: str
                 createdAt: datetime = field(timestamp=True)
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(MemberDataset)
                 def del_timestamp(cls, d: Dataset):
                     return d.drop(columns=["createdAt"])

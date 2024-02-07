@@ -31,7 +31,7 @@ class Likes:
     action_type: str
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Action)
     def filter_likes(cls, actions: Dataset):
         return actions.filter(lambda df: df["action_type"] == "like")
@@ -73,7 +73,7 @@ class RatingRescaled:
     rescaled: float
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Rating)
     def pipeline_transform(cls, ratings: Dataset):
         def rescale(df: pd.DataFrame) -> pd.DataFrame:
@@ -135,7 +135,7 @@ class UserSellerActivity:
     seller_id: Optional[int]
     at: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Product, OrderActivity)
     def join_orders(cls, products: Dataset, orders: Dataset) -> Dataset:
         return orders.join(products, how="left", on=["pid"])
@@ -184,7 +184,7 @@ class UserAdStats:
     num_clicks_1w: int
     at: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(AdClickStream)
     def aggregate_ad_clicks(cls, ad_clicks: Dataset):
         return ad_clicks.groupby("uid").aggregate(

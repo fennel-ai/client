@@ -38,7 +38,7 @@ def test_join_schema_validation():
             revenue: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(MovieRating, MovieRevenue)
             def pipeline_join(cls, rating: Dataset, revenue: Dataset):
                 return rating.join(revenue, how="left", on=[str(cls.movie)])
@@ -65,7 +65,7 @@ def test_drop_schema_validation_drop_keys():
             y: int
             t: datetime
 
-            @pipeline()
+            @pipeline
             @inputs(A)
             def my_pipeline(cls, a: Dataset):
                 return a.drop(["x", "t"])
@@ -92,7 +92,7 @@ def test_drop_schema_validation_drop_timestamp():
             x: int = field(key=True)
             t: datetime
 
-            @pipeline()
+            @pipeline
             @inputs(A)
             def my_pipeline(cls, a: Dataset):
                 return a.drop(["t"])
@@ -120,7 +120,7 @@ def test_drop_schema_validation_drop_empty():
             y: int
             t: datetime
 
-            @pipeline()
+            @pipeline
             @inputs(A)
             def my_pipeline(cls, a: Dataset):
                 return a.drop([])
@@ -148,7 +148,7 @@ def test_rename_duplicate_names_one():
             b: int = field(key=True)
             t: datetime
 
-            @pipeline()
+            @pipeline
             @inputs(A)
             def my_pipeline(cls, a: Dataset):
                 return a.rename({"x": "a", "y": "a"})
@@ -176,7 +176,7 @@ def test_rename_duplicate_names_two():
             y: int = field(key=True)
             t: datetime
 
-            @pipeline()
+            @pipeline
             @inputs(A)
             def my_pipeline(cls, a: Dataset):
                 return a.rename({"x": "y"})
@@ -207,7 +207,7 @@ def test_add_key():
             movie: str = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def filter_positive_ratings(cls, rating: Dataset):
                 return rating.filter(lambda df: df[df["rating"] >= 3.5])
@@ -247,7 +247,7 @@ def test_aggregation_sum():
             timestamp: datetime
             sum_categ_fraudulent_transactions_7d: int
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Activity, MerchantInfo)
             def create_fraud_dataset(
                 cls, activity: Dataset, merchant_info: Dataset
@@ -316,7 +316,7 @@ def test_aggregation_min_max():
             b_min: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A1)
             def pipeline(cls, a: Dataset):
                 return a.groupby("a").aggregate(
@@ -350,7 +350,7 @@ def test_aggregation_min_max():
             b_max: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A2)
             def pipeline(cls, a: Dataset):
                 return a.groupby("a").aggregate(
@@ -384,7 +384,7 @@ def test_aggregation_min_max():
             b_max: str
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A3)
             def pipeline(cls, a: Dataset):
                 return a.groupby("a").aggregate(
@@ -421,7 +421,7 @@ def test_transform():
             b1: float
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A)
             def transform(cls, a: Dataset):
                 return a.transform(
@@ -447,7 +447,7 @@ def test_transform():
             b1: float
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A)
             def transform(cls, a: Dataset):
                 return a.transform(
@@ -473,7 +473,7 @@ def test_transform():
             b1: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A)
             def transform(cls, a: Dataset):
                 return a.transform(
@@ -499,7 +499,7 @@ def test_transform():
             b1: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A)
             def transform(cls, a: Dataset):
                 return a.transform(
@@ -536,7 +536,7 @@ def test_join_schema_validation_value():
             revenue: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A, B)
             def pipeline_join(cls, a: Dataset, b: Dataset):
                 return a.join(
@@ -579,7 +579,7 @@ def test_join_schema_validation_type():
             b3: Optional[str]
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A, C)
             def pipeline_join(cls, a: Dataset, c: Dataset):
                 return a.join(c, how="left", left_on=["a1"], right_on=["b1"])
@@ -600,7 +600,7 @@ def test_join_schema_validation_type():
             b3: Optional[str]
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A, E)
             def pipeline_join(cls, a: Dataset, e: Dataset):
                 return a.join(e, how="left", on=["a1"])
@@ -623,7 +623,7 @@ def test_dedup_ds_with_key_fails():
             revenue: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(MovieRating)
             def pipeline_dedup(cls, rating: Dataset):
                 return rating.dedup(by=[MovieRating.movie])
@@ -653,7 +653,7 @@ def test_dedup_schema_different_fails():
             rating: float
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def pipeline_dedup(cls, rating: Dataset):
                 return rating.dedup()
@@ -684,7 +684,7 @@ def test_dedup_on_missing_field():
             rating: float
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def pipeline_dedup(cls, rating: Dataset):
                 return rating.dedup(by=["director"])
@@ -714,7 +714,7 @@ def test_explode_fails_on_keyed_column():
             revenue: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(SingleHits)
             def pipeline_exploded(cls, hits: Dataset):
                 return hits.explode(columns=["director"])
@@ -744,7 +744,7 @@ def test_explode_fails_on_missing_column():
             revenue: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(SingleHits)
             def pipeline_exploded(cls, hits: Dataset):
                 return hits.explode(columns=["actor"])
@@ -774,7 +774,7 @@ def test_explode_fails_on_primitive_column():
             revenue: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(SingleHits)
             def pipeline_exploded(cls, hits: Dataset):
                 return hits.explode(columns=["movie"])
@@ -801,7 +801,7 @@ def test_first_without_key_fails():
             revenue: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(SingleHits)
             def pipeline_first(cls, hits: Dataset):
                 return hits.groupby().first()
@@ -831,7 +831,7 @@ def test_first_incorrect_schema_nokey():
             revenue: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(SingleHits)
             def pipeline_first(cls, hits: Dataset):
                 return hits.groupby("director").first()
@@ -860,7 +860,7 @@ def test_first_incorrect_schema_missing_field():
             movie: str
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(SingleHits)
             def pipeline_first(cls, hits: Dataset):
                 return hits.groupby("director").first()
@@ -890,7 +890,7 @@ def test_first_wrong_field():
             revenue: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(SingleHits)
             def pipeline_first(cls, hits: Dataset):
                 return hits.groupby("actor").first()
@@ -912,7 +912,7 @@ def test_drop_null():
             b3: str
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(C)
             def drop_null_noargs(cls, c: Dataset):
                 return c.dropnull()
@@ -931,7 +931,7 @@ def test_drop_null():
             b3: str
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(C)
             def drop_null_non_opt(cls, c: Dataset):
                 return c.dropnull("b1")
@@ -950,7 +950,7 @@ def test_drop_null():
             b3: str
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(C)
             def drop_null_non_present(cls, c: Dataset):
                 return c.dropnull("b4")
@@ -979,7 +979,7 @@ def test_assign():
             movie: str
             rating: float
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
                 return activity.assign(
@@ -1002,7 +1002,7 @@ def test_assign():
             movie: str
             rating: float
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
                 return activity.assign(
@@ -1025,7 +1025,7 @@ def test_assign():
             movie: str
             rating: float
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
                 return activity.assign(
@@ -1047,7 +1047,7 @@ def test_assign():
             movie: str
             rating: float
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
                 return activity.assign(
@@ -1079,7 +1079,7 @@ def test_window_without_key_fails():
             window: Window
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby().window(
@@ -1109,7 +1109,7 @@ def test_window_incorrect_schema_optional_key():
             window: Window = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
@@ -1139,7 +1139,7 @@ def test_window_incorrect_schema_nokey():
             window: Window
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
@@ -1168,7 +1168,7 @@ def test_window_incorrect_schema_missing_field():
             user_id: str = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
@@ -1198,7 +1198,7 @@ def test_window_incorrect_schema_dtype_field():
             window_struct: str = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
@@ -1228,7 +1228,7 @@ def test_window_wrong_field():
             window: Window = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("u_id").window(
@@ -1258,7 +1258,7 @@ def test_window_wrong_type():
             window: Window = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
@@ -1288,7 +1288,7 @@ def test_window_not_implemented_type():
             window: Window = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
@@ -1318,7 +1318,7 @@ def test_window_invalid_gap():
             window: Window = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
@@ -1347,7 +1347,7 @@ def test_window_field_invalid_name():
             uuid: Window = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
@@ -1377,7 +1377,7 @@ def test_window_field_invalid_name():
             page_id: Window = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(

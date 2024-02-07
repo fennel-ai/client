@@ -33,7 +33,7 @@ class GenderStats:
     count: int
     timestamp: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserInfoDataset)
     def my_pipeline(cls, user_info: Dataset):
         return user_info.groupby("gender").aggregate(
@@ -47,7 +47,7 @@ class CountryStats:
     count: int
     timestamp: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserInfoDataset)
     def my_pipeline(cls, user_info: Dataset):
         return user_info.groupby("country_code").aggregate(
@@ -72,7 +72,7 @@ def _get_changed_dataset(filter_condition):
         count: int
         timestamp: datetime = field(timestamp=True)
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(UserInfoDataset)
         def my_pipeline(cls, user_info: Dataset):
             return (
@@ -98,7 +98,7 @@ def _get_source_changed_datasets():
         count: int
         timestamp: datetime = field(timestamp=True)
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(UserInfoDataset)
         def my_pipeline(cls, user_info: Dataset):
             return user_info.groupby("gender").aggregate(
