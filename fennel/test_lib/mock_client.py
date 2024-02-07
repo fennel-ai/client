@@ -188,10 +188,10 @@ class MockClient(Client):
         output_df[timestamp_column] = timestamps
         return output_df
 
-    def progress_query_offline(self, request_id):
+    def query_offline_status(self, request_id):
         return FakeResponse(404, "Extract historical features not supported")
 
-    def cancel_query_offline(self, request_id):
+    def query_offline_cancel(self, request_id):
         return FakeResponse(404, "Extract historical features not supported")
 
     def lookup(

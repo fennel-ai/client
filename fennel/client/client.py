@@ -31,7 +31,7 @@ class Client:
     def __init__(
         self,
         url: str,
-        token: Optional[str] = None,
+        token: str,
         branch: Optional[str] = None,
     ):
         self.url = url
@@ -466,7 +466,7 @@ class Client:
             "{}/branch/{}/query_offline".format(V1_API, self._branch), req
         )
 
-    def progress_query_offline(self, request_id):
+    def query_offline_status(self, request_id):
         """
         Get the progress of query offline run.
 
@@ -482,7 +482,7 @@ class Client:
             f"{V1_API}/branch/{self._branch}/query_offline/status?request_id={request_id}"
         )
 
-    def cancel_query_offline(self, request_id):
+    def query_offline_cancel(self, request_id):
         """
         Cancel the query offline run.
 
@@ -494,9 +494,9 @@ class Client:
                         A failure rate of 0.0 indicates that all processing has been completed successfully.
                         The status of the request.
         """
-        req = {"request_id": request_id}
         return self._post_json(
-            f"{V1_API}/branch/{self._branch}/query_offline/cancel", req
+            f"{V1_API}/branch/{self._branch}/query_offline/cancel?request_id={request_id}",
+            {},
         )
 
     # ----------------------- Debug API's --------------------------------------
