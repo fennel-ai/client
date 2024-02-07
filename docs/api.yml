@@ -1,0 +1,59 @@
+version: '0.0.0'
+sidebar:
+  - slug: "api-reference/client"
+    title: "Client"
+    pages:
+      - "api-reference/client"
+
+  - slug: "api-reference/rest-api"
+    title: "REST API"
+    pages:
+      - "api-reference/rest-api"
+
+
+  - slug: "api-reference/data-types"
+    title: "Data Types"
+    pages:
+      - "api-reference/data-types/core-types"
+      - "api-reference/data-types/type-restrictions"
+      - "api-reference/data-types/duration"
+
+  - slug: "api-reference/operators"
+    title: "Operators"
+    pages:
+      - "api-reference/operators/assign"
+      - "api-reference/operators/filter"
+      - "api-reference/operators/drop"
+      - "api-reference/operators/select"
+      - "api-reference/operators/dropnull"
+      - "api-reference/operators/transform"
+      - "api-reference/operators/explode"
+      - "api-reference/operators/join"
+      - "api-reference/operators/groupby"
+      - "api-reference/operators/aggregate"
+      - "api-reference/operators/first"
+      - "api-reference/operators/dedup"
+      - "api-reference/operators/rename"
+
+  - slug: "api-reference/sources"
+    title: "Sources"
+    pages:
+      - "api-reference/sources"
+
+  - slug: "api-reference/aggregations"
+    title: "Aggregations"
+    pages:
+      - "api-reference/aggregations/count"
+      - "api-reference/aggregations/sum"
+      - "api-reference/aggregations/min"
+      - "api-reference/aggregations/max"
+      - "api-reference/aggregations/average"
+      - "api-reference/aggregations/stddev"
+      - "api-reference/aggregations/lastk"
+      - "api-reference/aggregations/distinct"
+
+
+  - slug: "api-reference/expectations"
+    title: "Expectations"
+    pages:
+      - "api-reference/expectations"

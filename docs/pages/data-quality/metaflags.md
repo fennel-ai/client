@@ -21,6 +21,7 @@ Here are a few common scenarios where Metaflags help:
   or through a long list of upstream dependencies need to be audited - but for
   that, first all such features need to be identified.&#x20;
 
+
 Let's look at an example:
 
 ```python
@@ -65,8 +66,8 @@ Fennel currently supports 5 metaflags:
     It'd be a good idea to mark it as deleted and leave it like that forever (the code for
    its extractor can be removed)
 5. **deprecated** - same as deleted but just marks the object as to be deprecated in the near
-   future. If an object uses a deprecated object, the owner will get periodic reminders to modify
-    their object to not depend on the deprecated object any more.&#x20;
+   future. Future users of this object can see this flag in code and hence are 
+   nudged to not use it. 
 
 
 ### Enforcement of Ownership

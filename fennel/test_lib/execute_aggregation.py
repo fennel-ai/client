@@ -84,25 +84,24 @@ class CountUniqueState(AggState):
 
 
 class AvgState(AggState):
-    def __init__(self):
+    def __init__(self, default):
         self.sum = 0
         self.count = 0
+        self.default = default
 
     def add_val_to_state(self, val):
         self.sum += val
         self.count += 1
-        return self.sum / self.count
+        return self.get_val()
 
     def del_val_from_state(self, val):
         self.sum -= val
         self.count -= 1
-        if self.count == 0:
-            return 0
-        return self.sum / self.count
+        return self.get_val()
 
     def get_val(self):
         if self.count == 0:
-            return 0
+            return self.default
         return self.sum / self.count
 
 
@@ -388,7 +387,7 @@ def get_aggregated_df(
                     else:
                         state[key] = CountState()
                 elif isinstance(aggregate, Average):
-                    state[key] = AvgState()
+                    state[key] = AvgState(aggregate.default)
                 elif isinstance(aggregate, LastK):
                     state[key] = LastKState(aggregate.limit, aggregate.dedup)
                 elif isinstance(aggregate, Min):

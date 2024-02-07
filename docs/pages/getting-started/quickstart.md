@@ -9,7 +9,7 @@ The following example tries to show how several concepts in Fennel come together
 
 ### 0. Installation
 We only need to install Fennel's Python client to run this example, so let's install that first:
-```
+```bash
 pip install fennel-ai
 ```
 

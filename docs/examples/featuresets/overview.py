@@ -4,75 +4,82 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, field
-from fennel.featuresets import extractor
-from fennel.featuresets import feature, featureset
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock, InternalTestClient
 
 webhook = Webhook(name="fennel_webhook")
+__owner__ = "nikhil@fennel.ai"
 
 
-# docsnip featureset
-@featureset
-class Movies:
-    duration: int = feature(id=1)
-    over_2hrs: bool = feature(id=2)
+def test_featureset_overview():
+    # docsnip featureset
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
 
-    @extractor
-    @inputs(duration)
-    @outputs(over_2hrs)
-    def my_extractor(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
-        return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
+    @featureset
+    class Movie:
+        duration: int = feature(id=1)
+        over_2hrs: bool = feature(id=2)
 
+        @extractor
+        @inputs(duration)
+        @outputs(over_2hrs)
+        def my_extractor(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
-# /docsnip
+    # /docsnip
 
-
-def test_featureset():
     ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 2)])
     durations = pd.Series([3600, 7200, 7201, 10800])
     res = Movie.my_extractor(Movie, ts, durations)
     assert res.tolist() == [False, False, True, True]
 
 
-# docsnip featureset_zero_extractors
-@featureset
-class MoviesZeroExtractors:
-    duration: int = feature(id=1)
-    over_2hrs: bool = feature(id=2)
+def test_featureset_zero_extractors():
+    # docsnip featureset_zero_extractors
+    from fennel.featuresets import feature, featureset, extractor
+
+    @featureset
+    class MoviesZeroExtractors:
+        duration: int = feature(id=1)
+        over_2hrs: bool = feature(id=2)
+
+    # /docsnip
 
 
-# /docsnip
+def test_featureset_many_extractors():
+    # docsnip featureset_many_extractors
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
 
+    @featureset
+    class MoviesManyExtractors:
+        duration: int = feature(id=1)
+        over_2hrs: bool = feature(id=2)
+        over_3hrs: bool = feature(id=3)
 
-# docsnip featureset_many_extractors
-@featureset
-class MoviesManyExtractors:
-    duration: int = feature(id=1)
-    over_2hrs: bool = feature(id=2)
-    over_3hrs: bool = feature(id=3)
+        @extractor
+        @inputs(duration)
+        @outputs(over_2hrs)
+        def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
-    @extractor
-    @inputs(duration)
-    @outputs(over_2hrs)
-    def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
-        return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
+        @extractor
+        @inputs(duration)
+        @outputs(over_3hrs)
+        def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
 
-    @extractor
-    @inputs(duration)
-    @outputs(over_3hrs)
-    def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
-        return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
-
-
-# /docsnip
+    # /docsnip
 
 
 @mock
 def test_multiple_extractors_of_same_feature(client):
     # docsnip featureset_extractors_of_same_feature
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
+    from fennel.lib.metadata import meta
+
     @meta(owner="aditya@xyz.ai")
     @featureset
     class Movies:
@@ -107,30 +114,35 @@ def test_multiple_extractors_of_same_feature(client):
     )
 
 
-# docsnip remote_feature_as_input
-@featureset
-class Length:
-    limit_secs: int = feature(id=1)
+def test_remote_feature_as_input():
+    # docsnip remote_feature_as_input
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
 
+    @featureset
+    class Length:
+        limit_secs: int = feature(id=1)
 
-@featureset
-class MoviesForeignFeatureInput:
-    duration: int = feature(id=1)
-    over_limit: bool = feature(id=2)
+    @featureset
+    class MoviesForeignFeatureInput:
+        duration: int = feature(id=1)
+        over_limit: bool = feature(id=2)
 
-    @extractor
-    @inputs(Length.limit_secs, duration)
-    @outputs(over_limit)
-    def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
-        return pd.Series(name="over_limit", data=durations > limits)
+        @extractor
+        @inputs(Length.limit_secs, duration)
+        @outputs(over_limit)
+        def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
+            return pd.Series(name="over_limit", data=durations > limits)
 
-
-# /docsnip
+    # /docsnip
 
 
 def test_remote_feature_as_output():
     with pytest.raises(Exception):
         # docsnip remote_feature_as_output
+        from fennel.featuresets import feature, featureset, extractor
+        from fennel.lib.schema import inputs, outputs
+
         @featureset
         class Request:
             too_long: bool = feature(id=1)
@@ -142,77 +154,73 @@ def test_remote_feature_as_output():
 
             @extractor
             @inputs(limit_secs, duration)
-            @outputs(
-                Request.too_long
-            )  # can not output feature of another featureset
+            @outputs(Request.too_long)
             def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
                 return pd.Series(name="movie_too_long", data=durations > limits)
 
-
-# /docsnip
-
-
-@featureset
-class Movie:
-    duration: int = feature(id=1)
-    over_2hrs: bool = feature(id=2)
-
-    # docsnip featureset_extractor
-    @extractor
-    @inputs(duration)
-    @outputs(over_2hrs)
-    def my_extractor(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
-        return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
-
-    # /docsnip
-
-
-@meta(owner="data-eng-oncall@fennel.ai")
-@source(webhook.endpoint("UserInfo"))
-@dataset
-class UserInfo:
-    uid: int = field(key=True)
-    city: str
-    update_time: datetime = field(timestamp=True)
-
-
-# docsnip multiple_feature_extractor
-@meta(owner="data-eng-oncall@fennel.ai")
-@featureset
-class UserLocationFeatures:
-    uid: int = feature(id=1)
-    latitude: float = feature(id=2)
-    longitude: float = feature(id=3)
-
-    @extractor(depends_on=[UserInfo])
-    @inputs(uid)
-    @outputs(latitude, longitude)
-    def get_user_city_coordinates(cls, ts: pd.Series, uid: pd.Series):
-        from geopy.geocoders import Nominatim
-
-        df, found = UserInfo.lookup(ts, uid=uid)
-        # Fetch the coordinates using a geocoding service / API.
-        # If the service is down, use some dummy coordinates as fallback.
-        try:
-            geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
-            coordinates = (
-                df["city"]
-                .apply(geolocator.geocode)
-                .apply(lambda x: (x.latitude, x.longitude))
-            )
-        except Exception:
-            coordinates = pd.Series([(41, -74), (52, -0), (49, 2)])
-        df["latitude"] = coordinates.apply(lambda x: round(x[0], 1))
-        df["longitude"] = coordinates.apply(lambda x: round(x[1], 1))
-        return df[["latitude", "longitude"]]
-
-
-# /docsnip
+        # /docsnip
 
 
 @pytest.mark.slow
 @mock
 def test_multiple_features_extracted(client):
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
+
+    @featureset
+    class Movie:
+        duration: int = feature(id=1)
+        over_2hrs: bool = feature(id=2)
+
+        # docsnip featureset_extractor
+        @extractor
+        @inputs(duration)
+        @outputs(over_2hrs)
+        def my_extractor(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
+
+    # /docsnip
+    @source(webhook.endpoint("UserInfo"))
+    @dataset
+    class UserInfo:
+        uid: int = field(key=True)
+        city: str
+        update_time: datetime = field(timestamp=True)
+
+    # docsnip multiple_feature_extractor
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
+
+    @featureset
+    class UserLocationFeatures:
+        uid: int = feature(id=1)
+        latitude: float = feature(id=2)
+        longitude: float = feature(id=3)
+
+        @extractor(depends_on=[UserInfo])
+        @inputs(uid)
+        @outputs(latitude, longitude)
+        def get_user_city_coordinates(cls, ts: pd.Series, uid: pd.Series):
+            from geopy.geocoders import Nominatim
+
+            df, found = UserInfo.lookup(ts, uid=uid)
+            # Fetch the coordinates using a geocoding service / API.
+            # If the service is down, use some dummy coordinates as fallback.
+            try:
+                geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
+                coordinates = (
+                    df["city"]
+                    .apply(geolocator.geocode)
+                    .apply(lambda x: (x.latitude, x.longitude))
+                )
+            except Exception:
+                coordinates = pd.Series([(41, -74), (52, -0), (49, 2)])
+            df["latitude"] = coordinates.apply(lambda x: round(x[0], 1))
+            df["longitude"] = coordinates.apply(lambda x: round(x[1], 1))
+            return df[["latitude", "longitude"]]
+
+    # /docsnip
+
     client.sync(datasets=[UserInfo], featuresets=[UserLocationFeatures])
     now = datetime.now()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
@@ -236,52 +244,57 @@ def test_multiple_features_extracted(client):
         assert all(abs(df - expected) <= 1)
 
 
-# docsnip extractors_across_featuresets
-@meta(owner="data-eng-oncall@fennel.ai")
-@featureset
-class Request:
-    uid: int = feature(id=1)
-    request_timestamp: datetime = feature(id=2)
-    ip: str = feature(id=3)
-
-
-@meta(owner="data-eng-oncall@fennel.ai")
-@featureset
-class UserLocationFeaturesRefactored:
-    uid: int = feature(id=1)
-    latitude: float = feature(id=2)
-    longitude: float = feature(id=3)
-
-    @extractor(depends_on=[UserInfo])
-    @inputs(Request.uid)
-    @outputs(uid, latitude, longitude)
-    def get_country_geoid(cls, ts: pd.Series, uid: pd.Series):
-        from geopy.geocoders import Nominatim
-
-        df, found = UserInfo.lookup(ts, uid=uid)
-        # Fetch the coordinates using a geocoding service / API.
-        # If the service is down, use some dummy coordinates as fallback.
-        try:
-            geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
-            coordinates = (
-                df["city"]
-                .apply(geolocator.geocode)
-                .apply(lambda x: (x.latitude, x.longitude))
-            )
-        except Exception:
-            coordinates = pd.Series([(41, -74), (52, -0), (49, 2)])
-        df["uid"] = uid
-        df["latitude"] = coordinates.apply(lambda x: round(x[0], 0))
-        df["longitude"] = coordinates.apply(lambda x: round(x[1], 0))
-        return df[["uid", "latitude", "longitude"]]
-
-
-# /docsnip
-
-
 @pytest.mark.slow
 @mock
 def test_extractors_across_featuresets(client):
+    @source(webhook.endpoint("UserInfo"))
+    @dataset
+    class UserInfo:
+        uid: int = field(key=True)
+        city: str
+        update_time: datetime = field(timestamp=True)
+
+    # docsnip extractors_across_featuresets
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
+
+    @featureset
+    class Request:
+        uid: int = feature(id=1)
+        request_timestamp: datetime = feature(id=2)
+        ip: str = feature(id=3)
+
+    @featureset
+    class UserLocationFeaturesRefactored:
+        uid: int = feature(id=1)
+        latitude: float = feature(id=2)
+        longitude: float = feature(id=3)
+
+        @extractor(depends_on=[UserInfo])
+        @inputs(Request.uid)
+        @outputs(uid, latitude, longitude)
+        def get_country_geoid(cls, ts: pd.Series, uid: pd.Series):
+            from geopy.geocoders import Nominatim
+
+            df, found = UserInfo.lookup(ts, uid=uid)
+            # Fetch the coordinates using a geocoding service / API.
+            # If the service is down, use some dummy coordinates as fallback.
+            try:
+                geolocator = Nominatim(user_agent="adityanambiar@fennel.ai")
+                coordinates = (
+                    df["city"]
+                    .apply(geolocator.geocode)
+                    .apply(lambda x: (x.latitude, x.longitude))
+                )
+            except Exception:
+                coordinates = pd.Series([(41, -74), (52, -0), (49, 2)])
+            df["uid"] = uid
+            df["latitude"] = coordinates.apply(lambda x: round(x[0], 0))
+            df["longitude"] = coordinates.apply(lambda x: round(x[1], 0))
+            return df[["uid", "latitude", "longitude"]]
+
+    # /docsnip
+
     client.sync(
         datasets=[UserInfo],
         featuresets=[Request, UserLocationFeaturesRefactored],

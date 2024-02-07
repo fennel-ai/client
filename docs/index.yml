@@ -17,13 +17,13 @@ sidebar:
       - "concepts/pipeline"
       - "concepts/featureset"
 
+
   - slug: "architecture"
     title: "Architecture"
     pages:
       - "architecture/overview"
       - "architecture/technologies"
       - "architecture/read-write-separation"
-      - "architecture/deployment-model"
       - "architecture/cost-optimizations"
       - "architecture/privacy-security"
 
@@ -46,32 +46,13 @@ sidebar:
       - "development/ci-cd-workflows"
       - "development/console"
 
-  - slug: "monitoring"
-    title: "Monitoring"
+  - slug: "observability"
+    title: "Observability"
     pages:
-      - "monitoring/prometheus"
-      - "monitoring/grafana"
-      - "monitoring/newrelic"
-      - "monitoring/alerting"
-
-  - slug: "guides"
-    title: "Guides"
-    pages: 
-      - "guides/request-based-features"
-      - "guides/composite-features"
-      - "guides/out-of-order-data"
-
-  - slug: "api-reference"
-    title: "API Reference"
-    pages:
-      - "api-reference/client"
-      - "api-reference/rest-api"
-      - "api-reference/duration"
-      - "api-reference/data-types"
-      - "api-reference/operators"
-      - "api-reference/aggregations"
-      - "api-reference/sources"
-      - "api-reference/expectations"
+      - "observability/prometheus"
+      - "observability/grafana"
+      - "observability/newrelic"
+      - "observability/alerting"
 
   - 
     slug: "misc"

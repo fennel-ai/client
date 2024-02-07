@@ -23,9 +23,7 @@ distributions can be seen on [Fennel console](/development/console).
 ![Diagram](/assets/feature_drift.png)
 
 :::info
-Feature distributions are tracked only for features having a [type](/api-reference/data-types) of either `int` or `float`.
+Feature distributions are tracked only for features having a [type](/api-reference/data-types/core-types) 
+of either `int` or `float`.
 :::
 
-These distributions are also hosted on the [Prometheus endpoint](/development/monitoring-alerting).
-Thus you can point your monitoring systems (like Grafana) towards these graphs
-and do your own anomaly detection and/or alerting on top if needed.

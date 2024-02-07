@@ -6,20 +6,19 @@ status: 'published'
 
 # Privacy & Security
 
-### General InfoSec
+## General InfoSec
 
 Fennel runs inside your VPC and thus is subject to your usual InfoSec policies.
 The code or data never leave your cloud which eliminates many privacy/compliance
 vulnerabilities.
 
-Fennel uses PrivateLink for creating endpoints - as a result, the endpoints aren't
-visible to the public internet outside of your VPC.
+No ports are kept open to the public internet outside of your VPC.
 
 While Fennel's control plane runs outside of your VPC, it only has access to logs
 and telemetry information.
 
 
-### Data security
+## Data security
 
 Fennel uses industry best-practices for data security:
 

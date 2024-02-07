@@ -1,19 +1,19 @@
 from datetime import datetime
-
 import pandas as pd
-
-from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, extractor, feature
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
-from fennel.sources import source, Webhook
 from fennel.test_lib import mock
+
+__owner__ = "ml-team@fennel.ai"
+
+
+# docsnip featuresets_reading_datasets
+from fennel.datasets import dataset, field
+from fennel.sources import source, Webhook
+from fennel.featuresets import featureset, extractor, feature
+from fennel.lib.schema import inputs, outputs
 
 webhook = Webhook(name="fennel_webhook")
 
 
-# docsnip featuresets_reading_datasets
-@meta(owner="data-eng-team@fennel.ai")
 @source(webhook.endpoint("User"))
 @dataset
 class User:
@@ -22,7 +22,6 @@ class User:
     timestamp: datetime
 
 
-@meta(owner="data-science-team@fennel.ai")
 @featureset
 class UserFeatures:
     uid: int = feature(id=1)
@@ -41,13 +40,11 @@ class UserFeatures:
 
 
 # docsnip derived_extractors
-@meta(owner="data-science-team@fennel.ai")
 @featureset
 class Request:
     user_id: int = feature(id=1)
 
 
-@meta(owner="data-science-team@fennel.ai")
 @featureset
 class UserFeaturesDerived:
     uid: int = feature(id=1).extract(feature=Request.user_id)
@@ -58,13 +55,11 @@ class UserFeaturesDerived:
 
 
 # docsnip derived_extractor_with_provider
-@meta(owner="data-science-team@fennel.ai")
 @featureset
 class Request2:
     uid: int = feature(id=1)
 
 
-@meta(owner="data-science-team@fennel.ai")
 @featureset
 class UserFeaturesDerived2:
     name: str = feature(id=1).extract(

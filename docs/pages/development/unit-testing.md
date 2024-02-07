@@ -15,8 +15,6 @@ This mock server has near parity with the actual server with one notable
 exception - it doesn't support data connectors to external data systems 
 (after all, it is completely local with zero remote dependencies!)
 
-### Example
-
 Let's first see how it will work and later we will see a fully functional unit test example.
 
 ```python

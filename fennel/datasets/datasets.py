@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing_extensions import Literal
 
 import copy
 import datetime
@@ -212,8 +213,8 @@ class _Node(Generic[T]):
     def filter(self, func: Callable) -> _Node:
         return Filter(self, func)
 
-    def assign(self, column: str, result_type: Type, func: Callable) -> _Node:
-        return Assign(self, column, result_type, func)
+    def assign(self, name: str, dtype: Type, func: Callable) -> _Node:
+        return Assign(self, name, dtype, func)
 
     def groupby(self, *args) -> GroupBy:
         return GroupBy(self, *args)
@@ -221,7 +222,7 @@ class _Node(Generic[T]):
     def join(
         self,
         other: Dataset,
-        how: str,
+        how: Literal["inner", "left"],
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
@@ -267,16 +268,27 @@ class _Node(Generic[T]):
             return self
         return self.__drop(drop_cols, name="select")
 
-    def dedup(self, by: Optional[List[str]] = None) -> _Node:
+    def dedup(self, *args, by: Optional[List[str]] = None) -> _Node:
         # If 'by' is not provided, dedup by all value fields.
         # Note: we don't use key fields because dedup cannot be applied on keyed datasets.
-        if by is None:
-            by = self.dsschema().values.keys()
-        return Dedup(self, by)
+        collist: List[str] = []
+        if len(args) == 0 and by is None:
+            collist = list(self.dsschema().values.keys())
+        elif len(args) > 0 and by is None:
+            collist = args  # type: ignore
+        elif len(args) == 0 and by is not None and isinstance(by, list):
+            collist = by
+        elif len(args) == 0 and by is not None and isinstance(by, str):
+            collist = [by]
+        else:
+            raise ValueError(
+                "Invalid arguments to dedup. Must specify either 'by' or positional arguments."
+            )
 
-    def explode(self, columns: List[str]) -> _Node:
-        if not isinstance(columns, list):
-            columns = [columns]
+        return Dedup(self, collist)
+
+    def explode(self, *args, columns: List[str] = None) -> _Node:
+        columns = _Node.__get_drop_args(*args, columns=columns, name="explode")
         return Explode(self, columns)
 
     def isignature(self):
@@ -582,7 +594,7 @@ class Join(_Node):
         node: _Node,
         dataset: Dataset,
         within: Tuple[Duration, Duration],
-        how: str,
+        how: Literal["inner", "left"],
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
@@ -590,6 +602,10 @@ class Join(_Node):
         lsuffix: str = "",
         rsuffix: str = "",
     ):
+        if how not in ["inner", "left"]:
+            raise ValueError(
+                f"Join type {how} is not supported. Currently only 'inner' and 'left' joins are supported"
+            )
         if on is not None:
             if left_on is not None or right_on is not None:
                 raise ValueError("Cannot specify on and left_on/right_on")

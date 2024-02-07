@@ -1,131 +1,139 @@
 from datetime import datetime
+import pytest
 
+import os
 import pandas as pd
 
-from fennel.datasets import dataset, field
-from fennel.lib.metadata import meta
-from fennel.sources import Webhook, ref
+from fennel.sources import Webhook
 from fennel.test_lib import mock
+from fennel.datasets import dataset, field
+
+__owner__ = "owner@example.com"
 
 
-# docsnip user_dataset
-@meta(owner="data-eng-oncall@fennel.ai")
-@dataset
-class UserDataset:
-    uid: int = field(key=True)
-    dob: datetime
-    country: str
-    update_time: datetime = field(timestamp=True)
+def test_user_dataset():
+    # docsnip user_dataset
+    @dataset
+    class UserDataset:
+        uid: int = field(key=True)
+        dob: datetime
+        country: str
+        update_time: datetime = field(timestamp=True)
+
+    # /docsnip
 
 
-# /docsnip
-
-# This docsnip is not used in the docs, but is used in the tests
-# since docs requires not compilable credentials.
-from fennel.sources import source, Postgres, Kafka
-
-pg = Postgres.get(name="postgres")
-kafka = Kafka.get(name="kafka")
-webhook = Webhook(name="fennel_webhook")
-
-
-# docsnip external_data_sources
-@meta(owner="data-eng-oncall@fennel.ai")
-@source(pg.table("user", cursor="update_timestamp"), every="1m", tier="prod")
-@source(webhook.endpoint("User"), tier="dev")
-@dataset
-class User:
-    uid: int = field(key=True)
-    dob: datetime
-    country: str
-    signup_time: datetime = field(timestamp=True)
-
-
-@meta(owner="data-eng-oncall@fennel.ai")
-@source(kafka.topic("transactions"), tier="prod")
-@source(webhook.endpoint("Transaction"), tier="dev")
-@dataset
-class Transaction:
-    uid: int
-    amount: float
-    payment_country: str
-    merchant_id: int
-    timestamp: datetime = field(timestamp=True)
-
-
-# /docsnip
-
-from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Count, Sum
-from fennel.lib.schema import inputs
-
-
-# docsnip pipeline
-@meta(owner="data-eng-oncall@fennel.ai")
-@dataset
-class UserTransactionsAbroad:
-    uid: int = field(key=True)
-    count: int
-    amount_1d: float
-    amount_1w: float
-    timestamp: datetime = field(timestamp=True)
-
-    @pipeline(version=1)
-    @inputs(User, Transaction)
-    def first_pipeline(cls, user: Dataset, transaction: Dataset):
-        joined = transaction.join(user, how="left", on=["uid"])
-        abroad = joined.filter(
-            lambda df: df["country"] != df["payment_country"]
-        )
-        return abroad.groupby("uid").aggregate(
-            Count(window="forever", into_field="count"),
-            Sum(of="amount", window="1d", into_field="amount_1d"),
-            Sum(of="amount", window="1d", into_field="amount_1w"),
-        )
-
-
-# /docsnip
-
-from datetime import timedelta
-
-from fennel.featuresets import feature, featureset, extractor
-from fennel.lib.schema import inputs, outputs
-
-
-# docsnip featureset
-@featureset
-class UserFeature:
-    uid: int = feature(id=1)
-    country: str = feature(id=2)
-    age: float = feature(id=3)
-    dob: datetime = feature(id=4)
-
-    @extractor
-    @inputs(uid)
-    @outputs(age)
-    def get_age(cls, ts: pd.Series, uids: pd.Series):
-        dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])
-        # Using ts instead of datetime.now() to make extract_historical work as of for the extractor
-        ages = ts - dobs
-        return pd.Series(ages)
-
-    @extractor
-    @inputs(uid)
-    @outputs(country)
-    def get_country(cls, ts: pd.Series, uids: pd.Series):
-        countries, _ = User.lookup(ts=ts, uid=uids, fields=["country"])
-        return countries
-
-
-# /docsnip
-
-
-# Tests to ensure that there are no run time errors in the snippets
 @mock
 def test_overview(client):
-    client.sync(
-        datasets=[User, Transaction, UserTransactionsAbroad], tier="dev"
+    # This docsnip is not used in the docs, but is used in the tests
+    # since docs requires not compilable credentials.
+
+    from fennel.sources import source, MySQL, Kafka, Postgres
+
+    pg = Postgres.get(name="postgres")
+    kafka = Kafka.get(name="kafka")
+    webhook = Webhook(name="fennel_webhook")
+
+    # docsnip external_data_sources
+    @source(pg.table("user", cursor="modified_at"), every="1m", tier="prod")
+    @dataset
+    class User:
+        uid: int = field(key=True)
+        dob: datetime
+        country: str
+        signup_time: datetime = field(timestamp=True)
+
+    @source(kafka.topic("transactions"), tier="prod")
+    @dataset
+    class Transaction:
+        uid: int
+        amount: float
+        payment_country: str
+        merchant_id: int
+        timestamp: datetime = field(timestamp=True)
+
+    # /docsnip
+
+    from fennel.datasets import pipeline, Dataset
+    from fennel.lib.aggregate import Count, Sum
+    from fennel.lib.schema import inputs
+
+    # docsnip pipeline
+    @dataset
+    class UserTransactionsAbroad:
+        uid: int = field(key=True)
+        count: int
+        amount_1d: float
+        amount_1w: float
+        timestamp: datetime = field(timestamp=True)
+
+        @pipeline(version=1)
+        @inputs(User, Transaction)
+        def first_pipeline(cls, user: Dataset, transaction: Dataset):
+            joined = transaction.join(user, how="left", on=["uid"])
+            abroad = joined.filter(
+                lambda df: df["country"] != df["payment_country"]
+            )
+            return abroad.groupby("uid").aggregate(
+                Count(window="forever", into_field="count"),
+                Sum(of="amount", window="1d", into_field="amount_1d"),
+                Sum(of="amount", window="1w", into_field="amount_1w"),
+            )
+
+    # /docsnip
+
+    from datetime import timedelta
+
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
+
+    # docsnip featureset
+    @featureset
+    class UserFeature:
+        uid: int = feature(id=1)
+        country: str = feature(id=2)
+        age: float = feature(id=3)
+        dob: datetime = feature(id=4)
+
+        @extractor(depends_on=[User])
+        @inputs(uid)
+        @outputs(age)
+        def get_age(cls, ts: pd.Series, uids: pd.Series):
+            df, _ = User.lookup(ts=ts, uid=uids, fields=["dob"])
+            df.fillna(datetime(1970, 1, 1), inplace=True)
+            age = (ts - df["dob"]).dt.days / 365  # age is calculated as of `ts`
+            return pd.DataFrame(age, columns=["age"])
+
+        @extractor(depends_on=[User])
+        @inputs(uid)
+        @outputs(country)
+        def get_country(cls, ts: pd.Series, uids: pd.Series):
+            countries, _ = User.lookup(ts=ts, uid=uids, fields=["country"])
+            countries = countries.fillna("unknown")
+            return countries
+
+    # /docsnip
+
+    User = source(webhook.endpoint("User"), tier="local")(User)
+    Transaction = source(webhook.endpoint("Transaction"), tier="local")(
+        Transaction
     )
+
+    def _unused():
+        # docsnip sync
+        client.sync(
+            datasets=[User, Transaction, UserTransactionsAbroad],
+            featuresets=[UserFeature],
+            tier="prod",
+        )
+        # /docsnip
+
+    client.sync(
+        datasets=[User, Transaction, UserTransactionsAbroad],
+        featuresets=[UserFeature],
+        tier="local",
+    )
+
     now = datetime.now()
     dob = now - timedelta(days=365 * 30)
     data = [
@@ -175,32 +183,84 @@ def test_overview(client):
     assert data["amount_1d"].tolist() == [500, 400, 600, None]
     assert found.to_list() == [True, True, True, False]
 
+    # docsnip query
+    feature_df = client.extract(
+        outputs=[
+            UserFeature.age,
+            UserFeature.country,
+        ],
+        inputs=[
+            UserFeature.uid,
+        ],
+        input_dataframe=pd.DataFrame({"UserFeature.uid": [1, 3]}),
+    )
 
-# docsnip source
-from fennel.sources import source, Postgres
+    # /docsnip
 
-postgres = Postgres(
-    name="my-postgres",
-    host="localhost",
-    db_name="my_db",
-    port=5432,
-    username="admin",
-    password="password",
-)
+    # docsnip query_historical
+    feature_df = client.extract_historical(
+        outputs=[
+            UserFeature.age,
+            UserFeature.country,
+        ],
+        inputs=[
+            UserFeature.uid,
+        ],
+        input_dataframe=pd.DataFrame(
+            {
+                "UserFeature.uid": [1, 3],
+                "timestamp": [
+                    datetime.now(),
+                    datetime.now() - timedelta(days=1),
+                ],
+            }
+        ),
+        timestamp_column="timestamp",
+    )
+    # /docsnip
+    # just something to use feature_df to remove lint warning
+    return feature_df.shape
 
 
-@source(
-    postgres.table("user", cursor="update_time"),
-    every="1m",
-    preproc={"city": "San Francisco", "country": ref("processed_country")},
-)
-@meta(owner="xyz@example.com")
-@dataset
-class UserLocation:
-    uid: int
-    city: str
-    country: str
-    update_time: datetime
+def test_source_snip():
+    os.environ["POSTGRES_HOST"] = "some-host"
+    os.environ["POSTGRES_DB_NAME"] = "some-db-name"
+    os.environ["POSTGRES_USERNAME"] = "some-username"
+    os.environ["POSTGRES_PASSWORD"] = "some-password"
+
+    # docsnip source
+    from fennel.sources import source, Postgres
+    from fennel.datasets import dataset
+
+    postgres = Postgres(
+        name="my-postgres",
+        host=os.environ["POSTGRES_HOST"],
+        db_name=os.environ["POSTGRES_DB_NAME"],
+        port=5432,
+        username=os.environ["POSTGRES_USERNAME"],
+        password=os.environ["POSTGRES_PASSWORD"],
+    )
+
+    @source(postgres.table("user", cursor="update_time"), every="1m")
+    @dataset
+    class UserLocation:
+        uid: int
+        city: str
+        country: str
+        update_time: datetime
+
+    # /docsnip
 
 
-# /docsnip
+def dummy_function():
+    os.environ["FENNEL_SERVER_URL"] = "http://localhost:8080"
+    os.environ["FENNEL_TOKEN"] = "my-secret-token"
+    # docsnip client
+    from fennel.client import Client
+
+    client = Client(
+        os.environ["FENNEL_SERVER_URL"], token=os.environ["FENNEL_TOKEN"]
+    )
+    # /docsnip
+    # just do something with the client to avoid unused variable warning
+    return client

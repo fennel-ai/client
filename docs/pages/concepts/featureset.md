@@ -11,20 +11,17 @@ backed by a Python function that knows how to extract it. A featureset is writte
 as a Python class annotated with `@featureset` decorator. A single application
 will typically have many featuresets. Let's see an example:
 
-### Example
-
 <pre snippet="featuresets/overview#featureset"></pre>
 
 
 Above example defines a featureset called `Movie` with two features - `duration`,
-`over_2hrs`. Each feature has a [type](/api-reference/data-types) and is given
-a monotonically increasing `id` that is unique within the featureset. This
-featureset has one extractor - `my_extractor` that when given the `duration`
-feature, knows how to extract the `over_2hrs` feature. Let's look at extractors in
-a bit more detail.
+`over_2hrs`. Each feature has a [type](/api-reference/data-types/core-types) and 
+is given a monotonically increasing `id` that is unique within the featureset. 
+This featureset has one extractor - `my_extractor` that when given the `duration`
+feature, knows how to extract the `over_2hrs` feature. 
 
 
-### Extractors
+## Extractors
 
 Extractors are stateless Python functions in a featureset that are annotated
 by `@extractor` decorator. Each extractor accepts zero or more inputs
@@ -69,22 +66,49 @@ depending on the number of output features, of the same length as the input feat
 
 With this, let's look at a few valid and invalid examples:
 
-Valid - featureset can have zero extractors
-<pre snippet="featuresets/overview#featureset_zero_extractors"></pre>
+<pre snippet="featuresets/overview#featureset_zero_extractors"
+   status="success" message="Featureset can have zero extractors">
+</pre>
 
-Valid - featureset can have multiple extractors provided they are all valid
+A featureset having a feature without an extractor simply means that Fennel 
+doesn't know how to compute that feature and hence that feature must always be
+provided as an input to the resolution process.
 
-<pre snippet="featuresets/overview#featureset_many_extractors"></pre>
+<pre snippet="featuresets/overview#featureset_many_extractors"
+   status="success" message="Can have multiple extractors for different features"
+   highlight="12, 18">
+</pre>
 
-Invalid - multiple extractors extracting the same feature. `over_3hrs` is
-extracted both by e1 and e2:
-<pre snippet="featuresets/overview#featureset_extractors_of_same_feature"></pre>
+<pre snippet="featuresets/overview#featureset_extractors_of_same_feature"
+   status="error" message="Multiple extractors extracting the same feature over_3hrs"
+   highlight="15, 23">
+</pre>
 
-Valid - input feature of extractor coming from another featureset.
-<pre snippet="featuresets/overview#remote_feature_as_input"></pre>
+<pre snippet="featuresets/overview#remote_feature_as_input"
+   status="success" message="Input feature coming from another featureset"
+   highlight="14">
+</pre>
 
 Invalid - output feature of extractor from another featureset
-<pre snippet="featuresets/overview#remote_feature_as_output"></pre>
+<pre snippet="featuresets/overview#remote_feature_as_output"
+   status="error" message="Extractor outputs feature from another featureset"
+   highlight="15"
+></pre>
+
+### Extractor Resolution
+
+Support you have an extractor `A` that takes feature `f1` as input and outputs `f2`
+and there is another extractor `B` that takes `f2` as input and returns `f3` as 
+output. Further, suppose that the value of `f1` is available and you're interested
+in computing the value of `f3`.
+
+Fennel can automatically deduce that in order to go from `f1` to `f3`, it 
+must first run extractor `A` to get to `f2` and then run `B` on `f2` to get `f3`. 
+
+More generally, Fennel is able is able to do recursive resolution of feature 
+extractors and find a path via extractors to go from a set of input features
+to a set of output features. This allows you to reuse feature logic and not have
+every feature depend on root level inputs like uid.
 
 
 ### Dataset Lookups
@@ -93,16 +117,19 @@ A large fraction of real world ML features are built on top of stored data.
 However, featuresets don't have any storage of their own and are completely
 stateless. Instead, they are able to do random lookups on datasets and use
 that for the feature computation. Let's see an example:
-<pre snippet="featuresets/reading_datasets#featuresets_reading_datasets"></pre>
+
+<pre snippet="featuresets/reading_datasets#featuresets_reading_datasets"
+   highlight="10, 20, 23, 24"
+></pre>
 
 In this example, the extractor is just looking up the value of `name` given the
 `uid` from the `User` dataset and returning that as feature value. Note a couple
 of things:
-* In line 15, extractor has to explicitly declare that it depends on `User` dataset.
+* Extractor has to explicitly declare that it depends on `User` dataset.
   This helps Fennel build an explicit lineage between features and the datasets they
   depend on.
-* In line 19, extractor is able to call a `lookup` function on the dataset. This
- function also takes series of timestamps as the first argument - you'd almost always
- pass the extractor's timestamp list to this function as it is. In addition, all the
- key fields in the dataset become kwarg to the lookup function.
+* Inside the body of the extractor, function `lookup` is invoked on the dataset. 
+ This function also takes series of timestamps as the first argument - you'd 
+ almost always pass the extractor's timestamp list to this function as it is. 
+ In addition, all the key fields in the dataset become kwarg to the lookup function.
 * It's not possible to do lookups on dataset without keys.
