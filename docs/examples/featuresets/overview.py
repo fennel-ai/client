@@ -8,6 +8,7 @@ from fennel.sources import source, Webhook
 from fennel.test_lib import mock, InternalTestClient
 
 webhook = Webhook(name="fennel_webhook")
+__owner__ = "nikhil@fennel.ai"
 
 
 def test_featureset_overview():
@@ -163,6 +164,9 @@ def test_remote_feature_as_output():
 @pytest.mark.slow
 @mock
 def test_multiple_features_extracted(client):
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.lib.schema import inputs, outputs
+
     @featureset
     class Movie:
         duration: int = feature(id=1)
@@ -243,6 +247,13 @@ def test_multiple_features_extracted(client):
 @pytest.mark.slow
 @mock
 def test_extractors_across_featuresets(client):
+    @source(webhook.endpoint("UserInfo"))
+    @dataset
+    class UserInfo:
+        uid: int = field(key=True)
+        city: str
+        update_time: datetime = field(timestamp=True)
+
     # docsnip extractors_across_featuresets
     from fennel.featuresets import feature, featureset, extractor
     from fennel.lib.schema import inputs, outputs

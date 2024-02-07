@@ -55,15 +55,15 @@ different type across rows.
 
 <RightSection>
 <pre snippet="api-reference/operators/explode#basic" status="success"
-    message="Exploding skus and prices together">
+    message="Exploding skus and prices together" highlight="19">
 </pre>
 
 <pre snippet="api-reference/operators/explode#exploding_non_list" status="error"
-    message="Exploding a non-list column">
+    message="Exploding a non-list column" highlight="5, 17">
 </pre>
 
 <pre snippet="api-reference/operators/explode#exploding_missing" status="error"
-    message="Exploding a non-existent column">
+    message="Exploding a non-existent column" highlight="17">
 </pre>
 </RightSection>
 

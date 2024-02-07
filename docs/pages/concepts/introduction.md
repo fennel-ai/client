@@ -119,6 +119,7 @@ dataset/featureset definitions with the server:
 
 <pre snippet="overview/concepts#sync"></pre>
 
+
 This makes a POST request to Fennel and syncs the dataset on the server. Fennel 
 may reject this sync request if there is any error with any dataset or 
 featureset e.g. if a dataset already exists with this name or somehow this 

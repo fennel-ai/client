@@ -1,4 +1,5 @@
 from datetime import datetime
+import pytest
 
 import os
 import pandas as pd
@@ -117,13 +118,21 @@ def test_overview(client):
     Transaction = source(webhook.endpoint("Transaction"), tier="local")(
         Transaction
     )
-    # docsnip sync
+
+    def _unused():
+        # docsnip sync
+        client.sync(
+            datasets=[User, Transaction, UserTransactionsAbroad],
+            featuresets=[UserFeature],
+            tier="prod",
+        )
+        # /docsnip
+
     client.sync(
         datasets=[User, Transaction, UserTransactionsAbroad],
         featuresets=[UserFeature],
         tier="local",
     )
-    # /docsnip
 
     now = datetime.now()
     dob = now - timedelta(days=365 * 30)

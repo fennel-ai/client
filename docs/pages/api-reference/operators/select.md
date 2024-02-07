@@ -38,13 +38,13 @@ Sync error to select a column that is not present in the input dataset.
 
 <RightSection>
 <pre snippet="api-reference/operators/select#basic" status="success"
-    message="Selecting uid, height & weight columns">
+    message="Selecting uid, height & weight columns" highlight="22">
 </pre>
 <pre snippet="api-reference/operators/select#missing_key" status="error"
-    message="Did not select key uid">
+    message="Did not select key uid" highlight="16">
 </pre>
 <pre snippet="api-reference/operators/select#missing_column" status="error"
-    message="Selecting non-existent column">
+    message="Selecting non-existent column" highlight="17">
 </pre>
 </RightSection>
 

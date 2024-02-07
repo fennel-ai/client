@@ -28,11 +28,9 @@ class TestAssignSnips(unittest.TestCase):
         @source(webhook.endpoint("MerchantCategory"))
         @dataset
         class MerchantCategory:
-            merchant: int = field(
-                key=True
-            )  # won't show up in the joined dataset
+            merchant: int = field(key=True)  # won't show up in joined dataset
             category: str
-            updated_at: datetime  # won't show up in the joined dataset
+            updated_at: datetime  # won't show up in joined dataset
 
         @dataset
         class WithCategory:

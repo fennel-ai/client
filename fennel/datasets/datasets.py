@@ -271,20 +271,21 @@ class _Node(Generic[T]):
     def dedup(self, *args, by: Optional[List[str]] = None) -> _Node:
         # If 'by' is not provided, dedup by all value fields.
         # Note: we don't use key fields because dedup cannot be applied on keyed datasets.
+        collist: List[str] = []
         if len(args) == 0 and by is None:
-            by = list(self.dsschema().values.keys())
+            collist = list(self.dsschema().values.keys())
         elif len(args) > 0 and by is None:
-            by = args
+            collist = args  # type: ignore
         elif len(args) == 0 and by is not None and isinstance(by, list):
-            by = by
+            collist = by
         elif len(args) == 0 and by is not None and isinstance(by, str):
-            by = [by]
+            collist = [by]
         else:
             raise ValueError(
                 "Invalid arguments to dedup. Must specify either 'by' or positional arguments."
             )
 
-        return Dedup(self, by)
+        return Dedup(self, collist)
 
     def explode(self, *args, columns: List[str] = None) -> _Node:
         columns = _Node.__get_drop_args(*args, columns=columns, name="explode")

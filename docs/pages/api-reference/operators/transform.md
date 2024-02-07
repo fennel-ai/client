@@ -46,15 +46,15 @@ Sync error if transform tries to modify key/timestamp columns.
 
 <RightSection>
 <pre snippet="api-reference/operators/transform#basic" status="success"
-    message="Adding column amount_sq">
+    message="Adding column amount_sq" highlight="12, 21">
 </pre>
 
 <pre snippet="api-reference/operators/transform#modifying_keys" status="error"
-    message="Modifying key or timestamp columns">
+    message="Modifying key or timestamp columns" highlight="4, 9, 10, 23">
 </pre>
 
 <pre snippet="api-reference/operators/transform#incorrect_type" status="error"
-    message="Runtime error: amount_sq is of type int, not str">
+    message="Runtime error: amount_sq is of type int, not str" highlight="12, 21">
 </pre>
 </RightSection>
 

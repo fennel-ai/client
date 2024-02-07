@@ -6,7 +6,7 @@ from fennel.test_lib import mock
 def test_func():
     # docsnip struct_type
     # imports for data types
-    from typing import List, Optional
+    from typing import List, Optional, Dict
     from datetime import datetime
     from fennel.lib.schema import struct
 
@@ -26,7 +26,7 @@ def test_func():
     class Student:
         id: int = field(key=True)
         name: str
-        grades: dict[float] = field().meta(description="map class to grade")
+        grades: Dict[str, float]
         honors: bool
         classes: List[str]
         address: Address  # Address is now a valid Fennel type

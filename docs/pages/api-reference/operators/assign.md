@@ -48,11 +48,11 @@ the declared type and the same length as the input dataframe.
 
 <RightSection>
 <pre snippet="api-reference/operators/assign#basic" status="success" 
-    message="Adding new column 'amount_sq' of type int" highlight="17, 23"
+    message="Adding new column 'amount_sq' of type int" highlight="18, 24"
 >
 </pre>
 <pre snippet="api-reference/operators/assign#incorrect_type" status="error" 
-    message="Runtime error: returns float, not int" highlight="17, 23"
+    message="Runtime error: returns float, not int" highlight="18, 25"
 >
 </pre>
 </RightSection>

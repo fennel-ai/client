@@ -28,7 +28,7 @@ class TestAssignSnips(unittest.TestCase):
         @dataset
         class Aggregated:
             uid: int = field(key=True)
-            total_amount: int
+            total: int
             count_1d: int
             timestamp: datetime
 
@@ -37,9 +37,7 @@ class TestAssignSnips(unittest.TestCase):
             def pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     Count(window="1d", into_field="count_1d"),
-                    Sum(
-                        of="amount", window="forever", into_field="total_amount"
-                    ),
+                    Sum(of="amount", window="forever", into_field="total"),
                 )
 
         # /docsnip
@@ -82,5 +80,5 @@ class TestAssignSnips(unittest.TestCase):
             uid=pd.Series([1, 2]),
         )
         assert df["uid"].tolist() == [1, 2]
-        assert df["total_amount"].tolist() == [30, 30]
+        assert df["total"].tolist() == [30, 30]
         assert df["count_1d"].tolist() == [2, 1]
