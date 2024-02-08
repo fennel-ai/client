@@ -1,10 +1,12 @@
 import sys
+import types
 import typing
 from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
+    ForwardRef,
     Generic,
     Iterator,
     List,
@@ -16,28 +18,47 @@ from typing import (
     Union,
     cast,
 )
+from weakref import WeakKeyDictionary, WeakValueDictionary
 
-from fennel._vendor.typing_extensions import Annotated
+from fennel._vendor.typing_extensions import Annotated, Literal as ExtLiteral
 
 from .class_validators import gather_all_validators
 from .fields import DeferredType
 from .main import BaseModel, create_model
 from .types import JsonWrapper
 from .typing import display_as_type, get_all_type_hints, get_args, get_origin, typing_base
-from .utils import LimitedDict, all_identical, lenient_issubclass
+from .utils import all_identical, lenient_issubclass
+
+if sys.version_info >= (3, 10):
+    from typing import _UnionGenericAlias
+if sys.version_info >= (3, 8):
+    from typing import Literal
 
 GenericModelT = TypeVar('GenericModelT', bound='GenericModel')
 TypeVarType = Any  # since mypy doesn't allow the use of TypeVar as a type
 
+CacheKey = Tuple[Type[Any], Any, Tuple[Any, ...]]
 Parametrization = Mapping[TypeVarType, Type[Any]]
 
-_generic_types_cache: LimitedDict[Tuple[Type[Any], Union[Any, Tuple[Any, ...]]], Type[BaseModel]] = LimitedDict()
+# weak dictionaries allow the dynamically created parametrized versions of generic models to get collected
+# once they are no longer referenced by the caller.
+if sys.version_info >= (3, 9):  # Typing for weak dictionaries available at 3.9
+    GenericTypesCache = WeakValueDictionary[CacheKey, Type[BaseModel]]
+    AssignedParameters = WeakKeyDictionary[Type[BaseModel], Parametrization]
+else:
+    GenericTypesCache = WeakValueDictionary
+    AssignedParameters = WeakKeyDictionary
+
+# _generic_types_cache is a Mapping from __class_getitem__ arguments to the parametrized version of generic models.
+# This ensures multiple calls of e.g. A[B] return always the same class.
+_generic_types_cache = GenericTypesCache()
+
 # _assigned_parameters is a Mapping from parametrized version of generic models to assigned types of parametrizations
 # as captured during construction of the class (not instances).
 # E.g., for generic model `Model[A, B]`, when parametrized model `Model[int, str]` is created,
 # `Model[int, str]`: {A: int, B: str}` will be stored in `_assigned_parameters`.
 # (This information is only otherwise available after creation from the class name string).
-_assigned_parameters: LimitedDict[Type[Any], Parametrization] = LimitedDict()
+_assigned_parameters = AssignedParameters()
 
 
 class GenericModel(BaseModel):
@@ -63,8 +84,12 @@ class GenericModel(BaseModel):
 
         """
 
-        def _cache_key(_params: Any) -> Tuple[Type[GenericModelT], Any, Tuple[Any, ...]]:
-            return cls, _params, get_args(_params)
+        def _cache_key(_params: Any) -> CacheKey:
+            args = get_args(_params)
+            # python returns a list for Callables, which is not hashable
+            if len(args) == 2 and isinstance(args[0], list):
+                args = (tuple(args[0]), args[1])
+            return cls, _params, args
 
         cached = _generic_types_cache.get(_cache_key(params))
         if cached is not None:
@@ -245,6 +270,8 @@ def replace_types(type_: Any, type_map: Mapping[Any, Any]) -> Any:
         annotated_type, *annotations = type_args
         return Annotated[replace_types(annotated_type, type_map), tuple(annotations)]
 
+    if (origin_type is ExtLiteral) or (sys.version_info >= (3, 8) and origin_type is Literal):
+        return type_map.get(type_, type_)
     # Having type args is a good indicator that this is a typing module
     # class instantiation or a generic alias of some sort.
     if type_args:
@@ -264,6 +291,10 @@ def replace_types(type_: Any, type_map: Mapping[Any, Any]) -> Any:
             # See: https://www.python.org/dev/peps/pep-0585
             origin_type = getattr(typing, type_._name)
         assert origin_type is not None
+        # PEP-604 syntax (Ex.: list | str) is represented with a types.UnionType object that does not have __getitem__.
+        # We also cannot use isinstance() since we have to compare types.
+        if sys.version_info >= (3, 10) and origin_type is types.UnionType:  # noqa: E721
+            return _UnionGenericAlias(origin_type, resolved_type_args)
         return origin_type[resolved_type_args]
 
     # We handle pydantic generic models separately as they don't have the same
@@ -291,7 +322,12 @@ def replace_types(type_: Any, type_map: Mapping[Any, Any]) -> Any:
 
     # If all else fails, we try to resolve the type directly and otherwise just
     # return the input with no modifications.
-    return type_map.get(type_, type_)
+    new_type = type_map.get(type_, type_)
+    # Convert string to ForwardRef
+    if isinstance(new_type, str):
+        return ForwardRef(new_type)
+    else:
+        return new_type
 
 
 def check_parameters_count(cls: Type[GenericModel], parameters: Tuple[Any, ...]) -> None:

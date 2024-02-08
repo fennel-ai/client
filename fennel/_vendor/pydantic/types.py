@@ -3,7 +3,7 @@ import math
 import re
 import warnings
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from pathlib import Path
 from types import new_class
@@ -226,7 +226,13 @@ class ConstrainedInt(int, metaclass=ConstrainedNumberMeta):
 
 
 def conint(
-    *, strict: bool = False, gt: int = None, ge: int = None, lt: int = None, le: int = None, multiple_of: int = None
+    *,
+    strict: bool = False,
+    gt: Optional[int] = None,
+    ge: Optional[int] = None,
+    lt: Optional[int] = None,
+    le: Optional[int] = None,
+    multiple_of: Optional[int] = None,
 ) -> Type[int]:
     # use kwargs then define conf in a dict to aid with IDE type hinting
     namespace = dict(strict=strict, gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of)
@@ -369,8 +375,8 @@ def conbytes(
     strip_whitespace: bool = False,
     to_upper: bool = False,
     to_lower: bool = False,
-    min_length: int = None,
-    max_length: int = None,
+    min_length: Optional[int] = None,
+    max_length: Optional[int] = None,
     strict: bool = False,
 ) -> Type[bytes]:
     # use kwargs then define conf in a dict to aid with IDE type hinting
@@ -403,7 +409,7 @@ class ConstrainedStr(str):
     min_length: OptionalInt = None
     max_length: OptionalInt = None
     curtail_length: OptionalInt = None
-    regex: Optional[Pattern[str]] = None
+    regex: Optional[Union[str, Pattern[str]]] = None
     strict = False
 
     @classmethod
@@ -412,7 +418,7 @@ class ConstrainedStr(str):
             field_schema,
             minLength=cls.min_length,
             maxLength=cls.max_length,
-            pattern=cls.regex and cls.regex.pattern,
+            pattern=cls.regex and cls._get_pattern(cls.regex),
         )
 
     @classmethod
@@ -430,10 +436,14 @@ class ConstrainedStr(str):
             value = value[: cls.curtail_length]
 
         if cls.regex:
-            if not cls.regex.match(value):
-                raise errors.StrRegexError(pattern=cls.regex.pattern)
+            if not re.match(cls.regex, value):
+                raise errors.StrRegexError(pattern=cls._get_pattern(cls.regex))
 
         return value
+
+    @staticmethod
+    def _get_pattern(regex: Union[str, Pattern[str]]) -> str:
+        return regex if isinstance(regex, str) else regex.pattern
 
 
 def constr(
@@ -442,10 +452,10 @@ def constr(
     to_upper: bool = False,
     to_lower: bool = False,
     strict: bool = False,
-    min_length: int = None,
-    max_length: int = None,
-    curtail_length: int = None,
-    regex: str = None,
+    min_length: Optional[int] = None,
+    max_length: Optional[int] = None,
+    curtail_length: Optional[int] = None,
+    regex: Optional[str] = None,
 ) -> Type[str]:
     # use kwargs then define conf in a dict to aid with IDE type hinting
     namespace = dict(
@@ -506,7 +516,7 @@ class ConstrainedSet(set):  # type: ignore
         return v
 
 
-def conset(item_type: Type[T], *, min_items: int = None, max_items: int = None) -> Type[Set[T]]:
+def conset(item_type: Type[T], *, min_items: Optional[int] = None, max_items: Optional[int] = None) -> Type[Set[T]]:
     # __args__ is needed to conform to typing generics api
     namespace = {'min_items': min_items, 'max_items': max_items, 'item_type': item_type, '__args__': [item_type]}
     # We use new_class to be able to deal with Generic types
@@ -548,7 +558,9 @@ class ConstrainedFrozenSet(frozenset):  # type: ignore
         return v
 
 
-def confrozenset(item_type: Type[T], *, min_items: int = None, max_items: int = None) -> Type[FrozenSet[T]]:
+def confrozenset(
+    item_type: Type[T], *, min_items: Optional[int] = None, max_items: Optional[int] = None
+) -> Type[FrozenSet[T]]:
     # __args__ is needed to conform to typing generics api
     namespace = {'min_items': min_items, 'max_items': max_items, 'item_type': item_type, '__args__': [item_type]}
     # We use new_class to be able to deal with Generic types
@@ -595,7 +607,10 @@ class ConstrainedList(list):  # type: ignore
         return v
 
     @classmethod
-    def unique_items_validator(cls, v: 'List[T]') -> 'List[T]':
+    def unique_items_validator(cls, v: 'Optional[List[T]]') -> 'Optional[List[T]]':
+        if v is None:
+            return None
+
         for i, value in enumerate(v, start=1):
             if value in v[i:]:
                 raise errors.ListUniqueItemsError()
@@ -604,7 +619,7 @@ class ConstrainedList(list):  # type: ignore
 
 
 def conlist(
-    item_type: Type[T], *, min_items: int = None, max_items: int = None, unique_items: bool = None
+    item_type: Type[T], *, min_items: Optional[int] = None, max_items: Optional[int] = None, unique_items: bool = None
 ) -> Type[List[T]]:
     # __args__ is needed to conform to typing generics api
     namespace = dict(
@@ -676,7 +691,11 @@ class ConstrainedDecimal(Decimal, metaclass=ConstrainedNumberMeta):
 
     @classmethod
     def validate(cls, value: Decimal) -> Decimal:
-        digit_tuple, exponent = value.as_tuple()[1:]
+        try:
+            normalized_value = value.normalize()
+        except InvalidOperation:
+            normalized_value = value
+        digit_tuple, exponent = normalized_value.as_tuple()[1:]
         if exponent in {'F', 'n', 'N'}:
             raise errors.DecimalIsNotFiniteError()
 
@@ -717,8 +736,8 @@ def condecimal(
     ge: Decimal = None,
     lt: Decimal = None,
     le: Decimal = None,
-    max_digits: int = None,
-    decimal_places: int = None,
+    max_digits: Optional[int] = None,
+    decimal_places: Optional[int] = None,
     multiple_of: Decimal = None,
 ) -> Type[Decimal]:
     # use kwargs then define conf in a dict to aid with IDE type hinting

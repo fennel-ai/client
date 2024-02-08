@@ -223,28 +223,28 @@ def Field(
     default: Any = Undefined,
     *,
     default_factory: Optional[NoArgAnyCallable] = None,
-    alias: str = None,
-    title: str = None,
-    description: str = None,
-    exclude: Union['AbstractSetIntStr', 'MappingIntStrAny', Any] = None,
-    include: Union['AbstractSetIntStr', 'MappingIntStrAny', Any] = None,
-    const: bool = None,
-    gt: float = None,
-    ge: float = None,
-    lt: float = None,
-    le: float = None,
-    multiple_of: float = None,
-    allow_inf_nan: bool = None,
-    max_digits: int = None,
-    decimal_places: int = None,
-    min_items: int = None,
-    max_items: int = None,
-    unique_items: bool = None,
-    min_length: int = None,
-    max_length: int = None,
+    alias: Optional[str] = None,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    exclude: Optional[Union['AbstractSetIntStr', 'MappingIntStrAny', Any]] = None,
+    include: Optional[Union['AbstractSetIntStr', 'MappingIntStrAny', Any]] = None,
+    const: Optional[bool] = None,
+    gt: Optional[float] = None,
+    ge: Optional[float] = None,
+    lt: Optional[float] = None,
+    le: Optional[float] = None,
+    multiple_of: Optional[float] = None,
+    allow_inf_nan: Optional[bool] = None,
+    max_digits: Optional[int] = None,
+    decimal_places: Optional[int] = None,
+    min_items: Optional[int] = None,
+    max_items: Optional[int] = None,
+    unique_items: Optional[bool] = None,
+    min_length: Optional[int] = None,
+    max_length: Optional[int] = None,
     allow_mutation: bool = True,
-    regex: str = None,
-    discriminator: str = None,
+    regex: Optional[str] = None,
+    discriminator: Optional[str] = None,
     repr: bool = True,
     **extra: Any,
 ) -> Any:
@@ -287,7 +287,7 @@ def Field(
     :param unique_items: only applies to lists, requires the field not to have duplicated
       elements. The schema will have a ``uniqueItems`` validation keyword
     :param min_length: only applies to strings, requires the field to have a minimum length. The
-      schema will have a ``maximum`` validation keyword
+      schema will have a ``minLength`` validation keyword
     :param max_length: only applies to strings, requires the field to have a maximum length. The
       schema will have a ``maxLength`` validation keyword
     :param allow_mutation: a boolean which defaults to True. When False, the field raises a TypeError if the field is
@@ -402,7 +402,7 @@ class ModelField(Representation):
         default_factory: Optional[NoArgAnyCallable] = None,
         required: 'BoolUndefined' = Undefined,
         final: bool = False,
-        alias: str = None,
+        alias: Optional[str] = None,
         field_info: Optional[FieldInfo] = None,
     ) -> None:
 
@@ -1107,7 +1107,13 @@ class ModelField(Representation):
         assert self.discriminator_alias is not None
 
         try:
-            discriminator_value = v[self.discriminator_alias]
+            try:
+                discriminator_value = v[self.discriminator_alias]
+            except KeyError:
+                if self.model_config.allow_population_by_field_name:
+                    discriminator_value = v[self.discriminator_key]
+                else:
+                    raise
         except KeyError:
             return v, ErrorWrapper(MissingDiscriminator(discriminator_key=self.discriminator_key), loc)
         except TypeError:
@@ -1117,15 +1123,18 @@ class ModelField(Representation):
             except (AttributeError, TypeError):
                 return v, ErrorWrapper(MissingDiscriminator(discriminator_key=self.discriminator_key), loc)
 
-        try:
-            sub_field = self.sub_fields_mapping[discriminator_value]  # type: ignore[index]
-        except TypeError:
+        if self.sub_fields_mapping is None:
             assert cls is not None
             raise ConfigError(
                 f'field "{self.name}" not yet prepared so type is still a ForwardRef, '
                 f'you might need to call {cls.__name__}.update_forward_refs().'
             )
-        except KeyError:
+
+        try:
+            sub_field = self.sub_fields_mapping[discriminator_value]
+        except (KeyError, TypeError):
+            # KeyError: `discriminator_value` is not in the dictionary.
+            # TypeError: `discriminator_value` is unhashable.
             assert self.sub_fields_mapping is not None
             return v, ErrorWrapper(
                 InvalidDiscriminator(
