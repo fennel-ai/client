@@ -4,7 +4,7 @@ import json
 import math
 import re
 from datetime import datetime
-from typing import Dict, Optional, Any, Set, List, Union, Tuple
+from typing import Dict, Optional, Any, Set, List, Union, Tuple, Type
 from urllib.parse import urljoin
 
 import pandas as pd
@@ -670,6 +670,34 @@ class Client:
         return self._get(
             "{}/dataset/{}/inspect?n={}".format(V1_API, dataset_name, n)
         ).json()
+
+    def erase(self, dataset_name: str, erase_keys: List[Dict[str, Any]]):
+        """
+        Issue erasure of data that associated with the erase key, any new data that
+        associated with the key will be purge and won't be reflected in downstream dataset.
+
+        Example:
+            We have a dataset named Test which has two erase keyed fields named A and B
+            Suppose we want to erase these key from this dataset
+
+            keys = [
+                {"A": "valueA1", "B": "valueB1"},
+                {"A": "valueA2", "B": "valueB2"}
+            ]
+            dataset_name = "dataset_name"
+
+        Parameters:
+        dataset_name (str): The name of the dataset.
+        erase_keys (List[Dict[str, Any]]): A list of keys, key(s), and its value, is a represented in a dictionary.
+
+        Returns:
+        Response status
+        """
+        req = {
+            "dataset_name": dataset_name,
+            "erase_keys": erase_keys,
+        }
+        return self._post_json("{}/erase".format(V1_API), req)
 
     # ----------------------- Private methods -----------------------
 

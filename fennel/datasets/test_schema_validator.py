@@ -1673,3 +1673,26 @@ def test_join_with_wrong_right_index():
         str(e.value)
         == """`offline` needs to be set on index of the right dataset `Users` for `'[Pipeline:pipeline]->join node'`."""
     )
+
+def test_conflicting_key_field_error():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str = field(key=True)
+            page_id: str = field(erase_key=True)
+            t: datetime = field(timestamp=True)
+
+    assert str(e.value) == """Non key field cannot be an erase key field."""
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent1:
+            user_id: str = field(key=True)
+            page_id: str = field()
+            t: datetime = field(erase_key=True, timestamp=True)
+
+    assert str(e.value) == """Non key field cannot be an erase key field."""

@@ -10,23 +10,13 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import (
-    dataset,
-    field,
-    pipeline,
-    Dataset,
-    Min,
-    Max,
-    Sum,
-    Average,
-    Count,
-    Stddev,
-    Distinct,
-    Quantile,
-    index,
-)
-from fennel.lib import includes, meta, inputs
-from fennel.dtypes import between, oneof, struct
+from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.lib.aggregate import Min, Max
+from fennel.lib.aggregate import Sum, Average, Count, Stddev, Distinct
+from fennel.client import Client
+from fennel.lib.includes import includes
+from fennel.lib.metadata import meta
+from fennel.lib.schema import between, oneof, inputs, struct
 from fennel.sources import source, Webhook, ref
 from fennel.testing import almost_equal, mock, InternalTestClient
 
@@ -55,7 +45,7 @@ class UserInfoDataset:
 @index
 @dataset
 class UserInfoDatasetDerived:
-    user_id: int = field(key=True).meta(description="User ID")  # type: ignore
+    user_id: int = field(key=True, erase_key=True).meta(description="User ID")  # type: ignore
     name: str = field().meta(description="User name")  # type: ignore
     country_name: Optional[str]
     ts: datetime = field(timestamp=True)
@@ -3354,5 +3344,67 @@ def test_lookup_as_of_time(client):
     )
     assert len(found.tolist()) == 2
     assert found.tolist() == [False, True]
-    assert data.shape[0] == 2
-    assert data.tolist() == [None, "Monica"]
+    assert len(data) == 2
+    assert data[0]["name"] is None
+    assert data[1]["name"] == "Monica"
+
+
+@pytest.mark.integration
+@mock
+def test_erase_key(client):
+    client.sync(datasets=[UserInfoDataset, UserInfoDatasetDerived])
+    data = [
+        [18232, "Ross", 24, "USA", "2022-11-10 01:22:23"],
+        [18233, "Monica", 24, "USA", "2022-11-15 01:33:13"],
+        [18234, "Chandler", 24, "USA", "2022-11-16 01:22:23"],
+        [18235, "Rachel", 24, "USA", "2022-11-17 01:33:13"],
+    ]
+    columns = ["user_id", "name", "age", "country", "timestamp"]
+    df = pd.DataFrame(data, columns=columns)
+
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
+    assert response.status_code == requests.codes.OK, response.json()
+
+    data, found = client.lookup(
+        "UserInfoDatasetDerived",
+        [{"user_id": 18232}],
+        fields=["name"],
+    )
+    assert len(found.tolist()) == 1
+    assert found.tolist() == [True]
+    assert len(data) == 1
+    assert data[0]["name"] == "Ross"
+
+    # Should be deleted
+
+    response = client.erase("UserInfoDatasetDerived", [{"user_id": 18232}])
+    assert response.status_code == requests.codes.OK, response.json()
+
+    data, found = client.lookup(
+        "UserInfoDatasetDerived",
+        [{"user_id": 18232}],
+        fields=["name"],
+    )
+    assert len(found.tolist()) == 1
+    assert found.tolist() == [False]
+
+    # Even when logging again it should be filter out
+
+    data = [
+        [18232, "Ross", 24, "USA", "2022-11-10 01:22:23"],
+        [18233, "Monica", 24, "USA", "2022-11-15 01:33:13"],
+        [18234, "Chandler", 24, "USA", "2022-11-16 01:22:23"],
+        [18235, "Rachel", 24, "USA", "2022-11-17 01:33:13"],
+    ]
+    columns = ["user_id", "name", "age", "country", "timestamp"]
+    df = pd.DataFrame(data, columns=columns)
+
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
+
+    data, found = client.lookup(
+        "UserInfoDatasetDerived",
+        [{"user_id": 18232}],
+        fields=["name"],
+    )
+    assert len(found.tolist()) == 1
+    assert found.tolist() == [False]

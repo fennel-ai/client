@@ -220,21 +220,33 @@ def fields_to_dsschema(fields: List[Field]) -> schema_proto.DSSchema:
     keys = []
     values = []
     ts = None
+    erase_keys = []
     for field in fields:
         if field.key:
+            if field.erase_key:
+                erase_keys.append(field.name)
             keys.append(_field_to_proto(field))
         elif field.timestamp:
+            if field.key or field.erase_key:
+                raise ValueError(
+                    f"Timestamp {field.name} field cannot be key field."
+                )
             if ts is not None:
                 raise ValueError(
                     "Multiple timestamp fields are not supported. Please set one of the datetime fields to be the timestamp field."
                 )
             ts = field.name
         else:
+            if field.erase_key:
+                raise ValueError(
+                    f"Value {field.name} field cannot be an erase key."
+                )
             values.append(_field_to_proto(field))
     return schema_proto.DSSchema(
         keys=schema_proto.Schema(fields=keys),
         values=schema_proto.Schema(fields=values),
         timestamp=str(ts),
+        erase_keys=erase_keys,
     )
 
 
