@@ -38,7 +38,17 @@ sidebar:
   - slug: "api-reference/sources"
     title: "Sources"
     pages:
-      - "api-reference/sources"
+      - "api-reference/sources/kafka"
+      - "api-reference/sources/kinesis"
+      - "api-reference/sources/webhook"
+      - "api-reference/sources/mysql"
+      - "api-reference/sources/postgres"
+      - "api-reference/sources/snowflake"
+      - "api-reference/sources/s3"
+      - "api-reference/sources/deltalake"
+      - "api-reference/sources/hudi"
+      - "api-reference/sources/avro"
+      - "api-reference/sources/source"
 
   - slug: "api-reference/aggregations"
     title: "Aggregations"

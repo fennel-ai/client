@@ -1339,7 +1339,7 @@ class Dataset(_Node[T]):
     def with_source(
         self,
         conn: DataConnector,
-        every: Optional[Duration] = None,
+        every: Duration = "1h",
         starting_from: Optional[datetime.datetime] = None,
         disorder: Optional[Duration] = None,
         pre_proc: Optional[Dict[str, PreProcValue]] = None,
