@@ -41,6 +41,7 @@ from mypy.plugin import (
     FunctionContext,
     MethodContext,
     Plugin,
+    ReportConfigContext,
     SemanticAnalyzerPluginInterface,
 )
 from mypy.plugins import dataclasses
@@ -52,6 +53,7 @@ from mypy.types import (
     Instance,
     NoneType,
     Overloaded,
+    ProperType,
     Type,
     TypeOfAny,
     TypeType,
@@ -75,16 +77,20 @@ CONFIGFILE_KEY = 'pydantic-mypy'
 METADATA_KEY = 'pydantic-mypy-metadata'
 BASEMODEL_FULLNAME = 'pydantic.main.BaseModel'
 BASESETTINGS_FULLNAME = 'pydantic.env_settings.BaseSettings'
+MODEL_METACLASS_FULLNAME = 'pydantic.main.ModelMetaclass'
 FIELD_FULLNAME = 'pydantic.fields.Field'
 DATACLASS_FULLNAME = 'pydantic.dataclasses.dataclass'
 
 
 def parse_mypy_version(version: str) -> Tuple[int, ...]:
-    return tuple(int(part) for part in version.split('+', 1)[0].split('.'))
+    return tuple(map(int, version.partition('+')[0].split('.')))
 
 
 MYPY_VERSION_TUPLE = parse_mypy_version(mypy_version)
 BUILTINS_NAME = 'builtins' if MYPY_VERSION_TUPLE >= (0, 930) else '__builtins__'
+
+# Increment version if plugin changes and mypy caches should be invalidated
+__version__ = 2
 
 
 def plugin(version: str) -> 'TypingType[Plugin]':
@@ -100,6 +106,7 @@ def plugin(version: str) -> 'TypingType[Plugin]':
 class PydanticPlugin(Plugin):
     def __init__(self, options: Options) -> None:
         self.plugin_config = PydanticPluginConfig(options)
+        self._plugin_data = self.plugin_config.to_data()
         super().__init__(options)
 
     def get_base_class_hook(self, fullname: str) -> 'Optional[Callable[[ClassDefContext], None]]':
@@ -108,6 +115,11 @@ class PydanticPlugin(Plugin):
             # No branching may occur if the mypy cache has not been cleared
             if any(get_fullname(base) == BASEMODEL_FULLNAME for base in sym.node.mro):
                 return self._pydantic_model_class_maker_callback
+        return None
+
+    def get_metaclass_hook(self, fullname: str) -> Optional[Callable[[ClassDefContext], None]]:
+        if fullname == MODEL_METACLASS_FULLNAME:
+            return self._pydantic_model_metaclass_marker_callback
         return None
 
     def get_function_hook(self, fullname: str) -> 'Optional[Callable[[FunctionContext], Type]]':
@@ -122,13 +134,37 @@ class PydanticPlugin(Plugin):
         return None
 
     def get_class_decorator_hook(self, fullname: str) -> Optional[Callable[[ClassDefContext], None]]:
-        if fullname == DATACLASS_FULLNAME:
+        """Mark pydantic.dataclasses as dataclass.
+
+        Mypy version 1.1.1 added support for `@dataclass_transform` decorator.
+        """
+        if fullname == DATACLASS_FULLNAME and MYPY_VERSION_TUPLE < (1, 1):
             return dataclasses.dataclass_class_maker_callback  # type: ignore[return-value]
         return None
+
+    def report_config_data(self, ctx: ReportConfigContext) -> Dict[str, Any]:
+        """Return all plugin config data.
+
+        Used by mypy to determine if cache needs to be discarded.
+        """
+        return self._plugin_data
 
     def _pydantic_model_class_maker_callback(self, ctx: ClassDefContext) -> None:
         transformer = PydanticModelTransformer(ctx, self.plugin_config)
         transformer.transform()
+
+    def _pydantic_model_metaclass_marker_callback(self, ctx: ClassDefContext) -> None:
+        """Reset dataclass_transform_spec attribute of ModelMetaclass.
+
+        Let the plugin handle it. This behavior can be disabled
+        if 'debug_dataclass_transform' is set to True', for testing purposes.
+        """
+        if self.plugin_config.debug_dataclass_transform:
+            return
+        info_metaclass = ctx.cls.info.declared_metaclass
+        assert info_metaclass, "callback not passed from 'get_metaclass_hook'"
+        if getattr(info_metaclass.type, 'dataclass_transform_spec', None):
+            info_metaclass.type.dataclass_transform_spec = None  # type: ignore[attr-defined]
 
     def _pydantic_field_callback(self, ctx: FunctionContext) -> 'Type':
         """
@@ -185,11 +221,18 @@ class PydanticPlugin(Plugin):
 
 
 class PydanticPluginConfig:
-    __slots__ = ('init_forbid_extra', 'init_typed', 'warn_required_dynamic_aliases', 'warn_untyped_fields')
+    __slots__ = (
+        'init_forbid_extra',
+        'init_typed',
+        'warn_required_dynamic_aliases',
+        'warn_untyped_fields',
+        'debug_dataclass_transform',
+    )
     init_forbid_extra: bool
     init_typed: bool
     warn_required_dynamic_aliases: bool
     warn_untyped_fields: bool
+    debug_dataclass_transform: bool  # undocumented
 
     def __init__(self, options: Options) -> None:
         if options.config_file is None:  # pragma: no cover
@@ -210,18 +253,24 @@ class PydanticPluginConfig:
                 setting = plugin_config.getboolean(CONFIGFILE_KEY, key, fallback=False)
                 setattr(self, key, setting)
 
+    def to_data(self) -> Dict[str, Any]:
+        return {key: getattr(self, key) for key in self.__slots__}
+
 
 def from_orm_callback(ctx: MethodContext) -> Type:
     """
     Raise an error if orm_mode is not enabled
     """
     model_type: Instance
-    if isinstance(ctx.type, CallableType) and isinstance(ctx.type.ret_type, Instance):
-        model_type = ctx.type.ret_type  # called on the class
-    elif isinstance(ctx.type, Instance):
-        model_type = ctx.type  # called on an instance (unusual, but still valid)
+    ctx_type = ctx.type
+    if isinstance(ctx_type, TypeType):
+        ctx_type = ctx_type.item
+    if isinstance(ctx_type, CallableType) and isinstance(ctx_type.ret_type, Instance):
+        model_type = ctx_type.ret_type  # called on the class
+    elif isinstance(ctx_type, Instance):
+        model_type = ctx_type  # called on an instance (unusual, but still valid)
     else:  # pragma: no cover
-        detail = f'ctx.type: {ctx.type} (of type {ctx.type.__class__.__name__})'
+        detail = f'ctx.type: {ctx_type} (of type {ctx_type.__class__.__name__})'
         error_unexpected_behavior(detail, ctx.api, ctx.context)
         return ctx.default_return_type
     pydantic_metadata = model_type.type.metadata.get(METADATA_KEY)
@@ -258,15 +307,11 @@ class PydanticModelTransformer:
         * stores the fields, config, and if the class is settings in the mypy metadata for access by subclasses
         """
         ctx = self._ctx
-        info = self._ctx.cls.info
+        info = ctx.cls.info
 
         self.adjust_validator_signatures()
         config = self.collect_config()
         fields = self.collect_fields(config)
-        for field in fields:
-            if info[field.name].type is None:
-                if not ctx.api.final_iteration:
-                    ctx.api.defer()
         is_settings = any(get_fullname(base) == BASESETTINGS_FULLNAME for base in info.mro[:-1])
         self.add_initializer(fields, config, is_settings)
         self.add_construct_method(fields)
@@ -448,15 +493,32 @@ class PydanticModelTransformer:
         obj_type = ctx.api.named_type(f'{BUILTINS_NAME}.object')
         self_tvar_name = '_PydanticBaseModel'  # Make sure it does not conflict with other names in the class
         tvar_fullname = ctx.cls.fullname + '.' + self_tvar_name
-        tvd = TypeVarDef(self_tvar_name, tvar_fullname, -1, [], obj_type)
-        self_tvar_expr = TypeVarExpr(self_tvar_name, tvar_fullname, [], obj_type)
+        if MYPY_VERSION_TUPLE >= (1, 4):
+            tvd = TypeVarType(
+                self_tvar_name,
+                tvar_fullname,
+                -1,
+                [],
+                obj_type,
+                AnyType(TypeOfAny.from_omitted_generics),  # type: ignore[arg-type]
+            )
+            self_tvar_expr = TypeVarExpr(
+                self_tvar_name,
+                tvar_fullname,
+                [],
+                obj_type,
+                AnyType(TypeOfAny.from_omitted_generics),  # type: ignore[arg-type]
+            )
+        else:
+            tvd = TypeVarDef(self_tvar_name, tvar_fullname, -1, [], obj_type)
+            self_tvar_expr = TypeVarExpr(self_tvar_name, tvar_fullname, [], obj_type)
         ctx.cls.info.names[self_tvar_name] = SymbolTableNode(MDEF, self_tvar_expr)
 
         # Backward-compatible with TypeVarDef from Mypy 0.910.
         if isinstance(tvd, TypeVarType):
             self_type = tvd
         else:
-            self_type = TypeVarType(tvd)  # type: ignore[call-arg]
+            self_type = TypeVarType(tvd)
 
         add_method(
             ctx,
@@ -474,13 +536,26 @@ class PydanticModelTransformer:
 
         This is the same approach used by the attrs and dataclasses plugins.
         """
-        info = self._ctx.cls.info
+        ctx = self._ctx
+        info = ctx.cls.info
         for field in fields:
             sym_node = info.names.get(field.name)
             if sym_node is not None:
                 var = sym_node.node
-                assert isinstance(var, Var)
-                var.is_property = frozen
+                if isinstance(var, Var):
+                    var.is_property = frozen
+                elif isinstance(var, PlaceholderNode) and not ctx.api.final_iteration:
+                    # See https://github.com/pydantic/pydantic/issues/5191 to hit this branch for test coverage
+                    ctx.api.defer()
+                else:  # pragma: no cover
+                    # I don't know whether it's possible to hit this branch, but I've added it for safety
+                    try:
+                        var_str = str(var)
+                    except TypeError:
+                        # This happens for PlaceholderNode; perhaps it will happen for other types in the future..
+                        var_str = repr(var)
+                    detail = f'sym_node.node: {var_str} (of type {var.__class__})'
+                    error_unexpected_behavior(detail, ctx.api, ctx.cls)
             else:
                 var = field.to_var(info, use_alias=False)
                 var.info = info
@@ -525,23 +600,39 @@ class PydanticModelTransformer:
         if isinstance(expr, TempNode):
             # TempNode means annotation-only, so only non-required if Optional
             value_type = get_proper_type(cls.info[lhs.name].type)
-            if isinstance(value_type, UnionType) and any(isinstance(item, NoneType) for item in value_type.items):
-                # Annotated as Optional, or otherwise having NoneType in the union
-                return False
-            return True
+            return not PydanticModelTransformer.type_has_implicit_default(value_type)
         if isinstance(expr, CallExpr) and isinstance(expr.callee, RefExpr) and expr.callee.fullname == FIELD_FULLNAME:
             # The "default value" is a call to `Field`; at this point, the field is
             # only required if default is Ellipsis (i.e., `field_name: Annotation = Field(...)`) or if default_factory
             # is specified.
             for arg, name in zip(expr.args, expr.arg_names):
-                # If name is None, then this arg is the default because it is the only positonal argument.
+                # If name is None, then this arg is the default because it is the only positional argument.
                 if name is None or name == 'default':
                     return arg.__class__ is EllipsisExpr
                 if name == 'default_factory':
                     return False
-            return True
+            # In this case, default and default_factory are not specified, so we need to look at the annotation
+            value_type = get_proper_type(cls.info[lhs.name].type)
+            return not PydanticModelTransformer.type_has_implicit_default(value_type)
         # Only required if the "default value" is Ellipsis (i.e., `field_name: Annotation = ...`)
         return isinstance(expr, EllipsisExpr)
+
+    @staticmethod
+    def type_has_implicit_default(type_: Optional[ProperType]) -> bool:
+        """
+        Returns True if the passed type will be given an implicit default value.
+
+        In pydantic v1, this is the case for Optional types and Any (with default value None).
+        """
+        if isinstance(type_, AnyType):
+            # Annotated as Any
+            return True
+        if isinstance(type_, UnionType) and any(
+            isinstance(item, NoneType) or isinstance(item, AnyType) for item in type_.items
+        ):
+            # Annotated as Optional, or otherwise having NoneType or AnyType in the union
+            return True
+        return False
 
     @staticmethod
     def get_alias_info(stmt: AssignmentStmt) -> Tuple[Optional[str], bool]:
@@ -706,7 +797,9 @@ def error_required_dynamic_aliases(api: SemanticAnalyzerPluginInterface, context
     api.fail('Required dynamic aliases disallowed', context, code=ERROR_ALIAS)
 
 
-def error_unexpected_behavior(detail: str, api: CheckerPluginInterface, context: Context) -> None:  # pragma: no cover
+def error_unexpected_behavior(
+    detail: str, api: Union[CheckerPluginInterface, SemanticAnalyzerPluginInterface], context: Context
+) -> None:  # pragma: no cover
     # Can't think of a good way to test this, but I confirmed it renders as desired by adding to a non-error path
     link = 'https://github.com/pydantic/pydantic/issues/new/choose'
     full_message = f'The pydantic mypy plugin ran into unexpected behavior: {detail}\n'

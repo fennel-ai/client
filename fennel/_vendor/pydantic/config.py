@@ -38,7 +38,8 @@ class Extra(str, Enum):
 
 
 # https://github.com/cython/cython/issues/4003
-# Will be fixed with Cython 3 but still in alpha right now
+# Fixed in Cython 3 and Pydantic v1 won't support Cython 3.
+# Pydantic v2 doesn't depend on Cython at all.
 if not compiled:
     from fennel._vendor.typing_extensions import TypedDict
 
@@ -68,9 +69,7 @@ if not compiled:
         json_encoders: Dict[Type[object], AnyCallable]
         underscore_attrs_are_private: bool
         allow_inf_nan: bool
-
-        # whether or not inherited models as fields should be reconstructed as base model
-        copy_on_model_validation: bool
+        copy_on_model_validation: Literal['none', 'deep', 'shallow']
         # whether dataclass `__post_init__` should be run after validation
         post_init_call: Literal['before_validation', 'after_validation']
 

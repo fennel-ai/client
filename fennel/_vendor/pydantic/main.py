@@ -33,7 +33,6 @@ from .errors import ConfigError, DictError, ExtraError, MissingError
 from .fields import (
     MAPPING_LIKE_SHAPES,
     Field,
-    FieldInfo,
     ModelField,
     ModelPrivateAttr,
     PrivateAttr,
@@ -118,7 +117,7 @@ UNTOUCHED_TYPES: Tuple[Any, ...] = (FunctionType,) + ANNOTATED_FIELD_UNTOUCHED_T
 _is_base_model_class_defined = False
 
 
-@dataclass_transform(kw_only_default=True, field_descriptors=(Field, FieldInfo))
+@dataclass_transform(kw_only_default=True, field_specifiers=(Field,))
 class ModelMetaclass(ABCMeta):
     @no_type_check  # noqa C901
     def __new__(mcs, name, bases, namespace, **kwargs):  # noqa C901
@@ -508,6 +507,7 @@ class BaseModel(Representation, metaclass=ModelMetaclass):
     def _enforce_dict_if_root(cls, obj: Any) -> Any:
         if cls.__custom_root_type__ and (
             not (isinstance(obj, dict) and obj.keys() == {ROOT_KEY})
+            and not (isinstance(obj, BaseModel) and obj.__fields__.keys() == {ROOT_KEY})
             or cls.__fields__[ROOT_KEY].shape in MAPPING_LIKE_SHAPES
         ):
             return {ROOT_KEY: obj}

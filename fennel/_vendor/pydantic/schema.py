@@ -1,6 +1,7 @@
 import re
 import warnings
 from collections import defaultdict
+from dataclasses import is_dataclass
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from enum import Enum
@@ -54,6 +55,7 @@ from .types import (
     ConstrainedInt,
     ConstrainedList,
     ConstrainedSet,
+    ConstrainedStr,
     SecretBytes,
     SecretStr,
     StrictBytes,
@@ -225,7 +227,7 @@ def field_schema(
     model_name_map: Dict[TypeModelOrEnum, str],
     ref_prefix: Optional[str] = None,
     ref_template: str = default_ref_template,
-    known_models: TypeModelSet = None,
+    known_models: Optional[TypeModelSet] = None,
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Set[str]]:
     """
     Process a Pydantic field and return a tuple with a JSON Schema for it as the first item.
@@ -345,7 +347,7 @@ def get_model_name_map(unique_models: TypeModelSet) -> Dict[TypeModelOrEnum, str
     return {v: k for k, v in name_model_map.items()}
 
 
-def get_flat_models_from_model(model: Type['BaseModel'], known_models: TypeModelSet = None) -> TypeModelSet:
+def get_flat_models_from_model(model: Type['BaseModel'], known_models: Optional[TypeModelSet] = None) -> TypeModelSet:
     """
     Take a single ``model`` and generate a set with itself and all the sub-models in the tree. I.e. if you pass
     model ``Foo`` (subclass of Pydantic ``BaseModel``) as ``model``, and it has a field of type ``Bar`` (also
@@ -367,7 +369,7 @@ def get_flat_models_from_model(model: Type['BaseModel'], known_models: TypeModel
 
 def get_flat_models_from_field(field: ModelField, known_models: TypeModelSet) -> TypeModelSet:
     """
-    Take a single Pydantic ``ModelField`` (from a model) that could have been declared as a sublcass of BaseModel
+    Take a single Pydantic ``ModelField`` (from a model) that could have been declared as a subclass of BaseModel
     (so, it could be a submodel), and generate a set with its model and all the sub-models in the tree.
     I.e. if you pass a field that was declared to be of type ``Foo`` (subclass of BaseModel) as ``field``, and that
     model ``Foo`` has a field of type ``Bar`` (also subclass of ``BaseModel``) and that model ``Bar`` has a field of
@@ -489,8 +491,8 @@ def field_type_schema(
         if regex:
             # Dict keys have a regex pattern
             # items_schema might be a schema or empty dict, add it either way
-            f_schema['patternProperties'] = {regex.pattern: items_schema}
-        elif items_schema:
+            f_schema['patternProperties'] = {ConstrainedStr._get_pattern(regex): items_schema}
+        if items_schema:
             # The dict values are not simply Any, so they need a schema
             f_schema['additionalProperties'] = items_schema
     elif field.shape == SHAPE_TUPLE or (field.shape == SHAPE_GENERIC and not issubclass(field.type_, BaseModel)):
@@ -554,7 +556,7 @@ def model_process_schema(
     model_name_map: Dict[TypeModelOrEnum, str],
     ref_prefix: Optional[str] = None,
     ref_template: str = default_ref_template,
-    known_models: TypeModelSet = None,
+    known_models: Optional[TypeModelSet] = None,
     field: Optional[ModelField] = None,
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Set[str]]:
     """
@@ -657,11 +659,13 @@ def enum_process_schema(enum: Type[Enum], *, field: Optional[ModelField] = None)
 
     This is similar to the `model_process_schema` function, but applies to ``Enum`` objects.
     """
+    import inspect
+
     schema_: Dict[str, Any] = {
         'title': enum.__name__,
         # Python assigns all enums a default docstring value of 'An enumeration', so
         # all enums will have a description field even if not explicitly provided.
-        'description': enum.__doc__ or 'An enumeration.',
+        'description': inspect.cleandoc(enum.__doc__ or 'An enumeration.'),
         # Add enum values and the enum field type to the schema.
         'enum': [item.value for item in cast(Iterable[Enum], enum)],
     }
@@ -714,6 +718,8 @@ def field_singleton_sub_fields_schema(
             discriminator_models_refs: Dict[str, Union[str, Dict[str, Any]]] = {}
 
             for discriminator_value, sub_field in field.sub_fields_mapping.items():
+                if isinstance(discriminator_value, Enum):
+                    discriminator_value = str(discriminator_value.value)
                 # sub_field is either a `BaseModel` or directly an `Annotated` `Union` of many
                 if is_union(get_origin(sub_field.type_)):
                     sub_models = get_sub_types(sub_field.type_)
@@ -864,7 +870,7 @@ def field_singleton_schema(  # noqa: C901 (ignore complexity)
         f_schema['const'] = field.default
 
     if is_literal_type(field_type):
-        values = all_literal_values(field_type)
+        values = tuple(x.value if isinstance(x, Enum) else x for x in all_literal_values(field_type))
 
         if len({v.__class__ for v in values}) > 1:
             return field_schema(
@@ -969,7 +975,14 @@ def multitypes_literal_field_for_schema(values: Tuple[Any, ...], field: ModelFie
 
 
 def encode_default(dft: Any) -> Any:
-    if isinstance(dft, Enum):
+    from .main import BaseModel
+
+    if isinstance(dft, BaseModel) or is_dataclass(dft):
+        dft = cast('dict[str, Any]', pydantic_encoder(dft))
+
+    if isinstance(dft, dict):
+        return {encode_default(k): encode_default(v) for k, v in dft.items()}
+    elif isinstance(dft, Enum):
         return dft.value
     elif isinstance(dft, (int, float, str)):
         return dft
@@ -977,8 +990,6 @@ def encode_default(dft: Any) -> Any:
         t = dft.__class__
         seq_args = (encode_default(v) for v in dft)
         return t(*seq_args) if is_namedtuple(t) else t(seq_args)
-    elif isinstance(dft, dict):
-        return {encode_default(k): encode_default(v) for k, v in dft.items()}
     elif dft is None:
         return None
     else:
@@ -1011,7 +1022,7 @@ def get_annotation_from_field_info(
         raise ValueError(
             f'On field "{field_name}" the following field constraints are set but not enforced: '
             f'{", ".join(unused_constraints)}. '
-            f'\nFor more details see https://pydantic-docs.helpmanual.io/usage/schema/#unenforced-field-constraints'
+            f'\nFor more details see https://docs.pydantic.dev/usage/schema/#unenforced-field-constraints'
         )
 
     return annotation

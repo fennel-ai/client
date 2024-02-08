@@ -31,23 +31,12 @@ This means we **don't want to create a new dataclass that inherits from it**
 The trick is to create a wrapper around `M` that will act as a proxy to trigger
 validation without altering default `M` behaviour.
 """
+import copy
+import dataclasses
 import sys
 from contextlib import contextmanager
 from functools import wraps
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
-    Generator,
-    Optional,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Generator, Optional, Type, TypeVar, Union, overload
 
 from fennel._vendor.typing_extensions import dataclass_transform
 
@@ -105,7 +94,7 @@ _T = TypeVar('_T')
 
 if sys.version_info >= (3, 10):
 
-    @dataclass_transform(kw_only_default=True, field_descriptors=(Field, FieldInfo))
+    @dataclass_transform(field_specifiers=(dataclasses.field, Field))
     @overload
     def dataclass(
         *,
@@ -117,11 +106,12 @@ if sys.version_info >= (3, 10):
         frozen: bool = False,
         config: Union[ConfigDict, Type[object], None] = None,
         validate_on_init: Optional[bool] = None,
+        use_proxy: Optional[bool] = None,
         kw_only: bool = ...,
     ) -> Callable[[Type[_T]], 'DataclassClassOrWrapper']:
         ...
 
-    @dataclass_transform(kw_only_default=True, field_descriptors=(Field, FieldInfo))
+    @dataclass_transform(field_specifiers=(dataclasses.field, Field))
     @overload
     def dataclass(
         _cls: Type[_T],
@@ -134,13 +124,14 @@ if sys.version_info >= (3, 10):
         frozen: bool = False,
         config: Union[ConfigDict, Type[object], None] = None,
         validate_on_init: Optional[bool] = None,
+        use_proxy: Optional[bool] = None,
         kw_only: bool = ...,
     ) -> 'DataclassClassOrWrapper':
         ...
 
 else:
 
-    @dataclass_transform(kw_only_default=True, field_descriptors=(Field, FieldInfo))
+    @dataclass_transform(field_specifiers=(dataclasses.field, Field))
     @overload
     def dataclass(
         *,
@@ -152,10 +143,11 @@ else:
         frozen: bool = False,
         config: Union[ConfigDict, Type[object], None] = None,
         validate_on_init: Optional[bool] = None,
+        use_proxy: Optional[bool] = None,
     ) -> Callable[[Type[_T]], 'DataclassClassOrWrapper']:
         ...
 
-    @dataclass_transform(kw_only_default=True, field_descriptors=(Field, FieldInfo))
+    @dataclass_transform(field_specifiers=(dataclasses.field, Field))
     @overload
     def dataclass(
         _cls: Type[_T],
@@ -168,11 +160,12 @@ else:
         frozen: bool = False,
         config: Union[ConfigDict, Type[object], None] = None,
         validate_on_init: Optional[bool] = None,
+        use_proxy: Optional[bool] = None,
     ) -> 'DataclassClassOrWrapper':
         ...
 
 
-@dataclass_transform(kw_only_default=True, field_descriptors=(Field, FieldInfo))
+@dataclass_transform(field_specifiers=(dataclasses.field, Field))
 def dataclass(
     _cls: Optional[Type[_T]] = None,
     *,
@@ -184,6 +177,7 @@ def dataclass(
     frozen: bool = False,
     config: Union[ConfigDict, Type[object], None] = None,
     validate_on_init: Optional[bool] = None,
+    use_proxy: Optional[bool] = None,
     kw_only: bool = False,
 ) -> Union[Callable[[Type[_T]], 'DataclassClassOrWrapper'], 'DataclassClassOrWrapper']:
     """
@@ -195,9 +189,15 @@ def dataclass(
     the_config = get_config(config)
 
     def wrap(cls: Type[Any]) -> 'DataclassClassOrWrapper':
-        import dataclasses
-
-        if is_builtin_dataclass(cls) and _extra_dc_args(_cls) == _extra_dc_args(_cls.__bases__[0]):  # type: ignore
+        should_use_proxy = (
+            use_proxy
+            if use_proxy is not None
+            else (
+                is_builtin_dataclass(cls)
+                and (cls.__bases__[0] is object or set(dir(cls)) == set(dir(cls.__bases__[0])))
+            )
+        )
+        if should_use_proxy:
             dc_cls_doc = ''
             dc_cls = DataclassProxy(cls)
             default_validate_on_init = False
@@ -254,8 +254,17 @@ class DataclassProxy:
     def __getattr__(self, name: str) -> Any:
         return getattr(self.__dataclass__, name)
 
+    def __setattr__(self, __name: str, __value: Any) -> None:
+        return setattr(self.__dataclass__, __name, __value)
+
     def __instancecheck__(self, instance: Any) -> bool:
         return isinstance(instance, self.__dataclass__)
+
+    def __copy__(self) -> 'DataclassProxy':
+        return DataclassProxy(copy.copy(self.__dataclass__))
+
+    def __deepcopy__(self, memo: Any) -> 'DataclassProxy':
+        return DataclassProxy(copy.deepcopy(self.__dataclass__, memo))
 
 
 def _add_pydantic_validation_attributes(  # noqa: C901 (ignore complexity)
@@ -285,7 +294,10 @@ def _add_pydantic_validation_attributes(  # noqa: C901 (ignore complexity)
             init(self, *args, **kwargs)
 
     if hasattr(dc_cls, '__post_init__'):
-        post_init = dc_cls.__post_init__
+        try:
+            post_init = dc_cls.__post_init__.__wrapped__  # type: ignore[attr-defined]
+        except AttributeError:
+            post_init = dc_cls.__post_init__
 
         @wraps(post_init)
         def new_post_init(self: 'Dataclass', *args: Any, **kwargs: Any) -> None:
@@ -315,7 +327,6 @@ def _add_pydantic_validation_attributes(  # noqa: C901 (ignore complexity)
             if hasattr(self, '__post_init_post_parse__'):
                 # We need to find again the initvars. To do that we use `__dataclass_fields__` instead of
                 # public method `dataclasses.fields`
-                import dataclasses
 
                 # get all initvars and their default values
                 initvars_and_values: Dict[str, Any] = {}
@@ -364,8 +375,6 @@ def create_pydantic_model_from_dataclass(
     config: Type[Any] = BaseConfig,
     dc_cls_doc: Optional[str] = None,
 ) -> Type['BaseModel']:
-    import dataclasses
-
     field_definitions: Dict[str, Any] = {}
     for field in dataclasses.fields(dc_cls):
         default: Any = Undefined
@@ -431,14 +440,6 @@ def _dataclass_validate_assignment_setattr(self: 'Dataclass', name: str, value: 
     object.__setattr__(self, name, value)
 
 
-def _extra_dc_args(cls: Type[Any]) -> Set[str]:
-    return {
-        x
-        for x in dir(cls)
-        if x not in getattr(cls, '__dataclass_fields__', {}) and not (x.startswith('__') and x.endswith('__'))
-    }
-
-
 def is_builtin_dataclass(_cls: Type[Any]) -> bool:
     """
     Whether a class is a stdlib dataclass
@@ -461,8 +462,6 @@ def is_builtin_dataclass(_cls: Type[Any]) -> bool:
     In this case, when we first check `B`, we make an extra check and look at the annotations ('y'),
     which won't be a superset of all the dataclass fields (only the stdlib fields i.e. 'x')
     """
-    import dataclasses
-
     return (
         dataclasses.is_dataclass(_cls)
         and not hasattr(_cls, '__pydantic_model__')
@@ -476,4 +475,4 @@ def make_dataclass_validator(dc_cls: Type['Dataclass'], config: Type[BaseConfig]
     and yield the validators
     It retrieves the parameters of the dataclass and forwards them to the newly created dataclass
     """
-    yield from _get_validators(dataclass(dc_cls, config=config, validate_on_init=False))
+    yield from _get_validators(dataclass(dc_cls, config=config, use_proxy=True))
