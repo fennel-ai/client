@@ -47,6 +47,7 @@ def test_simple_dataset():
             {
                 "name": "UserInfoDataset",
                 "metadata": {"owner": "ml-eng@fennel.ai"},
+                "version": 1,
                 "dsschema": {
                     "keys": {
                         "fields": [
@@ -155,6 +156,7 @@ def test_dataset_with_aggregates():
     d = {
         "name": "UserAggregatesDataset",
         "metadata": {"owner": "test@test.com"},
+        "version": 1,
         "dsschema": {
             "keys": {
                 "fields": [{"name": "gender", "dtype": {"stringType": {}}}]
@@ -208,6 +210,7 @@ def test_dataset_with_retention():
             {
                 "name": "Activity",
                 "metadata": {"owner": "ml-eng@fennel.ai"},
+                "version": 1,
                 "dsschema": {
                     "keys": {},
                     "values": {
@@ -300,6 +303,7 @@ def test_nested_dataset():
             {
                 "name": "Dealer",
                 "metadata": {"owner": "test@test.com"},
+                "version": 1,
                 "dsschema": {
                     "keys": {},
                     "values": {
@@ -549,6 +553,7 @@ def test_dataset_with_pipes():
     assert len(sync_request.datasets) == 1
     d = {
         "name": "ABCDataset",
+        "version": 1,
         "dsschema": {
             "keys": {
                 "fields": [{"name": "a1", "dtype": {"int_type": {}}}],
@@ -617,7 +622,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -632,7 +637,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -650,7 +655,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
             "on": {"a1": "b1"},
             "how": 0,
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -746,6 +751,7 @@ def test_dataset_with_pipes_bounds():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -787,7 +793,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -802,7 +808,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -820,7 +826,7 @@ def test_dataset_with_pipes_bounds():
             "on": {"a1": "b1"},
             "how": 0,
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -842,6 +848,7 @@ def test_dataset_with_pipes_bounds():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -883,7 +890,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -898,7 +905,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -916,7 +923,7 @@ def test_dataset_with_pipes_bounds():
             "on": {"a1": "b1"},
             "how": 0,
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -938,6 +945,7 @@ def test_dataset_with_pipes_bounds():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -979,7 +987,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -994,7 +1002,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1013,7 +1021,7 @@ def test_dataset_with_pipes_bounds():
             "within_low": "3600s",
             "how": 0,
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1035,6 +1043,7 @@ def test_dataset_with_pipes_bounds():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1076,7 +1085,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1091,7 +1100,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1110,7 +1119,7 @@ def test_dataset_with_pipes_bounds():
             "how": 0,
             "within_high": "86400s",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1132,6 +1141,7 @@ def test_dataset_with_pipes_bounds():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1173,7 +1183,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1188,7 +1198,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1208,7 +1218,7 @@ def test_dataset_with_pipes_bounds():
             "within_low": "259200s",
             "within_high": "31536000s",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1314,6 +1324,7 @@ def test_dataset_with_complex_pipe():
             },
             "timestamp": "timestamp",
         },
+        "version": 1,
         "metadata": {"owner": "test@test.com"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1360,7 +1371,7 @@ def test_dataset_with_complex_pipe():
         "dataset_ref": {
             "referring_dataset_name": "UserInfoDataset",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1376,7 +1387,7 @@ def test_dataset_with_complex_pipe():
         "dataset_ref": {
             "referring_dataset_name": "Activity",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1389,7 +1400,6 @@ def test_dataset_with_complex_pipe():
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "filter": {"operandId": "Activity", "pycode": {}},
-        "ds_version": 0,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1407,7 +1417,7 @@ def test_dataset_with_complex_pipe():
             "on": {"user_id": "user_id"},
             "how": 0,
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1429,7 +1439,6 @@ def test_dataset_with_complex_pipe():
             },
             "pycode": {},
         },
-        "ds_version": 0,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1445,7 +1454,7 @@ def test_dataset_with_complex_pipe():
             "operandId": "bfa10d216f843625785d24e6b9d890fb",
             "columns": ["user_id", "merchant_id"],
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1476,7 +1485,7 @@ def test_dataset_with_complex_pipe():
                 },
             ],
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1532,6 +1541,7 @@ def test_assign_column():
             },
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "thaqib@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1627,6 +1637,7 @@ def test_dropnull():
             },
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "test@test.com"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1668,7 +1679,7 @@ def test_dropnull():
         "pipeline_name": "from_a",
         "dataset_name": "B",
         "dataset_ref": {"referring_dataset_name": "A"},
-        "ds_version": 0,
+        "ds_version": 1,
     }
     operator_req = sync_request.operators[0]
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -1682,7 +1693,7 @@ def test_dropnull():
         "pipelineName": "from_a",
         "datasetName": "B",
         "dropnull": {"operandId": "A", "columns": ["a2", "a4"]},
-        "ds_version": 0,
+        "ds_version": 1,
     }
 
     operator_req = sync_request.operators[1]
@@ -1741,6 +1752,7 @@ def test_select_and_rename_column():
             },
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "thaqib@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1779,7 +1791,7 @@ def test_select_and_rename_column():
         "pipeline_name": "from_a",
         "dataset_name": "B",
         "dataset_ref": {"referring_dataset_name": "A"},
-        "ds_version": 0,
+        "ds_version": 1,
     }
     operator_req = sync_request.operators[0]
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -1792,7 +1804,7 @@ def test_select_and_rename_column():
         "id": "10340ca369826992acc29dc84b073c18",
         "pipelineName": "from_a",
         "rename": {"columnMap": {"a1": "b1"}, "operandId": "A"},
-        "ds_version": 0,
+        "ds_version": 1,
     }
 
     operator_req = sync_request.operators[1]
@@ -1811,7 +1823,7 @@ def test_select_and_rename_column():
         "id": "0d52839b6fb94cde94dea24334ad9bce",
         "isRoot": True,
         "pipelineName": "from_a",
-        "ds_version": 0,
+        "ds_version": 1,
     }
 
     operator_req = sync_request.operators[2]
@@ -1866,6 +1878,7 @@ def test_union_datasets():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "test@test.com"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1908,7 +1921,7 @@ def test_union_datasets():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1922,7 +1935,6 @@ def test_union_datasets():
         "pipeline_name": "pipeline2_diamond",
         "dataset_name": "ABCDataset",
         "transform": {"operand_id": "A", "schema": {}, "pycode": {}},
-        "ds_version": 0,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1936,7 +1948,6 @@ def test_union_datasets():
         "pipeline_name": "pipeline2_diamond",
         "dataset_name": "ABCDataset",
         "transform": {"operand_id": "A", "schema": {}, "pycode": {}},
-        "ds_version": 0,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1955,7 +1966,7 @@ def test_union_datasets():
                 "b1f19f0df67793dfec442938232b07c4",
             ],
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1973,7 +1984,6 @@ def test_union_datasets():
             "schema": {},
             "pycode": {},
         },
-        "ds_version": 0,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1991,7 +2001,6 @@ def test_union_datasets():
             "schema": {},
             "pycode": {},
         },
-        "ds_version": 0,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2010,7 +2019,7 @@ def test_union_datasets():
                 "95a98aebceb48a64d9b2a8a7001d10df",
             ],
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2069,6 +2078,7 @@ def test_first_operator():
             },
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "abhay@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -2115,7 +2125,7 @@ def test_first_operator():
         "dataset_ref": {
             "referring_dataset_name": "RatingActivity",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2129,7 +2139,7 @@ def test_first_operator():
         "pipelineName": "pipeline_first_movie_seen",
         "datasetName": "FirstMovieSeen",
         "first": {"operandId": "RatingActivity", "by": ["userid"]},
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2244,6 +2254,7 @@ def test_search_dataset():
             },
             "timestamp": "creation_timestamp",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -2302,6 +2313,7 @@ def test_search_dataset():
             },
             "timestamp": "creation_timestamp",
         },
+        "version": 1,
         "metadata": {"owner": "abhay@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -2366,7 +2378,7 @@ def test_search_dataset():
         "dataset_ref": {
             "referring_dataset_name": "Document",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2396,7 +2408,6 @@ def test_search_dataset():
             },
             "pycode": {},
         },
-        "ds_version": 0,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2412,7 +2423,7 @@ def test_search_dataset():
         "dataset_ref": {
             "referring_dataset_name": "DocumentContentDataset",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2429,7 +2440,7 @@ def test_search_dataset():
             "operand_id": "DocumentContentDataset",
             "columns": ["top_10_unique_words"],
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2457,7 +2468,6 @@ def test_search_dataset():
             },
             "pycode": {},
         },
-        "ds_version": 0,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2651,6 +2661,7 @@ def test_dataset_with_str_window_aggregate():
             },
             "timestamp": "timestamp",
         },
+        "version": 1,
         "history": "63072000s",
         "retention": "63072000s",
         "fieldMetadata": {
@@ -2733,6 +2744,7 @@ def test_window_operator():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "nitin@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -2778,7 +2790,7 @@ def test_window_operator():
         "dataset_ref": {
             "referring_dataset_name": "PageViewEvent",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2796,7 +2808,7 @@ def test_window_operator():
             "gap": "600s",
             "operandId": "PageViewEvent",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2863,6 +2875,7 @@ def test_window_operator_with_aggregation():
             },
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "nitin@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -2908,7 +2921,7 @@ def test_window_operator_with_aggregation():
         "dataset_ref": {
             "referring_dataset_name": "PageViewEvent",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2926,7 +2939,7 @@ def test_window_operator_with_aggregation():
             "gap": "600s",
             "operandId": "PageViewEvent",
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2945,7 +2958,7 @@ def test_window_operator_with_aggregation():
             "outputType": {"intType": {}},
             "pycode": {},
         },
-        "ds_version": 0,
+        "ds_version": 1,
     }
     operator_req.assign.pycode.Clear()
     expected_operator_request = ParseDict(o, ds_proto.Operator())
