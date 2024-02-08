@@ -1056,20 +1056,6 @@ def pipeline(
     pipeline_func: Callable = None,
     tier: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    # if isinstance(version, Callable) or isinstance(  # type: ignore
-    #     version, Dataset
-    # ):
-    #     if hasattr(version, "__name__"):
-    #         callable_name = version.__name__  # type: ignore
-    #     else:
-    #         callable_name = str(version)
-    #     raise ValueError(
-    #         f"pipeline decorator on `{callable_name}` must have a parenthesis"
-    #     )
-    # if type(version) is not int:
-    #     raise ValueError(
-    #         "pipeline version must be an integer, found %s" % type(version)
-    #     )
 
     def _create_pipeline(
         pipeline_func: Callable,
@@ -1565,32 +1551,34 @@ def sync_validation_for_pipelines(pipelines: List[Pipeline], ds_name: str):
     This validation function contains the checks that are run just before the sync call.
     It should only contain checks that are not possible to run during the registration phase/compilation phase.
     """
-    if len(pipelines) > 1:
-        tiers: Set[str] = set()
-        for pipeline in pipelines:
-            tier = pipeline.tier.tiers
-            if tier is None:
-                raise ValueError(
-                    f"Pipeline : `{pipeline.name}` has no tier. If there are more than one Pipelines for a dataset, "
-                    f"please specify tier for each of them as there can only be one Pipeline for each tier."
-                )
-            if isinstance(tier, list):
-                for tier_item in tier:
-                    if tier_item in tiers:
-                        raise ValueError(
-                            f"Pipeline : `{pipeline.name}` mapped to Tier : {tier_item} which has more than one "
-                            f"pipeline. Please specify only one."
-                        )
-                    else:
-                        tiers.add(tier_item)
-            elif isinstance(tier, str):
-                if tier in tiers:
+    if len(pipelines) <= 1:
+        return
+
+    tiers: Set[str] = set()
+    for pipeline in pipelines:
+        tier = pipeline.tier.tiers
+        if tier is None:
+            raise ValueError(
+                f"Pipeline : `{pipeline.name}` has no tier. If there are more than one Pipelines for a dataset, "
+                f"please specify tier for each of them as there can only be one Pipeline for each tier."
+            )
+        if isinstance(tier, list):
+            for tier_item in tier:
+                if tier_item in tiers:
                     raise ValueError(
-                        f"Pipeline : `{pipeline.name}` mapped to Tier : {tier} which has more than one pipeline. "
-                        f"Please specify only one."
+                        f"Pipeline : `{pipeline.name}` mapped to Tier : {tier_item} which has more than one "
+                        f"pipeline. Please specify only one."
                     )
                 else:
-                    tiers.add(tier)
+                    tiers.add(tier_item)
+        elif isinstance(tier, str):
+            if tier in tiers:
+                raise ValueError(
+                    f"Pipeline : `{pipeline.name}` mapped to Tier : {tier} which has more than one pipeline. "
+                    f"Please specify only one."
+                )
+            else:
+                tiers.add(tier)
 
 
 # ---------------------------------------------------------------------
