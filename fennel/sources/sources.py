@@ -6,6 +6,7 @@ from enum import Enum
 import re
 
 from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
+from typing import Literal
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
@@ -217,11 +218,11 @@ class Avro(BaseModel):
 
 class Kafka(DataSource):
     bootstrap_servers: str
-    security_protocol: str
+    security_protocol: Literal["PLAINTEXT", "SASL_PLAINTEXT", "SASL_SSL"]
     sasl_mechanism: Optional[str]
     sasl_plain_username: Optional[str]
     sasl_plain_password: Optional[str]
-    verify_cert: Optional[bool]
+    verify_cert: Optional[bool] = False
 
     @validator("security_protocol")
     def validate_security_protocol(cls, security_protocol: str) -> str:
@@ -240,9 +241,9 @@ class Kafka(DataSource):
         return ["topic"]
 
     def topic(
-        self, topic_name: str, format: Optional[str | Avro] = None
+        self, topic: str, format: Union[str, Avro] = "json"
     ) -> KafkaConnector:
-        return KafkaConnector(self, topic_name, format)
+        return KafkaConnector(self, topic, format)
 
     @staticmethod
     def get(name: str) -> Kafka:
@@ -453,7 +454,7 @@ class S3Connector(DataConnector):
         self.data_source = data_source
         self.bucket_name = bucket_name
         self.delimiter = delimiter
-        self.format = format
+        self.format = format.lower()
         self.presorted = presorted
 
         if self.format not in [

@@ -272,13 +272,12 @@ def test_invalid_bigquery_credential():
 
 
 def test_invalid_kaffa_security_protocol():
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         Kafka(
             name="kafka",
             bootstrap_servers="localhost:9092",
             security_protocol="Wrong Protocol",
         )
-    assert "security protocol must be one of" in str(e.value)
 
 
 bigquery = BigQuery(

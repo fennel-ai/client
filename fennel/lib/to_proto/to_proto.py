@@ -691,7 +691,6 @@ def _kafka_to_ext_db_proto(
             sasl_plain_username=sasl_plain_username,
             sasl_plain_password=sasl_plain_password,
             sasl_jaas_config="",
-            # TODO(xiao): remove once server side is updated
             enable_ssl_certificate_verification=BoolValue(value=verify_cert),
         ),
     )
