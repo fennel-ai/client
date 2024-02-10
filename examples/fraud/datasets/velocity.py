@@ -33,7 +33,7 @@ class NumCompletedTripsDS:
     num_past_completed_trips: int
     created: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(ReservationDS)
     def num_completed_trips(cls, reservations: Dataset):
         return (
@@ -57,7 +57,7 @@ class CancelledTripsDS:
     num_past_cancelled_trips: int
     created: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(ReservationDS)
     def num_completed_trips(cls, reservations: Dataset):
         return (
@@ -90,7 +90,7 @@ class LoginsLastDayDS:
     num_logins_last_day: int
     created: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(LoginEventsDS)
     def logins_per_day(cls, logins: Dataset):
         return logins.groupby("driver_id").aggregate(
@@ -119,7 +119,7 @@ class CheckoutPagesLastDayDS:
     num_checkout_pages_last_day: int
     created: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(BookingFlowCheckoutPageDS)
     def checkout_pages_per_day(cls, logins: Dataset):
         return (
@@ -154,7 +154,7 @@ class PastApprovedDS:
     num_past_approved_trips: int
     created: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(ReservationSummaryDS)
     def past_approved_trips(cls, reservations: Dataset):
         return (

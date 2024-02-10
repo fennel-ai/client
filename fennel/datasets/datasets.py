@@ -23,6 +23,7 @@ from typing import (
     Union,
     overload,
     get_args,
+    Set,
 )
 
 import numpy as np
@@ -85,6 +86,7 @@ ON_DEMAND_ATTR = "__fennel_on_demand__"
 
 DEFAULT_RETENTION = Duration("2y")
 DEFAULT_EXPIRATION = Duration("30d")
+DEFAULT_VERSION = 1
 RESERVED_FIELD_NAMES = [
     "cls",
     "self",
@@ -887,6 +889,7 @@ class WindowOperator(_Node):
 @overload
 def dataset(  # noqa: E704
     *,
+    version: Optional[int] = DEFAULT_VERSION,
     history: Optional[Duration] = DEFAULT_RETENTION,
 ) -> Callable[[Type[T]], Dataset]: ...
 
@@ -897,6 +900,7 @@ def dataset(cls: Type[T]) -> Dataset: ...  # noqa: E704
 
 def dataset(
     cls: Optional[Type[T]] = None,
+    version: Optional[int] = DEFAULT_VERSION,
     history: Optional[Duration] = DEFAULT_RETENTION,
 ) -> Union[Callable[[Type[T]], Dataset], Dataset]:
     """
@@ -906,6 +910,8 @@ def dataset(
     dataset from other datasets.
     Parameters
     ----------
+    version : int ( Optional )
+        Version of the dataset
     history : Duration ( Optional )
         The amount of time to keep data in the dataset.
     max_staleness : Duration ( Optional )
@@ -1017,6 +1023,7 @@ def dataset(
 
     def _create_dataset(
         dataset_cls: Type[T],
+        version: int,
         history: Duration,
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
@@ -1068,6 +1075,7 @@ def dataset(
         return Dataset(
             dataset_cls,
             fields,
+            version=version,
             history=duration_to_timedelta(history),
             lookup_fn=_create_lookup_function(
                 dataset_cls.__name__, key_fields, struct_types  # type: ignore
@@ -1076,7 +1084,7 @@ def dataset(
         )
 
     def wrap(c: Type[T]) -> Dataset:
-        return _create_dataset(c, cast(Duration, history))
+        return _create_dataset(c, version, cast(Duration, history))  # type: ignore
 
     if cls is None:
         # We're being called as @dataset(arguments)
@@ -1107,27 +1115,28 @@ def f_get_type_hints(obj):
     return type_hints
 
 
+@overload
+def pipeline(  # noqa: E704
+    *,
+    tier: Optional[Union[str, List[str]]] = None,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
+
+
+@overload
 def pipeline(
-    version: int = 1,
-    active: bool = False,
+    pipeline_func: Callable,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...  # noqa: E704
+
+
+def pipeline(
+    pipeline_func: Callable = None,
     tier: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    if isinstance(version, Callable) or isinstance(  # type: ignore
-        version, Dataset
-    ):
-        if hasattr(version, "__name__"):
-            callable_name = version.__name__  # type: ignore
-        else:
-            callable_name = str(version)
-        raise ValueError(
-            f"pipeline decorator on `{callable_name}` must have a parenthesis"
-        )
-    if type(version) is not int:
-        raise ValueError(
-            "pipeline version must be an integer, found %s" % type(version)
-        )
 
-    def wrapper(pipeline_func: Callable) -> Callable:
+    def _create_pipeline(
+        pipeline_func: Callable,
+        tier: Optional[Union[str, List[str]]] = None,
+    ) -> Callable:
         if not callable(pipeline_func):
             raise TypeError("pipeline functions must be callable.")
         pipeline_name = pipeline_func.__name__
@@ -1176,14 +1185,20 @@ def pipeline(
             Pipeline(
                 inputs=list(params),
                 func=pipeline_func,
-                version=version,
-                active=active,
                 tier=tier,
             ),
         )
         return pipeline_func
 
-    return wrapper
+    def wrap(pipeline_func: Callable) -> Callable:
+        return _create_pipeline(pipeline_func, tier)  # type: ignore
+
+    if pipeline_func is None:
+        # We're being called as @pipeline(arguments)
+        return wrap
+    pipeline_func = cast(Callable, pipeline_func)
+    # @pipeline decorator was used without arguments
+    return wrap(pipeline_func)
 
 
 @dataclass
@@ -1241,15 +1256,11 @@ class Pipeline:
         self,
         inputs: List[Dataset],
         func: Callable,
-        version: int,
-        active: bool = False,
         tier: Optional[Union[str, List[str]]] = None,
     ):
         self.inputs = inputs
         self.func = func  # type: ignore
         self.name = func.__name__
-        self.version = version
-        self.active = active
         self.tier = TierSelector(tier)
 
     # Validate the schema of all intermediate nodes
@@ -1303,6 +1314,7 @@ class Dataset(_Node[T]):
         self,
         cls: T,
         fields: List[Field],
+        version: int,
         history: datetime.timedelta,
         lookup_fn: Optional[Callable] = None,
         owner: Optional[str] = None,
@@ -1316,6 +1328,7 @@ class Dataset(_Node[T]):
         self._add_fields_to_class()
         self._set_timestamp_field()
         self._set_key_fields()
+        self._version = version
         self._history = history
         self.__fennel_original_cls__ = cls
         propogate_fennel_attributes(cls, self)
@@ -1588,26 +1601,34 @@ def sync_validation_for_pipelines(pipelines: List[Pipeline], ds_name: str):
     This validation function contains the checks that are run just before the sync call.
     It should only contain checks that are not possible to run during the registration phase/compilation phase.
     """
-    versions = set()
-    for pipeline in pipelines:
-        if pipeline.version in versions:
-            raise ValueError(
-                f"Pipeline {pipeline.fqn} has the same version as another pipeline in the dataset."
-            )
-        versions.add(pipeline.version)
+    if len(pipelines) <= 1:
+        return
 
-    found_active = False
+    tiers: Set[str] = set()
     for pipeline in pipelines:
-        if pipeline.active and found_active:
+        tier = pipeline.tier.tiers
+        if tier is None:
             raise ValueError(
-                f"Multiple active pipelines are not supported for dataset {ds_name}."
+                f"Pipeline : `{pipeline.name}` has no tier. If there are more than one Pipelines for a dataset, "
+                f"please specify tier for each of them as there can only be one Pipeline for each tier."
             )
-        if pipeline.active:
-            found_active = True
-    if not found_active and len(pipelines) > 1:
-        raise ValueError(
-            f"No active pipeline found for dataset {ds_name}. Please mark one of the pipelines as active by setting `active=True`."
-        )
+        if isinstance(tier, list):
+            for tier_item in tier:
+                if tier_item in tiers:
+                    raise ValueError(
+                        f"Pipeline : `{pipeline.name}` mapped to Tier : {tier_item} which has more than one "
+                        f"pipeline. Please specify only one."
+                    )
+                else:
+                    tiers.add(tier_item)
+        elif isinstance(tier, str):
+            if tier in tiers:
+                raise ValueError(
+                    f"Pipeline : `{pipeline.name}` mapped to Tier : {tier} which has more than one pipeline. "
+                    f"Please specify only one."
+                )
+            else:
+                tiers.add(tier)
 
 
 # ---------------------------------------------------------------------

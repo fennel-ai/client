@@ -32,7 +32,7 @@ class Sessions:
     window: Window = field(key=True)
     timestamp: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(AppEvent)
     def get_sessions(cls, app_event: Dataset):
         return app_event.groupby("user_id").window(
@@ -49,7 +49,7 @@ class SessionStats:
     avg_length: float
     last_visitor_session: List[Window]
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Sessions)
     def get_session_stats(cls, sessions: Dataset):
         stats = (

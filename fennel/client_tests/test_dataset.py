@@ -47,7 +47,7 @@ class UserInfoDatasetDerived:
     country_name: Optional[str]
     ts: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserInfoDataset)
     def get_info(cls, info: Dataset):
         x = info.rename({"country": "country_name", "timestamp": "ts"})
@@ -62,7 +62,7 @@ class UserInfoDatasetDerivedSelect:
     country_name: str
     ts: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserInfoDataset)
     def get_info(cls, info: Dataset):
         x = info.rename({"country": "country_name", "timestamp": "ts"})
@@ -80,7 +80,7 @@ class UserInfoDatasetDerivedDropnull:
     age: int
     timestamp: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserInfoDataset)
     def get_info(cls, info: Dataset):
         return info.dropnull()
@@ -520,7 +520,7 @@ class MovieRatingCalculated:
     distinct_users: List[int]
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
@@ -589,7 +589,7 @@ class MovieRatingTransformed:
     rating_orig: float
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(MovieRating)
     def pipeline_transform(cls, m: Dataset):
         def t(df: pd.DataFrame) -> pd.DataFrame:
@@ -629,7 +629,7 @@ class MovieRatingAssign:
     rating_into_5: float
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(MovieRating)
     def pipeline_assign(cls, m: Dataset):
         rating_sq = m.assign("rating_sq", float, lambda df: df["rating"] ** 2)
@@ -765,7 +765,7 @@ class MovieStats:
     revenue_in_millions: float
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(MovieRating, MovieRevenue)
     def pipeline_join(cls, rating: Dataset, revenue: Dataset):
         def to_millions(df: pd.DataFrame) -> pd.DataFrame:
@@ -878,7 +878,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             revenue: int
             at: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(MovieInfo, TicketSale)
             def pipeline_join(cls, info: Dataset, sale: Dataset):
                 uniq = sale.dedup(by=["ticket_id"])
@@ -1109,7 +1109,7 @@ class MovieRatingWindowed:
 
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
@@ -1285,7 +1285,7 @@ class PositiveRatingActivity:
     )
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(RatingActivity)
     def filter_positive_ratings(cls, rating: Dataset):
         filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
@@ -1370,7 +1370,7 @@ class UniqueMoviesSeen:
     unique_movies_2h: int
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(RatingActivity)
     def pipeline_unique_movies_seen(cls, rating: Dataset):
         schema = rating.schema()
@@ -1470,7 +1470,7 @@ class UserUniqueMoviesSeen:
     unique_movies_2h: List[str]
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(RatingActivity)
     def pipeline_unique_movies_seen(cls, rating: Dataset):
         schema = rating.schema()
@@ -1554,7 +1554,7 @@ class FirstMovieSeen:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(RatingActivity)
     def pipeline_first_movie_seen(cls, rating: Dataset):
         return rating.groupby("userid").first()
@@ -1573,7 +1573,7 @@ class NumTimesFirstMovie:
     count: int
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(FirstMovieSeen)
     def pipeline_num_first(cls, first_movies: Dataset):
         return first_movies.groupby("movie").aggregate(
@@ -1673,7 +1673,7 @@ class FirstMovieSeenWithFilter:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(RatingActivity)
     def pipeline_first_movie_seen(cls, rating: Dataset):
         filtered_rating = rating.filter(lambda df: df["rating"] <= 3)
@@ -1807,7 +1807,7 @@ class DealerNumCars:
     num_cars: int
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Dealer)
     def pipeline_dealer_num_cars(cls, dealer: Dataset):
         schema = dealer.schema()
@@ -1960,7 +1960,7 @@ class FraudReportAggregatedDataset:
     num_categ_fraudulent_transactions_7d: int
     sum_categ_fraudulent_transactions_7d: float
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Activity, MerchantInfo)
     def create_fraud_dataset(cls, activity: Dataset, merchant_info: Dataset):
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -2161,7 +2161,7 @@ class UserAgeAggregated:
     timestamp: datetime
     sum_age: int
 
-    @pipeline(version=1, active=True)
+    @pipeline
     @inputs(UserAge, UserAge2)
     def create_user_age_aggregated(cls, user_age: Dataset, user_age2: Dataset):
         union = user_age + user_age2
@@ -2260,7 +2260,7 @@ class ManchesterUnitedPlayerInfo:
     salary: Optional[int]
     wag: Optional[str]
 
-    @pipeline()
+    @pipeline
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
         cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
@@ -2298,7 +2298,7 @@ class ManchesterUnitedPlayerInfoBounded:
     salary: Optional[int]
     wag: Optional[str]
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(PlayerInfo, ClubSalary, WAG)
     def create_player_detailed_info(
         cls, player_info: Dataset, club_salary: Dataset, wag: Dataset
@@ -2553,7 +2553,7 @@ def test_join(client):
         v2: Optional[int]
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             x = a.join(
@@ -2643,7 +2643,7 @@ class LocationLatLong:
     onb_velocity_l90_2: int
     onb_total_2: int
 
-    @pipeline(version=1)
+    @pipeline
     @includes(extract_payload, extract_keys, extract_location_index)
     @inputs(CommonEvent)
     def get_payload(cls, common_event: Dataset):
@@ -2845,7 +2845,7 @@ class TransactionsCreditInternetBanking:
     number_credit_internet_banking: int
     stddev_credit_internet_banking: float
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(TransactionsCredit)
     def get_payload(cls, event: Dataset):
         event = (
@@ -2976,7 +2976,7 @@ def test_inner_join_column_name_collision(client):
         max_risk_score: float
         min_risk_score: float
 
-        @pipeline()
+        @pipeline
         @inputs(
             PaymentEventDataset,
             PaymentAccountDataset,

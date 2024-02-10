@@ -44,6 +44,7 @@ class Serializer(Visitor):
         self.lib_generated_code = gen_code
         self.dataset_code = get_dataset_core_code(dataset)
         self.dataset_name = dataset._name
+        self.dataset_version = dataset._version
 
     def serialize(self):
         _ = self.visit(self.terminal_node)
@@ -140,6 +141,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             dataset_ref=proto.DatasetRef(
                 referring_dataset_name=obj._name,
             ),
@@ -158,6 +160,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             transform=proto.Transform(
                 operand_id=self.visit(obj.node),
                 schema=schema,
@@ -173,6 +176,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             filter=proto.Filter(
                 operand_id=self.visit(obj.node),
                 pycode=gen_pycode,
@@ -190,6 +194,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=(obj == self.terminal_node),
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             assign=proto.Assign(
                 operand_id=self.visit(obj.node),
                 pycode=gen_pycode,
@@ -204,6 +209,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             aggregate=proto.Aggregate(
                 operand_id=self.visit(obj.node),
                 keys=obj.keys,
@@ -237,6 +243,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             join=proto.Join(
                 lhs_operand_id=self.visit(obj.node),
                 rhs_dsref_operand_id=rhs_operator_id,
@@ -257,6 +264,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             drop=proto.Drop(
                 operand_id=self.visit(obj.node),
                 dropcols=obj.columns,
@@ -269,6 +277,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=(obj == self.terminal_node),
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             dropnull=proto.Dropnull(
                 operand_id=self.visit(obj.node), columns=obj.columns
             ),
@@ -280,6 +289,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             rename=proto.Rename(
                 operand_id=self.visit(obj.node),
                 column_map=obj.column_mapping,
@@ -292,6 +302,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             union=proto.Union(
                 operand_ids=[self.visit(node) for node in obj.nodes]
             ),
@@ -303,6 +314,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             dedup=proto.Dedup(
                 operand_id=self.visit(obj.node),
                 columns=obj.by,
@@ -315,6 +327,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             explode=proto.Explode(
                 operand_id=self.visit(obj.node),
                 columns=obj.columns,
@@ -327,6 +340,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             first=proto.First(
                 operand_id=self.visit(obj.node),
                 by=obj.keys,
@@ -360,6 +374,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             is_root=obj == self.terminal_node,
             pipeline_name=self.pipeline_name,
             dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
             window=proto.WindowOperatorKind(
                 operand_id=self.visit(obj.node),
                 window_type=window_type,

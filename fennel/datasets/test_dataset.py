@@ -47,6 +47,7 @@ def test_simple_dataset():
             {
                 "name": "UserInfoDataset",
                 "metadata": {"owner": "ml-eng@fennel.ai"},
+                "version": 1,
                 "dsschema": {
                     "keys": {
                         "fields": [
@@ -126,7 +127,7 @@ def test_dataset_with_aggregates():
         avg_age: float
         stddev_age: float
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(UserInfoDataset)
         def create_aggregated_dataset(cls, user_info: Dataset):
             return user_info.groupby("gender").aggregate(
@@ -155,6 +156,7 @@ def test_dataset_with_aggregates():
     d = {
         "name": "UserAggregatesDataset",
         "metadata": {"owner": "test@test.com"},
+        "version": 1,
         "dsschema": {
             "keys": {
                 "fields": [{"name": "gender", "dtype": {"stringType": {}}}]
@@ -208,6 +210,7 @@ def test_dataset_with_retention():
             {
                 "name": "Activity",
                 "metadata": {"owner": "ml-eng@fennel.ai"},
+                "version": 1,
                 "dsschema": {
                     "keys": {},
                     "values": {
@@ -300,6 +303,7 @@ def test_nested_dataset():
             {
                 "name": "Dealer",
                 "metadata": {"owner": "test@test.com"},
+                "version": 1,
                 "dsschema": {
                     "keys": {},
                     "values": {
@@ -537,7 +541,7 @@ def test_dataset_with_pipes():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @includes(add_one)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
@@ -549,6 +553,7 @@ def test_dataset_with_pipes():
     assert len(sync_request.datasets) == 1
     d = {
         "name": "ABCDataset",
+        "version": 1,
         "dsschema": {
             "keys": {
                 "fields": [{"name": "a1", "dtype": {"int_type": {}}}],
@@ -578,14 +583,14 @@ def add_one(x: int):
     return x + 1
 
 
-@pipeline(version=1)
+@pipeline
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
     return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
 """
     assert expected_gen_code == pipeline_req.pycode.generated_code
-    expected_source_code = """@pipeline(version=1)
+    expected_source_code = """@pipeline
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
@@ -598,8 +603,6 @@ def pipeline1(cls, a: Dataset, b: Dataset):
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     pipeline_req.pycode.Clear()
@@ -619,6 +622,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -633,6 +637,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -650,6 +655,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
             "on": {"a1": "b1"},
             "how": 0,
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -676,7 +682,7 @@ def test_dataset_with_pipes_bounds():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
@@ -687,7 +693,7 @@ def test_dataset_with_pipes_bounds():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(
@@ -704,7 +710,7 @@ def test_dataset_with_pipes_bounds():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(
@@ -721,7 +727,7 @@ def test_dataset_with_pipes_bounds():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(
@@ -745,6 +751,7 @@ def test_dataset_with_pipes_bounds():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -768,8 +775,6 @@ def test_dataset_with_pipes_bounds():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -788,6 +793,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -802,6 +808,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -819,6 +826,7 @@ def test_dataset_with_pipes_bounds():
             "on": {"a1": "b1"},
             "how": 0,
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -840,6 +848,7 @@ def test_dataset_with_pipes_bounds():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -863,8 +872,6 @@ def test_dataset_with_pipes_bounds():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -883,6 +890,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -897,6 +905,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -914,6 +923,7 @@ def test_dataset_with_pipes_bounds():
             "on": {"a1": "b1"},
             "how": 0,
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -935,6 +945,7 @@ def test_dataset_with_pipes_bounds():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -958,8 +969,6 @@ def test_dataset_with_pipes_bounds():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -978,6 +987,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -992,6 +1002,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1010,6 +1021,7 @@ def test_dataset_with_pipes_bounds():
             "within_low": "3600s",
             "how": 0,
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1031,6 +1043,7 @@ def test_dataset_with_pipes_bounds():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1054,8 +1067,6 @@ def test_dataset_with_pipes_bounds():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -1074,6 +1085,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1088,6 +1100,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1106,6 +1119,7 @@ def test_dataset_with_pipes_bounds():
             "how": 0,
             "within_high": "86400s",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1127,6 +1141,7 @@ def test_dataset_with_pipes_bounds():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1150,8 +1165,6 @@ def test_dataset_with_pipes_bounds():
         "signature": "pipeline1",
         "metadata": {},
         "input_dataset_names": ["A", "B"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -1170,6 +1183,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "B",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1184,6 +1198,7 @@ def test_dataset_with_pipes_bounds():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1203,6 +1218,7 @@ def test_dataset_with_pipes_bounds():
             "within_low": "259200s",
             "within_high": "31536000s",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1219,7 +1235,7 @@ def test_dataset_with_complex_pipe():
         num_merchant_fraudulent_transactions: int
         num_merchant_fraudulent_transactions_7d: int
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(Activity, UserInfoDataset)
         def create_fraud_dataset(cls, activity: Dataset, user_info: Dataset):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -1308,6 +1324,7 @@ def test_dataset_with_complex_pipe():
             },
             "timestamp": "timestamp",
         },
+        "version": 1,
         "metadata": {"owner": "test@test.com"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1336,8 +1353,6 @@ def test_dataset_with_complex_pipe():
         "signature": "create_fraud_dataset",
         "metadata": {},
         "input_dataset_names": ["Activity", "UserInfoDataset"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -1356,6 +1371,7 @@ def test_dataset_with_complex_pipe():
         "dataset_ref": {
             "referring_dataset_name": "UserInfoDataset",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1371,6 +1387,7 @@ def test_dataset_with_complex_pipe():
         "dataset_ref": {
             "referring_dataset_name": "Activity",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1400,6 +1417,7 @@ def test_dataset_with_complex_pipe():
             "on": {"user_id": "user_id"},
             "how": 0,
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1436,6 +1454,7 @@ def test_dataset_with_complex_pipe():
             "operandId": "bfa10d216f843625785d24e6b9d890fb",
             "columns": ["user_id", "merchant_id"],
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1466,6 +1485,7 @@ def test_dataset_with_complex_pipe():
                 },
             ],
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1490,7 +1510,7 @@ def test_assign_column():
         a2: str
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(A)
         def from_a(cls, a: Dataset):
             x = a.assign("a2", str, lambda df: df["a3"])
@@ -1521,6 +1541,7 @@ def test_assign_column():
             },
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "thaqib@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1577,7 +1598,7 @@ def test_dropnull():
         a4: float
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(A)
         def from_a(cls, a: Dataset):
             x = a.dropnull("a2", "a4")
@@ -1616,6 +1637,7 @@ def test_dropnull():
             },
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "test@test.com"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1644,8 +1666,6 @@ def test_dropnull():
         "signature": "from_a",
         "metadata": {},
         "input_dataset_names": ["A"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -1659,6 +1679,7 @@ def test_dropnull():
         "pipeline_name": "from_a",
         "dataset_name": "B",
         "dataset_ref": {"referring_dataset_name": "A"},
+        "ds_version": 1,
     }
     operator_req = sync_request.operators[0]
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -1672,6 +1693,7 @@ def test_dropnull():
         "pipelineName": "from_a",
         "datasetName": "B",
         "dropnull": {"operandId": "A", "columns": ["a2", "a4"]},
+        "ds_version": 1,
     }
 
     operator_req = sync_request.operators[1]
@@ -1699,7 +1721,7 @@ def test_select_and_rename_column():
         a2: int
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(A)
         def from_a(cls, a: Dataset):
             x = a.rename({"a1": "b1"})
@@ -1730,6 +1752,7 @@ def test_select_and_rename_column():
             },
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "thaqib@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1755,8 +1778,6 @@ def test_select_and_rename_column():
         "signature": "from_a",
         "metadata": {},
         "input_dataset_names": ["A"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -1770,6 +1791,7 @@ def test_select_and_rename_column():
         "pipeline_name": "from_a",
         "dataset_name": "B",
         "dataset_ref": {"referring_dataset_name": "A"},
+        "ds_version": 1,
     }
     operator_req = sync_request.operators[0]
     expected_operator_request = ParseDict(o, ds_proto.Operator())
@@ -1782,6 +1804,7 @@ def test_select_and_rename_column():
         "id": "10340ca369826992acc29dc84b073c18",
         "pipelineName": "from_a",
         "rename": {"columnMap": {"a1": "b1"}, "operandId": "A"},
+        "ds_version": 1,
     }
 
     operator_req = sync_request.operators[1]
@@ -1800,6 +1823,7 @@ def test_select_and_rename_column():
         "id": "0d52839b6fb94cde94dea24334ad9bce",
         "isRoot": True,
         "pipelineName": "from_a",
+        "ds_version": 1,
     }
 
     operator_req = sync_request.operators[2]
@@ -1826,7 +1850,7 @@ def test_union_datasets():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(A)
         def pipeline2_diamond(cls, a: Dataset):
             b = a.transform(lambda df: df)
@@ -1854,6 +1878,7 @@ def test_union_datasets():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "test@test.com"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -1878,9 +1903,7 @@ def test_union_datasets():
         "dataset_name": "ABCDataset",
         "signature": "pipeline2_diamond",
         "metadata": {},
-        "version": 1,
         "input_dataset_names": ["A"],
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -1898,6 +1921,7 @@ def test_union_datasets():
         "dataset_ref": {
             "referring_dataset_name": "A",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1942,6 +1966,7 @@ def test_union_datasets():
                 "b1f19f0df67793dfec442938232b07c4",
             ],
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1994,6 +2019,7 @@ def test_union_datasets():
                 "95a98aebceb48a64d9b2a8a7001d10df",
             ],
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2018,7 +2044,7 @@ def test_first_operator():
         movie: str
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(RatingActivity)
         def pipeline_first_movie_seen(cls, rating: Dataset):
             return rating.groupby("userid").first()
@@ -2052,6 +2078,7 @@ def test_first_operator():
             },
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "abhay@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -2080,8 +2107,6 @@ def test_first_operator():
         "signature": "pipeline_first_movie_seen",
         "metadata": {},
         "input_dataset_names": ["RatingActivity"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -2100,6 +2125,7 @@ def test_first_operator():
         "dataset_ref": {
             "referring_dataset_name": "RatingActivity",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2113,6 +2139,7 @@ def test_first_operator():
         "pipelineName": "pipeline_first_movie_seen",
         "datasetName": "FirstMovieSeen",
         "first": {"operandId": "RatingActivity", "by": ["userid"]},
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2147,7 +2174,7 @@ def test_search_dataset():
         top_10_unique_words: List[str]
         creation_timestamp: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(Document)
         def content_features(cls, ds: Dataset):
             return ds.transform(
@@ -2174,7 +2201,7 @@ def test_search_dataset():
         top_10_unique_words: str
         creation_timestamp: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(DocumentContentDataset)
         def unique_words(cls, ds: Dataset):
             schema = ds.schema()
@@ -2227,6 +2254,7 @@ def test_search_dataset():
             },
             "timestamp": "creation_timestamp",
         },
+        "version": 1,
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -2285,6 +2313,7 @@ def test_search_dataset():
             },
             "timestamp": "creation_timestamp",
         },
+        "version": 1,
         "metadata": {"owner": "abhay@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -2315,9 +2344,7 @@ def test_search_dataset():
         "dataset_name": "DocumentContentDataset",
         "signature": "content_features",
         "metadata": {},
-        "version": 1,
         "input_dataset_names": ["Document"],
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -2332,9 +2359,7 @@ def test_search_dataset():
         "dataset_name": "DocumentWordDataset",
         "signature": "unique_words",
         "metadata": {},
-        "version": 1,
         "input_dataset_names": ["DocumentContentDataset"],
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -2353,6 +2378,7 @@ def test_search_dataset():
         "dataset_ref": {
             "referring_dataset_name": "Document",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2397,6 +2423,7 @@ def test_search_dataset():
         "dataset_ref": {
             "referring_dataset_name": "DocumentContentDataset",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2413,6 +2440,7 @@ def test_search_dataset():
             "operand_id": "DocumentContentDataset",
             "columns": ["top_10_unique_words"],
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2456,7 +2484,7 @@ def test_auto_schema_generation():
         merchant_id: int
         transaction_amount: float
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(Activity)
         def create_fraud_dataset(cls, activity: Dataset):
             def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -2554,14 +2582,19 @@ def test_pipeline_with_tier_selector():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(version=1, tier="prod")
+        @pipeline(tier="prod")
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
 
-        @pipeline(version=1, tier="staging")
+        @pipeline(tier="staging")
         @inputs(A, B)
         def pipeline2(cls, a: Dataset, b: Dataset):
+            return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
+
+        @pipeline(tier="staging")
+        @inputs(A, B)
+        def pipeline3(cls, a: Dataset, b: Dataset):
             return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
 
     view = InternalTestClient()
@@ -2572,7 +2605,7 @@ def test_pipeline_with_tier_selector():
         _ = view._get_sync_request_proto()
     assert (
         str(e.value)
-        == "Pipeline ABCDatasetDefault-pipeline2 has the same version as another pipeline in the dataset."
+        == "Pipeline : `pipeline3` mapped to Tier : staging which has more than one pipeline. Please specify only one."
     )
 
     with pytest.raises(ValueError) as e:
@@ -2593,7 +2626,7 @@ def test_dataset_with_str_window_aggregate():
         sum_age: int
         stddev_age: float
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(UserInfoDataset)
         def create_aggregated_dataset(cls, user_info: Dataset):
             return user_info.groupby("gender").aggregate(
@@ -2628,6 +2661,7 @@ def test_dataset_with_str_window_aggregate():
             },
             "timestamp": "timestamp",
         },
+        "version": 1,
         "history": "63072000s",
         "retention": "63072000s",
         "fieldMetadata": {
@@ -2663,7 +2697,7 @@ def test_window_operator():
         window: Window = field(key=True)
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(PageViewEvent)
         def pipeline_window(cls, app_event: Dataset):
             return app_event.groupby("user_id").window(
@@ -2710,6 +2744,7 @@ def test_window_operator():
             "values": {},
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "nitin@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -2737,8 +2772,6 @@ def test_window_operator():
         "signature": "pipeline_window",
         "metadata": {},
         "input_dataset_names": ["PageViewEvent"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -2757,6 +2790,7 @@ def test_window_operator():
         "dataset_ref": {
             "referring_dataset_name": "PageViewEvent",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2775,6 +2809,7 @@ def test_window_operator():
             "operandId": "PageViewEvent",
             "by": ["user_id"],
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2797,7 +2832,7 @@ def test_window_operator_with_aggregation():
         avg_session_secs: float
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(PageViewEvent)
         def pipeline_window(cls, app_event: Dataset):
             sessions = (
@@ -2841,6 +2876,7 @@ def test_window_operator_with_aggregation():
             },
             "timestamp": "t",
         },
+        "version": 1,
         "metadata": {"owner": "nitin@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
@@ -2868,8 +2904,6 @@ def test_window_operator_with_aggregation():
         "signature": "pipeline_window",
         "metadata": {},
         "input_dataset_names": ["PageViewEvent"],
-        "version": 1,
-        "active": True,
         "pycode": {},
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -2888,6 +2922,7 @@ def test_window_operator_with_aggregation():
         "dataset_ref": {
             "referring_dataset_name": "PageViewEvent",
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2906,6 +2941,7 @@ def test_window_operator_with_aggregation():
             "operandId": "PageViewEvent",
             "by": ["user_id"],
         },
+        "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -2924,6 +2960,7 @@ def test_window_operator_with_aggregation():
             "outputType": {"intType": {}},
             "pycode": {},
         },
+        "ds_version": 1,
     }
     operator_req.assign.pycode.Clear()
     expected_operator_request = ParseDict(o, ds_proto.Operator())

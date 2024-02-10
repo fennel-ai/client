@@ -204,9 +204,7 @@ class DataEngine(object):
                     f"Dataset {dataset._name} has no pipelines and is not a source dataset"
                 )
             selected_pipelines = [
-                x
-                for x in dataset._pipelines
-                if x.tier.is_entity_selected(tier) and x.active
+                x for x in dataset._pipelines if x.tier.is_entity_selected(tier)
             ]
             sync_validation_for_pipelines(selected_pipelines, dataset._name)
 

@@ -57,7 +57,7 @@ class CityInfo:
     count: int
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserInfo)
     def count_city_gender(cls, user_info: Dataset):
         return user_info.groupby(["city", "gender"]).aggregate(
@@ -72,7 +72,7 @@ class UserViewsDataset:
     num_views: int
     time_stamp: datetime
 
-    @pipeline(1)
+    @pipeline
     @inputs(ViewData)
     def count_user_views(cls, view_data: Dataset):
         return view_data.groupby("user_id").aggregate(
@@ -88,7 +88,7 @@ class UserCategoryDataset:
     num_views: int
     time_stamp: datetime
 
-    @pipeline(1)
+    @pipeline
     @inputs(ViewData, PostInfo)
     def count_user_views(cls, view_data: Dataset, post_info: Dataset):
         post_info_enriched = view_data.join(

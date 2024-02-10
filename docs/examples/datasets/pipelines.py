@@ -1,9 +1,7 @@
-import json
 from datetime import datetime, timedelta
 
 import pandas as pd
 import requests
-from typing import List
 
 from fennel.datasets import pipeline, Dataset
 from fennel.lib.includes import includes
@@ -58,7 +56,7 @@ def test_pipeline_basic():
         timestamp: datetime
 
         @classmethod
-        @pipeline(version=1)
+        @pipeline
         @inputs(User, Transaction)
         def first_pipeline(cls, user: Dataset, transaction: Dataset):
             joined = transaction.join(user, how="left", on=["uid"])
@@ -153,7 +151,7 @@ def test_fraud(client):
         amount_cents: float
         timestamp: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(Activity)
         def create_fraud_dataset(cls, activity: Dataset):
             return (
@@ -252,7 +250,7 @@ def test_multiple_pipelines(client):
         num_logins_1d: int
         login_time: datetime
 
-        @pipeline(version=1, active=True)
+        @pipeline
         @inputs(AndroidLogins, IOSLogins)
         @includes(add_platform)
         def android_logins(cls, android_logins: Dataset, ios_logins: Dataset):

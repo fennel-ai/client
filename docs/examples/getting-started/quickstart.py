@@ -74,7 +74,7 @@ class UserSellerOrders:
     num_orders_1w: int
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Order, Product)
     def my_pipeline(cls, orders: Dataset, products: Dataset):
         orders = orders.join(products, how="left", on=["product_id"])

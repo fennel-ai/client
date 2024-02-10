@@ -60,7 +60,7 @@ class UserTransactionSums:
     sum_amt_1d: float
     sum_amt_7d: float
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(CreditCardTransactions)
     def first_pipeline(cls, transactions: Dataset):
         return transactions.groupby("cc_num").aggregate(

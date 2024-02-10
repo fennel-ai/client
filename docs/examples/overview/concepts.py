@@ -1,5 +1,4 @@
 from datetime import datetime
-import pytest
 
 import os
 import pandas as pd
@@ -67,7 +66,7 @@ def test_overview(client):
         amount_1w: float
         timestamp: datetime = field(timestamp=True)
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(User, Transaction)
         def first_pipeline(cls, user: Dataset, transaction: Dataset):
             joined = transaction.join(user, how="left", on=["uid"])

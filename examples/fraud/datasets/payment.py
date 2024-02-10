@@ -41,7 +41,7 @@ class TransactionsDS:
     max_radar_score: float
     created: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(ChargesDS, PaymentIdentifierDS)
     def transactions(cls, charges: Dataset, payment_identifier: Dataset):
         return (
@@ -93,7 +93,7 @@ class LastPaymentDS:
     is_debit_card: bool
     created: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(PaymentEventDS, PaymentIdentifierDS)
     def last_payment(cls, payment_event: Dataset, payment_identifier: Dataset):
         return (
@@ -122,7 +122,7 @@ class PaymentDS:
     num_failed_payment_verification_attempts: int
     created: datetime = field(timestamp=True)
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(PaymentEventDS, PaymentIdentifierDS)
     def payment(cls, payment_event: Dataset, payment_identifier: Dataset):
         return (

@@ -52,7 +52,7 @@ class PaymentIdentifierDS:
     id: int
     created: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(
         PaymentAccountSrcDS,
         PaymentAccountAssociationSrcDS,

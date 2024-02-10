@@ -65,6 +65,7 @@ def test_simple_source():
     dataset_request = sync_request.datasets[0]
     d = {
         "name": "UserInfoDataset",
+        "version": 1,
         "dsschema": {
             "keys": {
                 "fields": [
@@ -212,6 +213,7 @@ def test_simple_source_with_pre_proc():
     dataset_request = sync_request.datasets[0]
     d = {
         "name": "UserInfoDataset",
+        "version": 1,
         "dsschema": {
             "keys": {
                 "fields": [
