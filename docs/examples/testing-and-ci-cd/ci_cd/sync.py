@@ -1,4 +1,4 @@
-# docsnip gh_action_sync
+# docsnip gh_action_commit
 import os
 from fennel.client import Client
 
@@ -10,6 +10,6 @@ if __name__ == "__main__":
     token = os.getenv("FENNEL_TOKEN")
 
     client = Client(url=url, token=token)
-    client.sync(datasets=[Ticket], featuresets=[TicketFeatures])
+    client.commit(datasets=[Ticket], featuresets=[TicketFeatures])
 
 # /docsnip

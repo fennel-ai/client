@@ -102,7 +102,7 @@ class UserPageViewFeatures:
 @pytest.mark.integration
 @mock
 def test_outbrain(client):
-    client.sync(
+    client.commit(
         datasets=[
             PageViews,
             PageViewsByUser,
@@ -139,7 +139,7 @@ def test_outbrain(client):
         inplace=True,
     )
     input_df = input_df.reset_index(drop=True)
-    feature_df = client.extract(
+    feature_df = client.query(
         outputs=[
             Request,
             UserPageViewFeatures,

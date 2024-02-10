@@ -70,7 +70,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print("Starting client  with url: " + args.url)
     client = Client(args.url, token=args.token)
-    client.sync(
+    client.commit(
         datasets=[
             PaymentAccountSrcDS,
             PaymentAccountAssociationSrcDS,

@@ -75,7 +75,7 @@ def log_payment_identifier_datasets(client):
 @mock
 def test_payment_identifier(client):
     """This test all tests if the mapping of different account ids is correct"""
-    sync_response = client.sync(
+    sync_response = client.commit(
         datasets=[
             PaymentAccountSrcDS,
             PaymentAccountAssociationSrcDS,
@@ -117,7 +117,7 @@ def test_payment_identifier(client):
 @mock
 def test_min_max_radar_score(client):
     """This test tests if the min and max radar score are correct"""
-    sync_response = client.sync(
+    sync_response = client.commit(
         datasets=[
             ChargesDS,
             PaymentAccountSrcDS,
@@ -157,7 +157,7 @@ def test_min_max_radar_score(client):
 @mock
 def test_last_payment(client):
     """This test tests if the last payment amount is correct"""
-    sync_response = client.sync(
+    sync_response = client.commit(
         datasets=[
             ChargesDS,
             PaymentAccountSrcDS,
@@ -196,7 +196,7 @@ def test_last_payment(client):
 
 @mock
 def test_payment(client):
-    sync_response = client.sync(
+    sync_response = client.commit(
         datasets=[
             ChargesDS,
             PaymentAccountSrcDS,
@@ -250,8 +250,8 @@ def test_payment(client):
 
     assert log_response.status_code == 200, log_response.json()
 
-    feature_df = client.extract_features(
-        input_feature_list=[
+    feature_df = client.query(
+        inputs=[
             "Request.driver_id",
             "Request.reservation_id",
         ],
@@ -264,7 +264,7 @@ def test_payment(client):
                 "Request.reservation_id": [13176875, 13398944],
             }
         ),
-        output_feature_list=[PaymentFS],
+        outputs=[PaymentFS],
     )
     assert feature_df.shape == (2, 7)
     assert feature_df["PaymentFS.driver_id"].to_list() == [23315855, 23348774]

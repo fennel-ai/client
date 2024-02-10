@@ -57,7 +57,7 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_dataset(self, client):
         # Sync the dataset
-        client.sync(datasets=[MovieRating, RatingActivity])
+        client.commit(datasets=[MovieRating, RatingActivity])
         now = datetime.now()
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
@@ -220,7 +220,7 @@ class UserInfoMultipleExtractor:
 class TestExtractorDAGResolution(unittest.TestCase):
     @mock
     def test_dag_resolution(self, client):
-        client.sync(
+        client.commit(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
@@ -234,7 +234,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
         response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
-        feature_df = client.extract(
+        feature_df = client.query(
             outputs=[UserInfoMultipleExtractor],
             inputs=[UserInfoMultipleExtractor.userid],
             input_dataframe=pd.DataFrame(

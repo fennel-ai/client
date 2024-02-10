@@ -49,7 +49,7 @@ class TestMovieInfo103(unittest.TestCase):
             pytest.skip("Skipping integration test in local mode")
 
         # Sync the dataset
-        client.sync(datasets=[MovieInfo103], tier="dev")
+        client.commit(datasets=[MovieInfo103], tier="dev")
         client.sleep()
         t = datetime.utcfromtimestamp(1672858163)
         data = [
@@ -105,7 +105,7 @@ class TestMovieInfo103(unittest.TestCase):
     def test_s3_data_integration_source(self, client):
         """Same test as test_log_to_MovieInfo103 but with an S3 source."""
         # Sync the dataset
-        client.sync(datasets=[MovieInfo103], tier="dev")
+        client.commit(datasets=[MovieInfo103], tier="dev")
         client.sleep()
 
         # Time for data_integration to do its magic
@@ -150,7 +150,7 @@ class TestMovieInfo103(unittest.TestCase):
             pytest.skip("Skipping integration test in local mode")
 
         # Sync the dataset
-        client.sync(datasets=[MovieInfo103], tier="dev")
+        client.commit(datasets=[MovieInfo103], tier="dev")
         client.sleep()
         data = [
             [

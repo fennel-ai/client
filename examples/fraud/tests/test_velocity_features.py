@@ -20,7 +20,7 @@ from fennel.test_lib import mock
 
 @mock
 def test_velocity_features(client):
-    sync_response = client.sync(
+    sync_response = client.commit(
         datasets=[
             BookingFlowCheckoutPageDS,
             ReservationDS,
@@ -110,8 +110,8 @@ def test_velocity_features(client):
     )
     assert log_response.status_code == 200, log_response.json()
 
-    feature_df = client.extract_features(
-        input_feature_list=["Request.driver_id"],
+    feature_df = client.query(
+        inputs=["Request.driver_id"],
         input_dataframe=pd.DataFrame(
             {
                 "Request.driver_id": [
@@ -120,7 +120,7 @@ def test_velocity_features(client):
                 ],
             }
         ),
-        output_feature_list=[DriverVelocityFS],
+        outputs=[DriverVelocityFS],
     )
     assert feature_df.shape == (2, 6)
     assert feature_df["DriverVelocityFS.driver_id"].to_list() == [
@@ -148,7 +148,7 @@ def test_velocity_features(client):
         17,
     ]
 
-    # Lets do an extract_historical_features to test out the num_logins_last_day and num_checkout_pages_last_day
+    # Lets do an query_offline to test out the num_logins_last_day and num_checkout_pages_last_day
 
     ts = pd.Series(
         [
@@ -156,8 +156,8 @@ def test_velocity_features(client):
             for date_time_str in ["2022-06-22 21:00:38", "2022-03-26 22:35:03"]
         ]
     )
-    feature_df = client.extract_historical_features(
-        input_feature_list=[
+    feature_df = client.query_offline(
+        inputs=[
             "Request.driver_id",
             "Request.reservation_id",
         ],
@@ -171,7 +171,7 @@ def test_velocity_features(client):
                 "timestamp": ts,
             }
         ),
-        output_feature_list=[DriverVelocityFS],
+        outputs=[DriverVelocityFS],
         timestamp_column="timestamp",
     )
     assert feature_df.shape == (2, 7)

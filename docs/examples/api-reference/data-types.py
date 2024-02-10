@@ -62,7 +62,11 @@ def test_restrictions(client):
 
     # /docsnip
 
-    client.sync(datasets=[UserInfoDataset])
+    client.commit(datasets=[UserInfoDataset])
+
+@mock
+def test_restrictions(client):
+    client.commit(datasets=[UserInfoDataset])
     now = datetime.now()
     data = [
         {

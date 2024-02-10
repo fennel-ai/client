@@ -189,7 +189,7 @@ class TestSimpleExtractor(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_simple_extractor(self, client):
-        client.sync(
+        client.commit(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
@@ -304,7 +304,7 @@ class TestDerivedExtractor(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_derived_extractor(self, client):
-        client.sync(
+        client.commit(
             datasets=[UserInfoDataset, FlightDataset],
             featuresets=[
                 UserInfoSingleExtractor,
@@ -340,7 +340,7 @@ class TestDerivedExtractor(unittest.TestCase):
         response = client.log("fennel_webhook", "FlightDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
-        feature_df = client.extract(
+        feature_df = client.query(
             outputs=[
                 UserInfoSingleExtractor.userid,
                 GeneratedFeatures.user_id,
@@ -402,7 +402,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_dag_resolution2(self, client):
-        client.sync(
+        client.commit(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
@@ -416,7 +416,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
         response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
-        feature_df = client.extract(
+        feature_df = client.query(
             outputs=[
                 UserInfoMultipleExtractor.userid,
                 UserInfoMultipleExtractor.name,
@@ -433,7 +433,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
         )
         self.assertEqual(feature_df.shape, (2, 7))
 
-        feature_df = client.extract(
+        feature_df = client.query(
             outputs=[UserInfoMultipleExtractor],
             inputs=[UserInfoMultipleExtractor.userid],
             input_dataframe=pd.DataFrame(
@@ -482,7 +482,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_dag_resolution_complex(self, client):
-        client.sync(
+        client.commit(
             datasets=[UserInfoDataset],
             featuresets=[
                 UserInfoMultipleExtractor,
@@ -501,7 +501,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
 
-        feature_df = client.extract(
+        feature_df = client.query(
             outputs=[
                 UserInfoTransformedFeatures.age_power_four,
                 UserInfoTransformedFeatures.is_name_common,
@@ -532,7 +532,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
         if client.is_integration_client():
             return
 
-        feature_df = client.extract_historical(
+        feature_df = client.query_offline(
             outputs=[
                 "UserInfoTransformedFeatures.age_power_four",
                 "UserInfoTransformedFeatures.is_name_common",
@@ -613,7 +613,7 @@ class TestDocumentDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_document_featureset(self, client):
-        client.sync(
+        client.commit(
             datasets=[DocumentContentDataset], featuresets=[DocumentFeatures]
         )
         now = datetime.utcnow()
@@ -639,7 +639,7 @@ class TestDocumentDataset(unittest.TestCase):
         response = client.log("fennel_webhook", "DocumentContentDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
-        feature_df = client.extract(
+        feature_df = client.query(
             outputs=[DocumentFeatures],
             inputs=[DocumentFeatures.doc_id],
             input_dataframe=pd.DataFrame(
@@ -671,7 +671,7 @@ class TestDocumentDataset(unittest.TestCase):
         if client.is_integration_client():
             return
 
-        feature_df = client.extract_historical(
+        feature_df = client.query_offline(
             outputs=[DocumentFeatures],
             inputs=[DocumentFeatures.doc_id],
             input_dataframe=pd.DataFrame(

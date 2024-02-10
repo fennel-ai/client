@@ -163,7 +163,7 @@ def test_fraud_detection_pipeline(client):
     transaction_data_sample["cc_num"] = transaction_data_sample[
         "cc_num"
     ].astype(int)
-    client.sync(
+    client.commit(
         datasets=[CreditCardTransactions, Regions, UserTransactionSums],
         featuresets=[UserTransactionSumsFeatures],
     )
@@ -185,7 +185,7 @@ def test_fraud_detection_pipeline(client):
         "UserTransactionSumsFeatures.cc_num": 99
     }
 
-    df = client.extract(
+    df = client.query(
         inputs=[UserTransactionSumsFeatures.cc_num],
         # Input from featureset,
         outputs=[

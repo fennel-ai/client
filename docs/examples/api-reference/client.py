@@ -84,8 +84,8 @@ class UserFeatures:
 class TestExtractorDAGResolution(unittest.TestCase):
     @mock
     def test_dag_resolution(self, client):
-        # docsnip sync_api
-        client.sync(
+        # docsnip commit_api
+        client.commit(
             datasets=[UserInfoDataset],
             featuresets=[UserFeatures],
         )
@@ -102,8 +102,8 @@ class TestExtractorDAGResolution(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
         # /docsnip
 
-        # docsnip extract_api
-        feature_df = client.extract(
+        # docsnip query_api
+        feature_df = client.query(
             outputs=[UserFeatures],
             inputs=[UserFeatures.userid],
             input_dataframe=pd.DataFrame(
@@ -113,8 +113,8 @@ class TestExtractorDAGResolution(unittest.TestCase):
         self.assertEqual(feature_df.shape, (2, 7))
         # /docsnip
 
-        # docsnip extract_historical_api
-        response = client.extract_historical(
+        # docsnip query_offline_api
+        response = client.query_offline(
             outputs=[UserFeatures],
             inputs=[UserFeatures.userid],
             format="pandas",
@@ -134,7 +134,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
         # /docsnip
 
         with self.assertRaises(NotImplementedError) as e:
-            # docsnip extract_historical_s3
+            # docsnip query_offline_s3
             from fennel.sources import S3
 
             s3 = S3(
@@ -147,7 +147,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
             )
             s3_output_connection = s3.bucket("bucket", prefix="output")
 
-            response = client.extract_historical(
+            response = client.query_offline(
                 outputs=[UserFeatures],
                 inputs=[UserFeatures.userid],
                 format="csv",

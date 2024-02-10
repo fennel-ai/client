@@ -78,7 +78,7 @@ def test_pipeline_basic():
 def test_transaction_aggregation_example(client):
     User, Transaction = test_datasets_basic()
     UserTransactionsAbroad = test_pipeline_basic()
-    client.sync(datasets=[User, Transaction, UserTransactionsAbroad])
+    client.commit(datasets=[User, Transaction, UserTransactionsAbroad])
     now = datetime.now()
     dob = now - timedelta(days=365 * 30)
     data = [
@@ -166,7 +166,7 @@ def test_fraud(client):
 
     # /docsnip
     # # Sync the dataset
-    client.sync(datasets=[Activity, FraudActivity])
+    client.commit(datasets=[Activity, FraudActivity])
     now = datetime.now()
     minute_ago = now - timedelta(minutes=1)
     data = [
@@ -276,7 +276,14 @@ def test_multiple_pipelines(client):
             )
 
     # /docsnip
-    client.sync(datasets=[AndroidLogins, IOSLogins, LoginStats])
+    client.commit(datasets=[AndroidLogins, IOSLogins, LoginStats])
+
+# /docsnip
+
+
+@mock
+def test_multiple_pipelines(client):
+    client.commit(datasets=[AndroidLogins, IOSLogins, LoginStats])
     now = datetime.now()
     data = [
         [1, now],

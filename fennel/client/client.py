@@ -2,8 +2,6 @@ import functools
 import gzip
 import json
 import math
-import warnings
-from datetime import datetime
 from typing import Dict, Optional, Any, Set, List, Union, Tuple
 from urllib.parse import urljoin
 
@@ -25,21 +23,26 @@ V1_API = "/api/v1"
 _DEFAULT_CONNECT_TIMEOUT = 10
 # Default request timeout(s).
 _DEFAULT_TIMEOUT = 30
+# Name of the default branch
+_MAIN_BRANCH = "main"
 
 
 class Client:
     def __init__(
         self,
         url: str,
+        token: str,
         branch: Optional[str] = None,
-        token: Optional[str] = None,
     ):
         self.url = url
         self.token = token
         self.to_register: Set[str] = set()
         self.to_register_objects: List[Union[Dataset, Featureset]] = []
         self.http = self._get_session()
-        self.branch = branch
+        if branch is not None:
+            self._branch = branch
+        else:
+            self._branch = _MAIN_BRANCH
 
     def add(self, obj: Union[Dataset, Featureset]):
         """
@@ -65,7 +68,7 @@ class Client:
         else:
             raise NotImplementedError
 
-    def sync(
+    def commit(
         self,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
@@ -105,7 +108,9 @@ class Client:
                 self.add(featureset)
         sync_request = self._get_sync_request_proto(tier)
         response = self._post_bytes(
-            "{}/sync?preview={}".format(V1_API, str(preview).lower()),
+            "{}/branch/{}/commit?preview={}".format(
+                V1_API, self._branch, str(preview).lower()
+            ),
             sync_request.SerializeToString(),
             False,
             300,
@@ -164,7 +169,7 @@ class Client:
             response = self._post_json("{}/log".format(V1_API), req)
         return response
 
-    def extract(
+    def query(
         self,
         inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
@@ -174,7 +179,7 @@ class Client:
         sampling_rate: Optional[float] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         """
-        Extract features for a given output feature list from an input
+        Query features for a given output feature list from an input
         feature list. The features are computed for the current time.
 
         Parameters:
@@ -240,7 +245,9 @@ class Client:
         if sampling_rate is not None:
             req["sampling_rate"] = sampling_rate
 
-        response = self._post_json("{}/extract".format(V1_API), req)
+        response = self._post_json(
+            "{}/branch/{}/query".format(V1_API, self._branch), req
+        )
         df = pd.DataFrame(response.json())
         for col in df.columns:
             if df[col].dtype == "object":
@@ -260,7 +267,7 @@ class Client:
 
         """
         req = {"branch_name": name}
-        return self._post_json("{}/branch/create".format(V1_API), req)
+        return self._post_json("{}/branch/init".format(V1_API), req)
 
     def clone_branch(self, name: str, from_branch: str):
         """
@@ -290,8 +297,7 @@ class Client:
         Returns:
         List[str]: A list of branch names.
         """
-        req = {"user": user}
-        return self._get("{}/branches".format(V1_API), req)
+        return self._get("{}/branches".format(V1_API))
 
     def checkout(self, name: str):
         """
@@ -299,11 +305,11 @@ class Client:
         Parameters:
         name (str): The name of the branch to delete.
         """
-        self.branch = name
+        self._branch = name
 
     # ----------------------- Extract historical API's -----------------------
 
-    def extract_historical(
+    def query_offline(
         self,
         inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
@@ -456,56 +462,41 @@ class Client:
             "timestamp_column": timestamp_column,
             "s3_output": _s3_connector_dict(output_s3) if output_s3 else None,
         }
-        return self._post_json("{}/extract_historical".format(V1_API), req)
-
-    def extract_historical_progress(self, request_id):
-        """
-        Get the status of extract historical features request.
-
-        :param request_id: The request id returned by extract_historical.
-
-        Returns:
-        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
-                        A completion rate of 1.0 indicates that all processing has been completed.
-                        A failure rate of 0.0 indicates that all processing has been completed successfully.
-                        The status of the request.
-        """
-        return self._get(
-            f"{V1_API}/extract_historical_request/status?request_id={request_id}"
-        )
-
-    def extract_historical_features_progress(self, request_id):
-        """
-        Going to be deprecated in favor of extract_historical_progress and will be removed in the future.
-        Get the status of extract historical features request.
-
-        :param request_id: The request id returned by extract_historical.
-
-        Returns:
-        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
-                        A completion rate of 1.0 indicates that all processing has been completed.
-                        A failure rate of 0.0 indicates that all processing has been completed successfully.
-                        The status of the request.
-        """
-        return self._get(
-            f"{V1_API}/extract_historical_request/status?request_id={request_id}"
-        )
-
-    def extract_historical_cancel_request(self, request_id):
-        """
-        Cancel the extract historical features request.
-
-        :param request_id: The request id returned by extract_historical.
-
-        Returns:
-        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
-                        A completion rate of 1.0 indicates that all processing has been completed.
-                        A failure rate of 0.0 indicates that all processing has been completed successfully.
-                        The status of the request.
-        """
-        req = {"request_id": request_id}
         return self._post_json(
-            "{}/extract_historical_request/cancel".format(V1_API), req
+            "{}/branch/{}/query_offline".format(V1_API, self._branch), req
+        )
+
+    def query_offline_status(self, request_id):
+        """
+        Get the progress of query offline run.
+
+        :param request_id: The request id returned by query_offline.
+
+        Returns:
+        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
+                        A completion rate of 1.0 indicates that all processing has been completed.
+                        A failure rate of 0.0 indicates that all processing has been completed successfully.
+                        The status of the request.
+        """
+        return self._get(
+            f"{V1_API}/branch/{self._branch}/query_offline/status?request_id={request_id}"
+        )
+
+    def query_offline_cancel(self, request_id):
+        """
+        Cancel the query offline run.
+
+        :param request_id: The request id returned by query_offline.
+
+        Returns:
+        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
+                        A completion rate of 1.0 indicates that all processing has been completed.
+                        A failure rate of 0.0 indicates that all processing has been completed successfully.
+                        The status of the request.
+        """
+        return self._post_json(
+            f"{V1_API}/branch/{self._branch}/query_offline/cancel?request_id={request_id}",
+            {},
         )
 
     # ----------------------- Debug API's --------------------------------------
@@ -549,7 +540,10 @@ class Client:
                     timestamps[idx] = str(timestamps[idx])
             req["timestamp"] = timestamps
         response = self._post_json(
-            "{}/inspect/datasets/{}/lookup".format(V1_API, dataset_name), req
+            "{}/branch/{}/dataset/{}/lookup".format(
+                V1_API, self._branch, dataset_name
+            ),
+            req,
         )
         resp_json = response.json()
         found = pd.Series(resp_json["found"])
@@ -557,9 +551,7 @@ class Client:
             return pd.DataFrame(resp_json["data"]), found
         return pd.Series(resp_json["data"]), found
 
-    def inspect_lastn(
-        self, dataset_name: str, n: int = 10
-    ) -> List[Dict[str, Any]]:
+    def inspect(self, dataset_name: str, n: int = 10) -> List[Dict[str, Any]]:
         """
         Inspect the last n rows of a dataset.
 
@@ -571,272 +563,10 @@ class Client:
         List[Dict[str, Any]]: A list of dataset rows.
         """
         return self._get(
-            "{}/inspect/datasets/{}/lastn?n={}".format(V1_API, dataset_name, n)
-        ).json()
-
-    # ----------------------- Definition API's --------------------------------------
-
-    def list_datasets(self) -> List[Dict]:
-        """
-        List definitions of all the datasets.
-
-        Returns:
-        List[Dict]: A list of dataset definitions.
-        """
-        return self._get("{}/definitions/datasets".format(V1_API)).json()
-
-    def dataset_definition(self, dataset_name: str) -> Dict:
-        """
-        Returns a single dataset definition.
-
-        Parameters:
-        dataset_name (str):  Name of the dataset.
-
-        Returns:
-        Dict: The dataset definition.
-        """
-        return self._get(
-            "{}/definitions/datasets/{}".format(V1_API, dataset_name)
-        ).json()
-
-    def list_pipelines(self, dataset_name: str) -> List[Dict]:
-        """
-        List definitions of pipelines of a dataset.
-
-        Parameters:
-        dataset_name (str):  Name of the dataset.
-
-        Returns:
-        List[Dict]: A list of dataset definitions.
-        """
-        return self._get(
-            "{}/definitions/datasets/{}/pipelines".format(V1_API, dataset_name)
-        ).json()
-
-    def pipeline_definition(
-        self, dataset_name: str, pipeline_name: str
-    ) -> Dict:
-        """
-        Returns the definition of a single pipeline in the dataset.
-
-        Parameters:
-        dataset_name (str):  Name of the dataset.
-        pipeline_name (str): Name of the pipeline.
-
-        Returns:
-        Dict: The pipeline definition.
-        """
-        return self._get(
-            "{}/definitions/datasets/{}/pipelines/{}".format(
-                V1_API, dataset_name, pipeline_name
+            "{}/branch/{}/dataset/{}/inspect?n={}".format(
+                V1_API, self._branch, dataset_name, n
             )
         ).json()
-
-    def list_featuresets(self) -> List[Dict]:
-        """
-        List definitions of all the featuresets.
-
-        Returns:
-        List[Dict]: A list of featureset definitions.
-        """
-        return self._get("{}/definitions/featuresets".format(V1_API)).json()
-
-    def featureset_definition(self, featureset_name: str) -> Dict:
-        """
-        Returns the definition of a featureset.
-
-        Parameters:
-        featureset_name (str): Name of the featureset.
-
-        Returns:
-        Dict: The featureset definition.
-        """
-        return self._get(
-            "{}/definitions/featuresets/{}".format(V1_API, featureset_name)
-        ).json()
-
-    def list_extractors(self, featureset_name: str) -> List[Dict]:
-        """
-        List definitions of extractors of a featureset.
-
-        Parameters:
-        featureset_name (str): Name of the featureset.
-
-        Returns:
-        List[Dict]: A list of extractor definitions.
-        """
-        return self._get(
-            "{}/definitions/featuresets/{}/extractors".format(
-                V1_API, featureset_name
-            )
-        ).json()
-
-    def extractor_definition(
-        self, featureset_name: str, extractor_name: str
-    ) -> Dict:
-        """
-        Returns the definition of a extractor in the featureset.
-
-        Parameters:
-        featureset_name (str): Name of the featureset.
-        extractor_name (str): Name of the extractor.
-
-        Returns:
-        Dict: The extractor definition.
-        """
-        return self._get(
-            "{}/definitions/featuresets/{}/extractors/{}".format(
-                V1_API, featureset_name, extractor_name
-            )
-        ).json()
-
-    def list_features(self, featureset_name: str) -> List[Dict]:
-        """
-        List definitions of features of a featureset.
-
-        Parameters:
-        featureset_name (str): Name of the featureset.
-
-        Returns:
-        List[Dict]: A list of feature definitions.
-        """
-        return self._get(
-            "{}/definitions/featuresets/{}/features".format(
-                V1_API, featureset_name
-            )
-        ).json()
-
-    def feature_definition(
-        self, featureset_name: str, feature_name: str
-    ) -> Dict:
-        """
-        Returns the definition of a feature in the featureset.
-
-        Parameters:
-        featureset_name (str): Name of the featureset.
-        feature_name (str): Name of the feature.
-
-        Returns:
-        Dict: The feature definition.
-        """
-        return self._get(
-            "{}/definitions/featuresets/{}/features/{}".format(
-                V1_API, featureset_name, feature_name
-            )
-        ).json()
-
-    def list_sources(self) -> List[Dict]:
-        """
-        List definitions of sources.
-
-        Returns:
-        List[Dict]: A list of source definitions.
-        """
-        return self._get("{}/definitions/sources".format(V1_API)).json()
-
-    def source_definition(self, source_uuid: str) -> Dict:
-        """
-        Returns the definition of a source.
-
-        Parameters:
-        source_uuid (str): The uuid of the source.
-
-        Returns:
-        Dict: The source definition.
-        """
-        return self._get(
-            "{}/definitions/sources/{}".format(V1_API, source_uuid)
-        ).json()
-
-    def extract_features(
-        self,
-        input_feature_list: List[Union[Feature, str]],
-        output_feature_list: List[Union[Feature, Featureset, str]],
-        input_dataframe: pd.DataFrame,
-        log: bool = False,
-        workflow: Optional[str] = None,
-        sampling_rate: Optional[float] = None,
-    ) -> Union[pd.DataFrame, pd.Series]:
-        """
-        Going to be deprecated in favor of extract and will be removed in the future.
-        Extract features for a given output feature list from an input
-        feature list. The features are computed for the current time.
-
-        Parameters:
-        input_feature_list (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-        output_feature_list (List[Union[Feature, Featureset, str]]): List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
-        input_dataframe (pd.DataFrame): Dataframe containing the input features.
-        log (bool): Boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False.
-        workflow (Optional[str]): The name of the workflow associated with the feature extraction. Only relevant when log is set to True.
-        sampling_rate (float): The rate at which feature data should be sampled before logging. Only relevant when log is set to True. The default value is 1.0.
-
-        Returns:
-        Union[pd.DataFrame, pd.Series]: Pandas dataframe or series containing the output features.
-        """
-        warnings.warn(
-            "This method is going to be deprecated in favor of extract."
-        )
-        return self.extract(
-            inputs=input_feature_list,
-            outputs=output_feature_list,
-            input_dataframe=input_dataframe,
-            log=log,
-            workflow=workflow,
-            sampling_rate=sampling_rate,
-        )
-
-    def extract_historical_features(
-        self,
-        input_feature_list: List[Union[Feature, str]],
-        output_feature_list: List[Union[Feature, Featureset, str]],
-        timestamp_column: str,
-        format: str = "pandas",
-        input_dataframe: Optional[pd.DataFrame] = None,
-        input_s3: Optional[S3Connector] = None,
-        output_s3: Optional[S3Connector] = None,
-        feature_to_column_map: Optional[Dict[Feature, str]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Going to be deprecated in favor of extract_historical and will be removed in the future.
-        Extract point in time correct features from a dataframe, where the
-        timestamps are provided by the timestamps parameter.
-
-        Parameters:
-        input_feature_list (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-        output_feature_list (List[Union[Feature, Featureset, str]]): List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
-        timestamp_column (str): The name of the column containing the timestamps.
-        format (str): The format of the input data. Can be either "pandas",
-            "csv", "json" or "parquet". Default is "pandas".
-        input_dataframe (Optional[pd.DataFrame]): Dataframe containing the input features. Only relevant when format is "pandas".
-        output_s3 (Optional[S3Connector]): Contains the S3 info -- bucket, prefix, and optional access key id
-            and secret key -- used for storing the output of the extract historical request
-
-        The following parameters are only relevant when format is "csv", "json" or "parquet".
-
-        input_s3 (Optional[sources.S3Connector]): The info for the input S3 data, containing bucket, prefix, and optional access key id
-            and secret key
-        feature_to_column_map (Optional[Dict[Feature, str]]): A dictionary that maps columns in the S3 data to the required features.
-
-
-        Returns:
-        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
-                        A completion rate of 1.0 indicates that all processing has been completed.
-                        A failure rate of 0.0 indicates that all processing has been completed successfully.
-                        The status of the request.
-        """
-        warnings.warn(
-            "This method is going to be deprecated in favor of extract_historical."
-        )
-        return self.extract_historical(
-            inputs=input_feature_list,
-            outputs=output_feature_list,
-            timestamp_column=timestamp_column,
-            format=format,
-            input_dataframe=input_dataframe,
-            input_s3=input_s3,
-            output_s3=output_s3,
-            feature_to_column_map=feature_to_column_map,
-        )
 
     # ----------------------- Private methods -----------------------
 
@@ -875,7 +605,6 @@ class Client:
     def _post_json(
         self, path: str, req: Dict[str, Any], compress: bool = False
     ):
-        req["branch"] = self.branch
         payload = json.dumps(req).encode("utf-8")
         headers = {
             "Content-Type": "application/json",

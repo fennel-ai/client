@@ -251,7 +251,7 @@ def test_multiple_sources(client):
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-        client.sync(datasets=[UserInfoDataset], featuresets=[])
+        client.commit(datasets=[UserInfoDataset], featuresets=[])
 
     assert (
         str(e.value)

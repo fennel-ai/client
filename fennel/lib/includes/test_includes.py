@@ -102,7 +102,7 @@ def test_includes_proto_conversion():
 @pytest.mark.integration
 @mock
 def test_simple_extractor(client):
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoSingleExtractor],
     )
@@ -117,7 +117,7 @@ def test_simple_extractor(client):
     assert response.status_code == requests.codes.OK, response.json()
     if client.is_integration_client():
         client.sleep()
-    feature_df = client.extract(
+    feature_df = client.query(
         outputs=[UserInfoSingleExtractor],
         inputs=[UserInfoSingleExtractor.userid],
         input_dataframe=pd.DataFrame(

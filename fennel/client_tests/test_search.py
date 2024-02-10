@@ -478,7 +478,7 @@ class TestSearchExample(unittest.TestCase):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
-        client.sync(
+        client.commit(
             datasets=[NotionDocs, CodaDocs, GoogleDocs, Document], tier="dev"
         )
         self.log_document_data(client)
@@ -503,7 +503,7 @@ class TestSearchExample(unittest.TestCase):
     def test_search_datasets2(self, client):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
-        client.sync(
+        client.commit(
             datasets=[
                 UserActivity,
                 UserEngagementDataset,
@@ -532,7 +532,7 @@ class TestSearchExample(unittest.TestCase):
     def test_search_e2e(self, client):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
-        client.sync(
+        client.commit(
             datasets=[
                 NotionDocs,
                 CodaDocs,
@@ -565,7 +565,7 @@ class TestSearchExample(unittest.TestCase):
                 "Query.doc_id": [31234, 33234],
             }
         )
-        df = client.extract(
+        df = client.query(
             outputs=[
                 UserBehaviorFeatures,
                 DocumentFeatures,
@@ -620,7 +620,7 @@ class TestSearchExample(unittest.TestCase):
                 "TopWordsFeatures.word": ["This", "Coda"],
             }
         )
-        df = client.extract(
+        df = client.query(
             outputs=[TopWordsFeatures.count],
             inputs=[TopWordsFeatures.word],
             input_dataframe=input_df,

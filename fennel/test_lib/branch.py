@@ -107,7 +107,7 @@ class Branch:
     ) -> FakeResponse:
         return self.data_engine.log(webhook, endpoint, df, _batch_size)
 
-    def sync(
+    def commit(
         self,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,

@@ -55,7 +55,7 @@ from fennel.test_lib import mock
 
 @mock
 def test_all_features(client):
-    client.sync(
+    client.commit(
         datasets=[
             DriverDS,
             DriverCreditScoreDS,
@@ -302,8 +302,8 @@ def test_all_features(client):
     )
     assert log_response.status_code == 200, log_response.json()
 
-    feature_df = client.extract_features(
-        input_feature_list=[
+    feature_df = client.query(
+        inputs=[
             "Request.driver_id",
             "Request.vehicle_id",
             "Request.reservation_id",
@@ -318,7 +318,7 @@ def test_all_features(client):
                 "Request.reservation_id": [13176875, 13398944],
             }
         ),
-        output_feature_list=[FraudModel],
+        outputs=[FraudModel],
     )
     assert feature_df.shape == (2, 21)
     # Test features from each group

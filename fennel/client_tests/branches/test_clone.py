@@ -136,7 +136,7 @@ def test_simple_clone(client):
     """
     Cloning should return same datasets and featuresets.
     """
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
@@ -161,7 +161,7 @@ def test_clone_after_log(client):
     """
     Purpose of this test is to make sure, we copy data also when we clone.
     """
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
@@ -197,7 +197,7 @@ def test_webhook_log_to_both_clone_parent(client):
     """
     Testing webhook logging to Dataset A in both the branches
     """
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset, GenderStats],
     )
     client.clone_branch("test-branch", from_branch="main")
@@ -245,12 +245,12 @@ def test_add_dataset_clone_branch(client):
     """
     Clone a branch, then adding one or more datasets in cloned branch. Change should be reflected in cloned branch only.
     """
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset, GenderStats],
     )
     client.clone_branch("test-branch", from_branch="main")
 
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset, GenderStats, CountryStats],
     )
 
@@ -324,7 +324,7 @@ def test_change_dataset_clone_branch(client):
     ]
     df = pd.DataFrame(data)
 
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset, GenderStats],
     )
     response = client.log("fennel_webhook", "UserInfoDataset", df)
@@ -337,14 +337,14 @@ def test_change_dataset_clone_branch(client):
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 
-    client.sync(
+    client.commit(
         datasets=[
             UserInfoDataset,
             _get_changed_dataset(lambda x: x["gender"].isin(["M", "F"])),
         ]
     )
     client.checkout("main")
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset, GenderStats],
     )
 
@@ -389,7 +389,7 @@ def test_multiple_clone_branch(client):
     ]
     df = pd.DataFrame(data)
 
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset, GenderStats],
     )
     client.clone_branch("test-branch-1", from_branch="main")
@@ -409,12 +409,12 @@ def test_multiple_clone_branch(client):
     output = client.get_dataset_df("GenderStats")
     assert output.shape == (2, 3)
 
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset, GenderStats],
     )
 
     client.checkout("test-branch-2")
-    client.sync(
+    client.commit(
         datasets=[
             UserInfoDataset,
             _get_changed_dataset(lambda x: x["gender"].isin(["M", "F"])),
@@ -422,7 +422,7 @@ def test_multiple_clone_branch(client):
     )
 
     client.checkout("test-branch-1")
-    client.sync(
+    client.commit(
         datasets=[
             UserInfoDataset,
             _get_changed_dataset(lambda x: x["gender"].isin(["m", "f"])),
@@ -451,12 +451,12 @@ def test_change_source_dataset_clone_branch(client):
     We have branch A, with src -> pipeline. Clone A -> B.
     In B we modify the source dataset itself. ( different webhook ) now the derived pipelines give different answers.
     """
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset, GenderStats],
     )
     client.clone_branch("test-branch", from_branch="main")
 
-    client.sync(
+    client.commit(
         datasets=_get_source_changed_datasets(),
     )
 
@@ -521,13 +521,13 @@ def test_change_extractor_clone_branch(client):
     We have branch A, with src -> pipeline -> extractor. Clone A -> B.
     In B we modify extractor. Now the extract give different answers.
     """
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
     client.clone_branch("test-branch", from_branch="main")
 
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset],
         featuresets=[_get_changed_featureset()],
     )
@@ -557,7 +557,7 @@ def test_change_extractor_clone_branch(client):
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
 
-    output = client.extract(
+    output = client.query(
         inputs=["UserInfoFeatureset.user_id"],
         outputs=[UserInfoFeatureset],
         input_dataframe=pd.DataFrame({"UserInfoFeatureset.user_id": [1, 2, 3]}),
@@ -579,7 +579,7 @@ def test_change_extractor_clone_branch(client):
     ]
 
     client.checkout("main")
-    output = client.extract(
+    output = client.query(
         inputs=["UserInfoFeatureset.user_id"],
         outputs=[UserInfoFeatureset],
         input_dataframe=pd.DataFrame({"UserInfoFeatureset.user_id": [1, 2, 3]}),

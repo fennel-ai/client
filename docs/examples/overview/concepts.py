@@ -102,6 +102,14 @@ def test_overview(client):
             df.fillna(datetime(1970, 1, 1), inplace=True)
             age = (ts - df["dob"]).dt.days / 365  # age is calculated as of `ts`
             return pd.DataFrame(age, columns=["age"])
+    @extractor
+    @inputs(uid)
+    @outputs(age)
+    def get_age(cls, ts: pd.Series, uids: pd.Series):
+        dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])
+        # Using ts instead of datetime.now() to make query_offline work as of for the extractor
+        ages = ts - dobs
+        return pd.Series(ages)
 
         @extractor(depends_on=[User])
         @inputs(uid)
@@ -120,14 +128,14 @@ def test_overview(client):
 
     def _unused():
         # docsnip sync
-        client.sync(
+        client.commit(
             datasets=[User, Transaction, UserTransactionsAbroad],
             featuresets=[UserFeature],
             tier="prod",
         )
         # /docsnip
 
-    client.sync(
+    client.commit(
         datasets=[User, Transaction, UserTransactionsAbroad],
         featuresets=[UserFeature],
         tier="local",
@@ -183,7 +191,7 @@ def test_overview(client):
     assert found.to_list() == [True, True, True, False]
 
     # docsnip query
-    feature_df = client.extract(
+    feature_df = client.query(
         outputs=[
             UserFeature.age,
             UserFeature.country,
@@ -197,7 +205,7 @@ def test_overview(client):
     # /docsnip
 
     # docsnip query_historical
-    feature_df = client.extract_historical(
+    feature_df = client.query_offline(
         outputs=[
             UserFeature.age,
             UserFeature.country,
