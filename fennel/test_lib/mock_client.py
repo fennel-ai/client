@@ -94,16 +94,16 @@ class MockClient(Client):
                 f"found in any branch",
             )
 
-    def sync(
+    def commit(
         self,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
         tier: Optional[str] = None,
     ):
-        return self._get_branch().sync(datasets, featuresets, preview, tier)
+        return self._get_branch().commit(datasets, featuresets, preview, tier)
 
-    def extract(
+    def query(
         self,
         inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
@@ -136,7 +136,7 @@ class MockClient(Client):
             timestamps,
         )
 
-    def extract_historical(
+    def query_offline(
         self,
         inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
@@ -188,10 +188,10 @@ class MockClient(Client):
         output_df[timestamp_column] = timestamps
         return output_df
 
-    def extract_historical_progress(self, request_id):
+    def query_offline_status(self, request_id):
         return FakeResponse(404, "Extract historical features not supported")
 
-    def extract_historical_cancel_request(self, request_id):
+    def query_offline_cancel(self, request_id):
         return FakeResponse(404, "Extract historical features not supported")
 
     def lookup(
@@ -207,7 +207,7 @@ class MockClient(Client):
             data_engine, dataset_name, keys, fields, timestamps
         )
 
-    def inspect_lastn(
+    def inspect(
         self,
         dataset_name: str,
         n: int = 10,

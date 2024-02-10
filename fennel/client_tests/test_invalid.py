@@ -88,7 +88,7 @@ class TestInvalidSync(unittest.TestCase):
     @mock
     def test_invalid_sync(self, client):
         with pytest.raises(ValueError) as e:
-            client.sync(featuresets=[DomainFeatures, Query])
+            client.commit(featuresets=[DomainFeatures, Query])
 
         if client.is_integration_client():
             assert (
@@ -179,14 +179,14 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
                 return df
 
         with pytest.raises(Exception) as e:
-            client.sync(
+            client.commit(
                 datasets=[
                     MemberActivityDataset,
                     MemberActivityDatasetCopy,
                 ],
                 featuresets=[DomainFeatures, Query],
             )
-            client.extract(
+            client.query(
                 outputs=[DomainFeatures2],
                 inputs=[Query.member_id],
                 input_dataframe=pd.DataFrame(
@@ -206,11 +206,11 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_missing_dataset(self, client):
-        client.sync(
+        client.commit(
             datasets=[MemberDataset], featuresets=[DomainFeatures2, Query]
         )
         with pytest.raises(Exception) as e:
-            client.extract(
+            client.query(
                 outputs=[DomainFeatures2],
                 inputs=[Query.domain],
                 input_dataframe=pd.DataFrame(
@@ -238,11 +238,11 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
     @mock
     def test_no_access(self, client):
         with pytest.raises(Exception) as e:
-            client.sync(
+            client.commit(
                 datasets=[MemberDataset, MemberActivityDatasetCopy],
                 featuresets=[DomainFeatures2, Query],
             )
-            client.extract(
+            client.query(
                 outputs=[DomainFeatures2],
                 inputs=[Query.domain],
                 input_dataframe=pd.DataFrame(

@@ -43,7 +43,7 @@ class UserInfoFeatureset:
 @pytest.mark.integration
 @mock
 def test_delete_branch(client):
-    client.sync(datasets=[UserInfoDataset])
+    client.commit(datasets=[UserInfoDataset])
 
     client.clone_branch("test-branch", "main")
     assert len(client.list_branches()) == 2
@@ -58,7 +58,7 @@ def test_complex_delete(client):
     """
     Clone B from A, test extract working from both, then delete B, test extract working only from A.
     """
-    client.sync(
+    client.commit(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
@@ -98,7 +98,7 @@ def test_complex_delete(client):
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
 
-    output = client.extract(
+    output = client.query(
         inputs=["UserInfoFeatureset.user_id"],
         outputs=[UserInfoFeatureset],
         input_dataframe=pd.DataFrame({"UserInfoFeatureset.user_id": [1, 4]}),
@@ -115,7 +115,7 @@ def test_complex_delete(client):
     ]
 
     client.checkout(name="test-branch")
-    output = client.extract(
+    output = client.query(
         inputs=["Request.user_id"],
         outputs=[UserInfoFeatureset],
         input_dataframe=pd.DataFrame({"Request.user_id": [1, 4]}),
@@ -134,7 +134,7 @@ def test_complex_delete(client):
     client.delete_branch("test-branch")
 
     with pytest.raises(KeyError) as error:
-        client.extract(
+        client.query(
             inputs=["Request.user_id"],
             outputs=[UserInfoFeatureset],
             input_dataframe=pd.DataFrame({"Request.user_id": [1, 4]}),

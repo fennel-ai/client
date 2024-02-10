@@ -42,7 +42,7 @@ class Likes:
 
 @mock
 def test_filter(client):
-    client.sync(datasets=[Action, Likes])
+    client.commit(datasets=[Action, Likes])
     data = [
         {"uid": 1, "action_type": "like", "timestamp": datetime(2020, 1, 1)},
         {"uid": 1, "action_type": "comment", "timestamp": datetime(2020, 1, 1)},
@@ -95,7 +95,7 @@ class RatingRescaled:
 
 @mock
 def test_transform(client):
-    client.sync(datasets=[Rating, RatingRescaled])
+    client.commit(datasets=[Rating, RatingRescaled])
     data = [
         {"movie": "movie1", "rating": 3.0, "timestamp": datetime(2020, 1, 1)},
         {"movie": "movie2", "rating": 4.0, "timestamp": datetime(2020, 1, 1)},
@@ -146,7 +146,7 @@ class UserSellerActivity:
 
 @mock
 def test_join(client):
-    client.sync(datasets=[Product, OrderActivity, UserSellerActivity])
+    client.commit(datasets=[Product, OrderActivity, UserSellerActivity])
     data = [
         {"pid": 1, "seller_id": 1, "creation": datetime(2020, 1, 1)},
         {"pid": 2, "seller_id": 2, "creation": datetime(2020, 1, 1)},
@@ -217,7 +217,7 @@ class UserAdStatsFeatures:
 
 @mock
 def test_aggregate(client):
-    client.sync(
+    client.commit(
         datasets=[AdClickStream, UserAdStats], featuresets=[UserAdStatsFeatures]
     )
     data = [
@@ -236,7 +236,7 @@ def test_aggregate(client):
     three_days_ago = dt - timedelta(days=3)
     ts_series = pd.Series([dt, yes, dt, three_days_ago, yes])
     uids = pd.Series([1, 1, 2, 2, 2])
-    df = client.extract_historical(
+    df = client.query_offline(
         inputs=[UserAdStatsFeatures.uid],
         outputs=[UserAdStatsFeatures],
         input_dataframe=pd.DataFrame(

@@ -103,7 +103,7 @@ When you work with Fennel, your datasets and featuresets will live in a Python f
 from fennel.client import Client
 
 client = Client(<FENNEL SERVER URL>)
-client.sync(
+client.commit(
     datasets=[User, Transaction, UserTransactionsAbroad],
     featuresets=[UserFeature],
 	tier='dev'

@@ -119,7 +119,7 @@ from fennel.test_lib import MockClient
 
 # client = Client('<FENNEL SERVER URL>') # uncomment this line to use a real Fennel server
 client = MockClient()  # comment this line to use a real Fennel server
-client.sync(
+client.commit(
     datasets=[Order, Product, UserSellerOrders],
     featuresets=[UserSellerFeatures],
     tier="dev",
@@ -145,7 +145,7 @@ assert response.status_code == requests.codes.OK, response.json()
 # /docsnip
 
 # docsnip query
-feature_df = client.extract(
+feature_df = client.query(
     outputs=[
         UserSellerFeatures.num_orders_1d,
         UserSellerFeatures.num_orders_1w,
@@ -170,7 +170,7 @@ assert feature_df["UserSellerFeatures.num_orders_1w"].tolist() == [2, 1]
 # /docsnip
 
 # docsnip historical
-feature_df = client.extract_historical(
+feature_df = client.query_offline(
     outputs=[
         UserSellerFeatures.num_orders_1d,
         UserSellerFeatures.num_orders_1w,

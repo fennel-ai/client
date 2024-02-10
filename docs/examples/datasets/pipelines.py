@@ -81,7 +81,7 @@ class UserTransactionsAbroad:
 # Tests to ensure that there are no run time errors in the snippets
 @mock
 def test_transaction_aggregation_example(client):
-    client.sync(datasets=[User, Transaction, UserTransactionsAbroad])
+    client.commit(datasets=[User, Transaction, UserTransactionsAbroad])
     now = datetime.now()
     dob = now - timedelta(days=365 * 30)
     data = [
@@ -185,7 +185,7 @@ class FraudActivityDataset:
 @mock
 def test_fraud(client):
     # # Sync the dataset
-    client.sync(datasets=[Activity, FraudActivityDataset])
+    client.commit(datasets=[Activity, FraudActivityDataset])
     now = datetime.now()
     minute_ago = now - timedelta(minutes=1)
     data = [
@@ -316,7 +316,7 @@ class LoginStats:
 
 @mock
 def test_multiple_pipelines(client):
-    client.sync(datasets=[AndroidLogins, IOSLogins, LoginStats])
+    client.commit(datasets=[AndroidLogins, IOSLogins, LoginStats])
     now = datetime.now()
     data = [
         [1, now],

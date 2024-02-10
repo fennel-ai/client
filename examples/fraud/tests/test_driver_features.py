@@ -11,10 +11,7 @@ from fennel.test_lib import mock
 class TestAgeFS:
     @mock
     def test_account_age_features(self, client):
-        import os
-
-        print(os.getcwd())
-        sync_response = client.sync(
+        sync_response = client.commit(
             datasets=[
                 DriverDS,
             ],
@@ -45,9 +42,9 @@ class TestAgeFS:
         )
         assert log_response.status_code == 200, log_response.json()
 
-        feature_df = client.extract_features(
-            output_feature_list=[AgeFS],
-            input_feature_list=[Request.driver_id],
+        feature_df = client.query(
+            outputs=[AgeFS],
+            inputs=[Request.driver_id],
             input_dataframe=pd.DataFrame(
                 {
                     "Request.driver_id": [
@@ -66,7 +63,7 @@ class TestAgeFS:
 class TestCreditScore:
     @mock
     def test_credit_score_features(self, client):
-        sync_response = client.sync(
+        sync_response = client.commit(
             datasets=[
                 DriverCreditScoreDS,
             ],
@@ -93,9 +90,9 @@ class TestCreditScore:
         )
         assert log_response.status_code == 200, log_response.json()
 
-        feature_df = client.extract_features(
-            output_feature_list=[CreditScoreFS],
-            input_feature_list=[Request.driver_id],
+        feature_df = client.query(
+            outputs=[CreditScoreFS],
+            inputs=[Request.driver_id],
             input_dataframe=pd.DataFrame(
                 {
                     "Request.driver_id": [

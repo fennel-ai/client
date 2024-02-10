@@ -105,7 +105,7 @@ class UserFeature:
     @outputs(age)
     def get_age(cls, ts: pd.Series, uids: pd.Series):
         dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])
-        # Using ts instead of datetime.now() to make extract_historical work as of for the extractor
+        # Using ts instead of datetime.now() to make query_offline work as of for the extractor
         ages = ts - dobs
         return pd.Series(ages)
 
@@ -123,7 +123,7 @@ class UserFeature:
 # Tests to ensure that there are no run time errors in the snippets
 @mock
 def test_overview(client):
-    client.sync(
+    client.commit(
         datasets=[User, Transaction, UserTransactionsAbroad], tier="dev"
     )
     now = datetime.now()

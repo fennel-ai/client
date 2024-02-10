@@ -153,7 +153,7 @@ class UserFeatures:
 @pytest.mark.slow
 @mock
 def test_social_network(client):
-    client.sync(
+    client.commit(
         datasets=[
             UserInfo,
             PostInfo,
@@ -191,7 +191,7 @@ def test_social_network(client):
     )
     assert found.to_list() == [True, True, True]
 
-    feature_df = client.extract(
+    feature_df = client.query(
         outputs=[UserFeatures],
         inputs=[Request.user_id, Request.category],
         input_dataframe=pd.DataFrame(

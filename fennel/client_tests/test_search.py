@@ -474,7 +474,7 @@ class TestSearchExample(unittest.TestCase):
         mock_CodaDocs = CodaDocs.with_source(webhook.endpoint("CodaDocs"))
         mock_GoogleDocs = GoogleDocs.with_source(webhook.endpoint("GoogleDocs"))
 
-        client.sync(
+        client.commit(
             datasets=[mock_NotionDocs, mock_CodaDocs, mock_GoogleDocs, Document]
         )
         self.log_document_data(client)
@@ -504,7 +504,7 @@ class TestSearchExample(unittest.TestCase):
             webhook.endpoint("UserActivity")
         )
 
-        client.sync(
+        client.commit(
             datasets=[
                 mock_UserActivity,
                 UserEngagementDataset,
@@ -540,7 +540,7 @@ class TestSearchExample(unittest.TestCase):
             webhook.endpoint("UserActivity")
         )
 
-        client.sync(
+        client.commit(
             datasets=[
                 mock_NotionDocs,
                 mock_CodaDocs,
@@ -572,7 +572,7 @@ class TestSearchExample(unittest.TestCase):
                 "Query.doc_id": [31234, 33234],
             }
         )
-        df = client.extract(
+        df = client.query(
             outputs=[
                 UserBehaviorFeatures,
                 DocumentFeatures,
@@ -627,7 +627,7 @@ class TestSearchExample(unittest.TestCase):
                 "TopWordsFeatures.word": ["This", "Coda"],
             }
         )
-        df = client.extract(
+        df = client.query(
             outputs=[TopWordsFeatures.count],
             inputs=[TopWordsFeatures.word],
             input_dataframe=input_df,
