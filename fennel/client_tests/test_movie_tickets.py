@@ -46,7 +46,7 @@ class ActorStats:
     revenue: int  # type: ignore
     at: datetime
 
-    @pipeline(version=1, tier="prod")
+    @pipeline(tier="staging")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join(cls, info: Dataset, sale: Dataset):
         uniq = sale.groupby("ticket_id").first()
@@ -69,7 +69,7 @@ class ActorStats:
             ]
         )
 
-    @pipeline(version=2, active=True, tier="prod")
+    @pipeline(tier="prod")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join_v2(cls, info: Dataset, sale: Dataset):
         def foo(df):
@@ -105,7 +105,7 @@ class ActorStatsList:
     revenue_distinct: List[int]  # type: ignore
     at: datetime
 
-    @pipeline(version=1, tier="prod")
+    @pipeline(tier="prod")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join(cls, info: Dataset, sale: Dataset):
         uniq = sale.groupby("ticket_id").first()

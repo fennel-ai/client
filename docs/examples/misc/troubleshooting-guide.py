@@ -31,7 +31,7 @@ class TxnActivityDataset:
     metadata: str
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Activity)
     def create_fraud_dataset(
         cls,

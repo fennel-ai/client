@@ -1,4 +1,7 @@
 # Changelog
+## [0.30.1] - 2024-02-07
+- Beta version of client 0.3.0
+
 ## [0.20.10] - 2024-01-22
 - Added capability in lookup method in client to support as-of lookups on keyed datasets.
 

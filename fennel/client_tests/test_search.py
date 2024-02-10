@@ -83,7 +83,7 @@ class Document:
     origin: str
     creation_timestamp: datetime
 
-    @pipeline()
+    @pipeline
     @inputs(NotionDocs, CodaDocs, GoogleDocs)
     def notion_pipe(
         cls, notion_docs: Dataset, coda_docs: Dataset, google_docs: Dataset
@@ -164,7 +164,7 @@ class DocumentContentDataset:
     top_10_unique_words: List[str]
     creation_timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Document)
     def content_features(cls, ds: Dataset):
         return ds.transform(
@@ -187,7 +187,7 @@ class TopWordsCount:
     count: int
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(DocumentContentDataset)
     def top_words_count(cls, ds: Dataset):
         ds = ds.explode(columns=["top_10_unique_words"]).rename(
@@ -224,7 +224,7 @@ class UserEngagementDataset:
     num_long_views: int
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserActivity)
     def user_engagement_pipeline(cls, ds: Dataset):
         def create_short_click(df: pd.DataFrame) -> pd.DataFrame:
@@ -274,7 +274,7 @@ class DocumentEngagementDataset:
     total_timespent: float
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserActivity)
     def doc_engagement_pipeline(cls, ds: Dataset):
         return (

@@ -54,7 +54,7 @@ class UserSellerOrders:
     num_orders_1w: int
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Order)
     def my_pipeline(cls, orders: Dataset):
         return orders.groupby("uid", "seller_id").aggregate(

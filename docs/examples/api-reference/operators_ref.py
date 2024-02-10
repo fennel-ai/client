@@ -41,7 +41,7 @@ class UserTransactions:
     transaction_amount: float
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Activity)
     def create_user_transactions(cls, activity: Dataset):
         # docsnip dropnull
@@ -80,7 +80,7 @@ class UserTransactionsV2:
     user_id_str: str
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserTransactions)
     def create_user_transactions(cls, user_transactions: Dataset):
         # docsnip assign
@@ -100,7 +100,7 @@ class UserFirstAction:
     transaction_amount: float
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserTransactions)
     def create_user_first_action_category(cls, txns: UserTransactions):
         # docsnip first
@@ -117,7 +117,7 @@ class FraudActivityDataset:
     txn_count: int
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(UserTransactions, MerchantCategory)
     def create_fraud_dataset(
         cls, txns: UserTransactions, merchant_category: Dataset
@@ -176,7 +176,7 @@ class ActivitySession:
     window: Window = field(key=True)
     timestamp: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Activity)
     def create_sessions_dataset(cls, activity: Dataset):
         # docsnip window

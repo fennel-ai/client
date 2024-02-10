@@ -34,7 +34,7 @@ class MovieRating:
     sum_ratings: float
     t: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(

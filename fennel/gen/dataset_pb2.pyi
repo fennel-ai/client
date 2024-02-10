@@ -53,8 +53,7 @@ class CoreDataset(google.protobuf.message.Message):
     FIELD_METADATA_FIELD_NUMBER: builtins.int
     PYCODE_FIELD_NUMBER: builtins.int
     IS_SOURCE_DATASET_FIELD_NUMBER: builtins.int
-    LINEAGES_FIELD_NUMBER: builtins.int
-    ACTIVE_DATAFLOW_FIELD_NUMBER: builtins.int
+    VERSION_FIELD_NUMBER: builtins.int
     TAGS_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
@@ -70,13 +69,7 @@ class CoreDataset(google.protobuf.message.Message):
     @property
     def pycode(self) -> pycode_pb2.PyCode: ...
     is_source_dataset: builtins.bool
-    @property
-    def lineages(self) -> global___DatasetLineages:
-        """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
-        THE CLIENT
-        """
-    @property
-    def active_dataflow(self) -> global___Dataflow: ...
+    version: builtins.int
     @property
     def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
         """Union of all tags based on ownership and dataflow semantics."""
@@ -91,12 +84,11 @@ class CoreDataset(google.protobuf.message.Message):
         field_metadata: collections.abc.Mapping[builtins.str, metadata_pb2.Metadata] | None = ...,
         pycode: pycode_pb2.PyCode | None = ...,
         is_source_dataset: builtins.bool = ...,
-        lineages: global___DatasetLineages | None = ...,
-        active_dataflow: global___Dataflow | None = ...,
+        version: builtins.int = ...,
         tags: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["active_dataflow", b"active_dataflow", "dsschema", b"dsschema", "history", b"history", "lineages", b"lineages", "metadata", b"metadata", "pycode", b"pycode", "retention", b"retention"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["active_dataflow", b"active_dataflow", "dsschema", b"dsschema", "field_metadata", b"field_metadata", "history", b"history", "is_source_dataset", b"is_source_dataset", "lineages", b"lineages", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "retention", b"retention", "tags", b"tags"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "history", b"history", "metadata", b"metadata", "pycode", b"pycode", "retention", b"retention"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "field_metadata", b"field_metadata", "history", b"history", "is_source_dataset", b"is_source_dataset", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "retention", b"retention", "tags", b"tags", "version", b"version"]) -> None: ...
 
 global___CoreDataset = CoreDataset
 
@@ -138,11 +130,8 @@ class Pipeline(google.protobuf.message.Message):
     SIGNATURE_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     INPUT_DATASET_NAMES_FIELD_NUMBER: builtins.int
-    VERSION_FIELD_NUMBER: builtins.int
-    ACTIVE_FIELD_NUMBER: builtins.int
-    LINEAGES_FIELD_NUMBER: builtins.int
+    DS_VERSION_FIELD_NUMBER: builtins.int
     PYCODE_FIELD_NUMBER: builtins.int
-    TAGS_FIELD_NUMBER: builtins.int
     name: builtins.str
     dataset_name: builtins.str
     signature: builtins.str
@@ -150,18 +139,9 @@ class Pipeline(google.protobuf.message.Message):
     def metadata(self) -> metadata_pb2.Metadata: ...
     @property
     def input_dataset_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    version: builtins.int
-    active: builtins.bool
-    @property
-    def lineages(self) -> global___PipelineLineages:
-        """NOTE: PIPELINE LINEAGE PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED
-        BY THE CLIENT
-        """
+    ds_version: builtins.int
     @property
     def pycode(self) -> pycode_pb2.PyCode: ...
-    @property
-    def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
-        """Tags that only belong to this pipeline."""
     def __init__(
         self,
         *,
@@ -170,14 +150,11 @@ class Pipeline(google.protobuf.message.Message):
         signature: builtins.str = ...,
         metadata: metadata_pb2.Metadata | None = ...,
         input_dataset_names: collections.abc.Iterable[builtins.str] | None = ...,
-        version: builtins.int = ...,
-        active: builtins.bool = ...,
-        lineages: global___PipelineLineages | None = ...,
+        ds_version: builtins.int = ...,
         pycode: pycode_pb2.PyCode | None = ...,
-        tags: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["lineages", b"lineages", "metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["active", b"active", "dataset_name", b"dataset_name", "input_dataset_names", b"input_dataset_names", "lineages", b"lineages", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "signature", b"signature", "tags", b"tags", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset_name", b"dataset_name", "ds_version", b"ds_version", "input_dataset_names", b"input_dataset_names", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "signature", b"signature"]) -> None: ...
 
 global___Pipeline = Pipeline
 
@@ -191,6 +168,7 @@ class Operator(google.protobuf.message.Message):
     IS_ROOT_FIELD_NUMBER: builtins.int
     PIPELINE_NAME_FIELD_NUMBER: builtins.int
     DATASET_NAME_FIELD_NUMBER: builtins.int
+    DS_VERSION_FIELD_NUMBER: builtins.int
     AGGREGATE_FIELD_NUMBER: builtins.int
     JOIN_FIELD_NUMBER: builtins.int
     TRANSFORM_FIELD_NUMBER: builtins.int
@@ -216,6 +194,7 @@ class Operator(google.protobuf.message.Message):
     """Name of the pipeline in which this operator is defined in"""
     dataset_name: builtins.str
     """Name of the dataset in which the pipeline is defined in"""
+    ds_version: builtins.int
     @property
     def aggregate(self) -> global___Aggregate: ...
     @property
@@ -257,6 +236,7 @@ class Operator(google.protobuf.message.Message):
         is_root: builtins.bool = ...,
         pipeline_name: builtins.str = ...,
         dataset_name: builtins.str = ...,
+        ds_version: builtins.int = ...,
         aggregate: global___Aggregate | None = ...,
         join: global___Join | None = ...,
         transform: global___Transform | None = ...,
@@ -274,7 +254,7 @@ class Operator(google.protobuf.message.Message):
         name: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "explode", b"explode", "filter", b"filter", "first", b"first", "join", b"join", "kind", b"kind", "rename", b"rename", "transform", b"transform", "union", b"union", "window", b"window"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_name", b"dataset_name", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "explode", b"explode", "filter", b"filter", "first", b"first", "id", b"id", "is_root", b"is_root", "join", b"join", "kind", b"kind", "name", b"name", "pipeline_name", b"pipeline_name", "rename", b"rename", "transform", b"transform", "union", b"union", "window", b"window"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_name", b"dataset_name", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "ds_version", b"ds_version", "explode", b"explode", "filter", b"filter", "first", b"first", "id", b"id", "is_root", b"is_root", "join", b"join", "kind", b"kind", "name", b"name", "pipeline_name", b"pipeline_name", "rename", b"rename", "transform", b"transform", "union", b"union", "window", b"window"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union", "filter", "dataset_ref", "rename", "drop", "explode", "dedup", "first", "assign", "dropnull", "window"] | None: ...
 
 global___Operator = Operator

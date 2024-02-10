@@ -54,7 +54,7 @@ class UserTransactionsAbroad:
     timestamp: datetime
 
     @classmethod
-    @pipeline(version=1)
+    @pipeline
     @inputs(User, Transaction)
     def first_pipeline(cls, user: Dataset, transaction: Dataset):
         joined = transaction.join(user, how="left", on=["uid"])
@@ -156,7 +156,7 @@ class FraudActivityDataset:
     merchant_id: int
     transaction_amount: float
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Activity)
     def create_fraud_dataset(cls, activity: Dataset):
         def extract_info(df: pd.DataFrame) -> pd.DataFrame:
@@ -285,7 +285,7 @@ class LoginStats:
     num_logins_1d: int
     login_time: datetime
 
-    @pipeline(version=1, active=True)
+    @pipeline
     @inputs(AndroidLogins, IOSLogins)
     @includes(add_platform)
     def android_logins(cls, android_logins: Dataset, ios_logins: Dataset):

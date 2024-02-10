@@ -27,7 +27,7 @@ class LocationDS2:
     id: int
     created: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(LocationDS)
     def location_ds(cls, location: Dataset):
         return (
@@ -62,7 +62,7 @@ class IdToMarketAreaDS:
     market_area_id: int
     created: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(LocationToNewMarketArea, LocationDS2)
     def id_to_market_area(cls, nma: Dataset, location: Dataset):
         return (
@@ -107,7 +107,7 @@ class MarketAreaDS:
     market_area_id: int
     created: datetime
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(VehicleSummary, IdToMarketAreaDS)
     def market_area_ds(
         cls, vehicle_summary: Dataset, id_to_market_area: Dataset

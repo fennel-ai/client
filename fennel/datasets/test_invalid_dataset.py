@@ -75,7 +75,7 @@ def test_invalid_select():
             a2: str
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A)
             def from_a(cls, a: Dataset):
                 return a.select("a2", "a3")
@@ -103,7 +103,7 @@ def test_invalid_assign():
             a2: str
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A)
             def from_a(cls, a: Dataset):
                 return a.assign("a1", float, lambda df: df["a1"] * 1.0)
@@ -133,7 +133,7 @@ def test_select_drop_invalid_param():
             a2: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A)
             def from_a(cls, a: Dataset):
                 return a.select("a1", "a2", columns=["a1", "a2"])
@@ -161,7 +161,7 @@ def test_select_drop_invalid_param():
             a2: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A)
             def from_a_drop(cls, a: Dataset):
                 return a.drop("a3", "a4", columns=["a3", "a4"])
@@ -189,7 +189,7 @@ def test_select_drop_invalid_param():
             a2: int
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A)
             def from_a_drop(cls, a: Dataset):
                 return a.drop()
@@ -220,7 +220,7 @@ def test_incorrect_aggregate():
             movie: str = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def filter_positive_ratings(cls, rating: Dataset):
                 filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
@@ -257,7 +257,7 @@ def test_incorrect_aggregate():
             movie: str = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def count_distinct_pipeline(cls, rating: Dataset):
                 filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
@@ -294,7 +294,7 @@ def test_incorrect_aggregate():
             movie: str = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def count_distinct_pipeline(cls, rating: Dataset):
                 filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
@@ -332,7 +332,7 @@ def test_incorrect_aggregate():
             movie: str = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(RatingActivity)
             def get_stddev_ratings(cls, rating: Dataset):
                 return rating.groupby("movie").aggregate(
@@ -524,46 +524,13 @@ def test_dataset_with_pipes():
     with pytest.raises(Exception) as e:
 
         @dataset
-        class ABCDataset:
-            a: int = field(key=True)
-            b: int = field(key=True)
-            c: int
-            d: datetime
-
-            @pipeline
-            def create_pipeline(cls, a: Dataset):
-                return a
-
-    assert (
-        str(e.value)
-        == "pipeline decorator on `create_pipeline` must have a parenthesis"
-    )
-
-    with pytest.raises(Exception) as e:
-
-        @dataset
-        class ABCDataset1:
-            a: int = field(key=True)
-            b: int = field(key=True)
-            c: int
-            d: datetime
-
-            @pipeline(XYZ)
-            def create_pipeline(cls, a: Dataset):
-                return a
-
-    assert str(e.value) == "pipeline decorator on `XYZ` must have a parenthesis"
-
-    with pytest.raises(Exception) as e:
-
-        @dataset
         class ABCDataset2:
             a: int = field(key=True)
             b: int = field(key=True)
             c: int
             d: datetime
 
-            @pipeline(version=1)
+            @pipeline
             def create_pipeline(cls, a: Dataset):
                 return a
 
@@ -581,7 +548,7 @@ def test_dataset_with_pipes():
             c: int
             d: datetime
 
-            @pipeline(version=1)  # type: ignore
+            @pipeline  # type: ignore
             @inputs(XYZ)
             def create_pipeline(a: Dataset):  # type: ignore
                 return a
@@ -611,7 +578,7 @@ def test_pipeline_input_validation_during_sync(client):
             name: str
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(XYZ)
             def create_pipeline(cls, a: Dataset):
                 return a
@@ -639,7 +606,7 @@ def test_dataset_incorrect_join():
             c: int
             d: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(XYZ)
             def create_pipeline(cls, a: Dataset):
                 b = a.transform(lambda x: x)
@@ -673,7 +640,7 @@ def test_dataset_incorrect_join():
             age: int
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(XYZ, ABC)
             def create_pipeline(cls, a: Dataset, b: Dataset):
                 c = a.join(b, how="inner", on=["user_id", "agent_id"])  # type: ignore
@@ -704,7 +671,7 @@ def test_dataset_incorrect_join_bounds():
             a1: int = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
@@ -734,7 +701,7 @@ def test_dataset_incorrect_join_bounds():
             a1: int = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
@@ -764,7 +731,7 @@ def test_dataset_incorrect_join_bounds():
             a1: int = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
@@ -794,7 +761,7 @@ def test_dataset_incorrect_join_bounds():
             a1: int = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
@@ -824,7 +791,7 @@ def test_dataset_incorrect_join_bounds():
             a1: int = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
                 return a.join(
@@ -893,7 +860,7 @@ def test_join():
             v: Optional[int]
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(A, B)
             def pipeline1(cls, a: Dataset, b: Dataset):
                 x = a.join(
@@ -932,7 +899,7 @@ def test_invalid_assign_schema(client):
         id: int
         created: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(LocationDS)
         def location_ds(cls, location: Dataset):
             ds = location.assign(

@@ -46,6 +46,7 @@ def test_simple_dataset():
     assert len(sync_request.datasets) == 1
     d = {
         "name": "UserInfoDataset",
+        "version": 1,
         "metadata": {
             "owner": "aditya@fennel.ai",
             "description": "test",
@@ -121,6 +122,7 @@ def test_complex_dataset_with_fields():
         "datasets": [
             {
                 "name": "YextUserInfoDataset",
+                "version": 1,
                 "metadata": {"owner": "daniel@yext.com", "description": "test"},
                 "dsschema": {
                     "keys": {
