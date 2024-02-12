@@ -385,7 +385,6 @@ class MockClient(Client):
         _batch_size: int = 1000,
     ):
         if df.shape[0] == 0:
-            print(f"Skipping log of empty dataframe for webhook {webhook}")
             return FakeResponse(200, "OK")
 
         webhook_endpoint = f"{webhook}:{endpoint}"

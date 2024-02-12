@@ -3,12 +3,19 @@ sidebar:
   - slug: "api-reference/client"
     title: "Client"
     pages:
-      - "api-reference/client"
+      - "api-reference/client/sync"
+      - "api-reference/client/log"
+      - "api-reference/client/extract"
+      - "api-reference/client/extract-historical"
+      - "api-reference/client/extract-historical-progress"
+      - "api-reference/client/extract-historical-cancel"
+      - "api-reference/client/lookup"
 
   - slug: "api-reference/rest-api"
     title: "REST API"
     pages:
-      - "api-reference/rest-api"
+      - "api-reference/rest-api/extract"
+      - "api-reference/rest-api/log"
 
 
   - slug: "api-reference/data-types"
