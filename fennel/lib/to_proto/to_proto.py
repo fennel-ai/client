@@ -49,7 +49,7 @@ def _cleanup_dict(d) -> Dict[str, Any]:
 
 
 def _expectations_to_proto(
-    exp: Any, entity_name: str, entity_type: str
+    exp: Any, entity_name: str, entity_type: str, entity_version: int
 ) -> List[exp_proto.Expectations]:
     if exp is None:
         return []
@@ -75,6 +75,7 @@ def _expectations_to_proto(
             metadata=None,
             entity_name=entity_name,
             e_type=e_type,
+            entity_version=entity_version,
         )
     ]
 
@@ -262,6 +263,7 @@ def _pipeline_to_proto(pipeline: Pipeline, ds: Dataset) -> ds_proto.Pipeline:
     return ds_proto.Pipeline(
         name=pipeline.name,
         dataset_name=ds._name,
+        ds_version=ds._version,
         # TODO(mohit): Deprecate this field
         signature=pipeline.name,
         metadata=get_metadata_proto(pipeline.func),
@@ -291,17 +293,8 @@ def _operators_from_pipeline(pipeline: Pipeline, ds: Dataset):
 
 
 def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
-    # Mirror dataset
-    if hasattr(ds, sources.SOURCE_FIELD):
-        return _expectations_to_proto(ds.expectations, ds._name, "dataset")
+    return _expectations_to_proto(ds.expectations, ds._name, "dataset", ds._version)
 
-    # Derived dataset
-    expectations = []
-    for pipeline in ds._pipelines:
-        expectations.extend(
-            _expectations_to_proto(ds.expectations, pipeline.fqn, "pipeline")
-        )
-    return expectations
 
 
 def _validate_source_pre_proc(

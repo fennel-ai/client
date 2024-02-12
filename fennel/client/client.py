@@ -133,6 +133,7 @@ class Client:
                 for line in diff:
                     print(line, end="")
             raise Exception("sync failed: {}".format(response.text))
+        return response
 
     def log(
         self,

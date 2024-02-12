@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 import time
 import unittest
 from datetime import datetime, timedelta
@@ -114,7 +115,6 @@ class TestDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_simple_select_rename(self, client):
-        # Sync the dataset
         client.commit(datasets=[UserInfoDataset, UserInfoDatasetDerivedSelect])
         now = datetime.now()
         yesterday = now - pd.Timedelta(days=1)
@@ -131,8 +131,7 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
         # Do lookup on UserInfoDataset
-        if client.is_integration_client():
-            client.sleep()
+        client.sleep()
         ts = pd.Series([now, now])
         user_id_keys = pd.Series([18232, 18234])
         df, found = UserInfoDataset.lookup(ts, user_id=user_id_keys)
@@ -291,7 +290,7 @@ class TestDataset(unittest.TestCase):
             assert response.status_code == requests.codes.SERVER_ERROR
             assert (
                 response.json()["error"].strip()
-                == """error: input parse error: trailing characters at line 1 column 3""".strip()
+                == """error: trailing characters at line 1 column 3""".strip()
             )
         else:
             with pytest.raises(Exception) as e:

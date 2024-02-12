@@ -1,30 +1,81 @@
 import json
 import gzip
-from typing import Dict, Any
+import time
+from typing import Dict, Any, List, Optional, Tuple, Union
+from functools import partial
 
+import pandas as pd
 from fennel.client import Client
+from fennel.datasets import Dataset
+from fennel.featuresets import Featureset
 
 try:
+    import pyarrow as pa
+    import sys
+
+    sys.path.insert(
+        0,
+        "/nix/store/m5w8ccghyqai64lvbr28pj65barcgskf-python3-3.11.7-env/lib/python3.11/site-packages"
+    )
     from fennel_client_lib import HttpServer  # type: ignore
+    from fennel_dataset import lookup  # type: ignore
 except ImportError:
     pass
+import fennel.datasets.datasets
 from fennel._vendor.requests import Response  # type: ignore
+
+
+def lookup_wrapper(
+    branch: str,
+    ds_name: str,
+    ts: pd.Series,
+    fields: List[str],
+    keys: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.Series]:
+    # convert to pyarrow datastructures
+    ts_pa = pa.Array.from_pandas(ts)
+    keys_pa = pa.RecordBatch.from_pandas(keys)
+    ret_pa, found_pa = lookup(branch, ds_name, ts_pa, fields, keys_pa)
+
+    # convert back to pandas
+    return ret_pa.to_pandas(), found_pa.to_pandas()
 
 
 class IntegrationClient(Client):
     def __init__(
         self,
         url: str | None = None,
-        branch: str | None = None,
         token: str | None = None,
+        branch: str | None = None,
     ):
         url = url or "dummy"
-        token = token or "test-token"
-        super().__init__(url, branch, token)
+        token = token or "caput-draconis"
+        branch = branch or "main"
+        super().__init__(url, token, branch)
         self._http = HttpServer()
+        fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, branch)  # type: ignore
 
     def is_integration_client(self):
         return True
+
+    def sleep(self, seconds: float = 7):
+        time.sleep(seconds)
+
+    def commit(
+        self,
+        datasets: Optional[List[Dataset]] = None,
+        featuresets: Optional[List[Featureset]] = None,
+        preview=False,
+        tier: Optional[str] = None,
+    ):
+        resp = super().commit(datasets, featuresets, preview, tier)
+        # It takes a while to setup the server
+        time.sleep(10)
+        return resp
+
+    def checkout(self, name: str):
+        self._branch = name
+        fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, name)  # type: ignore
 
     def _url(self, path: str):
         return path
@@ -59,6 +110,11 @@ class IntegrationClient(Client):
         code = int(code)
         return FakeResponse(code, content)
 
+    def close(self):
+        self._http.close()
+    def __del__(self):
+        self._http.close()
+        time.sleep(7)
 
 class FakeResponse(Response):
     def __init__(self, status_code: int, content: str):
