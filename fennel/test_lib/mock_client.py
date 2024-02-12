@@ -337,9 +337,9 @@ class MockClient(Client):
 def mock(test_func):
     def wrapper(*args, **kwargs):
         f = True
-        if "data_integration" not in test_func.__name__:
-            client = MockClient()
-            f = test_func(*args, **kwargs, client=client)
+        # if "data_integration" not in test_func.__name__:
+        #     client = MockClient()
+        #     f = test_func(*args, **kwargs, client=client)
         if (
             "USE_INT_CLIENT" in os.environ
             and int(os.environ.get("USE_INT_CLIENT")) == 1

@@ -154,6 +154,7 @@ class UserInfoMultipleExtractor:
 class TestSimpleExtractor(unittest.TestCase):
     @pytest.mark.integration
     def test_get_age_and_name_features(self):
+        print("Running test_get_age_and_name_features")
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
         assert UserInfoMultipleExtractor.all() == [
@@ -304,6 +305,7 @@ class TestDerivedExtractor(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_derived_extractor(self, client):
+        print("Running test_derived_extractor")
         client.commit(
             datasets=[UserInfoDataset, FlightDataset],
             featuresets=[
@@ -402,6 +404,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_dag_resolution2(self, client):
+        print("Running test_dag_resolution2")
         client.commit(
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
@@ -482,6 +485,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_dag_resolution_complex(self, client):
+        print("Running test_dag_resolution_complex")
         client.commit(
             datasets=[UserInfoDataset],
             featuresets=[
@@ -613,6 +617,7 @@ class TestDocumentDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_document_featureset(self, client):
+        print("Running test_document_featureset")
         client.commit(
             datasets=[DocumentContentDataset], featuresets=[DocumentFeatures]
         )
