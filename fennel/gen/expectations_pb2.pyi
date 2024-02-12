@@ -31,14 +31,13 @@ class Expectations(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
         Dataset: Expectations._EntityType.ValueType  # 0
         Featureset: Expectations._EntityType.ValueType  # 1
-        Pipeline: Expectations._EntityType.ValueType  # 2
 
     class EntityType(_EntityType, metaclass=_EntityTypeEnumTypeWrapper): ...
     Dataset: Expectations.EntityType.ValueType  # 0
     Featureset: Expectations.EntityType.ValueType  # 1
-    Pipeline: Expectations.EntityType.ValueType  # 2
 
     ENTITY_NAME_FIELD_NUMBER: builtins.int
+    ENTITY_VERSION_FIELD_NUMBER: builtins.int
     SUITE_FIELD_NUMBER: builtins.int
     EXPECTATIONS_FIELD_NUMBER: builtins.int
     VERSION_FIELD_NUMBER: builtins.int
@@ -46,6 +45,7 @@ class Expectations(google.protobuf.message.Message):
     E_TYPE_FIELD_NUMBER: builtins.int
     TAGS_FIELD_NUMBER: builtins.int
     entity_name: builtins.str
+    entity_version: builtins.int
     suite: builtins.str
     @property
     def expectations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Expectation]: ...
@@ -59,6 +59,7 @@ class Expectations(google.protobuf.message.Message):
         self,
         *,
         entity_name: builtins.str = ...,
+        entity_version: builtins.int = ...,
         suite: builtins.str = ...,
         expectations: collections.abc.Iterable[global___Expectation] | None = ...,
         version: builtins.int = ...,
@@ -67,7 +68,7 @@ class Expectations(google.protobuf.message.Message):
         tags: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["e_type", b"e_type", "entity_name", b"entity_name", "expectations", b"expectations", "metadata", b"metadata", "suite", b"suite", "tags", b"tags", "version", b"version"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["e_type", b"e_type", "entity_name", b"entity_name", "entity_version", b"entity_version", "expectations", b"expectations", "metadata", b"metadata", "suite", b"suite", "tags", b"tags", "version", b"version"]) -> None: ...
 
 global___Expectations = Expectations
 
