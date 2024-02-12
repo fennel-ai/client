@@ -334,6 +334,7 @@ class Snowflake(google.protobuf.message.Message):
     SCHEMA_FIELD_NUMBER: builtins.int
     WAREHOUSE_FIELD_NUMBER: builtins.int
     ROLE_FIELD_NUMBER: builtins.int
+    JDBC_PARAMS_FIELD_NUMBER: builtins.int
     DATABASE_FIELD_NUMBER: builtins.int
     account: builtins.str
     user: builtins.str
@@ -341,6 +342,7 @@ class Snowflake(google.protobuf.message.Message):
     schema: builtins.str
     warehouse: builtins.str
     role: builtins.str
+    jdbc_params: builtins.str
     database: builtins.str
     def __init__(
         self,
@@ -351,9 +353,10 @@ class Snowflake(google.protobuf.message.Message):
         schema: builtins.str = ...,
         warehouse: builtins.str = ...,
         role: builtins.str = ...,
+        jdbc_params: builtins.str = ...,
         database: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["account", b"account", "database", b"database", "password", b"password", "role", b"role", "schema", b"schema", "user", b"user", "warehouse", b"warehouse"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["account", b"account", "database", b"database", "jdbc_params", b"jdbc_params", "password", b"password", "role", b"role", "schema", b"schema", "user", b"user", "warehouse", b"warehouse"]) -> None: ...
 
 global___Snowflake = Snowflake
 
@@ -628,17 +631,21 @@ class WebhookEndpoint(google.protobuf.message.Message):
 
     DB_FIELD_NUMBER: builtins.int
     ENDPOINT_FIELD_NUMBER: builtins.int
+    DURATION_FIELD_NUMBER: builtins.int
     @property
     def db(self) -> global___ExtDatabase: ...
     endpoint: builtins.str
+    @property
+    def duration(self) -> google.protobuf.duration_pb2.Duration: ...
     def __init__(
         self,
         *,
         db: global___ExtDatabase | None = ...,
         endpoint: builtins.str = ...,
+        duration: google.protobuf.duration_pb2.Duration | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "endpoint", b"endpoint"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["db", b"db", "duration", b"duration"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "duration", b"duration", "endpoint", b"endpoint"]) -> None: ...
 
 global___WebhookEndpoint = WebhookEndpoint
 
@@ -744,11 +751,12 @@ class Source(google.protobuf.message.Message):
     DATASET_FIELD_NUMBER: builtins.int
     EVERY_FIELD_NUMBER: builtins.int
     CURSOR_FIELD_NUMBER: builtins.int
-    DISORDER_FIELD_NUMBER: builtins.int
+    LATENESS_FIELD_NUMBER: builtins.int
     TIMESTAMP_FIELD_FIELD_NUMBER: builtins.int
     CDC_FIELD_NUMBER: builtins.int
     STARTING_FROM_FIELD_NUMBER: builtins.int
     PRE_PROC_FIELD_NUMBER: builtins.int
+    VERSION_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
@@ -756,13 +764,14 @@ class Source(google.protobuf.message.Message):
     def every(self) -> google.protobuf.duration_pb2.Duration: ...
     cursor: builtins.str
     @property
-    def disorder(self) -> google.protobuf.duration_pb2.Duration: ...
+    def lateness(self) -> google.protobuf.duration_pb2.Duration: ...
     timestamp_field: builtins.str
     cdc: global___CDCStrategy.ValueType
     @property
     def starting_from(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     @property
     def pre_proc(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___PreProcValue]: ...
+    version: builtins.int
     def __init__(
         self,
         *,
@@ -770,14 +779,15 @@ class Source(google.protobuf.message.Message):
         dataset: builtins.str = ...,
         every: google.protobuf.duration_pb2.Duration | None = ...,
         cursor: builtins.str | None = ...,
-        disorder: google.protobuf.duration_pb2.Duration | None = ...,
+        lateness: google.protobuf.duration_pb2.Duration | None = ...,
         timestamp_field: builtins.str = ...,
         cdc: global___CDCStrategy.ValueType = ...,
         starting_from: google.protobuf.timestamp_pb2.Timestamp | None = ...,
         pre_proc: collections.abc.Mapping[builtins.str, global___PreProcValue] | None = ...,
+        version: builtins.int = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "disorder", b"disorder", "every", b"every", "starting_from", b"starting_from", "table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "disorder", b"disorder", "every", b"every", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cursor", b"cursor", "every", b"every", "lateness", b"lateness", "starting_from", b"starting_from", "table", b"table"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "every", b"every", "lateness", b"lateness", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field", "version", b"version"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
 
 global___Source = Source
