@@ -7,12 +7,16 @@ SERVER = "http://localhost:8000/"
 
 
 class TestRestAPI(unittest.TestCase):
+
     @patch("requests.post")
     def test_log(self, mock_post):
         mock_post.return_value.status_code = 200
         # docsnip rest_log_api
         url = "{}/api/v1/log".format(SERVER)
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer <API-TOKEN>",
+        }
         data = [
             {
                 "user_id": 1,
@@ -47,7 +51,10 @@ class TestRestAPI(unittest.TestCase):
 
         # docsnip rest_extract_api
         url = "{}/api/v1/extract".format(SERVER)
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer <API-TOKEN>",
+        }
         data = [
             {"UserFeatures.userid": 1},
             {"UserFeatures.userid": 2},
@@ -67,7 +74,10 @@ class TestRestAPI(unittest.TestCase):
 
         # docsnip rest_extract_api_columnar
         url = "{}/api/v1/extract".format(SERVER)
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer <API-TOKEN>",
+        }
         data = {"UserFeatures.userid": [1, 2, 3]}
         req = {
             "outputs": ["UserFeatures"],
