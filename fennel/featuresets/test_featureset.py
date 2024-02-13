@@ -401,7 +401,7 @@ def test_extractor_tier_selector():
         == "Feature `income` is extracted by multiple extractors including `get_user_income` in featureset `UserInfo`."
     )
 
-    sync_request = view._get_sync_request_proto("prod")
+    sync_request = view._get_sync_request_proto(tier="prod")
     assert len(sync_request.feature_sets) == 3
     assert len(sync_request.extractors) == 2
     assert len(sync_request.features) == 8
@@ -409,7 +409,7 @@ def test_extractor_tier_selector():
     extractor_req = sync_request.extractors[1]
     assert extractor_req.name == "get_user_info2"
 
-    sync_request = view._get_sync_request_proto("dev")
+    sync_request = view._get_sync_request_proto(tier="dev")
     assert len(sync_request.feature_sets) == 3
     assert len(sync_request.extractors) == 2
     assert len(sync_request.features) == 8

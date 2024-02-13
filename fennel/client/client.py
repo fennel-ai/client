@@ -70,6 +70,7 @@ class Client:
 
     def commit(
         self,
+        message: str,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
@@ -80,6 +81,7 @@ class Client:
         featuresets that have been added to the client or passed in as arguments.
 
         Parameters:
+        message (str): Message to be linked with this commit.
         datasets (Optional[List[Dataset]]): List of datasets to register with the server.
         featuresets (Optional[List[Featureset]]):  List of featuresets to register with the server.
 
@@ -106,7 +108,7 @@ class Client:
                         f" of type `{type(featureset)}` instead."
                     )
                 self.add(featureset)
-        sync_request = self._get_sync_request_proto(tier)
+        sync_request = self._get_sync_request_proto(message, tier)
         response = self._post_bytes(
             "{}/branch/{}/commit?preview={}".format(
                 V1_API, self._branch, str(preview).lower()
@@ -562,10 +564,12 @@ class Client:
         )
         return http
 
-    def _get_sync_request_proto(self, tier: Optional[str] = None):
+    def _get_sync_request_proto(
+        self, message: str = "", tier: Optional[str] = None
+    ):
         if tier is not None and not isinstance(tier, str):
             raise ValueError(f"Expected tier to be a string, got {tier}")
-        return to_sync_request_proto(self.to_register_objects, tier)
+        return to_sync_request_proto(self.to_register_objects, message, tier)
 
     def _get(self, path: str):
         headers = None
