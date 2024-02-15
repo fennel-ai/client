@@ -44,7 +44,8 @@ __owner__ = "data-eng@fennel.ai"
 
 
 @meta(owner="e1@company.com")
-@source(s3.bucket("engagement", prefix="notion"), every="2m")
+@source(webhook.endpoint("NotionDocs"), tier="dev")
+@source(s3.bucket("engagement", prefix="notion"), every="2m", tier="prod")
 @dataset
 class NotionDocs:
     doc_id: int = field(key=True)
@@ -54,7 +55,8 @@ class NotionDocs:
     creation_timestamp: datetime
 
 
-@source(s3.bucket("engagement", prefix="coda"))
+@source(webhook.endpoint("CodaDocs"), tier="dev")
+@source(s3.bucket("engagement", prefix="coda"), tier="prod")
 @dataset
 class CodaDocs:
     doc_id: int = field(key=True).meta(owner="aditya@fennel.ai")  # type: ignore
@@ -64,7 +66,8 @@ class CodaDocs:
     creation_timestamp: datetime
 
 
-@source(s3.bucket("engagement", prefix="google"))
+@source(webhook.endpoint("GoogleDocs"), tier="dev")
+@source(s3.bucket("engagement", prefix="google"), tier="prod")
 @dataset
 class GoogleDocs:
     doc_id: int = field(key=True)
@@ -206,7 +209,12 @@ class TopWordsCount:
         )  # type: ignore
 
 
-@source(biq_query.table("user_activity", cursor="timestamp"), every="1h")
+@source(webhook.endpoint("UserActivity"), tier="dev")
+@source(
+    biq_query.table("user_activity", cursor="timestamp"),
+    every="1h",
+    tier="prod",
+)
 @dataset
 class UserActivity:
     user_id: int
@@ -470,12 +478,8 @@ class TestSearchExample(unittest.TestCase):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
 
-        mock_NotionDocs = NotionDocs.with_source(webhook.endpoint("NotionDocs"))
-        mock_CodaDocs = CodaDocs.with_source(webhook.endpoint("CodaDocs"))
-        mock_GoogleDocs = GoogleDocs.with_source(webhook.endpoint("GoogleDocs"))
-
         client.sync(
-            datasets=[mock_NotionDocs, mock_CodaDocs, mock_GoogleDocs, Document]
+            datasets=[NotionDocs, CodaDocs, GoogleDocs, Document], tier="dev"
         )
         self.log_document_data(client)
         client.sleep()
@@ -499,17 +503,13 @@ class TestSearchExample(unittest.TestCase):
     def test_search_datasets2(self, client):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
-
-        mock_UserActivity = UserActivity.with_source(
-            webhook.endpoint("UserActivity")
-        )
-
         client.sync(
             datasets=[
-                mock_UserActivity,
+                UserActivity,
                 UserEngagementDataset,
                 DocumentEngagementDataset,
-            ]
+            ],
+            tier="dev",
         )
 
         self.log_engagement_data(client)
@@ -532,21 +532,13 @@ class TestSearchExample(unittest.TestCase):
     def test_search_e2e(self, client):
         if client.integration_mode() == "local":
             pytest.skip("Skipping integration test in local mode")
-
-        mock_NotionDocs = NotionDocs.with_source(webhook.endpoint("NotionDocs"))
-        mock_CodaDocs = CodaDocs.with_source(webhook.endpoint("CodaDocs"))
-        mock_GoogleDocs = GoogleDocs.with_source(webhook.endpoint("GoogleDocs"))
-        mock_UserActivity = UserActivity.with_source(
-            webhook.endpoint("UserActivity")
-        )
-
         client.sync(
             datasets=[
-                mock_NotionDocs,
-                mock_CodaDocs,
-                mock_GoogleDocs,
+                NotionDocs,
+                CodaDocs,
+                GoogleDocs,
                 Document,
-                mock_UserActivity,
+                UserActivity,
                 DocumentContentDataset,
                 TopWordsCount,
                 UserEngagementDataset,
@@ -559,6 +551,7 @@ class TestSearchExample(unittest.TestCase):
                 DocumentContentFeatures,
                 TopWordsFeatures,
             ],
+            tier="dev",
         )
 
         self.log_document_data(client)

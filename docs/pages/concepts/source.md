@@ -128,6 +128,14 @@ Fennel natively supports change data capture (aka CDC) as well as other modes
 of ingestion (e.g. `append`). You can configure the `cdc` parameter to specify
 how should your data be interpreted and converted to valid change log data.
 
+### Since
+The `since` field in the source provides a way to ingest data from a specific time onwards from the source. 
+
+Typically, the data sources could contain data from a long time ago, but based on the use case, we may only want to 
+ingest data from a specific time onwards. The `since` field allows us to do that. 
+
+The `since` field is a `datetime` instance.
+
 
 ## Load Impact of Sources
 

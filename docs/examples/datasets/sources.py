@@ -23,7 +23,11 @@ postgres = Postgres(
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(postgres.table("user", cursor="update_timestamp"), every="1m")
+@source(
+    postgres.table("user", cursor="update_timestamp"),
+    every="1m",
+    since=datetime.strptime("2024-01-22T11:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+)
 @dataset
 class UserLocation:
     uid: int

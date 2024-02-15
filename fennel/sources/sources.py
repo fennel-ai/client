@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from enum import Enum
 import re
 
 from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
@@ -42,8 +41,8 @@ def source(
     conn: DataConnector,
     every: Optional[Duration] = None,
     since: Optional[datetime] = None,
-    disorder: Optional[Duration] = None,
-    cdc: Optional[str] = None,
+    disorder: Duration = DEFAULT_DISORDER,
+    cdc: str = DEFAULT_CDC,
     tier: Optional[Union[str, List[str]]] = None,
     preproc: Optional[Dict[str, PreProcValue]] = None,
 ) -> Callable[[T], Any]:
@@ -60,9 +59,9 @@ def source(
 
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY
-        conn.disorder = disorder if disorder is not None else DEFAULT_DISORDER
-        conn.cdc = cdc if cdc is not None else DEFAULT_CDC
         conn.since = since
+        conn.disorder = disorder
+        conn.cdc = cdc
         conn.tiers = TierSelector(tier)
         conn.pre_proc = preproc
         connectors = getattr(dataset_cls, SOURCE_FIELD, [])
