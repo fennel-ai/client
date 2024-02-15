@@ -1132,7 +1132,6 @@ def pipeline(
     pipeline_func: Callable = None,
     tier: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-
     def _create_pipeline(
         pipeline_func: Callable,
         tier: Optional[Union[str, List[str]]] = None,

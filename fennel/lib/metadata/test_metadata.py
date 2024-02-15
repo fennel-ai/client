@@ -201,7 +201,7 @@ def test_complex_dataset_with_fields():
                     }
                 },
                 "dataset": "YextUserInfoDataset",
-                "disorder": "1209600s",
+                "lateness": "1209600s",
             }
         ],
         "extdbs": [

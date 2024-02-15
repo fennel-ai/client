@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
+from datetime import datetime
 from textwrap import dedent, indent
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
@@ -293,8 +294,9 @@ def _operators_from_pipeline(pipeline: Pipeline, ds: Dataset):
 
 
 def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
-    return _expectations_to_proto(ds.expectations, ds._name, "dataset", ds._version)
-
+    return _expectations_to_proto(
+        ds.expectations, ds._name, "dataset", ds._version
+    )
 
 
 def _validate_source_pre_proc(

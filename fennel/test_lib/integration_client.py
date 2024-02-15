@@ -15,7 +15,7 @@ try:
 
     sys.path.insert(
         0,
-        "/nix/store/m5w8ccghyqai64lvbr28pj65barcgskf-python3-3.11.7-env/lib/python3.11/site-packages"
+        "/nix/store/m5w8ccghyqai64lvbr28pj65barcgskf-python3-3.11.7-env/lib/python3.11/site-packages",
     )
     from fennel_client_lib import HttpServer  # type: ignore
     from fennel_dataset import lookup  # type: ignore
@@ -77,6 +77,20 @@ class IntegrationClient(Client):
         self._branch = name
         fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, name)  # type: ignore
 
+    def init_branch(self, name: str):
+        resp = super().init_branch(name)
+        fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, name)
+        # Time taken by view to refresh
+        time.sleep(7)
+        return resp
+
+    def clone_branch(self, name: str, from_branch: str):
+        resp = super().clone_branch(name, from_branch)
+        fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, name)
+        # Time taken by view to refresh
+        time.sleep(7)
+        return resp
+
     def _url(self, path: str):
         return path
 
@@ -86,9 +100,16 @@ class IntegrationClient(Client):
         if self.token:
             headers = {}
             headers["Authorization"] = "Bearer " + self.token
-        code, content = self._http.get(self._url(path), headers=headers)
+        headers = list(headers.items())
+        x = self._http.get(self._url(path), headers=headers)
+        print(x)
+        code, content, content_type = x
+        if content_type == "application/json":
+            content = json.loads(content)
         # HTTP sever returns code as a string
         code = int(code)
+        if code != 200:
+            raise Exception(f"Server returned: {code}, {content}")
         return FakeResponse(code, content)
 
     def _post(
@@ -105,16 +126,20 @@ class IntegrationClient(Client):
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
         headers = list(headers.items())
-        code, content = self._http.post(self._url(path), headers, data)
+        code, content, content_type = self._http.post(self._url(path), headers, data)
+        # If response content type is json, parse it
+        if content_type == "application/json":
+            content = json.loads(content)
         # HTTP sever returns code as a string
         code = int(code)
+        if code != 200:
+            raise Exception(f"Server returned: {code}, {content}")
         return FakeResponse(code, content)
 
-    def close(self):
-        self._http.close()
     def __del__(self):
         self._http.close()
-        time.sleep(7)
+        time.sleep(8)
+
 
 class FakeResponse(Response):
     def __init__(self, status_code: int, content: str):

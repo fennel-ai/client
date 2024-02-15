@@ -43,12 +43,16 @@ class UserInfoFeatureset:
 @pytest.mark.integration
 @mock
 def test_delete_branch(client):
-    client.commit(datasets=[UserInfoDataset])
+    resp = client.commit(datasets=[UserInfoDataset])
+    assert resp.status_code == requests.codes.OK
 
-    client.clone_branch("test-branch", "main")
+    resp = client.clone_branch("test-branch", "main")
+    assert resp.status_code == requests.codes.OK
     assert len(client.list_branches()) == 2
 
-    client.delete_branch("test-branch")
+    resp = client.delete_branch("test-branch")
+    assert resp.status_code == requests.codes.OK
+
     assert len(client.list_branches()) == 1
 
 
@@ -60,7 +64,7 @@ def test_complex_delete(client):
     """
     client.commit(
         datasets=[UserInfoDataset],
-        featuresets=[UserInfoFeatureset],
+        featuresets=[Request, UserInfoFeatureset],
     )
     client.clone_branch(name="test-branch", from_branch="main")
 
@@ -97,6 +101,7 @@ def test_complex_delete(client):
     df = pd.DataFrame(data)
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
 
     output = client.query(
         inputs=["UserInfoFeatureset.user_id"],
@@ -131,16 +136,25 @@ def test_complex_delete(client):
         "None",
     ]
 
-    client.delete_branch("test-branch")
+    resp = client.delete_branch("test-branch")
+    assert resp.status_code == requests.codes.OK
 
-    with pytest.raises(KeyError) as error:
+    client.sleep()
+
+    with pytest.raises(Exception) as error:
         client.query(
             inputs=["Request.user_id"],
             outputs=[UserInfoFeatureset],
             input_dataframe=pd.DataFrame({"Request.user_id": [1, 4]}),
         )
 
-    assert (
-        str(error.value)
-        == "\"Branch: `test-branch` not found, please sync this branch and try again. Available branches: ['main']\""
-    )
+    if client.is_integration_client():
+        assert (
+            str(error.value)
+            == 'Server returned: 500, error: view not found'
+        )
+    else:
+        assert (
+            str(error.value)
+            == "\"Branch: `test-branch` not found, please sync this branch and try again. Available branches: ['main']\""
+        )

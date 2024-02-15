@@ -52,9 +52,12 @@ def test_duplicate_create(client):
     response = client.init_branch("test-branch")
     assert response.status_code == 200
 
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(Exception) as error:
         client.init_branch("test-branch")
-    assert str(error.value) == "Branch name: `test-branch` already exists"
+    if client.is_integration_client():
+        assert str(error.value) == 'Server returned: 500, error: failed to create branch: error returned from database: duplicate key value violates unique constraint "branch_name"'
+    else:
+        assert str(error.value) == "Branch name: `test-branch` already exists"
 
 
 @pytest.mark.integration
@@ -70,22 +73,29 @@ def test_complex_create(client):
         featuresets=[UserInfoFeatureset],
     )
 
-    assert client.get_dataset_df("UserInfoDataset").shape == (0, 7)
+    _, found = client.lookup(dataset_name="UserInfoDataset", keys=[{"user_id": 1},{"user_id": 2}],fields=["age"])
+    assert found.to_list() == [False, False]
 
     client.checkout("main")
-    with pytest.raises(ValueError) as error:
-        _ = client.get_dataset_df("UserInfoDataset")
-    assert str(error.value) == "Dataset `UserInfoDataset` not found"
+    with pytest.raises(Exception) as error:
+        _ = client.inspect("UserInfoDataset")
+    if client.is_integration_client():
+        assert str(error.value) == 'Server returned: 404, dataset "UserInfoDataset" not found'
+    else:
+        assert str(error.value) == "Dataset `UserInfoDataset` not found"
 
 
 @pytest.mark.integration
 @mock
 def test_log(client):
-    client.init_branch("test-branch")
-    client.commit(
+    resp = client.init_branch("test-branch")
+    assert resp.status_code == 200, resp.json()
+
+    resp = client.commit(
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
+    assert resp.status_code == 200, resp.json()
 
     now = datetime.now()
     data = [
@@ -100,8 +110,12 @@ def test_log(client):
         },
     ]
     df = pd.DataFrame(data)
+
+    assert client.get_branch() == "test-branch"
+
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
 
-    output = client.get_dataset_df("UserInfoDataset")
-    assert output.shape == (1, 7)
+    _, found = client.lookup(dataset_name="UserInfoDataset", keys=[{"user_id": 1},{"user_id": 2}],fields=["age"])
+    assert found.to_list() == [True, False]
