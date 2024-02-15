@@ -99,6 +99,7 @@ class MockClient(Client):
 
     def commit(
         self,
+        message: str = "testing",
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,

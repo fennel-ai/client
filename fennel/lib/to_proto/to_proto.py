@@ -86,6 +86,7 @@ def _expectations_to_proto(
 
 def to_sync_request_proto(
     registered_objs: List[Any],
+    message: str,
     tier: Optional[str] = None,
 ) -> services_proto.SyncRequest:
     datasets = []
@@ -144,6 +145,7 @@ def to_sync_request_proto(
         sources=conn_sources,
         extdbs=external_dbs,
         expectations=expectations,
+        message=message,
     )
 
 

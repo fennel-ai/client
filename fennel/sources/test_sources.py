@@ -437,7 +437,7 @@ def test_tier_selector_on_source():
         str(e.value)
         == "Dataset UserInfoDataset has multiple sources (4) defined. Please define only one source per dataset, or check your tier selection."
     )
-    sync_request = view._get_sync_request_proto("prod")
+    sync_request = view._get_sync_request_proto(tier="prod")
     assert len(sync_request.datasets) == 1
     assert len(sync_request.sources) == 1
     assert len(sync_request.extdbs) == 1
@@ -468,7 +468,7 @@ def test_tier_selector_on_source():
     assert source_request == expected_source_request, error_message(
         source_request, expected_source_request
     )
-    sync_request = view._get_sync_request_proto("staging")
+    sync_request = view._get_sync_request_proto(tier="staging")
     assert len(sync_request.datasets) == 1
     assert len(sync_request.sources) == 1
     assert len(sync_request.extdbs) == 1

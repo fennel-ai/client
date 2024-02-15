@@ -125,7 +125,7 @@ def test_tier_selector():
     view.add(RequestFeatures)
     view.add(ActorFeatures)
 
-    sync_request = view._get_sync_request_proto("dev")
+    sync_request = view._get_sync_request_proto(tier="dev")
     assert len(sync_request.feature_sets) == 2
     assert len(sync_request.features) == 2
     assert len(sync_request.datasets) == 3
