@@ -224,9 +224,9 @@ class Client:
         for out_feature in outputs:
             if isinstance(out_feature, Feature):
                 output_feature_names.append(out_feature.fqn())
-                output_feature_name_to_type[out_feature.fqn()] = (
-                    out_feature.dtype
-                )
+                output_feature_name_to_type[
+                    out_feature.fqn()
+                ] = out_feature.dtype
             elif isinstance(out_feature, str) and is_valid_feature(out_feature):
                 output_feature_names.append(out_feature)
                 output_feature_name_to_type[out_feature] = Any
@@ -251,7 +251,16 @@ class Client:
         response = self._post_json(
             "{}/branch/{}/query".format(V1_API, self._branch), req
         )
-        df = pd.DataFrame(response.json())
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+        if isinstance(response.json(), str):
+            # Assuming the issue is double-encoding
+            decoded_once = json.loads(response.text)
+            actual_data = json.loads(decoded_once)
+            # Now, `actual_data` should be a dictionary
+        else:
+            actual_data = response.json()
+        df = pd.DataFrame(actual_data)
         for col in df.columns:
             if df[col].dtype == "object":
                 df[col] = df[col].apply(
@@ -263,25 +272,28 @@ class Client:
 
     def init_branch(self, name: str):
         """
-        Create a new empty branch.
+        Create a new empty branch. The client will be checked out to the new
+        branch.
 
         Parameters:
         name (str): The name of the branch to create.
 
         """
-        req = {"branch_name": name}
-        return self._post_json("{}/branch/init".format(V1_API), req)
+        self._branch = name
+        return self._post_json(f"{V1_API}/branch/{name}/create", {})
 
     def clone_branch(self, name: str, from_branch: str):
         """
-        Clone a branch from another branch.
+        Clone a branch from another branch. After cloning, the client will be
+        checked out to the new branch.
 
         Parameters:
         name (str): The name of the branch to create.
         from_branch (str): The name of the branch to clone from.
         """
-        req = {"branch_name": name, "from_branch": from_branch}
-        return self._post_json("{}/branch/clone".format(V1_API), req)
+        req = {"clone_from": from_branch}
+        self._branch = name
+        return self._post_json(f"{V1_API}/branch/{name}/create", req)
 
     def delete_branch(self, name: str):
         """
@@ -290,8 +302,7 @@ class Client:
         Parameters:
         name (str): The name of the branch to delete.
         """
-        req = {"branch_name": name}
-        return self._post_json("{}/branch/delete".format(V1_API), req)
+        return self._post_json(f"{V1_API}/branch/{name}/delete", {})
 
     def list_branches(self) -> List[str]:
         """
@@ -300,7 +311,11 @@ class Client:
         Returns:
         List[str]: A list of branch names.
         """
-        return self._get("{}/branches".format(V1_API))
+        resp =  self._get(f"{V1_API}/branch/list")
+        resp = resp.json()
+        if "branches" not in resp:
+            raise Exception("Server returned invalid response for list branches.")
+        return resp["branches"]
 
     def checkout(self, name: str):
         """
@@ -309,6 +324,15 @@ class Client:
         name (str): The name of the branch to delete.
         """
         self._branch = name
+
+    def get_branch(self) -> str:
+        """
+        Get the current branch name.
+
+        Returns:
+        str: The current branch name.
+        """
+        return self._branch
 
     # ----------------------- Extract historical API's -----------------------
 

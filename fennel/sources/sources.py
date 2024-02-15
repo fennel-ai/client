@@ -40,7 +40,7 @@ def source(
     conn: DataConnector,
     every: Optional[Duration] = None,
     since: Optional[datetime] = None,
-    disorder: Optional[Duration] = None,
+    lateness: Optional[Duration] = None,
     cdc: Optional[str] = None,
     tier: Optional[Union[str, List[str]]] = None,
     preproc: Optional[Dict[str, PreProcValue]] = None,
@@ -58,7 +58,7 @@ def source(
 
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY
-        conn.disorder = disorder if disorder is not None else DEFAULT_DISORDER
+        conn.lateness = lateness if lateness is not None else DEFAULT_DISORDER
         conn.cdc = cdc if cdc is not None else DEFAULT_CDC
         conn.starting_from = since
         conn.tiers = TierSelector(tier)
@@ -370,7 +370,7 @@ class DataConnector:
 
     data_source: DataSource
     every: Duration
-    disorder: Duration
+    lateness: Duration
     cdc: str
     starting_from: Optional[datetime] = None
     tiers: TierSelector

@@ -815,11 +815,13 @@ def dataset(
     *,
     version: Optional[int] = DEFAULT_VERSION,
     history: Optional[Duration] = DEFAULT_RETENTION,
-) -> Callable[[Type[T]], Dataset]: ...
+) -> Callable[[Type[T]], Dataset]:
+    ...
 
 
 @overload
-def dataset(cls: Type[T]) -> Dataset: ...
+def dataset(cls: Type[T]) -> Dataset:
+    ...
 
 
 def dataset(
@@ -1043,20 +1045,21 @@ def f_get_type_hints(obj):
 def pipeline(  # noqa: E704
     *,
     tier: Optional[Union[str, List[str]]] = None,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    ...
 
 
 @overload
 def pipeline(
     pipeline_func: Callable,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...  # noqa: E704
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    ...  # noqa: E704
 
 
 def pipeline(
     pipeline_func: Callable = None,
     tier: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-
     def _create_pipeline(
         pipeline_func: Callable,
         tier: Optional[Union[str, List[str]]] = None,
@@ -1278,7 +1281,7 @@ class Dataset(_Node[T]):
         conn: DataConnector,
         every: Optional[Duration] = None,
         starting_from: Optional[datetime.datetime] = None,
-        disorder: Optional[Duration] = None,
+        lateness: Optional[Duration] = None,
         pre_proc: Optional[Dict[str, PreProcValue]] = None,
         tiers: Optional[Union[str, List[str]]] = None,
     ):
@@ -1295,7 +1298,7 @@ class Dataset(_Node[T]):
         if hasattr(ds_copy, sources.SOURCE_FIELD):
             delattr(ds_copy, sources.SOURCE_FIELD)
         src_fn = source(
-            conn, every, starting_from, disorder, None, tiers, pre_proc
+            conn, every, starting_from, lateness, None, tiers, pre_proc
         )
         return src_fn(ds_copy)
 

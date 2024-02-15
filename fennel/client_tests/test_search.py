@@ -467,9 +467,6 @@ class TestSearchExample(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_search_datasets1(self, client):
-        if client.integration_mode() == "local":
-            pytest.skip("Skipping integration test in local mode")
-
         mock_NotionDocs = NotionDocs.with_source(webhook.endpoint("NotionDocs"))
         mock_CodaDocs = CodaDocs.with_source(webhook.endpoint("CodaDocs"))
         mock_GoogleDocs = GoogleDocs.with_source(webhook.endpoint("GoogleDocs"))
@@ -497,9 +494,6 @@ class TestSearchExample(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_search_datasets2(self, client):
-        if client.integration_mode() == "local":
-            pytest.skip("Skipping integration test in local mode")
-
         mock_UserActivity = UserActivity.with_source(
             webhook.endpoint("UserActivity")
         )
@@ -530,9 +524,6 @@ class TestSearchExample(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_search_e2e(self, client):
-        if client.integration_mode() == "local":
-            pytest.skip("Skipping integration test in local mode")
-
         mock_NotionDocs = NotionDocs.with_source(webhook.endpoint("NotionDocs"))
         mock_CodaDocs = CodaDocs.with_source(webhook.endpoint("CodaDocs"))
         mock_GoogleDocs = GoogleDocs.with_source(webhook.endpoint("GoogleDocs"))

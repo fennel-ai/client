@@ -43,9 +43,6 @@ class TestMovieInfo103(unittest.TestCase):
     @mock
     def test_log_to_MovieInfo103(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
-        if client.integration_mode() == "local":
-            pytest.skip("Skipping integration test in local mode")
-
         mock_MovieInfo103 = MovieInfo103.with_source(
             webhook.endpoint("MovieInfo103")
         )

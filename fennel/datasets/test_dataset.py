@@ -102,7 +102,7 @@ def test_simple_dataset():
                     }
                 },
                 "dataset": "UserInfoDataset",
-                "disorder": "1209600s",
+                "lateness": "1209600s",
             }
         ],
         "extdbs": [
@@ -254,7 +254,7 @@ def test_dataset_with_retention():
                     }
                 },
                 "dataset": "Activity",
-                "disorder": "1209600s",
+                "lateness": "1209600s",
             }
         ],
         "extdbs": [
@@ -398,7 +398,7 @@ def test_nested_dataset():
                     }
                 },
                 "dataset": "Dealer",
-                "disorder": "1209600s",
+                "lateness": "1209600s",
             }
         ],
         "extdbs": [
@@ -604,6 +604,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "pycode": {},
+        "dsVersion": 1,
     }
     pipeline_req.pycode.Clear()
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
@@ -776,6 +777,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -873,6 +875,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -970,6 +973,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1068,6 +1072,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1166,6 +1171,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {},
         "input_dataset_names": ["A", "B"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1354,6 +1360,7 @@ def test_dataset_with_complex_pipe():
         "metadata": {},
         "input_dataset_names": ["Activity", "UserInfoDataset"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1667,6 +1674,7 @@ def test_dropnull():
         "metadata": {},
         "input_dataset_names": ["A"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1779,6 +1787,7 @@ def test_select_and_rename_column():
         "metadata": {},
         "input_dataset_names": ["A"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -1905,6 +1914,7 @@ def test_union_datasets():
         "metadata": {},
         "input_dataset_names": ["A"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -2108,6 +2118,7 @@ def test_first_operator():
         "metadata": {},
         "input_dataset_names": ["RatingActivity"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -2346,6 +2357,7 @@ def test_search_dataset():
         "metadata": {},
         "input_dataset_names": ["Document"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert content_pipeline_req == expected_pipeline_request, error_message(
@@ -2361,6 +2373,7 @@ def test_search_dataset():
         "metadata": {},
         "input_dataset_names": ["DocumentContentDataset"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert word_pipeline_req == expected_pipeline_request, error_message(
@@ -2563,14 +2576,14 @@ def test_pipeline_with_tier_selector():
     kafka = Kafka.get(name="my_kafka")
 
     @meta(owner="test@test.com")
-    @source(kafka.topic("orders"), disorder="1h")
+    @source(kafka.topic("orders"), lateness="1h")
     @dataset
     class A:
         a1: int = field(key=True)
         t: datetime
 
     @meta(owner="test@test.com")
-    @source(kafka.topic("orders2"), disorder="1h")
+    @source(kafka.topic("orders2"), lateness="1h")
     @dataset
     class B:
         b1: int = field(key=True)
@@ -2773,6 +2786,7 @@ def test_window_operator():
         "metadata": {},
         "input_dataset_names": ["PageViewEvent"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(
@@ -2904,6 +2918,7 @@ def test_window_operator_with_aggregation():
         "metadata": {},
         "input_dataset_names": ["PageViewEvent"],
         "pycode": {},
+        "ds_version": 1,
     }
     expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
     assert pipeline_req == expected_pipeline_request, error_message(

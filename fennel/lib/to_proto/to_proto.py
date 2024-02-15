@@ -293,8 +293,9 @@ def _operators_from_pipeline(pipeline: Pipeline, ds: Dataset):
 
 
 def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
-    return _expectations_to_proto(ds.expectations, ds._name, "dataset", ds._version)
-
+    return _expectations_to_proto(
+        ds.expectations, ds._name, "dataset", ds._version
+    )
 
 
 def _validate_source_pre_proc(
@@ -619,7 +620,7 @@ def _webhook_to_source_proto(
                     db=ext_db,
                 ),
             ),
-            #disorder=to_duration_proto(connector.disorder),
+            lateness=to_duration_proto(connector.lateness),
             dataset=dataset_name,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
@@ -654,7 +655,7 @@ def _kafka_conn_to_source_proto(
                 format=to_kafka_format_proto(connector.format),
             ),
         ),
-        disorder=to_duration_proto(connector.disorder),
+        lateness=to_duration_proto(connector.lateness),
         dataset=dataset_name,
         cdc=to_cdc_proto(connector.cdc),
         pre_proc=_pre_proc_to_proto(connector.pre_proc),
@@ -725,7 +726,7 @@ def _s3_conn_to_source_proto(
         table=ext_table,
         dataset=dataset_name,
         every=to_duration_proto(connector.every),
-        #disorder=to_duration_proto(connector.disorder),
+        # lateness=to_duration_proto(connector.lateness),
         starting_from=starting_from,
         cursor=None,
         timestamp_field=timestamp_field,
@@ -825,7 +826,7 @@ def _bigquery_conn_to_source_proto(
             dataset=dataset_name,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
-            disorder=to_duration_proto(connector.disorder),
+            lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
@@ -890,7 +891,7 @@ def _snowflake_conn_to_source_proto(
             dataset=dataset_name,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
-            disorder=to_duration_proto(connector.disorder),
+            lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
@@ -967,7 +968,7 @@ def _mysql_conn_to_source_proto(
             dataset=dataset_name,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
-            disorder=to_duration_proto(connector.disorder),
+            lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
@@ -1051,7 +1052,7 @@ def _pg_conn_to_source_proto(
             dataset=dataset_name,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
-            disorder=to_duration_proto(connector.disorder),
+            lateness=to_duration_proto(connector.lateness),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
@@ -1131,7 +1132,7 @@ def _kinesis_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset_name,
-            disorder=to_duration_proto(connector.disorder),
+            lateness=to_duration_proto(connector.lateness),
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),

@@ -80,6 +80,7 @@ def test_dataset_expectation_creation():
                 "expectationKwargs": '{"column_A": "age", "column_B": "user_id", "parse_strings_as_datetimes": false, "ignore_row_if": "both_values_are_missing", "include_config": true}',
             },
         ],
+        "entity_version": 1,
     }
     expected_exp_request = ParseDict(d, exp_proto.Expectations())
     act_config = sync_request.expectations[0]

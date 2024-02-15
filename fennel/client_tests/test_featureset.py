@@ -666,15 +666,14 @@ class TestDocumentDataset(unittest.TestCase):
             10,
             9,
         ]
-        assert (
-            feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
-            == [1, 2, 3, 4]
-        ).all()
 
-        yesterday = datetime.now() - timedelta(days=1)
+        embedding_resp = list(feature_df["DocumentFeatures.bert_embedding"].tolist()[0])
+        assert (embedding_resp == [1, 2, 3, 4])
 
         if client.is_integration_client():
             return
+
+        yesterday = datetime.now() - timedelta(days=1)
 
         feature_df = client.query_offline(
             outputs=[DocumentFeatures],
