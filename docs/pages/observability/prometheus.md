@@ -90,6 +90,36 @@ The following metrics are exposed via the Prometheus endpoint:
    - `status` - whether expectation passed or not. Valid values are `success` or `failure`
    </details>
 </li>
+
+<li>
+<details>
+   <summary><b> `fennel_source_watermark_discarded_rows` </b></summary>
+
+   Reports the number of rows discarded at the source dataset due to watermarking i.e. the rows are older than the 
+   `disorderness` set on the source.
+
+   Type: Counter
+
+   *Labels*:
+   - `source_name` - the name of the source
+   - `dataset_name` – the name of the dataset
+   </details>
+</li>
+
+<li>
+<details>
+   <summary><b> `fennel_source_watermark_timestamp` </b></summary>
+
+   Reports the current watermark timestamp of the source dataset. Any event older than this timestamp is discarded 
+   and reported in `fennel_source_watermark_discarded_rows` metric.
+
+   Type: Gauge
+
+   *Labels*:
+   - `source_name` - the name of the source
+   - `dataset_name` – the name of the dataset
+   </details>
+</li>
 </ol>
 
 
