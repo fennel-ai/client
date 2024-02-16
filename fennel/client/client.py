@@ -224,9 +224,9 @@ class Client:
         for out_feature in outputs:
             if isinstance(out_feature, Feature):
                 output_feature_names.append(out_feature.fqn())
-                output_feature_name_to_type[
-                    out_feature.fqn()
-                ] = out_feature.dtype
+                output_feature_name_to_type[out_feature.fqn()] = (
+                    out_feature.dtype
+                )
             elif isinstance(out_feature, str) and is_valid_feature(out_feature):
                 output_feature_names.append(out_feature)
                 output_feature_name_to_type[out_feature] = Any
@@ -280,7 +280,7 @@ class Client:
 
         """
         self._branch = name
-        return self._post_json(f"{V1_API}/branch/{name}/create", {})
+        return self._post_json(f"{V1_API}/branch/{name}/init", {})
 
     def clone_branch(self, name: str, from_branch: str):
         """
@@ -293,7 +293,7 @@ class Client:
         """
         req = {"clone_from": from_branch}
         self._branch = name
-        return self._post_json(f"{V1_API}/branch/{name}/create", req)
+        return self._post_json(f"{V1_API}/branch/{name}/init", req)
 
     def delete_branch(self, name: str):
         """
@@ -311,10 +311,12 @@ class Client:
         Returns:
         List[str]: A list of branch names.
         """
-        resp =  self._get(f"{V1_API}/branch/list")
+        resp = self._get(f"{V1_API}/branch/list")
         resp = resp.json()
         if "branches" not in resp:
-            raise Exception("Server returned invalid response for list branches.")
+            raise Exception(
+                "Server returned invalid response for list branches."
+            )
         return resp["branches"]
 
     def checkout(self, name: str):
