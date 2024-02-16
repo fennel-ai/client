@@ -96,7 +96,7 @@ The following metrics are exposed via the Prometheus endpoint:
    <summary><b> `fennel_source_watermark_discarded_rows` </b></summary>
 
    Reports the number of rows discarded at the source dataset due to watermarking i.e. the rows are older than the 
-   disorderness set on the source.
+   `disorderness` set on the source.
 
    Type: Counter
 
