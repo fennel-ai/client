@@ -6,10 +6,9 @@ from typing import List, no_type_check
 import fennel.datasets.datasets
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import inputs, outputs
 from fennel.sources import source, Webhook
-from fennel.test_lib import *
+from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
 

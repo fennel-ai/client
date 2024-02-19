@@ -6,8 +6,8 @@ from math import sqrt
 import pandas as pd
 from typing import Dict, List, Type
 
-from fennel.lib.aggregate import AggregateType, Distinct
-from fennel.lib.aggregate import Count, Sum, Average, LastK, Min, Max, Stddev
+from fennel.datasets import AggregateType, Distinct
+from fennel.datasets import Count, Sum, Average, LastK, Min, Max, Stddev
 from fennel.lib.duration import duration_to_timedelta
 from fennel.lib.schema import get_pd_dtype
 

@@ -7,13 +7,13 @@ import requests
 
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import feature, featureset, extractor
-from fennel.lib.aggregate import Count
-from fennel.lib.expectations import (
+from fennel.datasets import Count
+from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import meta
+from fennel.lib import inputs, outputs
 from fennel.sources import source, Postgres, Snowflake, Kafka, Webhook
 
 # /docsnip
@@ -114,7 +114,7 @@ class UserSellerFeatures:
 
 
 # docsnip sync
-from fennel.test_lib import MockClient
+from fennel.testing import MockClient
 
 
 # client = Client('<FENNEL SERVER URL>') # uncomment this line to use a real Fennel server

@@ -8,12 +8,12 @@ import requests
 from fennel import featureset, extractor, feature
 from fennel.datasets import dataset, field
 from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Sum, LastK, Distinct
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.datasets import Sum, LastK, Distinct
+from fennel.lib import meta
+from fennel.lib import inputs, outputs
 from fennel.sources import Webhook
 from fennel.sources import source
-from fennel.test_lib import mock, MockClient
+from fennel.testing import mock, MockClient
 
 client = MockClient()
 

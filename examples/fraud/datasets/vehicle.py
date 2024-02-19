@@ -2,8 +2,8 @@ from datetime import datetime
 from typing import List
 
 from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import LastK, Min
-from fennel.lib.schema import inputs
+from fennel.datasets import LastK, Min
+from fennel.lib import inputs
 from fennel.sources import Webhook, source
 
 __owner__ = "eng@app.com"

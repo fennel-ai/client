@@ -3,10 +3,10 @@ from datetime import datetime
 import pandas as pd
 import pytest
 from fennel.datasets import dataset, field
-from fennel.lib.metadata import meta
-from fennel.lib.schema import oneof, between, regex, struct
+from fennel.lib import meta
+from fennel.dtype import oneof, between, regex, struct
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 

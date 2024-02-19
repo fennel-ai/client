@@ -18,10 +18,10 @@ from fennel.lib.graph_algorithms import (
 from fennel.lib.includes import includes  # noqa
 from fennel.lib.schema import get_datatype
 from fennel.sources.sources import S3Connector
-from fennel.test_lib.branch import Branch
-from fennel.test_lib.integration_client import IntegrationClient
-from fennel.test_lib.query_engine import QueryEngine
-from fennel.test_lib.test_utils import cast_col_to_dtype, FakeResponse
+from fennel.testing.branch import Branch
+from fennel.testing.integration_client import IntegrationClient
+from fennel.testing.query_engine import QueryEngine
+from fennel.testing.test_utils import cast_col_to_dtype, FakeResponse
 
 MAIN_BRANCH = "main"
 

@@ -15,7 +15,7 @@ from fraud.datasets.payment_ids import (
 from fraud.featuresets.driver import Request
 from fraud.featuresets.payment import PaymentFS
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 def log_payment_identifier_datasets(client):

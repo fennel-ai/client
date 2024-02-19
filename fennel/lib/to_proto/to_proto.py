@@ -31,7 +31,8 @@ from fennel.lib.duration import (
 )
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr, OWNER
-from fennel.lib.schema import get_datatype, FENNEL_STRUCT
+from fennel.lib.schema import get_datatype
+from fennel.dtype.dtype import FENNEL_STRUCT
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import (
     get_featureset_core_code,

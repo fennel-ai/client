@@ -32,9 +32,9 @@ from fennel.lib.metadata import (
     set_meta_attr,
 )
 from fennel.lib.includes import TierSelector
+from fennel.lib.inputs import FENNEL_INPUTS
+from fennel.lib.outputs import FENNEL_OUTPUTS
 from fennel.lib.schema import (
-    FENNEL_INPUTS,
-    FENNEL_OUTPUTS,
     validate_val_with_dtype,
     fennel_get_optional_inner,
 )

@@ -14,9 +14,9 @@ from fennel.gen.featureset_pb2 import (
 )
 from fennel.gen.schema_pb2 import Field, DSSchema, Schema
 from fennel.lib.schema import data_schema_check, get_datatype
-from fennel.test_lib.branch import Entities
-from fennel.test_lib.data_engine import DataEngine
-from fennel.test_lib.test_utils import cast_col_to_dtype
+from fennel.testing.branch import Entities
+from fennel.testing.data_engine import DataEngine
+from fennel.testing.test_utils import cast_col_to_dtype
 import fennel.gen.schema_pb2 as schema_proto
 
 
@@ -114,9 +114,9 @@ class QueryEngine:
             features = entities.features_for_fs[extractor.featureset]
             feature_schema = {}
             for feature in features:
-                feature_schema[
-                    f"{extractor.featureset}.{feature.name}"
-                ] = feature.dtype
+                feature_schema[f"{extractor.featureset}.{feature.name}"] = (
+                    feature.dtype
+                )
             fields = []
             for feature_str in extractor.output_features:
                 feature_str = f"{extractor.featureset}.{feature_str}"

@@ -18,3 +18,16 @@ from fennel.datasets.datasets import (
     Explode,
     First,
 )
+from fennel.datasets.aggregate import (
+    Count,
+    Distinct,
+    Sum,
+    LastK,
+    Min,
+    Max,
+    Average,
+    AggregateType,
+    TopK,
+    CF,
+    Stddev,
+)

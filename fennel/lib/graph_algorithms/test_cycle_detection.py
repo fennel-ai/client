@@ -3,7 +3,7 @@ import pytest
 
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.graph_algorithms import is_extractor_graph_cyclic
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import inputs, outputs
 
 
 @featureset

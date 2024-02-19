@@ -7,7 +7,7 @@ from fennel._vendor import requests
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 wh = Webhook(name="fennel_webhook")
 __owner__ = "nitin@fennel.com"
@@ -55,7 +55,10 @@ def test_duplicate_create(client):
     with pytest.raises(Exception) as error:
         client.init_branch("test-branch")
     if client.is_integration_client():
-        assert str(error.value) == 'Server returned: 500, error: failed to create branch: error returned from database: duplicate key value violates unique constraint "branch_name"'
+        assert (
+            str(error.value)
+            == 'Server returned: 500, error: failed to create branch: error returned from database: duplicate key value violates unique constraint "branch_name"'
+        )
     else:
         assert str(error.value) == "Branch name: `test-branch` already exists"
 
@@ -73,14 +76,21 @@ def test_complex_create(client):
         featuresets=[UserInfoFeatureset],
     )
 
-    _, found = client.lookup(dataset_name="UserInfoDataset", keys=[{"user_id": 1},{"user_id": 2}],fields=["age"])
+    _, found = client.lookup(
+        dataset_name="UserInfoDataset",
+        keys=[{"user_id": 1}, {"user_id": 2}],
+        fields=["age"],
+    )
     assert found.to_list() == [False, False]
 
     client.checkout("main")
     with pytest.raises(Exception) as error:
         _ = client.inspect("UserInfoDataset")
     if client.is_integration_client():
-        assert str(error.value) == 'Server returned: 404, dataset "UserInfoDataset" not found'
+        assert (
+            str(error.value)
+            == 'Server returned: 404, dataset "UserInfoDataset" not found'
+        )
     else:
         assert str(error.value) == "Dataset `UserInfoDataset` not found"
 
@@ -117,5 +127,9 @@ def test_log(client):
     assert response.status_code == requests.codes.OK, response.json()
     client.sleep()
 
-    _, found = client.lookup(dataset_name="UserInfoDataset", keys=[{"user_id": 1},{"user_id": 2}],fields=["age"])
+    _, found = client.lookup(
+        dataset_name="UserInfoDataset",
+        keys=[{"user_id": 1}, {"user_id": 2}],
+        fields=["age"],
+    )
     assert found.to_list() == [True, False]

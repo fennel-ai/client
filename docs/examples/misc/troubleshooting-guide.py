@@ -4,8 +4,8 @@ from typing import Optional
 
 from fennel.datasets import dataset
 from fennel.datasets import pipeline, Dataset
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs
+from fennel.lib import meta
+from fennel.lib import inputs
 from fennel.sources import source, Webhook
 
 webhook = Webhook(name="fennel_webhook")

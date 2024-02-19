@@ -5,10 +5,10 @@ import pandas as pd
 
 from fennel.datasets import dataset, field, Dataset, pipeline
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Sum
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.datasets import Sum
+from fennel.lib import includes
+from fennel.lib import meta
+from fennel.lib import inputs, outputs
 from fennel.lib.to_proto.source_code import (
     get_featureset_core_code,
     get_dataset_core_code,

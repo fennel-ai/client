@@ -11,7 +11,7 @@ import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset
 from fennel.lib.includes.include_mod import FENNEL_INCLUDED_MOD
-from fennel.lib.schema import (
+from fennel.dtype.dtype import (
     FENNEL_STRUCT_SRC_CODE,
 )
 from fennel.utils import fennel_get_source
@@ -210,7 +210,7 @@ def get_all_imports() -> str:
         "from fennel.lib.expectations import *",
         "from fennel.lib.schema import *",
         "from fennel.lib.includes import includes",
-        "from fennel.lib.aggregate.aggregate import *",
+        "from fennel.datasets.aggregate import *",
         "from fennel.lib.metadata import meta",
         "from fennel.datasets.datasets import dataset_lookup",
     ]

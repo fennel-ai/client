@@ -7,11 +7,12 @@ import fennel._vendor.requests as requests
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Average
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs, Window
+from fennel.datasets import Average
+from fennel.lib import meta
+from fennel.lib import inputs, outputs
+from fennel.dtype import Window
 from fennel.sources import source
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 webhook = sources.Webhook(name="fennel_webhook")
 

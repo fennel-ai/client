@@ -5,7 +5,7 @@ import pandas as pd
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.sources import Webhook, ref
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 # docsnip user_dataset
@@ -56,8 +56,8 @@ class Transaction:
 # /docsnip
 
 from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Count, Sum
-from fennel.lib.schema import inputs
+from fennel.datasets import Count, Sum
+from fennel.lib import inputs
 
 
 # docsnip pipeline
@@ -89,7 +89,7 @@ class UserTransactionsAbroad:
 from datetime import timedelta
 
 from fennel.featuresets import feature, featureset, extractor
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import inputs, outputs
 
 
 # docsnip featureset

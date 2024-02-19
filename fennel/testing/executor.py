@@ -9,13 +9,13 @@ import pandas as pd
 
 from fennel.datasets import Pipeline, Visitor, Dataset
 from fennel.datasets.datasets import WindowType
-from fennel.lib.aggregate import Count
+from fennel.datasets import Count
 from fennel.lib.duration import duration_to_timedelta
 from fennel.lib.schema import get_datatype
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import to_includes_proto
-from fennel.test_lib.execute_aggregation import get_aggregated_df
-from fennel.test_lib.test_utils import cast_col_to_dtype
+from fennel.testing.execute_aggregation import get_aggregated_df
+from fennel.testing.test_utils import cast_col_to_dtype
 from fennel.lib.schema.schema import validate_field_in_df
 import fennel.gen.schema_pb2 as schema_proto
 

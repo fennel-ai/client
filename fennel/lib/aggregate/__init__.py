@@ -1,4 +1,4 @@
-from fennel.lib.aggregate.aggregate import (
+from fennel.datasets.aggregate import (
     Count,
     Distinct,
     Sum,

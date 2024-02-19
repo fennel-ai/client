@@ -29,8 +29,8 @@ import numpy as np
 import pandas as pd
 
 import fennel.sources as sources
-from fennel.lib.aggregate import AggregateType
-from fennel.lib.aggregate.aggregate import (
+from fennel.datasets.aggregate import (
+    AggregateType,
     Average,
     Count,
     Distinct,
@@ -52,21 +52,23 @@ from fennel.lib.metadata import (
     get_meta_attr,
     set_meta_attr,
 )
+from fennel.dtype.dtype import (
+    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
+    Window,
+    get_fennel_struct,
+    FENNEL_STRUCT_SRC_CODE,
+)
+from fennel.lib.inputs import FENNEL_INPUTS
+from fennel.lib.utils import dtype_to_string
 from fennel.lib.schema import (
-    dtype_to_string,
     get_primitive_dtype,
     fennel_is_optional,
     fennel_get_optional_inner,
     get_pd_dtype,
-    FENNEL_INPUTS,
     is_hashable,
     parse_json,
-    get_fennel_struct,
     get_python_type_from_pd,
-    FENNEL_STRUCT_SRC_CODE,
     get_origin,
-    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
-    Window,
 )
 from fennel.sources.sources import DataConnector, source, PreProcValue
 from fennel.utils import (
@@ -815,13 +817,11 @@ def dataset(
     *,
     version: Optional[int] = DEFAULT_VERSION,
     history: Optional[Duration] = DEFAULT_RETENTION,
-) -> Callable[[Type[T]], Dataset]:
-    ...
+) -> Callable[[Type[T]], Dataset]: ...
 
 
 @overload
-def dataset(cls: Type[T]) -> Dataset:
-    ...
+def dataset(cls: Type[T]) -> Dataset: ...
 
 
 def dataset(
@@ -1045,15 +1045,13 @@ def f_get_type_hints(obj):
 def pipeline(  # noqa: E704
     *,
     tier: Optional[Union[str, List[str]]] = None,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    ...
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
 
 
 @overload
 def pipeline(
     pipeline_func: Callable,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    ...  # noqa: E704
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...  # noqa: E704
 
 
 def pipeline(

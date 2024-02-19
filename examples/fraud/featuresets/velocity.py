@@ -13,7 +13,7 @@ from fennel.featuresets import featureset, feature
 
 __owner__ = "eng@app.com"
 
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import inputs, outputs
 
 
 @featureset

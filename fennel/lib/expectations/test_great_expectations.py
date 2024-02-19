@@ -18,7 +18,7 @@ from fennel.lib.expectations import (
 from fennel.lib.metadata import meta
 from fennel.lib.schema import oneof
 from fennel.sources import source, Webhook
-from fennel.test_lib import *
+from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
 

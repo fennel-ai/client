@@ -5,7 +5,7 @@ from fraud.datasets.sourced import (
 )
 from fraud.featuresets.driver import Request, AgeFS, CreditScoreFS
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 class TestAgeFS:

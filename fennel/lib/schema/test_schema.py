@@ -6,17 +6,21 @@ import pytest
 from typing import Dict, List, Optional
 
 import fennel.gen.schema_pb2 as proto
-from fennel.lib.schema.schema import (
-    get_datatype,
-    data_schema_check,
+from fennel.dtype import (
     between,
     oneof,
     regex,
-    is_hashable,
-    parse_json,
     struct,
+)
+from fennel.dtype.dtype import (
     FENNEL_STRUCT_SRC_CODE,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
+)
+from fennel.lib.schema.schema import (
+    get_datatype,
+    data_schema_check,
+    is_hashable,
+    parse_json,
 )
 
 

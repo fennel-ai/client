@@ -20,7 +20,7 @@ exception - it doesn't support data connectors to external data systems
 Let's first see how it will work and later we will see a fully functional unit test example.
 
 ```python
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 class TestDataset(unittest.TestCase):
@@ -37,7 +37,7 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(found, expected)    
 ```
 
-Here we imported `mock_client` from the `test_lib`. This is a decorator which can be used to decorate test functions - and the decorator supplies an extra argument called `client` to the test. Once the `client` object reaches the body of the test, you can do all operations that are typically done on a real client - you can sync datasets/featuresets, log data, extract features etc.&#x20;
+Here we imported `mock_client` from the `testing`. This is a decorator which can be used to decorate test functions - and the decorator supplies an extra argument called `client` to the test. Once the `client` object reaches the body of the test, you can do all operations that are typically done on a real client - you can sync datasets/featuresets, log data, extract features etc.&#x20;
 
 Since external data integration doesn't work in mock server, the only way to bring data to a dataset in the mock server is by explicitly logging data to it.
 

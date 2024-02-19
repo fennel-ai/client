@@ -6,9 +6,10 @@ import pandas as pd
 
 from fennel.datasets import dataset, field
 from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Sum, Count
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, Window
+from fennel.datasets import Sum, Count
+from fennel.lib import meta
+from fennel.lib import inputs
+from fennel.dtype import Window
 from fennel.sources import source, Webhook
 
 webhook = Webhook(name="fennel_webhook")

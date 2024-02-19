@@ -6,10 +6,10 @@ import requests
 
 # docsnip datasets
 from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import Count, Sum, Average
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.datasets import Count, Sum, Average
+from fennel.lib import includes
+from fennel.lib import meta
+from fennel.lib import inputs, outputs
 from fennel.sources import source, Webhook
 
 webhook = Webhook(name="fennel_webhook")
@@ -50,7 +50,7 @@ class MovieRating:
 # docsnip datasets_testing
 import unittest
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 class TestDataset(unittest.TestCase):

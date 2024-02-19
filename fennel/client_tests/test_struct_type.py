@@ -8,12 +8,12 @@ import fennel._vendor.requests as requests
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import LastK
+from fennel.datasets import LastK
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
-from fennel.lib.schema import struct
+from fennel.lib import inputs, outputs
+from fennel.dtype import struct
 from fennel.sources import source
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 webhook = sources.Webhook(name="fennel_webhook")
 

@@ -5,15 +5,16 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, pipeline, field, Dataset
-from fennel.lib.aggregate import Count, Average, Stddev, Distinct
+from fennel.datasets import Count, Average, Stddev, Distinct
 from fennel.lib.expectations import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, struct
+from fennel.lib import meta
+from fennel.lib import inputs
+from fennel.dtype import struct
 from fennel.sources import Webhook, source
-from fennel.test_lib import *
+from fennel.testing import *
 
 __owner__ = "eng@fennel.ai"
 

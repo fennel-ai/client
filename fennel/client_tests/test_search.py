@@ -11,13 +11,13 @@ import fennel._vendor.requests as requests
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Count, Sum
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, oneof
-from fennel.lib.schema import inputs, outputs
+from fennel.datasets import Count, Sum
+from fennel.lib import includes
+from fennel.lib import meta
+from fennel.dtype import Embedding, oneof
+from fennel.lib import inputs, outputs
 from fennel.sources import source
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 biq_query = sources.BigQuery(
     name="bg_source",

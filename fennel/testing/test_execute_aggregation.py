@@ -1,6 +1,6 @@
 from math import sqrt
 
-from fennel.test_lib.execute_aggregation import (
+from fennel.testing.execute_aggregation import (
     SumState,
     AvgState,
     CountState,

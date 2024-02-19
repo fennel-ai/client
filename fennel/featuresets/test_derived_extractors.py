@@ -7,11 +7,11 @@ from typing import Optional
 import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs, struct
+from fennel.lib import inputs, outputs, meta
+from fennel.dtype import struct
 from fennel.sources import source, Webhook
 
-from fennel.test_lib import *
+from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
 

@@ -23,7 +23,7 @@ from fennel.sources import (
 )
 
 # noinspection PyUnresolvedReferences
-from fennel.test_lib import *
+from fennel.testing import *
 
 mysql = MySQL(
     name="mysql",

@@ -6,12 +6,12 @@ import pytest
 from fennel.datasets import dataset, field
 from fennel.datasets import pipeline, Dataset
 from fennel.featuresets import featureset, extractor, feature
-from fennel.lib.aggregate import Count
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.datasets import Count
+from fennel.lib import meta
+from fennel.lib import inputs, outputs
 from fennel.sources import S3, Webhook
 from fennel.sources import source
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 s3 = S3(
     name="outbrain_source",

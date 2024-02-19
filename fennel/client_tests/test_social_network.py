@@ -6,12 +6,12 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, Dataset, pipeline
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Count
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
-from fennel.lib.schema import regex, oneof
+from fennel.datasets import Count
+from fennel.lib import meta
+from fennel.lib import inputs, outputs
+from fennel.dtype import regex, oneof
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 

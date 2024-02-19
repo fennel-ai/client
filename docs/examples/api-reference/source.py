@@ -6,7 +6,7 @@ from fennel import sources
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.sources import source
-from fennel.test_lib import MockClient
+from fennel.testing import MockClient
 
 # docsnip mysql_source
 mysql = sources.MySQL(

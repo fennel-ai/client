@@ -2,13 +2,13 @@ from datetime import datetime
 
 # docsnip expectations
 from fennel.datasets import dataset
-from fennel.lib.expectations import (
+from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
     expect_column_values_to_be_in_set,
     expect_column_pair_values_A_to_be_greater_than_B,
 )
-from fennel.lib.schema import between
+from fennel.dtype import between
 
 
 @dataset

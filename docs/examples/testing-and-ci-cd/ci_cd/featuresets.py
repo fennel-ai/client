@@ -2,7 +2,7 @@ import pandas as pd
 
 from fennel import featureset, extractor, feature
 from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import inputs, outputs
 
 from ci_cd.datasets import Ticket
 

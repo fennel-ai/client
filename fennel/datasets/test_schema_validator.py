@@ -6,9 +6,10 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import Sum, Min, Max
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, Window
+from fennel.datasets import Sum, Min, Max
+from fennel.lib import meta
+from fennel.lib import inputs
+from fennel.dtype import Window
 
 
 @meta(owner="test@test.com")
