@@ -1,13 +1,13 @@
 ---
-title: Extract
+title: Query
 order: 1
 status: 'published'
 ---
 
 <Divider>
 <LeftSection>
-`POST /api/v1/extract`
-### Extract
+`POST /api/v1/branch/:branch_name/query`
+### Query
 
 API to extract a set of output features given known values of some input features. 
 
@@ -21,6 +21,10 @@ Fennel uses bearer token for authorization. Pass along a valid token that has
 permissions to log data to the webhook.
 </Expandable>
 
+#### Query Parameters
+<Expandable title="branch_name" type="str">
+The name of the branch against which we want to query.
+</Expandable>
 
 #### Body Parameters:
 <Expandable title="inputs" type="str">

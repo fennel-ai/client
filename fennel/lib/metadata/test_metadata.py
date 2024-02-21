@@ -1,9 +1,9 @@
 from datetime import datetime
 from datetime import timedelta
+from typing import Optional, Dict, List
 
 import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
-from typing import Optional, Dict, List
 
 import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field

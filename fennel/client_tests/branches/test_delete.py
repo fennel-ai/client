@@ -149,10 +149,7 @@ def test_complex_delete(client):
         )
 
     if client.is_integration_client():
-        assert (
-            str(error.value)
-            == 'Server returned: 500, error: view not found'
-        )
+        assert str(error.value) == "Server returned: 500, error: view not found"
     else:
         assert (
             str(error.value)

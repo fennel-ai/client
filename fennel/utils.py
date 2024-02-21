@@ -8,14 +8,13 @@ import inspect
 import json
 import sys
 import textwrap
+from typing import Any, cast, Callable, Dict, List, Tuple, Union
 
 from pandas import DataFrame
-from typing import Any, Type
-from typing import cast, Callable, Dict, List, Tuple, Union
 
 import fennel._vendor.astunparse as astunparse
-from fennel._vendor.pydantic.typing import get_args, get_origin  # type: ignore
 import fennel._vendor.requests as requests  # type: ignore
+from fennel._vendor.pydantic.typing import get_args, get_origin  # type: ignore
 
 Tags = Union[List[str], Tuple[str, ...], str]
 
@@ -202,9 +201,9 @@ def parse_annotation_comments(cls: Any) -> Dict[str, str]:
                         line -= 1
 
                     if len(comments) > 0:
-                        comments_for_annotations[
-                            stmt.target.id
-                        ] = textwrap.dedent("\n".join(comments))
+                        comments_for_annotations[stmt.target.id] = (
+                            textwrap.dedent("\n".join(comments))
+                        )
 
         return comments_for_annotations
     except Exception:

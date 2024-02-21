@@ -667,8 +667,10 @@ class TestDocumentDataset(unittest.TestCase):
             9,
         ]
 
-        embedding_resp = list(feature_df["DocumentFeatures.bert_embedding"].tolist()[0])
-        assert (embedding_resp == [1, 2, 3, 4])
+        embedding_resp = list(
+            feature_df["DocumentFeatures.bert_embedding"].tolist()[0]
+        )
+        assert embedding_resp == [1, 2, 3, 4]
 
         if client.is_integration_client():
             return

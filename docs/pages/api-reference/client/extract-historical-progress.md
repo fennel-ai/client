@@ -1,13 +1,13 @@
 ---
-title: Extract Historical Progress
+title: Query Offline Status
 order: 0
 status: published
 ---
-### Extract Historical Progress
+### Query Offline Status
 
 <Divider>
 <LeftSection>
-Method to monitor the progress of a run of `extract_historical` query.
+Method to monitor the progress of a run of `query_offline` query.
 
 #### Parameters
 <Expandable title="request_id" type="str">

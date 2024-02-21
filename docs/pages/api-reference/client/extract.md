@@ -1,9 +1,9 @@
 ---
-title: Extract
+title: Query
 order: 0
 status: published
 ---
-### Extract
+### Query
 
 <Divider>
 <LeftSection>

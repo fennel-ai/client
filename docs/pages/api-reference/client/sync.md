@@ -1,10 +1,10 @@
 ---
-title: Sync
+title: Commit
 order: 0
 status: published
 ---
 
-### Sync
+### Commit
 
 <Divider>
 <LeftSection>

@@ -10,6 +10,7 @@ import pandas as pd
 from frozendict import frozendict
 
 import fennel.datasets.datasets
+import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Dataset, Pipeline
 from fennel.datasets.datasets import sync_validation_for_pipelines
 from fennel.gen.dataset_pb2 import CoreDataset
@@ -22,7 +23,6 @@ from fennel.test_lib.test_utils import (
     cast_df_to_schema,
     cast_col_to_dtype,
 )
-import fennel.gen.schema_pb2 as schema_proto
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -566,9 +566,9 @@ class DataEngine(object):
                 continue
             if ret.is_aggregate:
                 # Aggregate pipelines are not logged
-                self.datasets[
-                    pipeline.dataset_name
-                ].aggregated_datasets = ret.agg_result
+                self.datasets[pipeline.dataset_name].aggregated_datasets = (
+                    ret.agg_result
+                )
                 continue
 
             # Recursively log the output of the pipeline to the datasets

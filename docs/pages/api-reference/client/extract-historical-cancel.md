@@ -1,13 +1,13 @@
 ---
-title: Extract Historical Cancel
+title: Query Offline Cancel
 order: 0
 status: published
 ---
-### Extract Historical Cancel Request
+### Query Offline Cancel Request
 
 <Divider>
 <LeftSection>
-Method to cancel a previously issued `extract_historical` request.
+Method to cancel a previously issued `query_offline` request.
 
 #### Parameters
 <Expandable title="request_id" type="str">

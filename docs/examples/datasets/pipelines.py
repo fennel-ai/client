@@ -9,7 +9,6 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
 from fennel.test_lib import mock
 
-
 __owner__ = "data-eng@fennel.ai"
 
 

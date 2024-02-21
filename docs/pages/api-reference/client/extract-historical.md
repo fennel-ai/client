@@ -1,9 +1,9 @@
 ---
-title: Extract Historical
+title: Query Offline
 order: 0
 status: published
 ---
-### Extract Historical
+### Query Offline
 
 <Divider>
 <LeftSection>

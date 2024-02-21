@@ -4,6 +4,7 @@ from unittest.mock import patch
 import requests
 
 SERVER = "http://localhost:8000/"
+BRANCH_NAME = "main"
 
 
 class TestRestAPI(unittest.TestCase):
@@ -50,7 +51,7 @@ class TestRestAPI(unittest.TestCase):
         # /docsnip
 
         # docsnip rest_extract_api
-        url = "{}/api/v1/extract".format(SERVER)
+        url = "{}/api/v1/branch/{}/query".format(SERVER, BRANCH_NAME)
         headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer <API-TOKEN>",
@@ -73,7 +74,7 @@ class TestRestAPI(unittest.TestCase):
         # /docsnip
 
         # docsnip rest_extract_api_columnar
-        url = "{}/api/v1/extract".format(SERVER)
+        url = "{}/api/v1/branch/{}/query".format(SERVER, BRANCH_NAME)
         headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer <API-TOKEN>",

@@ -1,11 +1,11 @@
+import os
 from datetime import datetime
 
-import os
 import pandas as pd
 
+from fennel.datasets import dataset, field
 from fennel.sources import Webhook
 from fennel.test_lib import mock
-from fennel.datasets import dataset, field
 
 __owner__ = "owner@example.com"
 
@@ -27,7 +27,7 @@ def test_overview(client):
     # This docsnip is not used in the docs, but is used in the tests
     # since docs requires not compilable credentials.
 
-    from fennel.sources import source, MySQL, Kafka, Postgres
+    from fennel.sources import source, Kafka, Postgres
 
     pg = Postgres.get(name="postgres")
     kafka = Kafka.get(name="kafka")

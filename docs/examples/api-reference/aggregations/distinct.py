@@ -1,12 +1,12 @@
-import pytest
-from typing import List
 from datetime import datetime
+from typing import List
 
 import pandas as pd
+import pytest
 
 from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.schema import inputs
 from fennel.lib.aggregate import Distinct
+from fennel.lib.schema import inputs
 from fennel.sources import source, Webhook
 from fennel.test_lib import mock
 

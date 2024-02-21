@@ -1,10 +1,11 @@
-import json
 import gzip
+import json
 import time
-from typing import Dict, Any, List, Optional, Tuple, Union
 from functools import partial
+from typing import Dict, Any, List, Optional, Tuple
 
 import pandas as pd
+
 from fennel.client import Client
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset
@@ -126,7 +127,9 @@ class IntegrationClient(Client):
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
         headers = list(headers.items())
-        code, content, content_type = self._http.post(self._url(path), headers, data)
+        code, content, content_type = self._http.post(
+            self._url(path), headers, data
+        )
         # If response content type is json, parse it
         if content_type == "application/json":
             content = json.loads(content)

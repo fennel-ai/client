@@ -1,8 +1,8 @@
-import pytest
 import unittest
 from datetime import datetime
 
 import pandas as pd
+import pytest
 
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.schema import inputs

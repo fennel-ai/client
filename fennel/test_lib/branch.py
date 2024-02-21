@@ -28,7 +28,6 @@ from fennel.lib.to_proto import (
 from fennel.test_lib.data_engine import DataEngine
 from fennel.test_lib.test_utils import FakeResponse
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -131,9 +130,9 @@ class Branch:
             self.entities.features_for_fs[featureset._name] = features_from_fs(
                 featureset
             )
-            self.entities.featureset_requests[
-                featureset._name
-            ] = featureset_to_proto(featureset)
+            self.entities.featureset_requests[featureset._name] = (
+                featureset_to_proto(featureset)
+            )
             self.entities.featureset_map[featureset._name] = featureset
             # Check if the dataset used by the extractor is registered
             for extractor in featureset.extractors:
@@ -165,9 +164,9 @@ class Branch:
                 if extractor.extractor_type != ProtoExtractorType.PY_FUNC:
                     continue
                 extractor_fqn = f"{featureset._name}.{extractor.name}"
-                self.entities.extractor_funcs[
-                    extractor_fqn
-                ] = get_extractor_func(extractor)
+                self.entities.extractor_funcs[extractor_fqn] = (
+                    get_extractor_func(extractor)
+                )
 
         if is_extractor_graph_cyclic(self.entities.extractors):
             raise Exception("Cyclic graph detected in extractors")

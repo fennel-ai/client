@@ -1,11 +1,9 @@
 from __future__ import annotations
-from typing_extensions import Literal
 
 import copy
 import datetime
 import functools
 import inspect
-import logging
 import sys
 from dataclasses import dataclass
 from enum import Enum
@@ -28,8 +26,8 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+from typing_extensions import Literal
 
-import fennel.sources as sources
 from fennel.lib.aggregate import AggregateType
 from fennel.lib.aggregate.aggregate import (
     Average,
@@ -69,7 +67,6 @@ from fennel.lib.schema import (
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
     Window,
 )
-from fennel.sources.sources import DataConnector, source, PreProcValue
 from fennel.utils import (
     fhash,
     parse_annotation_comments,
@@ -1123,9 +1120,9 @@ def pipeline(  # noqa: E704
 
 
 @overload
-def pipeline(
+def pipeline(  # noqa: E704
     pipeline_func: Callable,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...  # noqa: E704
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
 
 
 def pipeline(

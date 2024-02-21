@@ -8,6 +8,7 @@ import pandas as pd
 from frozendict import frozendict
 
 import fennel.datasets.datasets
+import fennel.gen.schema_pb2 as schema_proto
 from fennel.featuresets import Extractor, Feature, Featureset, is_valid_feature
 from fennel.gen.featureset_pb2 import (
     ExtractorType as ProtoExtractorType,
@@ -17,7 +18,6 @@ from fennel.lib.schema import data_schema_check, get_datatype
 from fennel.test_lib.branch import Entities
 from fennel.test_lib.data_engine import DataEngine
 from fennel.test_lib.test_utils import cast_col_to_dtype
-import fennel.gen.schema_pb2 as schema_proto
 
 
 class QueryEngine:
@@ -114,9 +114,9 @@ class QueryEngine:
             features = entities.features_for_fs[extractor.featureset]
             feature_schema = {}
             for feature in features:
-                feature_schema[
-                    f"{extractor.featureset}.{feature.name}"
-                ] = feature.dtype
+                feature_schema[f"{extractor.featureset}.{feature.name}"] = (
+                    feature.dtype
+                )
             fields = []
             for feature_str in extractor.output_features:
                 feature_str = f"{extractor.featureset}.{feature_str}"
