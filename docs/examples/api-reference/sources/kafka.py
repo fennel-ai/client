@@ -32,7 +32,7 @@ def test_kafka_source(client):
 
     # /docsnip
 
-    client.sync(datasets=[SomeDataset])
+    client.commit(datasets=[SomeDataset])
 
 
 @mock
@@ -71,4 +71,4 @@ def test_kafka_with_avro(client):
 
     # /docsnip
 
-    client.sync(datasets=[SomeDataset])
+    client.commit(datasets=[SomeDataset])

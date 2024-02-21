@@ -182,12 +182,20 @@ def test_clone_after_log(client):
     assert response.status_code == requests.codes.OK, response.json()
     client.sleep()
 
-    _, found = client.lookup(dataset_name="UserInfoDataset", keys=[{"user_id": 1},{"user_id": 2}],fields=["age"])
+    _, found = client.lookup(
+        dataset_name="UserInfoDataset",
+        keys=[{"user_id": 1}, {"user_id": 2}],
+        fields=["age"],
+    )
     assert found.to_list() == [True, False]
 
     client.clone_branch("test-branch", from_branch="main")
     assert client.get_branch() == "test-branch"
-    _, found = client.lookup(dataset_name="UserInfoDataset", keys=[{"user_id": 1},{"user_id": 2}],fields=["age"])
+    _, found = client.lookup(
+        dataset_name="UserInfoDataset",
+        keys=[{"user_id": 1}, {"user_id": 2}],
+        fields=["age"],
+    )
     assert found.to_list() == [True, False]
 
 
@@ -204,7 +212,7 @@ def test_webhook_log_to_both_clone_parent(client):
     resp = client.clone_branch("test-branch", from_branch="main")
     assert resp.status_code == requests.codes.OK, resp.json()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         {
             "user_id": 1,
@@ -309,7 +317,10 @@ def test_add_dataset_clone_branch(client):
     with pytest.raises(Exception) as error:
         client.inspect("CountryStats")
     if client.is_integration_client():
-        assert str(error.value) == 'Server returned: 404, dataset "CountryStats" not found'
+        assert (
+            str(error.value)
+            == 'Server returned: 404, dataset "CountryStats" not found'
+        )
     else:
         assert str(error.value) == "Dataset `CountryStats` not found"
 

@@ -33,14 +33,14 @@ class TestDedupSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Transaction)
             def pipeline(cls, ds: Dataset):
                 return ds.dedup(by="txid")
 
         # /docsnip
 
-        client.sync(datasets=[Transaction, Deduped])
+        client.commit(datasets=[Transaction, Deduped])
         # log some rows to the transaction dataset, with some duplicates
         client.log(
             "webhook",
@@ -96,14 +96,14 @@ class TestDedupSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Transaction)
             def pipeline(cls, ds: Dataset):
                 return ds.dedup()
 
         # /docsnip
 
-        client.sync(datasets=[Transaction, Deduped])
+        client.commit(datasets=[Transaction, Deduped])
         # log some rows to the transaction dataset, with some duplicates
         client.log(
             "webhook",

@@ -30,7 +30,7 @@ def test_basic(client):
         stddev: float
         timestamp: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(Transaction)
         def pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
@@ -41,7 +41,7 @@ def test_basic(client):
             )
 
     # /docsnip
-    client.sync(datasets=[Transaction, Aggregated])
+    client.commit(datasets=[Transaction, Aggregated])
     # log some rows to the transaction dataset
     client.log(
         "webhook",
@@ -120,7 +120,7 @@ def test_invalid_type(client):
             var: str
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Transaction)
             def pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
@@ -149,7 +149,7 @@ def test_non_matching_types(client):
             ret: int
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Transaction)
             def pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(

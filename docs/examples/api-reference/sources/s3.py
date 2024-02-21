@@ -28,7 +28,7 @@ def test_s3_source_prefix(client):
         timestamp: datetime
 
     # /docsnip
-    client.sync(datasets=[User])
+    client.commit(datasets=[User])
 
 
 @mock
@@ -53,7 +53,7 @@ def test_s3_delta(client):
         timestamp: datetime
 
     # /docsnip
-    client.sync(datasets=[User])
+    client.commit(datasets=[User])
 
 
 @mock
@@ -78,7 +78,7 @@ def test_s3_hudi(client):
         timestamp: datetime
 
     # /docsnip
-    client.sync(datasets=[User])
+    client.commit(datasets=[User])
 
 
 @mock
@@ -105,4 +105,4 @@ def test_s3_source_path(client):
         timestamp: datetime
 
     # /docsnip
-    client.sync(datasets=[User])
+    client.commit(datasets=[User])

@@ -43,4 +43,4 @@ def test_source_decorator(client):
         timestamp: datetime
 
     # /docsnip
-    client.sync(datasets=[User])
+    client.commit(datasets=[User])

@@ -32,7 +32,7 @@ class TestAssignSnips(unittest.TestCase):
             count_1d: int
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Transaction)
             def pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
@@ -42,7 +42,7 @@ class TestAssignSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.sync(datasets=[Transaction, Aggregated])
+        client.commit(datasets=[Transaction, Aggregated])
         # log some rows to the transaction dataset
         client.log(
             "webhook",

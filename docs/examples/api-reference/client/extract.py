@@ -30,8 +30,8 @@ def test_basic(client):
             is_odd = is_even.apply(lambda x: not x)
             return pd.DataFrame({"is_even": is_even, "is_odd": is_odd})
 
-    client.sync(featuresets=[Numbers])
-    feature_df = client.extract(
+    client.commit(featuresets=[Numbers])
+    feature_df = client.query(
         inputs=[Numbers.num],
         outputs=[Numbers.is_even, Numbers.is_odd],
         input_dataframe=pd.DataFrame({"Numbers.num": [1, 2, 3, 4]}),
@@ -49,7 +49,7 @@ def test_basic(client):
 
     def _unused():
         # docsnip extract_historical_api
-        response = client.extract_historical(
+        response = client.query_offline(
             inputs=[Numbers.num],
             outputs=[Numbers.is_even, Numbers.is_odd],
             format="pandas",
@@ -64,12 +64,12 @@ def test_basic(client):
 
     # docsnip extract_historical_progress
     request_id = "bf5dfe5d-0040-4405-a224-b82c7a5bf085"
-    response = client.extract_historical_progress(request_id)
+    response = client.query_offline_status(request_id)
     print(response)
     # /docsnip
     # docsnip extract_historical_cancel
     request_id = "bf5dfe5d-0040-4405-a224-b82c7a5bf085"
-    response = client.extract_historical_cancel_request(request_id)
+    response = client.query_offline_cancel(request_id)
     print(response)
     # /docsnip
     # docsnip extract_historical_response
@@ -94,7 +94,7 @@ def test_basic(client):
         s3_input_connection = s3.bucket("bucket", prefix="data/user_features")
         s3_output_connection = s3.bucket("bucket", prefix="output")
 
-        response = client.extract_historical(
+        response = client.query_offline(
             inputs=[Numbers.num],
             outputs=[Numbers.is_even, Numbers.is_odd],
             format="csv",

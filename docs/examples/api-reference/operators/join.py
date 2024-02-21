@@ -40,7 +40,7 @@ class TestAssignSnips(unittest.TestCase):
             timestamp: datetime
             category: str
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Transaction, MerchantCategory)
             def pipeline(cls, tx: Dataset, merchant_category: Dataset):
                 return tx.join(merchant_category, on=["merchant"], how="inner")
@@ -48,7 +48,7 @@ class TestAssignSnips(unittest.TestCase):
         # /docsnip
 
         # log some rows to both datasets
-        client.sync(datasets=[Transaction, MerchantCategory, WithCategory])
+        client.commit(datasets=[Transaction, MerchantCategory, WithCategory])
         client.log(
             "webhook",
             "Transaction",

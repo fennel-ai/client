@@ -37,14 +37,14 @@ class TestDropnullSnips(unittest.TestCase):
             gender: Optional[str]
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(User)
             def pipeline(cls, user: Dataset):
                 return user.dropnull("city", "country")
 
         # /docsnip
 
-        client.sync(datasets=[User, Derived])
+        client.commit(datasets=[User, Derived])
         # log some rows
         client.log(
             "webhook",
@@ -110,14 +110,14 @@ class TestDropnullSnips(unittest.TestCase):
             dob: str
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(User)
             def pipeline(cls, user: Dataset):
                 return user.dropnull()
 
         # /docsnip
 
-        client.sync(datasets=[User, Derived])
+        client.commit(datasets=[User, Derived])
         # log some rows
         # log some rows
         client.log(
@@ -179,7 +179,7 @@ class TestDropnullSnips(unittest.TestCase):
                 city: str
                 timestamp: datetime
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(User)
                 def pipeline(cls, user: Dataset):
                     return user.select("random")
@@ -202,7 +202,7 @@ class TestDropnullSnips(unittest.TestCase):
                 uid: int = field(key=True)
                 timestamp: datetime
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(User)
                 def pipeline(cls, user: Dataset):
                     return user.select("city")

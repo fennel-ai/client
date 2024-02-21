@@ -31,7 +31,7 @@ class TestAssignSnips(unittest.TestCase):
             amount_sq: int
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Transaction)
             def pipeline(cls, ds: Dataset):
                 schema = ds.schema()
@@ -42,7 +42,7 @@ class TestAssignSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.sync(datasets=[Transaction, WithSquare])
+        client.commit(datasets=[Transaction, WithSquare])
         # log some rows to the transaction dataset
         client.log(
             "webhook",
@@ -83,7 +83,7 @@ class TestAssignSnips(unittest.TestCase):
                 amount: int
                 timestamp: datetime
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(Transaction)
                 def pipeline(cls, ds: Dataset):
                     schema = {"user": int, "amount": int, "timestamp": datetime}
@@ -108,7 +108,7 @@ class TestAssignSnips(unittest.TestCase):
             amount_sq: int
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Transaction)
             def pipeline(cls, ds: Dataset):
                 schema = ds.schema()
@@ -118,7 +118,7 @@ class TestAssignSnips(unittest.TestCase):
                 )  # noqa
 
         # /docsnip
-        client.sync(datasets=[Transaction, WithHalf])
+        client.commit(datasets=[Transaction, WithHalf])
         # log some rows to the transaction dataset
         with pytest.raises(Exception):
             client.log(

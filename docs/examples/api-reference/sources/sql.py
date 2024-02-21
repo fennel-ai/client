@@ -35,7 +35,7 @@ def test_mysql_basic(client):
 
     # /docsnip
 
-    client.sync(datasets=[User])
+    client.commit(datasets=[User])
 
 
 @mock
@@ -66,7 +66,7 @@ def test_postgres_basic(client):
         updated_at: datetime = field(timestamp=True)
 
     # /docsnip
-    client.sync(datasets=[User])
+    client.commit(datasets=[User])
 
 
 @mock
@@ -97,4 +97,4 @@ def test_snowflake_basic(client):
         timestamp: datetime
 
     # /docsnip
-    client.sync(datasets=[UserClick])
+    client.commit(datasets=[UserClick])

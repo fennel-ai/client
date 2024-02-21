@@ -32,7 +32,7 @@ class TestRenameSnips(unittest.TestCase):
             height_in: float
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(User)
             def pipeline(cls, user: Dataset):
                 return user.rename(
@@ -41,7 +41,7 @@ class TestRenameSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.sync(datasets=[User, Derived])
+        client.commit(datasets=[User, Derived])
         # log some rows
         client.log(
             "webhook",

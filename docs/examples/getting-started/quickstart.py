@@ -52,7 +52,7 @@ class Product:
 
 # ingesting realtime data from Kafka works exactly the same way
 @meta(owner="eva@fennel.ai")
-@source(kafka.topic("orders"), lateness="1h", tier="prod")
+@source(kafka.topic("orders"), disorder="1h", tier="prod")
 @source(webhook.endpoint("Order"), tier="dev")
 @dataset
 class Order:

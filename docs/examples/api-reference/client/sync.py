@@ -33,7 +33,7 @@ def test_basic(client):
         def some_fn(cls, ts, amount: pd.Series):
             return amount.apply(lambda x: x > 100)
 
-    client.sync(
+    client.commit(
         datasets=[Transaction],
         featuresets=[TransactionFeatures],
         preview=False,  # default is also False, so didn't need to include this

@@ -22,7 +22,7 @@ def test_basic(client):
         amount: int
         timestamp: datetime
 
-    client.sync(datasets=[Transaction])
+    client.commit(datasets=[Transaction])
 
     # log some rows to the webhook
     client.log(

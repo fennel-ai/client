@@ -35,14 +35,14 @@ class TestSelectSnips(unittest.TestCase):
             height: float
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(User)
             def pipeline(cls, user: Dataset):
                 return user.select("uid", "height", "weight")
 
         # /docsnip
 
-        client.sync(datasets=[User, Selected])
+        client.commit(datasets=[User, Selected])
         # log some rows
         client.log(
             "webhook",
@@ -114,7 +114,7 @@ class TestSelectSnips(unittest.TestCase):
                 city: str
                 timestamp: datetime
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(User)
                 def pipeline(cls, user: Dataset):
                     return user.select("height", "weight")
@@ -138,7 +138,7 @@ class TestSelectSnips(unittest.TestCase):
                 city: str
                 timestamp: datetime
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(User)
                 def pipeline(cls, user: Dataset):
                     return user.select("uid", "random")

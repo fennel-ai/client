@@ -97,7 +97,7 @@ def test_log(client):
     )
     assert resp.status_code == 200, resp.json()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         {
             "user_id": 1,

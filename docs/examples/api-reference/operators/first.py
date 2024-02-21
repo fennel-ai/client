@@ -31,14 +31,14 @@ class TestFirstSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Transaction)
             def pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").first()
 
         # /docsnip
 
-        client.sync(datasets=[Transaction, FirstOnly])
+        client.commit(datasets=[Transaction, FirstOnly])
         # log some rows to the transaction dataset
         client.log(
             "webhook",

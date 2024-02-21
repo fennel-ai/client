@@ -34,7 +34,7 @@ class TestExplodeSnips(unittest.TestCase):
             price: Optional[float]
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Orders)
             def pipeline(cls, ds: Dataset):
                 return ds.explode("skus", "prices").rename(
@@ -43,7 +43,7 @@ class TestExplodeSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.sync(datasets=[Orders, Derived])
+        client.commit(datasets=[Orders, Derived])
         # log some rows to the transaction dataset
         client.log(
             "webhook",
@@ -93,7 +93,7 @@ class TestExplodeSnips(unittest.TestCase):
                 price: float
                 timestamp: datetime
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(Orders)
                 def pipeline(cls, ds: Dataset):
                     return ds.explode("price")
@@ -117,7 +117,7 @@ class TestExplodeSnips(unittest.TestCase):
                 price: float
                 timestamp: datetime
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(Orders)
                 def pipeline(cls, ds: Dataset):
                     return ds.explode("price", "random")

@@ -277,13 +277,6 @@ def test_multiple_pipelines(client):
 
     # /docsnip
     client.commit(datasets=[AndroidLogins, IOSLogins, LoginStats])
-
-# /docsnip
-
-
-@mock
-def test_multiple_pipelines(client):
-    client.commit(datasets=[AndroidLogins, IOSLogins, LoginStats])
     now = datetime.now()
     data = [
         [1, now],

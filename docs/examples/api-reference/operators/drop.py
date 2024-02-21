@@ -34,7 +34,7 @@ class TestFilterSnips(unittest.TestCase):
             gender: str
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(User)
             def pipeline(cls, user: Dataset):
                 return user.drop("height", "weight").drop(
@@ -43,7 +43,7 @@ class TestFilterSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.sync(datasets=[User, Dropped])
+        client.commit(datasets=[User, Dropped])
         # log some rows
         client.log(
             "webhook",
@@ -114,7 +114,7 @@ class TestFilterSnips(unittest.TestCase):
                 city: str
                 timestamp: datetime
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(User)
                 def pipeline(cls, user: Dataset):
                     return user.drop("uid")
@@ -138,7 +138,7 @@ class TestFilterSnips(unittest.TestCase):
                 city: str
                 timestamp: datetime
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(User)
                 def pipeline(cls, user: Dataset):
                     return user.drop("random")

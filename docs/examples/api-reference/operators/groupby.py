@@ -30,7 +30,7 @@ class TestGroupbySnips(unittest.TestCase):
             uid: int
             timestamp: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(Transaction)
             def pipeline(cls, transactions: Dataset):
                 return transactions.groupby("category").first()
@@ -38,7 +38,7 @@ class TestGroupbySnips(unittest.TestCase):
         # /docsnip
 
         # log some rows to the transaction dataset
-        client.sync(datasets=[Transaction, FirstInCategory])
+        client.commit(datasets=[Transaction, FirstInCategory])
         client.log(
             "webhook",
             "Transaction",
@@ -92,7 +92,7 @@ class TestGroupbySnips(unittest.TestCase):
                 uid: int
                 timestamp: datetime
 
-                @pipeline(version=1)
+                @pipeline
                 @inputs(Transaction)
                 def pipeline(cls, transactions: Dataset):
                     return transactions.groupby("non_existent_column").first()

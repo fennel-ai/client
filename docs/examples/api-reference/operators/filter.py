@@ -32,14 +32,14 @@ class TestFilterSnips(unittest.TestCase):
             city: str
             signup_time: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(User)
             def my_pipeline(cls, user: Dataset):
                 return user.filter(lambda df: df["city"] != "London")
 
         # /docsnip
 
-        client.sync(datasets=[User, Filtered])
+        client.commit(datasets=[User, Filtered])
         # log some rows to the transaction dataset
         client.log(
             "webhook",
@@ -103,14 +103,14 @@ class TestFilterSnips(unittest.TestCase):
             city: str
             signup_time: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(User)
             def my_pipeline(cls, user: Dataset):
                 return user.filter(lambda df: df["city"] + "London")
 
         # /docsnip
 
-        client.sync(datasets=[User, Filtered])
+        client.commit(datasets=[User, Filtered])
         with pytest.raises(Exception):
             client.log(
                 "webhook",
