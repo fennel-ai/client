@@ -64,12 +64,13 @@ class IntegrationClient(Client):
 
     def commit(
         self,
+        message: str,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
         tier: Optional[str] = None,
     ):
-        resp = super().commit(datasets, featuresets, preview, tier)
+        resp = super().commit(message, datasets, featuresets, preview, tier)
         # It takes a while to setup the server
         time.sleep(10)
         return resp
@@ -101,7 +102,7 @@ class IntegrationClient(Client):
         if self.token:
             headers = {}
             headers["Authorization"] = "Bearer " + self.token
-        headers = list(headers.items())
+        headers = list(headers.items())  # type: ignore
         x = self._http.get(self._url(path), headers=headers)
         print(x)
         code, content, content_type = x
@@ -126,7 +127,7 @@ class IntegrationClient(Client):
             headers["Content-Encoding"] = "gzip"
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
-        headers = list(headers.items())
+        headers = list(headers.items())  # type: ignore
         code, content, content_type = self._http.post(
             self._url(path), headers, data
         )
