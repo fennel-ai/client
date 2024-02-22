@@ -6,8 +6,7 @@ import pytest
 
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import featureset, extractor, feature
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import meta, inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.testing import *
 

@@ -1,6 +1,4 @@
-from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.schema import inputs, outputs
-from fennel.lib.schema import oneof
+from fennel.featuresets import featureset, feature
 
 __owner__ = "eng@app.com"
 

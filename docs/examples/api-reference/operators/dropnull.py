@@ -6,7 +6,7 @@ from datetime import datetime
 import pandas as pd
 
 from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.schema import inputs
+from fennel.lib import inputs
 from fennel.sources import source, Webhook
 from fennel.testing import mock
 

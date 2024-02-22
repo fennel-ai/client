@@ -7,7 +7,7 @@ from dateutil.relativedelta import relativedelta  # type: ignore
 
 from fennel import meta, Count, featureset, feature, extractor
 from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import inputs, outputs
 from fennel.sources import Webhook
 from fennel.sources import source
 from fennel.testing import mock

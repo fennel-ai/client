@@ -3,12 +3,9 @@ from typing import Optional, List
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, Dataset, pipeline
+from fennel.datasets import dataset, field, Dataset, pipeline, Sum
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Sum
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import includes, meta, inputs, outputs
 from fennel.internal_lib.to_proto.source_code import (
     get_featureset_core_code,
     get_dataset_core_code,

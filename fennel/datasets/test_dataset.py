@@ -7,13 +7,19 @@ import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.dataset_pb2 as ds_proto
-from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.datasets import (
+    dataset,
+    pipeline,
+    field,
+    Dataset,
+    Count,
+    Average,
+    Stddev,
+    Sum,
+)
 from fennel.gen.services_pb2 import SyncRequest
-from fennel.internal_lib.last import Last
-from fennel.lib.aggregate import Count, Average, Stddev, Sum
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, inputs, Window
+from fennel.lib import includes, meta, inputs
+from fennel.dtypes import Embedding, Window
 from fennel.sources import source, Webhook, Kafka
 from fennel.testing import *
 
@@ -2651,9 +2657,7 @@ def test_dataset_with_str_window_aggregate():
                     window="forever",
                     into_field="sum_age",
                 ),
-                Stddev(
-                    of="age", window="forever", into_field="stddev_age"
-                ),
+                Stddev(of="age", window="forever", into_field="stddev_age"),
             )
 
     view = InternalTestClient()

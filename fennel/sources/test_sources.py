@@ -7,7 +7,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, field
-from fennel.lib.metadata import meta
+from fennel.lib import meta
 from fennel.sources import (
     source,
     MySQL,
@@ -18,8 +18,8 @@ from fennel.sources import (
     Kinesis,
     Avro,
     ref,
+    S3Connector,
 )
-from fennel.sources.sources import S3Connector
 
 # noinspection PyUnresolvedReferences
 from fennel.testing import *

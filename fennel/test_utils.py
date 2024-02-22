@@ -1,4 +1,4 @@
-from fennel.lib.schema import struct
+from fennel.dtypes import struct
 from fennel.utils import fhash, to_columnar_json
 from datetime import datetime, timezone
 from math import nan

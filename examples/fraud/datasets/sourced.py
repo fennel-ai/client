@@ -2,9 +2,8 @@ from datetime import datetime
 from typing import Optional
 
 from fennel.datasets import dataset, field
-from fennel.lib.schema import oneof
-from fennel.sources import Webhook, S3, MySQL
-from fennel.sources import source
+from fennel.dtypes import oneof
+from fennel.sources import Webhook, S3, MySQL, source
 
 __owner__ = "eng@app.com"
 

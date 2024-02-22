@@ -5,9 +5,8 @@ This file contains all velocity related datasets.
 from datetime import datetime
 from typing import Optional
 
-from fennel import Count
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.schema import inputs
+from fennel.datasets import dataset, field, pipeline, Dataset, Count
+from fennel.lib import inputs
 from fennel.sources import Webhook, source
 
 __owner__ = "eng@app.com"

@@ -16,4 +16,4 @@ from fennel.datasets import (
     Stddev,
 )
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.metadata import meta
+from fennel.lib import meta

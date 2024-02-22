@@ -14,7 +14,7 @@ class TestFilterSnips(unittest.TestCase):
     def test_basic(self, client):
         # docsnip basic
         from fennel.datasets import dataset, field, pipeline, Dataset
-        from fennel.lib.schema import inputs
+        from fennel.lib import inputs
         from fennel.sources import source, Webhook
 
         webhook = Webhook(name="webhook")
@@ -85,7 +85,7 @@ class TestFilterSnips(unittest.TestCase):
     def test_invalid_type(self, client):
         # docsnip incorrect_type
         from fennel.datasets import dataset, field, pipeline, Dataset
-        from fennel.lib.schema import inputs
+        from fennel.lib import inputs
         from fennel.sources import source, Webhook
 
         webhook = Webhook(name="webhook")

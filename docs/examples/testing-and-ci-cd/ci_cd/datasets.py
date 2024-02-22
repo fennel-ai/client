@@ -5,7 +5,7 @@ from typing import List
 def test_dataset_deleted():
     # docsnip dataset_deleted
     from fennel.datasets import dataset, field
-    from fennel.lib.metadata import meta
+    from fennel.lib import meta
     from fennel.sources import source, Webhook
 
     @meta(owner="mohit@fennel.ai", deleted=True)
@@ -22,7 +22,7 @@ def test_dataset_deleted():
 def test_gh_actions_dataset():
     # docsnip gh_action_dataset
     from fennel.datasets import dataset, field
-    from fennel.lib.metadata import meta
+    from fennel.lib import meta
     from fennel.sources import source, Webhook
 
     @meta(owner="mohit@fennel.ai")

@@ -4,7 +4,7 @@ from typing import Optional
 import pytest
 
 from fennel.datasets import dataset, field
-from fennel.lib.metadata import meta
+from fennel.lib import meta
 
 
 def test_invalid_email():

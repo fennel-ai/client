@@ -15,7 +15,7 @@ from fennel.featuresets import Featureset, Feature, is_valid_feature
 from fennel.internal_lib.graph_algorithms import (
     get_extractor_order,
 )
-from fennel.lib.includes import includes  # noqa
+from fennel.lib import includes  # noqa
 from fennel.internal_lib.schema import get_datatype
 from fennel.sources.sources import S3Connector
 from fennel.testing.branch import Branch

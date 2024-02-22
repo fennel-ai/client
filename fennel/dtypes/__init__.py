@@ -4,4 +4,5 @@ from fennel.dtypes.dtypes import (
     regex,
     between,
     Window,
+    struct,
 )

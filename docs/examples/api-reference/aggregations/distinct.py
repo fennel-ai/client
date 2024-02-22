@@ -4,9 +4,8 @@ from typing import List
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import Distinct
-from fennel.lib.schema import inputs
+from fennel.datasets import dataset, field, pipeline, Dataset, Distinct
+from fennel.lib import inputs
 from fennel.sources import source, Webhook
 from fennel.testing import mock
 

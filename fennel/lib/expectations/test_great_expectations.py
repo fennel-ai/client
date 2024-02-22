@@ -8,15 +8,15 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 import fennel._vendor.requests as requests
 import fennel.gen.expectations_pb2 as exp_proto
 from fennel.datasets import dataset, field
-from fennel.lib.expectations import (
+from fennel.lib import (
+    meta,
     expectations,
     expect_column_values_to_be_between,
     expect_column_values_to_be_in_set,
     expect_column_values_to_not_be_null,
     expect_column_pair_values_A_to_be_greater_than_B,
 )
-from fennel.lib.metadata import meta
-from fennel.lib.schema import oneof
+from fennel.dtypes import oneof
 from fennel.sources import source, Webhook
 from fennel.testing import *
 

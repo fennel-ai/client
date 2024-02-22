@@ -6,8 +6,8 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
-from fennel.lib.metadata import meta
-from fennel.lib.schema import oneof, regex, between
+from fennel.lib import meta
+from fennel.dtypes import oneof, regex, between
 from fennel.sources import source, Webhook
 from fennel.testing import mock
 

@@ -7,7 +7,7 @@ import pytest
 def test_basic_dataset():
     # docsnip user_dataset
     from fennel.datasets import dataset, field
-    from fennel.lib.metadata import meta
+    from fennel.lib import meta
 
     @meta(owner="data-eng-oncall@fennel.ai")
     @dataset
@@ -26,7 +26,7 @@ def test_basic_dataset():
 def test_valid_user_dataset():
     # docsnip valid_user_dataset
     from fennel.datasets import dataset, field
-    from fennel.lib.metadata import meta
+    from fennel.lib import meta
 
     @meta(owner="henry@fennel.ai")
     @dataset
@@ -41,7 +41,7 @@ def test_valid_user_dataset():
 def test_valid_dataset_multiple_datetime_fields():
     # docsnip valid_dataset_multiple_datetime_fields
     from fennel.datasets import dataset, field
-    from fennel.lib.metadata import meta
+    from fennel.lib import meta
 
     @meta(owner="laura@fennel.ai")
     @dataset
@@ -57,7 +57,7 @@ def test_valid_dataset_multiple_datetime_fields():
 def test_metaflags_dataset():
     # docsnip metaflags_dataset
     from fennel.datasets import dataset, field
-    from fennel.lib.metadata import meta
+    from fennel.lib import meta
 
     @meta(owner="abc-team@fennel.ai", tags=["PII", "experimental"])
     @dataset
@@ -73,7 +73,7 @@ def test_metaflags_dataset():
 def test_metaflags_dataset_default_owners():
     # docsnip metaflags_dataset_default_owners
     from fennel.datasets import dataset, field
-    from fennel.lib.metadata import meta
+    from fennel.lib import meta
 
     __owner__ = "hoang@fennel.ai"
 
@@ -108,7 +108,7 @@ def test_optional_key_field():
     with pytest.raises(Exception) as e:
         # docsnip invalid_user_dataset_optional_key_field
         from fennel.datasets import dataset, field
-        from fennel.lib.metadata import meta
+        from fennel.lib import meta
 
         @meta(owner="test@fennel.ai")
         @dataset
@@ -126,7 +126,7 @@ def test_no_datetime_field():
     with pytest.raises(Exception) as e:
         # docsnip invalid_user_dataset_no_datetime_field
         from fennel.datasets import dataset, field
-        from fennel.lib.metadata import meta
+        from fennel.lib import meta
 
         @meta(owner="data-eng-oncall@fennel.ai")
         @dataset
@@ -146,7 +146,7 @@ def test_ambiguous_timestamp_field():
     with pytest.raises(Exception) as e:
         # docsnip invalid_user_dataset_ambiguous_timestamp_field
         from fennel.datasets import dataset, field
-        from fennel.lib.metadata import meta
+        from fennel.lib import meta
 
         @meta(owner="data-eng-oncall@fennel.ai")
         @dataset

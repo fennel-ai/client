@@ -10,10 +10,9 @@ from fraud.featuresets.request import Request
 
 from fennel import extractor
 from fennel.featuresets import featureset, feature
+from fennel.lib import inputs, outputs
 
 __owner__ = "eng@app.com"
-
-from fennel.lib.schema import inputs, outputs
 
 
 @featureset

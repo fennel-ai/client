@@ -5,7 +5,7 @@ This file contains all the required datasets for linking different payment ids t
 from datetime import datetime
 
 from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.schema import inputs
+from fennel.lib import inputs
 from fennel.sources import Webhook, source
 
 __owner__ = "eng@app.com"

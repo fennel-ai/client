@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 
 from fennel.datasets import dataset
-from fennel.lib.metadata import meta
+from fennel.lib import meta
 
 os.environ["POSTGRES_NAME"] = "postgres"
 os.environ["POSTGRES_HOST"] = "localhost"

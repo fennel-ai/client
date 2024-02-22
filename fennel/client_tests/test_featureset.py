@@ -9,13 +9,15 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
-from fennel.lib.expectations import (
+from fennel.lib import (
+    includes,
+    inputs,
+    outputs,
+    meta,
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, inputs, outputs, struct
+from fennel.dtypes import Embedding, struct
 from fennel.sources import source, Webhook
 from fennel.testing import mock
 

@@ -10,12 +10,21 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import Min, Max
-from fennel.lib.aggregate import Sum, Average, Count, Stddev, Distinct
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import between, oneof, inputs, struct
+from fennel.datasets import (
+    dataset,
+    field,
+    pipeline,
+    Dataset,
+    Min,
+    Max,
+    Sum,
+    Average,
+    Count,
+    Stddev,
+    Distinct,
+)
+from fennel.lib import includes, meta, inputs
+from fennel.dtypes import between, oneof, struct
 from fennel.sources import source, Webhook, ref
 from fennel.testing import almost_equal, mock, InternalTestClient
 

@@ -4,12 +4,10 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field, Dataset, pipeline
+from fennel.datasets import dataset, field, Dataset, pipeline, Count
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Count
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
-from fennel.lib.schema import regex, oneof
+from fennel.lib import meta, inputs, outputs
+from fennel.dtypes import regex, oneof
 from fennel.sources import source, Webhook
 from fennel.testing import mock
 
