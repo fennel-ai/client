@@ -8,14 +8,17 @@ from typing import Optional
 import pandas as pd
 from fraud.datasets.payment_ids import PaymentIdentifierDS
 
-from fennel import (
+from fennel.datasets import (
     Count,
     Min,
     Max,
     Sum,
+    dataset,
+    field,
+    pipeline,
+    Dataset,
 )
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.schema import inputs
+from fennel.lib import inputs
 from fennel.sources import Webhook, source
 
 __owner__ = "eng@app.com"

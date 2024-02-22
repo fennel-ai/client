@@ -9,11 +9,11 @@ def test_func():
     # imports for data types
     from typing import List, Optional, Dict
     from datetime import datetime
-    from fennel.lib.schema import struct
+    from fennel.dtypes import struct
 
     # imports for datasets
     from fennel.datasets import dataset, field
-    from fennel.lib.metadata import meta
+    from fennel.lib import meta
 
     @struct  # like dataclass but verifies that fields have valid Fennel types
     class Address:
@@ -41,11 +41,11 @@ def test_restrictions(client):
     # docsnip dataset_type_restrictions
     # imports for data types
     from datetime import datetime
-    from fennel.lib.schema import oneof, between, regex
+    from fennel.dtypes import oneof, between, regex
 
     # imports for datasets
     from fennel.datasets import dataset, field
-    from fennel.lib.metadata import meta
+    from fennel.lib import meta
     from fennel.sources import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")

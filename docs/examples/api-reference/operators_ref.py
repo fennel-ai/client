@@ -4,11 +4,9 @@ from typing import Optional
 
 import pandas as pd
 
-from fennel.datasets import dataset, field
-from fennel.datasets import pipeline, Dataset
-from fennel.lib.aggregate import Sum, Count
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, Window
+from fennel.datasets import dataset, field, pipeline, Dataset, Sum, Count
+from fennel.lib import inputs
+from fennel.dtypes import Window
 from fennel.sources import source, Webhook
 
 webhook = Webhook(name="fennel_webhook")
@@ -98,7 +96,7 @@ class UserFirstAction:
 
     @pipeline
     @inputs(UserTransactions)
-    def create_user_first_action_category(cls, txns: UserTransactions):
+    def create_user_first_action_category(cls, txns: Dataset):
         # docsnip first
         first_txns = txns.groupby("user_id").first()
         return first_txns.drop("merchant_id")
@@ -114,9 +112,7 @@ class FraudActivityDataset:
 
     @pipeline
     @inputs(UserTransactions, MerchantCategory)
-    def create_fraud_dataset(
-        cls, txns: UserTransactions, merchant_category: Dataset
-    ):
+    def create_fraud_dataset(cls, txns: Dataset, merchant_category: Dataset):
         # docsnip rename
         renamed_ds = txns.rename(
             {

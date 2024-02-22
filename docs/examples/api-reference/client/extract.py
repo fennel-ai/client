@@ -15,7 +15,7 @@ __owner__ = "aditya@fennel.ai"
 def test_basic(client):
     # docsnip basic
     from fennel.featuresets import featureset, feature, extractor
-    from fennel.lib.schema import inputs, outputs
+    from fennel.lib import inputs, outputs
 
     @featureset
     class Numbers:

@@ -9,13 +9,10 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import sources
-from fennel.datasets import dataset, Dataset, pipeline, field
+from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Count, Sum
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import Embedding, oneof
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import includes, meta, inputs, outputs
+from fennel.dtypes import Embedding, oneof
 from fennel.sources import source
 from fennel.testing import mock
 

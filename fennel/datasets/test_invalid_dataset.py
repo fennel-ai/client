@@ -4,14 +4,23 @@ from typing import Optional, List, Union
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, pipeline, field, Dataset
-from fennel.lib.aggregate import Count, Average, Stddev, Distinct
-from fennel.lib.expectations import (
+from fennel.datasets import (
+    dataset,
+    pipeline,
+    field,
+    Dataset,
+    Count,
+    Average,
+    Stddev,
+    Distinct,
+)
+from fennel.lib import (
+    meta,
+    inputs,
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, struct
+from fennel.dtypes import struct
 from fennel.sources import Webhook, source
 from fennel.testing import *
 

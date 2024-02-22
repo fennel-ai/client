@@ -2,11 +2,9 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.datasets import dataset, field, pipeline, Dataset, Sum
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Sum
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import meta, inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.testing import mock
 

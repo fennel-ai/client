@@ -3,9 +3,8 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import Max
-from fennel.lib.schema import inputs
+from fennel.datasets import dataset, field, pipeline, Dataset, Max
+from fennel.lib import inputs
 from fennel.sources import source, Webhook
 from fennel.testing import mock
 

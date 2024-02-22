@@ -2,7 +2,7 @@ import pandas as pd
 
 from fennel.featuresets import featureset, extractor, feature
 from fennel.internal_lib.graph_algorithms import get_extractor_order
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import inputs, outputs
 
 
 @featureset

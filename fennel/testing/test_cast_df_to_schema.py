@@ -1,20 +1,11 @@
 from datetime import datetime
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 import pytest
 
-from fennel import dataset, field
-from fennel.gen.schema_pb2 import (
-    DSSchema,
-    DataType,
-    Field,
-    IntType,
-    StringType,
-    TimestampType,
-)
-from fennel.lib.schema import between, oneof, regex
+from fennel import dataset
+from fennel.dtypes import between, oneof, regex
 from fennel.internal_lib.to_proto.to_proto import fields_to_dsschema
 from fennel.testing.test_utils import cast_df_to_schema
 

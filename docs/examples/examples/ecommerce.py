@@ -5,11 +5,9 @@ from datetime import datetime, timedelta
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.datasets import dataset, pipeline, field, Dataset, Count
 from fennel.featuresets import feature, featureset, extractor
-from fennel.lib.aggregate import Count
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import meta, inputs, outputs
 from fennel.sources import Postgres, source, Webhook
 from fennel.testing import mock
 

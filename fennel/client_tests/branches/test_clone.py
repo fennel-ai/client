@@ -4,10 +4,9 @@ import pandas as pd
 import pytest
 
 from fennel._vendor import requests
-from fennel.datasets import Dataset, dataset, field, pipeline
+from fennel.datasets import Dataset, dataset, field, pipeline, Count
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.schema import inputs, outputs
-from fennel.lib.aggregate import Count
+from fennel.lib import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.testing import mock
 

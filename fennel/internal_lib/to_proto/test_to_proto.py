@@ -5,8 +5,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.includes import includes
-from fennel.lib.schema import outputs
+from fennel.lib import includes, outputs
 from fennel.internal_lib.to_proto.to_proto import to_extractor_pycode
 from fennel.testing import *
 

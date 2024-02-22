@@ -174,7 +174,9 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
         from fennel.lib.metadata import meta
         from fennel.lib.includes import includes
         from fennel.datasets import *
-        from fennel.lib.schema import *
+        from fennel.internal_lib.schema import *
+        from fennel.dtypes.dtypes import *
+        from fennel.params.params import *
         from fennel.datasets.datasets import dataset_lookup
         """
     )
@@ -378,7 +380,9 @@ def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
         from fennel.featuresets import featureset, feature
         from fennel.lib.metadata import meta
         from fennel.lib.includes import includes
-        from fennel.lib.schema import *
+        from fennel.internal_lib.schema import *
+        from fennel.params.params import *
+        from fennel.dtypes.dtypes import *
         """
     )
 

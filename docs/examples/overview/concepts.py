@@ -53,9 +53,8 @@ def test_overview(client):
 
     # /docsnip
 
-    from fennel.datasets import pipeline, Dataset
-    from fennel.lib.aggregate import Count, Sum
-    from fennel.lib.schema import inputs
+    from fennel.datasets import pipeline, Dataset, Count, Sum
+    from fennel.lib import inputs
 
     # docsnip pipeline
     @dataset
@@ -84,7 +83,7 @@ def test_overview(client):
     from datetime import timedelta
 
     from fennel.featuresets import feature, featureset, extractor
-    from fennel.lib.schema import inputs, outputs
+    from fennel.lib import inputs, outputs
 
     # docsnip featureset
     @featureset

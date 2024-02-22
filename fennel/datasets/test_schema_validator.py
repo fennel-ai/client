@@ -5,10 +5,9 @@ from typing import Optional, List
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import Sum, Min, Max
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, Window
+from fennel.datasets import dataset, field, pipeline, Dataset, Sum, Min, Max
+from fennel.lib import meta, inputs
+from fennel.dtypes import Window
 
 
 @meta(owner="test@test.com")

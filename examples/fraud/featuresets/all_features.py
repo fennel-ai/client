@@ -1,7 +1,7 @@
 from typing import Optional
 
 from fennel.featuresets import featureset, feature
-from fennel.lib.schema import oneof
+from fennel.dtypes import oneof
 
 __owner__ = "eng@app.com"
 

@@ -3,7 +3,7 @@ from fraud.datasets.vehicle import MarketAreaDS
 from fraud.featuresets.request import Request
 
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import inputs, outputs
 
 __owner__ = "eng@app.com"
 

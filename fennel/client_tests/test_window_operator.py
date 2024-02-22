@@ -6,11 +6,10 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import sources
-from fennel.datasets import dataset, Dataset, pipeline, field
+from fennel.datasets import dataset, Dataset, pipeline, field, Average, LastK
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Average, LastK
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs, Window
+from fennel.lib import meta, inputs, outputs
+from fennel.dtypes import Window
 from fennel.sources import source
 from fennel.testing import mock
 

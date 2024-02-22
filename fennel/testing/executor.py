@@ -6,15 +6,14 @@ from typing import Any, Optional, Dict, List
 
 import numpy as np
 import pandas as pd
-from fennel.internal_lib.schema import validate_field_in_df
-from fennel.internal_lib.to_proto import Serializer, to_includes_proto
 
 import fennel.gen.schema_pb2 as schema_proto
-from fennel.datasets import Pipeline, Visitor, Dataset
+from fennel.datasets import Pipeline, Visitor, Dataset, Count
 from fennel.datasets.datasets import WindowType
-from fennel.internal_lib.schema import get_datatype
 from fennel.internal_lib.duration import duration_to_timedelta
-from fennel.lib.aggregate import Count
+from fennel.internal_lib.schema import get_datatype
+from fennel.internal_lib.schema import validate_field_in_df
+from fennel.internal_lib.to_proto import Serializer, to_includes_proto
 from fennel.testing.execute_aggregation import get_aggregated_df
 
 pd.set_option("display.max_columns", None)

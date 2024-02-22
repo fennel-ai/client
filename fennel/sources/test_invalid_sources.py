@@ -4,7 +4,7 @@ from typing import Optional
 import pytest
 
 from fennel.datasets import dataset, field
-from fennel.lib.metadata import meta
+from fennel.lib import meta
 from fennel.sources import (
     source,
     MySQL,
@@ -12,9 +12,10 @@ from fennel.sources import (
     Snowflake,
     Kafka,
     Kinesis,
+    at_timestamp,
+    BigQuery,
+    S3Connector,
 )
-from fennel.sources.kinesis import at_timestamp
-from fennel.sources.sources import BigQuery, S3Connector
 
 # noinspection PyUnresolvedReferences
 from fennel.testing import *

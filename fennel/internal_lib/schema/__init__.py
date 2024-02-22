@@ -1,7 +1,6 @@
 from fennel.internal_lib.schema.schema import (
     get_primitive_dtype,
     fennel_is_optional,
-    fennel_get_optional_inner,
     get_pd_dtype,
     is_hashable,
     parse_json,

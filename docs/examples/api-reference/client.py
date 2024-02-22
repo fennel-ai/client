@@ -7,9 +7,7 @@ import requests
 
 from fennel.datasets import dataset, field
 from fennel.featuresets import feature, featureset, extractor
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import includes, meta, inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.testing import mock
 

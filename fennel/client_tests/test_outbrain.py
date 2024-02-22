@@ -3,12 +3,9 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field
-from fennel.datasets import pipeline, Dataset
+from fennel.datasets import dataset, field, pipeline, Dataset, Count
 from fennel.featuresets import featureset, extractor, feature
-from fennel.lib.aggregate import Count
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
+from fennel.lib import meta, inputs, outputs
 from fennel.sources import S3, Webhook
 from fennel.sources import source
 from fennel.testing import mock

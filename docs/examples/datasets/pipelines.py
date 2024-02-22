@@ -4,9 +4,7 @@ import pandas as pd
 import requests
 
 from fennel.datasets import pipeline, Dataset
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs
+from fennel.lib import includes, meta, inputs
 from fennel.testing import mock
 
 __owner__ = "data-eng@fennel.ai"
@@ -43,8 +41,7 @@ def test_datasets_basic():
 def test_pipeline_basic():
     User, Transaction = test_datasets_basic()
     # docsnip pipeline
-    from fennel.datasets import pipeline, Dataset, dataset, field
-    from fennel.lib.aggregate import Count, Sum
+    from fennel.datasets import pipeline, Dataset, dataset, field, Count, Sum
 
     @dataset
     class UserTransactionsAbroad:
@@ -217,9 +214,8 @@ def test_fraud(client):
 @mock
 def test_multiple_pipelines(client):
     # docsnip multiple_pipelines
-    from fennel.datasets import dataset, field
+    from fennel.datasets import dataset, field, Count
     from fennel.sources import source, Webhook
-    from fennel.lib.aggregate import Count
 
     webhook = Webhook(name="fennel_webhook")
 

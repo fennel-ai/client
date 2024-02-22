@@ -22,6 +22,7 @@ from fennel.sources.sources import (
     Ref,
     ref,
     PreProcValue,
+    at_timestamp,
 )
 
 import fennel.sources.kinesis as kinesis

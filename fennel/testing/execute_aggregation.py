@@ -6,10 +6,19 @@ from typing import Dict, List, Type
 
 import pandas as pd
 
+from fennel.datasets import (
+    AggregateType,
+    Distinct,
+    Count,
+    Sum,
+    Average,
+    LastK,
+    Min,
+    Max,
+    Stddev,
+)
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_pd_dtype
-from fennel.lib.aggregate import AggregateType, Distinct
-from fennel.lib.aggregate import Count, Sum, Average, LastK, Min, Max, Stddev
 
 # Type of data, 1 indicates insert -1 indicates delete.
 FENNEL_ROW_TYPE = "__fennel_row_type__"

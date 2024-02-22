@@ -5,15 +5,15 @@ from typing import Optional
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.datasets import dataset, pipeline, field, Dataset, Count
 from fennel.featuresets import feature, featureset, extractor
-from fennel.lib.aggregate import Count
-from fennel.lib.expectations import (
+from fennel.lib import (
+    meta,
+    inputs,
+    outputs,
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Postgres, Snowflake, Kafka, Webhook
 
 # /docsnip

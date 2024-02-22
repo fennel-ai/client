@@ -14,7 +14,7 @@ __owner__ = "nikhil@fennel.ai"
 def test_featureset_overview():
     # docsnip featureset
     from fennel.featuresets import feature, featureset, extractor
-    from fennel.lib.schema import inputs, outputs
+    from fennel.lib import inputs, outputs
 
     @featureset
     class Movie:
@@ -50,7 +50,7 @@ def test_featureset_zero_extractors():
 def test_featureset_many_extractors():
     # docsnip featureset_many_extractors
     from fennel.featuresets import feature, featureset, extractor
-    from fennel.lib.schema import inputs, outputs
+    from fennel.lib import inputs, outputs
 
     @featureset
     class MoviesManyExtractors:
@@ -77,8 +77,7 @@ def test_featureset_many_extractors():
 def test_multiple_extractors_of_same_feature(client):
     # docsnip featureset_extractors_of_same_feature
     from fennel.featuresets import feature, featureset, extractor
-    from fennel.lib.schema import inputs, outputs
-    from fennel.lib.metadata import meta
+    from fennel.lib import meta, inputs, outputs
 
     @meta(owner="aditya@xyz.ai")
     @featureset
@@ -117,7 +116,7 @@ def test_multiple_extractors_of_same_feature(client):
 def test_remote_feature_as_input():
     # docsnip remote_feature_as_input
     from fennel.featuresets import feature, featureset, extractor
-    from fennel.lib.schema import inputs, outputs
+    from fennel.lib import inputs, outputs
 
     @featureset
     class Length:
@@ -141,7 +140,7 @@ def test_remote_feature_as_output():
     with pytest.raises(Exception):
         # docsnip remote_feature_as_output
         from fennel.featuresets import feature, featureset, extractor
-        from fennel.lib.schema import inputs, outputs
+        from fennel.lib import inputs, outputs
 
         @featureset
         class Request:
@@ -165,7 +164,7 @@ def test_remote_feature_as_output():
 @mock
 def test_multiple_features_extracted(client):
     from fennel.featuresets import feature, featureset, extractor
-    from fennel.lib.schema import inputs, outputs
+    from fennel.lib import inputs, outputs
 
     @featureset
     class Movie:
@@ -189,7 +188,7 @@ def test_multiple_features_extracted(client):
 
     # docsnip multiple_feature_extractor
     from fennel.featuresets import feature, featureset, extractor
-    from fennel.lib.schema import inputs, outputs
+    from fennel.lib import inputs, outputs
 
     @featureset
     class UserLocationFeatures:
@@ -256,7 +255,7 @@ def test_extractors_across_featuresets(client):
 
     # docsnip extractors_across_featuresets
     from fennel.featuresets import feature, featureset, extractor
-    from fennel.lib.schema import inputs, outputs
+    from fennel.lib import inputs, outputs
 
     @featureset
     class Request:
