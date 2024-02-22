@@ -7,7 +7,7 @@ from fennel._vendor import requests
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 wh = Webhook(name="fennel_webhook")
 __owner__ = "nitin@fennel.com"

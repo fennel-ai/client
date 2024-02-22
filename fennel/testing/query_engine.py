@@ -15,9 +15,9 @@ from fennel.gen.featureset_pb2 import (
 )
 from fennel.gen.schema_pb2 import Field, DSSchema, Schema
 from fennel.lib.schema import data_schema_check, get_datatype
-from fennel.test_lib.branch import Entities
-from fennel.test_lib.data_engine import DataEngine
-from fennel.test_lib.test_utils import cast_col_to_dtype
+from fennel.testing.branch import Entities
+from fennel.testing.data_engine import DataEngine
+from fennel.testing.test_utils import cast_col_to_dtype
 
 
 class QueryEngine:

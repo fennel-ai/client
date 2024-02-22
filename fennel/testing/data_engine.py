@@ -17,8 +17,8 @@ from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.lib.schema import data_schema_check
 from fennel.lib.to_proto import dataset_to_proto
 from fennel.sources import sources, PreProcValue
-from fennel.test_lib.executor import Executor
-from fennel.test_lib.test_utils import (
+from fennel.testing.executor import Executor
+from fennel.testing.test_utils import (
     FakeResponse,
     cast_df_to_schema,
     cast_col_to_dtype,

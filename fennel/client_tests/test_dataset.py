@@ -1,6 +1,5 @@
 import json
 import re
-import sys
 import time
 import unittest
 from datetime import datetime, timedelta
@@ -18,7 +17,7 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import between, oneof, inputs, struct
 from fennel.sources import source, Webhook, ref
-from fennel.test_lib import almost_equal, mock, InternalTestClient
+from fennel.testing import almost_equal, mock, InternalTestClient
 
 ################################################################################
 #                           Dataset Unit Tests

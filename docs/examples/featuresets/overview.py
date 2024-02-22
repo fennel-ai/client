@@ -5,7 +5,7 @@ import pytest
 
 from fennel.datasets import dataset, field
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock, InternalTestClient
+from fennel.testing import mock, InternalTestClient
 
 webhook = Webhook(name="fennel_webhook")
 __owner__ = "nikhil@fennel.ai"

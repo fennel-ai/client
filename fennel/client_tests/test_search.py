@@ -17,7 +17,7 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, oneof
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import source
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 biq_query = sources.BigQuery(
     name="bg_source",

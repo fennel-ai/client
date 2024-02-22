@@ -15,7 +15,7 @@ from fraud.datasets.velocity import (
 from fraud.featuresets.driver import Request
 from fraud.featuresets.velocity import DriverVelocityFS
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 @mock

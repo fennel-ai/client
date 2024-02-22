@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 def test_func():

@@ -7,7 +7,7 @@ from fennel.datasets import pipeline, Dataset
 from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 __owner__ = "data-eng@fennel.ai"
 

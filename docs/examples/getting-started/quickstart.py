@@ -114,7 +114,7 @@ class UserSellerFeatures:
 
 
 # docsnip sync
-from fennel.test_lib import MockClient
+from fennel.testing import MockClient
 
 
 # client = Client('<FENNEL SERVER URL>') # uncomment this line to use a real Fennel server

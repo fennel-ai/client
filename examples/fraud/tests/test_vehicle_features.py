@@ -10,7 +10,7 @@ from fraud.datasets.vehicle import (
 from fraud.featuresets.driver import Request
 from fraud.featuresets.vehicle import VehicleFS
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 @mock

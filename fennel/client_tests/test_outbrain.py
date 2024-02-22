@@ -11,7 +11,7 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import S3, Webhook
 from fennel.sources import source
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 s3 = S3(
     name="outbrain_source",

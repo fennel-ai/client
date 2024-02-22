@@ -11,7 +11,7 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.schema import regex, oneof
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 

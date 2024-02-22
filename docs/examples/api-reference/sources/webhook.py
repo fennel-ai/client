@@ -3,7 +3,7 @@ from unittest.mock import patch
 import os
 import pandas as pd
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 __owner__ = "nikhil@fennel.ai"
 

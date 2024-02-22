@@ -3,7 +3,7 @@ import pandas as pd
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 @meta(owner="data-eng-oncall@fennel.ai")

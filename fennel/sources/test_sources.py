@@ -1,11 +1,8 @@
 from datetime import datetime
-from fennel import sources
-from fennel.sources.kinesis import at_timestamp
-from fennel.sources.sources import S3Connector
+from typing import Optional
 
 import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
-from typing import Optional
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
@@ -22,9 +19,10 @@ from fennel.sources import (
     Avro,
     ref,
 )
+from fennel.sources.sources import S3Connector
 
 # noinspection PyUnresolvedReferences
-from fennel.test_lib import *
+from fennel.testing import *
 
 mysql = MySQL(
     name="mysql",

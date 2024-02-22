@@ -1,7 +1,7 @@
-from datetime import datetime
 import os
+from datetime import datetime
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 __owner__ = "nikhil@fennel.ai"
 

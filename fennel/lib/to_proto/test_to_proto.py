@@ -8,7 +8,7 @@ from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.includes import includes
 from fennel.lib.schema import outputs
 from fennel.lib.to_proto.to_proto import to_extractor_pycode
-from fennel.test_lib import *
+from fennel.testing import *
 
 
 def a1():

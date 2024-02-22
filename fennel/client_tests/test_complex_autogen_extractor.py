@@ -10,7 +10,7 @@ from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import Webhook
 from fennel.sources import source
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 
