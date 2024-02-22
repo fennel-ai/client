@@ -12,7 +12,7 @@ from fennel.lib.schema import inputs, outputs
 from fennel.sources import source, Webhook
 
 # noinspection PyUnresolvedReferences
-from fennel.test_lib import *
+from fennel.testing import *
 
 __owner__ = "data@fennel.ai"
 webhook = Webhook(name="fennel_webhook")

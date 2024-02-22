@@ -4,7 +4,7 @@ import pandas as pd
 from ci_cd.datasets import Ticket
 from ci_cd.featuresets import TicketFeatures
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 @mock

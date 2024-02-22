@@ -17,7 +17,7 @@ from fennel.lib.includes import includes
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, outputs, struct
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 ################################################################################
 #                           Feature Single Extractor Unit Tests

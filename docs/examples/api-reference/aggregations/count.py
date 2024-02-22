@@ -7,7 +7,7 @@ from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib.schema import inputs
 from fennel.lib.aggregate import Count
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"

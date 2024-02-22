@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
 

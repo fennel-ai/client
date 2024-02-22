@@ -17,7 +17,7 @@ from fennel.sources.kinesis import at_timestamp
 from fennel.sources.sources import BigQuery, S3Connector
 
 # noinspection PyUnresolvedReferences
-from fennel.test_lib import *
+from fennel.testing import *
 
 mysql = MySQL(
     name="mysql",

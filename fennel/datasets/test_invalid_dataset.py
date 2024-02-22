@@ -13,7 +13,7 @@ from fennel.lib.expectations import (
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, struct
 from fennel.sources import Webhook, source
-from fennel.test_lib import *
+from fennel.testing import *
 
 __owner__ = "eng@fennel.ai"
 

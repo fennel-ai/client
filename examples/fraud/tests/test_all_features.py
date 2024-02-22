@@ -50,7 +50,7 @@ from fraud.tests.test_driver_payment_features import (
     log_payment_identifier_datasets,
 )
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 @mock

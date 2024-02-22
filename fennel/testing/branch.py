@@ -25,8 +25,8 @@ from fennel.lib.to_proto import (
     featureset_to_proto,
     extractors_from_fs,
 )
-from fennel.test_lib.data_engine import DataEngine
-from fennel.test_lib.test_utils import FakeResponse
+from fennel.testing.data_engine import DataEngine
+from fennel.testing.test_utils import FakeResponse
 
 logger = logging.getLogger(__name__)
 

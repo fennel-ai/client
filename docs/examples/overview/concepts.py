@@ -5,7 +5,7 @@ import pandas as pd
 
 from fennel.datasets import dataset, field
 from fennel.sources import Webhook
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 __owner__ = "owner@example.com"
 

@@ -13,7 +13,7 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs
 from fennel.sources import Webhook
 from fennel.sources import source
-from fennel.test_lib import mock, MockClient
+from fennel.testing import mock, MockClient
 
 client = MockClient()
 

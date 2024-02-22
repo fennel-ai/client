@@ -9,7 +9,7 @@ import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.lib.metadata import meta
 from fennel.sources import source, S3, Webhook
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 s3 = S3(
     name="ratings_source",

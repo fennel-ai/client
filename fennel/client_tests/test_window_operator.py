@@ -12,7 +12,7 @@ from fennel.lib.aggregate import Average, LastK
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs, Window
 from fennel.sources import source
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 webhook = sources.Webhook(name="fennel_webhook")
 

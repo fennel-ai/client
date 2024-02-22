@@ -50,7 +50,7 @@ class MovieRating:
 # docsnip datasets_testing
 import unittest
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 
 class TestDataset(unittest.TestCase):

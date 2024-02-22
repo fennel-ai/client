@@ -7,17 +7,16 @@ from typing import Any, Optional, Dict, List
 import numpy as np
 import pandas as pd
 
+import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Pipeline, Visitor, Dataset
 from fennel.datasets.datasets import WindowType
 from fennel.lib.aggregate import Count
 from fennel.lib.duration import duration_to_timedelta
 from fennel.lib.schema import get_datatype
+from fennel.lib.schema.schema import validate_field_in_df
 from fennel.lib.to_proto import Serializer
 from fennel.lib.to_proto.source_code import to_includes_proto
-from fennel.test_lib.execute_aggregation import get_aggregated_df
-from fennel.test_lib.test_utils import cast_col_to_dtype
-from fennel.lib.schema.schema import validate_field_in_df
-import fennel.gen.schema_pb2 as schema_proto
+from fennel.testing.execute_aggregation import get_aggregated_df
 
 pd.set_option("display.max_columns", None)
 

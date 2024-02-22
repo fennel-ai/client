@@ -9,7 +9,7 @@ from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.schema import inputs, outputs
 from fennel.lib.aggregate import Count
 from fennel.sources import source, Webhook
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 wh = Webhook(name="fennel_webhook")
 __owner__ = "nitin@fennel.com"

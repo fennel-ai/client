@@ -16,7 +16,7 @@ from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, Window
 from fennel.lib.window import Window as InternalWindow
 from fennel.sources import source, Webhook, Kafka
-from fennel.test_lib import *
+from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
 __owner__ = "ml-eng@fennel.ai"
