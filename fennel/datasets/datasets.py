@@ -28,8 +28,8 @@ import numpy as np
 import pandas as pd
 from typing_extensions import Literal
 
-from fennel.lib.aggregate import AggregateType
-from fennel.lib.aggregate.aggregate import (
+from fennel.datasets.aggregate import (
+    AggregateType,
     Average,
     Count,
     Distinct,
@@ -39,9 +39,28 @@ from fennel.lib.aggregate.aggregate import (
     Max,
     Stddev,
 )
-from fennel.lib.duration.duration import (
+from fennel.dtypes.dtypes import (
+    get_fennel_struct,
+    Window,
+)
+from fennel.internal_lib.duration import (
     Duration,
     duration_to_timedelta,
+)
+from fennel.internal_lib.schema import (
+    get_primitive_dtype,
+    fennel_is_optional,
+    fennel_get_optional_inner,
+    get_pd_dtype,
+    is_hashable,
+    parse_json,
+    get_python_type_from_pd,
+    FENNEL_STRUCT_SRC_CODE,
+    get_origin,
+    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
+)
+from fennel.internal_lib.utils import (
+    dtype_to_string,
 )
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.includes import TierSelector
@@ -51,22 +70,7 @@ from fennel.lib.metadata import (
     get_meta_attr,
     set_meta_attr,
 )
-from fennel.lib.schema import (
-    dtype_to_string,
-    get_primitive_dtype,
-    fennel_is_optional,
-    fennel_get_optional_inner,
-    get_pd_dtype,
-    FENNEL_INPUTS,
-    is_hashable,
-    parse_json,
-    get_fennel_struct,
-    get_python_type_from_pd,
-    FENNEL_STRUCT_SRC_CODE,
-    get_origin,
-    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
-    Window,
-)
+from fennel.lib.params import FENNEL_INPUTS
 from fennel.utils import (
     fhash,
     parse_annotation_comments,

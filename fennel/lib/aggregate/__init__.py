@@ -1,4 +1,5 @@
-from fennel.lib.aggregate.aggregate import (
+# Soon to be deprecated, keep just for backward compatibility
+from fennel.datasets.aggregate import (
     Count,
     Distinct,
     Sum,

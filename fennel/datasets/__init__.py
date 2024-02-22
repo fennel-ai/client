@@ -1,3 +1,14 @@
+from fennel.datasets.aggregate import (
+    Count,
+    Distinct,
+    Sum,
+    LastK,
+    Min,
+    Max,
+    Average,
+    AggregateType,
+    Stddev,
+)
 from fennel.datasets.datasets import (
     dataset,
     Dataset,

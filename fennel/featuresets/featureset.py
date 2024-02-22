@@ -32,11 +32,13 @@ from fennel.lib.metadata import (
     set_meta_attr,
 )
 from fennel.lib.includes import TierSelector
-from fennel.lib.schema import (
-    FENNEL_INPUTS,
-    FENNEL_OUTPUTS,
+from fennel.internal_lib.schema import (
     validate_val_with_dtype,
     fennel_get_optional_inner,
+)
+from fennel.lib.params import (
+    FENNEL_INPUTS,
+    FENNEL_OUTPUTS,
 )
 
 from fennel.lib import FENNEL_GEN_CODE_MARKER

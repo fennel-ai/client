@@ -1,28 +1,13 @@
-from fennel.lib.schema.schema import (
-    get_datatype,
-    get_pd_dtype,
-    between,
-    oneof,
-    dtype_to_string,
-    data_schema_check,
-    fennel_is_optional,
-    fennel_get_optional_inner,
-    FENNEL_INPUTS,
-    FENNEL_OUTPUTS,
-    Embedding,
-    regex,
+# Soon to be deprecated, keep just for backward compatibility
+from fennel.lib.params import (
     inputs,
     outputs,
-    get_primitive_dtype,
-    get_python_type_from_pd,
-    is_hashable,
-    get_fennel_struct,
-    parse_json,
+)
+from fennel.dtypes.dtypes import (
+    between,
+    oneof,
+    regex,
     struct,
-    get_origin,
-    FENNEL_STRUCT,
-    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
-    FENNEL_STRUCT_SRC_CODE,
     Window,
-    validate_val_with_dtype,
+    Embedding,
 )

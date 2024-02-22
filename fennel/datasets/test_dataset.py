@@ -9,12 +9,11 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.gen.services_pb2 import SyncRequest
+from fennel.internal_lib.last import Last
 from fennel.lib.aggregate import Count, Average, Stddev, Sum
 from fennel.lib.includes import includes
-from fennel.lib.last import Last
 from fennel.lib.metadata import meta
 from fennel.lib.schema import Embedding, inputs, Window
-from fennel.lib.window import Window as InternalWindow
 from fennel.sources import source, Webhook, Kafka
 from fennel.testing import *
 
@@ -2649,11 +2648,11 @@ def test_dataset_with_str_window_aggregate():
                 Count(window="forever", into_field="count"),
                 Sum(
                     of="age",
-                    window=InternalWindow("forever"),
+                    window="forever",
                     into_field="sum_age",
                 ),
                 Stddev(
-                    of="age", window=Last("forever"), into_field="stddev_age"
+                    of="age", window="forever", into_field="stddev_age"
                 ),
             )
 
