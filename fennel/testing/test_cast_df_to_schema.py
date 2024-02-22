@@ -15,7 +15,7 @@ from fennel.gen.schema_pb2 import (
     TimestampType,
 )
 from fennel.lib.schema import between, oneof, regex
-from fennel.lib.to_proto.to_proto import fields_to_dsschema
+from fennel.internal_lib.to_proto.to_proto import fields_to_dsschema
 from fennel.testing.test_utils import cast_df_to_schema
 
 

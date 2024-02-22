@@ -14,7 +14,7 @@ from fennel.gen.featureset_pb2 import (
     ExtractorType as ProtoExtractorType,
 )
 from fennel.gen.schema_pb2 import Field, DSSchema, Schema
-from fennel.lib.schema import data_schema_check, get_datatype
+from fennel.internal_lib.schema import data_schema_check, get_datatype
 from fennel.testing.branch import Entities
 from fennel.testing.data_engine import DataEngine
 from fennel.testing.test_utils import cast_col_to_dtype

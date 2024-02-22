@@ -4,7 +4,7 @@ from typing import List
 import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
-from fennel import Sum
+from fennel.datasets import Sum
 from fennel.datasets import dataset, pipeline, field, Dataset
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib.metadata import meta

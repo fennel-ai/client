@@ -2,14 +2,14 @@ import heapq
 from abc import ABC, abstractmethod
 from collections import Counter
 from math import sqrt
-
-import pandas as pd
 from typing import Dict, List, Type
 
+import pandas as pd
+
+from fennel.internal_lib.duration import duration_to_timedelta
+from fennel.internal_lib.schema import get_pd_dtype
 from fennel.lib.aggregate import AggregateType, Distinct
 from fennel.lib.aggregate import Count, Sum, Average, LastK, Min, Max, Stddev
-from fennel.lib.duration import duration_to_timedelta
-from fennel.lib.schema import get_pd_dtype
 
 # Type of data, 1 indicates insert -1 indicates delete.
 FENNEL_ROW_TYPE = "__fennel_row_type__"

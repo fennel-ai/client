@@ -14,8 +14,8 @@ import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Dataset, Pipeline
 from fennel.datasets.datasets import sync_validation_for_pipelines
 from fennel.gen.dataset_pb2 import CoreDataset
-from fennel.lib.schema import data_schema_check
-from fennel.lib.to_proto import dataset_to_proto
+from fennel.internal_lib.schema import data_schema_check
+from fennel.internal_lib.to_proto import dataset_to_proto
 from fennel.sources import sources, PreProcValue
 from fennel.testing.executor import Executor
 from fennel.testing.test_utils import (

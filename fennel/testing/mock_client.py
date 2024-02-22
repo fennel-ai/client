@@ -12,11 +12,11 @@ from fennel._vendor.requests import Response  # type: ignore
 from fennel.client import Client
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.featuresets import Featureset, Feature, is_valid_feature
-from fennel.lib.graph_algorithms import (
+from fennel.internal_lib.graph_algorithms import (
     get_extractor_order,
 )
 from fennel.lib.includes import includes  # noqa
-from fennel.lib.schema import get_datatype
+from fennel.internal_lib.schema import get_datatype
 from fennel.sources.sources import S3Connector
 from fennel.testing.branch import Branch
 from fennel.testing.integration_client import IntegrationClient

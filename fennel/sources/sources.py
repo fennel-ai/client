@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
 import re
-
+from datetime import datetime
 from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
 from typing import Literal
 
 from fennel._vendor.pydantic import BaseModel  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
-from fennel.lib.duration import (
+from fennel.internal_lib.duration import (
     Duration,
 )
 from fennel.lib.includes import TierSelector

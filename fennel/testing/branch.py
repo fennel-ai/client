@@ -5,6 +5,11 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Callable
 
 import pandas as pd
+from fennel.internal_lib.to_proto import (
+    features_from_fs,
+    featureset_to_proto,
+    extractors_from_fs,
+)
 
 from fennel.datasets.datasets import Dataset
 from fennel.featuresets.featureset import (
@@ -17,13 +22,8 @@ from fennel.gen.featureset_pb2 import (
     Extractor as ProtoExtractor,
     ExtractorType as ProtoExtractorType,
 )
-from fennel.lib.graph_algorithms import (
+from fennel.internal_lib.graph_algorithms import (
     is_extractor_graph_cyclic,
-)
-from fennel.lib.to_proto import (
-    features_from_fs,
-    featureset_to_proto,
-    extractors_from_fs,
 )
 from fennel.testing.data_engine import DataEngine
 from fennel.testing.test_utils import FakeResponse
