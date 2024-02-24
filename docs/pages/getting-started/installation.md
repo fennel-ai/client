@@ -30,8 +30,9 @@ explore Fennel.
 ## Deploying Fennel Server
 
 Fennel runs as a single tenant system inside your cloud so that your data and 
-code never leave your cloud perimeter. As an example, here are the steps for 
-deployment on AWS:
+code never leave your cloud perimeter. See [deployment model](/security/deployment-model)
+for details. With this deployment model, here are the steps for deploying Fennel 
+servers in your cloud:
 
 1. Create a new account in
    your [AWS Organization](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html). Fennel

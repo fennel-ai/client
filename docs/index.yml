@@ -25,7 +25,13 @@ sidebar:
       - "architecture/technologies"
       - "architecture/read-write-separation"
       - "architecture/cost-optimizations"
-      - "architecture/privacy-security"
+
+  - slug: "security"
+    title: "Security"
+    pages:
+      - "security/overview"
+      - "security/deployment-model"
+      - "security/rbac"
 
   - slug: "data-quality"
     title: "Data Quality"
