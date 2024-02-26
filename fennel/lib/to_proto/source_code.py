@@ -82,11 +82,11 @@ def get_featureset_gen_code(
                     getattr(fennel_struct, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE)
                 )
                 if code not in gen_code:
-                    gen_code = gen_code + "\n\n" + code + "\n\n"
+                    gen_code = gen_code + "\n" + code + "\n"
             if hasattr(fennel_struct, FENNEL_STRUCT_SRC_CODE):
                 code = dedent(getattr(fennel_struct, FENNEL_STRUCT_SRC_CODE))
                 if code not in gen_code:
-                    gen_code = gen_code + "\n\n" + code + "\n"
+                    gen_code = gen_code + "\n" + code + "\n"
 
     source_code = gen_code + "\n" + get_featureset_core_code(featureset)
     return _remove_empty_lines(source_code)

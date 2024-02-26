@@ -954,14 +954,14 @@ class MockClient(Client):
             )
             extractor_fqn = f"{extractor.featureset}.{extractor.name}"
             func = self.extractor_funcs[extractor_fqn]
-            # try:
-            ts_clone = timestamps.copy()
-            output = func(ts_clone, *prepare_args)
-            # except Exception as e:
-            #     raise Exception(
-            #         f"Extractor `{extractor.name}` in `{extractor.featureset}` "
-            #         f"failed to run with error: {e}. "
-            #     )
+            try:
+                ts_clone = timestamps.copy()
+                output = func(ts_clone, *prepare_args)
+            except Exception as e:
+                raise Exception(
+                    f"Extractor `{extractor.name}` in `{extractor.featureset}` "
+                    f"failed to run with error: {e}. "
+                )
             fennel.datasets.datasets.dataset_lookup = partial(
                 dataset_lookup_impl,
                 self.data,

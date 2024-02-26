@@ -259,7 +259,6 @@ def struct(cls):
                     f"non-struct type, which is not allowed."
                 )
             dependency_code += "\n\n" + getattr(fstruct, FENNEL_STRUCT_SRC_CODE)
-
     setattr(cls, FENNEL_STRUCT, True)
     try:
         src_code = inspect.getsource(cls)
@@ -269,6 +268,7 @@ def struct(cls):
     except Exception:
         # In exec mode ( such as extractor code generation ) there is no file
         # to get the source from, so we let it pass.
+        setattr(cls, FENNEL_STRUCT_SRC_CODE, "")
         pass
     setattr(cls, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE, dependency_code)
     cls.as_json = as_json
