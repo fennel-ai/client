@@ -87,13 +87,13 @@ class TestInvalidSync(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_invalid_sync(self, client):
-        with pytest.raises(ValueError) as e:
+        with pytest.raises(Exception) as e:
             client.commit(featuresets=[DomainFeatures, Query])
 
         if client.is_integration_client():
             assert (
-                str(e.value) == "Failed to sync: error: can not add edge "
-                'to (Extractor, "DomainFeatures.get_domain_feature"): from vertex (Dataset, "MemberActivityDatasetCopy") not in graph'
+                str(e.value)
+                == "Server returned: 500, Dataset MemberActivityDatasetCopy not found in the graph while creating inedges for pipeline DomainFeatures.get_domain_feature"
             )
         else:
             assert (
@@ -256,8 +256,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             )
         if client.is_integration_client():
             assert (
-                "Failed to sync: error: can not add edge to (Pipeline, "
-                '"MemberActivityDatasetCopy-copy"): from vertex (Dataset, "MemberActivityDataset") not in graph'
+                "Server returned: 500, Dataset MemberActivityDataset not found in the graph while creating inedges for pipeline MemberActivityDatasetCopy@v1.copy"
                 == str(e.value)
             )
         else:

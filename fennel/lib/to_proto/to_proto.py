@@ -354,7 +354,9 @@ def sources_from_ds(
         filtered_source = filtered_sources[0]
         if filtered_source.pre_proc:
             _validate_source_pre_proc(filtered_source.pre_proc, ds)
-        return _conn_to_source_proto(filtered_source, ds._name, timestamp_field)
+        return _conn_to_source_proto(
+            filtered_source, ds._name, ds.version, timestamp_field
+        )
     return None  # type: ignore
 
 
@@ -584,28 +586,33 @@ def _pre_proc_to_proto(
 
 
 def _conn_to_source_proto(
-    connector: sources.DataConnector, dataset_name: str, timestamp_field: str
+    connector: sources.DataConnector,
+    dataset_name: str,
+    ds_version: int,
+    timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if isinstance(connector, sources.S3Connector):
         return _s3_conn_to_source_proto(
-            connector, dataset_name, timestamp_field
+            connector, dataset_name, ds_version, timestamp_field
         )
     elif isinstance(connector, sources.TableConnector):
         return _table_conn_to_source_proto(
-            connector, dataset_name, timestamp_field
+            connector, dataset_name, ds_version, timestamp_field
         )
     elif isinstance(connector, sources.KafkaConnector):
-        return _kafka_conn_to_source_proto(connector, dataset_name)
+        return _kafka_conn_to_source_proto(connector, dataset_name, ds_version)
     elif isinstance(connector, sources.WebhookConnector):
-        return _webhook_to_source_proto(connector, dataset_name)
+        return _webhook_to_source_proto(connector, dataset_name, ds_version)
     elif isinstance(connector, sources.KinesisConnector):
-        return _kinesis_conn_to_source_proto(connector, dataset_name)
+        return _kinesis_conn_to_source_proto(
+            connector, dataset_name, ds_version
+        )
     else:
         raise ValueError(f"Unknown connector type: {type(connector)}")
 
 
 def _webhook_to_source_proto(
-    connector: sources.WebhookConnector, dataset_name: str
+    connector: sources.WebhookConnector, dataset_name: str, ds_version: int
 ):
     data_source = connector.data_source
     ext_db = connector_proto.ExtDatabase(
@@ -623,6 +630,7 @@ def _webhook_to_source_proto(
             ),
             disorder=to_duration_proto(connector.disorder),
             dataset=dataset_name,
+            ds_version=ds_version,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
@@ -630,7 +638,9 @@ def _webhook_to_source_proto(
 
 
 def _kafka_conn_to_source_proto(
-    connector: sources.KafkaConnector, dataset_name: str
+    connector: sources.KafkaConnector,
+    dataset_name: str,
+    ds_version: int,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if not isinstance(data_source, sources.Kafka):
@@ -654,6 +664,7 @@ def _kafka_conn_to_source_proto(
         ),
         disorder=to_duration_proto(connector.disorder),
         dataset=dataset_name,
+        ds_version=ds_version,
         cdc=to_cdc_proto(connector.cdc),
         pre_proc=_pre_proc_to_proto(connector.pre_proc),
         starting_from=_to_starting_from_proto(connector.since),
@@ -692,7 +703,10 @@ def _kafka_to_ext_db_proto(
 
 
 def _s3_conn_to_source_proto(
-    connector: sources.S3Connector, dataset_name: str, timestamp_field: str
+    connector: sources.S3Connector,
+    dataset_name: str,
+    ds_version: int,
+    timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if not isinstance(data_source, sources.S3):
@@ -714,6 +728,7 @@ def _s3_conn_to_source_proto(
     source = connector_proto.Source(
         table=ext_table,
         dataset=dataset_name,
+        ds_version=ds_version,
         every=to_duration_proto(connector.every),
         disorder=to_duration_proto(connector.disorder),
         starting_from=_to_starting_from_proto(connector.since),
@@ -769,24 +784,27 @@ def _s3_to_ext_table_proto(
 
 
 def _table_conn_to_source_proto(
-    connector: sources.TableConnector, dataset_name: str, timestamp_field: str
+    connector: sources.TableConnector,
+    dataset_name: str,
+    ds_version: int,
+    timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if isinstance(data_source, sources.BigQuery):
         return _bigquery_conn_to_source_proto(
-            connector, data_source, dataset_name, timestamp_field
+            connector, data_source, dataset_name, ds_version, timestamp_field
         )
     elif isinstance(data_source, sources.Snowflake):
         return _snowflake_conn_to_source_proto(
-            connector, data_source, dataset_name, timestamp_field
+            connector, data_source, dataset_name, ds_version, timestamp_field
         )
     elif isinstance(data_source, sources.MySQL):
         return _mysql_conn_to_source_proto(
-            connector, data_source, dataset_name, timestamp_field
+            connector, data_source, dataset_name, ds_version, timestamp_field
         )
     elif isinstance(data_source, sources.Postgres):
         return _pg_conn_to_source_proto(
-            connector, data_source, dataset_name, timestamp_field
+            connector, data_source, dataset_name, ds_version, timestamp_field
         )
     else:
         raise ValueError(f"Unknown data source type: {type(data_source)}")
@@ -796,6 +814,7 @@ def _bigquery_conn_to_source_proto(
     connector: sources.TableConnector,
     data_source: sources.BigQuery,
     dataset_name: str,
+    ds_version: int,
     timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _bigquery_to_ext_db_proto(
@@ -813,6 +832,7 @@ def _bigquery_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset_name,
+            ds_version=ds_version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
@@ -855,6 +875,7 @@ def _snowflake_conn_to_source_proto(
     connector: sources.TableConnector,
     data_source: sources.Snowflake,
     dataset_name: str,
+    ds_version: int,
     timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _snowflake_to_ext_db_proto(
@@ -875,6 +896,7 @@ def _snowflake_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset_name,
+            ds_version=ds_version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
@@ -925,6 +947,7 @@ def _mysql_conn_to_source_proto(
     connector: sources.TableConnector,
     data_source: sources.MySQL,
     dataset_name: str,
+    ds_version: int,
     timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if data_source._get:
@@ -947,6 +970,7 @@ def _mysql_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset_name,
+            ds_version=ds_version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
@@ -1006,6 +1030,7 @@ def _pg_conn_to_source_proto(
     connector: sources.TableConnector,
     data_source: sources.Postgres,
     dataset_name: str,
+    ds_version: int,
     timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if data_source._get:
@@ -1028,6 +1053,7 @@ def _pg_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset_name,
+            ds_version=ds_version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
@@ -1087,6 +1113,7 @@ def _pg_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
 def _kinesis_conn_to_source_proto(
     connector: sources.KinesisConnector,
     dataset_name: str,
+    ds_version: int,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if data_source._get:
@@ -1107,6 +1134,7 @@ def _kinesis_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset_name,
+            ds_version=ds_version,
             disorder=to_duration_proto(connector.disorder),
             cdc=to_cdc_proto(connector.cdc),
             starting_from=_to_starting_from_proto(connector.since),

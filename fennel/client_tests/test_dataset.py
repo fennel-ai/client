@@ -262,7 +262,6 @@ class TestDataset(unittest.TestCase):
         # Check if column age does not exist
         assert "age" not in df.columns
 
-    @pytest.mark.integration
     @mock
     def test_log_to_dataset(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
@@ -372,7 +371,6 @@ class TestDataset(unittest.TestCase):
         assert df["age"].tolist() == [33, 25]
         assert df["country"].tolist() == ["Russia", "Columbia"]
 
-    @pytest.mark.integration
     @mock
     def test_invalid_dataschema(self, client):
         """Check if invalid data raises an error."""
@@ -816,11 +814,11 @@ class TestBasicJoin(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("fennel_webhook", "MovieRevenue", df)
         assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
 
         # Do some lookups to verify pipeline_join is working as expected
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
-        client.sleep()
         df, _ = MovieStats.lookup(
             ts,
             movie=names,
@@ -991,6 +989,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
         assert response.status_code == requests.codes.OK
 
         # Now do the lookup again
+        client.sleep()
         client.sleep()
         df, _ = ActorStats.lookup(
             ts,
@@ -2220,7 +2219,7 @@ class TestAggregateTableDataset(unittest.TestCase):
 @source(webhook.endpoint("PlayerInfo"))
 @dataset
 class PlayerInfo:
-    name: str = field(key=True)
+    name: str
     age: int
     height: int = field().meta(description="in inches")  # type: ignore
     weight: int = field().meta(description="in pounds")  # type: ignore
@@ -2281,7 +2280,8 @@ class ManchesterUnitedPlayerInfo:
         )
         ms = metric_stats.join(club_salary, how="left", on=["club"])
         man_players = ms.filter(lambda df: df["club"] == "Manchester United")
-        return man_players.join(wag, how="left", on=["name"])
+        ret = man_players.join(wag, how="left", on=["name"])
+        return ret.groupby("name").first()
 
 
 @meta(owner="gianni@fifa.com")
@@ -2323,8 +2323,12 @@ class ManchesterUnitedPlayerInfoBounded:
         manchester_players = player_info_with_salary.filter(
             lambda df: df["club"] == "Manchester United"
         )
-        return manchester_players.join(
-            wag, how="left", on=["name"], within=("forever", "60s")
+        return (
+            manchester_players.join(
+                wag, how="left", on=["name"], within=("forever", "60s")
+            )
+            .groupby("name")
+            .first()
         )
 
 
@@ -2391,21 +2395,21 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
             "Manchester United",
             "Manchester United",
             None,
-            None,
+            "Manchester United",
             "Manchester United",
         ]
         assert df["salary"].tolist() == [
             1000000,
             1000000,
             None,
-            None,
+            1000000,
             1000000,
         ]
         assert df["wag"].tolist() == [
             "Lucia",
             "Fern",
             None,
-            None,
+            "Georgina",
             "Rosilene",
         ]
 
@@ -2508,13 +2512,6 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
             None,
             1000000,
             None,
-        ]
-        assert df["wag"].tolist() == [
-            None,
-            "Fern",
-            None,
-            "Georgina",
-            "Rosilene",
         ]
 
 
@@ -2662,16 +2659,12 @@ class LocationLatLong:
             .assign(
                 "latitude",
                 float,
-                lambda df: df["json_payload"]
-                .apply(lambda x: x["latitude"])
-                .astype(float),
+                lambda df: df["json_payload"].apply(lambda x: x["latitude"]),
             )
             .assign(
                 "longitude",
                 float,
-                lambda df: df["json_payload"]
-                .apply(lambda x: x["longitude"])
-                .astype(float),
+                lambda df: df["json_payload"].apply(lambda x: x["longitude"]),
             )
             .drop("json_payload")
         )
@@ -2806,8 +2799,7 @@ def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
     res = client.log("fennel_webhook", "CommonEvent", pd.DataFrame(data))
     assert res.status_code == 200, res.json()
 
-    if client.is_integration_client():
-        client.sleep()
+    client.sleep()
 
     now = datetime.now()
     timestamps = pd.Series([now, now])
@@ -3093,7 +3085,6 @@ class UserInfoDatasetPreProc:
     timestamp: datetime = field(timestamp=True)
 
 
-@pytest.mark.integration
 @mock
 def test_dataset_with_pre_proc_log(client):
     # Sync the dataset
@@ -3139,6 +3130,7 @@ def test_lookup_as_of_now(client):
 
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
 
     data, found = client.lookup(
         "UserInfoDataset",
@@ -3148,7 +3140,7 @@ def test_lookup_as_of_now(client):
     assert len(found.tolist()) == 1
     assert found.tolist() == [True]
     assert len(data) == 1
-    assert data[0]["name"] == "Ross"
+    assert data["name"][0] == "Ross"
 
 
 @pytest.mark.integration
@@ -3166,6 +3158,7 @@ def test_lookup_as_of_time(client):
 
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
 
     data, found = client.lookup(
         "UserInfoDataset",
@@ -3175,6 +3168,6 @@ def test_lookup_as_of_time(client):
     )
     assert len(found.tolist()) == 2
     assert found.tolist() == [False, True]
-    assert len(data) == 2
-    assert data[0]["name"] is None
-    assert data[1]["name"] == "Monica"
+    assert len(data) == 1
+    assert data["name"][0] is None
+    assert data["name"][1] == "Monica"

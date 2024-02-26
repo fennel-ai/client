@@ -57,7 +57,7 @@ class CountryStats:
 
 @featureset
 class UserInfoFeatureset:
-    user_id: str = feature(id=1)
+    user_id: int = feature(id=1)
     name: str = feature(id=2).extract(field=UserInfoDataset.name, default="None")  # type: ignore
     age: int = feature(id=3).extract(field=UserInfoDataset.age, default=1)  # type: ignore
     gender: str = feature(id=4).extract(field=UserInfoDataset.gender, default="None")  # type: ignore
@@ -111,7 +111,7 @@ def _get_source_changed_datasets():
 def _get_changed_featureset():
     @featureset
     class UserInfoFeatureset:
-        user_id: str = feature(id=1)
+        user_id: int = feature(id=1)
         name: str = feature(id=2).extract(field=UserInfoDataset.name, default="None")  # type: ignore
         age: int = feature(id=3)
         gender: str = feature(id=4).extract(field=UserInfoDataset.gender, default="None")  # type: ignore
@@ -534,6 +534,7 @@ def test_change_source_dataset_clone_branch(client):
     df = pd.DataFrame(data)
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
 
     now = datetime.utcnow()
     data = [
@@ -551,17 +552,23 @@ def test_change_source_dataset_clone_branch(client):
     df = pd.DataFrame(data)
     response = client.log("fennel_webhook", "UserInfoDataset3", df)
     assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
 
-    output = client.get_dataset_df("GenderStats")
-    assert output.shape == (2, 3)
-    assert output["gender"].tolist() == [0, 1]
-    assert output["count"].tolist() == [1, 1]
+    params = {
+        "dataset_name": "GenderStats",
+        "keys": [{"gender": 0}, {"gender": 1}],
+        "fields": ["gender", "count"],
+    }
+    output, found = client.lookup(**params)
+    assert found.to_list() == [True, True]
+    assert list(output["gender"]) == [0, 1]
+    assert list(output["count"]) == [1, 1]
 
     client.checkout("main")
-    output = client.get_dataset_df("GenderStats")
-    assert output.shape == (2, 3)
-    assert output["gender"].tolist() == ["M", "F"]
-    assert output["count"].tolist() == [1, 1]
+    params["keys"] = [{"gender": "M"}, {"gender": "F"}]
+    output, found = client.lookup(**params)
+    assert list(output["gender"]) == ["M", "F"]
+    assert list(output["count"]) == [1, 1]
 
 
 @pytest.mark.integration
@@ -606,7 +613,9 @@ def test_change_extractor_clone_branch(client):
     df = pd.DataFrame(data)
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
 
+    # How is client passing?
     output = client.query(
         inputs=["UserInfoFeatureset.user_id"],
         outputs=[UserInfoFeatureset],

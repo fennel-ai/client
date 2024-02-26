@@ -146,6 +146,7 @@ def test_simple_source():
             },
         },
         "dataset": "UserInfoDataset",
+        "dsVersion": 1,
         "every": "3600s",
         "disorder": "72000s",
         "cursor": "added_on",
@@ -294,6 +295,7 @@ def test_simple_source_with_pre_proc():
             },
         },
         "dataset": "UserInfoDataset",
+        "dsVersion": 1,
         "every": "3600s",
         "disorder": "72000s",
         "cursor": "added_on",
@@ -457,6 +459,7 @@ def test_tier_selector_on_source():
             }
         },
         "dataset": "UserInfoDataset",
+        "dsVersion": 1,
         "every": "3600s",
         "cursor": "added_on",
         "disorder": "1209600s",
@@ -490,6 +493,7 @@ def test_tier_selector_on_source():
             }
         },
         "dataset": "UserInfoDataset",
+        "dsVersion": 1,
         "every": "3600s",
         "cursor": "added_on",
         "disorder": "1209600s",
@@ -554,6 +558,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetS3",
+        "dsVersion": 1,
         "every": "3600s",
         "disorder": "172800s",
         "startingFrom": "2021-08-10T00:00:00Z",
@@ -614,6 +619,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetSnowFlake",
+        "dsVersion": 1,
         "every": "3600s",
         "disorder": "1209600s",
         "cursor": "added_on",
@@ -683,6 +689,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetSnowFlakeStartingFrom",
+        "dsVersion": 1,
         "every": "3600s",
         "disorder": "1209600s",
         "cursor": "added_on",
@@ -750,6 +757,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetBigQuery",
+        "dsVersion": 1,
         "every": "3600s",
         "disorder": "7200s",
         "cursor": "added_on",
@@ -814,6 +822,7 @@ def test_multiple_sources():
             },
         },
         "dataset": "UserInfoDatasetMySql",
+        "dsVersion": 1,
         "every": "3600s",
         "disorder": "1209600s",
         "cursor": "added_on",
@@ -882,6 +891,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetKafka",
+        "dsVersion": 1,
         "disorder": "1209600s",
         "startingFrom": "2021-08-10T00:00:00Z",
     }
@@ -950,6 +960,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetKafka",
+        "dsVersion": 1,
         "disorder": "1209600s",
         "cdc": "Debezium",
         "startingFrom": "2021-08-10T00:00:00Z",
@@ -995,6 +1006,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetKinesis",
+        "dsVersion": 1,
         "disorder": "1209600s",
         "startingFrom": "2021-08-10T00:00:00Z",
     }
@@ -1067,6 +1079,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetKinesis",
+        "dsVersion": 1,
         "disorder": "1209600s",
         "startingFrom": "2023-05-31T00:00:00Z",
     }
@@ -1092,6 +1105,7 @@ def test_multiple_sources():
             }
         },
         "dataset": "UserInfoDatasetKinesis2",
+        "dsVersion": 1,
         "disorder": "1209600s",
     }
     expected_source = ParseDict(e, connector_proto.Source())
@@ -1135,6 +1149,7 @@ def test_console_source():
             }
         },
         "dataset": "UserInfoDataset",
+        "dsVersion": 1,
         "every": "3600s",
         "disorder": "1209600s",
         "timestampField": "timestamp",
@@ -1186,6 +1201,7 @@ def test_s3_source_with_path():
             }
         },
         "dataset": "UserInfoDataset",
+        "dsVersion": 1,
         "every": "3600s",
         "disorder": "1209600s",
         "timestampField": "timestamp",

@@ -100,10 +100,10 @@ def test_simple_invalid_extractor(client):
             ),
         )
     if client.is_integration_client():
-        assert "Extractor UserInfoExtractor.get_user_info failed:" in str(
+        assert "Extractor UserInfoExtractor.get_user_info failed" in str(
             e.value
         )
-        assert "Value: name 'power_4' is not defined" in str(e.value)
+        assert "name 'power_4' is not defined" in str(e.value)
     else:
         str(e.value) == "Extractor `get_user_info` in `UserInfoExtractor` "
         "failed to run with error: name 'power_4' is not defined. "

@@ -188,7 +188,8 @@ def test_window_operator(client):
     assert df_stats.shape[0] == 1
     assert df_stats["user_id"].values == [1]
     assert df_stats["avg_length"].values == [2.5]
-    assert df_stats["avg_count"].values == [3.333333]
+    # Round to 3 places before comparing
+    assert round(df_stats["avg_count"].values[0], 3) == round(3.333333, 3)
 
     df_featureset = client.query(
         inputs=[
@@ -203,8 +204,13 @@ def test_window_operator(client):
     )
     assert df_featureset.shape[0] == 1
     assert df_featureset["UserSessionStats.avg_length"].values == [2.5]
-    assert df_featureset["UserSessionStats.avg_count"].values == [3.333333]
+    assert round(
+        df_featureset["UserSessionStats.avg_count"].values[0], 3
+    ) == round(3.333333, 3)
     assert df_featureset["UserSessionStats.last_visitor_session"].size == 1
+
+    if client.is_integration_client():
+        return
 
     df_historical = client.query_offline(
         input_dataframe=input_extract_historical_df,

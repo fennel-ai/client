@@ -52,6 +52,6 @@ def test_basic(client):
     )
     # /docsnip
     assert found.tolist() == [True, True, False]
-    assert response[0] == {"uid": 1, "amount": 10}
-    assert response[1] == {"uid": 2, "amount": 20}
-    assert response[2] == {"uid": 3, "amount": None}
+    # Response is columnar
+    assert response["uid"] == [1, 2, 3]
+    assert response["amount"] == [10, 20, None]

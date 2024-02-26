@@ -82,7 +82,7 @@ class QueryEngine:
         fennel.datasets.datasets.dataset_lookup = partial(
             data_engine.get_dataset_lookup_impl(None, None),
         )
-        return data[fields].to_dict(orient="records"), found
+        return data[fields].to_dict(orient="list"), found
 
     def run_extractors(
         self,

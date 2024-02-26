@@ -102,6 +102,7 @@ def test_simple_dataset():
                     }
                 },
                 "dataset": "UserInfoDataset",
+                "dsVersion": 1,
                 "disorder": "1209600s",
             }
         ],
@@ -254,6 +255,7 @@ def test_dataset_with_retention():
                     }
                 },
                 "dataset": "Activity",
+                "dsVersion": 1,
                 "disorder": "1209600s",
             }
         ],
@@ -398,6 +400,7 @@ def test_nested_dataset():
                     }
                 },
                 "dataset": "Dealer",
+                "dsVersion": 1,
                 "disorder": "1209600s",
             }
         ],

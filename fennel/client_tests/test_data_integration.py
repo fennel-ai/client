@@ -45,12 +45,8 @@ class TestMovieInfo103(unittest.TestCase):
     @mock
     def test_log_to_MovieInfo103(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
-        if client.integration_mode() == "local":
-            pytest.skip("Skipping integration test in local mode")
-
         # Sync the dataset
         client.commit(datasets=[MovieInfo103], tier="dev")
-        client.sleep()
         t = datetime.utcfromtimestamp(1672858163)
         data = [
             [
@@ -68,6 +64,7 @@ class TestMovieInfo103(unittest.TestCase):
 
         response = client.log("fennel_webhook", "MovieInfo", df)
         assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
 
         # Do some lookups
         now = datetime.now()
@@ -142,16 +139,11 @@ class TestMovieInfo103(unittest.TestCase):
         )
         assert found.tolist() == [False, False, True, False]
 
-    @pytest.mark.integration
     @mock
     def test_epoch_log_to_MovieInfo103(self, client):
         """Log some data to the dataset with epoch time and check if it is logged correctly."""
-        if client.integration_mode() == "local":
-            pytest.skip("Skipping integration test in local mode")
-
         # Sync the dataset
         client.commit(datasets=[MovieInfo103], tier="dev")
-        client.sleep()
         data = [
             [
                 1,
@@ -173,6 +165,7 @@ class TestMovieInfo103(unittest.TestCase):
 
         response = client.log("fennel_webhook", "MovieInfo", df)
         assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
 
         # Dataset name is the class name
         df = client.get_dataset_df("MovieInfo103")

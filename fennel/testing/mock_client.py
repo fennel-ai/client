@@ -336,12 +336,12 @@ def mock(test_func):
             client = MockClient()
             f = test_func(*args, **kwargs, client=client)
         if (
-            "USE_INT_CLIENT" in os.environ
-            and int(os.environ.get("USE_INT_CLIENT")) == 1
+                "USE_INT_CLIENT" in os.environ
+                and int(os.environ.get("USE_INT_CLIENT")) == 1
         ):
             mode = os.environ.get("FENNEL_TEST_MODE", "inmemory")
             print("Running rust client tests in mode:", mode)
-            client = IntegrationClient()
+            client = IntegrationClient(mode)
             f = test_func(*args, **kwargs, client=client)
         return f
 

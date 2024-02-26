@@ -201,6 +201,7 @@ def test_complex_dataset_with_fields():
                     }
                 },
                 "dataset": "YextUserInfoDataset",
+                "dsVersion": 1,
                 "disorder": "1209600s",
             }
         ],

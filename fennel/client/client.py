@@ -568,7 +568,7 @@ class Client:
             for idx in range(len(timestamps)):
                 if isinstance(timestamps[idx], datetime):
                     timestamps[idx] = str(timestamps[idx])
-            req["timestamp"] = timestamps
+            req["timestamps"] = timestamps
         response = self._post_json(
             "{}/branch/{}/dataset/{}/lookup".format(
                 V1_API, self._branch, dataset_name

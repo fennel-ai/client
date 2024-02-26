@@ -475,9 +475,6 @@ class TestSearchExample(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_search_datasets1(self, client):
-        if client.integration_mode() == "local":
-            pytest.skip("Skipping integration test in local mode")
-
         client.commit(
             datasets=[NotionDocs, CodaDocs, GoogleDocs, Document], tier="dev"
         )
@@ -501,8 +498,6 @@ class TestSearchExample(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_search_datasets2(self, client):
-        if client.integration_mode() == "local":
-            pytest.skip("Skipping integration test in local mode")
         client.commit(
             datasets=[
                 UserActivity,
@@ -530,8 +525,6 @@ class TestSearchExample(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_search_e2e(self, client):
-        if client.integration_mode() == "local":
-            pytest.skip("Skipping integration test in local mode")
         client.commit(
             datasets=[
                 NotionDocs,

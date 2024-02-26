@@ -1591,6 +1591,10 @@ class Dataset(_Node[T]):
     def fields(self):
         return self._fields
 
+    @property
+    def version(self):
+        return self._version
+
 
 def sync_validation_for_pipelines(pipelines: List[Pipeline], ds_name: str):
     """

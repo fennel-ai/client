@@ -57,7 +57,7 @@ def test_duplicate_create(client):
     if client.is_integration_client():
         assert (
             str(error.value)
-            == 'Server returned: 500, error: failed to create branch: error returned from database: duplicate key value violates unique constraint "branch_name"'
+            == "Server returned: 500, can not create branch `test-branch`: already exists"
         )
     else:
         assert str(error.value) == "Branch name: `test-branch` already exists"

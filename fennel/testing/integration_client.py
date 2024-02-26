@@ -16,7 +16,7 @@ try:
 
     sys.path.insert(
         0,
-        "/nix/store/m5w8ccghyqai64lvbr28pj65barcgskf-python3-3.11.7-env/lib/python3.11/site-packages",
+        "/nix/store/4f7n9rxn2ra9i640yji2j346br3gbfh9-python3-3.11.8-env/lib/python3.11/site-packages",
     )
     from fennel_client_lib import HttpServer  # type: ignore
     from fennel_dataset import lookup  # type: ignore
@@ -64,7 +64,7 @@ class IntegrationClient(Client):
 
     def commit(
         self,
-        message: str,
+        message: str = "test commit message",
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
@@ -134,6 +134,7 @@ class IntegrationClient(Client):
         # If response content type is json, parse it
         if content_type == "application/json":
             content = json.loads(content)
+        print(content)
         # HTTP sever returns code as a string
         code = int(code)
         if code != 200:

@@ -32,7 +32,6 @@ class UserInfoDataset:
 
 
 class TestDataset(unittest.TestCase):
-    @pytest.mark.integration
     @mock
     def test_log_with_additional_schema(self, client):
         # Log correct data
