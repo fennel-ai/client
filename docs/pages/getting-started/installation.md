@@ -24,41 +24,50 @@ run just via the mock server. See [quickstart](/getting-started/quickstart)
 for an example. 
 
 In other words, once you have pip installed the client, you are all setup to 
-explore Fennel. 
+explore Fennel locally without needing a Fennel server.
 
 
 ## Deploying Fennel Server
 
 Fennel runs as a single tenant system inside your cloud so that your data and 
 code never leave your cloud perimeter. See [deployment model](/security/deployment-model)
-for details. With this deployment model, here are the steps for deploying Fennel 
-servers in your cloud:
+for details. 
+
+With this deployment model, here are the steps for deploying Fennel servers in 
+your cloud:
 
 1. Create a new account in
-   your [AWS Organization](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html). Fennel
-   will run inside this account.
-2. Fennel support will give you a cloudformation template - run that from the 
-   region/account chosen in step 1. This template provisions a role and an IAM 
-   permission boundary.
-3. Share the region, account ID, and ARN(s) of the IAM role & the permission
-   boundary created by the cloud formation template with Fennel support.
-4. In addition, agree on a VPC CIDR that Fennel should use for the data plane, 
-   whether you want the endpoints to be public or private, and the email domain(s)
-   that should be allowed to access Fennel web console. 
-5. Sit back as Fennel Support deploys the platform in this account and manages
-   it from there. When done, Fennel will give you URLs of the Fennel console,
-   the main data/query servers and the VPC ID of the VPC setup in the account.
-5. If you want Fennel to ingest data from a private resource (e.g. RDS, Snowflake) 
-   in any of your accounts, you may need to do VPC peering between the VPC
-   set up by Fennel and your other AWS accounts. If you choose to use public 
-   endpoints instead, Fennel support can provide IPs to be added to 
-   appropriate allowlists on your side (for Snowflake access, for instance).
-6. To enable laptop access of Fennel for your team, Fennel can either provide
+   your [AWS Organization](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html) 
+   and note down the account ID. Fennel will run inside this account. 
+2. Create a VPC in this account with internet and nat gateways configured so 
+   that nodes have internet access. The VPC subnets also need to be 
+   appropriately tagged for load-balancer creation. You can do so by following 
+   [this guide](https://docs.aws.amazon.com/eks/latest/userguide/creating-a-vpc.html)
+   or Fennel support can also provide standard cloud-formation templates to use.
+3. Once VPC is setup, share the account ID from step 1 with the Fennel support. 
+   Also inform Fennel support a) whether you want the endpoints to be public 
+   or private and b) the email domain(s) that should be allowed to access Fennel 
+   web console.
+4. In response, you’d be given a cloud formation template, a cluster id and a 
+   subdomain. Run the cloud formation template from the account chosen in step 
+   1 with the following inputs: a) VPC: VPC ID, publicSubnets, privateSubnets, 
+   cidr b) cluster ID c) subdomain.
+5. This template provisions the outpost EC2 instance(s) inside the VPC, a 
+   security group, couple of IAM roles, a role permission boundary and some 
+   other machinery.
+6. Sit back as Fennel Support deploys the platform in this account and manages 
+   it from there. When done, Fennel will give you URLs of the Fennel console 
+   and the main API servers.
+7. If you want Fennel to ingest data from a private resource (e.g. RDS, 
+   Snowflake) in any of your accounts, you may either need to peer the 
+   VPC set up in step 2 with your other AWS accounts or add the IP of the NAT 
+   gateway to appropriate allow lists (e.g. Snowflake)
+8. To enable laptop access to Fennel for your team, Fennel can either provide 
    PrivateLink endpoint or you can use VPC peering and/or VPN setup yourself.
-7. Once you have access to console URL and network connectivity, visit the 
-   Fennel console to generate access tokens (you can also create new RBAC 
-   roles if needed and/or assign users to roles).
-9. Instantiate Fennel client by providing server URL and access tokens. Use this
-   client to talk to the server.
-10. You are all set now!
+9. Once you have access to Fennel console, use it to generate access tokens (you 
+    can also create new RBAC roles if needed and/or assign users to roles).
+10. Instantiate Fennel client by providing server URL and access tokens. Use 
+    this client to talk to the server.
+
+And you are all set now!
 
