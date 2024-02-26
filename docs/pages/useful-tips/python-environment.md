@@ -6,7 +6,8 @@ status: 'published'
 
 # Python Environment
 
-By default, Fennel runs on Python 3.9 and comes pre-installed with the following pip packages:
+By default, Fennel server runs on Python 3.9 and comes pre-installed with the 
+following pip packages:
 
 ```
 charset-normalizer==3.0.1

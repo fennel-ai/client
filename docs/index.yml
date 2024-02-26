@@ -61,10 +61,9 @@ sidebar:
       - "observability/newrelic"
       - "observability/alerting"
 
-  - 
-    slug: "misc"
-    title: "Misc."
+  - slug: "useful-tips"
+    title: "Useful Tips"
     pages:
-      - "misc/python-environment"
-      - "misc/troubleshooting-guide"
-      - "misc/performance-tuning"
+      - "useful-tips/code-organization"
+      - "useful-tips/python-environment"
+      - "useful-tips/troubleshooting"

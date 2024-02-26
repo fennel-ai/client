@@ -26,7 +26,7 @@ First we define the external sources by providing the required credentials:
 ```python
 from fennel.sources import source, Postgres, Kafka
 
-postgres = Postgres(host=...<credentials>..)
+pg = Postgres(host=...<credentials>..)
 kafka = Kafka(...<credentials>..)
 ```
 
