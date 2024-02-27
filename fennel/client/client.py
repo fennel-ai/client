@@ -496,7 +496,7 @@ class Client:
             "{}/branch/{}/query_offline".format(V1_API, self._branch), req
         )
 
-    def query_offline_status(self, request_id):
+    def track_offline_query(self, request_id):
         """
         Get the progress of query offline run.
 
@@ -512,7 +512,7 @@ class Client:
             f"{V1_API}/branch/{self._branch}/query_offline/status?request_id={request_id}"
         )
 
-    def query_offline_cancel(self, request_id):
+    def cancel_offline_query(self, request_id):
         """
         Cancel the query offline run.
 
