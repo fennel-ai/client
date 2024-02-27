@@ -127,16 +127,22 @@ def parse_json(annotation, json) -> Any:
         if origin is list:
             if isinstance(json, np.ndarray):
                 json = json.tolist()
-            if not isinstance(json, list):
+            # Lookups can return None also in case of List[FennelStruct]
+            if not isinstance(json, list) and pd.notna(json):
                 raise TypeError(f"Expected list, got `{type(json).__name__}`")
+            if not isinstance(json, list) and pd.isna(json):
+                return None
             return [parse_json(args[0], x) for x in json]
         if origin is dict:
             if isinstance(json, list):
                 return {k: parse_json(args[1], v) for k, v in json}
-            if not isinstance(json, dict):
+            # Lookups can return None also in case Dict[Any, FennelStruct]
+            if not isinstance(json, dict) and pd.notna(json):
                 raise TypeError(
                     f"Expected dict or list of pairs, got `{type(json).__name__}`"
                 )
+            if not isinstance(json, dict) and pd.isna(json):
+                return None
             return {k: parse_json(args[1], v) for k, v in json.items()}
         raise TypeError(f"Unsupported type `{origin}`")
     else:
@@ -253,7 +259,6 @@ def struct(cls):
                     f"non-struct type, which is not allowed."
                 )
             dependency_code += "\n\n" + getattr(fstruct, FENNEL_STRUCT_SRC_CODE)
-
     setattr(cls, FENNEL_STRUCT, True)
     try:
         src_code = inspect.getsource(cls)
@@ -263,6 +268,7 @@ def struct(cls):
     except Exception:
         # In exec mode ( such as extractor code generation ) there is no file
         # to get the source from, so we let it pass.
+        setattr(cls, FENNEL_STRUCT_SRC_CODE, "")
         pass
     setattr(cls, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE, dependency_code)
     cls.as_json = as_json

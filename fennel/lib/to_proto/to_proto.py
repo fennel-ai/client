@@ -4,22 +4,22 @@ import inspect
 import json
 from datetime import datetime
 from textwrap import dedent, indent
+from typing import Any, Dict, List, Optional, Tuple, Mapping
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, StringValue
-from typing import Any, Dict, List, Optional, Tuple, Set, Mapping
 
-import fennel.gen.schema_registry_pb2 as schema_registry_proto
-import fennel.gen.http_auth_pb2 as http_auth_proto
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.expectations_pb2 as exp_proto
 import fennel.gen.featureset_pb2 as fs_proto
+import fennel.gen.http_auth_pb2 as http_auth_proto
 import fennel.gen.kinesis_pb2 as kinesis_proto
 import fennel.gen.metadata_pb2 as metadata_proto
 import fennel.gen.pycode_pb2 as pycode_proto
 import fennel.gen.schema_pb2 as schema_proto
+import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.services_pb2 as services_proto
 import fennel.sources as sources
 from fennel.datasets import Dataset, Pipeline, Field
@@ -1268,7 +1268,7 @@ def to_extractor_pycode(
     if hasattr(extractor.func, FENNEL_INCLUDED_MOD):
         for f in getattr(extractor.func, FENNEL_INCLUDED_MOD):
             dep = to_includes_proto(f)
-            gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
+            gen_code = "\n" + gen_code + "\n" + dedent(dep.generated_code)
             dependencies.append(dep)
 
     # Extractor code construction

@@ -4,18 +4,19 @@ import os
 import re
 import sys
 from textwrap import dedent, indent
-
 from typing import Callable, Dict
 
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset
+from fennel.lib import FENNEL_GEN_CODE_MARKER
 from fennel.lib.includes.include_mod import FENNEL_INCLUDED_MOD
 from fennel.lib.schema import (
     FENNEL_STRUCT_SRC_CODE,
+    get_fennel_struct,
+    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
 )
 from fennel.utils import fennel_get_source
-from fennel.lib import FENNEL_GEN_CODE_MARKER
 
 
 def _remove_empty_lines(source_code: str) -> str:
@@ -71,6 +72,22 @@ def get_featureset_gen_code(
             continue
         fs_code = get_featureset_gen_code(fs_obj_map[fs], fs_obj_map)
         gen_code = dedent(fs_code) + "\n" + gen_code + "\n"
+
+    # Adding code of struct if any struct is part of annotation of any Feature in the Featureset
+    for feature in featureset.features:
+        fennel_struct = get_fennel_struct(feature.dtype)
+        if fennel_struct:
+            if hasattr(fennel_struct, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE):
+                code = dedent(
+                    getattr(fennel_struct, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE)
+                )
+                if code not in gen_code:
+                    gen_code = gen_code + "\n" + code + "\n"
+            if hasattr(fennel_struct, FENNEL_STRUCT_SRC_CODE):
+                code = dedent(getattr(fennel_struct, FENNEL_STRUCT_SRC_CODE))
+                if code not in gen_code:
+                    gen_code = gen_code + "\n" + code + "\n"
+
     source_code = gen_code + "\n" + get_featureset_core_code(featureset)
     return _remove_empty_lines(source_code)
 
