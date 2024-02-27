@@ -15,8 +15,8 @@ from fennel.featuresets import Featureset, Feature, is_valid_feature
 from fennel.internal_lib.graph_algorithms import (
     get_extractor_order,
 )
-from fennel.lib import includes  # noqa
 from fennel.internal_lib.schema import get_datatype
+from fennel.lib import includes  # noqa
 from fennel.sources.sources import S3Connector
 from fennel.testing.branch import Branch
 from fennel.testing.integration_client import IntegrationClient
@@ -184,11 +184,11 @@ class MockClient(Client):
         output_df[timestamp_column] = timestamps
         return output_df
 
-    def query_offline_status(self, request_id):
-        return FakeResponse(404, "Extract historical features not supported")
+    def track_offline_query(self, request_id):
+        return FakeResponse(404, "Offline Query features not supported")
 
-    def query_offline_cancel(self, request_id):
-        return FakeResponse(404, "Extract historical features not supported")
+    def cancel_offline_query(self, request_id):
+        return FakeResponse(404, "Offline Query features not supported")
 
     def lookup(
         self,
@@ -336,8 +336,8 @@ def mock(test_func):
             client = MockClient()
             f = test_func(*args, **kwargs, client=client)
         if (
-                "USE_INT_CLIENT" in os.environ
-                and int(os.environ.get("USE_INT_CLIENT")) == 1
+            "USE_INT_CLIENT" in os.environ
+            and int(os.environ.get("USE_INT_CLIENT")) == 1
         ):
             mode = os.environ.get("FENNEL_TEST_MODE", "inmemory")
             print("Running rust client tests in mode:", mode)
