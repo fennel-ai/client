@@ -92,7 +92,7 @@ class TestDebugSnips(unittest.TestCase):
     @mock
     def test_print_dataset(self, client):
 
-        # docsnip print_dataset_setup
+        # docsnip print_dataset
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib.schema import inputs
         from fennel.sources import source, Webhook
@@ -131,9 +131,6 @@ class TestDebugSnips(unittest.TestCase):
                 ],
             ),
         )
-        # /docsnip
-
-        # docsnip print_dataset_usage
         df = client.get_dataset_df("USUsers")
         print(df)
         # /docsnip
