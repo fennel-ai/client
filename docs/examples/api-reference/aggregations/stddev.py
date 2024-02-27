@@ -10,7 +10,14 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.datasets import dataset, field, pipeline, Dataset, Average, Stddev
+    from fennel.datasets import (
+        dataset,
+        field,
+        pipeline,
+        Dataset,
+        Average,
+        Stddev,
+    )
     from fennel.lib import inputs
     from fennel.sources import source, Webhook
 
@@ -110,7 +117,14 @@ def test_basic(client):
 def test_invalid_type(client):
     with pytest.raises(Exception):
         # docsnip incorrect_type
-        from fennel.datasets import dataset, field, pipeline, Dataset, Average, Stddev
+        from fennel.datasets import (
+            dataset,
+            field,
+            pipeline,
+            Dataset,
+            Average,
+            Stddev,
+        )
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 
@@ -148,7 +162,14 @@ def test_invalid_type(client):
 def test_non_matching_types(client):
     with pytest.raises(Exception):
         # docsnip non_matching_types
-        from fennel.datasets import dataset, field, pipeline, Dataset, Average, Stddev
+        from fennel.datasets import (
+            dataset,
+            field,
+            pipeline,
+            Dataset,
+            Average,
+            Stddev,
+        )
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 

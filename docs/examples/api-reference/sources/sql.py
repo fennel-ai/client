@@ -63,7 +63,7 @@ def test_postgres_basic(client):
     # docsnip-highlight end
 
     # docsnip-highlight next-line
-    @source(postgres.table("user", cursor="updated_at"), every="1m") 
+    @source(postgres.table("user", cursor="updated_at"), every="1m")
     @dataset
     class User:
         uid: int = field(key=True)
@@ -97,7 +97,7 @@ def test_snowflake_basic(client):
     )
     # docsnip-highlight end
 
-    @source(snowflake.table("User", cursor="timestamp")) # docsnip-highlight
+    @source(snowflake.table("User", cursor="timestamp"))  # docsnip-highlight
     @dataset
     class UserClick:
         uid: int

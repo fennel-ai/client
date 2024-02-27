@@ -25,7 +25,7 @@ def test_kafka_source(client):
     )
     # docsnip-highlight end
 
-    @source(kafka.topic("user", format="json")) # docsnip-highlight
+    @source(kafka.topic("user", format="json"))  # docsnip-highlight
     @dataset
     class SomeDataset:
         uid: int = field(key=True)

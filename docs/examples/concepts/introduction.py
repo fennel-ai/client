@@ -266,7 +266,7 @@ def dummy_function():
 
 @mock
 def test_branches(client):
-    from fennel.datasets import dataset, field 
+    from fennel.datasets import dataset, field
     from fennel.featuresets import feature, featureset, extractor
     from fennel.sources import Webhook, source
 
@@ -298,4 +298,3 @@ def test_branches(client):
         input_dataframe=pd.DataFrame({"SomeFeatureset.uid": [1, 2]}),
     )
     # /docsnip
-    

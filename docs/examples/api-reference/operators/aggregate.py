@@ -11,7 +11,14 @@ class TestAssignSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, Count, Sum
+        from fennel.datasets import (
+            dataset,
+            field,
+            pipeline,
+            Dataset,
+            Count,
+            Sum,
+        )
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 

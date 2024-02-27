@@ -45,9 +45,10 @@ class TestExplodeSnips(unittest.TestCase):
             def explode_pipeline(cls, ds: Dataset):
                 return (
                     ds
-                        # docsnip-highlight next-line
-                        .explode("skus", "prices")
-                        .rename({"skus": "sku", "prices": "price"})
+                    # docsnip-highlight next-line
+                    .explode("skus", "prices").rename(
+                        {"skus": "sku", "prices": "price"}
+                    )
                 )
 
         # /docsnip

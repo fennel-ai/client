@@ -35,6 +35,7 @@ def test_basic(client):
 
     # docsnip-highlight start
     client.commit(
+        message="transaction: add transaction dataset and featureset",
         datasets=[Transaction],
         featuresets=[TransactionFeatures],
         preview=False,  # default is False, so didn't need to include this

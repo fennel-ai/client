@@ -27,7 +27,7 @@ def test_kinesis_init_position(client):
     )
     # docsnip-highlight end
 
-    @source(stream) # docsnip-highlight
+    @source(stream)  # docsnip-highlight
     @dataset
     class Orders:
         uid: int
@@ -54,7 +54,7 @@ def test_kinesis_latest(client):
 
     stream = kinesis.stream(
         stream_arn=os.environ["KINESIS_ORDERS_STREAM_ARN"],
-        init_position="latest", # docsnip-highlight
+        init_position="latest",  # docsnip-highlight
         format="json",
     )
 
