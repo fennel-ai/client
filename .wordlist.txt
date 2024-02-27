@@ -159,7 +159,7 @@ denormalize
 dev
 df
 dfe
-disorderness
+disorder
 docsnip
 dropnull
 ds
