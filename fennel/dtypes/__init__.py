@@ -3,6 +3,6 @@ from fennel.dtypes.dtypes import (
     oneof,
     regex,
     between,
-    Window,
     struct,
+    Window,
 )

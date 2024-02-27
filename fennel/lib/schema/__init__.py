@@ -1,9 +1,9 @@
 # Soon to be deprecated, keep just for backward compatibility
-from fennel.lib.params import (
+from fennel.lib import (
     inputs,
     outputs,
 )
-from fennel.dtypes.dtypes import (
+from fennel.dtypes import (
     between,
     oneof,
     regex,

@@ -56,11 +56,11 @@ from fennel.internal_lib.schema import (
     parse_json,
     get_python_type_from_pd,
     FENNEL_STRUCT_SRC_CODE,
-    get_origin,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
 )
 from fennel.internal_lib.utils import (
     dtype_to_string,
+    get_origin,
 )
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.includes import TierSelector
