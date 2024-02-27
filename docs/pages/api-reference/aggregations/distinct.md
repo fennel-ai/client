@@ -43,7 +43,7 @@ dataset which must be of type `List[T]` where `T` is the type of the input colum
 <Expandable title="Computing distinct for non-hashable types">
 Distinct operator is a lot like building a hashmap - for it to be valid, the 
 underlying data must be hashable. Types like `float` (or any other complex type
-built using `float`) aren't hashable - so a sync error is raised.
+built using `float`) aren't hashable - so a commit error is raised.
 
 </Expandable>
 
@@ -57,6 +57,7 @@ Storing the full set of distinct values can get costly so it's recommended to us
 <pre snippet="api-reference/aggregations/distinct#basic" status="success" 
     message="Distinct in window of 1 day">
 </pre>
+
 <pre snippet="api-reference/aggregations/distinct#incorrect_type" status="error" 
     message="amounts should be of type List[int], not int">
 </pre>

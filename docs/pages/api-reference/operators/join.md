@@ -77,22 +77,21 @@ the output dataset becomes `Optional[T]` if it was `T` on the RHS side.
 
 #### Errors
 <Expandable title="Join with non-key dataset on the right side">
-Sync error to do a join with a dataset that doesn't have key columns.
+Commit error to do a join with a dataset that doesn't have key columns.
 </Expandable>
 
 <Expandable title="Join with intermediate dataset">
-Sync error to do a join with a dataset that is not an input to the pipeline but
+Commit error to do a join with a dataset that is not an input to the pipeline but
 instead is an intermediate dataset derived during the pipeline itself.
 </Expandable>
 
 <Expandable title="Post-join column name conflict">
-Sync error if join will result in a dataset having two columns of the same name. 
-A common way to work-around this is to rename columns via the `rename` operator
-before the join.
+Commit error if join will result in a dataset having two columns of the same name. 
+A common way to work-around this is to rename columns via the [rename](/api-reference/operators/rename) operator before the join.
 </Expandable>
 
 <Expandable title="Mismatch in columns to be joined">
-Sync error if the number/type of the join columns on the left and right side
+Commit error if the number/type of the join columns on the left and right side
 don't match.
 </Expandable>
 

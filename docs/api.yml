@@ -3,10 +3,10 @@ sidebar:
   - slug: "api-reference/client"
     title: "Client"
     pages:
-      - "api-reference/client/sync"
+      - "api-reference/client/commit"
       - "api-reference/client/log"
-      - "api-reference/client/extract"
-      - "api-reference/client/extract-historical"
+      - "api-reference/client/query"
+      - "api-reference/client/query-offline"
       - "api-reference/client/extract-historical-progress"
       - "api-reference/client/extract-historical-cancel"
       - "api-reference/client/lookup"

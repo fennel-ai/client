@@ -2,13 +2,8 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
-
-from fennel.datasets import dataset, pipeline, Dataset
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -16,6 +11,12 @@ class TestDedupSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -33,7 +34,8 @@ class TestDedupSnips(unittest.TestCase):
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def dedup_pipeline(cls, ds: Dataset):
+                # docsnip-highlight next-line
                 return ds.dedup(by="txid")
 
         # /docsnip
@@ -79,6 +81,12 @@ class TestDedupSnips(unittest.TestCase):
     @mock
     def test_dedup_by_all(self, client):
         # docsnip dedup_by_all
+        from fennel.datasets import dataset, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -96,7 +104,8 @@ class TestDedupSnips(unittest.TestCase):
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def dedup_by_all_pipeline(cls, ds: Dataset):
+                # docsnip-highlight next-line
                 return ds.dedup()
 
         # /docsnip

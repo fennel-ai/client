@@ -54,7 +54,7 @@ hyperloglog. For instance, `float` or types built on `float` aren't allowed.
 </Expandable>
 
 <Expandable title="Unique counts without approx">
-As of right now, it's a sync error to try to compute unique count without setting
+As of right now, it's a commit error to try to compute unique count without setting
 `approx` to True.
 </Expandable>
 
@@ -64,6 +64,7 @@ non-unique counts so use it only when truly needed.
 :::
 </LeftSection>
 <RightSection>
+
 <pre snippet="api-reference/aggregations/count#basic" status="success" 
     message="Count # of transaction & distinct vendors per user">
 </pre>

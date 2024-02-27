@@ -3,12 +3,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Count
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -16,6 +12,12 @@ class TestCountSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, field, pipeline, Dataset, Count
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -27,14 +29,17 @@ class TestCountSnips(unittest.TestCase):
         @dataset
         class Aggregated:
             uid: int = field(key=True)
+            # docsnip-highlight start
             num_transactions: int
             unique_vendors_1w: int
+            # docsnip-highlight end
             timestamp: datetime
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def count_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
+                    # docsnip-highlight start
                     Count(window="forever", into_field="num_transactions"),
                     Count(
                         of="vendor",
@@ -43,6 +48,7 @@ class TestCountSnips(unittest.TestCase):
                         window="1w",
                         into_field="unique_vendors_1w",
                     ),
+                    # docsnip-highlight end
                 )
 
         # /docsnip

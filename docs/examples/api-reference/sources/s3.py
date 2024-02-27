@@ -14,12 +14,15 @@ def test_s3_source_prefix(client):
     from fennel.sources import source, S3
     from fennel.datasets import dataset, field
 
+    # docsnip-highlight start
     s3 = S3(
         name="mys3",
         aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
         aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
     )
+    # docsnip-highlight end
 
+    # docsnip-highlight next-line
     @source(s3.bucket("datalake", prefix="user"), every="1h")
     @dataset
     class User:
@@ -45,7 +48,8 @@ def test_s3_delta(client):
         aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
     )
 
-    @source(s3.bucket("deltalake", prefix="user", format="delta"), every="1h")
+    # docsnip-highlight next-line
+    @source(s3.bucket("data", prefix="user", format="delta"), every="1h")
     @dataset
     class User:
         uid: int = field(key=True)
@@ -70,7 +74,8 @@ def test_s3_hudi(client):
         aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
     )
 
-    @source(s3.bucket("deltalake", prefix="user", format="hudi"), every="1h")
+    # docsnip-highlight next-line
+    @source(s3.bucket("data", prefix="user", format="hudi"), every="1h")
     @dataset
     class User:
         uid: int = field(key=True)
@@ -89,6 +94,7 @@ def test_s3_source_path(client):
     from fennel.sources import source, S3
     from fennel.datasets import dataset, field
 
+    # docsnip-highlight start
     s3 = S3(
         name="my_s3",
         aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
@@ -96,7 +102,9 @@ def test_s3_source_path(client):
     )
 
     bucket = s3.bucket("data", path="user/*/date-%Y-%m-%d/*", format="parquet")
+    # docsnip-highlight end
 
+    # docsnip-highlight next-line
     @source(bucket, every="1h")
     @dataset
     class User:

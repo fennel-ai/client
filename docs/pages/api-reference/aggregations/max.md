@@ -57,6 +57,7 @@ input dataset.
 
 </LeftSection>
 <RightSection>
+
 <pre snippet="api-reference/aggregations/max#basic" status="success" 
     message="Maximum in rolling window of 1 day & 1 week">
 </pre>

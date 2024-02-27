@@ -12,29 +12,29 @@ Method to query the latest value of features (typically for online inference).
 #### Parameters
 
 <Expandable title="inputs" type="List[Union[Feature, str]]">
-List of features to be used as inputs to extract. Features should be provided 
+List of features to be used as inputs to query. Features should be provided 
 either as Feature objects or strings representing fully qualified feature names.
 </Expandable>
 
 <Expandable title="outputs" type="List[Union[Featureset, Feature, str]]">
-List of features that need to be extracted. Features should be provided 
+List of features that need to be queries. Features should be provided 
 either as Feature objects, or Featureset objects (in which case all features under
-that featureset are extracted) or strings representing fully qualified feature names.
+that featureset are queries) or strings representing fully qualified feature names.
 </Expandable>
 
 <Expandable title="input_dataframe" type="pd.Dataframe">
 A pandas dataframe object that contains the values of all features in the inputs
 list. Each row of the dataframe can be thought of as one entity for which 
-features need to be extracted.
+features need to be queried.
 </Expandable>
 
 <Expandable title="log" type="bool" defaultVal="False">
-Boolean which indicates if the extracted features should also be logged (for 
+Boolean which indicates if the queried features should also be logged (for 
 log-and-wait approach to training data generation).
 </Expandable>
 
 <Expandable title="workflow" type="str" defaultVal="'default'">
-The name of the workflow associated with the feature extraction. Only relevant
+The name of the workflow associated with the feature query. Only relevant
 when `log` is set to True, in which case, features associated with the same workflow
 are collected together. Useful if you want to separate logged features between, say,
 login fraud and transaction fraud.
@@ -48,7 +48,7 @@ when `log` is set to True.
 
 #### Returns
 <Expandable title="type" type="Union[pd.Dataframe, pd.Series]">
-Returns the extracted features as dataframe with one column for each feature 
+Returns the queried features as dataframe with one column for each feature 
 in `outputs`. If a single output feature is requested, features are returned
 as a single pd.Series. Note that input features aren't returned back unless
 they are also present in the `outputs`
@@ -79,8 +79,7 @@ in order to resolve the path from the input features to the output features.
 
 </LeftSection>
 <RightSection>
-<pre snippet="api-reference/client/extract#basic" status="success"
-    message="Extracting two features" highlight="19-23">
-</pre>
+<pre snippet="api-reference/client/query#basic" status="success"
+    message="Querying two features"></pre>
 </RightSection>
 </Divider>

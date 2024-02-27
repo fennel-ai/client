@@ -12,9 +12,9 @@ users of any object can confidently rely on the object to be stable.
 
 ## Enforcement of immutability
 
-Fennel keeps track of state of all constructs. During any sync call, Fennel 
-verifies that constructs that were supposed to be immutable haven't changed.
-If it detects any such change, the whole sync call fails.
+Fennel tracks the state of all entities and during any `commit`, verifies that
+the entities that were supposed to be immutable haven't changed. If any such 
+change is detected, the whole commit operation fails.
 
 This ensures that all definitions are immutable unless explicitly updated by a 
 human by changing its version, at which point, the change is going via the code

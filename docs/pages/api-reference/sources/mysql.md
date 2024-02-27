@@ -70,12 +70,12 @@ queries don't create too much load on your MySQL
 
 #### Errors
 <Expandable title="Connectivity Issues">
-Fennel tries to test the connection with your MySQL during sync itself so any
+Fennel tries to test the connection with your MySQL during commit itself so any
 connectivity issue (e.g. wrong host name, username, password etc) is flagged as
-as an error during sync with the real Fennel servers.
+as an error during commit with the real Fennel servers.
 
 Note: Mock client can not talk to any external data source and hence is unable to
-do this validation at sync time.
+do this validation at commit time.
 </Expandable>
 
 <Expandable title="Schema mismatch errors">
@@ -86,6 +86,7 @@ Fennel console after initiating any data sync.
 
 </LeftSection>
 <RightSection>
+
 <pre snippet="api-reference/sources/sql#mysql_source"
     status="success" message="Sourcing dataset from a mysql table">
 </pre>

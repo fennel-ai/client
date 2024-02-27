@@ -3,13 +3,8 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -17,6 +12,12 @@ class TestAssignSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -28,17 +29,20 @@ class TestAssignSnips(unittest.TestCase):
         class WithSquare:
             uid: int = field(key=True)
             amount: int
+            # docsnip-highlight next-line
             amount_sq: int
             timestamp: datetime
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def transform_pipeline(cls, ds: Dataset):
                 schema = ds.schema()
                 schema["amount_sq"] = int
+                # docsnip-highlight start
                 return ds.transform(
                     lambda df: df.assign(amount_sq=df["amount"] ** 2), schema
-                )  # noqa
+                )
+                # docsnip-highlight end
 
         # /docsnip
 
@@ -65,16 +69,25 @@ class TestAssignSnips(unittest.TestCase):
     def test_changing_keys(self, client):
         with pytest.raises(Exception):
             # docsnip modifying_keys
+            from fennel.datasets import dataset, field, pipeline, Dataset
+            from fennel.lib import inputs
+            from fennel.sources import source, Webhook
+
+            webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("Transaction"))
             @dataset
             class Transaction:
+                # docsnip-highlight next-line
                 uid: int = field(key=True)
                 amount: int
                 timestamp: datetime
 
             def transform(df: pd.DataFrame) -> pd.DataFrame:
+                # docsnip-highlight start
                 df["user"] = df["uid"]
                 df.drop(columns=["uid"], inplace=True)
+                # docsnip-highlight end
                 return df
 
             @dataset
@@ -85,8 +98,9 @@ class TestAssignSnips(unittest.TestCase):
 
                 @pipeline
                 @inputs(Transaction)
-                def pipeline(cls, ds: Dataset):
+                def bad_pipeline(cls, ds: Dataset):
                     schema = {"user": int, "amount": int, "timestamp": datetime}
+                    # docsnip-highlight next-line
                     return ds.transform(transform, schema)
 
             # /docsnip
@@ -94,6 +108,12 @@ class TestAssignSnips(unittest.TestCase):
     @mock
     def test_invalid_type(self, client):
         # docsnip incorrect_type
+        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -105,17 +125,20 @@ class TestAssignSnips(unittest.TestCase):
         class WithHalf:
             uid: int = field(key=True)
             amount: int
+            # docsnip-highlight next-line
             amount_sq: int
             timestamp: datetime
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def invalid_pipeline(cls, ds: Dataset):
                 schema = ds.schema()
                 schema["amount_sq"] = int
+                # docsnip-highlight start
                 return ds.transform(
                     lambda df: df.assign(amount_sq=str(df["amount"])), schema
                 )  # noqa
+                # docsnip-highlight end
 
         # /docsnip
         client.commit(datasets=[Transaction, WithHalf])

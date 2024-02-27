@@ -13,14 +13,14 @@ data generation or batch inference.
 #### Parameters
 
 <Expandable title="inputs" type="List[Union[Feature, str]]">
-List of features to be used as inputs to extract. Features should be provided 
+List of features to be used as inputs to query. Features should be provided 
 either as Feature objects or strings representing fully qualified feature names.
 </Expandable>
 
 <Expandable title="outputs" type="List[Union[Featureset, Feature, str]]">
-List of features that need to be extracted. Features should be provided 
+List of features that need to be queried. Features should be provided 
 either as Feature objects, or Featureset objects (in which case all features under
-that featureset are extracted) or strings representing fully qualified feature names.
+that featureset are queried) or strings representing fully qualified feature names.
 </Expandable>
 
 <Expandable title="format" type='"pandas" | "csv" | "json" | "parquet"' defaultVal="pandas">
@@ -30,7 +30,7 @@ The format of the input data
 <Expandable title="input_dataframe" type="pd.Dataframe">
 A pandas dataframe object that contains the values of all features in the inputs
 list. Each row of the dataframe can be thought of as one entity for which 
-features need to be extracted.
+features need to be queried.
 
 Only relevant when `format` is "pandas".
 </Expandable>
@@ -60,7 +60,7 @@ all the output features should be written. Similar to `input_s3`, this is
 provided via `S3.bucket()` function of [S3](/api-reference/sources/s3) connector.
 
 If this isn't provided, Fennel writes the results of all requests to a fixed
-default bucket - you can see its details from the return value of `extract_historical`
+default bucket - you can see its details from the return value of `query_offline`
 or via Fennel Console.
 
 When using this option, please ensure that Fennel's data connector 
@@ -118,16 +118,17 @@ in order to resolve the path from the input features to the output features.
 </LeftSection>
 <RightSection>
 ===
-<pre name="Request" snippet="api-reference/client/extract#extract_historical_api"
+<pre name="Request" snippet="api-reference/client/query#extract_historical_api"
   status="success" message="Example with `format='pandas'` & default s3 output"
 ></pre>
-<pre name="Response" snippet="api-reference/client/extract#extract_historical_response"
+<pre name="Response" snippet="api-reference/client/query#extract_historical_response"
   status="success" message="Response of extract historical"
 ></pre>
 ===
 
-<pre snippet="api-reference/client/extract#extract_historical_s3"
+<pre snippet="api-reference/client/query#extract_historical_s3"
   status="success" message="Example specifying input and output s3 buckets"
 ></pre>
+
 </RightSection>
 </Divider>

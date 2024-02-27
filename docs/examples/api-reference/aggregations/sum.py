@@ -3,13 +3,8 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
-
-from fennel.datasets import dataset, field, pipeline, Dataset, Sum
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -17,6 +12,12 @@ class TestSumSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, field, pipeline, Dataset, Sum
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -27,17 +28,22 @@ class TestSumSnips(unittest.TestCase):
         @dataset
         class Aggregated:
             uid: int = field(key=True)
-            amount_1w: int
+            # docsnip-highlight start
+            # new int fields added to the dataset by the count aggregation
+            amount_1w: int 
             total: int
+            # docsnip-highlight end
             timestamp: datetime
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def sum_pipeline(cls, ds: Dataset):
+                # docsnip-highlight start
                 return ds.groupby("uid").aggregate(
                     Sum(of="amount", window="1w", into_field="amount_1w"),
                     Sum(of="amount", window="forever", into_field="total"),
                 )
+                # docsnip-highlight end
 
         # /docsnip
         client.commit(datasets=[Transaction, Aggregated])
@@ -105,11 +111,19 @@ class TestSumSnips(unittest.TestCase):
     def test_invalid_type(self, client):
         with pytest.raises(Exception):
             # docsnip incorrect_type
+            from fennel.datasets import dataset, field, pipeline, Dataset, Sum
+            from fennel.lib import inputs
+            from fennel.sources import source, Webhook
+
+            webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("Transaction"))
             @dataset
             class Transaction:
                 uid: int
                 amount: str
+                # docsnip-highlight next-line
+                vendor: str
                 timestamp: datetime
 
             @dataset
@@ -120,7 +134,9 @@ class TestSumSnips(unittest.TestCase):
 
                 @pipeline
                 @inputs(Transaction)
-                def pipeline(cls, ds: Dataset):
+                def bad_pipeline(cls, ds: Dataset):
                     return ds.groupby("uid").aggregate(
+                        # docsnip-highlight next-line
                         Sum(of="vendor", window="forever", into_field="total"),
                     )
+            # /docsnip

@@ -48,5 +48,9 @@ aren't allowed.
 <pre snippet="api-reference/aggregations/sum#basic" status="success" 
     message="Sum up amount in 1 week and forever windows">
 </pre>
+
+<pre snippet="api-reference/aggregations/sum#incorrect_type" status="error" 
+    message="Can only sum up int or float types">
+</pre>
 </RightSection>
 </Divider>

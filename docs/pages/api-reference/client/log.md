@@ -54,7 +54,7 @@ initiating any data sync.
 <RightSection>
 
 <pre snippet="api-reference/client/log#basic" status="success" 
-    message="Logging data to webhook via client" highlight="17-24">
-</pre>
+    message="Logging data to webhook via client"
+> </pre>
 </RightSection>
 </Divider>

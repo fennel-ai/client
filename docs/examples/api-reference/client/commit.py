@@ -33,10 +33,12 @@ def test_basic(client):
         def some_fn(cls, ts, amount: pd.Series):
             return amount.apply(lambda x: x > 100)
 
+    # docsnip-highlight start
     client.commit(
         datasets=[Transaction],
         featuresets=[TransactionFeatures],
-        preview=False,  # default is also False, so didn't need to include this
+        preview=False,  # default is False, so didn't need to include this
         tier="silver",
     )
+    # docsnip-highlight end
     # /docsnip

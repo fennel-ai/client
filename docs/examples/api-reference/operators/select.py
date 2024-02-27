@@ -4,12 +4,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -17,6 +13,12 @@ class TestSelectSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("User"))
         @dataset
         class User:
@@ -37,7 +39,8 @@ class TestSelectSnips(unittest.TestCase):
 
             @pipeline
             @inputs(User)
-            def pipeline(cls, user: Dataset):
+            def select_pipeline(cls, user: Dataset):
+                # docsnip-highlight next-line
                 return user.select("uid", "height", "weight")
 
         # /docsnip
@@ -102,6 +105,12 @@ class TestSelectSnips(unittest.TestCase):
     def test_invalid_drop_key_or_timestamp(self, client):
         with pytest.raises(Exception):
             # docsnip missing_key
+            from fennel.datasets import dataset, field, pipeline, Dataset
+            from fennel.lib import inputs
+            from fennel.sources import source, Webhook
+
+            webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("User"))
             @dataset
             class User:
@@ -116,8 +125,9 @@ class TestSelectSnips(unittest.TestCase):
 
                 @pipeline
                 @inputs(User)
-                def pipeline(cls, user: Dataset):
-                    return user.select("height", "weight")
+                def bad_pipeline(cls, user: Dataset):
+                    # docsnip-highlight next-line
+                    return user.select("city")
 
             # /docsnip
 
@@ -125,6 +135,11 @@ class TestSelectSnips(unittest.TestCase):
     def test_missing_column(self, client):
         with pytest.raises(Exception):
             # docsnip missing_column
+            from fennel.datasets import dataset, field, pipeline, Dataset
+            from fennel.lib import inputs
+            from fennel.sources import source, Webhook
+
+            webhook = Webhook(name="webhook")
             @source(webhook.endpoint("User"))
             @dataset
             class User:
@@ -140,7 +155,8 @@ class TestSelectSnips(unittest.TestCase):
 
                 @pipeline
                 @inputs(User)
-                def pipeline(cls, user: Dataset):
+                def bad_pipeline(cls, user: Dataset):
+                    # docsnip-highlight next-line
                     return user.select("uid", "random")
 
             # /docsnip

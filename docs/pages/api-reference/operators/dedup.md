@@ -27,7 +27,7 @@ some duplicated rows filtered out.
 
 #### Errors
 <Expandable title="Dedup on dataset with key columns">
-Sync error to apply dedup on a keyed dataset.
+Commit error to apply dedup on a keyed dataset.
 </Expandable>
 
 </LeftSection>
@@ -36,6 +36,7 @@ Sync error to apply dedup on a keyed dataset.
 <pre snippet="api-reference/operators/dedup#basic" status="success"
     message="Dedup using txid and timestamp">
 </pre>
+
 <pre snippet="api-reference/operators/dedup#dedup_by_all" status="success"
     message="Dedup using all the fields">
 </pre>

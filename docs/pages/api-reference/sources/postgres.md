@@ -70,12 +70,12 @@ queries don't create too much load on your Postgres database.
 
 #### Errors
 <Expandable title="Connectivity Issues">
-Fennel tries to test the connection with your Postgres during sync itself so any
+Fennel tries to test the connection with your Postgres during `commit` itself so any
 connectivity issue (e.g. wrong host name, username, password etc) is flagged as
-as an error during sync with the real Fennel servers.
+as an error during commit with the real Fennel servers.
 
 Note: Mock client can not talk to any external data source and hence is unable to
-do this validation at sync time.
+do this validation at commit time.
 </Expandable>
 
 <Expandable title="Schema mismatch errors">
@@ -83,7 +83,6 @@ Schema validity of data in Postgres is checked at runtime. Any rows that
 can not be parsed are rejected. Please keep an eye on the 'Errors' tab of 
 Fennel console after initiating any data sync.
 </Expandable>
-
 
 </LeftSection>
 <RightSection>

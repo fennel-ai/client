@@ -113,11 +113,11 @@ class UserSellerFeatures:
 # /docsnip
 
 
-# docsnip sync
+# docsnip commit
 from fennel.testing import MockClient
 
 
-# client = Client('<FENNEL SERVER URL>') # uncomment this line to use a real Fennel server
+# client = Client('<FENNEL SERVER URL>') # uncomment this to use real Fennel server
 client = MockClient()  # comment this line to use a real Fennel server
 client.commit(
     datasets=[Order, Product, UserSellerOrders],
@@ -125,8 +125,8 @@ client.commit(
     tier="dev",
 )
 
-now = datetime.utcnow()
 # create some product data
+now = datetime.utcnow()
 columns = ["product_id", "seller_id", "price", "desc", "last_modified"]
 data = [
     [1, 1, 10.0, "product 1", now],

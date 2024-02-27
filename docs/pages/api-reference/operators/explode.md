@@ -34,15 +34,15 @@ Empty lists are converted to `None` values (hence the output types need to be
 
 #### Errors
 <Expandable title="Exploding keyed datasets">
-Sync error to apply explode on an input dataset with key columns.
+Commit error to apply explode on an input dataset with key columns.
 </Expandable>
 
 <Expandable title="Exploding non-list columns">
-Sync error to explode using a column that is not of the type `List[T]`.
+Commit error to explode using a column that is not of the type `List[T]`.
 </Expandable>
 
 <Expandable title="Exploding non-existent columns">
-Sync error to explode using a column that is not present in the input dataset.
+Commit error to explode using a column that is not present in the input dataset.
 </Expandable>
 
 <Expandable title="Unequal size lists in multi-column explode">
@@ -65,6 +65,7 @@ different type across rows.
 <pre snippet="api-reference/operators/explode#exploding_missing" status="error"
     message="Exploding a non-existent column" highlight="17">
 </pre>
+
 </RightSection>
 
 </Divider>

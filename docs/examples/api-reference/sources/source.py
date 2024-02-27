@@ -21,6 +21,7 @@ def test_source_decorator(client):
 
     bucket = s3.bucket("data", path="user/*/date-%Y-%m-%d/*", format="parquet")
 
+    # docsnip-highlight start
     @source(
         bucket,
         every="1h",
@@ -33,6 +34,7 @@ def test_source_decorator(client):
         },
         tier="prod",
     )
+    # docsnip-highlight end
     @dataset
     class User:
         uid: int = field(key=True)

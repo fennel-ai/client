@@ -26,25 +26,26 @@ automatically included whether explicitly provided in the select or not.
 #### Errors
 <Expandable title="Not selecting all key columns">
 Select, like most other operators, can not change the key or timestamp columns.
-As a result, not selecting all the key columns is a sync error.
+As a result, not selecting all the key columns is a `commit` error.
 </Expandable>
 
 <Expandable title="Selecting non-existent column">
-Sync error to select a column that is not present in the input dataset.
+Commit error to select a column that is not present in the input dataset.
 </Expandable>
+
 
 </LeftSection>
 
 
 <RightSection>
 <pre snippet="api-reference/operators/select#basic" status="success"
-    message="Selecting uid, height & weight columns" highlight="22">
+    message="Selecting uid, height & weight columns">
 </pre>
 <pre snippet="api-reference/operators/select#missing_key" status="error"
     message="Did not select key uid" highlight="16">
 </pre>
 <pre snippet="api-reference/operators/select#missing_column" status="error"
-    message="Selecting non-existent column" highlight="17">
+    message="Selecting non-existent column">
 </pre>
 </RightSection>
 

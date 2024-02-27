@@ -26,12 +26,12 @@ columns renamed.
 
 #### Errors
 <Expandable title="Renaming non-existent column">
-Sync error if there is no existing column with name matching each of the keys
+Commit error if there is no existing column with name matching each of the keys
 in the rename dictionary.
 </Expandable>
 
 <Expandable title="Conflicting column names post-rename">
-Sync error if after renaming, there will be two columns in the dataset having
+Commit error if after renaming, there will be two columns in the dataset having
 the same name.
 </Expandable>
 
@@ -40,7 +40,9 @@ the same name.
 
 
 <RightSection>
-    <pre snippet="api-reference/operators/rename#basic"></pre>
+    <pre snippet="api-reference/operators/rename#basic"
+        status="success" message="Rename weight -> weight_lb & height -> height_in"
+    ></pre>
 </RightSection>
 
 </Divider>
