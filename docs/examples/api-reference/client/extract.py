@@ -2,10 +2,10 @@ from datetime import datetime
 from datetime import timedelta
 import pytest
 
-HOUR = timedelta(hours=1)
-
 import pandas as pd
 from fennel.test_lib import mock
+
+HOUR = timedelta(hours=1)
 
 __owner__ = "aditya@fennel.ai"
 
