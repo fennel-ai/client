@@ -765,6 +765,7 @@ class Source(google.protobuf.message.Message):
     VERSION_FIELD_NUMBER: builtins.int
     BOUNDED_FIELD_NUMBER: builtins.int
     IDLENESS_FIELD_NUMBER: builtins.int
+    UNTIL_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
@@ -784,6 +785,8 @@ class Source(google.protobuf.message.Message):
     bounded: builtins.bool
     @property
     def idleness(self) -> google.protobuf.duration_pb2.Duration: ...
+    @property
+    def until(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     def __init__(
         self,
         *,
@@ -800,9 +803,10 @@ class Source(google.protobuf.message.Message):
         version: builtins.int = ...,
         bounded: builtins.bool = ...,
         idleness: google.protobuf.duration_pb2.Duration | None = ...,
+        until: google.protobuf.timestamp_pb2.Timestamp | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_idleness", b"_idleness", "cursor", b"cursor", "disorder", b"disorder", "every", b"every", "idleness", b"idleness", "starting_from", b"starting_from", "table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_idleness", b"_idleness", "bounded", b"bounded", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "disorder", b"disorder", "ds_version", b"ds_version", "every", b"every", "idleness", b"idleness", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_idleness", b"_idleness", "cursor", b"cursor", "disorder", b"disorder", "every", b"every", "idleness", b"idleness", "starting_from", b"starting_from", "table", b"table", "until", b"until"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_idleness", b"_idleness", "bounded", b"bounded", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "disorder", b"disorder", "ds_version", b"ds_version", "every", b"every", "idleness", b"idleness", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field", "until", b"until", "version", b"version"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
     @typing.overload
