@@ -67,7 +67,10 @@ class MovieInfo:
                 name="role",
                 dtype=Role,
                 func=lambda x: x[["role_id", "name", "cost"]].apply(
-                    lambda z: Role(role_id=z[0], name=z[1], cost=z[2]), axis=1
+                    lambda z: Role(
+                        **{"role_id": z[0], "name": z[1], "cost": z[2]}
+                    ),
+                    axis=1,
                 ),
             )
             .drop(columns=["role_id", "name", "cost"])
@@ -142,10 +145,10 @@ class MovieFeatures:
                     )  # type: ignore
             if role_id_cost_map.values():
                 output.append(
-                    MovieBudget(roles=list(role_id_cost_map.values()))
+                    MovieBudget(roles=list(role_id_cost_map.values()))  # type: ignore
                 )
             else:
-                output.append(MovieBudget(roles=[]))
+                output.append(MovieBudget(roles=[]))  # type: ignore
         res["movie_budget"] = output
         return pd.Series(res["movie_budget"])
 
