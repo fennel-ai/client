@@ -255,9 +255,7 @@ class Window:
     Attributes:
         begin (datetime): The beginning of the time window.
         end (datetime): The end of the time window.
-        count (int): The count of events within the time window.
     """
 
     begin: datetime
     end: datetime
-    count: int

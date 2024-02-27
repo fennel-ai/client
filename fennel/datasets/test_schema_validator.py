@@ -1560,7 +1560,7 @@ def test_double_summary():
             window: Window = field(key=True)
             t: datetime
 
-            @pipeline(version=1)
+            @pipeline()
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return (
