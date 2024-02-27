@@ -42,7 +42,8 @@ class TestDebugSnips(unittest.TestCase):
                 schema = ds.schema()
                 print(schema)
                 # docsnip-highlight end
-                return ds.assign('country', str, lambda df: 'US')
+                return ds.assign("country", str, lambda df: "US")
+
         # /docsnip
 
         client.sync(datasets=[User, Procssed])
@@ -91,7 +92,6 @@ class TestDebugSnips(unittest.TestCase):
     @mock
     def test_print_dataset(self, client):
 
-
         # docsnip print_dataset_setup
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib.schema import inputs
@@ -117,7 +117,6 @@ class TestDebugSnips(unittest.TestCase):
             def my_pipeline(cls, user: Dataset):
                 return user.filter(lambda df: df["country"] == "US")
 
-
         client.sync(datasets=[User, USUsers])
         # log some rows to the dataset
         client.log(
@@ -130,7 +129,7 @@ class TestDebugSnips(unittest.TestCase):
                     [2, "US", "2021-02-01T00:00:00"],
                     [3, "US", "2021-03-01T00:00:00"],
                 ],
-            )
+            ),
         )
         # /docsnip
 
@@ -138,11 +137,11 @@ class TestDebugSnips(unittest.TestCase):
         df = client.get_dataset_df("USUsers")
         print(df)
         # /docsnip
-        assert df['uid'].tolist() == [2, 3]
-        assert df['country'].tolist() == ["US", "US"]
-        assert df['signup_time'].tolist() == [
-            pd.Timestamp("2021-02-01T00:00:00"), 
-            pd.Timestamp("2021-03-01T00:00:00")
+        assert df["uid"].tolist() == [2, 3]
+        assert df["country"].tolist() == ["US", "US"]
+        assert df["signup_time"].tolist() == [
+            pd.Timestamp("2021-02-01T00:00:00"),
+            pd.Timestamp("2021-03-01T00:00:00"),
         ]
         assert df.shape == (2, 3)
 
