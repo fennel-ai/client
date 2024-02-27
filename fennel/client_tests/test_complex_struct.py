@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict
 
 import pandas as pd
@@ -96,7 +96,7 @@ class MovieFeatures:
     role_list_py: List[Role] = feature(id=1)
     role_list_assign: List[Role] = feature(id=2).extract(field=MovieInfo.role_list, default=[], provider=Request)  # type: ignore
     role_list_struct: List[Role] = feature(id=3)
-    movie_budget: List[MovieBudget] = feature(id=4)
+    movie_budget: MovieBudget = feature(id=4)
 
     @extractor(depends_on=[MovieInfo])
     @inputs(Request.director_id, Request.movie_id)
@@ -141,9 +141,11 @@ class MovieFeatures:
                         total_cost=role.cost,
                     )  # type: ignore
             if role_id_cost_map.values():
-                output.append(list(role_id_cost_map.values()))
+                output.append(
+                    MovieBudget(roles=list(role_id_cost_map.values()))
+                )
             else:
-                output.append([])
+                output.append(MovieBudget(roles=[]))
         res["movie_budget"] = output
         return pd.Series(res["movie_budget"])
 
@@ -157,7 +159,7 @@ def _log_movie_data(client):
             "role_id": 1,
             "name": "Actor1",
             "cost": 1000,
-            "timestamp": now,
+            "timestamp": now - timedelta(minutes=50),
         },
         {
             "movie_id": 1,
@@ -165,7 +167,7 @@ def _log_movie_data(client):
             "role_id": 1,
             "name": "Actor2",
             "cost": 1000,
-            "timestamp": now,
+            "timestamp": now - timedelta(minutes=40),
         },
         {
             "movie_id": 1,
@@ -173,7 +175,7 @@ def _log_movie_data(client):
             "role_id": 2,
             "name": "Actor3",
             "cost": 1000,
-            "timestamp": now,
+            "timestamp": now - timedelta(minutes=30),
         },
         {
             "movie_id": 2,
@@ -181,7 +183,7 @@ def _log_movie_data(client):
             "role_id": 1,
             "name": "Actor1",
             "cost": 1000,
-            "timestamp": now,
+            "timestamp": now - timedelta(minutes=20),
         },
         {
             "movie_id": 3,
@@ -189,7 +191,7 @@ def _log_movie_data(client):
             "role_id": 4,
             "name": "Actor56",
             "cost": 100000,
-            "timestamp": now,
+            "timestamp": now - timedelta(minutes=10),
         },
     ]
     df = pd.DataFrame(data)
@@ -286,30 +288,38 @@ def test_complex_struct(client):
         == df["MovieFeatures.role_list_struct"].tolist()
     )
 
-    assert len(df["MovieFeatures.movie_budget"].tolist()[0]) == 2
-    assert df["MovieFeatures.movie_budget"].tolist()[0][0].as_json() == {
+    assert len(df["MovieFeatures.movie_budget"].tolist()[0].roles) == 2
+    assert df["MovieFeatures.movie_budget"].tolist()[0].roles[
+        0
+    ].as_json() == {
         "role_id": 2,
         "count": 1,
         "total_cost": 1000,
     }
-    assert df["MovieFeatures.movie_budget"].tolist()[0][1].as_json() == {
+    assert df["MovieFeatures.movie_budget"].tolist()[0].roles[
+        1
+    ].as_json() == {
         "role_id": 1,
         "count": 2,
         "total_cost": 2000,
     }
 
-    assert len(df["MovieFeatures.movie_budget"].tolist()[1]) == 1
-    assert df["MovieFeatures.movie_budget"].tolist()[1][0].as_json() == {
+    assert len(df["MovieFeatures.movie_budget"].tolist()[1].roles) == 1
+    assert df["MovieFeatures.movie_budget"].tolist()[1].roles[
+        0
+    ].as_json() == {
         "role_id": 1,
         "count": 1,
         "total_cost": 1000,
     }
 
-    assert len(df["MovieFeatures.movie_budget"].tolist()[2]) == 1
-    assert df["MovieFeatures.movie_budget"].tolist()[2][0].as_json() == {
+    assert len(df["MovieFeatures.movie_budget"].tolist()[2].roles) == 1
+    assert df["MovieFeatures.movie_budget"].tolist()[2].roles[
+        0
+    ].as_json() == {
         "role_id": 4,
         "count": 1,
         "total_cost": 100000,
     }
 
-    assert len(df["MovieFeatures.movie_budget"].tolist()[3]) == 0
+    assert len(df["MovieFeatures.movie_budget"].tolist()[3].roles) == 0
