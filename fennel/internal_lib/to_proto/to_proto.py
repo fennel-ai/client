@@ -7,14 +7,6 @@ from textwrap import dedent, indent
 from typing import Any, Dict, List, Optional, Tuple, Mapping
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
-from fennel.internal_lib.to_proto import Serializer
-from fennel.internal_lib.to_proto.source_code import (
-    get_featureset_core_code,
-    get_dataset_core_code,
-    get_all_imports,
-    get_featureset_gen_code,
-)
-from fennel.internal_lib.to_proto.source_code import to_includes_proto
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, StringValue
 
@@ -32,16 +24,24 @@ import fennel.gen.services_pb2 as services_proto
 import fennel.sources as sources
 from fennel.datasets import Dataset, Pipeline, Field
 from fennel.datasets.datasets import sync_validation_for_pipelines
+from fennel.dtypes.dtypes import FENNEL_STRUCT
 from fennel.featuresets import Featureset, Feature, Extractor, ExtractorType
 from fennel.featuresets.featureset import sync_validation_for_extractors
 from fennel.internal_lib.duration import (
     Duration,
     duration_to_timedelta,
 )
+from fennel.internal_lib.schema import get_datatype
+from fennel.internal_lib.to_proto import Serializer
+from fennel.internal_lib.to_proto.source_code import (
+    get_featureset_core_code,
+    get_dataset_core_code,
+    get_all_imports,
+    get_featureset_gen_code,
+)
+from fennel.internal_lib.to_proto.source_code import to_includes_proto
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr, OWNER
-from fennel.internal_lib.schema import get_datatype
-from fennel.dtypes.dtypes import FENNEL_STRUCT
 from fennel.sources import kinesis
 from fennel.utils import fennel_get_source
 
@@ -1296,7 +1296,7 @@ def to_extractor_pycode(
     if hasattr(extractor.func, FENNEL_INCLUDED_MOD):
         for f in getattr(extractor.func, FENNEL_INCLUDED_MOD):
             dep = to_includes_proto(f)
-            gen_code = "\n" + dedent(dep.generated_code) + "\n" + gen_code
+            gen_code = "\n" + gen_code + "\n" + dedent(dep.generated_code)
             dependencies.append(dep)
 
     # Extractor code construction

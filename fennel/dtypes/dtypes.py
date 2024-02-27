@@ -93,7 +93,6 @@ def struct(cls):
                 f"Struct `{cls.__name__}` contains forward reference `{name}` "
                 f"which is not allowed."
             )
-
     dependency_code = ""
     for name, annotation in cls.__annotations__.items():
         fstruct = get_fennel_struct(annotation)
@@ -118,7 +117,7 @@ def struct(cls):
     except Exception:
         # In exec mode ( such as extractor code generation ) there is no file
         # to get the source from, so we let it pass.
-        pass
+        setattr(cls, FENNEL_STRUCT_SRC_CODE, "")
     setattr(cls, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE, dependency_code)
     cls.as_json = as_json
     return dataclasses.dataclass(cls)

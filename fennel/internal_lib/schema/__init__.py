@@ -6,7 +6,6 @@ from fennel.internal_lib.schema.schema import (
     parse_json,
     get_python_type_from_pd,
     FENNEL_STRUCT_SRC_CODE,
-    get_origin,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
     validate_val_with_dtype,
     fennel_get_optional_inner,
