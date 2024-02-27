@@ -289,34 +289,26 @@ def test_complex_struct(client):
     )
 
     assert len(df["MovieFeatures.movie_budget"].tolist()[0].roles) == 2
-    assert df["MovieFeatures.movie_budget"].tolist()[0].roles[
-        0
-    ].as_json() == {
+    assert df["MovieFeatures.movie_budget"].tolist()[0].roles[0].as_json() == {
         "role_id": 2,
         "count": 1,
         "total_cost": 1000,
     }
-    assert df["MovieFeatures.movie_budget"].tolist()[0].roles[
-        1
-    ].as_json() == {
+    assert df["MovieFeatures.movie_budget"].tolist()[0].roles[1].as_json() == {
         "role_id": 1,
         "count": 2,
         "total_cost": 2000,
     }
 
     assert len(df["MovieFeatures.movie_budget"].tolist()[1].roles) == 1
-    assert df["MovieFeatures.movie_budget"].tolist()[1].roles[
-        0
-    ].as_json() == {
+    assert df["MovieFeatures.movie_budget"].tolist()[1].roles[0].as_json() == {
         "role_id": 1,
         "count": 1,
         "total_cost": 1000,
     }
 
     assert len(df["MovieFeatures.movie_budget"].tolist()[2].roles) == 1
-    assert df["MovieFeatures.movie_budget"].tolist()[2].roles[
-        0
-    ].as_json() == {
+    assert df["MovieFeatures.movie_budget"].tolist()[2].roles[0].as_json() == {
         "role_id": 4,
         "count": 1,
         "total_cost": 100000,
