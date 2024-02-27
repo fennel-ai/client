@@ -1,3 +1,4 @@
+AES
 APIs
 ARNs
 AST
@@ -53,6 +54,7 @@ MockClient
 Nones
 OAuth
 OOM
+OWASP
 OpenSSL's
 PII
 PLAINTEXT
@@ -80,10 +82,12 @@ SHA
 SLA
 SSDs
 SSL
+SSO
 SearchRequest
 ShardIteratorType
 Signifier
 Stddev
+Subprocessor
 SubscribeToShard
 TLS
 TLSv
@@ -107,6 +111,7 @@ WIP
 WIP
 WithSquare
 YAML
+actioned
 ai
 allowlists
 api
@@ -114,6 +119,7 @@ architected
 args
 arn
 assertEqual
+astype
 async
 atomicity
 autoscaling
@@ -123,6 +129,7 @@ aws
 backend
 backfill
 backfilled
+balancer
 binlog
 bmi
 bmr
@@ -131,10 +138,14 @@ boolean
 booleans
 cardinality
 cdc
+centric
+checkin
 checkpointing
+cidr
 classmethod
 classmethods
 cloudformation
+cloudwatch
 codebase
 codepaths
 compilable
@@ -209,11 +220,13 @@ msgs
 multicolumn
 mysql
 nan
+nat
 natively
 noqa
 np
 nullable
 observability
+onboarding
 oneof
 onwards
 os
@@ -226,9 +239,12 @@ pre
 precompute
 precomputed
 preproc
+privateSubnets
 prometheus
 protobuf
 protobufs
+publicSubnets
+py
 quickstart
 realtime
 regex
@@ -242,6 +258,7 @@ schemaless
 schemas
 sdk
 signup
+signups
 snowflakecomputing
 src
 stateful
@@ -249,6 +266,7 @@ str
 strftime
 struct
 sts
+subnets
 tiering
 timeframes
 ubuntu
@@ -256,6 +274,7 @@ uid
 uids
 uint
 uints
+unbundled
 uncomment
 unhashable
 unidirectionally

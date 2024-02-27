@@ -53,7 +53,7 @@ and environment security controls.
 Fennel's control plane doesn't have the IAM permissions to access any resources
 in the data plane hosted in the customer's cloud. Access to Fennel's production 
 environment is role based using Google SSO, is authenticated via short-term 
-certifiates, and follows the principle of least required priviliges at all times.
+certificates, and follows the principle of least required privileges at all times.
 
 Elevated levels of access require just-in-time access request approvals such that
 only the company founders can approve the access requests. Access controls are 
@@ -85,7 +85,7 @@ alignment with business objectives.
 ### System Monitoring
 Fennel invests heavily in extensive monitoring, observability, and alerting 
 for our production environments. We make use of several tools, including but not 
-liited to AWS cloudwatch, Prometheus, Grafana, and PagerDuty.
+limited to AWS cloudwatch, Prometheus, Grafana, and PagerDuty.
 
 Alerts are configured for important production systems and functionality. 
 Critical alerts are actioned immediately, with alerts & pages going out to our 
@@ -121,7 +121,7 @@ SANS Incident Handlers Handbook.
 
 Our plan includes steps for initiating the response plan, escalation to relevant 
 leadership stakeholders, triage, investigation, analysis, mitigation, 
-restoration, and post-mortem. Our engineering team works to monitor potential 
+restoration, and postmortem. Our engineering team works to monitor potential 
 security issues pro-actively, and takes all reports of security-related issues 
 very seriously.
 
