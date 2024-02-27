@@ -16,6 +16,7 @@ sidebar:
       - "concepts/dataset"
       - "concepts/pipeline"
       - "concepts/featureset"
+      - "concepts/branch"
 
 
   - slug: "architecture"
