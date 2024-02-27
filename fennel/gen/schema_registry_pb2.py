@@ -11,7 +11,7 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
-import http_auth_pb2 as http__auth__pb2
+import fennel.gen.http_auth_pb2 as http__auth__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15schema_registry.proto\x12\x1c\x66\x65nnel.proto.schema_registry\x1a\x0fhttp_auth.proto\"\xa2\x01\n\x0eSchemaRegistry\x12I\n\x11registry_provider\x18\x01 \x01(\x0e\x32..fennel.proto.schema_registry.RegistryProvider\x12\x0b\n\x03url\x18\x02 \x01(\t\x12\x38\n\x04\x61uth\x18\x03 \x01(\x0b\x32*.fennel.proto.http_auth.HTTPAuthentication*!\n\x10RegistryProvider\x12\r\n\tCONFLUENT\x10\x00\x62\x06proto3')

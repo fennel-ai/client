@@ -8,7 +8,6 @@ BRANCH_NAME = "main"
 
 
 class TestRestAPI(unittest.TestCase):
-
     @patch("requests.post")
     def test_log(self, mock_post):
         mock_post.return_value.status_code = 200

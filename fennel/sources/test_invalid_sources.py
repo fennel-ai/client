@@ -328,6 +328,55 @@ def test_invalid_starting_from():
     )
 
 
+def test_invalid_until():
+    with pytest.raises(Exception) as e:
+
+        @source(
+            s3.bucket(bucket_name="bucket", prefix="prefix"),
+            every="1h",
+            until="2020-01-01T00:00:00Z",
+        )
+        @meta(owner="zaki@fennel.ai")
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+    assert "'until' must be of type datetime - got <class 'str'>" == str(
+        e.value
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @source(
+            s3.bucket(bucket_name="bucket", prefix="prefix"),
+            every="1h",
+            since=datetime(2024, 1, 1),
+            until=datetime(2023, 12, 1),
+        )
+        @meta(owner="zaki@fennel.ai")
+        @dataset
+        class UserInfoDataset2:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+    assert ("'since' must be before 'until'") in str(e.value)
+
+
 def test_invalid_s3_format():
     with pytest.raises(Exception) as e:
         s3.bucket(bucket_name="bucket", prefix="prefix", format="py")

@@ -931,11 +931,13 @@ def dataset(  # noqa: E704
     *,
     version: Optional[int] = DEFAULT_VERSION,
     history: Optional[Duration] = DEFAULT_RETENTION,
-) -> Callable[[Type[T]], Dataset]: ...
+) -> Callable[[Type[T]], Dataset]:
+    ...
 
 
 @overload
-def dataset(cls: Type[T]) -> Dataset: ...  # noqa: E704
+def dataset(cls: Type[T]) -> Dataset:
+    ...  # noqa: E704
 
 
 def dataset(
@@ -1159,13 +1161,15 @@ def f_get_type_hints(obj):
 def pipeline(  # noqa: E704
     *,
     tier: Optional[Union[str, List[str]]] = None,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    ...
 
 
 @overload
 def pipeline(  # noqa: E704
     pipeline_func: Callable,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    ...
 
 
 def pipeline(

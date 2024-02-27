@@ -11,10 +11,10 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
-import dataset_pb2 as dataset__pb2
-import featureset_pb2 as featureset__pb2
-import connector_pb2 as connector__pb2
-import expectations_pb2 as expectations__pb2
+import fennel.gen.dataset_pb2 as dataset__pb2
+import fennel.gen.featureset_pb2 as featureset__pb2
+import fennel.gen.connector_pb2 as connector__pb2
+import fennel.gen.expectations_pb2 as expectations__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0eservices.proto\x12\x15\x66\x65nnel.proto.services\x1a\rdataset.proto\x1a\x10\x66\x65\x61tureset.proto\x1a\x0f\x63onnector.proto\x1a\x12\x65xpectations.proto\"\xb9\x04\n\x0bSyncRequest\x12\x33\n\x08\x64\x61tasets\x18\x01 \x03(\x0b\x32!.fennel.proto.dataset.CoreDataset\x12\x31\n\tpipelines\x18\x02 \x03(\x0b\x32\x1e.fennel.proto.dataset.Pipeline\x12\x31\n\toperators\x18\x03 \x03(\x0b\x32\x1e.fennel.proto.dataset.Operator\x12=\n\x0c\x66\x65\x61ture_sets\x18\x04 \x03(\x0b\x32\'.fennel.proto.featureset.CoreFeatureset\x12\x32\n\x08\x66\x65\x61tures\x18\x05 \x03(\x0b\x32 .fennel.proto.featureset.Feature\x12\x36\n\nextractors\x18\x06 \x03(\x0b\x32\".fennel.proto.featureset.Extractor\x12.\n\x06models\x18\x07 \x03(\x0b\x32\x1e.fennel.proto.featureset.Model\x12/\n\x07sources\x18\x08 \x03(\x0b\x32\x1e.fennel.proto.connector.Source\x12\x33\n\x06\x65xtdbs\x18\t \x03(\x0b\x32#.fennel.proto.connector.ExtDatabase\x12=\n\x0c\x65xpectations\x18\n \x03(\x0b\x32\'.fennel.proto.expectations.Expectations\x12\x0f\n\x07message\x18\x0b \x01(\tb\x06proto3')
