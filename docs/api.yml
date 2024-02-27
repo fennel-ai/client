@@ -10,6 +10,9 @@ sidebar:
       - "api-reference/client/extract-historical-progress"
       - "api-reference/client/extract-historical-cancel"
       - "api-reference/client/lookup"
+      - "api-reference/client/init-branch"
+      - "api-reference/client/clone-branch"
+      - "api-reference/client/delete-branch"
 
   - slug: "api-reference/rest-api"
     title: "REST API"
