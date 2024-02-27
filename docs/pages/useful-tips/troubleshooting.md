@@ -7,7 +7,7 @@ status: 'published'
 # Troubleshooting
 ## Local Development
 Fennel ships with a standalone mock client for easier & faster local mode
-development. Here are a few tips to debug issues encoutered during local 
+development. Here are a few tips to debug issues encountered during local 
 development:
 
 ### Debugging Dataset Schema Issues

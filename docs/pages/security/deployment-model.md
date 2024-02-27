@@ -7,7 +7,7 @@ status: 'published'
 # Deployment Model
 
 
-Fennel deployements follow data plane/control plane architecture as follows:
+Fennel deployments follow data plane/control plane architecture as follows:
 
 ![Diagram](/assets/deployment_model.jpg)
 
@@ -23,7 +23,7 @@ Fennel deployements follow data plane/control plane architecture as follows:
   doesn't have to leave the data plane), integrates with SSO and manages roles, 
   accounts, and tokens to provide fine grained column-level access control.
 - Data plane integrates with your data sources to continuously ingest data
-  for transformation. This may require VPC peering or IP allowlisting or other
+  for transformation. This may require VPC peering or IP allow-listing or other
   such mechanisms to give the data plane access to data resources.
 - No network ports are left open and the communication with the control plane
   is done over a reverse tunnel initiated by the data plane.
