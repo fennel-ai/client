@@ -22,7 +22,7 @@ specific decision and so Fennel gives you control on that decision - precompute
 some quantity on the write path by keeping it in a pipeline. Or compute it on 
 the fly by writing it as an extractor.
 
-![Diagram](/assets/readwritepath.png)
+![Diagram](/assets/read_write_v2.png)
 
 Note that in a majority of cases, you'd just want to move the computation to 
 write side as a pipeline. But there are several reasons/cases where keeping the 
