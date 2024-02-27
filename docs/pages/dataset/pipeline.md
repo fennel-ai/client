@@ -1,5 +1,5 @@
 ---
 title: 'Pipeline'
-order: 1
+order: 0
 status: 'draft'
 ---

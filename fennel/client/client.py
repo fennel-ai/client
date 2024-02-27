@@ -82,7 +82,7 @@ class Client:
         featuresets that have been added to the client or passed in as arguments.
 
         Parameters:
-        message (str): Message to be linked with this commit.
+        message (str): human readable description of the changes in the commit.
         datasets (Optional[List[Dataset]]): List of datasets to register with the server.
         featuresets (Optional[List[Featureset]]):  List of featuresets to register with the server.
 

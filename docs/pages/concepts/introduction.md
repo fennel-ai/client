@@ -1,6 +1,6 @@
 ---
 title: 'Introduction'
-order: 5
+order: 0
 status: 'published'
 ---
 
@@ -13,7 +13,7 @@ Fennel has two core concepts -- datasets and featuresets. Let's look at both one
 Dataset refers to a "table" of data with typed columns. Here is how a dataset is defined.&#x20;
 
 
-<pre snippet="overview/concepts#user_dataset"></pre>
+<pre snippet="concepts/introduction#user_dataset"></pre>
 
 This dataset has four columns -- `uid` (of type int), `dob` (of type datetime),
 `country` (of type string), and `signup_time` (of type datetime). For now, 
@@ -32,7 +32,7 @@ kafka = Kafka(...<credentials>..)
 
 Then we define the datasets that will hydrate themselves from these sources:
 
-<pre snippet="overview/concepts#external_data_sources"></pre>
+<pre snippet="concepts/introduction#external_data_sources"></pre>
 
 The first dataset will poll postgres table for new updates every minute and 
 hydrate itself with new data. The second dataset hydrates itself from a kafka 
@@ -44,7 +44,7 @@ Once you have one or more "sourced" datasets, you can derive new datasets from
 existing datasets by writing simple declarative Python code - it's 
 unimaginatively called a pipeline. Let's look at one such pipeline:
 
-<pre snippet="overview/concepts#pipeline" highlight="3"></pre>
+<pre snippet="concepts/introduction#pipeline" highlight="3"></pre>
 
 
 It's possible to do low latency lookups on these datasets using dataset keys. 
@@ -53,7 +53,7 @@ those. If you look carefully, line with `field(key=True)` above defines `uid`
 to be a key (dataset can have multi-column keys too). If we know the uid of a 
 user, we can ask this dataset for the value of the rest of the columns:
 
-<pre snippet="overview/concepts#dataset_lookup"></pre>
+<pre snippet="concepts/introduction#dataset_lookup"></pre>
 
 Here "found" is a boolean series denoting whether there was any row in the 
 dataset with that key. If data isn't found, a row of Nones is returned. What's 
@@ -80,7 +80,7 @@ computes user's age using the datasets we defined above.
 
 Here is how a really simple featureset looks:
 
-<pre snippet="overview/concepts#featureset" highlight="8-15"></pre>
+<pre snippet="concepts/introduction#featureset" highlight="8-15"></pre>
 
 This is a featureset with 3 features --- `uid`, `country`, and `age`. Highlighted 
 lines describe an extractor that given the value of the feature `uid`, knows how 
@@ -112,12 +112,12 @@ know about them until you explicitly tell them.
 
 To communicate with Fennel server, you'd typically create a `Client` object:
 
-<pre snippet="overview/concepts#client"></pre>
+<pre snippet="concepts/introduction#client"></pre>
 
 And once you have a client object, you'd issue a `commit` request to commit your 
 dataset/featureset definitions with the server:
 
-<pre snippet="overview/concepts#commit"></pre>
+<pre snippet="concepts/introduction#commit"></pre>
 
 
 This makes a POST request to Fennel and commits the dataset on the server. Fennel 
@@ -142,7 +142,7 @@ of these features for particular inputs (say uids). That can be accomplished via
 API which reads historical values of features for training data generation
 purposes. Here is how they look:
 
-<pre snippet="overview/concepts#query"></pre>
+<pre snippet="concepts/introduction#query"></pre>
 
 Here, we are trying to read two features of the `UserFeature` featureset - `age` 
 and `country` (as defined in `outputs`). We are providing the value of one
@@ -153,8 +153,30 @@ Python, this is a REST endpoint and can be queried via any other language as wel
 There is an analogous function to get historical values of features called 
 `extract_historical`:
 
-<pre snippet="overview/concepts#query_historical"></pre>
+<pre snippet="concepts/introduction#query_historical"></pre>
 
 This is almost identical as before except we are also passing row-level timestamps
 as of which we want features to be extracted. `extract_historical` is the mechanism
 to generate point-in-time correct training datasets or do large scale batch inference.
+
+## Branches
+Production machine learning is all about experimentation. You'd soon find yourself
+wanting to change something about these datasets/features and/or add new ones in
+an experimental way. 
+
+To support that, Fennel supports a git-inspired branch model of development. You
+can create new empty branches or clone existing branches - and after that, you 
+can make changes to branches independently without affecting other branches. 
+
+<pre snippet="concepts/introduction#branches"></pre>
+
+In the above example, we created an empty branch called `dev`, switched client
+to refer to this branch (via the `checkout` method), did a commit on this
+newly created `dev` branch, and finally, issued a query against this branch.
+
+In fact, with Fennel, you're always working with branches even if you aren't 
+explicitly creating or checking out branches. By default, Fennel creates 
+a branch called "main" and all the client methods talk to this default branch 
+if some other branch hasn't been checked out.
+
+See [this](/concepts/branch) for more details about branches.
