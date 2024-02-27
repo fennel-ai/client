@@ -140,6 +140,7 @@ class TestSelectSnips(unittest.TestCase):
             from fennel.sources import source, Webhook
 
             webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("User"))
             @dataset
             class User:

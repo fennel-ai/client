@@ -9,7 +9,7 @@ __owner__ = "nikhil@fennel.ai"
 @mock
 def test_branches_basic(client):
     from fennel.sources import Webhook, source
-    from fennel.datasets import dataset 
+    from fennel.datasets import dataset
     from fennel.featuresets import featureset, feature
 
     webhook = Webhook(name="webhook")
@@ -32,7 +32,7 @@ def test_branches_basic(client):
     client.init_branch("branch1")
     client.checkout("branch1")
     client.commit(datasets=[Dataset], featuresets=[SomeFeatureSet])
-    
+
     client.init_branch("branch2")
     client.checkout("branch2")
     client.commit(datasets=[Dataset], featuresets=[OtherFeatureSet])
@@ -61,7 +61,7 @@ def test_branches_clone(client):
     client.init_branch("branch1")
     client.checkout("branch1")
     client.commit(datasets=[SomeDataset], featuresets=[SomeFeatureset])
-    
+
     client.clone_branch("branch1", "branch2")
     client.checkout("branch2")
     # /docsnip

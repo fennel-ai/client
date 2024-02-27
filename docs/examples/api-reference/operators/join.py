@@ -30,7 +30,7 @@ class TestAssignSnips(unittest.TestCase):
         class MerchantCategory:
             # docsnip-highlight start
             # right side of the join can only be on key fields
-            merchant: int = field(key=True) 
+            merchant: int = field(key=True)
             # docsnip-highlight end
             category: str
             updated_at: datetime  # won't show up in joined dataset

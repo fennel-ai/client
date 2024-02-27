@@ -30,7 +30,7 @@ class TestSumSnips(unittest.TestCase):
             uid: int = field(key=True)
             # docsnip-highlight start
             # new int fields added to the dataset by the count aggregation
-            amount_1w: int 
+            amount_1w: int
             total: int
             # docsnip-highlight end
             timestamp: datetime
@@ -139,4 +139,5 @@ class TestSumSnips(unittest.TestCase):
                         # docsnip-highlight next-line
                         Sum(of="vendor", window="forever", into_field="total"),
                     )
+
             # /docsnip

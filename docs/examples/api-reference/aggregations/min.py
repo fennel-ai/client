@@ -15,6 +15,7 @@ def test_basic(client):
     from fennel.sources import source, Webhook
 
     webhook = Webhook(name="webhook")
+
     @source(webhook.endpoint("Transaction"))
     @dataset
     class Transaction:

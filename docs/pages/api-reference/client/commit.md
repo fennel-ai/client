@@ -12,6 +12,11 @@ Sends the local dataset and featureset definitions to the server for verificatio
 storage and processing.
 
 #### Parameters
+<Expandable title="message" type="str">
+Human readable description of the changes in the commit - akin to the commit 
+message in a git commit.
+</Expandable>
+
 <Expandable title="datasets" type="List[Dataset]" defaultVal="[]">
 List of dataset objects to be committed.
 </Expandable>
@@ -42,7 +47,7 @@ those with matching values. Rules of selection:
 </LeftSection>
 <RightSection>
 <pre snippet="api-reference/client/commit#basic" status="success"
-    message="Silver source and no extractor are committed" highlight="7-8, 21, 25-29">
+    message="Silver source and no extractor are committed">
 </pre>
 </RightSection>
 </Divider>
