@@ -33,7 +33,7 @@ and organize sub-modules under them based on the domain. Since the sources
 (e.g. s3 credentials) are needed for each dataset sub-module, they can be further
 factorized in their own module. Tests could be moved to a top-level `/tests`
 or `/tests` under both datasets/featuresets or unbundled as `test_x.py` files -
-really upto your personal taste.
+really up to your personal taste.
 
 Overall, the structure could look something like this:
 
