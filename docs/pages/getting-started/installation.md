@@ -48,10 +48,10 @@ your cloud:
    Also inform Fennel support a) whether you want the endpoints to be public 
    or private and b) the email domain(s) that should be allowed to access Fennel 
    web console.
-4. In response, you’d be given a cloud formation template, a cluster id and a 
-   subdomain. Run the cloud formation template from the account chosen in step 
-   1 with the following inputs: a) VPC: VPC ID, publicSubnets, privateSubnets, 
-   cidr b) cluster ID c) subdomain.
+4. In response, you’d be given a cloud formation template and a cluster ID. Run 
+   the cloud formation template from the account chosen in step 1 with the 
+   following inputs: a) VPC: VPC ID, publicSubnets, privateSubnets, 
+   cidr b) cluster ID
 5. This template provisions the outpost EC2 instance(s) inside the VPC, a 
    security group, couple of IAM roles, a role permission boundary and some 
    other machinery.
@@ -65,7 +65,7 @@ your cloud:
 8. To enable laptop access to Fennel for your team, Fennel can either provide 
    PrivateLink endpoint or you can use VPC peering and/or VPN setup yourself.
 9. Once you have access to Fennel console, use it to generate access tokens (you 
-    can also create new RBAC roles if needed and/or assign users to roles).
+   can also create new RBAC roles if needed and/or assign users to roles).
 10. Instantiate Fennel client by providing server URL and access tokens. Use 
     this client to talk to the server.
 
