@@ -54,6 +54,7 @@ The type of the field denoted by `into_field` in the output dataset and that of
 
 </LeftSection>
 <RightSection>
+
 <pre snippet="api-reference/aggregations/avg#basic" status="success" 
     message="Average in rolling window of 1 day & 1 week">
 </pre>

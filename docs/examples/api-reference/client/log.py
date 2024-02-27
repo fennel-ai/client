@@ -26,17 +26,19 @@ def test_basic(client):
     client.commit(datasets=[Transaction])
 
     # log some rows to the webhook
+    # docsnip-highlight start
     client.log(
         "some_webhook",
         "some_endpoint",
         df=pd.DataFrame(
+            columns=["uid", "amount", "timestamp"],
             data=[
                 [1, 10, "2021-01-01T00:00:00"],
                 [2, 20, "2021-02-01T00:00:00"],
             ],
-            columns=["uid", "amount", "timestamp"],
         ),
     )
+    # docsnip-highlight end
     # /docsnip
     # do lookup to verify that the rows were logged
     ts = [datetime(2021, 1, 1, 0, 0, 0), datetime(2021, 2, 1, 0, 0, 0)]

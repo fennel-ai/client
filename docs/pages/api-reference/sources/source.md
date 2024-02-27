@@ -61,10 +61,10 @@ and [webhook](/api-reference/sources/webhook).
 </Expandable>
 
 <Expandable title="tier" type="None | str | List[str]" defaultVal="None">
-When present, marks this source to be selected during sync call only when sync
-call itself is made for a `tier` that matches this tier. Primary use case is to
+When present, marks this source to be selected during `commit` only when `commit`
+operation itself is made for a `tier` that matches this tier. Primary use case is to
 decorate a single dataset with many `@source` decorators and choose only one of 
-them to sync depending on the environment.
+them to commit depending on the environment.
 </Expandable>
 
 <Expandable title="preproc" type="Optional[Dict[str, Union[Ref, Any]]]" defaultVal="None">
@@ -85,7 +85,7 @@ As of right now, there are two kinds of values of preproc:
 <RightSection>
 <pre snippet="api-reference/sources/source#source_decorator"
     status="success" message="Specifying options in source decorator"
-    highlight="8-19">
+>
 </pre>
 </RightSection>
 </Divider>

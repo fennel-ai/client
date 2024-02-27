@@ -32,11 +32,16 @@ def test_basic(client):
             return pd.DataFrame({"is_even": is_even, "is_odd": is_odd})
 
     client.commit(featuresets=[Numbers])
+
+    # now we can query the features
+    # docsnip-highlight start
     feature_df = client.query(
         inputs=[Numbers.num],
         outputs=[Numbers.is_even, Numbers.is_odd],
         input_dataframe=pd.DataFrame({"Numbers.num": [1, 2, 3, 4]}),
     )
+    # docsnip-highlight end
+
     pd.testing.assert_frame_equal(
         feature_df,
         pd.DataFrame(
@@ -95,6 +100,7 @@ def test_basic(client):
         s3_input_connection = s3.bucket("bucket", prefix="data/user_features")
         s3_output_connection = s3.bucket("bucket", prefix="output")
 
+        # docsnip-highlight start
         response = client.query_offline(
             inputs=[Numbers.num],
             outputs=[Numbers.is_even, Numbers.is_odd],
@@ -103,4 +109,5 @@ def test_basic(client):
             input_s3=s3_input_connection,
             output_s3=s3_output_connection,
         )
+        # docsnip-highlight end
         # /docsnip

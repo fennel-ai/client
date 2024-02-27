@@ -20,7 +20,7 @@ Fennel doesn't support reading delta tables from HDFS or any other non-S3 storag
 <RightSection>
 <pre snippet="api-reference/sources/s3#s3_delta"
     status="success" message="Sourcing delta tables into Fennel datasets" 
-    highlight="10">
+ >
 </pre>
 </RightSection>
 </Divider>

@@ -20,7 +20,7 @@ Fennel doesn't support reading hudi tables from HDFS or any other non-S3 storage
 <RightSection>
 <pre snippet="api-reference/sources/s3#s3_hudi"
     status="success" message="Sourcing hudi tables into Fennel datasets" 
-    highlight="10">
+>
 </pre>
 </RightSection>
 </Divider>

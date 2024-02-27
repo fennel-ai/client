@@ -3,13 +3,8 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -17,14 +12,22 @@ class TestFilterSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("User"))
         @dataset
         class User:
             uid: int = field(key=True)
+            # docsnip-highlight start
             city: str
             country: str
             weight: float
             height: float
+            # docsnip-highlight end
             gender: str
             timestamp: datetime
 
@@ -36,10 +39,12 @@ class TestFilterSnips(unittest.TestCase):
 
             @pipeline
             @inputs(User)
-            def pipeline(cls, user: Dataset):
+            def drop_pipeline(cls, user: Dataset):
+                # docsnip-highlight start
                 return user.drop("height", "weight").drop(
                     columns=["city", "country"]
                 )
+                # docsnip-highlight end
 
         # /docsnip
 
@@ -125,6 +130,12 @@ class TestFilterSnips(unittest.TestCase):
     def test_missing_column(self, client):
         with pytest.raises(Exception):
             # docsnip missing_column
+            from fennel.datasets import dataset, field, pipeline, Dataset
+            from fennel.lib import inputs
+            from fennel.sources import source, Webhook
+
+            webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("User"))
             @dataset
             class User:
@@ -140,7 +151,8 @@ class TestFilterSnips(unittest.TestCase):
 
                 @pipeline
                 @inputs(User)
-                def pipeline(cls, user: Dataset):
+                def bad_pipeline(cls, user: Dataset):
+                    # docsnip-highlight next-line
                     return user.drop("random")
 
             # /docsnip

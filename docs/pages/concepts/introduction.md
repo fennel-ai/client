@@ -104,7 +104,7 @@ training data generation request). And the bridge between them is `lookup`
 functionality of the dataset.
 
 
-## Syncing Datasets and Features
+## Committing Datasets and Features
 
 When you work with Fennel, your dataset and featureset definitions will live 
 in a Python file in your codebase or a notebook - but the Fennel servers won't
@@ -114,25 +114,25 @@ To communicate with Fennel server, you'd typically create a `Client` object:
 
 <pre snippet="overview/concepts#client"></pre>
 
-And once you have a client object, you'd issue a `sync` request to sync your 
+And once you have a client object, you'd issue a `commit` request to commit your 
 dataset/featureset definitions with the server:
 
-<pre snippet="overview/concepts#sync"></pre>
+<pre snippet="overview/concepts#commit"></pre>
 
 
-This makes a POST request to Fennel and syncs the dataset on the server. Fennel 
-may reject this sync request if there is any error with any dataset or 
+This makes a POST request to Fennel and commits the dataset on the server. Fennel 
+may reject this commit request if there is any error with any dataset or 
 featureset e.g. if a dataset already exists with this name or somehow this 
 dataset is malformed.
 
 
 Overtime, you'd have many more datasets and featuresets - you'd send all of them
-in a sync call. And with that, the validation can become lot more complex e.g 
+in a commit call. And with that, the validation can become lot more complex e.g 
 schema compatibility validation across the whole graph of datasets/featuresets.
 
 Assuming the call succeeds, any datasets/featuresets that don't yet exist will 
-be created, any datasets/featuresets that exist but are not provided in the sync 
-call are deleted and rest are left unchanged. 
+be created, any datasets/featuresets that exist but are not provided in the commit 
+are deleted and rest are left unchanged. 
 
 ## Feature Extraction Requests
 

@@ -24,11 +24,11 @@ can be passed as unpacked *args or a Python list.
 
 #### Errors
 <Expandable title="Grouping by non-existent columns">
-Sync error if trying to group by columns that don't exist in the input dataset.
+Commit error if trying to group by columns that don't exist in the input dataset.
 </Expandable>
 
 <Expandable title="Grouping by timestamp column">
-Sync error if trying to do a groupby via the timestamp column of the input dataset.
+Commit error if trying to do a groupby via the timestamp column of the input dataset.
 </Expandable>
 
 </LeftSection>
@@ -37,6 +37,7 @@ Sync error if trying to do a groupby via the timestamp column of the input datas
 <pre snippet="api-reference/operators/groupby#basic" status="success"
     message="Groupby category before using first">
 </pre>
+
 <pre snippet="api-reference/operators/groupby#non_existent_column" status="error"
     message="Groupby using a non-existent column">
 </pre>

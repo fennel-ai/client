@@ -28,13 +28,13 @@ assume this role (see below for details or talk to Fennel support if you need he
 The arn of the Kinesis stream. The corresponding `role_arn` must have 
 appropriate permissions for this stream. Providing a stream that either doesn't 
 exist or can not be read using the given `role_arn` will result in an error 
-during the sync operation.
+during the commit operation.
 </Expandable>
 
 <Expandable title="init_position" type="str | datetime | float | int">
 The initial position in the stream from which Fennel should start ingestion. 
 See [Kinesis ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html#API_GetShardIterator_RequestSyntax) for more context. Allowed values are:
-- `"latest"` - start from the latest data (starting a few minutes after `sync`)
+- `"latest"` - start from the latest data (starting a few minutes after `commit`)
 - `"trim_horizon"`- start from the oldest data that hasn't been trimmed/expired yet.
 - datetime - start from the position denoted by this timestamp (i.e. equivalent 
   to `AT_TIMESTAMP` in Kinesis vocabulary). 
@@ -55,12 +55,12 @@ though Fennel also supports [Avro](/api-reference/sources/avro).
 
 #### Errors
 <Expandable title="Connectivity problems">
-Fennel server tries to connect with Kinesis during the `sync` operation
+Fennel server tries to connect with Kinesis during the `commit` operation
 itself to validate connectivity - as a result, incorrect stream/role ARNs or 
-insufficient permissions will be caught at sync time itself as an error.
+insufficient permissions will be caught at ccommit time itself as an error.
 
 Note: Mock client can not talk to any external data source and hence is unable to
-do this validation at sync time.
+do this validation at commit time.
 </Expandable>
 
 <Expandable title="Schema mismatch errors">
@@ -75,11 +75,10 @@ Fennel console after initiating any data sync.
 <RightSection>
 <pre snippet="api-reference/sources/kinesis#kinesis_at_timestamp"
     status="success" message="Using explicit timestamp as init position"
-    highlight="4-15">
-</pre>
+></pre>
 
 <pre snippet="api-reference/sources/kinesis#kinesis_latest"
-    status="success" message="Using latest as init position" highlight="11">
+    status="success" message="Using latest as init position">
 </pre>
 </RightSection>
 </Divider>

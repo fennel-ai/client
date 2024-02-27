@@ -30,29 +30,29 @@ with the type of some columns modified from `Optional[T]` -> `T`.
 
 #### Errors
 <Expandable title="Dropnull on non-optional columns">
-Sync error to pass a column without an optional type.
+Commit error to pass a column without an optional type.
 </Expandable>
 
 <Expandable title="Dropnull on non-existent columns">
-Sync error to pass a column that doesn't exist in the input dataset.
+Commit error to pass a column that doesn't exist in the input dataset.
 </Expandable>
 </LeftSection>
 
 
 <RightSection>
 <pre snippet="api-reference/operators/dropnull#basic" status="success"
-    message="Dropnull on city & country, but not gender" highlight="23">
+    message="Dropnull on city & country, but not gender">
 </pre>
 <pre snippet="api-reference/operators/dropnull#dropnull_all" status="success"
     message="Applies to all optional columns if none is given explicitly"
-    highlight="23">
+    >
 </pre>
 <pre snippet="api-reference/operators/dropnull#missing_column" status="error"
-    message="Dropnull on a non-existent column" highlight="17">
+    message="Dropnull on a non-existent column" >
 </pre>
 
 <pre snippet="api-reference/operators/dropnull#non_optional_column" status="error"
-    message="Dropnull on a non-optional column" highlight="5, 16">
+    message="Dropnull on a non-optional column">
 </pre>
 </RightSection>
 

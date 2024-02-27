@@ -57,6 +57,7 @@ input dataset.
 
 </LeftSection>
 <RightSection>
+
 <pre snippet="api-reference/aggregations/min#basic" status="success" 
     message="Minimum in rolling window of 1 day & 1 week">
 </pre>

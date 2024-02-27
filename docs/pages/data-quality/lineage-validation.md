@@ -6,9 +6,9 @@ status: 'published'
 
 # Lineage Validation
 
-Fennel has visibility into the full lineage of dataflow graph. During `sync`
-call, Fennel conducts various validations across the full lineage graph to make
-sure that the dataflow graph is valid. Sync call succeeds if and only if
+Fennel has visibility into the full lineage of dataflow graph. During `commit`, 
+Fennel conducts various validations across the full lineage graph to make
+sure that the dataflow graph is valid. `Commit` succeeds if and only if
 all these validations pass at the compile time itself. These checks prevent
 data quality bugs of the following kind:
 
@@ -30,13 +30,13 @@ scenarios can not occur with Fennel because this missing dependency will be caug
 ## Typing Mismatch
 
 Fennel matches data types across dependencies to detect invalid relationships.
-For instance, if a dataset is supposed to have a field of certain type but the pipeline that produces
-the dataset doesn't produce that field/type, the error will be caught during `sync`
-only without ever going into the runtime phase.
+For instance, if a dataset is supposed to have a field of certain type but the 
+pipeline that produces the dataset doesn't produce that field/type, the error 
+will be caught during `commit` only without ever going into the runtime phase.
 
 
 ## Circular Dependencies
 
-Fennel is also able to detect circular dependencies in dataflow during sync.
+Fennel is also able to detect circular dependencies in dataflow during `commit`.
 While these aren't that common in production, but when they do happen, can be
 very hard to debug.

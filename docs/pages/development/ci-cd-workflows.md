@@ -8,7 +8,7 @@ status: 'published'
 
 Deployment to Fennel can be done via Github actions (or any other post-merge) 
 script. Credentials to Fennel servers are typically injected as environment
-variables in this script such that when `sync` call is made, the client ends up 
+variables in this script such that when `commit` is called, the client ends up 
 connecting with the chosen Fennel servers. 
 
 ## Example: Github Actions
@@ -21,14 +21,13 @@ And a single featureset as follows in a file called `featuresets.py`:
 <pre snippet="testing-and-ci-cd/ci_cd/featuresets#gh_action_featureset"></pre>
 
 A simple Python script could be written that imports both the dataset & featureset
-modules, reads Fennel URL & Token as environment variables and makes a sync
-call.
-<pre snippet="testing-and-ci-cd/ci_cd/sync#gh_action_commit"></pre>
+modules, reads Fennel URL & Token as environment variables and calls `commit`.
+<pre snippet="testing-and-ci-cd/ci_cd/commit#gh_action_commit"></pre>
 
 Given such a setup, here is a sample Github actions script to deploy changes to
 Fennel servers:
 ```bash
-name: sync
+name: commit
 
 on: # deploy only on pushes to the main branch
   push:
@@ -36,9 +35,9 @@ on: # deploy only on pushes to the main branch
       - main
 
 jobs:
-  fennel-sync:
+  fennel-commit:
     runs-on: ubuntu-latest
-    name: Sync datasets and features to Fennel cluster.
+    name: Commit datasets and features to Fennel cluster.
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -53,15 +52,15 @@ jobs:
       # You may also need to install more pip packages here depending 
       # on what else is needed to import your Python modules.
 
-      # Install fennel and sync against the cluster
-      - name: Sync Datasets and Features
+      # Install fennel and commit against the cluster
+      - name: Commit Datasets and Features
         env:
           FENNEL_URL: ${{ secrets.FENNEL_URL }}
           FENNEL_TOKEN: ${{ secrets.FENNEL_TOKEN }}
         run: |
           python3 -m pip install --upgrade pip
           pip install "fennel-ai>=0.19.0"
-          python3 -m path.to.fennel.code.sync
+          python3 -m path.to.fennel.code.commit
 ```
 
 
@@ -96,11 +95,11 @@ during roll back or not. In that sense, it is somewhat similar to roll backs of
 database schema migrations.
 
 Consequently, the best way to roll back is to not blindly revert the commit but 
-rather explicitly mark things as deprecated or deleted before syncing again.
+rather explicitly mark things as deprecated or deleted before committing again.
 
 To prevent accidental deletions of entities, Fennel requires you to first do a
-sync with datasets/featuresets marked as deleted and then in subsequent syncs,
-you are free to omit the entities from the sync call itself. Here is a simple
+`commit` with datasets/featuresets marked as deleted and then in subsequent `commit`,
+you are free to omit the entities from the `commit` operation. Here is a simple
 example showing how to mark dataset (or featureset) as deleted.
 
 <pre snippet="testing-and-ci-cd/ci_cd/datasets#dataset_deleted" highlight="5"></pre>

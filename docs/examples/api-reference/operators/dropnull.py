@@ -4,13 +4,8 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
-
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -18,13 +13,21 @@ class TestDropnullSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("User"))
         @dataset
         class User:
             uid: int = field(key=True)
             dob: str
+            # docsnip-highlight start
             city: Optional[str]
             country: Optional[str]
+            # docsnip-highlight end
             gender: Optional[str]
             timestamp: datetime
 
@@ -32,14 +35,18 @@ class TestDropnullSnips(unittest.TestCase):
         class Derived:
             uid: int = field(key=True)
             dob: str
+            # docsnip-highlight start
+            # dropnull changes the type of the columns to non-optional
             city: str
             country: str
+            # docsnip-highlight end
             gender: Optional[str]
             timestamp: datetime
 
             @pipeline
             @inputs(User)
-            def pipeline(cls, user: Dataset):
+            def dropnull_pipeline(cls, user: Dataset):
+                # docsnip-highlight next-line
                 return user.dropnull("city", "country")
 
         # /docsnip
@@ -91,28 +98,40 @@ class TestDropnullSnips(unittest.TestCase):
     @mock
     def test_dropnull_all(self, client):
         # docsnip dropnull_all
+        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("User"))
         @dataset
         class User:
             uid: int = field(key=True)
             dob: str
+            # docsnip-highlight start
             city: Optional[str]
             country: Optional[str]
             gender: Optional[str]
+            # docsnip-highlight end
             timestamp: datetime
 
         @dataset
         class Derived:
             uid: int = field(key=True)
+            dob: str
+            # docsnip-highlight start
+            # dropnull changes the type of all optional columns to non-optional
             city: str
             country: str
             gender: str
-            dob: str
+            # docsnip-highlight end
             timestamp: datetime
 
             @pipeline
             @inputs(User)
-            def pipeline(cls, user: Dataset):
+            def dropnull_pipeline(cls, user: Dataset):
+                # docsnip-highlight next-line
                 return user.dropnull()
 
         # /docsnip
@@ -166,6 +185,12 @@ class TestDropnullSnips(unittest.TestCase):
     def test_missing_column(self, client):
         with pytest.raises(Exception):
             # docsnip missing_column
+            from fennel.datasets import dataset, field, pipeline, Dataset
+            from fennel.lib import inputs
+            from fennel.sources import source, Webhook
+
+            webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("User"))
             @dataset
             class User:
@@ -181,7 +206,8 @@ class TestDropnullSnips(unittest.TestCase):
 
                 @pipeline
                 @inputs(User)
-                def pipeline(cls, user: Dataset):
+                def bad_pipeline(cls, user: Dataset):
+                    # docsnip-highlight next-line
                     return user.select("random")
 
             # /docsnip
@@ -190,11 +216,20 @@ class TestDropnullSnips(unittest.TestCase):
     def test_non_optional_column(self, client):
         with pytest.raises(Exception):
             # docsnip non_optional_column
+            from fennel.datasets import dataset, field, pipeline, Dataset
+            from fennel.lib import inputs
+            from fennel.sources import source, Webhook
+
+            webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("User"))
             @dataset
             class User:
                 uid: int = field(key=True)
+                # docsnip-highlight start
+                # dropnull can only be used on optional columns
                 city: str
+                # docsnip-highlight end
                 timestamp: datetime
 
             @dataset
@@ -204,7 +239,8 @@ class TestDropnullSnips(unittest.TestCase):
 
                 @pipeline
                 @inputs(User)
-                def pipeline(cls, user: Dataset):
+                def bad_pipeline(cls, user: Dataset):
+                    # docsnip-highlight next-line
                     return user.select("city")
 
             # /docsnip

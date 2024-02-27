@@ -118,7 +118,7 @@ def test_overview(client):
     )
 
     def _unused():
-        # docsnip sync
+        # docsnip commit
         client.commit(
             datasets=[User, Transaction, UserTransactionsAbroad],
             featuresets=[UserFeature],
