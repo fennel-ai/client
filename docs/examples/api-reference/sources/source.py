@@ -28,6 +28,7 @@ def test_source_decorator(client):
         cdc="append",
         disorder="2d",
         since=datetime(2021, 1, 1, 3, 30, 0),  # 3:30 AM on 1st Jan 2021
+        until=datetime(2022, 1, 1, 0, 0, 0),   # 12:00 AM on 1st Jan 2022
         preproc={
             "uid": ref("user_id"),  # 'uid' comes from column 'user_id'
             "country": "USA",  # country for every row should become 'USA'
