@@ -33,6 +33,16 @@ several cases, it's still necessary to read all the data before rejecting rows
 that are older than `since`.
 </Expandable>
 
+<Expandable title="until" type="Optional[datetime]" defaultVal="None">
+When `until` is set, the source only admits those rows that where the value
+corresponding to the `timestamp` column of the dataset will be < `until`.
+
+Fennel reads as little data as possible given this constraint - for instance, when
+reading parquet files, the filter is pushed all the way down. However, in 
+several cases, it's still necessary to read all the data before rejecting rows 
+that are newer than `until`.
+</Expandable>
+
 <Expandable title="disorder" type="Duration">
 Specifies how out of order can data from this source arrive. 
 
