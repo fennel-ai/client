@@ -897,7 +897,7 @@ class WindowOperator(_Node):
     def summarize(self, column: str, result_type: Type, func: Callable):
         if self.summary is not None:
             raise ValueError(
-                f"'window' operator already have a summary field with name {self.summary.field}. window operator can only have 1 summary"
+                f"'window' operator already have a summary field with name {self.summary.field}. window operator can only have one summary"
             )
 
         new_window_op = copy.deepcopy(self)
