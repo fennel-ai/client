@@ -566,9 +566,9 @@ class DataEngine(object):
                 continue
             if ret.is_aggregate:
                 # Aggregate pipelines are not logged
-                self.datasets[
-                    pipeline.dataset_name
-                ].aggregated_datasets = ret.agg_result
+                self.datasets[pipeline.dataset_name].aggregated_datasets = (
+                    ret.agg_result
+                )
                 continue
 
             # Recursively log the output of the pipeline to the datasets

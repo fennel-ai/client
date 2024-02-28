@@ -21,7 +21,7 @@ pytest-rerunfailures = "^13.0"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"
-black = "^24.0.0"
+black = ">=24.0.0"
 curlify = "2.2.1"
 mypy = "^0.981"
 pyarrow = "^14.0.2"
