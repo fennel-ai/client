@@ -12,7 +12,7 @@ from fennel.lib.aggregate import Average, LastK
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs, Window, struct
 from fennel.sources import source
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 webhook = sources.Webhook(name="fennel_webhook")
 
@@ -40,7 +40,7 @@ class Sessions:
     timestamp: datetime = field(timestamp=True)
     window_stats: WindowStats
 
-    @pipeline(version=1)
+    @pipeline()
     @inputs(AppEvent)
     def get_sessions(cls, app_event: Dataset):
         return (
@@ -67,7 +67,7 @@ class SessionStats:
     last_visitor_session: List[Window]
     avg_star: float
 
-    @pipeline(version=1)
+    @pipeline()
     @inputs(Sessions)
     def get_session_stats(cls, sessions: Dataset):
         stats = (
@@ -169,9 +169,9 @@ def log_app_events_data(client):
 
 @pytest.mark.integration
 @mock
-def test_tumbling_window_operator(client):
+def test_hopping_window_operator(client):
     # Sync to mock client
-    client.sync(
+    client.commit(
         datasets=[AppEvent, Sessions, SessionStats],
         featuresets=[UserSessionStats],
     )
@@ -200,9 +200,10 @@ def test_tumbling_window_operator(client):
         }
     )
 
-    df_session, _ = Sessions.lookup(
+    df_session, found = Sessions.lookup(
         ts, user_id=user_id_keys, window=window_keys
     )
+    assert list(found) == [True]
     assert df_session.shape[0] == 1
     assert df_session["user_id"].values == [1]
     assert df_session["window"].values[0].begin == datetime(
@@ -222,13 +223,15 @@ def test_tumbling_window_operator(client):
     assert list(df_stats["avg_length"].values) == [10.0]
     assert list(df_stats["avg_count"].values) == [pytest.approx(4.44444444)]
 
-    df_featureset = client.extract_features(
-        input_feature_list=[
+    df_featureset = client.query(
+        inputs=[
             UserSessionStats.user_id,
         ],
-        output_feature_list=[
+        outputs=[
             UserSessionStats.avg_count,
             UserSessionStats.avg_length,
+            UserSessionStats.last_visitor_session,
+            UserSessionStats.avg_star,
         ],
         input_dataframe=input_df,
     )
@@ -238,12 +241,17 @@ def test_tumbling_window_operator(client):
         pytest.approx(4.44444444)
     ]
 
-    df_historical = client.extract_historical_features(
+    if client.is_integration_client():
+        return
+
+    df_historical = client.query_offline(
         input_dataframe=input_extract_historical_df,
-        input_feature_list=["UserSessionStats.user_id"],
-        output_feature_list=[
+        inputs=["UserSessionStats.user_id"],
+        outputs=[
             "UserSessionStats.avg_count",
             "UserSessionStats.avg_length",
+            "UserSessionStats.last_visitor_session",
+            "UserSessionStats.avg_star",
         ],
         timestamp_column="timestamp",
         format="pandas",

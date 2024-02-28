@@ -6,13 +6,12 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import sources
-from fennel.datasets import dataset, Dataset, pipeline, field
+from fennel.datasets import dataset, Dataset, pipeline, field, Average, LastK
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Average, LastK
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs, Window, struct
+from fennel.lib import meta, inputs, outputs
+from fennel.dtypes import Window, struct
 from fennel.sources import source
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 webhook = sources.Webhook(name="fennel_webhook")
 
@@ -40,7 +39,7 @@ class Sessions:
     timestamp: datetime = field(timestamp=True)
     window_stats: WindowStats
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(AppEvent)
     def get_sessions(cls, app_event: Dataset):
         return (
@@ -67,7 +66,7 @@ class SessionStats:
     last_visitor_session: List[Window]
     avg_star: float
 
-    @pipeline(version=1)
+    @pipeline
     @inputs(Sessions)
     def get_session_stats(cls, sessions: Dataset):
         stats = (
@@ -75,7 +74,7 @@ class SessionStats:
                 "length",
                 int,
                 lambda df: df["window"].apply(
-                    lambda x: int((x["end"] - x["begin"]).total_seconds())
+                    lambda x: int((x["end"] - x["begin"]).total_seconds() - 1)
                 ),
             )
             .assign(
@@ -171,7 +170,7 @@ def log_app_events_data(client):
 @mock
 def test_tumbling_window_operator(client):
     # Sync to mock client
-    client.sync(
+    client.commit(
         datasets=[AppEvent, Sessions, SessionStats],
         featuresets=[UserSessionStats],
     )
@@ -219,33 +218,40 @@ def test_tumbling_window_operator(client):
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
     assert df_stats.shape[0] == 1
     assert list(df_stats["user_id"].values) == [1]
-    assert list(df_stats["avg_length"].values) == [10.0]
+    assert list(df_stats["avg_length"].values) == [9.0]
     assert list(df_stats["avg_count"].values) == [5.0]
 
-    df_featureset = client.extract_features(
-        input_feature_list=[
+    df_featureset = client.query(
+        inputs=[
             UserSessionStats.user_id,
         ],
-        output_feature_list=[
+        outputs=[
             UserSessionStats.avg_count,
             UserSessionStats.avg_length,
+            UserSessionStats.last_visitor_session,
+            UserSessionStats.avg_star,
         ],
         input_dataframe=input_df,
     )
     assert df_featureset.shape[0] == 1
-    assert list(df_featureset["UserSessionStats.avg_length"].values) == [10.0]
+    assert list(df_featureset["UserSessionStats.avg_length"].values) == [9.0]
     assert list(df_featureset["UserSessionStats.avg_count"].values) == [5.0]
 
-    df_historical = client.extract_historical_features(
+    if client.is_integration_client():
+        return
+
+    df_historical = client.query_offline(
         input_dataframe=input_extract_historical_df,
-        input_feature_list=["UserSessionStats.user_id"],
-        output_feature_list=[
+        inputs=["UserSessionStats.user_id"],
+        outputs=[
             "UserSessionStats.avg_count",
             "UserSessionStats.avg_length",
+            "UserSessionStats.last_visitor_session",
+            "UserSessionStats.avg_star",
         ],
         timestamp_column="timestamp",
         format="pandas",
     )
     assert df_historical.shape[0] == 1
-    assert list(df_historical["UserSessionStats.avg_length"].values) == [10.0]
+    assert list(df_historical["UserSessionStats.avg_length"].values) == [9.0]
     assert list(df_historical["UserSessionStats.avg_count"].values) == [6.0]

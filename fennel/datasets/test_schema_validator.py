@@ -1582,4 +1582,7 @@ def test_double_summary():
                     )
                 )
 
-    assert str(e.value) == """'window' operator already have a summary field with name concat_page_id. window operator can only have 1 summary"""
+    assert (
+        str(e.value)
+        == """'window' operator already have a summary field with name concat_page_id. window operator can only have 1 summary"""
+    )

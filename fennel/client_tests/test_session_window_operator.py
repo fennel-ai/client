@@ -8,9 +8,8 @@ import fennel._vendor.requests as requests
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field, Average, LastK
 from fennel.featuresets import featureset, feature, extractor
-from fennel.lib.aggregate import Average, LastK
-from fennel.lib.metadata import meta
-from fennel.lib.schema import inputs, outputs, Window, struct
+from fennel.lib import meta, inputs, outputs
+from fennel.dtypes import Window, struct
 from fennel.sources import source
 from fennel.testing import mock
 
@@ -75,7 +74,7 @@ class SessionStats:
                 "length",
                 int,
                 lambda df: df["window"].apply(
-                    lambda x: int((x["end"] - x["begin"]).total_seconds())
+                    lambda x: int((x["end"] - x["begin"]).total_seconds() - 1)
                 ),
             )
             .assign(
@@ -106,7 +105,7 @@ class SessionStats:
                     limit=1,
                     dedup=False,
                     into_field="last_visitor_session",
-                )
+                ),
                 Average(
                     of="avg_star",
                     window="forever",
@@ -205,7 +204,6 @@ def test_session_window_operator(client):
     df_session, _ = Sessions.lookup(
         ts, user_id=user_id_keys, window=window_keys
     )
-    print(df_session)
     assert df_session.shape[0] == 1
     assert list(df_session["user_id"].values) == [1]
     assert df_session["window"].values[0].begin == datetime(
@@ -221,7 +219,7 @@ def test_session_window_operator(client):
     df_stats, _ = SessionStats.lookup(ts, user_id=user_id_keys)
     assert df_stats.shape[0] == 1
     assert list(df_stats["user_id"].values) == [1]
-    assert list(df_stats["avg_length"].values) == [2.5]
+    assert list(df_stats["avg_length"].values) == [pytest.approx(1.833333333)]
     assert list(df_stats["avg_count"].values) == [pytest.approx(3.333333)]
     assert list(df_stats["avg_star"].values) == [pytest.approx(2.72083333)]
 
@@ -238,7 +236,9 @@ def test_session_window_operator(client):
         input_dataframe=input_df,
     )
     assert df_featureset.shape[0] == 1
-    assert list(df_featureset["UserSessionStats.avg_length"].values) == [2.5]
+    assert list(df_featureset["UserSessionStats.avg_length"].values) == [
+        pytest.approx(1.833333333)
+    ]
     assert list(df_featureset["UserSessionStats.avg_count"].values) == [
         pytest.approx(3.333333)
     ]
@@ -246,6 +246,7 @@ def test_session_window_operator(client):
         pytest.approx(2.720833333)
     ]
     assert df_featureset["UserSessionStats.last_visitor_session"].size == 1
+
     if client.is_integration_client():
         return
 
@@ -262,7 +263,7 @@ def test_session_window_operator(client):
         format="pandas",
     )
     assert df_historical.shape[0] == 1
-    assert list(df_historical["UserSessionStats.avg_length"].values) == [2.0]
+    assert list(df_historical["UserSessionStats.avg_length"].values) == [1]
     assert list(df_historical["UserSessionStats.avg_count"].values) == [3]
     assert list(df_featureset["UserSessionStats.avg_star"].values) == [
         pytest.approx(2.720833333)

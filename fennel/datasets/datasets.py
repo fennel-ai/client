@@ -885,9 +885,7 @@ class WindowOperator(_Node):
         }
         keys[self.field] = Window
         if self.summary is not None:
-            values = {
-                self.summary.field: get_pd_dtype(self.summary.dtype)
-            }
+            values = {self.summary.field: get_pd_dtype(self.summary.dtype)}
         else:
             values = {}
         return DSSchema(
@@ -898,7 +896,9 @@ class WindowOperator(_Node):
 
     def summarize(self, column: str, result_type: Type, func: Callable):
         if self.summary is not None:
-            raise ValueError(f"'window' operator already have a summary field with name {self.summary.field}. window operator can only have 1 summary")
+            raise ValueError(
+                f"'window' operator already have a summary field with name {self.summary.field}. window operator can only have 1 summary"
+            )
 
         new_window_op = copy.deepcopy(self)
         new_window_op.summary = Summary(
