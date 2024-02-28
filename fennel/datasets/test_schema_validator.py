@@ -1574,7 +1574,7 @@ def test_double_summary():
                         ),
                     )
                     .summarize(
-                        column="concat_page_id",
+                        column="concat_page_idd",
                         result_type=str,
                         func=lambda df: ",".join(
                             [str(x) for x in df["page_id"]]
@@ -1582,4 +1582,4 @@ def test_double_summary():
                     )
                 )
 
-    assert str(e.value) == """'window' operator already have a summary field"""
+    assert str(e.value) == """'window' operator already have a summary field with name concat_page_id. window operator can only have 1 summary"""
