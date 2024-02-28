@@ -383,14 +383,12 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 hopping=window_proto.Hopping(duration=duration, stride=stride)
             )
         if obj.summary is not None:
-            window_func_pycode = to_includes_proto(
-                obj.summary.summarize_func
-            )
+            window_func_pycode = to_includes_proto(obj.summary.summarize_func)
             gen_pycode = self.wrap_function(window_func_pycode, is_summary=True)
             summary = window_proto.Summary(
-                column_name=obj.summary.column_name,
+                column_name=obj.summary.field,
                 pycode=gen_pycode,
-                output_type=get_datatype(obj.summary.output_type),
+                output_type=get_datatype(obj.summary.dtype),
             )
         else:
             summary = None

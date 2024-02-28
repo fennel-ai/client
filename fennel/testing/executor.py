@@ -498,7 +498,21 @@ class Executor(Visitor):
             gap: int,
             field: str,
             summary: Optional[Summary],
-        ):
+        ) -> pd.DataFrame:
+            """Group record in dataframe by session based on
+            timestamp column and the maximum gap between records
+
+                Parameters:
+                df: Dataframe to group by session
+                timestamp_col: Column indicating timestamp of the record
+                gap: Maximum gap between records to be included in session
+                field: Output field to generate the sessions
+                summary: Optional summary to generate for the sessions
+
+                Returns:
+                Dataframe: The result dataframe contain the session
+
+            """
             # Sort the DataFrame by timestamp_col
             df = df.sort_values(by=timestamp_col)
             # Initialize lists to store session information
@@ -546,22 +560,22 @@ class Executor(Visitor):
             )
             if summary is not None:
                 try:
-                    df[summary.column_name] = summary_value
+                    df[summary.field] = summary_value
                 except Exception as e:
                     raise Exception(
-                        f"Error in assign node for column `{summary.column_name}` for pipeline "
+                        f"Error in window node for column `{summary.field}` for pipeline "
                         f"`{self.cur_pipeline_name}`, {e}"
                     )
                 # Check the schema of the column
                 try:
                     field = schema_proto.Field(
-                        name=summary.column_name,
-                        dtype=get_datatype(summary.output_type),
+                        name=summary.field,
+                        dtype=get_datatype(summary.dtype),
                     )
                     validate_field_in_df(field, df, self.cur_pipeline_name)
                 except Exception as e:
                     raise Exception(
-                        f"Error in assign node for column `{summary.column_name}` for pipeline "
+                        f"Error in window node for column `{summary.field}` for pipeline "
                         f"`{self.cur_pipeline_name}`, {e}"
                     )
 
@@ -569,7 +583,7 @@ class Executor(Visitor):
 
         list_keys = obj.keys + [input_ret.timestamp_field]
         if obj.summary is not None:
-            list_keys.append(obj.summary.column_name)
+            list_keys.append(obj.summary.field)
 
         if obj.type == WindowType.Sessionize:
             window_dataframe = (
@@ -597,7 +611,6 @@ class Executor(Visitor):
                     sorted_df[col_name] = sorted_df[col_name].astype(col_type())
                 elif col_type in [int, float, bool, str]:
                     sorted_df[col_name] = sorted_df[col_name].astype(col_type)
-            print(sorted_df)
             return NodeRet(sorted_df, input_ret.timestamp_field, obj.keys)
         else:
             raise Exception(

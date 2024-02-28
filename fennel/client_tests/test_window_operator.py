@@ -204,7 +204,6 @@ def test_window_operator(client):
     df_session, _ = Sessions.lookup(
         ts, user_id=user_id_keys, window=window_keys
     )
-    print(df_session)
     assert df_session.shape[0] == 1
     assert list(df_session["user_id"].values) == [1]
     assert df_session["window"].values[0].begin == datetime(
