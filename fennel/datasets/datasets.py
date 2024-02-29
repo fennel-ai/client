@@ -47,6 +47,7 @@ from fennel.dtypes.dtypes import (
 from fennel.internal_lib.duration import (
     Duration,
     duration_to_timedelta,
+    timedelta_to_micros
 )
 from fennel.internal_lib.schema import (
     get_primitive_dtype,
@@ -864,6 +865,11 @@ class WindowOperator(_Node):
         self.stride_timedelta = (
             stride if stride is None else duration_to_timedelta(stride)
         )
+        if type == WindowType.Hopping:
+            if timedelta_to_micros(self.duration_timedelta) < timedelta_to_micros(self.stride_timedelta):
+                raise ValueError(
+                    "stride parameters is larger than duration parameters which is not supported in 'hopping window'"
+                )
         self.field = field
         self.node = node
         self.node.out_edges.append(self)
