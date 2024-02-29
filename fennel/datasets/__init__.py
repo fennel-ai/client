@@ -8,6 +8,7 @@ from fennel.datasets.aggregate import (
     Average,
     AggregateType,
     Stddev,
+    Quantile,
 )
 from fennel.datasets.datasets import (
     dataset,

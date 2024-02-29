@@ -111,6 +111,7 @@ class Sum(AggregateType):
 class Average(AggregateType):
     of: str
     default: float = 0.0
+    approx: bool = False
 
     def to_proto(self):
         return spec_proto.PreSpec(
@@ -124,6 +125,31 @@ class Average(AggregateType):
 
     def signature(self):
         return f"avg_{self.of}_{self.window.signature()}"
+
+
+class Quantile(AggregateType):
+    p: float
+    default: Optional[float] = None
+    approx: bool = False
+    of: str
+
+    def to_proto(self):
+        return spec_proto.PreSpec(
+            quantile=spec_proto.Quantile(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+                default=self.default,
+                approx=self.approx,
+                quantile=self.p,
+            )
+        )
+
+    def signature(self):
+        return f"quantile_{self.of}_{self.window.signature()}"
+
+    def agg_type(self):
+        return "quantile"
 
 
 class Max(AggregateType):
