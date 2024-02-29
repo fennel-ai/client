@@ -1542,6 +1542,34 @@ def test_window_field_without_valid_parameters():
 
     assert str(e.value) == """'tumbling window' doesn't allow gap parameter"""
 
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class PageViewEvent:
+            user_id: str
+            page_id: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Sessions8:
+            user_id: str = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline
+            @inputs(PageViewEvent)
+            def pipeline_window(cls, app_event: Dataset):
+                return app_event.groupby("user_id").window(
+                    type="hopping", field="window", stride="6s", duration="5s"
+                )
+
+    assert (
+        str(e.value)
+        == """stride parameters is larger than duration parameters which is not supported in 'hopping window'"""
+    )
+
 
 def test_double_summary():
     with pytest.raises(ValueError) as e:
@@ -1584,5 +1612,5 @@ def test_double_summary():
 
     assert (
         str(e.value)
-        == """'window' operator already have a summary field with name concat_page_id. window operator can only have one summary"""
+        == """'window' operator already have a summary field with name concat_page_id. window operator can only have 1 summary"""
     )

@@ -47,6 +47,7 @@ from fennel.dtypes.dtypes import (
 from fennel.internal_lib.duration import (
     Duration,
     duration_to_timedelta,
+    timedelta_to_micros,
 )
 from fennel.internal_lib.schema import (
     get_primitive_dtype,
@@ -864,6 +865,11 @@ class WindowOperator(_Node):
         self.stride_timedelta = (
             stride if stride is None else duration_to_timedelta(stride)
         )
+        if type == WindowType.Hopping:
+            if timedelta_to_micros(self.duration_timedelta) < timedelta_to_micros(self.stride_timedelta):  # type: ignore
+                raise ValueError(
+                    "stride parameters is larger than duration parameters which is not supported in 'hopping window'"
+                )
         self.field = field
         self.node = node
         self.node.out_edges.append(self)
@@ -897,7 +903,7 @@ class WindowOperator(_Node):
     def summarize(self, column: str, result_type: Type, func: Callable):
         if self.summary is not None:
             raise ValueError(
-                f"'window' operator already have a summary field with name {self.summary.field}. window operator can only have one summary"
+                f"'window' operator already have a summary field with name {self.summary.field}. window operator can only have 1 summary"
             )
 
         new_window_op = copy.deepcopy(self)
