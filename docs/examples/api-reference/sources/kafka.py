@@ -14,6 +14,7 @@ def test_kafka_source(client):
     from fennel.sources import source, Kafka
     from fennel.datasets import dataset, field
 
+    # docsnip-highlight start
     kafka = Kafka(
         name="my_kafka",
         bootstrap_servers="localhost:9092",  # could come via os env var too
@@ -22,8 +23,9 @@ def test_kafka_source(client):
         sasl_plain_username=os.environ["KAFKA_USERNAME"],
         sasl_plain_password=os.environ["KAFKA_PASSWORD"],
     )
+    # docsnip-highlight end
 
-    @source(kafka.topic("user", format="json"))
+    @source(kafka.topic("user", format="json"))  # docsnip-highlight
     @dataset
     class SomeDataset:
         uid: int = field(key=True)

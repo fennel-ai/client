@@ -2,19 +2,27 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-
-from fennel.datasets import dataset, field, pipeline, Dataset, Average, Stddev
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
 @mock
 def test_basic(client):
     # docsnip basic
+    from fennel.datasets import (
+        dataset,
+        field,
+        pipeline,
+        Dataset,
+        Average,
+        Stddev,
+    )
+    from fennel.lib import inputs
+    from fennel.sources import source, Webhook
+
+    webhook = Webhook(name="webhook")
+
     @source(webhook.endpoint("Transaction"))
     @dataset
     class Transaction:
@@ -26,17 +34,20 @@ def test_basic(client):
     class Aggregated:
         uid: int = field(key=True)
         mean: float
+        # docsnip-highlight next-line
         stddev: float
         timestamp: datetime
 
         @pipeline
         @inputs(Transaction)
-        def pipeline(cls, ds: Dataset):
+        def stddev_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
                 Average(of="amt", window="1d", default=-1.0, into_field="mean"),
+                # docsnip-highlight start
                 Stddev(
                     of="amt", window="1d", default=-1.0, into_field="stddev"
                 ),
+                # docsnip-highlight end
             )
 
     # /docsnip
@@ -106,10 +117,24 @@ def test_basic(client):
 def test_invalid_type(client):
     with pytest.raises(Exception):
         # docsnip incorrect_type
+        from fennel.datasets import (
+            dataset,
+            field,
+            pipeline,
+            Dataset,
+            Average,
+            Stddev,
+        )
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
             uid: int
+            # docsnip-highlight next-line
             zip: str
             timestamp: datetime
 
@@ -121,11 +146,13 @@ def test_invalid_type(client):
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
+                    # docsnip-highlight start
                     Stddev(
                         of="zip", window="1d", default="x", into_field="var"
                     ),
+                    # docsnip-highlight end
                 )
 
         # /docsnip
@@ -135,6 +162,19 @@ def test_invalid_type(client):
 def test_non_matching_types(client):
     with pytest.raises(Exception):
         # docsnip non_matching_types
+        from fennel.datasets import (
+            dataset,
+            field,
+            pipeline,
+            Dataset,
+            Average,
+            Stddev,
+        )
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -145,16 +185,19 @@ def test_non_matching_types(client):
         @dataset
         class Aggregated:
             uid: int = field(key=True)
+            # docsnip-highlight next-line
             ret: int
             timestamp: datetime
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
+                    # docsnip-highlight start
                     Stddev(
                         of="amt", window="1d", default=1.0, into_field="ret"
                     ),
+                    # docsnip-highlight end
                 )
 
         # /docsnip

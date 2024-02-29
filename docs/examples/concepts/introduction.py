@@ -118,7 +118,7 @@ def test_overview(client):
     )
 
     def _unused():
-        # docsnip sync
+        # docsnip commit
         client.commit(
             datasets=[User, Transaction, UserTransactionsAbroad],
             featuresets=[UserFeature],
@@ -262,3 +262,39 @@ def dummy_function():
     # /docsnip
     # just do something with the client to avoid unused variable warning
     return client
+
+
+@mock
+def test_branches(client):
+    from fennel.datasets import dataset, field
+    from fennel.featuresets import feature, featureset, extractor
+    from fennel.sources import Webhook, source
+
+    webhook = Webhook(name="some_webhook")
+
+    @source(webhook.endpoint("endpoint1"))
+    @dataset
+    class SomeDataset:
+        uid: int = field(key=True)
+        dob: datetime
+        country: str
+        update_time: datetime = field(timestamp=True)
+
+    @featureset
+    class SomeFeatureset:
+        uid: int = feature(id=1)
+        country: str = feature(id=2).extract(
+            field=SomeDataset.country, default="unknown"
+        )
+
+    # docsnip branches
+    client.init_branch("dev")
+    client.checkout("dev")
+    client.commit(datasets=[SomeDataset], featuresets=[SomeFeatureset])
+
+    client.query(
+        outputs=[SomeFeatureset.country],
+        inputs=[SomeFeatureset.uid],
+        input_dataframe=pd.DataFrame({"SomeFeatureset.uid": [1, 2]}),
+    )
+    # /docsnip

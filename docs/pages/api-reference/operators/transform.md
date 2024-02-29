@@ -39,7 +39,7 @@ the provided `schema`.
 </Expandable>
 
 <Expandable title="Modifying key/timestamp columns">
-Sync error if transform tries to modify key/timestamp columns.
+Commit error if transform tries to modify key/timestamp columns.
 </Expandable>
 
 </LeftSection>
@@ -56,6 +56,7 @@ Sync error if transform tries to modify key/timestamp columns.
 <pre snippet="api-reference/operators/transform#incorrect_type" status="error"
     message="Runtime error: amount_sq is of type int, not str" highlight="12, 21">
 </pre>
+
 </RightSection>
 
 </Divider>

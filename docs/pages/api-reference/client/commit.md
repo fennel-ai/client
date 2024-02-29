@@ -12,16 +12,21 @@ Sends the local dataset and featureset definitions to the server for verificatio
 storage and processing.
 
 #### Parameters
+<Expandable title="message" type="str">
+Human readable description of the changes in the commit - akin to the commit 
+message in a git commit.
+</Expandable>
+
 <Expandable title="datasets" type="List[Dataset]" defaultVal="[]">
-List of dataset objects to be synced.
+List of dataset objects to be committed.
 </Expandable>
 
 <Expandable title="featuresets" type="List[Featureset]" defaultVal="[]">
-List of featureset objects to be synced.
+List of featureset objects to be committed.
 </Expandable>
 
 <Expandable title="preview" type="bool" defaultVal="False">
-If set to True, server only provides a preview of what will happen if sync were
+If set to True, server only provides a preview of what will happen if commit were
 to be done but doesn't change the state at all.
 
 :::info
@@ -31,7 +36,7 @@ it only works with real client/server and mock client/server ignore it.
 </Expandable>
 
 <Expandable title="tier" type="Optional[str]" defaultVal="None">
-Selector to optionally sync only a subset of sources, pipelines and extractors -
+Selector to optionally commit only a subset of sources, pipelines and extractors -
 those with matching values. Rules of selection:
 - If `tier` is None, all objects are selected
 - If `tier` is not None, an object is selected if its own selector is either None
@@ -41,8 +46,8 @@ those with matching values. Rules of selection:
 
 </LeftSection>
 <RightSection>
-<pre snippet="api-reference/client/sync#basic" status="success"
-    message="Silver source and no extractor are synced" highlight="7-8, 21, 25-29">
+<pre snippet="api-reference/client/commit#basic" status="success"
+    message="Silver source and no extractor are committed">
 </pre>
 </RightSection>
 </Divider>

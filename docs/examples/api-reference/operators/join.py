@@ -2,13 +2,8 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
-
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -16,6 +11,12 @@ class TestAssignSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -27,7 +28,10 @@ class TestAssignSnips(unittest.TestCase):
         @source(webhook.endpoint("MerchantCategory"))
         @dataset
         class MerchantCategory:
-            merchant: int = field(key=True)  # won't show up in joined dataset
+            # docsnip-highlight start
+            # right side of the join can only be on key fields
+            merchant: int = field(key=True)
+            # docsnip-highlight end
             category: str
             updated_at: datetime  # won't show up in joined dataset
 
@@ -41,7 +45,8 @@ class TestAssignSnips(unittest.TestCase):
 
             @pipeline
             @inputs(Transaction, MerchantCategory)
-            def pipeline(cls, tx: Dataset, merchant_category: Dataset):
+            def join_pipeline(cls, tx: Dataset, merchant_category: Dataset):
+                # docsnip-highlight next-line
                 return tx.join(merchant_category, on=["merchant"], how="inner")
 
         # /docsnip

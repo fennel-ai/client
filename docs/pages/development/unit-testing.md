@@ -26,7 +26,7 @@ class TestDataset(unittest.TestCase):
     def test_dataset(self, client):
         # client talks to the mock server
         # ... do any setup
-        # Sync the dataset
+        # commit the dataset
         client.commit(datasets=[User])
         # ... some other stuff
         client.log("fennel_webhook", 'User', pd.Dataframe(...))
@@ -35,29 +35,42 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(found, expected)    
 ```
 
-Here we imported `mock_client` from the `testing`. This is a decorator which can be used to decorate test functions - and the decorator supplies an extra argument called `client` to the test. Once the `client` object reaches the body of the test, you can do all operations that are typically done on a real client - you can sync datasets/featuresets, log data, extract features etc.&#x20;
+Here we imported `mock_client` from the `testing`. This is a decorator which 
+can be used to decorate test functions - and the decorator supplies an extra 
+argument called `client` to the test. Once the `client` object reaches the 
+body of the test, you can do all operations that are typically done on a real 
+client - you can commit datasets/featuresets, log data, extract features etc.
 
-Since external data integration doesn't work in mock server, the only way to bring data to a dataset in the mock server is by explicitly logging data to it.
+Since external data integration doesn't work in mock server, the only way to 
+bring data to a dataset in the mock server is by explicitly logging data to a
+[webhook](/api-reference/sources/webhook).
 
 
 
 ## Testing Datasets
 
-For testing Datasets, you can use the `client.log` to add some local data to a dataset and then query this or other downstream datasets using the `.lookup` API. Here is an end to end example. Suppose our regular non-test code looks like this:
+For testing Datasets, you can use the [log](/api-reference/client/log) method 
+of the client to add some local data to a dataset and then query this or other 
+downstream datasets using the [lookup](/api-reference/client/lookup) method.
+Here is an end to end example. Suppose our regular non-test code looks like this:
 
 <pre snippet="testing-and-ci-cd/unit_tests#datasets"></pre>
 
-And you want to test that data reaching `RatingActivity` dataset correctly propagates to `MovieRating` dataset via the pipeline. You could write the following unit test to do so:
+And you want to test that data reaching `RatingActivity` dataset correctly 
+propagates to `MovieRating` dataset via the pipeline. You could write the 
+following unit test to do so:
 
 <pre snippet="testing-and-ci-cd/unit_tests#datasets_testing"></pre>
 
 ### Testing Featuresets
-
 Extractors are simple Python functions and, hence, can be unit tested directly.
 
 <pre snippet="testing-and-ci-cd/unit_tests#featuresets_testing"></pre>
 
 
-For extractors that depend on dataset lookups, the setup looks similar to that of testing datasets as shown above - create a mock client, sync some datasets/featuresets, log data to a dataset, and finally use client to extract features. Here is an example:
+For extractors that depend on dataset lookups, the setup looks similar to that 
+of testing datasets as shown above - create a mock client, `commit` some 
+datasets/featuresets, log data to a dataset, and finally use client to extract 
+features. Here is an example:
 
 <pre snippet="testing-and-ci-cd/unit_tests#featuresets_testing_with_dataset"></pre>

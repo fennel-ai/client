@@ -54,12 +54,15 @@ The type of the field denoted by `into_field` in the output dataset and that of
 
 </LeftSection>
 <RightSection>
+
 <pre snippet="api-reference/aggregations/stddev#basic" status="success" 
     message="Standard deviation in window of 1 day & week">
 </pre>
+
 <pre snippet="api-reference/aggregations/stddev#incorrect_type" status="error" 
     message="Can not take stddev over string, only int or float">
 </pre>
+
 <pre snippet="api-reference/aggregations/stddev#non_matching_types" status="error" 
     message="Invalid type: ret is int but should be float">
 </pre>

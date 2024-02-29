@@ -1,6 +1,6 @@
 ---
 title: 'Source'
-order: 1
+order: 0
 status: 'published'
 ---
 
@@ -17,7 +17,7 @@ data into Fennel datasets.
 
 Let's see an example with postgres connector:
 
-<pre snippet="overview/concepts#source"></pre>
+<pre snippet="concepts/introduction#source"></pre>
 
 In this example, line 3 creates an object that knows how to connect with your
 Postgres database. Line 13-19 describe a dataset that needs to be sourced from

@@ -46,14 +46,14 @@ are immutable to improve reliability.
 
 
 
-### 4. Sync
-Once datasets/featuresets have been written (or updated), you can sync those
-definitions with the server by instantiating a client and using it to talk to
-server.
+### 4. Commit
+Once datasets/featuresets have been written (or updated), you can commit those
+definitions by instantiating a client and using it to talk to the server.
+
 Since we are not working with a real server, here we use the MockClient to run
 this example locally instead of a real client. Mock Client doesn't support data
 connectors so we will manually log some data to simulate data flows.
-<pre snippet="getting-started/quickstart#sync"></pre>
+<pre snippet="getting-started/quickstart#commit"></pre>
 
 ### 5. Query
 This is the read path of Fennel. You can query for live features (i.e. features

@@ -26,11 +26,11 @@ Returns a dataset with the same schema as the input dataset but with some column
 
 #### Errors
 <Expandable title="Dropping key/timestamp columns">
-Sync error on removing any key columns or the timestamp column.
+Commit error on removing any key columns or the timestamp column.
 </Expandable>
 
 <Expandable title="Dropping non-existent columns">
-Sync error on removing any column that doesn't exist in the input dataset.
+Commit error on removing any column that doesn't exist in the input dataset.
 </Expandable>
 
 </LeftSection>

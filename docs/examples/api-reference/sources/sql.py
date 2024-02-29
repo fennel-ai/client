@@ -15,6 +15,7 @@ def test_mysql_basic(client):
     from fennel.sources import source, MySQL
     from fennel.datasets import dataset, field
 
+    # docsnip-highlight start
     mysql = MySQL(
         name="my_mysql",
         host="my-favourite-mysql.us-west-2.rds.amazonaws.com",
@@ -24,7 +25,9 @@ def test_mysql_basic(client):
         password=os.environ["MYSQL_PASSWORD"],
         jdbc_params="enabledTLSProtocols=TLSv1.2",
     )
+    # docsnip-highlight end
 
+    # docsnip-highlight next-line
     @source(mysql.table("user", cursor="updated_at"), every="1m")
     @dataset
     class User:
@@ -47,6 +50,7 @@ def test_postgres_basic(client):
     from fennel.sources import source, Postgres
     from fennel.datasets import dataset, field
 
+    # docsnip-highlight start
     postgres = Postgres(
         name="my_postgres",
         host="my-favourite-pg.us-west-2.rds.amazonaws.com",
@@ -56,7 +60,9 @@ def test_postgres_basic(client):
         password=os.environ["POSTGRES_PASSWORD"],
         jdbc_params="enabledTLSProtocols=TLSv1.2",
     )
+    # docsnip-highlight end
 
+    # docsnip-highlight next-line
     @source(postgres.table("user", cursor="updated_at"), every="1m")
     @dataset
     class User:
@@ -76,8 +82,9 @@ def test_snowflake_basic(client):
     os.environ["DB_NAME"] = "some-db-name"
     # docsnip snowflake_source
     from fennel.sources import source, Snowflake
-    from fennel.datasets import dataset, field
+    from fennel.datasets import dataset
 
+    # docsnip-highlight start
     snowflake = Snowflake(
         name="my_snowflake",
         account="VPECCVJ-MUB03765",
@@ -88,8 +95,9 @@ def test_snowflake_basic(client):
         username=os.environ["SNOWFLAKE_USERNAME"],
         password=os.environ["SNOWFLAKE_PASSWORD"],
     )
+    # docsnip-highlight end
 
-    @source(snowflake.table("User", cursor="timestamp"))
+    @source(snowflake.table("User", cursor="timestamp"))  # docsnip-highlight
     @dataset
     class UserClick:
         uid: int

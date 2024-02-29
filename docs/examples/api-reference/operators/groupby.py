@@ -3,13 +3,8 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -17,6 +12,12 @@ class TestGroupbySnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -26,13 +27,15 @@ class TestGroupbySnips(unittest.TestCase):
 
         @dataset
         class FirstInCategory:
+            # docsnip-highlight next-line
             category: str = field(key=True)
             uid: int
             timestamp: datetime
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, transactions: Dataset):
+            def groupby_pipeline(cls, transactions: Dataset):
+                # docsnip-highlight next-line
                 return transactions.groupby("category").first()
 
         # /docsnip
@@ -79,6 +82,12 @@ class TestGroupbySnips(unittest.TestCase):
     def test_groupby_non_existent_column(self, client):
         with pytest.raises(Exception):
             # docsnip non_existent_column
+            from fennel.datasets import dataset, field, pipeline, Dataset
+            from fennel.lib import inputs
+            from fennel.sources import source, Webhook
+
+            webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("Transaction"))
             @dataset
             class Transaction:
@@ -94,7 +103,8 @@ class TestGroupbySnips(unittest.TestCase):
 
                 @pipeline
                 @inputs(Transaction)
-                def pipeline(cls, transactions: Dataset):
+                def bad_pipeline(cls, transactions: Dataset):
+                    # docsnip-highlight next-line
                     return transactions.groupby("non_existent_column").first()
 
             # /docsnip

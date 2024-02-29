@@ -5,12 +5,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.datasets import dataset, pipeline, Dataset
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "nikhil@fennel.ai"
 
 
@@ -19,26 +15,40 @@ class TestExplodeSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Orders"))
         @dataset
         class Orders:
             uid: int
+            # docsnip-highlight start
             skus: List[int]
             prices: List[float]
+            # docsnip-highlight end
             timestamp: datetime
 
         @dataset
         class Derived:
             uid: int
+            # docsnip-highlight start
             sku: Optional[int]
             price: Optional[float]
+            # docsnip-highlight end
             timestamp: datetime
 
             @pipeline
             @inputs(Orders)
-            def pipeline(cls, ds: Dataset):
-                return ds.explode("skus", "prices").rename(
-                    {"skus": "sku", "prices": "price"}
+            def explode_pipeline(cls, ds: Dataset):
+                return (
+                    ds
+                    # docsnip-highlight next-line
+                    .explode("skus", "prices").rename(
+                        {"skus": "sku", "prices": "price"}
+                    )
                 )
 
         # /docsnip
@@ -80,10 +90,17 @@ class TestExplodeSnips(unittest.TestCase):
     def test_invalid_type(self, client):
         with pytest.raises(Exception):
             # docsnip exploding_non_list
+            from fennel.datasets import dataset, pipeline, Dataset
+            from fennel.lib import inputs
+            from fennel.sources import source, Webhook
+
+            webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("Orders"))
             @dataset
             class Orders:
                 uid: int
+                # docsnip-highlight next-line
                 price: float
                 timestamp: datetime
 
@@ -95,7 +112,8 @@ class TestExplodeSnips(unittest.TestCase):
 
                 @pipeline
                 @inputs(Orders)
-                def pipeline(cls, ds: Dataset):
+                def bad_pipeline(cls, ds: Dataset):
+                    # docsnip-highlight next-line
                     return ds.explode("price")
 
             # /docsnip
@@ -104,6 +122,12 @@ class TestExplodeSnips(unittest.TestCase):
     def test_explode_missing_column(self, client):
         with pytest.raises(Exception):
             # docsnip exploding_missing
+            from fennel.datasets import dataset, pipeline, Dataset
+            from fennel.lib import inputs
+            from fennel.sources import source, Webhook
+
+            webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("Orders"))
             @dataset
             class Orders:
@@ -119,7 +143,8 @@ class TestExplodeSnips(unittest.TestCase):
 
                 @pipeline
                 @inputs(Orders)
-                def pipeline(cls, ds: Dataset):
+                def bad_pipeline(cls, ds: Dataset):
+                    # docsnip-highlight next-line
                     return ds.explode("price", "random")
 
             # /docsnip

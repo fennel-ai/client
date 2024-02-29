@@ -2,13 +2,8 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
-
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -16,27 +11,40 @@ class TestRenameSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("User"))
         @dataset
         class User:
             uid: int = field(key=True)
+            # docsnip-highlight start
             weight: float
             height: float
+            # docsnip-highlight end
             timestamp: datetime
 
         @dataset
         class Derived:
             uid: int = field(key=True)
+            # docsnip-highlight start
+            # rename changes the name of the columns
             weight_lb: float
             height_in: float
+            # docsnip-highlight end
             timestamp: datetime
 
             @pipeline
             @inputs(User)
-            def pipeline(cls, user: Dataset):
+            def rename_pipeline(cls, user: Dataset):
+                # docsnip-highlight start
                 return user.rename(
                     {"weight": "weight_lb", "height": "height_in"}
                 )
+                # docsnip-highlight end
 
         # /docsnip
 

@@ -1,6 +1,6 @@
 ---
 title: 'Pipeline'
-order: 3
+order: 0
 status: 'published'
 ---
 

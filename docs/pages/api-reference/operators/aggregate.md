@@ -40,7 +40,7 @@ other datasets can be derived from the dataset containing this pipeline.
 <RightSection>
 <pre snippet="api-reference/operators/aggregate#basic" status="success"
     message="Aggregate count & sum of transactions in rolling windows"
-    highlight="19, 20">
+>
 </pre>
 
 </RightSection>

@@ -24,7 +24,7 @@ value in the timestamp field. In case of ties, the first seen row wins.
 
 <RightSection>
 <pre snippet="api-reference/operators/first#basic" status="success"
-message="Dataset with just the first transaction of each user">
+    message="Dataset with just the first transaction of each user">
 </pre>
 </RightSection>
 

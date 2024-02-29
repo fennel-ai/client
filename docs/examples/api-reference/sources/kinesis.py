@@ -14,6 +14,7 @@ def test_kinesis_init_position(client):
     from fennel.sources import source, Kinesis
     from fennel.datasets import dataset, field
 
+    # docsnip-highlight start
     kinesis = Kinesis(
         name="my_kinesis",
         role_arn=os.environ["KINESIS_ROLE_ARN"],
@@ -24,8 +25,9 @@ def test_kinesis_init_position(client):
         init_position=datetime(2023, 1, 5),  # Start ingesting from Jan 5, 2023
         format="json",
     )
+    # docsnip-highlight end
 
-    @source(stream)
+    @source(stream)  # docsnip-highlight
     @dataset
     class Orders:
         uid: int
@@ -52,7 +54,7 @@ def test_kinesis_latest(client):
 
     stream = kinesis.stream(
         stream_arn=os.environ["KINESIS_ORDERS_STREAM_ARN"],
-        init_position="latest",
+        init_position="latest",  # docsnip-highlight
         format="json",
     )
 

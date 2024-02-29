@@ -4,18 +4,20 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, pipeline, Dataset, LastK
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
 @mock
 def test_basic(client):
     # docsnip basic
+    from fennel.datasets import dataset, field, pipeline, Dataset, LastK
+    from fennel.lib import inputs
+    from fennel.sources import source, Webhook
+
+    webhook = Webhook(name="webhook")
+
     @source(webhook.endpoint("Transaction"))
     @dataset
     class Transaction:
@@ -31,8 +33,9 @@ def test_basic(client):
 
         @pipeline
         @inputs(Transaction)
-        def pipeline(cls, ds: Dataset):
+        def lastk_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
+                # docsnip-highlight start
                 LastK(
                     of="amount",
                     limit=10,
@@ -40,6 +43,7 @@ def test_basic(client):
                     window="1d",
                     into_field="amounts",
                 ),
+                # docsnip-highlight end
             )
 
     # /docsnip
@@ -108,6 +112,12 @@ def test_basic(client):
 def test_invalid_type(client):
     with pytest.raises(Exception):
         # docsnip incorrect_type
+        from fennel.datasets import dataset, field, pipeline, Dataset, LastK
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -118,13 +128,15 @@ def test_invalid_type(client):
         @dataset
         class Aggregated:
             uid: int = field(key=True)
+            # docsnip-highlight next-line
             amounts: int  # should be List[int]
             timestamp: datetime
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def bad_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
+                    # docsnip-highlight start
                     LastK(
                         of="amount",
                         limit=10,
@@ -132,6 +144,7 @@ def test_invalid_type(client):
                         window="1d",
                         into_field="amounts",
                     ),
+                    # docsnip-highlight end
                 )
 
         # /docsnip

@@ -31,7 +31,7 @@ Protocol used to communicate with the brokers.
 </Expandable>
 
 <Expandable title="sasl_mechanism" type="Optional[str]">
-SASL mechanism (e.g.SCRAM-SHA-256, PLAIN) to use for authentication.
+SASL mechanism (e.g. SCRAM-SHA-256, PLAIN) to use for authentication.
 </Expandable>
 
 <Expandable title="sasl_plain_username" type="Optional[str]">
@@ -55,12 +55,12 @@ The format of the data in Kafka topic. Both `"json"` and
 
 #### Errors
 <Expandable title="Connectivity problems">
-Fennel server tries to connect with the Kafka broker during the `sync` operation
+Fennel server tries to connect with the Kafka broker during the `commit` operation
 itself to validate connectivity - as a result, incorrect URL/Username/Password
-etc will be caught at sync time itself as an error.
+etc will be caught at commit time itself as an error.
 
 Note: Mock client can not talk to any external data source and hence is unable to
-do this validation at sync time.
+do this validation at commit time.
 </Expandable>
 
 <Expandable title="Schema mismatch errors">
@@ -74,8 +74,7 @@ Fennel console after initiating any data sync.
 <RightSection>
 <pre snippet="api-reference/sources/kafka#basic"
     status="success" message="Sourcing json data from kafka to a dataset"
-    highlight="4-11, 13">
-</pre>
+></pre>
 </RightSection>
 
 

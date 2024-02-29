@@ -2,13 +2,8 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
-
-from fennel.datasets import dataset, field, pipeline, Dataset, Count, Sum
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
@@ -16,6 +11,19 @@ class TestAssignSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
+        from fennel.datasets import (
+            dataset,
+            field,
+            pipeline,
+            Dataset,
+            Count,
+            Sum,
+        )
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
@@ -25,18 +33,24 @@ class TestAssignSnips(unittest.TestCase):
 
         @dataset
         class Aggregated:
+            # docsnip-highlight start
+            # groupby field becomes the key field
             uid: int = field(key=True)
+            # new fields are added to the dataset by the aggregate operation
             total: int
             count_1d: int
+            # docsnip-highlight end
             timestamp: datetime
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def aggregate_pipeline(cls, ds: Dataset):
+                # docsnip-highlight start
                 return ds.groupby("uid").aggregate(
                     Count(window="1d", into_field="count_1d"),
                     Sum(of="amount", window="forever", into_field="total"),
                 )
+                # docsnip-highlight end
 
         # /docsnip
 

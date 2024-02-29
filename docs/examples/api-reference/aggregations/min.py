@@ -2,19 +2,20 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
-
-from fennel.datasets import dataset, field, pipeline, Dataset, Min
-from fennel.lib import inputs
-from fennel.sources import source, Webhook
 from fennel.testing import mock
 
-webhook = Webhook(name="webhook")
 __owner__ = "aditya@fennel.ai"
 
 
 @mock
 def test_basic(client):
     # docsnip basic
+    from fennel.datasets import dataset, field, pipeline, Dataset, Min
+    from fennel.lib import inputs
+    from fennel.sources import source, Webhook
+
+    webhook = Webhook(name="webhook")
+
     @source(webhook.endpoint("Transaction"))
     @dataset
     class Transaction:
@@ -25,16 +26,20 @@ def test_basic(client):
     @dataset
     class Aggregated:
         uid: int = field(key=True)
+        # docsnip-highlight start
         min_1d: float
         min_1w: float
+        # docsnip-highlight end
         timestamp: datetime
 
         @pipeline
         @inputs(Transaction)
-        def pipeline(cls, ds: Dataset):
+        def min_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
+                # docsnip-highlight start
                 Min(of="amt", window="1d", default=-1.0, into_field="min_1d"),
                 Min(of="amt", window="1w", default=-1.0, into_field="min_1w"),
+                # docsnip-highlight end
             )
 
     # /docsnip
@@ -104,24 +109,33 @@ def test_basic(client):
 def test_invalid_type(client):
     with pytest.raises(Exception):
         # docsnip incorrect_type
+        from fennel.datasets import dataset, field, pipeline, Dataset, Min
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
             uid: int
+            # docsnip-highlight next-line
             zip: str
             timestamp: datetime
 
         @dataset
         class Aggregated:
             uid: int = field(key=True)
-            min_1d: str
+            min: str
             timestamp: datetime
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
+                    # docsnip-highlight start
                     Min(of="zip", window="1d", default="min", into_field="min"),
+                    # docsnip-highlight end
                 )
 
         # /docsnip
@@ -131,24 +145,34 @@ def test_invalid_type(client):
 def test_non_matching_types(client):
     with pytest.raises(Exception):
         # docsnip non_matching_types
+        from fennel.datasets import dataset, field, pipeline, Dataset, Min
+        from fennel.lib import inputs
+        from fennel.sources import source, Webhook
+
+        webhook = Webhook(name="webhook")
+
         @source(webhook.endpoint("Transaction"))
         @dataset
         class Transaction:
             uid: int
+            # docsnip-highlight next-line
             amt: float
             timestamp: datetime
 
         @dataset
         class Aggregated:
             uid: int = field(key=True)
+            # docsnip-highlight next-line
             min_1d: int
             timestamp: datetime
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
+                    # docsnip-highlight start
                     Min(of="amt", window="1d", default=1, into_field="min_1d"),
+                    # docsnip-highlight end
                 )
 
         # /docsnip
