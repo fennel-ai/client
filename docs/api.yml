@@ -7,8 +7,8 @@ sidebar:
       - "api-reference/client/log"
       - "api-reference/client/query"
       - "api-reference/client/query-offline"
-      - "api-reference/client/extract-historical-progress"
-      - "api-reference/client/extract-historical-cancel"
+      - "api-reference/client/track-offline-query"
+      - "api-reference/client/cancel-offline-query"
       - "api-reference/client/lookup"
       - "api-reference/client/init-branch"
       - "api-reference/client/clone-branch"
@@ -17,7 +17,7 @@ sidebar:
   - slug: "api-reference/rest-api"
     title: "REST API"
     pages:
-      - "api-reference/rest-api/extract"
+      - "api-reference/rest-api/query"
       - "api-reference/rest-api/log"
 
 
