@@ -1,13 +1,13 @@
 ---
-title: Query Offline Status
+title: Extract Historical Progress
 order: 0
 status: published
 ---
-### Query Offline Status
+### Extract Historical Progress
 
 <Divider>
 <LeftSection>
-Method to monitor the progress of a run of `query_offline` query.
+Method to monitor the progress of a run of `extract_historical` query.
 
 #### Parameters
 <Expandable title="request_id" type="str">
@@ -34,11 +34,11 @@ been completed successfully.
 </LeftSection>
 <RightSection>
 ===
-<pre name="Request" snippet="api-reference/client/extract#extract_historical_progress"
+<pre name="Request" snippet="api-reference/client/query#extract_historical_progress"
   status="success" message="Checking progress of a prior extract historical request"
 ></pre>
 
-<pre name="Response" snippet="api-reference/client/extract#extract_historical_response"
+<pre name="Response" snippet="api-reference/client/query#extract_historical_response"
   status="success" message="Sample response of extract historical progress"
 ></pre>
 ===

@@ -35,11 +35,11 @@ been completed successfully.
 </LeftSection>
 <RightSection>
 ===
-<pre name="Request" snippet="api-reference/client/extract#extract_historical_cancel"
+<pre name="Request" snippet="api-reference/client/query#extract_historical_cancel"
   status="success" message="Canceling extract historical request with given ID"
 ></pre>
 
-<pre name="Response" snippet="api-reference/client/extract#extract_historical_response"
+<pre name="Response" snippet="api-reference/client/query#extract_historical_response"
   status="success" message="Sample response of extract historical cancellation"
 ></pre>
 ===
