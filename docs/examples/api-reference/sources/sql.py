@@ -90,7 +90,7 @@ def test_snowflake_basic(client):
         account="VPECCVJ-MUB03765",
         warehouse="TEST",
         db_name=os.environ["DB_NAME"],
-        src_schema="PUBLIC",
+        schema="PUBLIC",
         role="ACCOUNTADMIN",
         username=os.environ["SNOWFLAKE_USERNAME"],
         password=os.environ["SNOWFLAKE_PASSWORD"],

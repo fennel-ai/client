@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
 from typing import Literal
 
-from fennel._vendor.pydantic import BaseModel  # type: ignore
+from fennel._vendor.pydantic import BaseModel, Field # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
 from fennel.internal_lib.duration import (
     Duration,
@@ -310,7 +310,7 @@ class Snowflake(DataSource):
     username: str
     password: str
     warehouse: str
-    src_schema: str
+    src_schema: str = Field(alias="schema")
     role: str
 
     def table(self, table_name: str, cursor: str) -> TableConnector:
@@ -329,7 +329,7 @@ class Snowflake(DataSource):
             username="",
             password="",
             warehouse="",
-            src_schema="",
+            schema="",
             role="",
         )
 
