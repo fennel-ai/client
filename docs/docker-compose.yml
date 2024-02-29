@@ -1,15 +1,16 @@
 version: '3'
 services:
   preview:
-    build: "https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPO}.git#dev"
+    build: "https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPO}.git#docs/version-selector"
     ports:
       - 3001:3001
     volumes:
-      - ./assets:/app/apps/docs/_content/assets
-      - ./pages:/app/apps/docs/_content/pages
-      - ./examples:/app/apps/docs/_content/examples
-      - ./index.yml:/app/apps/docs/_content/index.yml
-      - ./api.yml:/app/apps/docs/_content/api.yml
+      - ./assets:/app/apps/docs/_content/main/assets
+      - ./pages:/app/apps/docs/_content/main/pages
+      - ./examples:/app/apps/docs/_content/main/examples
+      - ./index.yml:/app/apps/docs/_content/main/index.yml
+      - ./api.yml:/app/apps/docs/_content/main/api.yml
+      - ./versions.yml:/app/apps/docs/_content/main/versions.yml
     environment:
       - MODE=EDIT
       - GITHUB_TOKEN=${GITHUB_TOKEN}
