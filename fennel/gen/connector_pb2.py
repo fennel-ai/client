@@ -30,6 +30,8 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_KAFKA'].fields_by_name['sasl_jaas_config']._serialized_options = b'\030\001'
   _globals['_KAFKA'].fields_by_name['group_id']._options = None
   _globals['_KAFKA'].fields_by_name['group_id']._serialized_options = b'\030\001'
+  _globals['_KAFKA'].fields_by_name['enable_ssl_certificate_verification']._options = None
+  _globals['_KAFKA'].fields_by_name['enable_ssl_certificate_verification']._serialized_options = b'\030\001'
   _globals['_SOURCE_PREPROCENTRY']._options = None
   _globals['_SOURCE_PREPROCENTRY']._serialized_options = b'8\001'
   _globals['_CDCSTRATEGY']._serialized_start=4502
