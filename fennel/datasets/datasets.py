@@ -866,9 +866,7 @@ class WindowOperator(_Node):
             stride if stride is None else duration_to_timedelta(stride)
         )
         if type == WindowType.Hopping:
-            if timedelta_to_micros(
-                self.duration_timedelta
-            ) < timedelta_to_micros(self.stride_timedelta):
+            if timedelta_to_micros(self.duration_timedelta) < timedelta_to_micros(self.stride_timedelta):  # type: ignore
                 raise ValueError(
                     "stride parameters is larger than duration parameters which is not supported in 'hopping window'"
                 )
