@@ -30,7 +30,7 @@ servers (e.g. `localhost:9092,another.host:9092`).
 Protocol used to communicate with the brokers. 
 </Expandable>
 
-<Expandable title="sasl_mechanism" type="Optional[str]">
+<Expandable title="sasl_mechanism" type="str">
 SASL mechanism (e.g. SCRAM-SHA-256, PLAIN) to use for authentication.
 </Expandable>
 
