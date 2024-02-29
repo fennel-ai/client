@@ -892,6 +892,35 @@ __owner__ = "eng@fennel.ai"
 
 
 @mock
+def test_invalid_union(client):
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            a2: int
+            t: datetime
+
+        @meta(owner="thaqib@fennel.ai")
+        @dataset
+        class B:
+            a1: int = field(key=True)
+            a2: str
+            t: datetime
+
+            @pipeline
+            @inputs(A)
+            def from_a(cls, a: Dataset):
+                return a + a
+
+    assert (
+        str(e.value)
+        == """Union over keyed datasets is currently not supported. Found dataset with keys `{'a1': <class 'pandas.core.arrays.integer.Int64Dtype'>}` in pipeline `from_a`"""
+    )
+
+
+@mock
 def test_invalid_assign_schema(client):
     @source(webhook.endpoint("mysql_relayrides.location"), tier="local")
     @dataset
@@ -938,7 +967,6 @@ def test_invalid_assign_schema(client):
 
     with pytest.raises(Exception) as e:
         client.log("fennel_webhook", "mysql_relayrides.location", df)
-    print(str(e.value))
     assert (
         str(e.value)
         == "Error while executing pipeline `location_ds` in dataset `LocationDS`: Error in assign node for column `latitude_int` for pipeline `LocationDS2.location_ds`, Field `latitude_int` is of type int, but the column in the dataframe is of type `Float64`. Error found during checking schema for `LocationDS2.location_ds`."

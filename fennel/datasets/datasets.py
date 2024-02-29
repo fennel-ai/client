@@ -2168,6 +2168,13 @@ class SchemaValidator(Visitor):
         if len(obj.nodes) == 0:
             raise ValueError("Union must have at least one node.")
         schema = self.visit(obj.nodes[0])
+        # If it is a keyed dataset throw an error. Union over keyed
+        # datasets, is not currently supported.
+        if len(schema.keys) > 0:
+            raise TypeError(
+                f"Union over keyed datasets is currently not supported. Found dataset with keys `{schema.keys}` in pipeline `{self.pipeline_name}`"
+            )
+
         index = 1
         exceptions = []
         for node in obj.nodes[1:]:
@@ -2177,6 +2184,7 @@ class SchemaValidator(Visitor):
                 "Union node index 0",
                 f"Union node index {index} of pipeline {self.pipeline_name}",
             )
+            index += 1
             exceptions.extend(err)
         if len(exceptions) > 0:
             raise ValueError(f"Union node schemas do not match: {exceptions}")

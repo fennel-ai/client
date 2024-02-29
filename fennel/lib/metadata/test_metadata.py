@@ -194,7 +194,10 @@ def test_complex_dataset_with_fields():
                     "endpoint": {
                         "db": {
                             "name": "fennel_webhook",
-                            "webhook": {"name": "fennel_webhook","retention": '63072000s'},
+                            "webhook": {
+                                "name": "fennel_webhook",
+                                "retention": "63072000s",
+                            },
                         },
                         "endpoint": "YextUserInfoDataset",
                     }
@@ -205,7 +208,10 @@ def test_complex_dataset_with_fields():
             }
         ],
         "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook", "retention": '63072000s'}}
+            {
+                "name": "fennel_webhook",
+                "webhook": {"name": "fennel_webhook", "retention": "63072000s"},
+            }
         ],
     }
 

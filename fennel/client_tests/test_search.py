@@ -45,7 +45,7 @@ __owner__ = "data-eng@fennel.ai"
 @source(s3.bucket("engagement", prefix="notion"), every="2m", tier="prod")
 @dataset
 class NotionDocs:
-    doc_id: int = field(key=True)
+    doc_id: int
     body: str
     title: str
     owner: str
@@ -56,7 +56,7 @@ class NotionDocs:
 @source(s3.bucket("engagement", prefix="coda"), tier="prod")
 @dataset
 class CodaDocs:
-    doc_id: int = field(key=True).meta(owner="aditya@fennel.ai")  # type: ignore
+    doc_id: int
     body: str
     title: str
     owner: str
@@ -67,7 +67,7 @@ class CodaDocs:
 @source(s3.bucket("engagement", prefix="google"), tier="prod")
 @dataset
 class GoogleDocs:
-    doc_id: int = field(key=True)
+    doc_id: int
     body: str
     title: str
     owner: str
@@ -91,18 +91,22 @@ class Document:
         new_schema = notion_docs.schema()
         new_schema["origin"] = str
         return (
-            notion_docs.transform(
-                lambda df: cls.doc_pipeline_helper(df, "Notion"),
-                schema=new_schema,
+            (
+                notion_docs.transform(
+                    lambda df: cls.doc_pipeline_helper(df, "Notion"),
+                    schema=new_schema,
+                )
+                + coda_docs.transform(
+                    lambda df: cls.doc_pipeline_helper(df, "Coda"),
+                    schema=new_schema,
+                )
+                + google_docs.transform(
+                    lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
+                    schema=new_schema,
+                )
             )
-            + coda_docs.transform(
-                lambda df: cls.doc_pipeline_helper(df, "Coda"),
-                schema=new_schema,
-            )
-            + google_docs.transform(
-                lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
-                schema=new_schema,
-            )
+            .groupby("doc_id")
+            .first()
         )
 
     @classmethod

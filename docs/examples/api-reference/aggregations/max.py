@@ -3,8 +3,6 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import pipeline, Max
-from fennel.sources import Webhook
 from fennel.testing import mock
 from fennel.datasets import pipeline
 from fennel.datasets.aggregate import Max

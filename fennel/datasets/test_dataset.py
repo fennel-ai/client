@@ -101,7 +101,10 @@ def test_simple_dataset():
                     "endpoint": {
                         "db": {
                             "name": "fennel_webhook",
-                            "webhook": {"name": "fennel_webhook", "retention": '2592000s'},
+                            "webhook": {
+                                "name": "fennel_webhook",
+                                "retention": "2592000s",
+                            },
                         },
                         "endpoint": "UserInfoDataset",
                     }
@@ -112,7 +115,10 @@ def test_simple_dataset():
             }
         ],
         "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook", "retention": '2592000s'}}
+            {
+                "name": "fennel_webhook",
+                "webhook": {"name": "fennel_webhook", "retention": "2592000s"},
+            }
         ],
     }
     # Ignoring schema validation since they are bytes and not human readable
@@ -254,7 +260,10 @@ def test_dataset_with_retention():
                     "endpoint": {
                         "db": {
                             "name": "fennel_webhook",
-                            "webhook": {"name": "fennel_webhook", "retention": '2592000s'},
+                            "webhook": {
+                                "name": "fennel_webhook",
+                                "retention": "2592000s",
+                            },
                         },
                         "endpoint": "Activity",
                     }
@@ -265,7 +274,10 @@ def test_dataset_with_retention():
             }
         ],
         "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook", "retention": '2592000s'}}
+            {
+                "name": "fennel_webhook",
+                "webhook": {"name": "fennel_webhook", "retention": "2592000s"},
+            }
         ],
     }
 
@@ -399,7 +411,10 @@ def test_nested_dataset():
                     "endpoint": {
                         "db": {
                             "name": "fennel_webhook",
-                            "webhook": {"name": "fennel_webhook", "retention": '2592000s'},
+                            "webhook": {
+                                "name": "fennel_webhook",
+                                "retention": "2592000s",
+                            },
                         },
                         "endpoint": "DealerDataset",
                     }
@@ -410,7 +425,10 @@ def test_nested_dataset():
             }
         ],
         "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook", "retention": '2592000s'}}
+            {
+                "name": "fennel_webhook",
+                "webhook": {"name": "fennel_webhook", "retention": "2592000s"},
+            }
         ],
     }
     # Ignoring schema validation since they are bytes and not human readable
@@ -1853,18 +1871,18 @@ def test_select_and_rename_column():
 def test_union_datasets():
     @dataset
     class A:
-        a1: int = field(key=True)
+        a1: int
         t: datetime
 
     @dataset
     class B:
-        b1: int = field(key=True)
+        b1: int
         t: datetime
 
     @meta(owner="test@test.com")
     @dataset
     class ABCDataset:
-        a1: int = field(key=True)
+        a1: int
         t: datetime
 
         @pipeline
@@ -1884,7 +1902,8 @@ def test_union_datasets():
     d = {
         "name": "ABCDataset",
         "dsschema": {
-            "keys": {
+            "keys": {},
+            "values": {
                 "fields": [
                     {
                         "name": "a1",
@@ -1892,7 +1911,6 @@ def test_union_datasets():
                     }
                 ]
             },
-            "values": {},
             "timestamp": "t",
         },
         "version": 1,

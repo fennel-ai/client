@@ -625,7 +625,7 @@ def _webhook_to_source_proto(
         webhook=connector_proto.Webhook(
             name=data_source.name,
             retention=to_duration_proto(data_source.retention),
-        )
+        ),
     )
     return (
         ext_db,
