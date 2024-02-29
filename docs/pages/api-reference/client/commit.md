@@ -28,12 +28,11 @@ List of featureset objects to be committed.
 <Expandable title="preview" type="bool" defaultVal="False">
 If set to True, server only provides a preview of what will happen if commit were
 to be done but doesn't change the state at all.
-
+</Expandable>
 :::info
 Since preview's main goal is to check the validity of old & new definitions, 
 it only works with real client/server and mock client/server ignore it.
 :::
-</Expandable>
 
 <Expandable title="tier" type="Optional[str]" defaultVal="None">
 Selector to optionally commit only a subset of sources, pipelines and extractors -
