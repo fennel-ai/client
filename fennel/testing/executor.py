@@ -11,7 +11,7 @@ import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Pipeline, Visitor, Dataset, Count, Summary
 from fennel.datasets.datasets import WindowType
 from fennel.internal_lib.duration import duration_to_timedelta
-from fennel.internal_lib.schema import get_datatype
+from fennel.internal_lib.schema import get_datatype, fennel_is_optional
 from fennel.internal_lib.schema import validate_field_in_df
 from fennel.internal_lib.to_proto import Serializer, to_includes_proto
 from fennel.testing.execute_aggregation import get_aggregated_df
@@ -34,6 +34,42 @@ def is_subset(subset: List[str], superset: List[str]) -> bool:
 
 def set_match(a: List[str], b: List[str]) -> bool:
     return set(a) == set(b)
+
+
+def _primitive_type_to_pandas_dtype(dtype: Any) -> Any:
+    if dtype == int:
+        return pd.Int64Dtype
+    elif dtype == float:
+        return pd.Float64Dtype
+    elif dtype == str:
+        return pd.StringDtype
+    elif dtype == bool:
+        return pd.BooleanDtype
+    return dtype
+
+
+def _cast_primitive_dtype_columns(
+    df: pd.DataFrame, obj: Dataset
+) -> pd.DataFrame:
+    pandas_dtypes = [
+        pd.BooleanDtype,
+        pd.Int64Dtype,
+        pd.Float64Dtype,
+        pd.StringDtype,
+    ]
+    primitive_dtypes = [int, float, bool, str]
+    for col_name, col_type in obj.schema().items():
+        # If col_type is Optional, then extract the actual type
+        if fennel_is_optional(col_type):
+            col_type = col_type.__args__[0]
+
+        if col_type in pandas_dtypes:
+            df[col_name] = df[col_name].astype(col_type())
+        elif col_type in primitive_dtypes:
+            df[col_name] = df[col_name].astype(
+                _primitive_type_to_pandas_dtype(col_type)
+            )
+    return df
 
 
 class Executor(Visitor):
@@ -115,16 +151,7 @@ class Executor(Visitor):
 
         sorted_df = t_df.sort_values(input_ret.timestamp_field)
         # Cast sorted_df to obj.schema()
-        for col_name, col_type in obj.schema().items():
-            if col_type in [
-                pd.BooleanDtype,
-                pd.Int64Dtype,
-                pd.Float64Dtype,
-                pd.StringDtype,
-            ]:
-                sorted_df[col_name] = sorted_df[col_name].astype(col_type())
-            elif col_type in [int, float, bool, str]:
-                sorted_df[col_name] = sorted_df[col_name].astype(col_type)
+        sorted_df = _cast_primitive_dtype_columns(sorted_df, obj)
         return NodeRet(
             sorted_df, input_ret.timestamp_field, input_ret.key_fields
         )
@@ -459,6 +486,7 @@ class Executor(Visitor):
         # we should reset it. This is the behavior in our engine (where we don't have an index) and the operations
         # on the dataframe are not affected/associated by the index.
         df = df.explode(obj.columns, ignore_index=True)
+        df = _cast_primitive_dtype_columns(df, obj)
         return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
 
     def visitFirst(self, obj):
@@ -732,15 +760,5 @@ class Executor(Visitor):
 
         sorted_df = window_dataframe.sort_values(input_ret.timestamp_field)
         # Cast sorted_df to obj.schema()
-        for col_name, col_type in obj.schema().items():
-            if col_type in [
-                pd.BooleanDtype,
-                pd.Int64Dtype,
-                pd.Float64Dtype,
-                pd.StringDtype,
-            ]:
-                sorted_df[col_name] = sorted_df[col_name].astype(col_type())
-            elif col_type in [int, float, bool, str]:
-                sorted_df[col_name] = sorted_df[col_name].astype(col_type)
-
+        sorted_df = _cast_primitive_dtype_columns(sorted_df, obj)
         return NodeRet(sorted_df, input_ret.timestamp_field, obj.keys)

@@ -370,7 +370,6 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
         raise ValueError(f"Unsupported dtype {dtype}")
 
 
-# TODO(Aditya): Add support for nested schema checks for arrays and maps and structs
 def validate_field_in_df(
     field: schema_proto.Field,
     df: pd.DataFrame,

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from math import sqrt
 from typing import Optional, List, Dict
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -697,6 +698,71 @@ class TestBasicTransform(unittest.TestCase):
         assert df["rating_cube"].tolist() == [64, 125]
         assert df["rating_into_5"].tolist() == [20, 25]
         assert df["rating_orig"].tolist() == [4, 5]
+
+
+@source(Webhook(name="webhook").endpoint("Orders"))
+@dataset
+class Orders:
+    uid: int
+    skus: List[int]
+    prices: List[float]
+    timestamp: datetime
+
+
+@dataset
+class Derived:
+    uid: int = field(key=True)
+    sku: Optional[int]
+    price: Optional[float]
+    timestamp: datetime
+
+    @pipeline
+    @inputs(Orders)
+    def explode_pipeline(cls, ds: Dataset):
+        return (
+            ds.explode("skus", "prices")
+            .rename({"skus": "sku", "prices": "price"})
+            .groupby("uid")
+            .first()
+        )
+
+
+class TestBasicExplode(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_basic_explode(self, client):
+        # # Sync the dataset
+        client.commit(datasets=[Orders, Derived])
+        # log some rows to the transaction dataset
+        df = pd.DataFrame(
+            [
+                {
+                    "uid": 1,
+                    "skus": [1, 2],
+                    "prices": [10.1, 20.0],
+                    "timestamp": "2021-01-01T00:00:00",
+                },
+                {
+                    "uid": 2,
+                    "skus": [],
+                    "prices": [],
+                    "timestamp": "2021-01-01T00:00:00",
+                },
+            ]
+        )
+        client.log("webhook", "Orders", df)
+        client.sleep()
+
+        # do lookup on the WithSquare dataset
+        df, found = client.lookup(
+            dataset_name="Derived",
+            keys=[{"uid": 1}, {"uid": 2}],
+            fields=["uid", "sku", "price", "timestamp"],
+        )
+        assert list(found) == [True, True]
+        assert df["uid"] == [1, 2]
+        assert df["sku"] == [1, None]
+        assert df["price"] == [10.1, None]
 
 
 class TestBasicAssign(unittest.TestCase):
