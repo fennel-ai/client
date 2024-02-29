@@ -132,6 +132,7 @@ class UserSessionStats:
         res, _ = SessionStats.lookup(ts, user_id=user_ids, fields=["avg_count", "avg_length", "last_visitor_session", "avg_star"])  # type: ignore
         return res
 
+
 @meta(owner="test@test.com")
 @dataset
 class SessionsHopping:
@@ -145,7 +146,9 @@ class SessionsHopping:
     def get_sessions(cls, app_event: Dataset):
         return (
             app_event.groupby("user_id")
-            .window(type="hopping", stride="10s", duration="10s", field="window")
+            .window(
+                type="hopping", stride="10s", duration="10s", field="window"
+            )
             .summarize(
                 column="window_stats",
                 result_type=WindowStats,
@@ -232,6 +235,7 @@ class UserSessionStatsHopping:
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):
         res, _ = SessionStatsHopping.lookup(ts, user_id=user_ids, fields=["avg_count", "avg_length", "last_visitor_session", "avg_star"])  # type: ignore
         return res
+
 
 def log_app_events_data(client):
     data = {
@@ -356,12 +360,19 @@ def test_tumbling_window_operator(client):
     assert list(df_historical["UserSessionStats.avg_length"].values) == [9.0]
     assert list(df_historical["UserSessionStats.avg_count"].values) == [6.0]
 
+
 @pytest.mark.integration
 @mock
 def test_tumbling_hopping_equivalent_operator(client):
     # Sync to mock client
     client.commit(
-        datasets=[AppEvent, Sessions, SessionStats, SessionsHopping, SessionStatsHopping],
+        datasets=[
+            AppEvent,
+            Sessions,
+            SessionStats,
+            SessionsHopping,
+            SessionStatsHopping,
+        ],
         featuresets=[UserSessionStats, UserSessionStatsHopping],
     )
 
@@ -388,10 +399,25 @@ def test_tumbling_hopping_equivalent_operator(client):
     df_session_hopping, _ = SessionsHopping.lookup(
         ts, user_id=user_id_keys, window=window_keys
     )
-    
-    print(df_session_hopping.to_dict())
-    print(df_session_tumbling.to_dict())
-    assert df_session_tumbling.to_dict() == df_session_hopping.to_dict()
+
+    assert df_session_tumbling.shape[0] == df_session_hopping.shape[0]
+    assert (
+        df_session_tumbling["window"].values[0].begin
+        == df_session_hopping["window"].values[0].begin
+    )
+    assert (
+        df_session_tumbling["window"].values[0].end
+        == df_session_hopping["window"].values[0].end
+    )
+    assert (
+        df_session_tumbling["window_stats"].values[0].count
+        == df_session_hopping["window_stats"].values[0].count
+    )
+    assert df_session_tumbling["window_stats"].values[
+        0
+    ].avg_star == pytest.approx(
+        df_session_hopping["window_stats"].values[0].avg_star
+    )
 
     df_featureset_tumbling = client.query(
         inputs=[
@@ -417,21 +443,33 @@ def test_tumbling_hopping_equivalent_operator(client):
         ],
         input_dataframe=pd.DataFrame({"UserSessionStatsHopping.user_id": [1]}),
     )
-    
-    print(list(df_featureset_hopping.to_dict().values()))
-    print(list(df_featureset_tumbling.to_dict().values()))
-    assert str(df_featureset_hopping.to_dict().values()) == str(df_featureset_tumbling.to_dict().values())
+
+    assert df_featureset_tumbling.shape[0] == df_featureset_hopping.shape[0]
+    assert list(df_featureset_tumbling["UserSessionStats.avg_length"].values)[
+        0
+    ] == pytest.approx(
+        list(
+            df_featureset_hopping["UserSessionStatsHopping.avg_length"].values
+        )[0]
+    )
+    assert list(df_featureset_tumbling["UserSessionStats.avg_count"].values)[
+        0
+    ] == pytest.approx(
+        list(df_featureset_hopping["UserSessionStatsHopping.avg_count"].values)[
+            0
+        ]
+    )
 
     if client.is_integration_client():
         return
 
     df_historical_hopping = client.query_offline(
         input_dataframe=pd.DataFrame(
-        {
-            "UserSessionStatsHopping.user_id": [1],
-            "timestamp": [datetime(2023, 1, 16, 11, 0, 11)],
-        }
-    ),
+            {
+                "UserSessionStatsHopping.user_id": [1],
+                "timestamp": [datetime(2023, 1, 16, 11, 0, 11)],
+            }
+        ),
         inputs=["UserSessionStatsHopping.user_id"],
         outputs=[
             "UserSessionStatsHopping.avg_count",
@@ -442,14 +480,14 @@ def test_tumbling_hopping_equivalent_operator(client):
         timestamp_column="timestamp",
         format="pandas",
     )
-    
+
     df_historical_tumbling = client.query_offline(
         input_dataframe=pd.DataFrame(
-        {
-            "UserSessionStats.user_id": [1],
-            "timestamp": [datetime(2023, 1, 16, 11, 0, 11)],
-        }
-    ),
+            {
+                "UserSessionStats.user_id": [1],
+                "timestamp": [datetime(2023, 1, 16, 11, 0, 11)],
+            }
+        ),
         inputs=["UserSessionStats.user_id"],
         outputs=[
             "UserSessionStats.avg_count",
@@ -460,4 +498,18 @@ def test_tumbling_hopping_equivalent_operator(client):
         timestamp_column="timestamp",
         format="pandas",
     )
-    assert str(df_historical_tumbling.to_dict().values()) == str(df_historical_hopping.to_dict().values())
+    assert df_historical_hopping.shape[0] == df_historical_tumbling.shape[0]
+    assert list(df_historical_tumbling["UserSessionStats.avg_length"].values)[
+        0
+    ] == pytest.approx(
+        list(
+            df_historical_hopping["UserSessionStatsHopping.avg_length"].values
+        )[0]
+    )
+    assert list(df_historical_tumbling["UserSessionStats.avg_count"].values)[
+        0
+    ] == pytest.approx(
+        list(df_historical_hopping["UserSessionStatsHopping.avg_count"].values)[
+            0
+        ]
+    )

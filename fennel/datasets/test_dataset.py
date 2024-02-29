@@ -2831,7 +2831,8 @@ def test_window_operator():
     assert operator_req == expected_operator_request, error_message(
         operator_req, expected_operator_request
     )
-    
+
+
 def test_window_with_summary():
     @meta(owner="nitin@fennel.ai")
     @dataset
@@ -2852,10 +2853,13 @@ def test_window_with_summary():
         @inputs(PageViewEvent)
         def pipeline_window(cls, app_event: Dataset):
             return (
-                app_event
-                    .groupby("user_id")
-                    .window(type="tumbling", duration="10m", field="window")
-                    .summarize("page_id_concat", str, lambda df: ",".join(list(df["page_id"])))
+                app_event.groupby("user_id")
+                .window(type="tumbling", duration="10m", field="window")
+                .summarize(
+                    "page_id_concat",
+                    str,
+                    lambda df: ",".join(list(df["page_id"])),
+                )
             )
 
     view = InternalTestClient()
@@ -2970,9 +2974,8 @@ def test_window_with_summary():
             "summary": {
                 "pycode": {},
                 "column_name": "page_id_concat",
-                "output_type": {"stringType": {}}
-                
-            }
+                "output_type": {"stringType": {}},
+            },
         },
         "ds_version": 1,
     }
@@ -2981,7 +2984,6 @@ def test_window_with_summary():
     assert operator_req == expected_operator_request, error_message(
         operator_req, expected_operator_request
     )
-
 
 
 def test_window_operator_with_aggregation():

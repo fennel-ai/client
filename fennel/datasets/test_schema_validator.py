@@ -1541,7 +1541,7 @@ def test_window_field_without_valid_parameters():
                 )
 
     assert str(e.value) == """'tumbling window' doesn't allow gap parameter"""
-    
+
     with pytest.raises(ValueError) as e:
 
         @meta(owner="nitin@fennel.ai")
@@ -1565,7 +1565,10 @@ def test_window_field_without_valid_parameters():
                     type="hopping", field="window", stride="6s", duration="5s"
                 )
 
-    assert str(e.value) == """stride parameters is larger than duration parameters which is not supported in 'hopping window'"""
+    assert (
+        str(e.value)
+        == """stride parameters is larger than duration parameters which is not supported in 'hopping window'"""
+    )
 
 
 def test_double_summary():
