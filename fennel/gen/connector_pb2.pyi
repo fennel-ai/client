@@ -214,13 +214,18 @@ class Webhook(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     NAME_FIELD_NUMBER: builtins.int
+    RETENTION_FIELD_NUMBER: builtins.int
     name: builtins.str
+    @property
+    def retention(self) -> google.protobuf.duration_pb2.Duration: ...
     def __init__(
         self,
         *,
         name: builtins.str = ...,
+        retention: google.protobuf.duration_pb2.Duration | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["name", b"name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["retention", b"retention"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "retention", b"retention"]) -> None: ...
 
 global___Webhook = Webhook
 
