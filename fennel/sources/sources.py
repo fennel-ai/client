@@ -112,6 +112,8 @@ class DataSource(BaseModel):
 
 
 class Webhook(DataSource):
+    retention: Duration = "2y"
+
     def required_fields(self) -> List[str]:
         return ["endpoint"]
 

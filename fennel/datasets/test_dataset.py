@@ -23,7 +23,7 @@ from fennel.dtypes import Embedding, Window
 from fennel.sources import source, Webhook, Kafka
 from fennel.testing import *
 
-webhook = Webhook(name="fennel_webhook")
+webhook = Webhook(name="fennel_webhook", retention="30d")
 __owner__ = "ml-eng@fennel.ai"
 
 
@@ -101,7 +101,7 @@ def test_simple_dataset():
                     "endpoint": {
                         "db": {
                             "name": "fennel_webhook",
-                            "webhook": {"name": "fennel_webhook"},
+                            "webhook": {"name": "fennel_webhook", "retention": '2592000s'},
                         },
                         "endpoint": "UserInfoDataset",
                     }
@@ -112,7 +112,7 @@ def test_simple_dataset():
             }
         ],
         "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
+            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook", "retention": '2592000s'}}
         ],
     }
     # Ignoring schema validation since they are bytes and not human readable
@@ -254,7 +254,7 @@ def test_dataset_with_retention():
                     "endpoint": {
                         "db": {
                             "name": "fennel_webhook",
-                            "webhook": {"name": "fennel_webhook"},
+                            "webhook": {"name": "fennel_webhook", "retention": '2592000s'},
                         },
                         "endpoint": "Activity",
                     }
@@ -265,7 +265,7 @@ def test_dataset_with_retention():
             }
         ],
         "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
+            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook", "retention": '2592000s'}}
         ],
     }
 
@@ -399,7 +399,7 @@ def test_nested_dataset():
                     "endpoint": {
                         "db": {
                             "name": "fennel_webhook",
-                            "webhook": {"name": "fennel_webhook"},
+                            "webhook": {"name": "fennel_webhook", "retention": '2592000s'},
                         },
                         "endpoint": "DealerDataset",
                     }
@@ -410,7 +410,7 @@ def test_nested_dataset():
             }
         ],
         "extdbs": [
-            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook"}}
+            {"name": "fennel_webhook", "webhook": {"name": "fennel_webhook", "retention": '2592000s'}}
         ],
     }
     # Ignoring schema validation since they are bytes and not human readable

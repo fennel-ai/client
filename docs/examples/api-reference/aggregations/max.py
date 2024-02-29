@@ -2,6 +2,9 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
+
+from fennel.datasets import pipeline, Max
+from fennel.sources import Webhook
 from fennel.testing import mock
 from fennel.datasets import pipeline
 from fennel.datasets.aggregate import Max
@@ -111,7 +114,7 @@ def test_basic(client):
 def test_invalid_type(client):
     with pytest.raises(Exception):
         # docsnip incorrect_type
-        from fennel.datasets import dataset, field, Dataset, Min
+        from fennel.datasets import dataset, field, Dataset
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 

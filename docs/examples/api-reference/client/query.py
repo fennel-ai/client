@@ -70,12 +70,12 @@ def test_basic(client):
 
     # docsnip extract_historical_progress
     request_id = "bf5dfe5d-0040-4405-a224-b82c7a5bf085"
-    response = client.query_offline_status(request_id)
+    response = client.track_offline_query(request_id)
     print(response)
     # /docsnip
     # docsnip extract_historical_cancel
     request_id = "bf5dfe5d-0040-4405-a224-b82c7a5bf085"
-    response = client.query_offline_cancel(request_id)
+    response = client.cancel_offline_query(request_id)
     print(response)
     # /docsnip
     # docsnip extract_historical_response
