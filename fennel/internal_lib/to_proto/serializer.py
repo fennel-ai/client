@@ -27,6 +27,10 @@ def _del_spaces_tabs_and_newlines(s):
     return re.sub(r"[\s\n\t]+", "", s)
 
 
+# Reserved column for server to do grouping windowing.
+SERVER_CLUSTER_COLUMN = "_@@_cluster"
+
+
 class Serializer(Visitor):
     def __init__(self, pipeline: Pipeline, dataset: Dataset):
         super(Serializer, self).__init__()
@@ -55,6 +59,7 @@ class Serializer(Visitor):
         op_pycode,
         is_filter=False,
         is_assign=False,
+        is_summary=False,
         column_name: Optional[str] = None,
     ) -> pycode_proto.PyCode:
         gen_func_name = hashlib.sha256(
@@ -106,6 +111,14 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             gen_code += f"""
 def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
     return df.assign({column_name}={old_entry_point})
+"""
+        if is_summary:
+            old_entry_point = new_entry_point
+            new_entry_point = f"{old_entry_point}_summary"
+            gen_code += f"""
+def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.groupby('{SERVER_CLUSTER_COLUMN}').apply({old_entry_point}).reset_index(name='result').sort_values('{SERVER_CLUSTER_COLUMN}')
+    return df['result']
 """
 
         return pycode_proto.PyCode(
@@ -369,6 +382,16 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             window_type = window_proto.Window(
                 hopping=window_proto.Hopping(duration=duration, stride=stride)
             )
+        if obj.summary is not None:
+            window_func_pycode = to_includes_proto(obj.summary.summarize_func)
+            gen_pycode = self.wrap_function(window_func_pycode, is_summary=True)
+            summary = window_proto.Summary(
+                column_name=obj.summary.field,
+                pycode=gen_pycode,
+                output_type=get_datatype(obj.summary.dtype),
+            )
+        else:
+            summary = None
         return proto.Operator(
             id=obj.signature(),
             is_root=obj == self.terminal_node,
@@ -380,5 +403,6 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 window_type=window_type,
                 field=obj.field,
                 by=obj.by,
+                summary=summary,
             ),
         )

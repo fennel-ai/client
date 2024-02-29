@@ -2750,10 +2750,6 @@ def test_window_operator():
                                         "name": "end",
                                         "dtype": {"timestampType": {}},
                                     },
-                                    {
-                                        "name": "count",
-                                        "dtype": {"intType": {}},
-                                    },
                                 ],
                             }
                         },

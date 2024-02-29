@@ -671,6 +671,7 @@ class WindowOperatorKind(google.protobuf.message.Message):
     WINDOW_TYPE_FIELD_NUMBER: builtins.int
     BY_FIELD_NUMBER: builtins.int
     FIELD_FIELD_NUMBER: builtins.int
+    SUMMARY_FIELD_NUMBER: builtins.int
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
     @property
@@ -678,6 +679,8 @@ class WindowOperatorKind(google.protobuf.message.Message):
     @property
     def by(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     field: builtins.str
+    @property
+    def summary(self) -> window_pb2.Summary: ...
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -689,10 +692,12 @@ class WindowOperatorKind(google.protobuf.message.Message):
         window_type: window_pb2.Window | None = ...,
         by: collections.abc.Iterable[builtins.str] | None = ...,
         field: builtins.str = ...,
+        summary: window_pb2.Summary | None = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["window_type", b"window_type"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["by", b"by", "field", b"field", "operand_id", b"operand_id", "operand_name", b"operand_name", "window_type", b"window_type"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_summary", b"_summary", "summary", b"summary", "window_type", b"window_type"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_summary", b"_summary", "by", b"by", "field", b"field", "operand_id", b"operand_id", "operand_name", b"operand_name", "summary", b"summary", "window_type", b"window_type"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_summary", b"_summary"]) -> typing_extensions.Literal["summary"] | None: ...
 
 global___WindowOperatorKind = WindowOperatorKind
 

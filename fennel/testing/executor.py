@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 import fennel.gen.schema_pb2 as schema_proto
-from fennel.datasets import Pipeline, Visitor, Dataset, Count
+from fennel.datasets import Pipeline, Visitor, Dataset, Count, Summary
 from fennel.datasets.datasets import WindowType
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype
@@ -482,35 +482,52 @@ class Executor(Visitor):
             def __init__(self, event_time: datetime):
                 self.begin_time = event_time
                 self.end_time = event_time + timedelta(microseconds=1)
-                self.count = 1
 
             def add_event(self, event_time: datetime):
-                self.count += 1
                 self.end_time = event_time + timedelta(microseconds=1)
 
             def to_dict(self) -> dict:
                 return {
                     "begin": self.begin_time,
                     "end": self.end_time,
-                    "count": self.count,
                 }
 
         def generate_sessions_for_df(
-            df: pd.DataFrame, timestamp_col: str, gap: int, field: str
-        ):
+            df: pd.DataFrame,
+            timestamp_col: str,
+            gap: int,
+            field: str,
+            summary: Optional[Summary],
+        ) -> pd.DataFrame:
+            """Group record in dataframe by session based on
+            timestamp column and the maximum gap between records
+
+                Parameters:
+                df: Dataframe to group by session
+                timestamp_col: Column indicating timestamp of the record
+                gap: Maximum gap between records to be included in session
+                field: Output field to generate the sessions
+                summary: Optional summary to generate for the sessions
+
+                Returns:
+                Dataframe: The result dataframe contain the session
+
+            """
             # Sort the DataFrame by timestamp_col
             df = df.sort_values(by=timestamp_col)
-
             # Initialize lists to store session information
             window_list: List[dict] = []
             timestamp_list: List[datetime] = []
             current_window: Optional[WindowStruct] = None
+            rows: List = []
+            summary_value = []
 
             # Iterate through the rows of the DataFrame
-            for index, row in df.iterrows():
+            for _, row in df.iterrows():
                 # Check if it's the first event
                 if current_window is None:
                     current_window = WindowStruct(row[timestamp_col])
+                    rows.append(row)
                 else:
                     # Check if the event is within the time threshold of the previous one
                     if (
@@ -518,20 +535,55 @@ class Executor(Visitor):
                         - (current_window.end_time - timedelta(microseconds=1))
                     ).total_seconds() <= gap:
                         current_window.add_event(row[timestamp_col])
+                        rows.append(row)
                     else:
                         # Save window information and reset for a new window
                         window_list.append(current_window.to_dict())
                         timestamp_list.append(current_window.end_time)
+                        if summary is not None:
+                            value = summary.summarize_func(pd.DataFrame(rows))
+                            summary_value.append(value)
                         current_window = WindowStruct(row[timestamp_col])
+                        rows = [row]
 
             # Save the last window information
+            # Save the window information
             window_list.append(current_window.to_dict())  # type: ignore
             timestamp_list.append(current_window.end_time)  # type: ignore
+            if summary is not None:
+                value = summary.summarize_func(pd.DataFrame(rows))
+                summary_value.append(value)
 
             # Create a new DataFrame with session information
-            return pd.DataFrame(
+            df = pd.DataFrame(
                 {field: window_list, timestamp_col: timestamp_list}
             )
+            if summary is not None:
+                try:
+                    df[summary.field] = summary_value
+                except Exception as e:
+                    raise Exception(
+                        f"Error in window node for column `{summary.field}` for pipeline "
+                        f"`{self.cur_pipeline_name}`, {e}"
+                    )
+                # Check the schema of the column
+                try:
+                    field = schema_proto.Field(
+                        name=summary.field,
+                        dtype=get_datatype(summary.dtype),
+                    )
+                    validate_field_in_df(field, df, self.cur_pipeline_name)
+                except Exception as e:
+                    raise Exception(
+                        f"Error in window node for column `{summary.field}` for pipeline "
+                        f"`{self.cur_pipeline_name}`, {e}"
+                    )
+
+            return df
+
+        list_keys = obj.keys + [input_ret.timestamp_field]
+        if obj.summary is not None:
+            list_keys.append(obj.summary.field)
 
         if obj.type == WindowType.Sessionize:
             window_dataframe = (
@@ -541,9 +593,10 @@ class Executor(Visitor):
                     timestamp_col=input_ret.timestamp_field,
                     gap=obj.gap_timedelta.total_seconds(),
                     field=obj.field,
+                    summary=obj.summary,
                 )
                 .reset_index()
-                .loc[:, obj.keys + [input_ret.timestamp_field]]
+                .loc[:, list_keys]
             )
 
             sorted_df = window_dataframe.sort_values(input_ret.timestamp_field)
@@ -558,7 +611,6 @@ class Executor(Visitor):
                     sorted_df[col_name] = sorted_df[col_name].astype(col_type())
                 elif col_type in [int, float, bool, str]:
                     sorted_df[col_name] = sorted_df[col_name].astype(col_type)
-
             return NodeRet(sorted_df, input_ret.timestamp_field, obj.keys)
         else:
             raise Exception(

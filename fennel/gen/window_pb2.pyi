@@ -6,6 +6,8 @@ import builtins
 import google.protobuf.descriptor
 import google.protobuf.duration_pb2
 import google.protobuf.message
+import pycode_pb2
+import schema_pb2
 import sys
 
 if sys.version_info >= (3, 8):
@@ -134,3 +136,27 @@ class Session(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["gap", b"gap"]) -> None: ...
 
 global___Session = Session
+
+@typing_extensions.final
+class Summary(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    COLUMN_NAME_FIELD_NUMBER: builtins.int
+    OUTPUT_TYPE_FIELD_NUMBER: builtins.int
+    PYCODE_FIELD_NUMBER: builtins.int
+    column_name: builtins.str
+    @property
+    def output_type(self) -> schema_pb2.DataType: ...
+    @property
+    def pycode(self) -> pycode_pb2.PyCode: ...
+    def __init__(
+        self,
+        *,
+        column_name: builtins.str = ...,
+        output_type: schema_pb2.DataType | None = ...,
+        pycode: pycode_pb2.PyCode | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["output_type", b"output_type", "pycode", b"pycode"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["column_name", b"column_name", "output_type", b"output_type", "pycode", b"pycode"]) -> None: ...
+
+global___Summary = Summary
