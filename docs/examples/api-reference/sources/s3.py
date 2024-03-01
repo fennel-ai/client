@@ -23,7 +23,12 @@ def test_s3_source_prefix(client):
     # docsnip-highlight end
 
     # docsnip-highlight next-line
-    @source(s3.bucket("datalake", prefix="user"), every="1h")
+    @source(
+        s3.bucket("datalake", prefix="user"),
+        every="1h",
+        disorder="14d",
+        cdc="append",
+    )
     @dataset
     class User:
         uid: int = field(key=True)
@@ -49,7 +54,12 @@ def test_s3_delta(client):
     )
 
     # docsnip-highlight next-line
-    @source(s3.bucket("data", prefix="user", format="delta"), every="1h")
+    @source(
+        s3.bucket("data", prefix="user", format="delta"),
+        every="1h",
+        disorder="14d",
+        cdc="append",
+    )
     @dataset
     class User:
         uid: int = field(key=True)
@@ -75,7 +85,12 @@ def test_s3_hudi(client):
     )
 
     # docsnip-highlight next-line
-    @source(s3.bucket("data", prefix="user", format="hudi"), every="1h")
+    @source(
+        s3.bucket("data", prefix="user", format="hudi"),
+        disorder="14d",
+        cdc="append",
+        every="1h",
+    )
     @dataset
     class User:
         uid: int = field(key=True)
@@ -105,7 +120,7 @@ def test_s3_source_path(client):
     # docsnip-highlight end
 
     # docsnip-highlight next-line
-    @source(bucket, every="1h")
+    @source(bucket, disorder="14d", cdc="append", every="1h")
     @dataset
     class User:
         uid: int = field(key=True)

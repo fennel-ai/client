@@ -16,14 +16,14 @@ def test_webhook_basic(client):
 
     webhook = Webhook(name="prod_webhook")
 
-    @source(webhook.endpoint("User"))
+    @source(webhook.endpoint("User"), disorder="14d", cdc="append")
     @dataset
     class User:
         uid: int = field(key=True)
         email: str
         timestamp: datetime
 
-    @source(webhook.endpoint("Transaction"))
+    @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
     @dataset
     class Transaction:
         txid: int

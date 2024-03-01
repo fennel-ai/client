@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
 from typing import Literal
 
-from fennel._vendor.pydantic import BaseModel, Field # type: ignore
+from fennel._vendor.pydantic import BaseModel, Field  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
 from fennel.internal_lib.duration import (
     Duration,
@@ -38,10 +38,10 @@ PreProcValue = Union[Ref, Any]
 
 def source(
     conn: DataConnector,
+    disorder: Duration,
+    cdc: str,
     every: Optional[Duration] = None,
     since: Optional[datetime] = None,
-    disorder: Duration = DEFAULT_DISORDER,
-    cdc: str = DEFAULT_CDC,
     tier: Optional[Union[str, List[str]]] = None,
     preproc: Optional[Dict[str, PreProcValue]] = None,
 ) -> Callable[[T], Any]:

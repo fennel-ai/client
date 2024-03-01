@@ -39,7 +39,7 @@ __owner__ = "eng@fennel.ai"
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -502,7 +502,7 @@ class TestDataset(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("RatingActivity"))
+@source(webhook.endpoint("RatingActivity"), disorder="14d", cdc="append")
 @dataset
 class RatingActivity:
     userid: int
@@ -571,7 +571,7 @@ class MovieRatingCalculated:
 
 # Copy of above dataset but can be used as an input to another pipeline.
 @meta(owner="test@test.com")
-@source(webhook.endpoint("MovieRating"))
+@source(webhook.endpoint("MovieRating"), disorder="14d", cdc="append")
 @dataset
 class MovieRating:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -700,7 +700,9 @@ class TestBasicTransform(unittest.TestCase):
         assert df["rating_orig"].tolist() == [4, 5]
 
 
-@source(Webhook(name="webhook").endpoint("Orders"))
+@source(
+    Webhook(name="webhook").endpoint("Orders"), disorder="14d", cdc="append"
+)
 @dataset
 class Orders:
     uid: int
@@ -816,7 +818,7 @@ class TestBasicAssign(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("MovieRevenue"))
+@source(webhook.endpoint("MovieRevenue"), disorder="14d", cdc="append")
 @dataset
 class MovieRevenue:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -926,7 +928,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
     @mock
     def test_inner_join_with_explode_dedup(self, client):
         @meta(owner="abhay@fennel.ai")
-        @source(webhook.endpoint("MovieInfo"))
+        @source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="append")
         @dataset
         class MovieInfo:
             title: str = field(key=True)
@@ -934,7 +936,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             release: datetime
 
         @meta(owner="abhay@fennel.ai")
-        @source(webhook.endpoint("TicketSale"))
+        @source(webhook.endpoint("TicketSale"), disorder="14d", cdc="append")
         @dataset
         class TicketSale:
             ticket_id: str
@@ -1863,7 +1865,7 @@ class Car:
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("DealerDataset"))
+@source(webhook.endpoint("DealerDataset"), disorder="14d", cdc="append")
 @dataset
 class Dealer:
     name: str = field(key=True)
@@ -2002,7 +2004,7 @@ class TestNestedStructType(unittest.TestCase):
 
 
 @meta(owner="me@fennel.ai")
-@source(webhook.endpoint("Activity"))
+@source(webhook.endpoint("Activity"), disorder="14d", cdc="append")
 @dataset(history="4m")
 class Activity:
     user_id: int
@@ -2013,7 +2015,7 @@ class Activity:
 
 
 @meta(owner="me@fenne.ai")
-@source(webhook.endpoint("MerchantInfo"))
+@source(webhook.endpoint("MerchantInfo"), disorder="14d", cdc="append")
 @dataset(history="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
@@ -2207,7 +2209,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
 
 
 @meta(owner="me@fennel.ai")
-@source(webhook.endpoint("UserAge"))
+@source(webhook.endpoint("UserAge"), disorder="14d", cdc="append")
 @dataset
 class UserAge:
     name: str
@@ -2217,7 +2219,7 @@ class UserAge:
 
 
 @meta(owner="me@fennel.ai")
-@source(webhook.endpoint("UserAgeNonTable"))
+@source(webhook.endpoint("UserAgeNonTable"), disorder="14d", cdc="append")
 @dataset
 class UserAge2:
     name: str
@@ -2291,7 +2293,7 @@ class TestAggregateTableDataset(unittest.TestCase):
 
 
 @meta(owner="gianni@fifa.com")
-@source(webhook.endpoint("PlayerInfo"))
+@source(webhook.endpoint("PlayerInfo"), disorder="14d", cdc="append")
 @dataset
 class PlayerInfo:
     name: str
@@ -2303,7 +2305,7 @@ class PlayerInfo:
 
 
 @meta(owner="gianni@fifa.com")
-@source(webhook.endpoint("ClubSalary"))
+@source(webhook.endpoint("ClubSalary"), disorder="14d", cdc="append")
 @dataset
 class ClubSalary:
     club: str = field(key=True)
@@ -2312,7 +2314,7 @@ class ClubSalary:
 
 
 @meta(owner="gianni@fifa.com")
-@source(webhook.endpoint("WAG"))
+@source(webhook.endpoint("WAG"), disorder="14d", cdc="append")
 @dataset
 class WAG:
     name: str = field(key=True)
@@ -2599,7 +2601,7 @@ def test_join(client):
         ), "b1 column should not be present, " "{}".format(df.columns)
         return df
 
-    @source(webhook.endpoint("A"))
+    @source(webhook.endpoint("A"), disorder="14d", cdc="append")
     @meta(owner="aditya@fennel.ai")
     @dataset
     class A:
@@ -2607,7 +2609,7 @@ def test_join(client):
         v: int
         t: datetime
 
-    @source(webhook.endpoint("B"))
+    @source(webhook.endpoint("B"), disorder="14d", cdc="append")
     @meta(owner="aditya@fennel.ai")
     @dataset
     class B:
@@ -2694,7 +2696,7 @@ def extract_location_index(
 
 
 @dataset
-@source(webhook.endpoint("CommonEvent"))
+@source(webhook.endpoint("CommonEvent"), disorder="14d", cdc="append")
 @meta(owner="aditya@fennel.ai")
 class CommonEvent:
     name: str
@@ -2887,7 +2889,11 @@ def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
 
 
 @dataset
-@source(Webhook(name="fennel_webhook").endpoint("common"))
+@source(
+    Webhook(name="fennel_webhook").endpoint("common"),
+    disorder="14d",
+    cdc="append",
+)
 @meta(owner="nitin@epifi.com", tags=["common"])
 class TransactionsCredit:
     updated_at: datetime = field(timestamp=True)
@@ -3007,28 +3013,48 @@ def test_inner_join_column_name_collision(client):
     webhook = Webhook(name="fennel_webhook")
 
     @dataset
-    @source(webhook.endpoint("PaymentEventDataset"), tier="local")
+    @source(
+        webhook.endpoint("PaymentEventDataset"),
+        disorder="14d",
+        cdc="append",
+        tier="local",
+    )
     class PaymentEventDataset:
         customer: int = field(key=True)
         created: datetime
         outcome_risk_score: float
 
     @dataset
-    @source(webhook.endpoint("PaymentAccountDataset"), tier="local")
+    @source(
+        webhook.endpoint("PaymentAccountDataset"),
+        disorder="14d",
+        cdc="append",
+        tier="local",
+    )
     class PaymentAccountDataset:
         id: int
         created: datetime
         customer_id: int = field(key=True)
 
     @dataset
-    @source(webhook.endpoint("PaymentAccountAssociationDataset"), tier="local")
+    @source(
+        webhook.endpoint("PaymentAccountAssociationDataset"),
+        disorder="14d",
+        cdc="append",
+        tier="local",
+    )
     class PaymentAccountAssociationDataset:
         id: int = field(key=True)
         created: datetime
         account_id: int
 
     @dataset
-    @source(webhook.endpoint("AccountDataset"), tier="local")
+    @source(
+        webhook.endpoint("AccountDataset"),
+        disorder="14d",
+        cdc="append",
+        tier="local",
+    )
     class AccountDataset:
         id: int = field(key=True)
         created: datetime
@@ -3145,6 +3171,8 @@ def test_inner_join_column_name_collision(client):
 @meta(owner="test@test.com")
 @source(
     webhook.endpoint("UserInfoDatasetPreProc"),
+    disorder="14d",
+    cdc="append",
     preproc={
         "age": 10,
         "country": ref("upstream.country"),

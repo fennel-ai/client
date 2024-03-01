@@ -14,7 +14,7 @@ webhook = Webhook(name="fennel_webhook")
 
 # docsnip filter
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(webhook.endpoint("Action"))
+@source(webhook.endpoint("Action"), disorder="14d", cdc="append")
 @dataset
 class Action:
     uid: int
@@ -56,7 +56,7 @@ def test_filter(client):
 
 # docsnip transform
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(webhook.endpoint("Rating"))
+@source(webhook.endpoint("Rating"), disorder="14d", cdc="append")
 @dataset
 class Rating:
     movie: str = field(key=True)
@@ -108,7 +108,7 @@ def test_transform(client):
 
 # docsnip join
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(webhook.endpoint("Product"))
+@source(webhook.endpoint("Product"), disorder="14d", cdc="append")
 @dataset
 class Product:
     pid: int = field(key=True)
@@ -117,7 +117,7 @@ class Product:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(webhook.endpoint("OrderActivity"))
+@source(webhook.endpoint("OrderActivity"), disorder="14d", cdc="append")
 @dataset
 class OrderActivity:
     uid: int
@@ -166,7 +166,7 @@ def test_join(client):
 
 # docsnip aggregate
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(webhook.endpoint("AdClickStream"))
+@source(webhook.endpoint("AdClickStream"), disorder="14d", cdc="append")
 @dataset
 class AdClickStream:
     uid: int

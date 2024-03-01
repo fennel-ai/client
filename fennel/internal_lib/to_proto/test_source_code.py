@@ -322,7 +322,7 @@ class DocumentsMeta:
 
     example_2 = """
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

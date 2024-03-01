@@ -34,7 +34,13 @@ def test_overview(client):
     webhook = Webhook(name="fennel_webhook")
 
     # docsnip external_data_sources
-    @source(pg.table("user", cursor="modified_at"), every="1m", tier="prod")
+    @source(
+        pg.table("user", cursor="modified_at"),
+        every="1m",
+        disorder="14d",
+        cdc="append",
+        tier="prod",
+    )
     @dataset
     class User:
         uid: int = field(key=True)
@@ -42,7 +48,9 @@ def test_overview(client):
         country: str
         signup_time: datetime = field(timestamp=True)
 
-    @source(kafka.topic("transactions"), tier="prod")
+    @source(
+        kafka.topic("transactions"), disorder="14d", cdc="append", tier="prod"
+    )
     @dataset
     class Transaction:
         uid: int
@@ -112,10 +120,15 @@ def test_overview(client):
 
     # /docsnip
 
-    User = source(webhook.endpoint("User"), tier="local")(User)
-    Transaction = source(webhook.endpoint("Transaction"), tier="local")(
-        Transaction
-    )
+    User = source(
+        webhook.endpoint("User"), disorder="14d", cdc="append", tier="local"
+    )(User)
+    Transaction = source(
+        webhook.endpoint("Transaction"),
+        disorder="14d",
+        cdc="append",
+        tier="local",
+    )(Transaction)
 
     def _unused():
         # docsnip commit
@@ -239,7 +252,12 @@ def test_source_snip():
         password=os.environ["POSTGRES_PASSWORD"],
     )
 
-    @source(postgres.table("user", cursor="update_time"), every="1m")
+    @source(
+        postgres.table("user", cursor="update_time"),
+        disorder="14d",
+        cdc="append",
+        every="1m",
+    )
     @dataset
     class UserLocation:
         uid: int
@@ -272,7 +290,7 @@ def test_branches(client):
 
     webhook = Webhook(name="some_webhook")
 
-    @source(webhook.endpoint("endpoint1"))
+    @source(webhook.endpoint("endpoint1"), disorder="14d", cdc="append")
     @dataset
     class SomeDataset:
         uid: int = field(key=True)

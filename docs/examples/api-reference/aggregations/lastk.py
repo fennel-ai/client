@@ -18,7 +18,7 @@ def test_basic(client):
 
     webhook = Webhook(name="webhook")
 
-    @source(webhook.endpoint("Transaction"))
+    @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
     @dataset
     class Transaction:
         uid: int
@@ -118,7 +118,7 @@ def test_invalid_type(client):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("Transaction"))
+        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
         @dataset
         class Transaction:
             uid: int

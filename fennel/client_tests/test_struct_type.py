@@ -30,7 +30,7 @@ class Cast:
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("MovieInfo"))
+@source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="append")
 @dataset
 class MovieCast:
     movie: Movie

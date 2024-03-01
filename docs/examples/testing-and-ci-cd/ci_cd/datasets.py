@@ -9,7 +9,11 @@ def test_dataset_deleted():
     from fennel.sources import source, Webhook
 
     @meta(owner="mohit@fennel.ai", deleted=True)
-    @source(Webhook(name="example").endpoint("ticket_sale"))
+    @source(
+        Webhook(name="example").endpoint("ticket_sale"),
+        disorder="14d",
+        cdc="append",
+    )
     @dataset
     class Ticket:
         ticket_id: str = field(key=True)
@@ -26,7 +30,11 @@ def test_gh_actions_dataset():
     from fennel.sources import source, Webhook
 
     @meta(owner="mohit@fennel.ai")
-    @source(Webhook(name="example").endpoint("ticket_sale"))
+    @source(
+        Webhook(name="example").endpoint("ticket_sale"),
+        disorder="14d",
+        cdc="append",
+    )
     @dataset
     class Ticket:
         ticket_id: str = field(key=True)

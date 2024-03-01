@@ -27,6 +27,8 @@ postgres = Postgres(
     postgres.table("user", cursor="update_timestamp"),
     every="1m",
     since=datetime.strptime("2024-01-22T11:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    disorder="14d",
+    cdc="append",
 )
 @dataset
 class UserLocation:

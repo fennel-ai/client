@@ -24,7 +24,7 @@ webhook = Webhook(name="fennel_webhook")
     deprecated=True,
 )
 @dataset
-@source(webhook.endpoint("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"), cdc="append", disorder="14d")
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -97,7 +97,9 @@ def test_simple_dataset():
 
 def test_complex_dataset_with_fields():
     @dataset(history="1y")
-    @source(webhook.endpoint("YextUserInfoDataset"))
+    @source(
+        webhook.endpoint("YextUserInfoDataset"), disorder="14d", cdc="append"
+    )
     @meta(owner="daniel@yext.com", description="test")
     class YextUserInfoDataset:
         user_id: int = field(key=True).meta(

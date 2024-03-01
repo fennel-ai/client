@@ -17,7 +17,7 @@ class TestDedupSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("Transaction"))
+        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
         @dataset
         class Transaction:
             txid: int
@@ -87,7 +87,7 @@ class TestDedupSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("Transaction"))
+        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
         @dataset
         class Transaction:
             txid: int

@@ -17,7 +17,7 @@ wh = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(wh.endpoint("UserInfoDataset"))
+@source(wh.endpoint("UserInfoDataset"), cdc="append", disorder="14d")
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore

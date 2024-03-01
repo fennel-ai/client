@@ -22,9 +22,11 @@ webhook = Webhook(name="outbrain_webhook")
 @source(
     s3.bucket("fennel-demo-data", prefix="outbrain/page_views_filter.csv"),
     every="1d",
+    cdc="append",
+    disorder="14d",
     tier="prod",
 )
-@source(webhook.endpoint("PageViews"), tier="dev")
+@source(webhook.endpoint("PageViews"), disorder="14d", cdc="append", tier="dev")
 @meta(owner="xiao@fennel.ai")
 @dataset
 class PageViews:

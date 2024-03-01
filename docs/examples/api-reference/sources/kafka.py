@@ -25,7 +25,9 @@ def test_kafka_source(client):
     )
     # docsnip-highlight end
 
-    @source(kafka.topic("user", format="json"))  # docsnip-highlight
+    @source(
+        kafka.topic("user", format="json"), disorder="14d", cdc="append"
+    )  # docsnip-highlight
     @dataset
     class SomeDataset:
         uid: int = field(key=True)
@@ -64,7 +66,7 @@ def test_kafka_with_avro(client):
         password=os.environ["SCHEMA_REGISTRY_PASSWORD"],
     )
 
-    @source(kafka.topic("user", format=avro))
+    @source(kafka.topic("user", format=avro), disorder="14d", cdc="append")
     @dataset
     class SomeDataset:
         uid: int = field(key=True)

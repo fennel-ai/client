@@ -17,7 +17,7 @@ webhook = sources.Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("AppEvent"))
+@source(webhook.endpoint("AppEvent"), disorder="14d", cdc="append")
 @dataset
 class AppEvent:
     user_id: int

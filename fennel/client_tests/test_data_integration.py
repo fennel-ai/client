@@ -21,13 +21,15 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="xiao@fennel.ai")
-@source(webhook.endpoint("MovieInfo"), tier="dev")
+@source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="append", tier="dev")
 @source(
     s3.bucket(
         bucket_name="fennel-demo-data",
         prefix="movielens_sampled/movies_timestamped.csv",
     ),
     every="1h",
+    disorder="14d",
+    cdc="append",
     tier="prod",
 )
 @dataset

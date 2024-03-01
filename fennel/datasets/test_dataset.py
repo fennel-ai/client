@@ -27,7 +27,7 @@ webhook = Webhook(name="fennel_webhook", retention="30d")
 __owner__ = "ml-eng@fennel.ai"
 
 
-@source(webhook.endpoint("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(owner="xyz@fennel.ai")  # type: ignore
@@ -202,7 +202,7 @@ def test_dataset_with_aggregates():
     )
 
 
-@source(webhook.endpoint("Activity"))
+@source(webhook.endpoint("Activity"), disorder="14d", cdc="append")
 @dataset(history="120d")
 class Activity:
     user_id: int
@@ -303,7 +303,7 @@ class Car:
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("DealerDataset"))
+@source(webhook.endpoint("DealerDataset"), disorder="14d", cdc="append")
 @dataset
 class Dealer:
     name: str
@@ -2602,14 +2602,14 @@ def test_pipeline_with_tier_selector():
     kafka = Kafka.get(name="my_kafka")
 
     @meta(owner="test@test.com")
-    @source(kafka.topic("orders"), disorder="1h")
+    @source(kafka.topic("orders"), disorder="1h", cdc="append")
     @dataset
     class A:
         a1: int = field(key=True)
         t: datetime
 
     @meta(owner="test@test.com")
-    @source(kafka.topic("orders2"), disorder="1h")
+    @source(kafka.topic("orders2"), disorder="1h", cdc="append")
     @dataset
     class B:
         b1: int = field(key=True)

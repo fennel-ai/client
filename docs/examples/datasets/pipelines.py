@@ -17,7 +17,7 @@ def test_datasets_basic():
 
     webhook = Webhook(name="fennel_webhook")
 
-    @source(webhook.endpoint("User"))
+    @source(webhook.endpoint("User"), disorder="14d", cdc="append")
     @dataset
     class User:
         uid: int = field(key=True)
@@ -25,7 +25,7 @@ def test_datasets_basic():
         country: str
         signup_time: datetime = field(timestamp=True)
 
-    @source(webhook.endpoint("Transaction"))
+    @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
     @dataset
     class Transaction:
         uid: int
@@ -130,7 +130,7 @@ def test_fraud(client):
 
     webhook = Webhook(name="fennel_webhook")
 
-    @source(webhook.endpoint("Activity"))
+    @source(webhook.endpoint("Activity"), disorder="14d", cdc="append")
     @dataset
     class Activity:
         uid: int
@@ -220,14 +220,14 @@ def test_multiple_pipelines(client):
     webhook = Webhook(name="fennel_webhook")
 
     @meta(owner="me@fennel.ai")
-    @source(webhook.endpoint("AndroidLogins"))
+    @source(webhook.endpoint("AndroidLogins"), disorder="14d", cdc="append")
     @dataset
     class AndroidLogins:
         uid: int
         login_time: datetime
 
     @meta(owner="me@fennel.ai")
-    @source(webhook.endpoint("IOSLogins"))
+    @source(webhook.endpoint("IOSLogins"), disorder="14d", cdc="append")
     @dataset
     class IOSLogins:
         uid: int

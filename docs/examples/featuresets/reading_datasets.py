@@ -14,7 +14,7 @@ from fennel.lib import inputs, outputs
 webhook = Webhook(name="fennel_webhook")
 
 
-@source(webhook.endpoint("User"))
+@source(webhook.endpoint("User"), disorder="14d", cdc="append")
 @dataset
 class User:
     uid: int = field(key=True)

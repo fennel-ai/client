@@ -78,7 +78,7 @@ def test_simple_source():
 
     with pytest.raises(TypeError) as e:
 
-        @source(mysql, every="1h")
+        @source(mysql, disorder="14d", cdc="append", every="1h")
         @dataset
         class UserInfoDataset2:
             user_id: int = field(key=True)
@@ -229,15 +229,26 @@ def test_multiple_sources(client):
     with pytest.raises(Exception) as e:
 
         @meta(owner="test@test.com")
-        @source(kafka.topic("test_topic"))
-        @source(mysql.table("users_mysql", cursor="added_on"), every="1h")
-        @source(snowflake.table("users_Sf", cursor="added_on"), every="1h")
+        @source(kafka.topic("test_topic"), disorder="14d", cdc="append")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            disorder="14d",
+            cdc="append",
+            every="1h",
+        )
+        @source(
+            snowflake.table("users_Sf", cursor="added_on"),
+            disorder="14d",
+            cdc="append",
+            every="1h",
+        )
         @source(
             s3.bucket(
                 bucket_name="all_ratings",
                 prefix="prod/apac/",
             ),
             every="1h",
+            cdc="append",
             disorder="2d",
         )
         @dataset
@@ -295,6 +306,8 @@ def test_invalid_starting_from():
         @source(
             s3.bucket(bucket_name="bucket", prefix="prefix"),
             every="1h",
+            disorder="14d",
+            cdc="append",
             since="2020-01-01T00:00:00Z",
         )
         @meta(owner="aditya@fennel.ai")
@@ -364,6 +377,8 @@ def test_invalid_pre_proc():
             prefix="prod/apac/",
         ),
         every="1h",
+        disorder="14d",
+        cdc="append",
         # column doesn't exist
         preproc={
             "age": 10,
@@ -386,6 +401,8 @@ def test_invalid_pre_proc():
             prefix="prod/apac/",
         ),
         every="1h",
+        disorder="14d",
+        cdc="append",
         # data type is wrong
         preproc={
             "timestamp": 10,

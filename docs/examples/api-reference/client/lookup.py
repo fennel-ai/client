@@ -15,7 +15,7 @@ def test_basic(client):
     # first define & sync a dataset that sources from a webhook
     webhook = Webhook(name="some_webhook")
 
-    @source(webhook.endpoint("some_endpoint"))
+    @source(webhook.endpoint("some_endpoint"), disorder="14d", cdc="append")
     @dataset
     class Transaction:
         uid: int = field(key=True)

@@ -922,7 +922,12 @@ def test_invalid_union(client):
 
 @mock
 def test_invalid_assign_schema(client):
-    @source(webhook.endpoint("mysql_relayrides.location"), tier="local")
+    @source(
+        webhook.endpoint("mysql_relayrides.location"),
+        disorder="14d",
+        cdc="append",
+        tier="local",
+    )
     @dataset
     class LocationDS:
         id: int = field(key=True)

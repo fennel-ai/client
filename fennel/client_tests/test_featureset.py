@@ -29,7 +29,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"))
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -244,7 +244,7 @@ class Velocity:
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("FlightDataset"))
+@source(webhook.endpoint("FlightDataset"), disorder="14d", cdc="append")
 @dataset
 class FlightDataset:
     id: int = field(key=True)
@@ -575,7 +575,9 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 
 
 @meta(owner="aditya@fennel.ai")
-@source(webhook.endpoint("DocumentContentDataset"))
+@source(
+    webhook.endpoint("DocumentContentDataset"), disorder="14d", cdc="append"
+)
 @dataset
 class DocumentContentDataset:
     doc_id: int = field(key=True)

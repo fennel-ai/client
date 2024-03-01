@@ -13,7 +13,7 @@ webhook = Webhook(name="fennel_webhook")
 
 # docsnip datasets_lookup
 @meta(owner="data-eng-oncall@fennel.ai")
-@source(webhook.endpoint("User"))
+@source(webhook.endpoint("User"), disorder="14d", cdc="append")
 @dataset
 class User:
     uid: int = field(key=True)

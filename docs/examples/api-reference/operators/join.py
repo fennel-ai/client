@@ -17,7 +17,7 @@ class TestAssignSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("Transaction"))
+        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
         @dataset
         class Transaction:
             uid: int
@@ -25,7 +25,9 @@ class TestAssignSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
-        @source(webhook.endpoint("MerchantCategory"))
+        @source(
+            webhook.endpoint("MerchantCategory"), disorder="14d", cdc="append"
+        )
         @dataset
         class MerchantCategory:
             # docsnip-highlight start

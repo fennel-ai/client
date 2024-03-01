@@ -26,7 +26,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="abhay@fennel.ai")
-@source(webhook.endpoint("MovieInfo"))
+@source(webhook.endpoint("MovieInfo"), cdc="append", disorder="14d")
 @dataset
 class MovieInfo:
     title: str = field(key=True)
@@ -35,7 +35,7 @@ class MovieInfo:
 
 
 @meta(owner="abhay@fennel.ai")
-@source(webhook.endpoint("TicketSale"))
+@source(webhook.endpoint("TicketSale"), disorder="14d", cdc="append")
 @dataset
 class TicketSale:
     ticket_id: str

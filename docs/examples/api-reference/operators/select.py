@@ -19,7 +19,7 @@ class TestSelectSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"))
+        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
         @dataset
         class User:
             uid: int = field(key=True)

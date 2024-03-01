@@ -40,6 +40,7 @@ def test_simple_source():
             cursor="added_on",
         ),
         every="1h",
+        cdc="append",
         disorder="20h",
     )
     @meta(owner="test@test.com")
@@ -184,6 +185,7 @@ def test_simple_source_with_pre_proc():
         ),
         every="1h",
         disorder="20h",
+        cdc="append",
         preproc={
             "age": 10,
             "gender": "male",
@@ -397,15 +399,21 @@ kinesis = Kinesis(
 
 def test_tier_selector_on_source():
     @meta(owner="test@test.com")
-    @source(kafka.topic("test_topic"), tier=["dev-2"])
+    @source(
+        kafka.topic("test_topic"), disorder="14d", cdc="append", tier=["dev-2"]
+    )
     @source(
         mysql.table("users_mysql", cursor="added_on"),
         every="1h",
+        disorder="14d",
+        cdc="append",
         tier=["prod"],
     )
     @source(
         snowflake.table("users_Sf", cursor="added_on"),
         every="1h",
+        disorder="14d",
+        cdc="append",
         tier=["staging"],
     )
     @source(
@@ -415,6 +423,7 @@ def test_tier_selector_on_source():
         ),
         every="1h",
         disorder="2d",
+        cdc="append",
         tier=["dev"],
     )
     @dataset
@@ -516,6 +525,7 @@ def test_multiple_sources():
         ),
         every="1h",
         disorder="2d",
+        cdc="append",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -582,7 +592,12 @@ def test_multiple_sources():
     )
 
     @meta(owner="test@test.com")
-    @source(snowflake.table("users_Sf", cursor="added_on"), every="1h")
+    @source(
+        snowflake.table("users_Sf", cursor="added_on"),
+        disorder="14d",
+        cdc="append",
+        every="1h",
+    )
     @dataset
     class UserInfoDatasetSnowFlake:
         user_id: int = field(key=True)
@@ -651,6 +666,8 @@ def test_multiple_sources():
     @source(
         snowflake.table("users_Sf", cursor="added_on"),
         every="1h",
+        disorder="14d",
+        cdc="append",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -723,6 +740,7 @@ def test_multiple_sources():
         bigquery.table("users_bq", cursor="added_on"),
         every="1h",
         disorder="2h",
+        cdc="append",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -786,6 +804,8 @@ def test_multiple_sources():
     @source(
         mysql.table("users_mysql", cursor="added_on"),
         every="1h",
+        disorder="14d",
+        cdc="append",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -852,6 +872,8 @@ def test_multiple_sources():
     @meta(owner="test@test.com")
     @source(
         kafka.topic("test_topic"),
+        disorder="14d",
+        cdc="append",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -914,6 +936,7 @@ def test_multiple_sources():
             format=avro,
         ),
         cdc="debezium",
+        disorder="14d",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -973,6 +996,8 @@ def test_multiple_sources():
     @meta(owner="test@test.com")
     @source(
         kinesis.stream("test_stream", init_position="latest", format="json"),
+        disorder="14d",
+        cdc="append",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -1022,6 +1047,8 @@ def test_multiple_sources():
             init_position="2023-05-31 15:30:00",
             format="json",
         ),
+        disorder="14d",
+        cdc="append",
         since=datetime(2023, 5, 31),
     )
     @dataset
@@ -1038,6 +1065,8 @@ def test_multiple_sources():
             init_position=datetime(2023, 5, 31),
             format="json",
         ),
+        disorder="14d",
+        cdc="append",
     )
     @dataset
     class UserInfoDatasetKinesis2:
@@ -1120,6 +1149,8 @@ def test_console_source():
             bucket_name="all_ratings",
             prefix="prod/apac/",
         ),
+        disorder="14d",
+        cdc="append",
         every="1h",
     )
     @meta(owner="test@test.com", tags=["test", "yolo"])
@@ -1172,6 +1203,8 @@ def test_s3_source_with_path():
             bucket_name="all_ratings",
             path="prod/data_type=events/*/date=%Y%m%d/hour=%H/*/*.csv",
         ),
+        disorder="14d",
+        cdc="append",
         every="1h",
     )
     @meta(owner="test@test.com", tags=["test", "yolo"])

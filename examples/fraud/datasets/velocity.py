@@ -14,7 +14,12 @@ __owner__ = "eng@app.com"
 webhook = Webhook(name="app_webhook")
 
 
-@source(webhook.endpoint("ReservationDS"), tier="local")
+@source(
+    webhook.endpoint("ReservationDS"),
+    tier="local",
+    disorder="14d",
+    cdc="append",
+)
 @dataset
 class ReservationDS:
     driver_id: int
@@ -74,7 +79,12 @@ class CancelledTripsDS:
         )
 
 
-@source(webhook.endpoint("LoginEventsDS"), tier="local")
+@source(
+    webhook.endpoint("LoginEventsDS"),
+    disorder="14d",
+    cdc="append",
+    tier="local",
+)
 @dataset
 class LoginEventsDS:
     driver_id: int
@@ -104,7 +114,12 @@ class LoginsLastDayDS:
 
 
 @dataset
-@source(webhook.endpoint("BookingFlowCheckoutPageDS"), tier="local")
+@source(
+    webhook.endpoint("BookingFlowCheckoutPageDS"),
+    disorder="14d",
+    cdc="append",
+    tier="local",
+)
 class BookingFlowCheckoutPageDS:
     id: str
     created: datetime
@@ -136,7 +151,12 @@ class CheckoutPagesLastDayDS:
         )
 
 
-@source(webhook.endpoint("ReservationSummaryDS"), tier="local")
+@source(
+    webhook.endpoint("ReservationSummaryDS"),
+    disorder="14d",
+    cdc="append",
+    tier="local",
+)
 @dataset
 class ReservationSummaryDS:
     reservation_id: int = field(key=True)

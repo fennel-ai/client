@@ -30,8 +30,14 @@ webhook = Webhook(name="fennel_webhook")
 
 # docsnip datasets
 @dataset
-@source(postgres.table("product", cursor="updated"), every="1m", tier="prod")
-@source(webhook.endpoint("Product"), tier="dev")
+@source(
+    postgres.table("product", cursor="updated"),
+    disorder="14d",
+    cdc="append",
+    every="1m",
+    tier="prod",
+)
+@source(webhook.endpoint("Product"), disorder="14d", cdc="append", tier="dev")
 @meta(owner="chris@fennel.ai", tags=["PII"])
 class Product:
     product_id: int = field(key=True)
@@ -52,8 +58,8 @@ class Product:
 
 # ingesting realtime data from Kafka works exactly the same way
 @meta(owner="eva@fennel.ai")
-@source(kafka.topic("orders"), disorder="1h", tier="prod")
-@source(webhook.endpoint("Order"), tier="dev")
+@source(kafka.topic("orders"), disorder="1h", cdc="append", tier="prod")
+@source(webhook.endpoint("Order"), disorder="14d", cdc="append", tier="dev")
 @dataset
 class Order:
     uid: int

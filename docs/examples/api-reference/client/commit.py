@@ -15,8 +15,18 @@ def test_basic(client):
 
     webhook = Webhook(name="some_webhook")
 
-    @source(webhook.endpoint("endpoint1"), tier="bronze")
-    @source(webhook.endpoint("endpoint2"), tier="silver")
+    @source(
+        webhook.endpoint("endpoint1"),
+        disorder="14d",
+        cdc="append",
+        tier="bronze",
+    )
+    @source(
+        webhook.endpoint("endpoint2"),
+        disorder="14d",
+        cdc="append",
+        tier="silver",
+    )
     @dataset
     class Transaction:
         txid: int = field(key=True)

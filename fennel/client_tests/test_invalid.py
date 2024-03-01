@@ -37,7 +37,7 @@ class MemberActivityDataset:
 
 
 @meta(owner="test@fennel.ai")
-@source(webhook.endpoint("MemberDataset"))
+@source(webhook.endpoint("MemberDataset"), cdc="append", disorder="14d")
 @dataset
 class MemberDataset:
     pk: str
@@ -122,7 +122,11 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
     @mock
     def test_missing_features(self, client):
         @meta(owner="test@fennel.ai")
-        @source(webhook.endpoint("MemberActivityDataset"))
+        @source(
+            webhook.endpoint("MemberActivityDataset"),
+            disorder="14d",
+            cdc="append",
+        )
         @dataset
         class MemberActivityDataset:
             url: str
@@ -135,7 +139,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             domain_used_count: int
 
         @meta(owner="test@fennel.ai")
-        @source(webhook.endpoint("MemberDataset"))
+        @source(webhook.endpoint("MemberDataset"), disorder="14d", cdc="append")
         @dataset
         class MemberDataset:
             pk: str

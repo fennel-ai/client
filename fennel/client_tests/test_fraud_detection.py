@@ -12,7 +12,9 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="henry@fennel.ai")
-@source(webhook.endpoint("CreditCardTransactions"))
+@source(
+    webhook.endpoint("CreditCardTransactions"), cdc="append", disorder="14d"
+)
 @dataset
 class CreditCardTransactions:
     trans_num: str = field(key=True)  # Id
@@ -42,7 +44,7 @@ class CreditCardTransactions:
 
 
 @meta(owner="henry@fennel.ai")
-@source(webhook.endpoint("Regions"))
+@source(webhook.endpoint("Regions"), disorder="14d", cdc="append")
 @dataset
 class Regions:
     created_at: datetime

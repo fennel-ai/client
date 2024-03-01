@@ -41,7 +41,7 @@ class MovieBudget:
     roles: List[RoleBudget]
 
 
-@source(webhook.endpoint("MovieDS"))
+@source(webhook.endpoint("MovieDS"), cdc="append", disorder="14d")
 @dataset
 class MovieDS:
     movie_id: int

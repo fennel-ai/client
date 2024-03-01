@@ -19,13 +19,20 @@ s3 = S3(
 )
 
 
-@source(webhook.endpoint("EventTrackerDS"), tier="local")
+@source(
+    webhook.endpoint("EventTrackerDS"),
+    disorder="14d",
+    cdc="append",
+    tier="local",
+)
 @source(
     s3.bucket(
         bucket_name="prod",
         prefix="event_tracker/payment_fraud.parquet",
     ),
     every="1d",
+    disorder="14d",
+    cdc="append",
     tier="prod",
 )
 @dataset
@@ -42,13 +49,20 @@ class EventTrackerDS:
     created: datetime
 
 
-@source(webhook.endpoint("DriverLicenseCountryDS"), tier="local")
+@source(
+    webhook.endpoint("DriverLicenseCountryDS"),
+    disorder="14d",
+    cdc="append",
+    tier="local",
+)
 @source(
     s3.bucket(
         bucket_name="prod",
         prefix="rides/driver_license_country.parquet",
     ),
     every="1d",
+    disorder="14d",
+    cdc="append",
     tier="prod",
 )
 @dataset
@@ -58,13 +72,20 @@ class DriverLicenseCountryDS:
     created: datetime
 
 
-@source(webhook.endpoint("VehicleSummaryDS"), tier="local")
+@source(
+    webhook.endpoint("VehicleSummaryDS"),
+    disorder="14d",
+    cdc="append",
+    tier="local",
+)
 @source(
     s3.bucket(
         bucket_name="prode",
         prefix="rides/vehicle_summary.parquet",
     ),
     every="2h",
+    disorder="14d",
+    cdc="append",
     tier="prod",
 )
 @dataset
@@ -80,6 +101,8 @@ class VehicleSummaryDS:
 
 @source(
     webhook.endpoint("RentCarCheckoutEventDS"),
+    disorder="14d",
+    cdc="append",
     tier="local",
 )
 @source(
@@ -88,6 +111,8 @@ class VehicleSummaryDS:
         prefix="event_tracker/RentCarCheckoutEventDS.parquet",
     ),
     every="2h",
+    disorder="14d",
+    cdc="append",
     tier="prod",
 )
 @dataset
@@ -103,7 +128,9 @@ class RentCarCheckoutEventDS:
     created: datetime = field(timestamp=True)
 
 
-@source(webhook.endpoint("DriverDS"), tier="local")
+@source(
+    webhook.endpoint("DriverDS"), disorder="14d", cdc="append", tier="local"
+)
 @dataset
 class DriverDS:
     id: int = field(key=True)
@@ -111,7 +138,12 @@ class DriverDS:
     birthdate: datetime
 
 
-@source(webhook.endpoint("DriverCreditScoreDS"), tier="local")
+@source(
+    webhook.endpoint("DriverCreditScoreDS"),
+    disorder="14d",
+    cdc="append",
+    tier="local",
+)
 @dataset
 class DriverCreditScoreDS:
     driver_id: int = field(key=True)

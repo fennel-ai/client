@@ -41,8 +41,16 @@ __owner__ = "data-eng@fennel.ai"
 
 
 @meta(owner="e1@company.com")
-@source(webhook.endpoint("NotionDocs"), tier="dev")
-@source(s3.bucket("engagement", prefix="notion"), every="2m", tier="prod")
+@source(
+    webhook.endpoint("NotionDocs"), disorder="14d", cdc="append", tier="dev"
+)
+@source(
+    s3.bucket("engagement", prefix="notion"),
+    disorder="14d",
+    cdc="append",
+    every="2m",
+    tier="prod",
+)
 @dataset
 class NotionDocs:
     doc_id: int
@@ -52,8 +60,13 @@ class NotionDocs:
     creation_timestamp: datetime
 
 
-@source(webhook.endpoint("CodaDocs"), tier="dev")
-@source(s3.bucket("engagement", prefix="coda"), tier="prod")
+@source(webhook.endpoint("CodaDocs"), disorder="14d", cdc="append", tier="dev")
+@source(
+    s3.bucket("engagement", prefix="coda"),
+    disorder="14d",
+    cdc="append",
+    tier="prod",
+)
 @dataset
 class CodaDocs:
     doc_id: int
@@ -63,8 +76,15 @@ class CodaDocs:
     creation_timestamp: datetime
 
 
-@source(webhook.endpoint("GoogleDocs"), tier="dev")
-@source(s3.bucket("engagement", prefix="google"), tier="prod")
+@source(
+    webhook.endpoint("GoogleDocs"), disorder="14d", cdc="append", tier="dev"
+)
+@source(
+    s3.bucket("engagement", prefix="google"),
+    disorder="14d",
+    cdc="append",
+    tier="prod",
+)
 @dataset
 class GoogleDocs:
     doc_id: int
@@ -210,10 +230,14 @@ class TopWordsCount:
         )  # type: ignore
 
 
-@source(webhook.endpoint("UserActivity"), tier="dev")
+@source(
+    webhook.endpoint("UserActivity"), disorder="14d", cdc="append", tier="dev"
+)
 @source(
     biq_query.table("user_activity", cursor="timestamp"),
     every="1h",
+    disorder="14d",
+    cdc="append",
     tier="prod",
 )
 @dataset

@@ -14,7 +14,7 @@ def test_branches_basic(client):
 
     webhook = Webhook(name="webhook")
 
-    @source(webhook.endpoint("Dataset"))
+    @source(webhook.endpoint("Dataset"), disorder="14d", cdc="append")
     @dataset
     class Dataset:
         uid: int
@@ -47,7 +47,7 @@ def test_branches_clone(client):
 
     webhook = Webhook(name="webhook")
 
-    @source(webhook.endpoint("Dataset"))
+    @source(webhook.endpoint("Dataset"), disorder="14d", cdc="append")
     @dataset
     class SomeDataset:
         uid: int

@@ -10,7 +10,9 @@ __owner__ = "eng@app.com"
 webhook = Webhook(name="app_webhook")
 
 
-@source(webhook.endpoint("LocationDS"), tier="local")
+@source(
+    webhook.endpoint("LocationDS"), disorder="14d", cdc="append", tier="local"
+)
 @dataset
 class LocationDS:
     id: int = field(key=True)
@@ -46,7 +48,12 @@ class LocationDS2:
         )
 
 
-@source(webhook.endpoint("LocationToNewMarketArea"), tier="local")
+@source(
+    webhook.endpoint("LocationToNewMarketArea"),
+    disorder="14d",
+    cdc="append",
+    tier="local",
+)
 @dataset
 class LocationToNewMarketArea:
     gid: int
@@ -88,7 +95,12 @@ class IdToMarketAreaDS:
         )
 
 
-@source(webhook.endpoint("VehicleSummary"), tier="local")
+@source(
+    webhook.endpoint("VehicleSummary"),
+    disorder="14d",
+    cdc="append",
+    tier="local",
+)
 @dataset
 class VehicleSummary:
     vehicle_id: int

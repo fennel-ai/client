@@ -13,7 +13,7 @@ wh = Webhook(name="fennel_webhook")
 __owner__ = "nitin@fennel.com"
 
 
-@source(wh.endpoint("UserInfoDataset"))
+@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

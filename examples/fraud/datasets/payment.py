@@ -26,7 +26,9 @@ __owner__ = "eng@app.com"
 webhook = Webhook(name="app_webhook")
 
 
-@source(webhook.endpoint("ChargesDS"), tier="local")
+@source(
+    webhook.endpoint("ChargesDS"), disorder="14d", cdc="append", tier="local"
+)
 @dataset
 class ChargesDS:
     customer: str = field(key=True)
@@ -73,7 +75,12 @@ class TransactionsDS:
 
 
 @dataset
-@source(webhook.endpoint("PaymentEventDS"), tier="local")
+@source(
+    webhook.endpoint("PaymentEventDS"),
+    disorder="14d",
+    cdc="append",
+    tier="local",
+)
 class PaymentEventDS:
     customer_id: str
     payment_provider: str

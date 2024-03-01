@@ -31,9 +31,15 @@ postgres = Postgres(
     postgres.table("orders", cursor="timestamp"),
     every="1m",
     disorder="1d",
+    cdc="append",
     tier="prod",
 )
-@source(Webhook(name="fennel_webhook").endpoint("Order"), tier="dev")
+@source(
+    Webhook(name="fennel_webhook").endpoint("Order"),
+    disorder="14d",
+    cdc="append",
+    tier="dev",
+)
 @meta(owner="data-eng-oncall@fennel.ai")
 @dataset
 class Order:

@@ -27,7 +27,7 @@ def test_kinesis_init_position(client):
     )
     # docsnip-highlight end
 
-    @source(stream)  # docsnip-highlight
+    @source(stream, disorder="14d", cdc="append")  # docsnip-highlight
     @dataset
     class Orders:
         uid: int
@@ -58,7 +58,7 @@ def test_kinesis_latest(client):
         format="json",
     )
 
-    @source(stream)
+    @source(stream, disorder="14d", cdc="append")
     @dataset
     class Orders:
         uid: int
