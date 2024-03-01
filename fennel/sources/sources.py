@@ -61,7 +61,7 @@ def source(
         raise TypeError(f"'until' must be of type datetime - got {type(until)}")
 
     if since is not None and until is not None and since > until:
-        raise ValueError("'since' must be before 'until'")
+        raise ValueError(f"'since' ({since}) must be earlier than 'until' ({until})")
 
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY

@@ -374,7 +374,7 @@ def test_invalid_until():
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-    assert ("'since' must be before 'until'") in str(e.value)
+    assert ("must be earlier than 'until'") in str(e.value)
 
 
 def test_invalid_s3_format():
