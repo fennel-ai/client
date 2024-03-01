@@ -45,9 +45,9 @@ def lookup_wrapper(
 class IntegrationClient(Client):
     def __init__(
         self,
-        url: str | None = None,
-        token: str | None = None,
-        branch: str | None = None,
+        url: Optional[str] = None,
+        token: Optional[str] = None,
+        branch: Optional[str] = None,
     ):
         url = url or "dummy"
         token = token or "caput-draconis"
