@@ -675,7 +675,8 @@ def _kafka_conn_to_source_proto(
         ds_version=ds_version,
         cdc=to_cdc_proto(connector.cdc),
         pre_proc=_pre_proc_to_proto(connector.pre_proc),
-        starting_from=_to_starting_from_proto(connector.since),
+        starting_from=_to_timestamp_proto(connector.since),
+        until=_to_timestamp_proto(connector.until),
     )
     return (ext_db, source)
 
@@ -739,7 +740,8 @@ def _s3_conn_to_source_proto(
         ds_version=ds_version,
         every=to_duration_proto(connector.every),
         disorder=to_duration_proto(connector.disorder),
-        starting_from=_to_starting_from_proto(connector.since),
+        starting_from=_to_timestamp_proto(connector.since),
+        until=_to_timestamp_proto(connector.until),
         cursor=None,
         timestamp_field=timestamp_field,
         cdc=to_cdc_proto(connector.cdc),
@@ -844,7 +846,8 @@ def _bigquery_conn_to_source_proto(
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
-            starting_from=_to_starting_from_proto(connector.since),
+            starting_from=_to_timestamp_proto(connector.since),
+            until=_to_timestamp_proto(connector.until),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
@@ -911,7 +914,8 @@ def _snowflake_conn_to_source_proto(
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
-            starting_from=_to_starting_from_proto(connector.since),
+            starting_from=_to_timestamp_proto(connector.since),
+            until=_to_timestamp_proto(connector.until),
         ),
     )
 
@@ -984,7 +988,8 @@ def _mysql_conn_to_source_proto(
             disorder=to_duration_proto(connector.disorder),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
-            starting_from=_to_starting_from_proto(connector.since),
+            starting_from=_to_timestamp_proto(connector.since),
+            until=_to_timestamp_proto(connector.until),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
@@ -1067,7 +1072,8 @@ def _pg_conn_to_source_proto(
             disorder=to_duration_proto(connector.disorder),
             timestamp_field=timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
-            starting_from=_to_starting_from_proto(connector.since),
+            starting_from=_to_timestamp_proto(connector.since),
+            until=_to_timestamp_proto(connector.until),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
@@ -1145,7 +1151,8 @@ def _kinesis_conn_to_source_proto(
             ds_version=ds_version,
             disorder=to_duration_proto(connector.disorder),
             cdc=to_cdc_proto(connector.cdc),
-            starting_from=_to_starting_from_proto(connector.since),
+            starting_from=_to_timestamp_proto(connector.since),
+            until=_to_timestamp_proto(connector.until),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
         ),
     )
@@ -1361,13 +1368,13 @@ def {featureset._name}_{extractor.name}(*args, **kwargs):
 
 
 # ------------------------------------------------------------------------------
-# Since
+# Since / Until
 # ------------------------------------------------------------------------------
 
 
-def _to_starting_from_proto(since: Optional[datetime]) -> Optional[Timestamp]:
-    if since is None:
+def _to_timestamp_proto(dt: Optional[datetime]) -> Optional[Timestamp]:
+    if dt is None:
         return None
     ts = Timestamp()
-    ts.FromDatetime(since)
+    ts.FromDatetime(dt)
     return ts

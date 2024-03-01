@@ -136,6 +136,13 @@ ingest data from a specific time onwards. The `since` field allows us to do that
 
 The `since` field is a `datetime` instance.
 
+### Until
+The `until` field provides a way to limit ingestion of a particular source to end at a particular timestamp.
+
+When deriving datasets that are unions of batch and realtime sources, `until` and `since` can be used to control when
+to switch between sources. For example, read from s3 `until` a timestamp, and from that timestamp onwards, read from kafka
+using `since`.  
+
 
 ## Load Impact of Sources
 

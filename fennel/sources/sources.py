@@ -42,6 +42,7 @@ def source(
     cdc: str,
     every: Optional[Duration] = None,
     since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
     tier: Optional[Union[str, List[str]]] = None,
     preproc: Optional[Dict[str, PreProcValue]] = None,
 ) -> Callable[[T], Any]:
@@ -56,9 +57,18 @@ def source(
     if since is not None and not isinstance(since, datetime):
         raise TypeError(f"'since' must be of type datetime - got {type(since)}")
 
+    if until is not None and not isinstance(until, datetime):
+        raise TypeError(f"'until' must be of type datetime - got {type(until)}")
+
+    if since is not None and until is not None and since > until:
+        raise ValueError(
+            f"'since' ({since}) must be earlier than 'until' ({until})"
+        )
+
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY
         conn.since = since
+        conn.until = until
         conn.disorder = disorder
         conn.cdc = cdc
         conn.tiers = TierSelector(tier)
@@ -377,6 +387,7 @@ class DataConnector:
     disorder: Duration
     cdc: str
     since: Optional[datetime] = None
+    until: Optional[datetime] = None
     tiers: TierSelector
     pre_proc: Optional[Dict[str, PreProcValue]] = None
 
