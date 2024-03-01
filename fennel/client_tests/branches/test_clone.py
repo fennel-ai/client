@@ -183,8 +183,7 @@ def test_clone_after_log(client):
 
     _, found = client.lookup(
         dataset_name="UserInfoDataset",
-        keys=[{"user_id": 1}, {"user_id": 2}],
-        fields=["age"],
+        keys=pd.DataFrame({"user_id": [1, 2]}),
     )
     assert found.to_list() == [True, False]
 
@@ -192,8 +191,7 @@ def test_clone_after_log(client):
     assert client.get_branch() == "test-branch"
     _, found = client.lookup(
         dataset_name="UserInfoDataset",
-        keys=[{"user_id": 1}, {"user_id": 2}],
-        fields=["age"],
+        keys=pd.DataFrame({"user_id": [1, 2]}),
     )
     assert found.to_list() == [True, False]
 
@@ -241,7 +239,7 @@ def test_webhook_log_to_both_clone_parent(client):
     assert client.get_branch() == "test-branch"
     params = {
         "dataset_name": "GenderStats",
-        "keys": [{"gender": "male"}, {"gender": "F"}],
+        "keys": pd.DataFrame({"gender": ["male", "F"]}),
         "fields": ["gender", "count"],
     }
     _, found = client.lookup(**params)
@@ -395,7 +393,7 @@ def test_change_dataset_clone_branch(client):
     client.checkout("test-branch")
     df, found = client.lookup(
         dataset_name="GenderStats",
-        keys=[{"gender": "male"}, {"gender": "F"}],
+        keys=pd.DataFrame({"gender": ["male", "F"]}),
         fields=["gender", "count"],
     )
     assert found.to_list() == [False, True]
@@ -443,7 +441,7 @@ def test_multiple_clone_branch(client):
 
     params = {
         "dataset_name": "GenderStats",
-        "keys": [{"gender": "male"}, {"gender": "F"}],
+        "keys": pd.DataFrame({"gender": ["male", "F"]}),
         "fields": ["gender", "count"],
     }
     df, found = client.lookup(**params)
@@ -555,7 +553,7 @@ def test_change_source_dataset_clone_branch(client):
 
     params = {
         "dataset_name": "GenderStats",
-        "keys": [{"gender": 0}, {"gender": 1}],
+        "keys": pd.DataFrame({"gender": [0, 1]}),
         "fields": ["gender", "count"],
     }
     output, found = client.lookup(**params)
@@ -564,7 +562,7 @@ def test_change_source_dataset_clone_branch(client):
     assert list(output["count"]) == [1, 1]
 
     client.checkout("main")
-    params["keys"] = [{"gender": "M"}, {"gender": "F"}]
+    params["keys"] = pd.DataFrame({"gender": ["M", "F"]})
     output, found = client.lookup(**params)
     assert list(output["gender"]) == ["M", "F"]
     assert list(output["count"]) == [1, 1]

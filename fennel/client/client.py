@@ -534,9 +534,9 @@ class Client:
     def lookup(
         self,
         dataset_name: str,
-        keys: List[Dict[str, Any]],
-        fields: List[str],
-        timestamps: List[Union[int, str, datetime]] = None,
+        keys: pd.DataFrame,
+        fields: Optional[List[str]] = None,
+        timestamps: Optional[pd.Series] = None,
     ) -> Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
         """
         Look up values of fields in a dataset given keys.
@@ -545,21 +545,24 @@ class Client:
               other fields are timestamp and C. Suppose we want to lookup this dataset against
               two values as of some time and now.
 
-              keys = [
-                {"A": "valueA1", "B": "valueB1"},
-                {"A": "valueA2", "B": "valueB2"}
+              keys = pd.DataFrame([
+                {"A": ["valueA1", "valueA2"]}
+                {"B": ["valueB1", "valueB2"]}
               ]
               fields = ["C"]
-              timestamp = ["2019-02-01T00:00:00Z", "2019-02-01T00:00:00Z"] if want to do as of else None
+              timestamp = pd.Series(["2019-02-01T00:00:00Z", "2019-02-01T00:00:00Z"]) if want to do as of else None
 
         Parameters:
         dataset_name (str): The name of the dataset.
-        keys (List[Dict[str, Any]]): A list of keys, key(s), and its value, is a represented in a dictionary.
-        fields: A subset of fields of the dataset.
+        keys (pd.DataFrame): All the keys to lookup.
+        fields: (Optional[List[str]]): The fields to lookup. If None, all fields are returned.
+        timestamps (Optional[pd.Series]): The timestamps to lookup. If None, the current time is used.
 
         Returns:
         Tuple[Union[pd.DataFrame, pd.Series], pd.Series]: A pair. The first is a Pandas dataframe or series containing values; the second is a series indicating whether the corresponding key(s) is found in the dataset.
         """
+        keys = keys.to_dict(orient="records")
+        fields = fields if fields else []
         req = {
             "keys": keys,
             "fields": fields,
@@ -577,9 +580,9 @@ class Client:
         )
         resp_json = response.json()
         found = pd.Series(resp_json["found"])
-        if len(fields) > 1:
-            return pd.DataFrame(resp_json["data"]), found
-        return pd.Series(resp_json["data"]), found
+        if len(fields) == 1:
+            return pd.Series(name=fields[0], data=resp_json["data"][fields[0]]), found
+        return pd.DataFrame(resp_json["data"]), found
 
     def inspect(self, dataset_name: str, n: int = 10) -> List[Dict[str, Any]]:
         """

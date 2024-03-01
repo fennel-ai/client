@@ -78,7 +78,7 @@ def test_complex_create(client):
 
     _, found = client.lookup(
         dataset_name="UserInfoDataset",
-        keys=[{"user_id": 1}, {"user_id": 2}],
+        keys=pd.DataFrame({"user_id": [1, 2]}),
         fields=["age"],
     )
     assert found.to_list() == [False, False]
@@ -129,7 +129,7 @@ def test_log(client):
 
     _, found = client.lookup(
         dataset_name="UserInfoDataset",
-        keys=[{"user_id": 1}, {"user_id": 2}],
+        keys=pd.DataFrame({"user_id": [1, 2]}),
         fields=["age"],
     )
     assert found.to_list() == [True, False]

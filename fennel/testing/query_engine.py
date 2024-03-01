@@ -29,30 +29,38 @@ class QueryEngine:
         self,
         data_engine: DataEngine,
         dataset_name: str,
-        keys: List[Dict[str, Any]],
-        fields: List[str],
-        timestamps: List[Union[int, str, datetime]] = None,
-    ) -> Tuple[List[dict], pd.Series]:
+        keys: pd.DataFrame,
+        fields: Optional[List[str]] = None,
+        timestamps: Optional[pd.Series] = None,
+    ) -> Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
         """
         This function does a lookup on a dataset given data_engine containing the dataset.
         Args:
             data_engine: (DataEngine) - Data Engine containing the datasets and corresponding pandas dataframes
-            dataset_name: (str) - Name of the dataset on which lookup is performed
-            keys: (List[Dict[str, Any]]) - List of keys against which lookup is performed
-            fields: (List[str]) - List of output fields
-            timestamps: (List[Union[int, str, datetime]]) - Time as of which lookup is performed, in case of null, as of now lookup is performed.
+            dataset_name (str): The name of the dataset.
+            keys (pd.DataFrame): All the keys to lookup.
+            fields: (Optional[List[str]]): The fields to lookup. If None, all fields are returned.
+            timestamps (Optional[pd.Series]): The timestamps to lookup. If None, the current time is used.
         Returns:
 
         """
+        if isinstance(keys, list):
+            raise ValueError(
+                "keys should be a pandas DataFrame, not a dictionary"
+            )
+
         if dataset_name not in data_engine.get_dataset_names():
             raise KeyError(f"Dataset: {dataset_name} not found")
 
         dataset_fields = data_engine.get_dataset_fields(dataset_name)
         dataset = data_engine.get_dataset(dataset_name)
 
-        for field_name in fields:
-            if field_name not in dataset_fields:
-                raise ValueError(f"Field: {field_name} not in dataset")
+        if fields is not None:
+            for field_name in fields:
+                if field_name not in dataset_fields:
+                    raise ValueError(f"Field: {field_name} not in dataset")
+        else:
+            fields = dataset_fields
 
         fennel.datasets.datasets.dataset_lookup = partial(
             data_engine.get_dataset_lookup_impl(None, [dataset_name]),
@@ -65,9 +73,10 @@ class QueryEngine:
                     timestamp_type=schema_proto.TimestampType()
                 ),
             )
-            if timestamps
+            if timestamps is not None
             else pd.Series([datetime.utcnow() for _ in range(len(keys))])
         )
+        keys = keys.to_dict(orient="records")
 
         keys_dict = defaultdict(list)
         for key in keys:
@@ -82,7 +91,9 @@ class QueryEngine:
         fennel.datasets.datasets.dataset_lookup = partial(
             data_engine.get_dataset_lookup_impl(None, None),
         )
-        return data[fields].to_dict(orient="list"), found
+        if len(fields) == 1:
+            return pd.Series(name=fields[0], data=data[fields[0]]), found
+        return data[fields], found
 
     def run_extractors(
         self,

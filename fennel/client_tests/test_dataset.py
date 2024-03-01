@@ -758,13 +758,12 @@ class TestBasicExplode(unittest.TestCase):
         # do lookup on the WithSquare dataset
         df, found = client.lookup(
             dataset_name="Derived",
-            keys=[{"uid": 1}, {"uid": 2}],
-            fields=["uid", "sku", "price", "timestamp"],
+            keys=pd.DataFrame({"uid": [1, 2]}),
         )
         assert list(found) == [True, True]
-        assert df["uid"] == [1, 2]
-        assert df["sku"] == [1, None]
-        assert df["price"] == [10.1, None]
+        assert df["uid"].tolist() == [1, 2]
+        assert df["sku"].tolist() == [1, None]
+        assert df["price"].tolist() == [10.1, None]
 
 
 class TestBasicAssign(unittest.TestCase):
@@ -3237,13 +3236,12 @@ def test_lookup_as_of_now(client):
 
     data, found = client.lookup(
         "UserInfoDataset",
-        [{"user_id": 18232}],
+        pd.DataFrame({"user_id": [18232]}),
         fields=["name"],
     )
-    assert len(found.tolist()) == 1
     assert found.tolist() == [True]
     assert len(data) == 1
-    assert data["name"][0] == "Ross"
+    assert data.tolist() == ["Ross"]
 
 
 @pytest.mark.integration
@@ -3265,12 +3263,11 @@ def test_lookup_as_of_time(client):
 
     data, found = client.lookup(
         "UserInfoDataset",
-        [{"user_id": 18232}, {"user_id": 18233}],
+        pd.DataFrame({"user_id": [18232, 18233]}),
         fields=["name"],
         timestamps=["2022-11-09 01:22:23", "2022-11-16 01:33:13"],
     )
     assert len(found.tolist()) == 2
     assert found.tolist() == [False, True]
-    assert len(data) == 1
-    assert data["name"][0] is None
-    assert data["name"][1] == "Monica"
+    assert data.shape[0] == 2
+    assert data.tolist() == [None, "Monica"]

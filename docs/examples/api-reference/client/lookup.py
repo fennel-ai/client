@@ -38,7 +38,7 @@ def test_basic(client):
     )
 
     # now do a lookup to verify that the rows were logged
-    keys = [{"uid": 1}, {"uid": 2}, {"uid": 3}]
+    keys = pd.DataFrame({"uid": [1, 2, 3]})
     ts = [
         datetime(2021, 1, 1, 0, 0, 0),
         datetime(2021, 2, 1, 0, 0, 0),
@@ -47,11 +47,10 @@ def test_basic(client):
     response, found = client.lookup(
         "Transaction",
         keys=keys,
-        fields=["uid", "amount"],
-        timestamps=ts,
+        timestamps=pd.Series(ts),
     )
     # /docsnip
     assert found.tolist() == [True, True, False]
     # Response is columnar
-    assert response["uid"] == [1, 2, 3]
-    assert response["amount"] == [10, 20, None]
+    assert response["uid"].tolist() == [1, 2, 3]
+    assert response["amount"].tolist() == [10, 20, None]

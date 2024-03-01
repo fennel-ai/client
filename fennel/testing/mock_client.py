@@ -4,7 +4,7 @@ import copy
 import logging
 import os
 from datetime import datetime
-from typing import Dict, List, Optional, Union, Any
+from typing import Dict, List, Optional, Union, Any, Tuple
 
 import pandas as pd
 
@@ -193,10 +193,10 @@ class MockClient(Client):
     def lookup(
         self,
         dataset_name: str,
-        keys: List[Dict[str, Any]],
-        fields: List[str],
-        timestamps: List[Union[int, str, datetime]] = None,
-    ):
+        keys: pd.DataFrame,
+        fields: Optional[List[str]] = None,
+        timestamps: Optional[pd.Series] = None,
+    ) -> Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
         branch_class = self._get_branch()
         data_engine = branch_class.get_data_engine()
         return self.query_engine.lookup(
