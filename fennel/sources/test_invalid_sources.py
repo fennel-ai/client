@@ -334,6 +334,8 @@ def test_invalid_until():
         @source(
             s3.bucket(bucket_name="bucket", prefix="prefix"),
             every="1h",
+            disorder="14d",
+            cdc="append",
             until="2020-01-01T00:00:00Z",
         )
         @meta(owner="zaki@fennel.ai")
@@ -358,6 +360,8 @@ def test_invalid_until():
         @source(
             s3.bucket(bucket_name="bucket", prefix="prefix"),
             every="1h",
+            disorder="14d",
+            cdc="append",
             since=datetime(2024, 1, 1),
             until=datetime(2023, 12, 1),
         )
