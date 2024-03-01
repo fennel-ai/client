@@ -44,7 +44,7 @@ class Sessions:
     def get_sessions(cls, app_event: Dataset):
         return (
             app_event.groupby("user_id")
-            .window(type="tumbling", duration="10s", field="window")
+            .window(type="tumbling", duration="10s", into_field="window")
             .summarize(
                 field="window_stats",
                 dtype=WindowStats,
@@ -147,7 +147,10 @@ class SessionsHopping:
         return (
             app_event.groupby("user_id")
             .window(
-                type="hopping", stride="10s", duration="10s", field="window"
+                type="hopping",
+                stride="10s",
+                duration="10s",
+                into_field="window",
             )
             .summarize(
                 field="window_stats",

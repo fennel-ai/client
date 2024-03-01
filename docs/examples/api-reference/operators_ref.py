@@ -171,7 +171,7 @@ class ActivitySession:
     def create_sessions_dataset(cls, activity: Dataset):
         # docsnip window
         sessions = activity.groupby("user_id").window(
-            type="session", gap="60m", field="window"
+            type="session", gap="60m", into_field="window"
         )
         # /docsnip
         return sessions

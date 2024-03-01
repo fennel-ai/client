@@ -45,7 +45,9 @@ class Sessions:
     def get_sessions(cls, app_event: Dataset):
         return (
             app_event.groupby("user_id")
-            .window(type="hopping", stride="5s", duration="10s", field="window")
+            .window(
+                type="hopping", stride="5s", duration="10s", into_field="window"
+            )
             .summarize(
                 field="window_stats",
                 dtype=WindowStats,

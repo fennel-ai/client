@@ -2732,7 +2732,7 @@ def test_window_operator():
         @inputs(PageViewEvent)
         def pipeline_window(cls, app_event: Dataset):
             return app_event.groupby("user_id").window(
-                type="session", gap="10m", field="window"
+                type="session", gap="10m", into_field="window"
             )
 
     view = InternalTestClient()
@@ -2866,7 +2866,7 @@ def test_window_with_summary():
         def pipeline_window(cls, app_event: Dataset):
             return (
                 app_event.groupby("user_id")
-                .window(type="tumbling", duration="10m", field="window")
+                .window(type="tumbling", duration="10m", into_field="window")
                 .summarize(
                     "page_id_concat",
                     str,
@@ -3018,7 +3018,7 @@ def test_window_operator_with_aggregation():
         def pipeline_window(cls, app_event: Dataset):
             sessions = (
                 app_event.groupby("user_id")
-                .window(type="session", gap="10m", field="window")
+                .window(type="session", gap="10m", into_field="window")
                 .assign(
                     "duration_secs",
                     int,

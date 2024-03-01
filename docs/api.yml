@@ -46,6 +46,8 @@ sidebar:
       - "api-reference/operators/first"
       - "api-reference/operators/dedup"
       - "api-reference/operators/rename"
+      - "api-reference/operators/window"
+      - "api-reference/operators/summarize"
 
   - slug: "api-reference/sources"
     title: "Sources"
