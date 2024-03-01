@@ -5,7 +5,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.test_lib import mock
+from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
 
@@ -20,7 +20,7 @@ class TestDebugSnips(unittest.TestCase):
         webhook = Webhook(name="webhook")
 
         # docsnip basic
-        @source(webhook.endpoint("User"))
+        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
         @dataset
         class User:
             uid: int = field(key=True)
@@ -34,7 +34,7 @@ class TestDebugSnips(unittest.TestCase):
             country: str
             signup_time: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(User)
             def my_pipeline(cls, user: Dataset):
                 ds = user.filter(lambda df: df["city"] != "London")
@@ -46,7 +46,7 @@ class TestDebugSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.sync(datasets=[User, Procssed])
+        client.commit(datasets=[User, Procssed])
         # log some rows to the dataset
         client.log(
             "webhook",
@@ -99,7 +99,7 @@ class TestDebugSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"))
+        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
         @dataset
         class User:
             uid: int = field(key=True)
@@ -112,12 +112,12 @@ class TestDebugSnips(unittest.TestCase):
             country: str
             signup_time: datetime
 
-            @pipeline(version=1)
+            @pipeline
             @inputs(User)
             def my_pipeline(cls, user: Dataset):
                 return user.filter(lambda df: df["country"] == "US")
 
-        client.sync(datasets=[User, USUsers])
+        client.commit(datasets=[User, USUsers])
         # log some rows to the dataset
         client.log(
             "webhook",
@@ -151,14 +151,14 @@ class TestDebugSnips(unittest.TestCase):
         webhook = Webhook(name="webhook")
 
         # docsnip astype
-        @source(webhook.endpoint("User"))
+        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
         @dataset
         class User:
             uid: int = field(key=True)
             height_cm: Optional[float]
             signup_time: datetime
 
-        client.sync(datasets=[User])
+        client.commit(datasets=[User])
         # log some rows to the dataset
         df = pd.DataFrame(
             columns=["uid", "height_cm", "signup_time"],

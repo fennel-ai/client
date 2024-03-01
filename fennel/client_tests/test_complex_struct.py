@@ -18,7 +18,6 @@ __owner__ = "nitin@fennel.ai"
 
 @struct
 class Lookup:
-    director_id: int
     movie_id: int
 
 
