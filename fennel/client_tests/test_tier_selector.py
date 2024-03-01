@@ -55,9 +55,8 @@ class ActorStats:
     @pipeline(tier="prod")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join(cls, info: Dataset, sale: Dataset):
-        uniq = sale.groupby("ticket_id").first()
         c = (
-            uniq.join(info, how="inner", on=["title"])
+            sale.join(info, how="inner", on=["title"])
             .explode(columns=["actors"])
             .rename(columns={"actors": "name"})
         )
@@ -79,9 +78,8 @@ class ActorStats:
             df["price"] = df["price"] * 2
             return df
 
-        uniq = sale.groupby("ticket_id").first()
         c = (
-            uniq.join(info, how="inner", on=["title"])
+            sale.join(info, how="inner", on=["title"])
             .explode(columns=["actors"])
             .rename(columns={"actors": "name"})
         )

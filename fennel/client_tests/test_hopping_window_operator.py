@@ -47,8 +47,8 @@ class Sessions:
             app_event.groupby("user_id")
             .window(type="hopping", stride="5s", duration="10s", field="window")
             .summarize(
-                column="window_stats",
-                result_type=WindowStats,
+                field="window_stats",
+                dtype=WindowStats,
                 func=lambda df: {
                     "avg_star": float(df["star"].mean()),
                     "count": len(df),

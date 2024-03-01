@@ -2187,7 +2187,7 @@ def test_first_operator():
 @meta(owner="e2@company.com")
 @dataset
 class Document:
-    doc_id: int = field(key=True).meta(owner="aditya@fennel.ai")  # type: ignore
+    doc_id: int
     body: str
     title: str
     owner: str
@@ -2203,7 +2203,7 @@ def test_search_dataset():
     @meta(owner="aditya@fennel.ai")
     @dataset
     class DocumentContentDataset:
-        doc_id: int = field(key=True)
+        doc_id: int
         bert_embedding: Embedding[128]
         fast_text_embedding: Embedding[256]
         num_words: int
@@ -2230,7 +2230,7 @@ def test_search_dataset():
     @meta(owner="abhay@fennel.ai")
     @dataset
     class DocumentWordDataset:
-        doc_id: int = field(key=True)
+        doc_id: int
         bert_embedding: Embedding[128]
         fast_text_embedding: Embedding[256]
         num_words: int
@@ -2257,16 +2257,13 @@ def test_search_dataset():
     d = {
         "name": "DocumentContentDataset",
         "dsschema": {
-            "keys": {
+            "keys": {"fields": []},
+            "values": {
                 "fields": [
                     {
                         "name": "doc_id",
                         "dtype": {"int_type": {}},
-                    }
-                ]
-            },
-            "values": {
-                "fields": [
+                    },
                     {
                         "name": "bert_embedding",
                         "dtype": {"embedding_type": {"embedding_size": 128}},
@@ -2316,16 +2313,13 @@ def test_search_dataset():
     d = {
         "name": "DocumentWordDataset",
         "dsschema": {
-            "keys": {
+            "keys": {"fields": []},
+            "values": {
                 "fields": [
                     {
                         "name": "doc_id",
                         "dtype": {"int_type": {}},
-                    }
-                ]
-            },
-            "values": {
-                "fields": [
+                    },
                     {
                         "name": "bert_embedding",
                         "dtype": {"embedding_type": {"embedding_size": 128}},

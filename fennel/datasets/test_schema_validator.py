@@ -695,7 +695,7 @@ def test_dedup_on_missing_field():
 
 
 def test_explode_fails_on_keyed_column():
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(TypeError) as e:
 
         @meta(owner="abhay@fennel.ai")
         @dataset
@@ -720,7 +720,7 @@ def test_explode_fails_on_keyed_column():
 
     assert (
         str(e.value)
-        == """Field `director` is a key or timestamp field in schema of explode node input '[Dataset:SingleHits]'. Value fields are: ['movie', 'revenue']"""
+        == """Explode over keyed datasets is not defined. Found dataset with keys `{'director': typing.List[str]}` in pipeline `pipeline_exploded`"""
     )
 
 
@@ -730,7 +730,7 @@ def test_explode_fails_on_missing_column():
         @meta(owner="abhay@fennel.ai")
         @dataset
         class SingleHits:
-            director: List[str] = field(key=True)
+            director: List[str]
             movie: str
             revenue: int
             t: datetime
@@ -1595,15 +1595,15 @@ def test_double_summary():
                     app_event.groupby("user_id")
                     .window(type="session", gap="2s", field="window")
                     .summarize(
-                        column="concat_page_id",
-                        result_type=str,
+                        field="concat_page_id",
+                        dtype=str,
                         func=lambda df: ",".join(
                             [str(x) for x in df["page_id"]]
                         ),
                     )
                     .summarize(
-                        column="concat_page_idd",
-                        result_type=str,
+                        field="concat_page_idd",
+                        dtype=str,
                         func=lambda df: ",".join(
                             [str(x) for x in df["page_id"]]
                         ),

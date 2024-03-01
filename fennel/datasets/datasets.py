@@ -672,6 +672,14 @@ class Join(_Node):
             self.dataset.dsschema().values
         )
 
+        rhs_keys = set(self.dataset.dsschema().keys)
+        join_keys = set(self.on) if self.on is not None else set(self.right_on)
+        # Ensure on or right_on are the keys of the right dataset
+        if join_keys != rhs_keys:
+            raise ValueError(
+                f"Join fields `{join_keys}` are not keys fields in right dataset `{self.dataset.dsschema().name}`"
+            )
+
         common_cols = set(left_schema.keys()) & set(right_value_schema.keys())
         # for common values, suffix column name in left_schema with lsuffix and right_schema with rsuffix
         for col in common_cols:
@@ -900,7 +908,7 @@ class WindowOperator(_Node):
             timestamp=input_schema.timestamp,
         )
 
-    def summarize(self, column: str, result_type: Type, func: Callable):
+    def summarize(self, field: str, dtype: Type, func: Callable):
         if self.summary is not None:
             raise ValueError(
                 f"'window' operator already have a summary field with name {self.summary.field}. window operator can only have 1 summary"
@@ -908,7 +916,7 @@ class WindowOperator(_Node):
 
         new_window_op = copy.deepcopy(self)
         new_window_op.summary = Summary(
-            field=column, dtype=result_type, summarize_func=func
+            field=field, dtype=dtype, summarize_func=func
         )
         return new_window_op
 
@@ -2303,6 +2311,12 @@ class SchemaValidator(Visitor):
 
     def visitExplode(self, obj) -> DSSchema:
         input_schema = copy.deepcopy(self.visit(obj.node))
+        # If it is a keyed dataset throw an error. Explode over keyed
+        # datasets, is not defined, since for a keyed dataset, there is only one value for each key.
+        if len(input_schema.keys) > 0:
+            raise TypeError(
+                f"Explode over keyed datasets is not defined. Found dataset with keys `{input_schema.keys}` in pipeline `{self.pipeline_name}`"
+            )
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->explode node'"
         if obj.columns is None or len(obj.columns) == 0:
             raise ValueError(

@@ -96,7 +96,7 @@ class GoogleDocs:
 
 @dataset
 class Document:
-    doc_id: int = field(key=True).meta(owner="aditya@fennel.ai")  # type: ignore
+    doc_id: int
     body: str
     title: str
     owner: str
@@ -111,28 +111,39 @@ class Document:
         new_schema = notion_docs.schema()
         new_schema["origin"] = str
         return (
-            (
-                notion_docs.transform(
-                    lambda df: cls.doc_pipeline_helper(df, "Notion"),
-                    schema=new_schema,
-                )
-                + coda_docs.transform(
-                    lambda df: cls.doc_pipeline_helper(df, "Coda"),
-                    schema=new_schema,
-                )
-                + google_docs.transform(
-                    lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
-                    schema=new_schema,
-                )
+            notion_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "Notion"),
+                schema=new_schema,
             )
-            .groupby("doc_id")
-            .first()
+            + coda_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "Coda"),
+                schema=new_schema,
+            )
+            + google_docs.transform(
+                lambda df: cls.doc_pipeline_helper(df, "GoogleDocs"),
+                schema=new_schema,
+            )
         )
 
     @classmethod
     def doc_pipeline_helper(cls, df: pd.DataFrame, origin: str) -> pd.DataFrame:
         df["origin"] = origin
         return df
+
+
+@dataset
+class DocumentIndexed:
+    doc_id: int = field(key=True)
+    body: str
+    title: str
+    owner: str
+    origin: str
+    creation_timestamp: datetime
+
+    @pipeline
+    @inputs(Document)
+    def index(cls, ds: Dataset):
+        return ds.groupby("doc_id").first()
 
 
 def get_bert_embedding(text: str):
@@ -180,7 +191,7 @@ def get_content_features(df: pd.DataFrame) -> pd.DataFrame:
 
 @dataset
 class DocumentContentDataset:
-    doc_id: int = field(key=True)
+    doc_id: int
     bert_embedding: Embedding[128]
     fast_text_embedding: Embedding[256]
     num_words: int
@@ -203,6 +214,22 @@ class DocumentContentDataset:
                 "creation_timestamp": datetime,
             },
         )
+
+
+@dataset
+class DocumentContentDatasetIndexed:
+    doc_id: int = field(key=True)
+    bert_embedding: Embedding[128]
+    fast_text_embedding: Embedding[256]
+    num_words: int
+    num_stop_words: int
+    top_10_unique_words: List[str]
+    creation_timestamp: datetime
+
+    @pipeline
+    @inputs(DocumentContentDataset)
+    def index(cls, ds: Dataset):
+        return ds.groupby("doc_id").first()
 
 
 @dataset
@@ -385,10 +412,10 @@ class DocumentContentFeatures:
     num_stop_words: int = feature(id=5)
     top_10_unique_words: List[str] = feature(id=6)
 
-    @extractor(depends_on=[DocumentContentDataset])
+    @extractor(depends_on=[DocumentContentDatasetIndexed])
     @inputs(Query.doc_id)
     def get_features(cls, ts: pd.Series, doc_id: pd.Series):
-        df, found = DocumentContentDataset.lookup(  # type: ignore
+        df, found = DocumentContentDatasetIndexed.lookup(  # type: ignore
             ts, doc_id=doc_id  # type: ignore
         )
         df.drop("creation_timestamp", axis=1, inplace=True)
@@ -501,7 +528,14 @@ class TestSearchExample(unittest.TestCase):
     @mock
     def test_search_datasets1(self, client):
         client.commit(
-            datasets=[NotionDocs, CodaDocs, GoogleDocs, Document], tier="dev"
+            datasets=[
+                NotionDocs,
+                CodaDocs,
+                GoogleDocs,
+                Document,
+                DocumentIndexed,
+            ],
+            tier="dev",
         )
         self.log_document_data(client)
         client.sleep()
@@ -510,13 +544,13 @@ class TestSearchExample(unittest.TestCase):
 
         doc_ids = pd.Series([141234, 143354, 33234, 11111])
         ts = pd.Series([now, now, now, now])
-        df, found = Document.lookup(ts, doc_id=doc_ids)
+        df, found = DocumentIndexed.lookup(ts, doc_id=doc_ids)
         assert df.shape == (4, 6)
         assert found.tolist() == [True, True, True, False]
 
         doc_ids = pd.Series([141234, 143354, 33234, 11111])
         ts = pd.Series([yesterday, yesterday, yesterday, yesterday])
-        df, found = Document.lookup(ts, doc_id=doc_ids)
+        df, found = DocumentIndexed.lookup(ts, doc_id=doc_ids)
         assert df.shape == (4, 6)
         assert found.tolist() == [False, False, True, False]
 
@@ -558,6 +592,7 @@ class TestSearchExample(unittest.TestCase):
                 Document,
                 UserActivity,
                 DocumentContentDataset,
+                DocumentContentDatasetIndexed,
                 TopWordsCount,
                 UserEngagementDataset,
                 DocumentEngagementDataset,
