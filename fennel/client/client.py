@@ -581,7 +581,10 @@ class Client:
         resp_json = response.json()
         found = pd.Series(resp_json["found"])
         if len(fields) == 1:
-            return pd.Series(name=fields[0], data=resp_json["data"][fields[0]]), found
+            return (
+                pd.Series(name=fields[0], data=resp_json["data"][fields[0]]),
+                found,
+            )
         return pd.DataFrame(resp_json["data"]), found
 
     def inspect(self, dataset_name: str, n: int = 10) -> List[Dict[str, Any]]:
