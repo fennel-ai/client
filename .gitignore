@@ -1,5 +1,6 @@
 **/.DS_Store
 fennel/proto/*.proto
+fennel/test_lib/
 output.txt
 
 # Byte-compiled / optimized / DLL files
