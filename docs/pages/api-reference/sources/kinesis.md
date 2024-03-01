@@ -57,7 +57,7 @@ though Fennel also supports [Avro](/api-reference/sources/avro).
 <Expandable title="Connectivity problems">
 Fennel server tries to connect with Kinesis during the `commit` operation
 itself to validate connectivity - as a result, incorrect stream/role ARNs or 
-insufficient permissions will be caught at ccommit time itself as an error.
+insufficient permissions will be caught at commit time itself as an error.
 
 Note: Mock client can not talk to any external data source and hence is unable to
 do this validation at commit time.

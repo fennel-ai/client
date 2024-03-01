@@ -28,14 +28,14 @@ By default, Fennel creates a default branch called "main". All branch operations
 talk to this branch if not explicitly specified. The only thing special
 about this branch is that it can not be deleted - outside of that, it's just a 
 regular branch. All branches are equally suitable to be used in any production or
-experimetal setting.
+experimental setting.
 
 ## Branch Cloning
 In addition to creating new empty branches via `init_branch` method on the client,
 Fennel also supports cloning an existing branch. The new cloned branch gets an
 independent copy of all the datasets/featuresets in the original branch. After
 the clone, the datasets/featuresets in the new branch can be modified arbitrarily
-without influcing the original branch.
+without influencing the original branch.
 
 <pre snippet="concepts/branch#clone" message="Cloning branch1 into a new branch branch2">
 </pre>
