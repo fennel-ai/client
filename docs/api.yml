@@ -13,6 +13,8 @@ sidebar:
       - "api-reference/client/init-branch"
       - "api-reference/client/clone-branch"
       - "api-reference/client/delete-branch"
+      - "api-reference/client/checkout"
+      - "api-reference/client/branch"
 
   - slug: "api-reference/rest-api"
     title: "REST API"
