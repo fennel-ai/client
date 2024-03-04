@@ -140,7 +140,7 @@ def test_simple_clone(client):
     )
 
     client.clone_branch("test-branch", from_branch="main")
-    assert client.get_branch() == "test-branch"
+    assert client.branch() == "test-branch"
 
     test_branch_datasets = client.get_datasets()
     test_branch_featuresets = client.get_featuresets()
@@ -151,6 +151,24 @@ def test_simple_clone(client):
         assert x._name == y._name
     for x, y in zip(client.get_featuresets(), test_branch_featuresets):
         assert x._name == y._name
+
+
+@pytest.mark.integration
+@mock
+def test_clone_errors(client):
+    # can not clone from non-existent branch
+    assert client.list_branches() == ["main"]
+    response = client.clone_branch("test-branch", from_branch="random")
+    assert response.status_code == requests.codes.BAD_REQUEST
+
+    # does work when the branch exists
+    assert client.list_branches() == ["main"]
+    client.clone_branch("test-branch", from_branch="main")
+    assert client.list_branches() == ["main", "test-branch"]
+
+    # can not clone to an existing branch
+    response = client.clone_branch("test-branch", from_branch="main")
+    assert response.status_code == requests.codes.BAD_REQUEST
 
 
 @pytest.mark.integration
@@ -188,7 +206,7 @@ def test_clone_after_log(client):
     assert found.to_list() == [True, False]
 
     client.clone_branch("test-branch", from_branch="main")
-    assert client.get_branch() == "test-branch"
+    assert client.branch() == "test-branch"
     _, found = client.lookup(
         dataset_name="UserInfoDataset",
         keys=pd.DataFrame({"user_id": [1, 2]}),
@@ -236,7 +254,7 @@ def test_webhook_log_to_both_clone_parent(client):
 
     client.sleep()
 
-    assert client.get_branch() == "test-branch"
+    assert client.branch() == "test-branch"
     params = {
         "dataset_name": "GenderStats",
         "keys": pd.DataFrame({"gender": ["male", "F"]}),
@@ -246,7 +264,7 @@ def test_webhook_log_to_both_clone_parent(client):
     assert found.to_list() == [True, True]
 
     client.checkout("main")
-    assert client.get_branch() == "main"
+    assert client.branch() == "main"
     _, found = client.lookup(**params)
     assert found.to_list() == [True, True]
 
