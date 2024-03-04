@@ -15,11 +15,13 @@ operator.
 The `first` operator does not take any parameters.
 
 #### Returns
+<Expandable type="Dataset">
 The returned dataset's fields are the same as the input dataset, with the 
 grouping fields as the keys.  
 
 For each group formed by grouping, one row is chosen having the lowest
 value in the timestamp field. In case of ties, the first seen row wins.
+</Expandable>
 </LeftSection>
 
 <RightSection>

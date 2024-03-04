@@ -1,53 +1,38 @@
 ---
 title: Init Branch
 order: 0
-status: draft
+status: published
 ---
 
 `init_branch`
 ### Init Branch
 <Divider>
 <LeftSection>
-Sends the local dataset and featureset definitions to the server for verification,
-storage and processing.
+Creates a new empty branch and checks out the client to point towards it.
 
 #### Parameters
-<Expandable title="message" type="str">
-Human readable description of the changes in the commit - akin to the commit 
-message in a git commit.
+<Expandable title="name" type="str">
+The name of the branch that should be created. The name can consist of any ASCII
+characters.
 </Expandable>
 
-<Expandable title="datasets" type="List[Dataset]" defaultVal="[]">
-List of dataset objects to be committed.
+#### Errors
+<Expandable title="Branch already exists">
+Raises an error if a branch of the same name already exists.
 </Expandable>
 
-<Expandable title="featuresets" type="List[Featureset]" defaultVal="[]">
-List of featureset objects to be committed.
+<Expandable title="Invalid auth token">
+Raises an error if the auth token isn't valid. Not applicable to the mock client.
 </Expandable>
 
-<Expandable title="preview" type="bool" defaultVal="False">
-If set to True, server only provides a preview of what will happen if commit were
-to be done but doesn't change the state at all.
-
-:::info
-Since preview's main goal is to check the validity of old & new definitions, 
-it only works with real client/server and mock client/server ignore it.
-:::
+<Expandable title="Insufficient permissions">
+Raises an error if the account corresponding to the auth token doesn't carry 
+the permission to create a new branch. Not applicable to the mock client.
 </Expandable>
-
-<Expandable title="tier" type="Optional[str]" defaultVal="None">
-Selector to optionally commit only a subset of sources, pipelines and extractors -
-those with matching values. Rules of selection:
-- If `tier` is None, all objects are selected
-- If `tier` is not None, an object is selected if its own selector is either None
-  or same as `tier` or is `~x` for some other x
-</Expandable>
-
-
 </LeftSection>
 <RightSection>
-<pre snippet="api-reference/client/commit#basic" status="success"
-    message="Silver source and no extractor are committed">
+<pre snippet="api-reference/client/branch#init_branch" status="success"
+    message="Create a new empty branch 'mybranch'">
 </pre>
 </RightSection>
 </Divider>
