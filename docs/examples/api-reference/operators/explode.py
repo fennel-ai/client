@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from typing import List, Optional
 import unittest
@@ -11,7 +12,6 @@ __owner__ = "nikhil@fennel.ai"
 
 
 class TestExplodeSnips(unittest.TestCase):
-    @pytest.mark.skip("Unskip after fixing explode on mock client")
     @mock
     def test_basic(self, client):
         # docsnip basic
@@ -21,7 +21,7 @@ class TestExplodeSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("Orders"))
+        @source(webhook.endpoint("Orders"), disorder="14d", cdc="append")
         @dataset
         class Orders:
             uid: int
@@ -77,6 +77,7 @@ class TestExplodeSnips(unittest.TestCase):
         )
         # do lookup on the WithSquare dataset
         df = client.get_dataset_df("Derived")
+        df = df.fillna(np.nan).replace([np.nan], [None])
         assert df["uid"].tolist() == [1, 1, 2]
         assert df["sku"].tolist() == [1, 2, None]
         assert df["price"].tolist() == [10.1, 20.0, None]
@@ -96,7 +97,7 @@ class TestExplodeSnips(unittest.TestCase):
 
             webhook = Webhook(name="webhook")
 
-            @source(webhook.endpoint("Orders"))
+            @source(webhook.endpoint("Orders"), disorder="14d", cdc="append")
             @dataset
             class Orders:
                 uid: int
@@ -128,7 +129,7 @@ class TestExplodeSnips(unittest.TestCase):
 
             webhook = Webhook(name="webhook")
 
-            @source(webhook.endpoint("Orders"))
+            @source(webhook.endpoint("Orders"), disorder="14d", cdc="append")
             @dataset
             class Orders:
                 uid: int
