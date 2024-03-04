@@ -39,7 +39,7 @@ class UserInfoFeatureset:
 @mock
 def test_simple_create(client):
     client.init_branch("test-branch")
-    assert client.get_branch() == "test-branch"
+    assert client.branch() == "test-branch"
     client.commit()
 
 
@@ -121,7 +121,7 @@ def test_log(client):
     ]
     df = pd.DataFrame(data)
 
-    assert client.get_branch() == "test-branch"
+    assert client.branch() == "test-branch"
 
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()

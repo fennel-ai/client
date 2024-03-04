@@ -46,6 +46,11 @@ def test_delete_branch(client):
     resp = client.commit(datasets=[UserInfoDataset])
     assert resp.status_code == requests.codes.OK
 
+    # can not delete the main branch
+    assert client.list_branches() == ["main"]
+    response = client.delete_branch("main")
+    assert response.status_code == requests.codes.BAD_REQUEST
+
     resp = client.clone_branch("test-branch", "main")
     assert resp.status_code == requests.codes.OK
     assert len(client.list_branches()) == 2
@@ -54,6 +59,8 @@ def test_delete_branch(client):
     assert resp.status_code == requests.codes.OK
 
     assert len(client.list_branches()) == 1
+    # after deleting the branch, the client should be on the main branch
+    assert client.branch() == "main"
 
 
 @pytest.mark.integration
@@ -138,6 +145,8 @@ def test_complex_delete(client):
 
     resp = client.delete_branch("test-branch")
     assert resp.status_code == requests.codes.OK
+    # have to checkout again because delete checks out to main
+    client.checkout("test-branch")
 
     client.sleep()
 

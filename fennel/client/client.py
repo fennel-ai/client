@@ -46,15 +46,19 @@ class Client:
             self._branch = _MAIN_BRANCH
 
     def add(self, obj: Union[Dataset, Featureset]):
-        """
-        Add a dataset or featureset to the client. This will not register the
-        dataset or featureset with the server until the sync method is called.
+        """Add a dataset or featureset to the client.
+
+        This will not register the dataset or featureset with the server until
+        the sync method is called.
 
         Parameters:
+        ----------
         obj (Union[Dataset, Featureset]): Dataset or Featureset to add to the client.
 
         Returns:
+        ----------
         None
+
         """
         if isinstance(obj, Dataset):
             if obj._name in self.to_register:
@@ -77,17 +81,23 @@ class Client:
         preview=False,
         tier: Optional[str] = None,
     ):
-        """
-        Sync the client with the server. This will register any datasets or
-        featuresets that have been added to the client or passed in as arguments.
+        """Commit the changes to the branch pointed to by the client.
+
+        This will register any datasets or featuresets that have been added to
+        the client or passed in as arguments.
 
         Parameters:
+        ----------
         message (str): human readable description of the changes in the commit.
-        datasets (Optional[List[Dataset]]): List of datasets to register with the server.
-        featuresets (Optional[List[Featureset]]):  List of featuresets to register with the server.
+        datasets (Optional[List[Dataset]]): List of datasets to register with
+            the server.
+        featuresets (Optional[List[Featureset]]):  List of featuresets to
+            register with the server.
 
         Returns:
+        ----------
         None
+
         """
         # Reset state.
         self.to_register_objects = []
@@ -143,17 +153,19 @@ class Client:
         df: pd.DataFrame,
         batch_size: int = 1000,
     ):
-        """
-        Log data to a webhook.
+        """Log data to a webhook.
 
         Parameters:
+        ----------
         webhook (str): Name of the webhook to log data to.
         endpoint (str): Endpoint within the webhook to log data to.
         dataframe (pd.DataFrame): Dataframe to log to the dataset.
         batch_size (int): Batch size to use when logging data.
 
-        Returns:
-        Dict: response from the server
+        Returns: Dict
+        ----------
+        Returns the response from the server.
+
         """
         num_rows = df.shape[0]
         if num_rows == 0:
@@ -182,20 +194,35 @@ class Client:
         workflow: Optional[str] = None,
         sampling_rate: Optional[float] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
-        """
-        Query features for a given output feature list from an input
-        feature list. The features are computed for the current time.
+        """Query current value of output features given values of input feature.
 
         Parameters:
-        inputs (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-        outputs (List[Union[Feature, Featureset, str]]): List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
-        input_dataframe (pd.DataFrame): Dataframe containing the input features.
-        log (bool): Boolean which indicates if the extracted features should also be logged (for log-and-wait approach to training data generation). Default is False.
-        workflow (Optional[str]): The name of the workflow associated with the feature extraction. Only relevant when log is set to True.
-        sampling_rate (float): The rate at which feature data should be sampled before logging. Only relevant when log is set to True. The default value is 1.0.
+        ----------
+        inputs (List[Union[Feature, str]]): List of feature objects or fully
+            qualified feature names (when providing a str) can be used as input.
+            Unlike `outputs`, it's not allowed to pass full Featuresets as
+            inputs.
 
-        Returns:
-        Union[pd.DataFrame, pd.Series]: Pandas dataframe or series containing the output features.
+        outputs (List[Union[Feature, Featureset, str]]): List of feature or
+            featureset objects or fully qualified feature names (when providing
+            a str) to compute.
+
+        input_dataframe (pd.DataFrame): Dataframe containing the input features.
+
+        log (bool): Boolean which indicates if the extracted features should
+            also be logged (for log-and-wait approach to training data
+            generation). Default is False.
+
+        workflow (Optional[str]): The name of the workflow associated with the
+            feature extraction. Only relevant when log is set to True.
+        sampling_rate (float): The rate at which feature data should be sampled
+            before logging. Only relevant when log is set to True. The default
+            value is 1.0.
+
+        Returns: Union[pd.DataFrame, pd.Series]:
+        ----------
+        Pandas dataframe or series containing the output features.
+
         """
         if input_dataframe.empty or len(outputs) == 0:
             return pd.DataFrame()
@@ -272,45 +299,61 @@ class Client:
     # ----------------------- Branch API's -----------------------------------
 
     def init_branch(self, name: str):
-        """
-        Create a new empty branch. The client will be checked out to the new
-        branch.
+        """Create a new empty branch.
+
+        The client will be checked out to the new branch.
+        Raises an exception if a branch with the same name already exists.
 
         Parameters:
+        ----------
         name (str): The name of the branch to create.
+
+        Raises an exception if a branch with the same name already exists.
 
         """
         self._branch = name
         return self._post_json(f"{V1_API}/branch/{name}/init", {})
 
     def clone_branch(self, name: str, from_branch: str):
-        """
-        Clone a branch from another branch. After cloning, the client will be
-        checked out to the new branch.
+        """Clone a branch from another branch.
+
+        After cloning, the client will be checked out to the new branch.
+
+        Raises an exception if the branch to clone from does not exist or
+        if the branch to create already exists.
 
         Parameters:
+        ----------
         name (str): The name of the branch to create.
         from_branch (str): The name of the branch to clone from.
+
         """
         req = {"clone_from": from_branch}
         self._branch = name
         return self._post_json(f"{V1_API}/branch/{name}/init", req)
 
     def delete_branch(self, name: str):
-        """
-        Delete a branch.
+        """Delete a branch.
+
+        If successful, the client will be checked out to the
+        main branch. Raises an exception if the branch does not exist.
 
         Parameters:
+        ----------
         name (str): The name of the branch to delete.
+
         """
-        return self._post_json(f"{V1_API}/branch/{name}/delete", {})
+        response = self._post_json(f"{V1_API}/branch/{name}/delete", {})
+        self.checkout(_MAIN_BRANCH)
+        return response
 
     def list_branches(self) -> List[str]:
-        """
-        List all branches that the user has access to.
+        """List all branches that the user has access to.
 
         Returns:
         List[str]: A list of branch names.
+        ----------
+
         """
         resp = self._get(f"{V1_API}/branch/list")
         resp = resp.json()
@@ -321,19 +364,22 @@ class Client:
         return resp["branches"]
 
     def checkout(self, name: str):
-        """
-        Checkouts the client to another branch.
+        """Checkouts the client to another branch.
+
         Parameters:
+        ----------
         name (str): The name of the branch to delete.
+
         """
         self._branch = name
 
-    def get_branch(self) -> str:
-        """
-        Get the current branch name.
+    def branch(self) -> str:
+        """Get the name of the branch that the client is pointing to.
 
-        Returns:
-        str: The current branch name.
+        Returns: str
+        ----------
+        The current branch name.
+
         """
         return self._branch
 
@@ -350,32 +396,51 @@ class Client:
         output_s3: Optional[S3Connector] = None,
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Dict[str, Any]:
-        """
-        Extract point in time correct features from a dataframe, where the
-        timestamps are provided by the timestamps parameter.
+        """Extract point in time correct values of output features.
+
+        Extracts feature values using the input features given as a dataframe.
+        The timestamps are provided by the timestamps parameter.
 
         Parameters:
-        inputs (List[Union[Feature, str]]): List of feature objects or fully qualified feature names (when providing a str) can be used as input. We don't allow adding featureset as input because if an engineer adds a new feature to the featureset it would break all extract calls running in production.
-        outputs (List[Union[Feature, Featureset, str]]): List of feature or featureset objects or fully qualified feature names (when providing a str) to compute.
-        timestamp_column (str): The name of the column containing the timestamps.
+        ----------
+        inputs (List[Union[Feature, str]]): List of feature objects or fully
+            qualified feature names (when providing a str) can be used as input.
+            Unlike `outputs`, it's not allowed to pass full Featuresets as
+            inputs.
+
+        outputs (List[Union[Feature, Featureset, str]]): List of feature or
+            featureset objects or fully qualified feature names (when providing
+            a str) to compute.
+
+        timestamp_column (str): The name of the column containing timestamps.
+
         format (str): The format of the input data. Can be either "pandas",
             "csv", "json" or "parquet". Default is "pandas".
-        input_dataframe (Optional[pd.DataFrame]): Dataframe containing the input features. Only relevant when format is "pandas".
-        output_s3 (Optional[S3Connector]): Contains the S3 info -- bucket, prefix, and optional access key id
-            and secret key -- used for storing the output of the extract historical request
 
-        The following parameters are only relevant when format is "csv", "json" or "parquet".
+        input_dataframe (Optional[pd.DataFrame]): Dataframe containing the input
+            features. Only relevant when format is "pandas".
 
-        input_s3 (Optional[sources.S3Connector]): The info for the input S3 data, containing bucket, prefix, and optional access key id
-            and secret key
-        feature_to_column_map (Optional[Dict[Feature, str]]): A dictionary that maps columns in the S3 data to the required features.
+        output_s3 (Optional[S3Connector]): Contains the S3 info -- bucket,
+            prefix, and optional access key id and secret key -- used for
+            storing the output of the extract historical request
+
+        The following parameters are only relevant when format is "csv", "json"
+            or "parquet".
+
+        input_s3 (Optional[sources.S3Connector]): The info for the input S3
+            data, containing bucket, prefix, and optional access key id and
+            secret key
+
+        feature_to_column_map (Optional[Dict[Feature, str]]): A dictionary that
+            maps columns in the S3 data to the required features.
 
 
-        Returns:
-        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
-                        A completion rate of 1.0 indicates that all processing has been completed.
-                        A failure rate of 0.0 indicates that all processing has been completed successfully.
-                        The status of the request.
+        Returns: Dict[str, Any]:
+        ----------
+        A dictionary containing the request_id, the output s3 bucket and prefix,
+        the completion rate and the failure rate.  A completion rate of 1.0
+        indicates that all processing has been completed. A failure rate of 0.0
+        indicates that all processing has been completed successfully.
         """
         if format not in ["pandas", "csv", "json", "parquet"]:
             raise Exception(
@@ -497,32 +562,38 @@ class Client:
         )
 
     def track_offline_query(self, request_id):
-        """
-        Get the progress of query offline run.
+        """Get the progress of query offline run.
 
+        Parameters:
+        ----------
         :param request_id: The request id returned by query_offline.
 
-        Returns:
-        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
-                        A completion rate of 1.0 indicates that all processing has been completed.
-                        A failure rate of 0.0 indicates that all processing has been completed successfully.
-                        The status of the request.
+        Returns: Dict[str, Any]:
+        ----------
+        A dictionary containing the request_id, the output s3 bucket and prefix,
+        the completion rate and the failure rate.  A completion rate of 1.0
+        indicates that all processing has been completed. A failure rate of 0.0
+        indicates that all processing has been completed successfully.
+
         """
         return self._get(
             f"{V1_API}/branch/{self._branch}/query_offline/status?request_id={request_id}"
         )
 
     def cancel_offline_query(self, request_id):
-        """
-        Cancel the query offline run.
+        """Cancel the query offline run.
 
+        Parameters:
+        ----------
         :param request_id: The request id returned by query_offline.
 
-        Returns:
-        Dict[str, Any]: A dictionary containing the request_id, the output s3 bucket and prefix, the completion rate and the failure rate.
-                        A completion rate of 1.0 indicates that all processing has been completed.
-                        A failure rate of 0.0 indicates that all processing has been completed successfully.
-                        The status of the request.
+        Returns: Dict[str, Any]:
+        ----------
+        A dictionary containing the request_id, the output s3 bucket and prefix,
+        the completion rate and the failure rate.  A completion rate of 1.0
+        indicates that all processing has been completed. A failure rate of 0.0
+        indicates that all processing has been completed successfully.
+
         """
         return self._post_json(
             f"{V1_API}/branch/{self._branch}/query_offline/cancel?request_id={request_id}",
@@ -538,28 +609,23 @@ class Client:
         fields: Optional[List[str]] = None,
         timestamps: Optional[pd.Series] = None,
     ) -> Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
-        """
-        Look up values of fields in a dataset given keys.
-        Example:
-              We have a dataset named Test which has two keyed fields named A and B,
-              other fields are timestamp and C. Suppose we want to lookup this dataset against
-              two values as of some time and now.
-
-              keys = pd.DataFrame([
-                {"A": ["valueA1", "valueA2"]}
-                {"B": ["valueB1", "valueB2"]}
-              ]
-              fields = ["C"]
-              timestamp = pd.Series(["2019-02-01T00:00:00Z", "2019-02-01T00:00:00Z"]) if want to do as of else None
+        """Look up values of fields in a dataset given keys.
 
         Parameters:
+        ----------
         dataset_name (str): The name of the dataset.
         keys (pd.DataFrame): All the keys to lookup.
-        fields: (Optional[List[str]]): The fields to lookup. If None, all fields are returned.
-        timestamps (Optional[pd.Series]): The timestamps to lookup. If None, the current time is used.
+        fields: (Optional[List[str]]): The fields to lookup. If None, all
+            fields are returned.
+        timestamps (Optional[pd.Series]): The timestamps to lookup. If None,
+            the current time is used.
 
-        Returns:
-        Tuple[Union[pd.DataFrame, pd.Series], pd.Series]: A pair. The first is a Pandas dataframe or series containing values; the second is a series indicating whether the corresponding key(s) is found in the dataset.
+        Returns: Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
+        -------------
+        Returns a pair - The first element is a Pandas dataframe or series
+        containing values; the second is a boolean series indicating whether the
+        corresponding key(s) is found in the dataset.
+
         """
         keys = keys.to_dict(orient="records")
         fields = fields if fields else []
@@ -588,15 +654,17 @@ class Client:
         return pd.DataFrame(resp_json["data"]), found
 
     def inspect(self, dataset_name: str, n: int = 10) -> List[Dict[str, Any]]:
-        """
-        Inspect the last n rows of a dataset.
+        """Inspect the last n rows of a dataset.
 
         Parameters:
+        ----------
         dataset_name (str): The dataset name.
         n (int): The number of rows, default is 10.
 
-        Returns:
-        List[Dict[str, Any]]: A list of dataset rows.
+        Returns: List[Dict[str, Any]]:
+        ----------
+        A list of dataset rows.
+
         """
         return self._get(
             "{}/branch/{}/dataset/{}/inspect?n={}".format(

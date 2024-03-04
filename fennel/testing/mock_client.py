@@ -232,6 +232,10 @@ class MockClient(Client):
                 400,
                 "New Branch name cannot be same as the branch that needs to be cloned",
             )
+        if from_branch not in self.branches_map:
+            return FakeResponse(
+                400, f"Branch name: {from_branch} does not exist"
+            )
         self.branches_map[name] = copy.deepcopy(self.branches_map[from_branch])
         self.branches_map[name].name = name
         self.checkout(name)
@@ -240,9 +244,10 @@ class MockClient(Client):
     def delete_branch(self, name: str):
         if name not in self.branches_map:
             return FakeResponse(400, f"Branch name: {name} does not exist")
-        del self.branches_map[name]
         if name == MAIN_BRANCH:
-            self.branches_map[name] = Branch(name)
+            return FakeResponse(400, "Cannot delete main branch")
+        del self.branches_map[name]
+        self._branch = MAIN_BRANCH
         return FakeResponse(200, "Ok")
 
     def list_branches(self) -> List[str]:
