@@ -735,6 +735,7 @@ def _s3_conn_to_source_proto(
         delimiter=connector.delimiter,
         format=connector.format,
         presorted=connector.presorted,
+        spread=connector.spread,
     )
     source = connector_proto.Source(
         table=ext_table,
@@ -780,6 +781,7 @@ def _s3_to_ext_table_proto(
     delimiter: str,
     format: str,
     presorted: bool,
+    spread: Optional[Duration],
 ) -> connector_proto.ExtTable:
     if bucket is None:
         raise ValueError("bucket must be specified")
@@ -797,6 +799,7 @@ def _s3_to_ext_table_proto(
             format=format,
             pre_sorted=presorted,
             path_suffix=path_suffix,
+            spread=to_duration_proto(spread),
         )
     )
 
@@ -1316,7 +1319,11 @@ def to_auth_proto(
 # ------------------------------------------------------------------------------
 
 
-def to_duration_proto(duration: Duration) -> duration_proto.Duration:
+def to_duration_proto(
+    duration: Optional[Duration],
+) -> Optional[duration_proto.Duration]:
+    if not duration:
+        return None
     proto = duration_proto.Duration()
     proto.FromTimedelta(duration_to_timedelta(duration))
     return proto
