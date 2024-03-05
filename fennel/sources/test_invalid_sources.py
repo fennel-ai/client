@@ -423,6 +423,26 @@ def test_invalid_s3_path():
         assert error_str in str(e.value)
 
 
+def test_invalid_spread():
+    # spread must be used with path
+    with pytest.raises(AttributeError) as e:
+        s3.bucket(bucket_name="bucket", prefix="prefix", spread="7d")
+    assert "path must be specified to use spread" == str(e.value)
+
+    # spread must be a valid duration
+    with pytest.raises(ValueError) as e:
+        s3.bucket(
+            bucket_name="bucket", path="prefix/foo/yymmdd=%Y%m%d/*", spread="k"
+        )
+    assert "Spread k is an invalid duration" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        s3.bucket(
+            bucket_name="bucket", path="prefix/foo/yymmdd=%Y%m%d/*", spread="d7"
+        )
+    assert "Spread d7 is an invalid duration" in str(e.value)
+
+
 def test_invalid_pre_proc():
     @source(
         s3.bucket(
