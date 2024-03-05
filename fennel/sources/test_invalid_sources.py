@@ -483,6 +483,8 @@ def test_invalid_bounded_and_idleness():
             ),
             every="1h",
             bounded=True,
+            disorder="14d",
+            cdc="append",
         )
 
     assert (
@@ -499,6 +501,8 @@ def test_invalid_bounded_and_idleness():
             ),
             every="1h",
             idleness="1h",
+            disorder="14d",
+            cdc="append",
         )
 
     assert (

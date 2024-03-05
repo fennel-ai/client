@@ -186,7 +186,9 @@ class DataEngine(object):
                 )
             core_dataset = dataset_to_proto(dataset)
             if hasattr(dataset, sources.SOURCE_FIELD):
-                pre_proc, bounded, idleness = self._process_data_connector(dataset, tier)
+                pre_proc, bounded, idleness = self._process_data_connector(
+                    dataset, tier
+                )
             else:
                 pre_proc, bounded, idleness = None, False, None
 
@@ -516,11 +518,21 @@ class DataEngine(object):
         bounded = self.datasets[dataset_name].bounded
         if bounded:
             idleness = self.datasets[dataset_name].idleness
-            expected_idleness_secs = duration_to_timedelta(idleness).total_seconds()
-            actual_idleness_secs = (datetime.now() - self.datasets[dataset_name].prev_log_time).total_seconds()
+            if not idleness:
+                raise ValueError(
+                    "Idleness parameter should be non-empty for bounded source"
+                )
+            expected_idleness_secs = duration_to_timedelta(
+                idleness
+            ).total_seconds()
+            actual_idleness_secs = (
+                datetime.now() - self.datasets[dataset_name].prev_log_time
+            ).total_seconds()
             # Do not log the data if a bounded source is idle for more time than expected
             if actual_idleness_secs >= expected_idleness_secs:
-                print(f"Skipping log of dataframe for webhook `{dataset_name}` since the source is closed")
+                print(
+                    f"Skipping log of dataframe for webhook `{dataset_name}` since the source is closed"
+                )
                 return FakeResponse(200, "OK")
 
         for col in df.columns:
@@ -644,8 +656,8 @@ class DataEngine(object):
         self.datasets[dataset_name].prev_log_time = datetime.now()
 
     def _process_data_connector(
-            self, dataset: Dataset, tier: Optional[str] = None
-    ) -> (Optional[Dict[str, PreProcValue]], bool, Optional[Duration]):
+        self, dataset: Dataset, tier: Optional[str] = None
+    ) -> Tuple[Optional[Dict[str, PreProcValue]], bool, Optional[Duration]]:
         connector = getattr(dataset, sources.SOURCE_FIELD)
         connector = connector if isinstance(connector, list) else [connector]
         connector = [x for x in connector if x.tiers.is_entity_selected(tier)]
@@ -654,7 +666,7 @@ class DataEngine(object):
                 f"Dataset `{dataset._name}` has more than one source defined, found {len(connector)} sources."
             )
         if len(connector) == 0:
-            return None
+            return None, False, None
         connector = connector[0]
         if isinstance(connector, sources.WebhookConnector):
             src = connector.data_source

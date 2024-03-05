@@ -28,12 +28,6 @@ And that's it - once this is written, `UserLocation` dataset will start
 mirroring your postgres table `user`and will update as the underlying Postgres 
 table updates.
 
-### Bounded
-The `bounded` attribute in the source indicates whether the source possesses a finite amount of data that does not expand. It is assigned a value of True when the source has limited data, with the default value being False.
-
-### Idleness
-The idleness parameter, when non-null, signifies that a bounded source is expected to be closed after a specified duration. For unbounded sources, it is advised not to set this parameter.
-
 ## Schema Matching
 
 Fennel has a strong typing system and all ingested data is evaluated against
@@ -152,6 +146,21 @@ When deriving datasets that are unions of batch and realtime sources, `until` an
 to switch between sources. For example, read from s3 `until` a timestamp, and from that timestamp onwards, read from kafka
 using `since`.  
 
+### Bounded
+The `bounded` field in the source indicates whether the source possesses  a finite amount of data that does not expand.
+It is assigned a value of True when the source has limited data, with the default value being False.
+
+This ensures correct watermark values are propagated to the downstream pipelines. Without this, say an unbounded source
+with no data flow will cause the watermarks to be stuck and will have cost and performance implications.
+
+### Idleness
+The `idleness` field, when non-null, signifies that a bounded source is 
+expected to be closed after a specified duration. It is invalid if set for
+unbounded sources
+
+Let's see an example on how to use bounded and idleness parameters:
+
+<pre snippet="concepts/introduction#bounded_idleness"></pre>
 
 ## Load Impact of Sources
 

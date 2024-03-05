@@ -1237,6 +1237,8 @@ def test_s3_source_with_path():
         "every": "3600s",
         "disorder": "1209600s",
         "timestampField": "timestamp",
+        "bounded": False,
+        "idleness": None,
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -1297,7 +1299,7 @@ def test_s3_source_with_path():
         ), f"Expected suffix: {expected_suffix}, got: {suffix}"
 
 
-def test_source_with_bounded_and_idleness():
+def test_bounded_source_with_idleness():
     @source(
         mysql.table(
             "users",
@@ -1307,6 +1309,7 @@ def test_source_with_bounded_and_idleness():
         disorder="20h",
         bounded=True,
         idleness="1h",
+        cdc="append",
     )
     @meta(owner="test@test.com")
     @dataset
@@ -1384,6 +1387,7 @@ def test_source_with_bounded_and_idleness():
             "timestamp": {},
         },
         "isSourceDataset": True,
+        "version": 1,
     }
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
     expected_dataset_request.pycode.Clear()
@@ -1417,6 +1421,7 @@ def test_source_with_bounded_and_idleness():
         "idleness": "3600s",
         "cursor": "added_on",
         "timestamp_field": "timestamp",
+        "dsVersion": 1,
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
