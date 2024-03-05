@@ -18,7 +18,7 @@ __owner__ = "saiharsha@fennel.ai"
     cdc="append",
     disorder="1d",
     bounded=True,
-    idleness="4s",
+    idleness="10s",
 )
 @dataset
 class BoundedClicksDS:
@@ -40,7 +40,7 @@ class UnBoundedClicksDS:
 
 
 def _log_clicks_data_batch1(client, webhook_endpoint):
-    now = datetime.utcnow()
+    now = datetime.now()
     data = [
         {
             "display_id": 1,
@@ -68,7 +68,7 @@ def _log_clicks_data_batch1(client, webhook_endpoint):
 
 
 def _log_clicks_data_batch2(client, webhook_endpoint):
-    now = datetime.utcnow()
+    now = datetime.now()
     data = [
         {
             "display_id": 4,
@@ -90,7 +90,7 @@ def _log_clicks_data_batch2(client, webhook_endpoint):
 
 
 def _log_clicks_data_batch3(client, webhook_endpoint):
-    now = datetime.utcnow()
+    now = datetime.now()
     data = [
         {
             "display_id": 6,
@@ -143,7 +143,7 @@ def test_idleness_for_bounded_source(client):
     assert df["clicked"].to_list() == [True, False, None]
 
     # Sleep for 5s so that new data is not logged
-    time.sleep(5)
+    time.sleep(10)
     _log_clicks_data_batch3(client, "ClicksDS1")
     client.sleep()
 
