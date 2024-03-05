@@ -3,6 +3,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import partial
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Callable, Any
 
 import numpy as np
@@ -14,6 +15,7 @@ import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Dataset, Pipeline
 from fennel.datasets.datasets import sync_validation_for_pipelines
 from fennel.gen.dataset_pb2 import CoreDataset
+from fennel.internal_lib.duration import Duration, duration_to_timedelta
 from fennel.internal_lib.schema import data_schema_check
 from fennel.internal_lib.to_proto import dataset_to_proto
 from fennel.sources import sources, PreProcValue
@@ -56,9 +58,12 @@ class _Dataset:
     is_source_dataset: bool
     core_dataset: CoreDataset
     dataset: Dataset
+    bounded: bool
     data: Optional[pd.DataFrame] = None
     pre_proc: Optional[Dict[str, sources.PreProcValue]] = None
     aggregated_datasets: Optional[Dict[str, Any]] = None
+    idleness: Optional[Duration] = None
+    prev_log_time: datetime = datetime.now()
 
     def empty_df(self):
         return pd.DataFrame(columns=self.fields)
@@ -181,9 +186,9 @@ class DataEngine(object):
                 )
             core_dataset = dataset_to_proto(dataset)
             if hasattr(dataset, sources.SOURCE_FIELD):
-                pre_proc = self._process_data_connector(dataset, tier)
+                pre_proc, bounded, idleness = self._process_data_connector(dataset, tier)
             else:
-                pre_proc = None
+                pre_proc, bounded, idleness = None, False, None
 
             is_source_dataset = hasattr(dataset, sources.SOURCE_FIELD)
             fields = [f.name for f in dataset.fields]
@@ -193,7 +198,9 @@ class DataEngine(object):
                 is_source_dataset=is_source_dataset,
                 core_dataset=core_dataset,
                 dataset=dataset,
+                bounded=bounded,
                 pre_proc=pre_proc,
+                idleness=idleness,
             )
 
             if (
@@ -506,6 +513,16 @@ class DataEngine(object):
         if dataset_name not in self.datasets:
             raise ValueError(f"Dataset `{dataset_name}` not found")
 
+        bounded = self.datasets[dataset_name].bounded
+        if bounded:
+            idleness = self.datasets[dataset_name].idleness
+            expected_idleness_secs = duration_to_timedelta(idleness).total_seconds()
+            actual_idleness_secs = (datetime.now() - self.datasets[dataset_name].prev_log_time).total_seconds()
+            # Do not log the data if a bounded source is idle for more time than expected
+            if actual_idleness_secs >= expected_idleness_secs:
+                print(f"Skipping log of dataframe for webhook `{dataset_name}` since the source is closed")
+                return FakeResponse(200, "OK")
+
         for col in df.columns:
             # If any of the columns is a dictionary, convert it to a frozen dict
             if df[col].apply(lambda x: isinstance(x, dict)).any():
@@ -624,10 +641,11 @@ class DataEngine(object):
         # Sort by timestamp
         timestamp_field = self.datasets[dataset_name].dataset.timestamp_field
         self.datasets[dataset_name].data = df.sort_values(timestamp_field)
+        self.datasets[dataset_name].prev_log_time = datetime.now()
 
     def _process_data_connector(
-        self, dataset: Dataset, tier: Optional[str] = None
-    ) -> Optional[Dict[str, PreProcValue]]:
+            self, dataset: Dataset, tier: Optional[str] = None
+    ) -> (Optional[Dict[str, PreProcValue]], bool, Optional[Duration]):
         connector = getattr(dataset, sources.SOURCE_FIELD)
         connector = connector if isinstance(connector, list) else [connector]
         connector = [x for x in connector if x.tiers.is_entity_selected(tier)]
@@ -642,5 +660,5 @@ class DataEngine(object):
             src = connector.data_source
             webhook_endpoint = f"{src.name}:{connector.endpoint}"
             self.webhook_to_dataset_map[webhook_endpoint].append(dataset._name)
-            return connector.pre_proc
-        return None
+            return connector.pre_proc, connector.bounded, connector.idleness
+        return None, False, None
