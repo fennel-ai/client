@@ -248,7 +248,7 @@ class Kafka(DataSource):
             _get=True,
             bootstrap_servers="",
             security_protocol="PLAINTEXT",
-            sasl_mechanism="",
+            sasl_mechanism="PLAIN",
             sasl_plain_username="",
             sasl_plain_password="",
         )
