@@ -506,6 +506,7 @@ class DataEngine(object):
         return df
 
     def _internal_log(self, dataset_name: str, df: pd.DataFrame):
+        print("Data to be logged at {}", datetime.utcnow())
         if df.shape[0] == 0:
             print(
                 f"Skipping log of empty dataframe for webhook `{dataset_name}`"
@@ -528,6 +529,7 @@ class DataEngine(object):
             actual_idleness_secs = (
                 datetime.utcnow() - self.datasets[dataset_name].prev_log_time
             ).total_seconds()
+            print("Expected idleness_secs {} Actual idleness secs {}", expected_idleness_secs, actual_idleness_secs)
             # Do not log the data if a bounded source is idle for more time than expected
             if actual_idleness_secs >= expected_idleness_secs:
                 print(

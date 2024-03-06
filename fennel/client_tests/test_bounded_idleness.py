@@ -1,5 +1,6 @@
+import logging
 import time
-from datetime import datetime
+from datetime import datetime, UTC
 
 import pandas as pd
 import pytest
@@ -11,6 +12,7 @@ from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 __owner__ = "saiharsha@fennel.ai"
+log = logging.getLogger(__name__)
 
 
 @source(
@@ -159,16 +161,20 @@ def test_idleness_for_bounded_source(client):
 @pytest.mark.integration
 @mock
 def test_idleness_for_unbounded_source(client):
+    log.error("Test started %s", datetime.now(UTC))
     client.commit(datasets=[UnBoundedClicksDS], featuresets=[])
 
     # Log data
     _log_clicks_data_batch1(client, "ClicksDS2")
     client.sleep()
 
+    log.error("Data logged at %s", datetime.now(UTC))
+
     now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 2, 4])
 
+    log.error("Performing lookup at %s", datetime.now(UTC))
     df, _ = UnBoundedClicksDS.lookup(ts, display_id=display_id_keys)
 
     assert df["ad_id"].to_list() == [2, 3, None]
