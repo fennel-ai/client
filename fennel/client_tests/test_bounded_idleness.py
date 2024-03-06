@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import datetime, UTC
+from datetime import datetime
 
 import pandas as pd
 import pytest
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
     cdc="append",
     disorder="1d",
     bounded=True,
-    idleness="10s",
+    idleness="5s",
 )
 @dataset
 class BoundedClicksDS:
@@ -113,14 +113,18 @@ def _log_clicks_data_batch3(client, webhook_endpoint):
     assert response.status_code == requests.codes.OK, response.json()
 
 
-@pytest.mark.integration
 @mock
 def test_idleness_for_bounded_source(client):
-    client.commit(datasets=[BoundedClicksDS], featuresets=[])
+    print("Start test case {}", datetime.now())
+    client.commit(message="first_commit", datasets=[BoundedClicksDS], featuresets=[])
 
+    print("Commit finished {}", datetime.utcnow())
     # Log data
     _log_clicks_data_batch1(client, "ClicksDS1")
+    print("Logged to webhook {}", datetime.utcnow())
     client.sleep()
+
+    print("Logged the batch {}", datetime.now())
 
     now = datetime.utcnow()
     ts = pd.Series([now, now, now])
@@ -145,7 +149,7 @@ def test_idleness_for_bounded_source(client):
     assert df["clicked"].to_list() == [True, False, None]
 
     # Sleep for 5s so that new data is not logged
-    time.sleep(10)
+    time.sleep(5)
     _log_clicks_data_batch3(client, "ClicksDS1")
     client.sleep()
 
@@ -158,23 +162,22 @@ def test_idleness_for_bounded_source(client):
     assert df["clicked"].to_list() == [True, None, None]
 
 
-@pytest.mark.integration
 @mock
 def test_idleness_for_unbounded_source(client):
-    log.error("Test started %s", datetime.now(UTC))
-    client.commit(datasets=[UnBoundedClicksDS], featuresets=[])
+    log.error("Test started %s", datetime.now())
+    client.commit(message="first_commit", datasets=[UnBoundedClicksDS], featuresets=[])
 
     # Log data
     _log_clicks_data_batch1(client, "ClicksDS2")
     client.sleep()
 
-    log.error("Data logged at %s", datetime.now(UTC))
+    log.error("Data logged at %s", datetime.now())
 
     now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 2, 4])
 
-    log.error("Performing lookup at %s", datetime.now(UTC))
+    log.error("Performing lookup at %s", datetime.now())
     df, _ = UnBoundedClicksDS.lookup(ts, display_id=display_id_keys)
 
     assert df["ad_id"].to_list() == [2, 3, None]

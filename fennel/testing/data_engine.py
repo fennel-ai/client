@@ -63,7 +63,7 @@ class _Dataset:
     pre_proc: Optional[Dict[str, sources.PreProcValue]] = None
     aggregated_datasets: Optional[Dict[str, Any]] = None
     idleness: Optional[Duration] = None
-    prev_log_time: datetime = datetime.utcnow()
+    prev_log_time: Optional[datetime] = None
 
     def empty_df(self):
         return pd.DataFrame(columns=self.fields)
@@ -195,6 +195,7 @@ class DataEngine(object):
             is_source_dataset = hasattr(dataset, sources.SOURCE_FIELD)
             fields = [f.name for f in dataset.fields]
 
+            print("Curr time now {}", datetime.utcnow())
             self.datasets[dataset._name] = _Dataset(
                 fields=fields,
                 is_source_dataset=is_source_dataset,
@@ -203,7 +204,9 @@ class DataEngine(object):
                 bounded=bounded,
                 pre_proc=pre_proc,
                 idleness=idleness,
+                prev_log_time=datetime.utcnow()
             )
+            print("Just created dataset with values {}".format(self.datasets[dataset._name].prev_log_time))
 
             if (
                 not core_dataset.is_source_dataset
@@ -517,7 +520,7 @@ class DataEngine(object):
             raise ValueError(f"Dataset `{dataset_name}` not found")
 
         bounded = self.datasets[dataset_name].bounded
-        if bounded:
+        if bounded and self.datasets[dataset_name].prev_log_time:
             idleness = self.datasets[dataset_name].idleness
             if not idleness:
                 raise ValueError(
@@ -529,6 +532,7 @@ class DataEngine(object):
             actual_idleness_secs = (
                 datetime.utcnow() - self.datasets[dataset_name].prev_log_time
             ).total_seconds()
+            print("Idleness {} Curr time {} Prev log time {}", expected_idleness_secs, datetime.utcnow(), self.datasets[dataset_name].prev_log_time)
             print("Expected idleness_secs {} Actual idleness secs {}", expected_idleness_secs, actual_idleness_secs)
             # Do not log the data if a bounded source is idle for more time than expected
             if actual_idleness_secs >= expected_idleness_secs:
