@@ -257,7 +257,9 @@ class UserInfo2:
 
 @mock
 def test_tp(client):
-    client.commit(datasets=[UserInfoDataset], featuresets=[UserInfo2])
+    client.commit(
+        message="msg", datasets=[UserInfoDataset], featuresets=[UserInfo2]
+    )
 
 
 @mock

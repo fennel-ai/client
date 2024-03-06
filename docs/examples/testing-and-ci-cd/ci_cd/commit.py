@@ -10,6 +10,10 @@ if __name__ == "__main__":
     token = os.getenv("FENNEL_TOKEN")
 
     client = Client(url=url, token=token)
-    client.commit(datasets=[Ticket], featuresets=[TicketFeatures])
+    client.commit(
+        message="ticket: add initial dataset and featureset",
+        datasets=[Ticket],
+        featuresets=[TicketFeatures],
+    )
 
 # /docsnip

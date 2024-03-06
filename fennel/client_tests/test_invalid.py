@@ -87,7 +87,7 @@ class TestInvalidSync(unittest.TestCase):
     @mock
     def test_invalid_sync(self, client):
         with pytest.raises(Exception) as e:
-            client.commit(featuresets=[DomainFeatures, Query])
+            client.commit(message="msg", featuresets=[DomainFeatures, Query])
 
         if client.is_integration_client():
             assert (
@@ -183,6 +183,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
 
         with pytest.raises(Exception) as e:
             client.commit(
+                message="msg",
                 datasets=[
                     MemberActivityDataset,
                     MemberActivityDatasetCopy,
@@ -210,7 +211,9 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
     @mock
     def test_missing_dataset(self, client):
         client.commit(
-            datasets=[MemberDataset], featuresets=[DomainFeatures2, Query]
+            message="msg",
+            datasets=[MemberDataset],
+            featuresets=[DomainFeatures2, Query],
         )
         with pytest.raises(Exception) as e:
             client.query(
@@ -242,6 +245,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
     def test_no_access(self, client):
         with pytest.raises(Exception) as e:
             client.commit(
+                message="msg",
                 datasets=[MemberDataset, MemberActivityDatasetCopy],
                 featuresets=[DomainFeatures2, Query],
             )

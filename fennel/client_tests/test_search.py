@@ -528,6 +528,7 @@ class TestSearchExample(unittest.TestCase):
     @mock
     def test_search_datasets1(self, client):
         client.commit(
+            message="Initial commit",
             datasets=[
                 NotionDocs,
                 CodaDocs,
@@ -558,6 +559,7 @@ class TestSearchExample(unittest.TestCase):
     @mock
     def test_search_datasets2(self, client):
         client.commit(
+            message="Initial commit",
             datasets=[
                 UserActivity,
                 UserEngagementDataset,
@@ -585,6 +587,7 @@ class TestSearchExample(unittest.TestCase):
     @mock
     def test_search_e2e(self, client):
         client.commit(
+            message="Initial commit",
             datasets=[
                 NotionDocs,
                 CodaDocs,

@@ -172,7 +172,12 @@ class TestMovieTicketSale(unittest.TestCase):
     def test_movie_ticket_sale(self, client):
         datasets = [MovieInfo, TicketSale, ActorStats, ActorStatsList]  # type: ignore
         featuresets = [ActorFeatures, RequestFeatures]
-        client.commit(datasets=datasets, featuresets=featuresets, tier="prod")  # type: ignore
+        client.commit(
+            message="initial commit",
+            datasets=datasets,
+            featuresets=featuresets,
+            tier="prod",
+        )  # type: ignore
         client.sleep()
         data = [
             [

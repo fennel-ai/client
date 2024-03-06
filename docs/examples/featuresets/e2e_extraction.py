@@ -48,7 +48,7 @@ class Request:
 
 @mock
 def test_e2e_extraction(client):
-    client.commit(featuresets=[User, UserPost, Request])
+    client.commit(message="msg", featuresets=[User, UserPost, Request])
     # docsnip e2e_extraction
     feature_df = client.query(
         outputs=[

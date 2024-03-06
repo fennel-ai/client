@@ -53,7 +53,7 @@ class TestExplodeSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[Orders, Derived])
+        client.commit(message="some msg", datasets=[Orders, Derived])
         # log some rows to the transaction dataset
         client.log(
             "webhook",

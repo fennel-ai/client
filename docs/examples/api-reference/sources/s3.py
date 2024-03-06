@@ -36,7 +36,7 @@ def test_s3_source_prefix(client):
         timestamp: datetime
 
     # /docsnip
-    client.commit(datasets=[User])
+    client.commit(message="some commit msg", datasets=[User])
 
 
 @mock
@@ -67,7 +67,7 @@ def test_s3_delta(client):
         timestamp: datetime
 
     # /docsnip
-    client.commit(datasets=[User])
+    client.commit(message="msg", datasets=[User])
 
 
 @mock
@@ -98,7 +98,7 @@ def test_s3_hudi(client):
         timestamp: datetime
 
     # /docsnip
-    client.commit(datasets=[User])
+    client.commit(message="msg", datasets=[User])
 
 
 @mock
@@ -128,4 +128,4 @@ def test_s3_source_path(client):
         timestamp: datetime
 
     # /docsnip
-    client.commit(datasets=[User])
+    client.commit(message="msg", datasets=[User])

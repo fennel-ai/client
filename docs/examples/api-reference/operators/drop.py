@@ -48,7 +48,7 @@ class TestFilterSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[User, Dropped])
+        client.commit(message="some msg", datasets=[User, Dropped])
         # log some rows
         client.log(
             "webhook",

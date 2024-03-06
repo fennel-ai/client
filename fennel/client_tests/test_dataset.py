@@ -102,14 +102,14 @@ class TestDataset(unittest.TestCase):
     def test_sync_dataset(self, client):
         """Sync the dataset and check if it is synced correctly."""
         # Sync the dataset
-        response = client.commit(datasets=[UserInfoDataset])
+        response = client.commit(message="msg", datasets=[UserInfoDataset])
         assert response.status_code == requests.codes.OK, response.json()
 
     @pytest.mark.integration
     @mock
     def test_simple_log(self, client):
         # Sync the dataset
-        client.commit(datasets=[UserInfoDataset])
+        client.commit(message="msg", datasets=[UserInfoDataset])
         now = datetime.now()
         yesterday = now - pd.Timedelta(days=1)
         data = [
@@ -124,7 +124,10 @@ class TestDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_simple_select_rename(self, client):
-        client.commit(datasets=[UserInfoDataset, UserInfoDatasetDerivedSelect])
+        client.commit(
+            message="msg",
+            datasets=[UserInfoDataset, UserInfoDatasetDerivedSelect],
+        )
         now = datetime.now()
         yesterday = now - pd.Timedelta(days=1)
         data = [
@@ -168,7 +171,8 @@ class TestDataset(unittest.TestCase):
     def test_simple_drop_null(self, client):
         # Sync the dataset
         response = client.commit(
-            datasets=[UserInfoDataset, UserInfoDatasetDerivedDropnull]
+            message="msg",
+            datasets=[UserInfoDataset, UserInfoDatasetDerivedDropnull],
         )
         assert response.status_code == requests.codes.OK, response.json()
         now = datetime.now()
@@ -237,7 +241,9 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_simple_drop_rename(self, client):
         # Sync the dataset
-        client.commit(datasets=[UserInfoDataset, UserInfoDatasetDerived])
+        client.commit(
+            message="msg", datasets=[UserInfoDataset, UserInfoDatasetDerived]
+        )
         now = datetime.now()
         yesterday = now - pd.Timedelta(days=1)
         data = [
@@ -276,7 +282,7 @@ class TestDataset(unittest.TestCase):
     def test_log_to_dataset(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
-        client.commit(datasets=[UserInfoDataset])
+        client.commit(message="msg", datasets=[UserInfoDataset])
 
         now = datetime.now()
         yesterday = now - pd.Timedelta(days=1)
@@ -384,7 +390,7 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_invalid_dataschema(self, client):
         """Check if invalid data raises an error."""
-        client.commit(datasets=[UserInfoDataset])
+        client.commit(message="msg", datasets=[UserInfoDataset])
         data = [
             [18232, "Ross", "32y", "USA", 1668475993],
             [18234, "Monica", 24, "USA", 1668475343],
@@ -413,7 +419,7 @@ class TestDataset(unittest.TestCase):
                 country: Optional[str]
                 timestamp: datetime = field(timestamp=True)
 
-            client.commit(datasets=[UserInfoDataset])
+            client.commit(message="msg", datasets=[UserInfoDataset])
 
         assert (
             str(e.exception)
@@ -654,6 +660,7 @@ class TestBasicTransform(unittest.TestCase):
     def test_basic_transform(self, client):
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[MovieRating, MovieRatingTransformed, RatingActivity],
         )
         now = datetime.now()
@@ -734,7 +741,7 @@ class TestBasicExplode(unittest.TestCase):
     @mock
     def test_basic_explode(self, client):
         # # Sync the dataset
-        client.commit(datasets=[Orders, Derived])
+        client.commit(message="msg", datasets=[Orders, Derived])
         # log some rows to the transaction dataset
         df = pd.DataFrame(
             [
@@ -772,6 +779,7 @@ class TestBasicAssign(unittest.TestCase):
     def test_basic_assign(self, client):
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[MovieRating, MovieRatingAssign, RatingActivity],
         )
         now = datetime.now()
@@ -871,6 +879,7 @@ class TestBasicJoin(unittest.TestCase):
     def test_basic_join(self, client):
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[MovieRating, MovieRevenue, MovieStats, RatingActivity],
         )
         now = datetime.now()
@@ -974,6 +983,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
 
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[MovieInfo, TicketSale, ActorStats],
         )
         data = [
@@ -1113,6 +1123,7 @@ class TestBasicAggregate(unittest.TestCase):
     def test_basic_aggregate(self, client):
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[MovieRatingCalculated, RatingActivity],
         )
         now = datetime.now()
@@ -1228,6 +1239,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
     def test_basic_window_aggregate(self, client):
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[MovieRatingWindowed, RatingActivity],
         )
         true_now = datetime.now()
@@ -1378,6 +1390,7 @@ class TestBasicFilter(unittest.TestCase):
     def test_basic_filter(self, client):
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[PositiveRatingActivity, RatingActivity],
         )
         now = datetime.now()
@@ -1480,6 +1493,7 @@ class TestBasicCountUnique(unittest.TestCase):
     def test_basic_count_unique(self, client):
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[UniqueMoviesSeen, RatingActivity],
         )
         now = datetime.now()
@@ -1572,6 +1586,7 @@ class TestBasicDistinct(unittest.TestCase):
     @mock
     def test_basic_distinct(self, client):
         client.commit(
+            message="msg",
             datasets=[UserUniqueMoviesSeen, RatingActivity],
         )
         now = datetime.now()
@@ -1665,6 +1680,7 @@ class TestFirstOp(unittest.TestCase):
     def test_first_op(self, client):
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[FirstMovieSeen, RatingActivity, NumTimesFirstMovie],
         )
         now = datetime.now()
@@ -1759,6 +1775,7 @@ class TestWaterMark(unittest.TestCase):
     def test_water_marking(self, client):
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[FirstMovieSeenWithFilter, RatingActivity],
         )
         now = datetime.now()
@@ -1906,6 +1923,7 @@ class TestNestedStructType(unittest.TestCase):
     def test_nested_struct_type(self, client):
         # # Sync the dataset
         client.commit(
+            message="msg",
             datasets=[DealerNumCars, Dealer],
         )
         now = datetime.now() - timedelta(hours=1)
@@ -2085,7 +2103,8 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
     def test_fraud(self, client):
         # # Sync the dataset
         client.commit(
-            datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset]
+            message="msg",
+            datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset],
         )
         now = datetime.now()
         minute_ago = now - timedelta(minutes=1)
@@ -2253,7 +2272,9 @@ class TestAggregateTableDataset(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_table_aggregation(self, client):
-        client.commit(datasets=[UserAge, UserAge2, UserAgeAggregated])
+        client.commit(
+            message="msg", datasets=[UserAge, UserAge2, UserAgeAggregated]
+        )
         client.sleep()
         yesterday = datetime.now() - timedelta(days=1)
         now = datetime.now()
@@ -2413,6 +2434,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
     @mock
     def test_muinfo_e2e_test(self, client):
         client.commit(
+            message="msg",
             datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo],
         )
         now = datetime.now()
@@ -2495,6 +2517,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
     @mock
     def test_muinfo_e2e_bounded(self, client):
         client.commit(
+            message="msg",
             datasets=[
                 PlayerInfo,
                 ClubSalary,
@@ -2637,7 +2660,7 @@ def test_join(client):
             x = x.transform(test_dataframe)  # type: ignore
             return x
 
-    client.commit(datasets=[A, B, ABCDataset])
+    client.commit(message="msg", datasets=[A, B, ABCDataset])
 
     now = datetime.now()
     df1 = pd.DataFrame(
@@ -2853,7 +2876,7 @@ def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
     ) == del_spaces_tabs_and_newlines(expected_code)
 
     # Test running of code
-    client.commit(datasets=[CommonEvent, LocationLatLong])
+    client.commit(message="msg", datasets=[CommonEvent, LocationLatLong])
 
     data = [
         {
@@ -2965,7 +2988,8 @@ class TransactionsCreditInternetBanking:
 @mock
 def test_chained_lambda(client):
     client.commit(
-        datasets=[TransactionsCredit, TransactionsCreditInternetBanking]
+        message="msg",
+        datasets=[TransactionsCredit, TransactionsCreditInternetBanking],
     )
     view = InternalTestClient()
     view.add(TransactionsCredit)
@@ -3112,13 +3136,14 @@ def test_inner_join_column_name_collision(client):
             )
 
     initial = client.commit(
+        message="msg",
         datasets=[
             RiderAggRiskScore,
             PaymentEventDataset,
             PaymentAccountDataset,
             PaymentAccountAssociationDataset,
             AccountDataset,
-        ]
+        ],
     )
     assert initial.status_code == 200
     now = datetime.now()
@@ -3190,7 +3215,7 @@ class UserInfoDatasetPreProc:
 @mock
 def test_dataset_with_pre_proc_log(client):
     # Sync the dataset
-    client.commit(datasets=[UserInfoDatasetPreProc])
+    client.commit(message="msg", datasets=[UserInfoDatasetPreProc])
     now = datetime.now()
     data = [
         [18232, "Ross", "USA"],
@@ -3222,7 +3247,7 @@ def test_dataset_with_pre_proc_log(client):
 @pytest.mark.integration
 @mock
 def test_lookup_as_of_now(client):
-    client.commit(datasets=[UserInfoDataset])
+    client.commit(message="msg", datasets=[UserInfoDataset])
     data = [
         [18232, "Ross", 24, "USA", 1668475993],
         [18234, "Monica", 24, "USA", 1668475343],
@@ -3247,7 +3272,7 @@ def test_lookup_as_of_now(client):
 @pytest.mark.integration
 @mock
 def test_lookup_as_of_time(client):
-    client.commit(datasets=[UserInfoDataset])
+    client.commit(message="msg", datasets=[UserInfoDataset])
     data = [
         [18232, "Ross", 24, "USA", "2022-11-10 01:22:23"],
         [18233, "Monica", 24, "USA", "2022-11-15 01:33:13"],

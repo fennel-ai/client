@@ -44,4 +44,4 @@ def test_source_decorator(client):
         timestamp: datetime
 
     # /docsnip
-    client.commit(datasets=[User])
+    client.commit(message="some commit msg", datasets=[User])

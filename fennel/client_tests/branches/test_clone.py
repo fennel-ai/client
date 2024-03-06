@@ -135,6 +135,7 @@ def test_simple_clone(client):
     Cloning should return same datasets and featuresets.
     """
     client.commit(
+        message="Initial commit",
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
@@ -178,6 +179,7 @@ def test_clone_after_log(client):
     Purpose of this test is to make sure, we copy data also when we clone.
     """
     client.commit(
+        message="Initial commit",
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
@@ -221,6 +223,7 @@ def test_webhook_log_to_both_clone_parent(client):
     Testing webhook logging to Dataset A in both the branches
     """
     resp = client.commit(
+        message="Initial commit",
         datasets=[UserInfoDataset, GenderStats],
     )
     assert resp.status_code == requests.codes.OK, resp.json()
@@ -276,6 +279,7 @@ def test_add_dataset_clone_branch(client):
     Clone a branch, then adding one or more datasets in cloned branch. Change should be reflected in cloned branch only.
     """
     resp = client.commit(
+        message="Initial commit",
         datasets=[UserInfoDataset, GenderStats],
     )
     assert resp.status_code == requests.codes.OK, resp.json()
@@ -283,6 +287,7 @@ def test_add_dataset_clone_branch(client):
     resp = client.clone_branch("test-branch", from_branch="main")
     assert resp.status_code == requests.codes.OK, resp.json()
     resp = client.commit(
+        message="Add CountryStats",
         datasets=[UserInfoDataset, GenderStats, CountryStats],
     )
     assert resp.status_code == requests.codes.OK, resp.json()
@@ -371,6 +376,7 @@ def test_change_dataset_clone_branch(client):
     user_df = pd.DataFrame(data)
 
     client.commit(
+        message="Initial commit",
         datasets=[UserInfoDataset, GenderStats],
     )
     response = client.log("fennel_webhook", "UserInfoDataset", user_df)
@@ -390,13 +396,15 @@ def test_change_dataset_clone_branch(client):
     assert found.to_list() == [True, True]
 
     client.commit(
+        message="some msg",
         datasets=[
             UserInfoDataset,
             _get_changed_dataset(lambda x: x["gender"].isin(["M", "F"])),
-        ]
+        ],
     )
     client.checkout("main")
     client.commit(
+        message="some msg",
         datasets=[UserInfoDataset, GenderStats],
     )
 
@@ -448,6 +456,7 @@ def test_multiple_clone_branch(client):
     user_df = pd.DataFrame(data)
 
     client.commit(
+        message="Initial commit",
         datasets=[UserInfoDataset, GenderStats],
     )
     client.clone_branch("test-branch-1", from_branch="main")
@@ -474,23 +483,26 @@ def test_multiple_clone_branch(client):
     assert found.to_list() == [True, True]
 
     client.commit(
+        message="some msg",
         datasets=[UserInfoDataset, GenderStats],
     )
 
     client.checkout("test-branch-2")
     client.commit(
+        message="some msg",
         datasets=[
             UserInfoDataset,
             _get_changed_dataset(lambda x: x["gender"].isin(["M", "F"])),
-        ]
+        ],
     )
 
     client.checkout("test-branch-1")
     client.commit(
+        message="some msg",
         datasets=[
             UserInfoDataset,
             _get_changed_dataset(lambda x: x["gender"].isin(["m", "f"])),
-        ]
+        ],
     )
 
     response = client.log("fennel_webhook", "UserInfoDataset", user_df)
@@ -517,11 +529,13 @@ def test_change_source_dataset_clone_branch(client):
     In B we modify the source dataset itself. ( different webhook ) now the derived pipelines give different answers.
     """
     client.commit(
+        message="Initial commit",
         datasets=[UserInfoDataset, GenderStats],
     )
     client.clone_branch("test-branch", from_branch="main")
 
     client.commit(
+        message="some msg",
         datasets=_get_source_changed_datasets(),
     )
 
@@ -594,12 +608,14 @@ def test_change_extractor_clone_branch(client):
     In B we modify extractor. Now the extract give different answers.
     """
     client.commit(
+        message="Initial commit",
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
     client.clone_branch("test-branch", from_branch="main")
 
     client.commit(
+        message="some msg",
         datasets=[UserInfoDataset],
         featuresets=[_get_changed_featureset()],
     )

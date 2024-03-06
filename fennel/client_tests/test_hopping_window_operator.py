@@ -172,6 +172,7 @@ def log_app_events_data(client):
 def test_hopping_window_operator(client):
     # Sync to mock client
     client.commit(
+        message="Initial commit",
         datasets=[AppEvent, Sessions, SessionStats],
         featuresets=[UserSessionStats],
     )

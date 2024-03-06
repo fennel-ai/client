@@ -84,6 +84,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
     def test_dag_resolution(self, client):
         # docsnip commit_api
         client.commit(
+            message="add user info dataset and user features",
             datasets=[UserInfoDataset],
             featuresets=[UserFeatures],
         )

@@ -45,7 +45,7 @@ class TestSelectSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[User, Selected])
+        client.commit(message="some msg", datasets=[User, Selected])
         # log some rows
         client.log(
             "webhook",

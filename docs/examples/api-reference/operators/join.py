@@ -54,7 +54,10 @@ class TestAssignSnips(unittest.TestCase):
         # /docsnip
 
         # log some rows to both datasets
-        client.commit(datasets=[Transaction, MerchantCategory, WithCategory])
+        client.commit(
+            message="some msg",
+            datasets=[Transaction, MerchantCategory, WithCategory],
+        )
         client.log(
             "webhook",
             "Transaction",

@@ -23,7 +23,7 @@ def test_basic(client):
         amount: int
         timestamp: datetime
 
-    client.commit(datasets=[Transaction])
+    client.commit(message="some commit msg", datasets=[Transaction])
 
     # log some rows to the webhook
     # docsnip-highlight start

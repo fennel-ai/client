@@ -45,7 +45,7 @@ class UserFeature:
 
 @mock
 def test_user_dataset_lookup(client):
-    client.commit(datasets=[User], featuresets=[UserFeature])
+    client.commit(message="msg", datasets=[User], featuresets=[UserFeature])
     now = datetime.now()
 
     data = [

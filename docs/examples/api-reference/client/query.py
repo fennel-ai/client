@@ -31,7 +31,7 @@ def test_basic(client):
             is_odd = is_even.apply(lambda x: not x)
             return pd.DataFrame({"is_even": is_even, "is_odd": is_odd})
 
-    client.commit(featuresets=[Numbers])
+    client.commit(message="some commit msg", featuresets=[Numbers])
 
     # now we can query the features
     # docsnip-highlight start

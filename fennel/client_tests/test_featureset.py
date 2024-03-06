@@ -193,6 +193,7 @@ class TestSimpleExtractor(unittest.TestCase):
     @mock
     def test_simple_extractor(self, client):
         client.commit(
+            message="some commit msg",
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
@@ -309,6 +310,7 @@ class TestDerivedExtractor(unittest.TestCase):
     def test_derived_extractor(self, client):
         print("Running test_derived_extractor")
         client.commit(
+            message="some commit msg",
             datasets=[UserInfoDataset, FlightDataset],
             featuresets=[
                 UserInfoSingleExtractor,
@@ -408,6 +410,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
     def test_dag_resolution2(self, client):
         print("Running test_dag_resolution2")
         client.commit(
+            message="some commit msg",
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
@@ -489,6 +492,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
     def test_dag_resolution_complex(self, client):
         print("Running test_dag_resolution_complex")
         client.commit(
+            message="some commit msg",
             datasets=[UserInfoDataset],
             featuresets=[
                 UserInfoMultipleExtractor,
@@ -623,7 +627,9 @@ class TestDocumentDataset(unittest.TestCase):
     def test_document_featureset(self, client):
         print("Running test_document_featureset")
         client.commit(
-            datasets=[DocumentContentDataset], featuresets=[DocumentFeatures]
+            message="some commit msg",
+            datasets=[DocumentContentDataset],
+            featuresets=[DocumentFeatures],
         )
         now = datetime.utcnow()
         data = [

@@ -48,7 +48,7 @@ class TestRenameSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[User, Derived])
+        client.commit(message="some msg", datasets=[User, Derived])
         # log some rows
         client.log(
             "webhook",

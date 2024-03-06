@@ -26,7 +26,7 @@ class Movie:
 
 @mock
 def test_featureset_metaflags(client):
-    client.commit(featuresets=[Movie])
+    client.commit(message="some commit msg", featuresets=[Movie])
 
     ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 2)])
     durations = pd.Series([3600, 7200, 7201, 10800])

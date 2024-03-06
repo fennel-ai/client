@@ -51,7 +51,7 @@ class TestDropnullSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[User, Derived])
+        client.commit(message="msg", datasets=[User, Derived])
         # log some rows
         client.log(
             "webhook",
@@ -136,8 +136,7 @@ class TestDropnullSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[User, Derived])
-        # log some rows
+        client.commit(message="msg", datasets=[User, Derived])
         # log some rows
         client.log(
             "webhook",

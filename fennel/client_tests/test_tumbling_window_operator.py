@@ -275,6 +275,7 @@ def log_app_events_data(client):
 def test_tumbling_window_operator(client):
     # Sync to mock client
     client.commit(
+        message="Initial commit",
         datasets=[AppEvent, Sessions, SessionStats],
         featuresets=[UserSessionStats],
     )
@@ -366,6 +367,7 @@ def test_tumbling_window_operator(client):
 def test_tumbling_hopping_equivalent_operator(client):
     # Sync to mock client
     client.commit(
+        message="Initial commit",
         datasets=[
             AppEvent,
             Sessions,

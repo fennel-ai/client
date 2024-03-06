@@ -31,11 +31,19 @@ def test_branches_basic(client):
     # docsnip basic
     client.init_branch("branch1")
     client.checkout("branch1")
-    client.commit(datasets=[Dataset], featuresets=[SomeFeatureSet])
+    client.commit(
+        message="some module: some git like commit message",
+        datasets=[Dataset],
+        featuresets=[SomeFeatureSet],
+    )
 
     client.init_branch("branch2")
     client.checkout("branch2")
-    client.commit(datasets=[Dataset], featuresets=[OtherFeatureSet])
+    client.commit(
+        message="another module: some git like commit message",
+        datasets=[Dataset],
+        featuresets=[OtherFeatureSet],
+    )
     # /docsnip
 
 
@@ -60,7 +68,11 @@ def test_branches_clone(client):
     # docsnip clone
     client.init_branch("branch1")
     client.checkout("branch1")
-    client.commit(datasets=[SomeDataset], featuresets=[SomeFeatureset])
+    client.commit(
+        message="branch1: initial commit",
+        datasets=[SomeDataset],
+        featuresets=[SomeFeatureset],
+    )
 
     client.clone_branch("branch1", "branch2")
     client.checkout("branch2")

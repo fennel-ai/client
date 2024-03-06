@@ -214,7 +214,9 @@ def test_complex_struct(client):
     """
 
     client.commit(
-        datasets=[MovieDS, MovieInfo], featuresets=[Request, MovieFeatures]
+        message="msg",
+        datasets=[MovieDS, MovieInfo],
+        featuresets=[Request, MovieFeatures],
     )
 
     # Log data to test the pipeline

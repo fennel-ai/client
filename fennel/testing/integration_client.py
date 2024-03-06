@@ -64,7 +64,7 @@ class IntegrationClient(Client):
 
     def commit(
         self,
-        message: str = "test commit message",
+        message: str,
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,

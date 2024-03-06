@@ -218,6 +218,7 @@ def test_complex_auto_gen_extractors(client):
     """
     with pytest.raises(ValueError) as e:
         _ = client.commit(
+            message="some commit msg",
             datasets=[
                 RiderDataset,
                 RiderCreditScoreDataset,
@@ -238,6 +239,7 @@ def test_complex_auto_gen_extractors(client):
 
     with pytest.raises(ValueError) as e:
         _ = client.commit(
+            message="some commit msg",
             datasets=[
                 RiderDataset,
                 RiderCreditScoreDataset,
@@ -258,6 +260,7 @@ def test_complex_auto_gen_extractors(client):
 
     with pytest.raises(ValueError) as e:
         _ = client.commit(
+            message="some commit msg",
             datasets=[
                 RiderDataset,
                 RiderCreditScoreDataset,
@@ -278,6 +281,7 @@ def test_complex_auto_gen_extractors(client):
     )
 
     resp = client.commit(
+        message="some commit msg",
         datasets=[
             RiderDataset,
             RiderCreditScoreDataset,
