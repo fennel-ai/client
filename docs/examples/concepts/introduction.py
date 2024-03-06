@@ -29,28 +29,22 @@ def test_overview(client):
 
     from fennel.sources import source, Kafka, Postgres
 
-    pg = Postgres.get(name="postgres")
+    postgres = Postgres.get(name="postgres")
     kafka = Kafka.get(name="kafka")
     webhook = Webhook(name="fennel_webhook")
 
     # docsnip external_data_sources
-    @source(
-        pg.table("user", cursor="modified_at"),
-        every="1m",
-        disorder="14d",
-        cdc="append",
-        tier="prod",
-    )
+    user_table = postgres.table("user", cursor="signup_at")
+
+    @source(user_table, every="1m", disorder="7d", cdc="append", tier="prod")
     @dataset
     class User:
         uid: int = field(key=True)
         dob: datetime
         country: str
-        signup_time: datetime = field(timestamp=True)
+        signup_at: datetime = field(timestamp=True)
 
-    @source(
-        kafka.topic("transactions"), disorder="14d", cdc="append", tier="prod"
-    )
+    @source(kafka.topic("txn"), disorder="1d", cdc="append", tier="prod")
     @dataset
     class Transaction:
         uid: int
@@ -136,7 +130,6 @@ def test_overview(client):
             message="user: add transaction datasets; first few features",
             datasets=[User, Transaction, UserTransactionsAbroad],
             featuresets=[UserFeature],
-            tier="prod",
         )
         # /docsnip
 
@@ -155,7 +148,7 @@ def test_overview(client):
         [3, dob, "China", now - timedelta(days=2)],
     ]
 
-    df = pd.DataFrame(data, columns=["uid", "dob", "country", "signup_time"])
+    df = pd.DataFrame(data, columns=["uid", "dob", "country", "signup_at"])
 
     response = client.log("fennel_webhook", "User", df)
     assert response.status_code == 200, response.json()
@@ -245,6 +238,7 @@ def test_source_snip():
     from fennel.sources import source, Postgres
     from fennel.datasets import dataset
 
+    # docsnip-highlight start
     postgres = Postgres(
         name="my-postgres",
         host=os.environ["POSTGRES_HOST"],
@@ -253,13 +247,13 @@ def test_source_snip():
         username=os.environ["POSTGRES_USERNAME"],
         password=os.environ["POSTGRES_PASSWORD"],
     )
+    # docsnip-highlight end
 
-    @source(
-        postgres.table("user", cursor="update_time"),
-        disorder="14d",
-        cdc="append",
-        every="1m",
-    )
+    # docsnip-highlight next-line
+    table = postgres.table("user", cursor="update_time")
+
+    # docsnip-highlight next-line
+    @source(table, disorder="14d", cdc="append", every="1m")
     @dataset
     class UserLocation:
         uid: int

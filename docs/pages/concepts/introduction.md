@@ -26,7 +26,7 @@ credentials:
 ```python
 from fennel.sources import source, Postgres, Kafka
 
-pg = Postgres(host=...<credentials>..)
+postgres = Postgres(host=...<credentials>..)
 kafka = Kafka(...<credentials>..)
 ```
 
@@ -36,17 +36,18 @@ Then we define the datasets that will hydrate themselves from these sources:
 
 The first dataset will poll postgres table for new updates every minute and 
 hydrate itself with new data. The second dataset hydrates itself from a kafka 
-topic. Fennel supports connectors with all main sources. Read 
-[this](/concepts/source) to learn more about sources and [this](/api-reference/sources) 
-to see the full list of sources supported by Fennel.
+topic. There are few more kwargs set here like `disorder` and `cdc` - ignore 
+them for now - though if you are interested, you can read about them and sources 
+in general [here](/concepts/source).  
 
+Besides Postgres and Kafka, Fennel supports connectors with many other sources. 
+See [full list](/api-reference/sources).
 
 Once you have one or more "sourced" datasets, you can derive new datasets from 
 existing datasets by writing simple declarative Python code - it's 
 unimaginatively called a pipeline. Let's look at one such pipeline:
 
 <pre snippet="concepts/introduction#pipeline" highlight="3"></pre>
-
 
 It's possible to do low latency lookups on these datasets using dataset keys. 
 Earlier you were asked to ignore the field descriptors -- it's time to revisit 
