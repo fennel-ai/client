@@ -1,4 +1,3 @@
-import logging
 import time
 from datetime import datetime
 
@@ -12,7 +11,6 @@ from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 __owner__ = "saiharsha@fennel.ai"
-log = logging.getLogger(__name__)
 
 
 @source(
@@ -20,7 +18,7 @@ log = logging.getLogger(__name__)
     cdc="append",
     disorder="1d",
     bounded=True,
-    idleness="5s",
+    idleness="4s",
 )
 @dataset
 class BoundedClicksDS:
@@ -41,7 +39,13 @@ class UnBoundedClicksDS:
     timestamp: datetime = field(timestamp=True)
 
 
-def _log_clicks_data_batch1(client, webhook_endpoint):
+@mock
+def test_idleness_for_bounded_source(client):
+    client.commit(
+        message="first_commit", datasets=[BoundedClicksDS], featuresets=[]
+    )
+
+    # Log 3 rows of data
     now = datetime.utcnow()
     data = [
         {
@@ -64,12 +68,19 @@ def _log_clicks_data_batch1(client, webhook_endpoint):
         },
     ]
     df = pd.DataFrame(data)
-    response = client.log("fennel_webhook", webhook_endpoint, df)
-
+    response = client.log("fennel_webhook", "ClicksDS1", df)
     assert response.status_code == requests.codes.OK, response.json()
 
+    # We should get data for keys 1 and 2 since they are logged above and no data for 4
+    now = datetime.utcnow()
+    ts = pd.Series([now, now, now])
+    display_id_keys = pd.Series([1, 2, 4])
+    df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
+    assert df["ad_id"].to_list() == [2, 3, None]
+    assert df["clicked"].to_list() == [True, False, None]
 
-def _log_clicks_data_batch2(client, webhook_endpoint):
+    # Sleep for 2 seconds and log 2 more rows of data
+    time.sleep(2)
     now = datetime.utcnow()
     data = [
         {
@@ -86,12 +97,19 @@ def _log_clicks_data_batch2(client, webhook_endpoint):
         },
     ]
     df = pd.DataFrame(data)
-    response = client.log("fennel_webhook", webhook_endpoint, df)
-
+    response = client.log("fennel_webhook", "ClicksDS1", df)
     assert response.status_code == requests.codes.OK, response.json()
 
+    # We should get data for keys 4, 5 since they are logged above and no data for 6
+    now = datetime.utcnow()
+    ts = pd.Series([now, now, now])
+    display_id_keys = pd.Series([4, 5, 6])
+    df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
+    assert df["ad_id"].to_list() == [5, 6, None]
+    assert df["clicked"].to_list() == [True, False, None]
 
-def _log_clicks_data_batch3(client, webhook_endpoint):
+    # Sleep for 5s so that new data which is not logged is not ingested since idleness for this source is 4s
+    time.sleep(5)
     now = datetime.utcnow()
     data = [
         {
@@ -108,55 +126,14 @@ def _log_clicks_data_batch3(client, webhook_endpoint):
         },
     ]
     df = pd.DataFrame(data)
-    response = client.log("fennel_webhook", webhook_endpoint, df)
-
+    response = client.log("fennel_webhook", "ClicksDS1", df)
     assert response.status_code == requests.codes.OK, response.json()
 
-
-@mock
-def test_idleness_for_bounded_source(client):
-    print("Start test case {}", datetime.now())
-    client.commit(message="first_commit", datasets=[BoundedClicksDS], featuresets=[])
-
-    print("Commit finished {}", datetime.utcnow())
-    # Log data
-    _log_clicks_data_batch1(client, "ClicksDS1")
-    print("Logged to webhook {}", datetime.utcnow())
-    client.sleep()
-
-    print("Logged the batch {}", datetime.now())
-
-    now = datetime.utcnow()
-    ts = pd.Series([now, now, now])
-    display_id_keys = pd.Series([1, 2, 4])
-
-    df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
-
-    assert df["ad_id"].to_list() == [2, 3, None]
-    assert df["clicked"].to_list() == [True, False, None]
-
-    # Sleep for 2 seconds and log more data
-    time.sleep(2)
-    _log_clicks_data_batch2(client, "ClicksDS1")
-    client.sleep()
-
-    now = datetime.utcnow()
-    ts = pd.Series([now, now, now])
-    display_id_keys = pd.Series([4, 5, 6])
-
-    df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
-    assert df["ad_id"].to_list() == [5, 6, None]
-    assert df["clicked"].to_list() == [True, False, None]
-
-    # Sleep for 5s so that new data is not logged
-    time.sleep(5)
-    _log_clicks_data_batch3(client, "ClicksDS1")
-    client.sleep()
-
+    # We should get data for key 1 since they are logged above and no data for 6, 7 since we logged the data after
+    # the source is closed
     now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 6, 7])
-
     df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
     assert df["ad_id"].to_list() == [2, None, None]
     assert df["clicked"].to_list() == [True, None, None]
@@ -164,47 +141,98 @@ def test_idleness_for_bounded_source(client):
 
 @mock
 def test_idleness_for_unbounded_source(client):
-    log.error("Test started %s", datetime.now())
-    client.commit(message="first_commit", datasets=[UnBoundedClicksDS], featuresets=[])
+    client.commit(
+        message="first_commit", datasets=[UnBoundedClicksDS], featuresets=[]
+    )
 
-    # Log data
-    _log_clicks_data_batch1(client, "ClicksDS2")
-    client.sleep()
+    # Log 3 rows of data
+    now = datetime.utcnow()
+    data = [
+        {
+            "display_id": 1,
+            "ad_id": 2,
+            "clicked": True,
+            "timestamp": now,
+        },
+        {
+            "display_id": 2,
+            "ad_id": 3,
+            "clicked": False,
+            "timestamp": now,
+        },
+        {
+            "display_id": 3,
+            "ad_id": 4,
+            "clicked": True,
+            "timestamp": now,
+        },
+    ]
+    df = pd.DataFrame(data)
+    response = client.log("fennel_webhook", "ClicksDS2", df)
+    assert response.status_code == requests.codes.OK, response.json()
 
-    log.error("Data logged at %s", datetime.now())
-
+    # We should get data for keys 1 and 2 since they are logged above and no data for 4
     now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 2, 4])
-
-    log.error("Performing lookup at %s", datetime.now())
     df, _ = UnBoundedClicksDS.lookup(ts, display_id=display_id_keys)
-
     assert df["ad_id"].to_list() == [2, 3, None]
     assert df["clicked"].to_list() == [True, False, None]
 
-    # Sleep for 2 seconds and log more data
+    # Sleep for 2 seconds and log 2 more rows of data
     time.sleep(2)
-    _log_clicks_data_batch2(client, "ClicksDS2")
-    client.sleep()
+    now = datetime.utcnow()
+    data = [
+        {
+            "display_id": 4,
+            "ad_id": 5,
+            "clicked": True,
+            "timestamp": now,
+        },
+        {
+            "display_id": 5,
+            "ad_id": 6,
+            "clicked": False,
+            "timestamp": now,
+        },
+    ]
+    df = pd.DataFrame(data)
+    response = client.log("fennel_webhook", "ClicksDS2", df)
+    assert response.status_code == requests.codes.OK, response.json()
 
+    # We should get data for keys 4, 5 since they are logged above and no data for 6
     now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([4, 5, 6])
-
     df, _ = UnBoundedClicksDS.lookup(ts, display_id=display_id_keys)
     assert df["ad_id"].to_list() == [5, 6, None]
     assert df["clicked"].to_list() == [True, False, None]
 
-    # Sleep for 5s so that new data is not logged
+    # Sleep for 5s and this new data gets ingested since the source is unbounded
     time.sleep(5)
-    _log_clicks_data_batch3(client, "ClicksDS2")
-    client.sleep()
+    now = datetime.utcnow()
+    data = [
+        {
+            "display_id": 6,
+            "ad_id": 7,
+            "clicked": True,
+            "timestamp": now,
+        },
+        {
+            "display_id": 7,
+            "ad_id": 8,
+            "clicked": False,
+            "timestamp": now,
+        },
+    ]
+    df = pd.DataFrame(data)
+    response = client.log("fennel_webhook", "ClicksDS2", df)
+    assert response.status_code == requests.codes.OK, response.json()
 
+    # We should get data for keys 1, 6, 7 since the data is logged above and source is unbounded
     now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 6, 7])
-
     df, _ = UnBoundedClicksDS.lookup(ts, display_id=display_id_keys)
     assert df["ad_id"].to_list() == [2, 7, 8]
     assert df["clicked"].to_list() == [True, True, False]

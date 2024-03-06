@@ -70,7 +70,6 @@ class IntegrationClient(Client):
         preview=False,
         tier: Optional[str] = None,
     ):
-        print("Inside integration client")
         resp = super().commit(message, datasets, featuresets, preview, tier)
         # It takes a while to setup the server
         time.sleep(10)

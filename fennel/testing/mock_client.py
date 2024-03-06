@@ -97,7 +97,6 @@ class MockClient(Client):
         preview=False,
         tier: Optional[str] = None,
     ):
-        print("Inside mock client")
         return self._get_branch().commit(datasets, featuresets, preview, tier)
 
     def query(

@@ -195,7 +195,6 @@ class DataEngine(object):
             is_source_dataset = hasattr(dataset, sources.SOURCE_FIELD)
             fields = [f.name for f in dataset.fields]
 
-            print("Curr time now {}", datetime.utcnow())
             self.datasets[dataset._name] = _Dataset(
                 fields=fields,
                 is_source_dataset=is_source_dataset,
@@ -204,9 +203,8 @@ class DataEngine(object):
                 bounded=bounded,
                 pre_proc=pre_proc,
                 idleness=idleness,
-                prev_log_time=datetime.utcnow()
+                prev_log_time=datetime.utcnow(),
             )
-            print("Just created dataset with values {}".format(self.datasets[dataset._name].prev_log_time))
 
             if (
                 not core_dataset.is_source_dataset
@@ -509,7 +507,6 @@ class DataEngine(object):
         return df
 
     def _internal_log(self, dataset_name: str, df: pd.DataFrame):
-        print("Data to be logged at {}", datetime.utcnow())
         if df.shape[0] == 0:
             print(
                 f"Skipping log of empty dataframe for webhook `{dataset_name}`"
@@ -520,7 +517,8 @@ class DataEngine(object):
             raise ValueError(f"Dataset `{dataset_name}` not found")
 
         bounded = self.datasets[dataset_name].bounded
-        if bounded and self.datasets[dataset_name].prev_log_time:
+        prev_log_time = self.datasets[dataset_name].prev_log_time
+        if bounded and prev_log_time:
             idleness = self.datasets[dataset_name].idleness
             if not idleness:
                 raise ValueError(
@@ -530,10 +528,8 @@ class DataEngine(object):
                 idleness
             ).total_seconds()
             actual_idleness_secs = (
-                datetime.utcnow() - self.datasets[dataset_name].prev_log_time
+                datetime.utcnow() - prev_log_time
             ).total_seconds()
-            print("Idleness {} Curr time {} Prev log time {}", expected_idleness_secs, datetime.utcnow(), self.datasets[dataset_name].prev_log_time)
-            print("Expected idleness_secs {} Actual idleness secs {}", expected_idleness_secs, actual_idleness_secs)
             # Do not log the data if a bounded source is idle for more time than expected
             if actual_idleness_secs >= expected_idleness_secs:
                 print(
