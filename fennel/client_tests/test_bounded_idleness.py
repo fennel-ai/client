@@ -40,7 +40,7 @@ class UnBoundedClicksDS:
 
 
 def _log_clicks_data_batch1(client, webhook_endpoint):
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         {
             "display_id": 1,
@@ -68,7 +68,7 @@ def _log_clicks_data_batch1(client, webhook_endpoint):
 
 
 def _log_clicks_data_batch2(client, webhook_endpoint):
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         {
             "display_id": 4,
@@ -90,7 +90,7 @@ def _log_clicks_data_batch2(client, webhook_endpoint):
 
 
 def _log_clicks_data_batch3(client, webhook_endpoint):
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         {
             "display_id": 6,
@@ -120,7 +120,7 @@ def test_idleness_for_bounded_source(client):
     _log_clicks_data_batch1(client, "ClicksDS1")
     client.sleep()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 2, 4])
 
@@ -134,7 +134,7 @@ def test_idleness_for_bounded_source(client):
     _log_clicks_data_batch2(client, "ClicksDS1")
     client.sleep()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([4, 5, 6])
 
@@ -147,7 +147,7 @@ def test_idleness_for_bounded_source(client):
     _log_clicks_data_batch3(client, "ClicksDS1")
     client.sleep()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 6, 7])
 
@@ -165,7 +165,7 @@ def test_idleness_for_unbounded_source(client):
     _log_clicks_data_batch1(client, "ClicksDS2")
     client.sleep()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 2, 4])
 
@@ -179,7 +179,7 @@ def test_idleness_for_unbounded_source(client):
     _log_clicks_data_batch2(client, "ClicksDS2")
     client.sleep()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([4, 5, 6])
 
@@ -192,7 +192,7 @@ def test_idleness_for_unbounded_source(client):
     _log_clicks_data_batch3(client, "ClicksDS2")
     client.sleep()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 6, 7])
 

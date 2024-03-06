@@ -63,7 +63,7 @@ class _Dataset:
     pre_proc: Optional[Dict[str, sources.PreProcValue]] = None
     aggregated_datasets: Optional[Dict[str, Any]] = None
     idleness: Optional[Duration] = None
-    prev_log_time: datetime = datetime.now()
+    prev_log_time: datetime = datetime.utcnow()
 
     def empty_df(self):
         return pd.DataFrame(columns=self.fields)
@@ -526,7 +526,7 @@ class DataEngine(object):
                 idleness
             ).total_seconds()
             actual_idleness_secs = (
-                datetime.now() - self.datasets[dataset_name].prev_log_time
+                datetime.utcnow() - self.datasets[dataset_name].prev_log_time
             ).total_seconds()
             # Do not log the data if a bounded source is idle for more time than expected
             if actual_idleness_secs >= expected_idleness_secs:
@@ -653,7 +653,7 @@ class DataEngine(object):
         # Sort by timestamp
         timestamp_field = self.datasets[dataset_name].dataset.timestamp_field
         self.datasets[dataset_name].data = df.sort_values(timestamp_field)
-        self.datasets[dataset_name].prev_log_time = datetime.now()
+        self.datasets[dataset_name].prev_log_time = datetime.utcnow()
 
     def _process_data_connector(
         self, dataset: Dataset, tier: Optional[str] = None
