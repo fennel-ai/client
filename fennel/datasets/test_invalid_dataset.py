@@ -592,7 +592,7 @@ def test_pipeline_input_validation_during_sync(client):
             def create_pipeline(cls, a: Dataset):
                 return a
 
-        client.commit(datasets=[ABCDataset])
+        client.commit(message="msg", datasets=[ABCDataset])
     assert (
         str(e.value)
         == "Dataset `XYZ` is an input to the pipelines: `['ABCDataset.create_pipeline']` but is not synced. Please add it to the sync call."
@@ -955,6 +955,7 @@ def test_invalid_assign_schema(client):
             return ds.groupby(["latitude_int", "longitude_int"]).first()
 
     client.commit(
+        message="msg",
         datasets=[LocationDS, LocationDS2],
     )
     df = pd.DataFrame(

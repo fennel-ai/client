@@ -9,7 +9,11 @@ from fennel.testing import mock
 
 @mock
 def test_featureset_metaflags(client):
-    client.commit(datasets=[Ticket], featuresets=[TicketFeatures])
+    client.commit(
+        message="ticket: add first dataset and featureset",
+        datasets=[Ticket],
+        featuresets=[TicketFeatures],
+    )
 
     df = pd.DataFrame(
         data=[

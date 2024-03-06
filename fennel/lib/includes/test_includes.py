@@ -101,6 +101,7 @@ def test_includes_proto_conversion():
 @mock
 def test_simple_extractor(client):
     client.commit(
+        message="some msg",
         datasets=[UserInfoDataset],
         featuresets=[UserInfoSingleExtractor],
     )

@@ -56,6 +56,7 @@ from fennel.testing import mock
 @mock
 def test_all_features(client):
     client.commit(
+        message="some commit message",
         datasets=[
             DriverDS,
             DriverCreditScoreDS,

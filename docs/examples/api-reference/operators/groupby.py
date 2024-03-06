@@ -41,7 +41,9 @@ class TestGroupbySnips(unittest.TestCase):
         # /docsnip
 
         # log some rows to the transaction dataset
-        client.commit(datasets=[Transaction, FirstInCategory])
+        client.commit(
+            message="some msg", datasets=[Transaction, FirstInCategory]
+        )
         client.log(
             "webhook",
             "Transaction",

@@ -123,7 +123,11 @@ def log_movie_data(client):
 @pytest.mark.integration
 @mock
 def test_struct_type(client):
-    client.commit(datasets=[MovieCast, MovieInfo], featuresets=[MovieFeatures])
+    client.commit(
+        message="Initial commit",
+        datasets=[MovieCast, MovieInfo],
+        featuresets=[MovieFeatures],
+    )
     # Log data to test the pipeline
     log_movie_data(client)
 

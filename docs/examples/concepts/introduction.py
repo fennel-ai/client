@@ -133,6 +133,7 @@ def test_overview(client):
     def _unused():
         # docsnip commit
         client.commit(
+            message="user: add transaction datasets; first few features",
             datasets=[User, Transaction, UserTransactionsAbroad],
             featuresets=[UserFeature],
             tier="prod",
@@ -140,6 +141,7 @@ def test_overview(client):
         # /docsnip
 
     client.commit(
+        message="user: add transaction datasets; first few features",
         datasets=[User, Transaction, UserTransactionsAbroad],
         featuresets=[UserFeature],
         tier="local",
@@ -308,7 +310,11 @@ def test_branches(client):
     # docsnip branches
     client.init_branch("dev")
     client.checkout("dev")
-    client.commit(datasets=[SomeDataset], featuresets=[SomeFeatureset])
+    client.commit(
+        message="some module: some git like commit message",
+        datasets=[SomeDataset],
+        featuresets=[SomeFeatureset],
+    )
 
     client.query(
         outputs=[SomeFeatureset.country],

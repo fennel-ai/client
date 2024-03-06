@@ -40,7 +40,7 @@ class TestDedupSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[Transaction, Deduped])
+        client.commit(message="some msg", datasets=[Transaction, Deduped])
         # log some rows to the transaction dataset, with some duplicates
         client.log(
             "webhook",
@@ -110,7 +110,7 @@ class TestDedupSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[Transaction, Deduped])
+        client.commit(message="some msg", datasets=[Transaction, Deduped])
         # log some rows to the transaction dataset, with some duplicates
         client.log(
             "webhook",

@@ -33,7 +33,7 @@ def test_webhook_basic(client):
 
     # /docsnip
 
-    client.commit(datasets=[User, Transaction])
+    client.commit(message="some commit message", datasets=[User, Transaction])
 
     # docsnip log_data_sdk
     df = pd.DataFrame(

@@ -51,7 +51,7 @@ def test_basic(client):
             )
 
     # /docsnip
-    client.commit(datasets=[Transaction, Aggregated])
+    client.commit(message="msg", datasets=[Transaction, Aggregated])
     # log some rows to the transaction dataset
     client.log(
         "webhook",

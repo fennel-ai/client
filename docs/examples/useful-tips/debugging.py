@@ -46,7 +46,7 @@ class TestDebugSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[User, Procssed])
+        client.commit(message="msg", datasets=[User, Procssed])
         # log some rows to the dataset
         client.log(
             "webhook",
@@ -117,7 +117,7 @@ class TestDebugSnips(unittest.TestCase):
             def my_pipeline(cls, user: Dataset):
                 return user.filter(lambda df: df["country"] == "US")
 
-        client.commit(datasets=[User, USUsers])
+        client.commit(message="msg", datasets=[User, USUsers])
         # log some rows to the dataset
         client.log(
             "webhook",
@@ -158,7 +158,7 @@ class TestDebugSnips(unittest.TestCase):
             height_cm: Optional[float]
             signup_time: datetime
 
-        client.commit(datasets=[User])
+        client.commit(message="msg", datasets=[User])
         # log some rows to the dataset
         df = pd.DataFrame(
             columns=["uid", "height_cm", "signup_time"],

@@ -43,7 +43,7 @@ class UserInfoFeatureset:
 @pytest.mark.integration
 @mock
 def test_delete_branch(client):
-    resp = client.commit(datasets=[UserInfoDataset])
+    resp = client.commit(message="msg", datasets=[UserInfoDataset])
     assert resp.status_code == requests.codes.OK
 
     # can not delete the main branch
@@ -70,6 +70,7 @@ def test_complex_delete(client):
     Clone B from A, test extract working from both, then delete B, test extract working only from A.
     """
     client.commit(
+        message="msg",
         datasets=[UserInfoDataset],
         featuresets=[Request, UserInfoFeatureset],
     )

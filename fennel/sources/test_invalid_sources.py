@@ -263,7 +263,7 @@ def test_multiple_sources(client):
             country: Optional[str]
             timestamp: datetime = field(timestamp=True)
 
-        client.commit(datasets=[UserInfoDataset], featuresets=[])
+        client.commit(message="msg", datasets=[UserInfoDataset], featuresets=[])
 
     assert (
         str(e.value)

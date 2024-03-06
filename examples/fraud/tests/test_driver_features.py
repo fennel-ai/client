@@ -12,6 +12,7 @@ class TestAgeFS:
     @mock
     def test_account_age_features(self, client):
         sync_response = client.commit(
+            message="Syncing driver features",
             datasets=[
                 DriverDS,
             ],
@@ -64,6 +65,7 @@ class TestCreditScore:
     @mock
     def test_credit_score_features(self, client):
         sync_response = client.commit(
+            message="Syncing driver credit score features",
             datasets=[
                 DriverCreditScoreDS,
             ],

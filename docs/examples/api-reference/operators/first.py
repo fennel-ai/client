@@ -38,7 +38,7 @@ class TestFirstSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[Transaction, FirstOnly])
+        client.commit(message="some msg", datasets=[Transaction, FirstOnly])
         # log some rows to the transaction dataset
         client.log(
             "webhook",

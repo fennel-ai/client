@@ -16,6 +16,7 @@ from fennel.testing import mock
 @mock
 def test_vehicle_features(client):
     sync_response = client.commit(
+        message="sync vehicle features",
         datasets=[
             IdToMarketAreaDS,
             LocationToNewMarketArea,

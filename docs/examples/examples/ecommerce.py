@@ -101,6 +101,7 @@ class TestUserLivestreamFeatures(unittest.TestCase):
     @mock
     def test_feature(self, client):
         client.commit(
+            message="some commit message",
             datasets=[Order, UserSellerOrders],
             featuresets=[UserSeller],
             tier="dev",

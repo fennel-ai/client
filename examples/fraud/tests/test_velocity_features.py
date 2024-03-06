@@ -21,6 +21,7 @@ from fennel.testing import mock
 @mock
 def test_velocity_features(client):
     sync_response = client.commit(
+        message="sync velocity features",
         datasets=[
             BookingFlowCheckoutPageDS,
             ReservationDS,

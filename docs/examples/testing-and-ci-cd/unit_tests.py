@@ -62,7 +62,10 @@ class TestDataset(unittest.TestCase):
     @mock
     def test_dataset(self, client):
         # Sync the dataset
-        client.commit(datasets=[MovieRating, RatingActivity])
+        client.commit(
+            message="datasets: add RatingActivity and MovieRating",
+            datasets=[MovieRating, RatingActivity],
+        )
         now = datetime.now()
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
@@ -226,6 +229,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
     @mock
     def test_dag_resolution(self, client):
         client.commit(
+            message="user: add info datasets, featuresets",
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )

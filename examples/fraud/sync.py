@@ -71,6 +71,7 @@ if __name__ == "__main__":
     print("Starting client  with url: " + args.url)
     client = Client(args.url, token=args.token)
     client.commit(
+        message="Initial commit for fraud detection",
         datasets=[
             PaymentAccountSrcDS,
             PaymentAccountAssociationSrcDS,

@@ -152,6 +152,7 @@ class UserFeatures:
 @mock
 def test_social_network(client):
     client.commit(
+        message="social network",
         datasets=[
             UserInfo,
             PostInfo,

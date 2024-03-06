@@ -39,7 +39,7 @@ class TestAssignSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[Transaction, WithSquare])
+        client.commit(message="some msg", datasets=[Transaction, WithSquare])
         # log some rows to the transaction dataset
         client.log(
             "webhook",
@@ -89,7 +89,7 @@ class TestAssignSnips(unittest.TestCase):
                 )
 
         # /docsnip
-        client.commit(datasets=[Transaction, WithHalf])
+        client.commit(message="some msg", datasets=[Transaction, WithHalf])
         # log some rows to the transaction dataset
         with pytest.raises(Exception):
             client.log(

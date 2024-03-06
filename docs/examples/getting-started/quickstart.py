@@ -126,6 +126,7 @@ from fennel.testing import MockClient
 # client = Client('<FENNEL SERVER URL>') # uncomment this to use real Fennel server
 client = MockClient()  # comment this line to use a real Fennel server
 client.commit(
+    message="initial commit",
     datasets=[Order, Product, UserSellerOrders],
     featuresets=[UserSellerFeatures],
     tier="dev",

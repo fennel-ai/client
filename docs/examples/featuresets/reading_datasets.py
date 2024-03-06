@@ -73,6 +73,7 @@ class UserFeaturesDerived2:
 @mock
 def test_lookup_in_extractor(client):
     client.commit(
+        message="user: add user dataset and featuresets",
         datasets=[User],
         featuresets=[UserFeatures, UserFeaturesDerived, UserFeaturesDerived2],
     )

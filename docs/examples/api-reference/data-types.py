@@ -63,7 +63,7 @@ def test_restrictions(client):
 
     # /docsnip
 
-    client.commit(datasets=[UserInfoDataset])
+    client.commit(message="msg", datasets=[UserInfoDataset])
     now = datetime.now()
     data = [
         {

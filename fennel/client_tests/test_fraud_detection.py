@@ -164,6 +164,7 @@ def test_fraud_detection_pipeline(client):
         "cc_num"
     ].astype(int)
     client.commit(
+        message="initial commit",
         datasets=[CreditCardTransactions, Regions, UserTransactionSums],
         featuresets=[UserTransactionSumsFeatures],
     )

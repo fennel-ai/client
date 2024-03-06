@@ -40,7 +40,7 @@ class UserInfoFeatureset:
 def test_simple_create(client):
     client.init_branch("test-branch")
     assert client.branch() == "test-branch"
-    client.commit()
+    client.commit(message="msg")
 
 
 @pytest.mark.integration
@@ -69,9 +69,10 @@ def test_complex_create(client):
     """
     Syncing zero datasets in main and few in a branch. The change should be reflected in that branch only.
     """
-    client.commit()
+    client.commit(message="msg")
     client.init_branch("test-branch")
     client.commit(
+        message="msg",
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )
@@ -102,6 +103,7 @@ def test_log(client):
     assert resp.status_code == 200, resp.json()
 
     resp = client.commit(
+        message="msg",
         datasets=[UserInfoDataset],
         featuresets=[UserInfoFeatureset],
     )

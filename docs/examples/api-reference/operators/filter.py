@@ -39,7 +39,7 @@ class TestFilterSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[User, Filtered])
+        client.commit(message="some msg", datasets=[User, Filtered])
         # log some rows to the transaction dataset
         client.log(
             "webhook",
@@ -110,7 +110,7 @@ class TestFilterSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(datasets=[User, Filtered])
+        client.commit(message="msg", datasets=[User, Filtered])
         with pytest.raises(Exception):
             client.log(
                 "webhook",

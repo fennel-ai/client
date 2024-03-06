@@ -36,7 +36,7 @@ def test_kinesis_init_position(client):
         timestamp: datetime
 
     # /docsnip
-    client.commit(datasets=[Orders])
+    client.commit(message="some commit msg", datasets=[Orders])
 
 
 @mock
@@ -67,4 +67,4 @@ def test_kinesis_latest(client):
         timestamp: datetime
 
     # /docsnip
-    client.commit(datasets=[Orders])
+    client.commit(message="some commit msg", datasets=[Orders])

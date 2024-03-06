@@ -102,6 +102,7 @@ class UserPageViewFeatures:
 @mock
 def test_outbrain(client):
     client.commit(
+        message="initial commit",
         datasets=[
             PageViews,
             PageViewsByUser,

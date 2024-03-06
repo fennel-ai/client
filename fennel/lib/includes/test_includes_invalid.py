@@ -74,6 +74,7 @@ def power_4_alt(x: int) -> int:
 @mock
 def test_simple_invalid_extractor(client):
     client.commit(
+        message="some msg",
         datasets=[UserInfoDataset],
         featuresets=[UserInfoExtractor],
     )
@@ -148,6 +149,7 @@ def test_invalid_code_changes(client):
                 ]
 
         client.commit(
+            message="some msg",
             datasets=[UserInfoDataset],
             featuresets=[UserInfoExtractorInvalid],
         )
@@ -189,6 +191,7 @@ def test_invalid_code_changes(client):
 
         with pytest.raises(Exception) as e:
             client.commit(
+                message="some msg",
                 datasets=[UserInfoDataset],
                 featuresets=[UserInfoExtractorInvalid],
             )
@@ -234,6 +237,7 @@ def test_invalid_code_changes(client):
                 ]
 
         client.commit(
+            message="some msg",
             datasets=[UserInfoDataset],
             featuresets=[UserInfoExtractorInvalid],
         )

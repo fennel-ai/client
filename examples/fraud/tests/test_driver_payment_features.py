@@ -76,12 +76,13 @@ def log_payment_identifier_datasets(client):
 def test_payment_identifier(client):
     """This test all tests if the mapping of different account ids is correct"""
     sync_response = client.commit(
+        message="Syncing payment identifier datasets",
         datasets=[
             PaymentAccountSrcDS,
             PaymentAccountAssociationSrcDS,
             AccountSrcDS,
             PaymentIdentifierDS,
-        ]
+        ],
     )
     assert sync_response.status_code == 200
 
@@ -118,6 +119,7 @@ def test_payment_identifier(client):
 def test_min_max_radar_score(client):
     """This test tests if the min and max radar score are correct"""
     sync_response = client.commit(
+        message="Syncing payment datasets",
         datasets=[
             ChargesDS,
             PaymentAccountSrcDS,
@@ -125,7 +127,7 @@ def test_min_max_radar_score(client):
             AccountSrcDS,
             PaymentIdentifierDS,
             TransactionsDS,
-        ]
+        ],
     )
     assert sync_response.status_code == 200
     log_payment_identifier_datasets(client)
@@ -158,6 +160,7 @@ def test_min_max_radar_score(client):
 def test_last_payment(client):
     """This test tests if the last payment amount is correct"""
     sync_response = client.commit(
+        message="Syncing payment datasets",
         datasets=[
             ChargesDS,
             PaymentAccountSrcDS,
@@ -167,7 +170,7 @@ def test_last_payment(client):
             PaymentEventDS,
             TransactionsDS,
             LastPaymentDS,
-        ]
+        ],
     )
     assert sync_response.status_code == 200
     log_payment_identifier_datasets(client)
@@ -197,6 +200,7 @@ def test_last_payment(client):
 @mock
 def test_payment(client):
     sync_response = client.commit(
+        message="Syncing payment datasets",
         datasets=[
             ChargesDS,
             PaymentAccountSrcDS,
