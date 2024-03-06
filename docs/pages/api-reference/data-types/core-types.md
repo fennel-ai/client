@@ -46,7 +46,7 @@ Same as Python `Optional` - permits either `None` or values of type `T`.
 Denotes a list of floats of the given fixed length i.e. `Embedding[32]` 
 describes a list of 32 floats. This is same as `list[float]` but enforces the 
 list length which is important for dot product and other similar operations on 
-embeddings. `Embedding` types also use fewer bits for storage (by default 16)
+embeddings.
 </Expandable>
 
 <Expandable type="datetime">

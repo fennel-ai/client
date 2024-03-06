@@ -309,7 +309,6 @@ def test_branches(client):
 
     # docsnip branches
     client.init_branch("dev")
-    client.checkout("dev")
     client.commit(
         message="some module: some git like commit message",
         datasets=[SomeDataset],

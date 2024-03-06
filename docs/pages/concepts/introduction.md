@@ -19,9 +19,9 @@ This dataset has four columns -- `uid` (of type int), `dob` (of type datetime),
 `country` (of type string), and `signup_time` (of type datetime). For now, 
 ignore the `field(...)` descriptors - they'd be explained soon.
 
-How to get data into a dataset? It's possible to hydrate datasets from external data sources:
-
-First we define the external sources by providing the required credentials:
+How to get data into a dataset? It's possible to hydrate datasets from external 
+data sources. First we define the external sources by providing the required 
+credentials:
 
 ```python
 from fennel.sources import source, Postgres, Kafka
@@ -36,8 +36,9 @@ Then we define the datasets that will hydrate themselves from these sources:
 
 The first dataset will poll postgres table for new updates every minute and 
 hydrate itself with new data. The second dataset hydrates itself from a kafka 
-topic. Fennel supports connectors with all main sources - check 
-[here](/concepts/source) for details.
+topic. Fennel supports connectors with all main sources. Read 
+[this](/concepts/source) to learn more about sources and [this](/api-reference/sources) 
+to see the full list of sources supported by Fennel.
 
 
 Once you have one or more "sourced" datasets, you can derive new datasets from 
@@ -170,9 +171,8 @@ can make changes to branches independently without affecting other branches.
 
 <pre snippet="concepts/introduction#branches"></pre>
 
-In the above example, we created an empty branch called `dev`, switched client
-to refer to this branch (via the `checkout` method), did a commit on this
-newly created `dev` branch, and finally, issued a query against this branch.
+In the above example, we created an empty branch called `dev`, made a commit 
+on this newly created `dev` branch, and finally, issued a query against this branch.
 
 In fact, with Fennel, you're always working with branches even if you aren't 
 explicitly creating or checking out branches. By default, Fennel creates 
