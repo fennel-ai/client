@@ -5,7 +5,8 @@ status: 'published'
 ---
 # Quickstart
 
-The following example tries to show how several concepts in Fennel come together to solve a problem.
+The following example tries to show how several concepts in Fennel come together 
+to solve a problem.
 
 ### 0. Installation
 We only need to install Fennel's Python client to run this example, so let's install that first:
@@ -48,12 +49,14 @@ are immutable to improve reliability.
 
 ### 4. Commit
 Once datasets/featuresets have been written (or updated), you can commit those
-definitions by instantiating a client and using it to talk to the server.
-
-Since we are not working with a real server, here we use the MockClient to run
-this example locally instead of a real client. Mock Client doesn't support data
-connectors so we will manually log some data to simulate data flows.
+definitions by instantiating a client and using it to talk to the server. Since 
+we are not working with a real server, here we use the MockClient to run this 
+example locally.
 <pre snippet="getting-started/quickstart#commit"></pre>
+
+Mock Client doesn't support data connectors so we will manually log some data 
+to simulate data flows.
+<pre snippet="getting-started/quickstart#log_data"></pre>
 
 ### 5. Query
 This is the read path of Fennel. You can query for live features (i.e. features
@@ -61,9 +64,9 @@ using the latest value of all datasets) like this:
 <pre snippet="getting-started/quickstart#query"></pre>
 
 You can also query for historical values of features at arbitrary timestamps (
-useful in creating training datasets) like this:
+often used while creating training datasets or for offline batch inference) 
+like this:
 
 <pre snippet="getting-started/quickstart#historical"></pre>
-
 Query requests can be made over REST API from any language/tool which makes it easy
 to ship features to production servers.

@@ -15,6 +15,9 @@ from fennel.lib import (
     expect_column_values_to_be_between,
 )
 from fennel.sources import source, Postgres, Snowflake, Kafka, Webhook
+from fennel.testing import MockClient
+
+__owner__ = "nikhil@fennel.ai"
 
 # /docsnip
 
@@ -29,16 +32,12 @@ webhook = Webhook(name="fennel_webhook")
 
 
 # docsnip datasets
+table = postgres.table("product", cursor="last_modified")
+
+
 @dataset
-@source(
-    postgres.table("product", cursor="updated"),
-    disorder="14d",
-    cdc="append",
-    every="1m",
-    tier="prod",
-)
-@source(webhook.endpoint("Product"), disorder="14d", cdc="append", tier="dev")
-@meta(owner="chris@fennel.ai", tags=["PII"])
+@source(table, disorder="1d", cdc="append", every="1m", tier="prod")
+@source(webhook.endpoint("Product"), disorder="1d", cdc="append", tier="dev")
 class Product:
     product_id: int = field(key=True)
     seller_id: int
@@ -57,7 +56,6 @@ class Product:
 
 
 # ingesting realtime data from Kafka works exactly the same way
-@meta(owner="eva@fennel.ai")
 @source(kafka.topic("orders"), disorder="1h", cdc="append", tier="prod")
 @source(webhook.endpoint("Order"), disorder="14d", cdc="append", tier="dev")
 @dataset
@@ -71,7 +69,6 @@ class Order:
 
 
 # docsnip pipelines
-@meta(owner="mark@fennel.ai")
 @dataset
 class UserSellerOrders:
     uid: int = field(key=True)
@@ -97,7 +94,6 @@ class UserSellerOrders:
 
 
 # docsnip features
-@meta(owner="nikhil@fennel.ai")
 @featureset
 class UserSellerFeatures:
     uid: int = feature(id=1)
@@ -120,9 +116,6 @@ class UserSellerFeatures:
 
 
 # docsnip commit
-from fennel.testing import MockClient
-
-
 # client = Client('<FENNEL SERVER URL>') # uncomment this to use real Fennel server
 client = MockClient()  # comment this line to use a real Fennel server
 client.commit(
@@ -132,6 +125,9 @@ client.commit(
     tier="dev",
 )
 
+# /docsnip
+
+# docsnip log_data
 # create some product data
 now = datetime.utcnow()
 columns = ["product_id", "seller_id", "price", "desc", "last_modified"]
@@ -162,12 +158,11 @@ feature_df = client.query(
         UserSellerFeatures.seller_id,
     ],
     input_dataframe=pd.DataFrame(
-        {
-            "UserSellerFeatures.uid": [1, 1],
-            "UserSellerFeatures.seller_id": [1, 2],
-        }
+        [[1, 1], [1, 2]],
+        columns=["UserSellerFeatures.uid", "UserSellerFeatures.seller_id"],
     ),
 )
+
 assert feature_df.columns.tolist() == [
     "UserSellerFeatures.num_orders_1d",
     "UserSellerFeatures.num_orders_1w",
@@ -177,6 +172,8 @@ assert feature_df["UserSellerFeatures.num_orders_1w"].tolist() == [2, 1]
 # /docsnip
 
 # docsnip historical
+day = timedelta(days=1)
+
 feature_df = client.query_offline(
     outputs=[
         UserSellerFeatures.num_orders_1d,
@@ -189,18 +186,15 @@ feature_df = client.query_offline(
     timestamp_column="timestamps",
     format="pandas",
     input_dataframe=pd.DataFrame(
-        {
-            "UserSellerFeatures.uid": [1, 1, 1, 1],
-            "UserSellerFeatures.seller_id": [1, 2, 1, 2],
-            "timestamps": [
-                now,
-                now,
-                now - timedelta(days=1),
-                now - timedelta(days=1),
-            ],
-        }
+        [[1, 1, now], [1, 2, now], [1, 1, now - day], [1, 2, now - day]],
+        columns=[
+            "UserSellerFeatures.uid",
+            "UserSellerFeatures.seller_id",
+            "timestamps",
+        ],
     ),
 )
+
 assert feature_df.columns.tolist() == [
     "UserSellerFeatures.num_orders_1d",
     "UserSellerFeatures.num_orders_1w",

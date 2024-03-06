@@ -19,13 +19,14 @@ Let's see an example with postgres connector:
 
 <pre snippet="concepts/introduction#source"></pre>
 
-In this example, line 3 creates an object that knows how to connect with your
-Postgres database. Line 13-19 describe a dataset that needs to be sourced from
-the Postgres. And line 13 declares that this dataset should be sourced from a
-table named `user` within the Postgres database. And that's it - once this
-is written, `UserLocation` dataset will start mirroring your postgres table
-`user`and will update as the underlying Postgres table updates.
+In this example, first an object is created that knows how to connect with your
+Postgres database. Then we specify the table within this database (i.e. `user`) 
+that we intend to source from. And finally, a decorator is added on top of the 
+dataset which should be sourcing from this table.
 
+And that's it - once this is written, `UserLocation` dataset will start 
+mirroring your postgres table `user`and will update as the underlying Postgres 
+table updates.
 
 ## Schema Matching
 
@@ -91,19 +92,6 @@ The frequency with which you want Fennel to check the external data source for
 new data. Fennel is built with continuous ingestion in mind so you could set it 
 to small values and still be fine.
 
-### Disorder
-Fennel, like many other streaming systems, is designed to robustly handle out
-of order data. If there are no bounds on how out of order data can get, internal 
-state maintained by Fennel can become very large. Unlike many other streaming 
-systems (like Flink or Spark streaming), Fennel keeps this state on disk, not RAM, 
-which eliminates OOM issues. But even then, it's desirable to garbage collect 
-this state when all data before a timestamp has been seen.
-
-This is usually handled by a technique called [Watermarking](https://www.oreilly.com/radar/the-world-beyond-batch-streaming-102/)
-where max out of order delay is specified. This max out of order delay of a source
-is called `disorder` in Fennel, and once specified at source level, is respected
-automatically by each downstream pipeline. 
-
 ### Cursor
 For some (but not all) sources, Fennel uses a cursor to do incremental 
 ingestion of data. It does so by remembering the last value of the cursor 
@@ -117,16 +105,31 @@ an index of the cursor column so that this query is efficient.
 Many data sources don't need an explicit cursor and instead use other implicit 
 mechanisms to track and save ingestion progress.
 
+### Disorder
+Fennel, like many other streaming systems, is designed to robustly handle out
+of order data. If there are no bounds on how out of order data can get, internal 
+state maintained by Fennel can become very large. Unlike many other streaming 
+systems (like Flink or Spark streaming), Fennel keeps this state on disk, not RAM, 
+which eliminates OOM issues. But even then, it's desirable to garbage collect 
+this state when all data before a timestamp has been seen.
+
+This is usually handled by a technique called [Watermarking](https://www.oreilly.com/radar/the-world-beyond-batch-streaming-102/)
+where max out of order delay is specified. This max out of order delay of a source
+is called `disorder` in Fennel, and once specified at source level, is respected
+automatically by each downstream pipeline. 
+
+### CDC
+Fennel natively supports change data capture (aka CDC) as well as other modes
+of ingestion (e.g. `append`). You can configure the `cdc` parameter to specify
+how should your data be interpreted and converted to valid change log data. More
+often than not, you'd choose `append` to signify that all incoming rows should
+be appended to the dataset such that there are no deletes/updates.
 
 ### Preproc
 The `preproc` field in the source provides a way to ingest a column that 
 doesn't exist. Instead, it is either given a default value or to base the value 
 of that column on another column. 
 
-### CDC
-Fennel natively supports change data capture (aka CDC) as well as other modes
-of ingestion (e.g. `append`). You can configure the `cdc` parameter to specify
-how should your data be interpreted and converted to valid change log data.
 
 ### Since
 The `since` field in the source provides a way to ingest data from a specific time onwards from the source. 
