@@ -5,6 +5,7 @@ AST
 AdministratorAccess
 AllowKinesisAccess
 AssumeRole
+Auth
 Avro
 BigTable
 CIDR
@@ -122,6 +123,7 @@ assertEqual
 astype
 async
 atomicity
+auth
 autoscaling
 avro
 avro
@@ -218,10 +220,12 @@ lookups
 metaflags
 msgs
 multicolumn
+mybranch
 mysql
 nan
 nat
 natively
+noop
 noqa
 np
 nullable
