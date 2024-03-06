@@ -229,23 +229,9 @@ class Avro(BaseModel):
 class Kafka(DataSource):
     bootstrap_servers: str
     security_protocol: Literal["PLAINTEXT", "SASL_PLAINTEXT", "SASL_SSL"]
-    sasl_mechanism: Optional[str]
-    sasl_plain_username: Optional[str]
-    sasl_plain_password: Optional[str]
-    verify_cert: Optional[bool] = False
-
-    @validator("security_protocol")
-    def validate_security_protocol(cls, security_protocol: str) -> str:
-        if security_protocol not in [
-            "PLAINTEXT",
-            "SASL_PLAINTEXT",
-            "SASL_SSL",
-        ]:
-            raise ValueError(
-                "security protocol must be one of "
-                "PLAINTEXT, SASL_PLAINTEXT, SASL_SSL"
-            )
-        return security_protocol
+    sasl_mechanism: Literal["PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512"]
+    sasl_plain_username: str
+    sasl_plain_password: str
 
     def required_fields(self) -> List[str]:
         return ["topic"]
@@ -262,10 +248,9 @@ class Kafka(DataSource):
             _get=True,
             bootstrap_servers="",
             security_protocol="PLAINTEXT",
-            sasl_mechanism="",
+            sasl_mechanism="PLAIN",
             sasl_plain_username="",
             sasl_plain_password="",
-            verify_cert=None,
         )
 
     def identifier(self) -> str:

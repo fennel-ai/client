@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.1] - 2024-03-05
+- Make sasl info a required field for kafka sources
+
+## [1.0.0] - 2024-03-01
+
 ## [0.20.20] - 2024-02-14
 - Make `cdc` and `disorder` non-optional fields on a data source with reasonable default values.
 - remove `with_source` on the `@sources` decorator. This has been deprecated in favor using `tier=` on the data source

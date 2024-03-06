@@ -384,7 +384,6 @@ kafka = Kafka(
     sasl_mechanism="PLAIN",
     sasl_plain_username="test",
     sasl_plain_password="test",
-    verify_cert=False,
 )
 
 s3_console = S3.get(
@@ -905,7 +904,6 @@ def test_multiple_sources():
                         "saslMechanism": "PLAIN",
                         "saslPlainUsername": "test",
                         "saslPlainPassword": "test",
-                        "enableSslCertificateVerification": False,
                     },
                 },
                 "topic": "test_topic",
@@ -968,7 +966,6 @@ def test_multiple_sources():
                         "saslMechanism": "PLAIN",
                         "saslPlainUsername": "test",
                         "saslPlainPassword": "test",
-                        "enableSslCertificateVerification": False,
                     },
                 },
                 "topic": "test_topic",
