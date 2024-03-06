@@ -57,6 +57,8 @@ still use the same physical assets to power the two branches.
 
 ## Branch Management
 
+![Diagram](/assets/list_branch.png)
+
 ### Fennel Console
 You can also use Fennel console to browse through all the existing branches. For
 any given branch, you can see all its datasets/featuresets, inspect live dataflow 
