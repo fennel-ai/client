@@ -37,7 +37,7 @@ Raises an error if the auth token isn't valid. Not applicable to the mock client
 <Expandable title="Insufficient permissions">
 Raises an error if the account corresponding to the auth token doesn't carry 
 permissions to create a new branch. Also raises an error if the token doesn't have
-access to entities defined in the source brach. Auth/permissions checks are not 
+access to entities defined in the source branch. Auth/permissions checks are not 
 applicable to the mock client.
 </Expandable>
 </LeftSection>

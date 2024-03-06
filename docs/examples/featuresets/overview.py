@@ -220,7 +220,11 @@ def test_multiple_features_extracted(client):
 
     # /docsnip
 
-    client.commit(datasets=[UserInfo], featuresets=[UserLocationFeatures])
+    client.commit(
+        message="msg",
+        datasets=[UserInfo],
+        featuresets=[UserLocationFeatures],
+    )
     now = datetime.now()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
     df = pd.DataFrame(data, columns=["uid", "city", "update_time"])
@@ -295,6 +299,7 @@ def test_extractors_across_featuresets(client):
     # /docsnip
 
     client.commit(
+        message="some commit message",
         datasets=[UserInfo],
         featuresets=[Request, UserLocationFeaturesRefactored],
     )
