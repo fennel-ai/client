@@ -12,7 +12,14 @@ class TestSumSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, Sum
+        from fennel.datasets import (
+            dataset,
+            field,
+            pipeline,
+            Dataset,
+            Sum,
+            index,
+        )
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 
@@ -25,6 +32,7 @@ class TestSumSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
+        @index
         @dataset
         class Aggregated:
             uid: int = field(key=True)

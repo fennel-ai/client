@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field, Dataset, pipeline, Count
+from fennel.datasets import dataset, field, Dataset, pipeline, Count, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.dtypes import regex, oneof
@@ -29,6 +29,7 @@ class UserInfo:
 
 
 @source(webhook.endpoint("PostInfo"), disorder="14d", cdc="append")
+@index
 @dataset
 @meta(owner="data-eng@myspace.com")
 class PostInfo:
@@ -48,6 +49,7 @@ class ViewData:
 
 
 @meta(owner="ml-eng@myspace.com")
+@index
 @dataset
 class CityInfo:
     city: str = field(key=True)
@@ -63,8 +65,9 @@ class CityInfo:
         )
 
 
-@dataset
+@index
 @meta(owner="ml-eng@myspace.com")
+@dataset
 class UserViewsDataset:
     user_id: str = field(key=True)
     num_views: int
@@ -78,8 +81,9 @@ class UserViewsDataset:
         )
 
 
-@dataset
+@index
 @meta(owner="ml-eng@myspace.com")
+@dataset
 class UserCategoryDataset:
     user_id: str = field(key=True)
     category: str = field(key=True)
@@ -179,7 +183,7 @@ def test_social_network(client):
     assert res.status_code == requests.codes.OK, res.json()
     res = client.log("fennel_webhook", "ViewData", view_data_df)
     assert res.status_code == requests.codes.OK, res.json()
-    now = datetime.now()
+    now = datetime.utcnow()
     ts = pd.Series([now, now, now])
     if client.is_integration_client():
         client.sleep(120)

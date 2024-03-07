@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from math import sqrt
 from typing import Optional, List, Dict
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -24,6 +23,7 @@ from fennel.datasets import (
     Stddev,
     Distinct,
     Quantile,
+    index,
 )
 from fennel.lib import includes, meta, inputs
 from fennel.dtypes import between, oneof, struct
@@ -41,6 +41,7 @@ __owner__ = "eng@fennel.ai"
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@index
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -51,6 +52,7 @@ class UserInfoDataset:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class UserInfoDatasetDerived:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -66,6 +68,7 @@ class UserInfoDatasetDerived:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class UserInfoDatasetDerivedSelect:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -83,6 +86,7 @@ class UserInfoDatasetDerivedSelect:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class UserInfoDatasetDerivedDropnull:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -111,7 +115,7 @@ class TestDataset(unittest.TestCase):
     def test_simple_log(self, client):
         # Sync the dataset
         client.commit(message="msg", datasets=[UserInfoDataset])
-        now = datetime.now()
+        now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
         data = [
             [18232, "Ross", 32, "USA", now],
@@ -129,7 +133,7 @@ class TestDataset(unittest.TestCase):
             message="msg",
             datasets=[UserInfoDataset, UserInfoDatasetDerivedSelect],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
         data = [
             [18232, "Ross", 32, "USA", now],
@@ -176,7 +180,7 @@ class TestDataset(unittest.TestCase):
             datasets=[UserInfoDataset, UserInfoDatasetDerivedDropnull],
         )
         assert response.status_code == requests.codes.OK, response.json()
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             [18232, "Ross", 32, "USA", now],
             [18234, "Monica", None, "Chile", now],
@@ -245,7 +249,7 @@ class TestDataset(unittest.TestCase):
         client.commit(
             message="msg", datasets=[UserInfoDataset, UserInfoDatasetDerived]
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
         data = [
             [18232, "Ross", 32, "USA", now],
@@ -285,7 +289,7 @@ class TestDataset(unittest.TestCase):
         # Sync the dataset
         client.commit(message="msg", datasets=[UserInfoDataset])
 
-        now = datetime.now()
+        now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
         data = [
             [18232, "Ross", 32, "USA", now],
@@ -317,7 +321,7 @@ class TestDataset(unittest.TestCase):
         client.sleep(10)
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920], dtype="Int64")
-        lookup_now = datetime.now() + pd.Timedelta(minutes=1)
+        lookup_now = datetime.utcnow() + pd.Timedelta(minutes=1)
         ts = pd.Series([lookup_now, lookup_now, lookup_now])
         df, found = UserInfoDataset.lookup(
             ts,
@@ -412,6 +416,7 @@ class TestDataset(unittest.TestCase):
         with self.assertRaises(Exception) as e:
 
             @meta(owner="test@test.com")
+            @index
             @dataset
             class UserInfoDataset:
                 user_id: int = field(key=True)
@@ -472,7 +477,7 @@ class TestDataset(unittest.TestCase):
 #
 #         # Sync the dataset
 #         client.commit(datasets=[DocumentContentDataset])
-#         now = datetime.now()
+#         now = datetime.utcnow()
 #         data = [
 #             [18232, np.array([1, 2, 3, 4]), np.array([1, 2, 3]), 10, now],
 #             [
@@ -519,6 +524,7 @@ class RatingActivity:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class MovieRatingCalculated:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -600,6 +606,7 @@ class MovieRating:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class MovieRatingTransformed:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -641,6 +648,7 @@ class MovieRatingTransformed:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class MovieRatingAssign:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -673,7 +681,7 @@ class TestBasicTransform(unittest.TestCase):
             message="msg",
             datasets=[MovieRating, MovieRatingTransformed, RatingActivity],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         two_hours_ago = now - timedelta(hours=2)
         data = [
             ["Jumanji", 4, 343, 789, two_hours_ago],
@@ -728,6 +736,7 @@ class Orders:
     timestamp: datetime
 
 
+@index
 @dataset
 class Derived:
     uid: int = field(key=True)
@@ -792,7 +801,7 @@ class TestBasicAssign(unittest.TestCase):
             message="msg",
             datasets=[MovieRating, MovieRatingAssign, RatingActivity],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         two_hours_ago = now - timedelta(hours=2)
         data = [
             ["Jumanji", 4, 343, 789, two_hours_ago],
@@ -836,6 +845,7 @@ class TestBasicAssign(unittest.TestCase):
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("MovieRevenue"), disorder="14d", cdc="append")
+@index
 @dataset
 class MovieRevenue:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -846,6 +856,7 @@ class MovieRevenue:
 
 
 @meta(owner="aditya@fennel.ai")
+@index
 @dataset
 class MovieStats:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -892,7 +903,7 @@ class TestBasicJoin(unittest.TestCase):
             message="msg",
             datasets=[MovieRating, MovieRevenue, MovieStats, RatingActivity],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         one_hour_ago = now - timedelta(hours=1)
         data = [
             ["Jumanji", 4, 343, 789, one_hour_ago],
@@ -947,6 +958,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
     def test_inner_join_with_explode_dedup(self, client):
         @meta(owner="abhay@fennel.ai")
         @source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="append")
+        @index
         @dataset
         class MovieInfo:
             title: str = field(key=True)
@@ -963,6 +975,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             at: datetime
 
         @meta(owner="abhay@fennel.ai")
+        @index
         @dataset
         class ActorStats:
             name: str = field(key=True)
@@ -1020,7 +1033,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             response.status_code == requests.codes.OK
         ), response.json()  # noqa
 
-        now = datetime.now()
+        now = datetime.utcnow()
         one_hour_ago = now - timedelta(hours=1)
         one_day_ago = now - timedelta(days=1)
         two_hours_ago = now - timedelta(hours=2)
@@ -1136,7 +1149,7 @@ class TestBasicAggregate(unittest.TestCase):
             message="msg",
             datasets=[MovieRatingCalculated, RatingActivity],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -1188,6 +1201,7 @@ class TestBasicAggregate(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class MovieRatingWindowed:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -1253,7 +1267,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
             message="msg",
             datasets=[MovieRatingWindowed, RatingActivity],
         )
-        true_now = datetime.now()
+        true_now = datetime.utcnow()
         now = true_now - timedelta(days=10) - timedelta(minutes=1)
         three_hours = now + timedelta(hours=3)
         six_hours = now + timedelta(hours=6)
@@ -1373,6 +1387,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class PositiveRatingActivity:
     cnt_rating: int
@@ -1404,7 +1419,7 @@ class TestBasicFilter(unittest.TestCase):
             message="msg",
             datasets=[PositiveRatingActivity, RatingActivity],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -1460,6 +1475,7 @@ class TestBasicFilter(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class UniqueMoviesSeen:
     static: str = field(key=True)
@@ -1507,7 +1523,7 @@ class TestBasicCountUnique(unittest.TestCase):
             message="msg",
             datasets=[UniqueMoviesSeen, RatingActivity],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -1561,6 +1577,7 @@ class TestBasicCountUnique(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class UserUniqueMoviesSeen:
     userid: int = field(key=True)
@@ -1600,7 +1617,7 @@ class TestBasicDistinct(unittest.TestCase):
             message="msg",
             datasets=[UserUniqueMoviesSeen, RatingActivity],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -1646,6 +1663,7 @@ class TestBasicDistinct(unittest.TestCase):
 
 
 @meta(owner="abhay@fennel.ai")
+@index
 @dataset
 class FirstMovieSeen:
     userid: int = field(key=True)
@@ -1660,6 +1678,7 @@ class FirstMovieSeen:
 
 
 @meta(owner="abhay@fennel.ai")
+@index
 @dataset
 class NumTimesFirstMovie:
     """
@@ -1694,7 +1713,7 @@ class TestFirstOp(unittest.TestCase):
             message="msg",
             datasets=[FirstMovieSeen, RatingActivity, NumTimesFirstMovie],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         five_hours_ago = now - timedelta(hours=5)
         three_hours_ago = now - timedelta(hours=3)
         two_hours_ago = now - timedelta(hours=2)
@@ -1766,6 +1785,7 @@ class TestFirstOp(unittest.TestCase):
 
 
 @meta(owner="abhay@fennel.ai")
+@index
 @dataset
 class FirstMovieSeenWithFilter:
     userid: int = field(key=True)
@@ -1789,7 +1809,7 @@ class TestWaterMark(unittest.TestCase):
             message="msg",
             datasets=[FirstMovieSeenWithFilter, RatingActivity],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         minute_ago = now - timedelta(minutes=1)
         data = [
             [18231, 4.5, "Jumanji", minute_ago],
@@ -1893,6 +1913,7 @@ class Car:
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("DealerDataset"), disorder="14d", cdc="append")
+@index
 @dataset
 class Dealer:
     name: str = field(key=True)
@@ -1902,6 +1923,7 @@ class Dealer:
 
 
 @meta(owner="test@tesst.com")
+@index
 @dataset
 class DealerNumCars:
     name: str = field(key=True)
@@ -1937,7 +1959,7 @@ class TestNestedStructType(unittest.TestCase):
             message="msg",
             datasets=[DealerNumCars, Dealer],
         )
-        now = datetime.now() - timedelta(hours=1)
+        now = datetime.utcnow() - timedelta(hours=1)
         data = {
             "name": ["Test Dealer", "Second Dealer", "Third Dealer"],
             "address": [
@@ -1993,7 +2015,7 @@ class TestNestedStructType(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
 
-        now = datetime.now()
+        now = datetime.utcnow()
         # Verify the data by looking it up
         df, _ = Dealer.lookup(
             pd.Series([now, now]),
@@ -2044,6 +2066,7 @@ class Activity:
 
 @meta(owner="me@fenne.ai")
 @source(webhook.endpoint("MerchantInfo"), disorder="14d", cdc="append")
+@index
 @dataset(history="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
@@ -2053,6 +2076,7 @@ class MerchantInfo:
 
 
 @meta(owner="me@fennel.ai")
+@index
 @dataset
 class FraudReportAggregatedDataset:
     category: str = field(key=True)
@@ -2117,7 +2141,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
             message="msg",
             datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         minute_ago = now - timedelta(minutes=1)
         data = [
             [
@@ -2197,7 +2221,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
 
         client.sleep()
 
-        now = datetime.now() + timedelta(minutes=1)
+        now = datetime.utcnow() + timedelta(minutes=1)
         ts = pd.Series([now, now])
         categories = pd.Series(["grocery", "entertainment"])
         df, _ = FraudReportAggregatedDataset.lookup(ts, category=categories)
@@ -2258,6 +2282,7 @@ class UserAge2:
 
 
 @meta(owner="me@fennel.ai")
+@index
 @dataset
 class UserAgeAggregated:
     city: str = field(key=True)
@@ -2287,9 +2312,9 @@ class TestAggregateTableDataset(unittest.TestCase):
             message="msg", datasets=[UserAge, UserAge2, UserAgeAggregated]
         )
         client.sleep()
-        yesterday = datetime.now() - timedelta(days=1)
-        now = datetime.now()
-        tomorrow = datetime.now() + timedelta(days=1)
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        now = datetime.utcnow()
+        tomorrow = datetime.utcnow() + timedelta(days=1)
 
         data = [
             ["Sonu", 24, "mumbai", yesterday],
@@ -2354,6 +2379,7 @@ class WAG:
 
 
 @meta(owner="gianni@fifa.com")
+@index
 @dataset
 class ManchesterUnitedPlayerInfo:
     name: str = field(key=True)
@@ -2393,6 +2419,7 @@ class ManchesterUnitedPlayerInfo:
 
 
 @meta(owner="gianni@fifa.com")
+@index
 @dataset
 class ManchesterUnitedPlayerInfoBounded:
     name: str = field(key=True)
@@ -2448,9 +2475,9 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
             message="msg",
             datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo],
         )
-        now = datetime.now()
-        yesterday = datetime.now() - timedelta(days=1)
-        minute_ago = datetime.now() - timedelta(minutes=1)
+        now = datetime.utcnow()
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        minute_ago = datetime.utcnow() - timedelta(minutes=1)
         data = [
             ["Rashford", 25, 71, 154, "Manchester United", minute_ago],
             ["Maguire", 29, 76, 198, "Manchester United", minute_ago],
@@ -2537,7 +2564,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
             ],
         )
 
-        now = datetime.now()
+        now = datetime.utcnow()
         minute_ago = now - timedelta(minutes=1)
         second_ahead = now + timedelta(seconds=1)
         minute_ahead = now + timedelta(minutes=1)
@@ -2644,6 +2671,7 @@ def test_join(client):
 
     @source(webhook.endpoint("B"), disorder="14d", cdc="append")
     @meta(owner="aditya@fennel.ai")
+    @index
     @dataset
     class B:
         b1: int = field(key=True)
@@ -2673,7 +2701,7 @@ def test_join(client):
 
     client.commit(message="msg", datasets=[A, B, ABCDataset])
 
-    now = datetime.now()
+    now = datetime.utcnow()
     df1 = pd.DataFrame(
         {
             "a1": [1, 2, 3],
@@ -2737,6 +2765,7 @@ class CommonEvent:
     payload: str
 
 
+@index
 @dataset
 @meta(owner="aditya@fennel.ai.com", description="Location index features")
 class LocationLatLong:
@@ -2850,6 +2879,7 @@ def extract_payload(
     df[json_col] = df[payload_col].apply(lambda x: json.loads(x))
     return df[["timestamp", json_col]]
 
+@index
 @dataset
 @meta(owner="aditya@fennel.ai.com", description="Location index features")
 class LocationLatLong:
@@ -2892,17 +2922,17 @@ def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
     data = [
         {
             "name": "LocationLatLong",
-            "timestamp": datetime.now(),
+            "timestamp": datetime.utcnow(),
             "payload": '{"user_id": 247, "latitude": 12.3, "longitude": 12.3}',
         },
         {
             "name": "LocationLatLong",
-            "timestamp": datetime.now(),
+            "timestamp": datetime.utcnow(),
             "payload": '{"user_id": 248, "latitude": 12.3, "longitude": 12.4}',
         },
         {
             "name": "LocationLatLong",
-            "timestamp": datetime.now(),
+            "timestamp": datetime.utcnow(),
             "payload": '{"user_id": 246, "latitude": 12.3, "longitude": 12.3}',
         },
     ]
@@ -2911,7 +2941,7 @@ def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
 
     client.sleep()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     timestamps = pd.Series([now, now])
     res, found = LocationLatLong.lookup(
         ts=timestamps, latlng2=pd.Series(["12.3-12.4", "12.3-12.3"])
@@ -3058,6 +3088,7 @@ def test_inner_join_column_name_collision(client):
         created: datetime
         outcome_risk_score: float
 
+    @index
     @dataset
     @source(
         webhook.endpoint("PaymentAccountDataset"),
@@ -3070,6 +3101,7 @@ def test_inner_join_column_name_collision(client):
         created: datetime
         customer_id: int = field(key=True)
 
+    @index
     @dataset
     @source(
         webhook.endpoint("PaymentAccountAssociationDataset"),
@@ -3082,6 +3114,7 @@ def test_inner_join_column_name_collision(client):
         created: datetime
         account_id: int
 
+    @index
     @dataset
     @source(
         webhook.endpoint("AccountDataset"),
@@ -3157,7 +3190,7 @@ def test_inner_join_column_name_collision(client):
         ],
     )
     assert initial.status_code == 200
-    now = datetime.now()
+    now = datetime.utcnow()
 
     stripe_charge_df = pd.DataFrame(
         {"customer": [1], "created": [now], "outcome_risk_score": [0.5]}
@@ -3214,6 +3247,7 @@ def test_inner_join_column_name_collision(client):
         "timestamp": datetime(1970, 1, 1, 0, 0, 0),
     },
 )
+@index
 @dataset
 class UserInfoDatasetPreProc:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -3227,7 +3261,7 @@ class UserInfoDatasetPreProc:
 def test_dataset_with_pre_proc_log(client):
     # Sync the dataset
     client.commit(message="msg", datasets=[UserInfoDatasetPreProc])
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         [18232, "Ross", "USA"],
         [18234, "Monica", "Chile"],

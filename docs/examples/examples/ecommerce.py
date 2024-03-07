@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, pipeline, field, Dataset, Count
+from fennel.datasets import dataset, pipeline, field, Dataset, Count, index
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.sources import Postgres, source, Webhook
@@ -50,6 +50,7 @@ class Order:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
+@index
 @dataset
 class UserSellerOrders:
     uid: int = field(key=True)

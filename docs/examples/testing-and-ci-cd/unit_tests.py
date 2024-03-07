@@ -13,6 +13,7 @@ from fennel.datasets import (
     Count,
     Sum,
     Average,
+    index,
 )
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.sources import source, Webhook
@@ -31,6 +32,7 @@ class RatingActivity:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class MovieRating:
     movie: str = field(key=True)
@@ -66,7 +68,7 @@ class TestDataset(unittest.TestCase):
             message="datasets: add RatingActivity and MovieRating",
             datasets=[MovieRating, RatingActivity],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -171,6 +173,7 @@ def get_country_geoid(country: str) -> int:
 # docsnip featuresets_testing_with_dataset
 @meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@index
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

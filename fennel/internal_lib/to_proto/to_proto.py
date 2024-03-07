@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Mapping
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
-from google.protobuf.wrappers_pb2 import BoolValue, StringValue
+from google.protobuf.wrappers_pb2 import StringValue
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
@@ -23,7 +23,10 @@ import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.services_pb2 as services_proto
 import fennel.sources as sources
 from fennel.datasets import Dataset, Pipeline, Field
-from fennel.datasets.datasets import sync_validation_for_pipelines
+from fennel.datasets.datasets import (
+    sync_validation_for_pipelines,
+    indices_from_ds,
+)
 from fennel.dtypes.dtypes import FENNEL_STRUCT
 from fennel.featuresets import Featureset, Feature, Extractor, ExtractorType
 from fennel.featuresets.featureset import sync_validation_for_extractors
@@ -102,6 +105,8 @@ def to_sync_request_proto(
     features = []
     extractors = []
     expectations: List[exp_proto.Expectations] = []
+    offline_indices = []
+    online_indices = []
     featureset_obj_map = {}
     for obj in registered_objs:
         if isinstance(obj, Featureset):
@@ -121,6 +126,14 @@ def to_sync_request_proto(
             pipelines.extend(pipelines_from_ds(obj, tier))
             operators.extend(operators_from_ds(obj))
             expectations.extend(expectations_from_ds(obj))
+
+            # Adding indexes
+            online_index, offline_index = indices_from_ds(obj)
+            if online_index:
+                online_indices.append(online_index)
+            if offline_index:
+                offline_indices.append(offline_index)
+
             res = sources_from_ds(obj, obj.timestamp_field, tier)
             if res is None:
                 continue
@@ -148,6 +161,8 @@ def to_sync_request_proto(
         sources=conn_sources,
         extdbs=external_dbs,
         expectations=expectations,
+        offline_indices=offline_indices,
+        online_indices=online_indices,
         message=message,
     )
 

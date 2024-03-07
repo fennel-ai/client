@@ -4,7 +4,7 @@ This file contains all the required datasets for linking different payment ids t
 
 from datetime import datetime
 
-from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.datasets import dataset, field, pipeline, Dataset, index
 from fennel.lib import inputs
 from fennel.sources import Webhook, source
 
@@ -26,6 +26,7 @@ class PaymentAccountSrcDS:
     created: datetime
 
 
+@index
 @dataset
 @source(
     webhook.endpoint("PaymentAccountAssociationSrcDS"),
@@ -39,6 +40,7 @@ class PaymentAccountAssociationSrcDS:
     created: datetime
 
 
+@index
 @dataset
 @source(
     webhook.endpoint("AccountSrcDS"), disorder="14d", cdc="append", tier="local"
@@ -49,6 +51,7 @@ class AccountSrcDS:
     created: datetime
 
 
+@index
 @dataset
 class PaymentIdentifierDS:
     """

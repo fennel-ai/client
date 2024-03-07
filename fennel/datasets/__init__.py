@@ -13,6 +13,7 @@ from fennel.datasets.aggregate import (
 from fennel.datasets.datasets import (
     dataset,
     Dataset,
+    index,
     pipeline,
     Pipeline,
     field,

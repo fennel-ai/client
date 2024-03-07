@@ -2,6 +2,8 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
+
+from fennel.datasets import index
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -28,6 +30,7 @@ class TestAssignSnips(unittest.TestCase):
         @source(
             webhook.endpoint("MerchantCategory"), disorder="14d", cdc="append"
         )
+        @index
         @dataset
         class MerchantCategory:
             # docsnip-highlight start

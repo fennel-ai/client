@@ -40,7 +40,11 @@ def test_webhook_basic(client):
         {
             "uid": [1, 2, 3],
             "email": ["a@gmail.com", "b@gmail.com", "c@gmail.com"],
-            "timestamp": [datetime.now(), datetime.now(), datetime.now()],
+            "timestamp": [
+                datetime.utcnow(),
+                datetime.utcnow(),
+                datetime.utcnow(),
+            ],
         }
     )
     client.log("prod_webhook", "User", df)

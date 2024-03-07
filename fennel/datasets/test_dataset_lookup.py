@@ -4,7 +4,7 @@ import pandas as pd
 from typing import List, no_type_check
 
 import fennel.datasets.datasets
-from fennel.datasets import dataset, field
+from fennel.datasets import dataset, field, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import inputs, outputs
 from fennel.sources import source, Webhook
@@ -16,6 +16,7 @@ __owner__ = "test@test.com"
 
 
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@index
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

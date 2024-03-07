@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Count
+from fennel.datasets import dataset, field, pipeline, Dataset, Count, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import meta, inputs, outputs
 from fennel.sources import S3, Webhook
@@ -39,6 +39,7 @@ class PageViews:
 
 
 @meta(owner="xiao@fennel.ai")
+@index
 @dataset
 class PageViewsByUser:
     uuid: str = field(key=True)
@@ -115,7 +116,7 @@ def test_outbrain(client):
     )
     df = pd.read_csv("fennel/client_tests/data/page_views_sample.csv")
     # Current time in ms
-    cur_time_ms = datetime.now().timestamp() * 1000
+    cur_time_ms = datetime.utcnow().timestamp() * 1000
     max_ts = max(df["timestamp"].tolist())
     # Shift all the data such that the most recent data point has timestamp = cur_time_ms
     df["timestamp"] = df["timestamp"] + cur_time_ms - max_ts
@@ -155,4 +156,4 @@ def test_outbrain(client):
         feature_df["UserPageViewFeatures.page_views_1d"].sum(),
         feature_df["UserPageViewFeatures.page_views_3d"].sum(),
         feature_df["UserPageViewFeatures.page_views_9d"].sum(),
-    ) == (11975, 1140, 3840, 9544)
+    ) == (11975, 646, 3344, 9474)

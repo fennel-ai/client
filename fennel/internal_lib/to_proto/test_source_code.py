@@ -3,7 +3,7 @@ from typing import Optional, List
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, Dataset, pipeline, Sum
+from fennel.datasets import dataset, field, Dataset, pipeline, Sum, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.internal_lib.to_proto.source_code import (
@@ -65,6 +65,7 @@ class UserAgeAggregated:
         )
 
 
+@index
 @dataset
 class User:
     uid: int = field(key=True)
@@ -85,7 +86,7 @@ class UserFeature:
     @outputs(age)
     def get_age(cls, ts: pd.Series, uids: pd.Series):
         dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])  # type: ignore
-        # Using ts instead of datetime.now() to make extract_historical work as of for the extractor
+        # Using ts instead of datetime.utcnow() to make extract_historical work as of for the extractor
         ages = ts - dobs
         return pd.Series(ages)
 
@@ -100,6 +101,7 @@ class UserFeature:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
