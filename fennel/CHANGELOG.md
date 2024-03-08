@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.3] - 2024-03-08
+- Add support for period in branch names. 
+
 ## [1.0.2] - 2024-03-08
 - Allow only valid branch names.
 - Display sync error correctly.

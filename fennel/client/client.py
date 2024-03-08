@@ -306,7 +306,6 @@ class Client:
         Raises an exception if a branch with the same name already exists.
 
         """
-        print(f"Creating branch {name}...")
         _validate_branch_name(name)
         self._branch = name
         return self._post_json(f"{V1_API}/branch/{name}/init", {})
@@ -780,11 +779,11 @@ def _s3_connector_dict(s3: S3Connector) -> Dict[str, Any]:
 
 def _validate_branch_name(branch: str):
     """
-    Branch name should only contain alphanumeric characters, hyphens or underscores.
+    Branch name should only contain alphanumeric characters, hyphens or underscores or a period.
     :param branch:
     """
-    pattern = r"^[a-zA-Z0-9-_]+$"
+    pattern = r"^[a-zA-Z0-9_.-]+$"
     if not re.match(pattern, branch):
         raise ValueError(
-            f"Branch name should only contain alphanumeric characters, hyphens or underscores, found {branch}."
+            f"Branch name should only contain alphanumeric characters, hyphens, underscores or a period, found {branch}."
         )

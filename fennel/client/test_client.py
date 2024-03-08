@@ -94,6 +94,9 @@ def test_s3_connector_dict():
 def test_valid_branch_names():
     valid_names = [
         "main",
+        "main.branch",
+        "a.b.c",
+        ".....",
         "main-branch",
         "main_branch",
         "main-branch-1",
@@ -106,6 +109,7 @@ def test_valid_branch_names():
     invalid_names = [
         "main branch",
         "ad$23",
+        ".-_%",
         "main/branch" "@branchname" "branch$name",
         "branch name",
         "branch-name-1$",
