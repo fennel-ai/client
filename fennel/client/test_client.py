@@ -1,6 +1,6 @@
 # Unit Tests for client.py
 
-from fennel.client.client import _s3_connector_dict
+from fennel.client.client import _s3_connector_dict, _validate_branch_name
 from fennel.sources.sources import S3
 
 import pytest
@@ -89,3 +89,31 @@ def test_s3_connector_dict():
         s3_conn = s3_src.bucket("bucket", "prefix")
         res = _s3_connector_dict(s3_conn)
     assert "access key id not found" in str(e)
+
+
+def test_valid_branch_names():
+    valid_names = [
+        "main",
+        "main-branch",
+        "main_branch",
+        "main-branch-1",
+        "main-branch-1-2",
+        "main-branch_1-2-3",
+        "aditya_1-2-3",
+    ]
+    for name in valid_names:
+        _validate_branch_name(name)
+    invalid_names = [
+        "main branch",
+        "ad$23",
+        "main/branch" "@branchname" "branch$name",
+        "branch name",
+        "branch-name-1$",
+        "aditya/branch-testing",
+    ]
+    for name in invalid_names:
+        with pytest.raises(Exception) as e:
+            _validate_branch_name(name)
+        assert "Branch name should only contain alphanumeric characters" in str(
+            e
+        )
