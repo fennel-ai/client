@@ -2,6 +2,7 @@ import functools
 import gzip
 import json
 import math
+import re
 from datetime import datetime
 from typing import Dict, Optional, Any, Set, List, Union, Tuple
 from urllib.parse import urljoin
@@ -128,22 +129,16 @@ class Client:
             False,
             300,
         )
-        code = response.status_code
         if response.headers.get("content-type") == "application/json":
             res_json = response.json()
         else:
             res_json = {}
-        if code == requests.codes.OK:
-            if "summary" in res_json:
-                summary = res_json["summary"]
-                for line in summary:
-                    print(line, end="")
+        if "summary" in res_json:
+            summary = res_json["summary"]
+            for line in summary:
+                print(line, end="")
         else:
-            if "diff" in res_json:
-                diff = res_json["diff"]
-                for line in diff:
-                    print(line, end="")
-            raise Exception("sync failed: {}".format(response.text))
+            raise Exception("commit failed: {}".format(response.text))
         return response
 
     def log(
@@ -311,6 +306,8 @@ class Client:
         Raises an exception if a branch with the same name already exists.
 
         """
+        print(f"Creating branch {name}...")
+        _validate_branch_name(name)
         self._branch = name
         return self._post_json(f"{V1_API}/branch/{name}/init", {})
 
@@ -779,3 +776,15 @@ def _s3_connector_dict(s3: S3Connector) -> Dict[str, Any]:
         "db": {"S3": {"creds": creds_json}},
     }
     return s3_table
+
+
+def _validate_branch_name(branch: str):
+    """
+    Branch name should only contain alphanumeric characters, hyphens or underscores.
+    :param branch:
+    """
+    pattern = r"^[a-zA-Z0-9-_]+$"
+    if not re.match(pattern, branch):
+        raise ValueError(
+            f"Branch name should only contain alphanumeric characters, hyphens or underscores, found {branch}."
+        )

@@ -81,6 +81,8 @@ def check_response(response: requests.Response):  # type: ignore
                 msg = response_json["err_msg"]
             else:
                 msg = response.text
+            if "err_diff" in response_json:
+                print(response_json["err_diff"])
             raise Exception(
                 "Server returned: {}, {}: {}".format(
                     response.status_code, response.reason, msg

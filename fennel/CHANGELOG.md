@@ -1,9 +1,16 @@
 # Changelog
 
+## [1.0.2] - 2024-03-08
+- Allow only valid branch names.
+- Display sync error correctly.
+
 ## [1.0.1] - 2024-03-05
 - Make sasl info a required field for kafka sources
 
 ## [1.0.0] - 2024-03-01
+- Add support for branches in Fennel.
+- Change/Rename all client methods.
+- Introduce versioning for datasets.
 
 ## [0.20.20] - 2024-02-14
 - Make `cdc` and `disorder` non-optional fields on a data source with reasonable default values.
