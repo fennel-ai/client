@@ -33,7 +33,7 @@ def test_basic(client):
 
     def unused_delete_branch():
         # docsnip delete_branch
-        client.init_branch("mybranch")
+        client.delete_branch("mybranch")
 
         # do some operations on the branch
         client.commit(...)

@@ -364,7 +364,7 @@ class Client:
 
         Parameters:
         ----------
-        name (str): The name of the branch to delete.
+        name (str): The name of the branch to checkout.
 
         """
         self._branch = name
