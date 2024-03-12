@@ -1251,6 +1251,61 @@ def test_s3_source_with_path():
         extdb_request, expected_extdb_request
     )
 
+    # Test with spread
+    @source(
+        s3_console.bucket(
+            bucket_name="all_ratings",
+            path="prod/data_type=events/*/date=%Y%m%d/hour=%H/*/*.csv",
+            spread="6h",
+        ),
+        disorder="14d",
+        cdc="append",
+        every="1h",
+    )
+    @meta(owner="test@test.com", tags=["test", "yolo"])
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDataset)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.extdbs) == 1
+
+    # last source
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "s3Table": {
+                "bucket": "all_ratings",
+                "pathPrefix": "prod/data_type=events/",
+                "pathSuffix": "*/date=%Y%m%d/hour=%H/*/*.csv",
+                "delimiter": ",",
+                "format": "csv",
+                "spread": "21600s",
+                "db": {"s3": {}, "name": "s3_test"},
+            }
+        },
+        "dataset": "UserInfoDataset",
+        "dsVersion": 1,
+        "every": "3600s",
+        "disorder": "1209600s",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {"s3": {}, "name": "s3_test"}
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
     # see test_invalid_sources for invalid examples
     valid_path_cases = [
         ("fixed/foo/bar/", "fixed/foo/bar/", ""),

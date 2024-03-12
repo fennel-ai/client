@@ -11,6 +11,7 @@ from fennel._vendor.pydantic import validator  # type: ignore
 from fennel.internal_lib.duration import (
     Duration,
 )
+from fennel.internal_lib.duration.duration import is_valid_duration
 from fennel.lib.includes import TierSelector
 from fennel.sources.kinesis import at_timestamp
 
@@ -187,6 +188,7 @@ class S3(DataSource):
         delimiter: str = ",",
         format: str = "csv",
         presorted: bool = False,
+        spread: Optional[Duration] = None,
     ) -> S3Connector:
         return S3Connector(
             self,
@@ -196,6 +198,7 @@ class S3(DataSource):
             delimiter,
             format,
             presorted,
+            spread,
         )
 
     def required_fields(self) -> List[str]:
@@ -467,6 +470,7 @@ class S3Connector(DataConnector):
     delimiter: str = ","
     format: str = "csv"
     presorted: bool = False
+    spread: Optional[Duration] = None
 
     def __init__(
         self,
@@ -477,6 +481,7 @@ class S3Connector(DataConnector):
         delimiter,
         format,
         presorted,
+        spread,
     ):
         self.data_source = data_source
         self.bucket_name = bucket_name
@@ -509,6 +514,14 @@ class S3Connector(DataConnector):
             self.path_prefix, self.path_suffix = S3Connector.parse_path(path)
         else:
             raise AttributeError("either path or prefix must be specified")
+
+        if spread:
+            if not path:
+                raise AttributeError("path must be specified to use spread")
+            e = is_valid_duration(spread)
+            if e:
+                raise ValueError(f"Spread {spread} is an invalid duration: {e}")
+            self.spread = spread
 
     def identifier(self) -> str:
         return (
