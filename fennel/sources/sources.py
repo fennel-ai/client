@@ -45,6 +45,8 @@ def source(
     until: Optional[datetime] = None,
     tier: Optional[Union[str, List[str]]] = None,
     preproc: Optional[Dict[str, PreProcValue]] = None,
+    bounded: bool = False,
+    idleness: Optional[Duration] = None,
 ) -> Callable[[T], Any]:
     """
     Decorator to specify the source of data for a dataset. The source can be
@@ -80,6 +82,16 @@ def source(
             f"'since' ({since}) must be earlier than 'until' ({until})"
         )
 
+    if bounded and not idleness:
+        raise AttributeError(
+            "idleness parameter should always be passed when bounded is set as True"
+        )
+
+    if not bounded and idleness:
+        raise AttributeError(
+            "idleness parameter should not be passed when bounded is set as False"
+        )
+
     def decorator(dataset_cls: T):
         conn.every = every if every is not None else DEFAULT_EVERY
         conn.since = since
@@ -88,6 +100,8 @@ def source(
         conn.cdc = cdc
         conn.tiers = TierSelector(tier)
         conn.pre_proc = preproc
+        conn.bounded = bounded
+        conn.idleness = idleness
         connectors = getattr(dataset_cls, SOURCE_FIELD, [])
         connectors.append(conn)
         setattr(dataset_cls, SOURCE_FIELD, connectors)
@@ -390,6 +404,8 @@ class DataConnector:
     until: Optional[datetime] = None
     tiers: TierSelector
     pre_proc: Optional[Dict[str, PreProcValue]] = None
+    bounded: bool = False
+    idleness: Optional[Duration] = None
 
     def identifier(self):
         raise NotImplementedError

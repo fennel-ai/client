@@ -471,3 +471,41 @@ def test_invalid_pre_proc():
         view = InternalTestClient()
         view.add(UserInfoDataset2)
         view._get_sync_request_proto()
+
+
+def test_invalid_bounded_and_idleness():
+    # No idleness for bounded source
+    with pytest.raises(AttributeError) as e:
+        source(
+            s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+            ),
+            every="1h",
+            bounded=True,
+            disorder="14d",
+            cdc="append",
+        )
+
+    assert (
+        "idleness parameter should always be passed when bounded is set as True"
+        == str(e.value)
+    )
+
+    # Idleness for unbounded source
+    with pytest.raises(AttributeError) as e:
+        source(
+            s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+            ),
+            every="1h",
+            idleness="1h",
+            disorder="14d",
+            cdc="append",
+        )
+
+    assert (
+        "idleness parameter should not be passed when bounded is set as False"
+        == str(e.value)
+    )

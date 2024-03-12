@@ -264,6 +264,74 @@ def test_source_snip():
     # /docsnip
 
 
+def test_bounded_idleness_snip():
+    os.environ["POSTGRES_HOST"] = "some-host"
+    os.environ["POSTGRES_DB_NAME"] = "some-db-name"
+    os.environ["POSTGRES_USERNAME"] = "some-username"
+    os.environ["POSTGRES_PASSWORD"] = "some-password"
+
+    # docsnip bounded_idleness
+    from fennel.sources import source, Postgres, Webhook
+    from fennel.datasets import dataset, Dataset
+    from fennel import pipeline
+    from fennel.lib import inputs
+
+    postgres = Postgres(
+        name="my-postgres",
+        host=os.environ["POSTGRES_HOST"],
+        db_name=os.environ["POSTGRES_DB_NAME"],
+        port=5432,
+        username=os.environ["POSTGRES_USERNAME"],
+        password=os.environ["POSTGRES_PASSWORD"],
+    )
+    webhook = Webhook(name="fennel_webhook")
+
+    # Below is a batch source which is bounded. After initial ingestion, this source is marked as closed
+    # due to no data flow for idleness time period.
+    @source(
+        postgres.table("User", "timestamp"),
+        disorder="1d",
+        cdc="append",
+        bounded=True,
+        idleness="1h",
+    )
+    @dataset
+    class OldUsers:
+        uid: int
+        dob: datetime
+        country: str
+        signup_time: datetime = field(timestamp=True)
+
+    # Below is a stream source which is unbounded
+    @source(webhook.endpoint("User"), disorder="1d", cdc="append")
+    @dataset
+    class NewUsers:
+        uid: int
+        dob: datetime
+        country: str
+        signup_time: datetime = field(timestamp=True)
+
+    @dataset
+    class Users:
+        uid: int
+        dob: datetime
+        country: str
+        signup_time: datetime = field(timestamp=True)
+
+        @pipeline
+        @inputs(OldUsers, NewUsers)
+        def club_data(cls, old_users: Dataset, new_users: Dataset):
+            ds_batch = old_users.filter(
+                lambda df: df["signup_time"] < datetime(2024, 2, 20)
+            )
+            ds_stream = new_users.filter(
+                lambda df: df["signup_time"] >= datetime(2024, 2, 20)
+            )
+            return ds_batch + ds_stream
+
+    # /docsnip
+
+
 def dummy_function():
     os.environ["FENNEL_SERVER_URL"] = "http://localhost:8080"
     os.environ["FENNEL_TOKEN"] = "my-secret-token"

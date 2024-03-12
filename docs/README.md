@@ -6,8 +6,8 @@ To get up and running contributing to the documentation, take the following step
 1. Clone this repo
 2. Rename `.env.example` to `.env` and fill out the values.
     - `GITHUB_TOKEN` should be a valid Github PAT with access to read the `fennel-ai/turbo` repo
-    - `GITHUB_REPO` is the location of the Dockerfile that builds the frontend, and should be set to `fennel-ai/turbo`
-3. Run in your terminal `make up` from the root
+    - `GITHUB_REPO` is the location of the Dockerfile that builds the frontend. It should be set to `fennel-ai/turbo`
+3. Run in your terminal `make up` from the docs directory
     - This will pull in the Docs UI repo from Github, and run it on `localhost:3001/docs`
 4. Edit the markdown and python files in this repo, and get hot-reloading showing the latest changes on `localhost`
 5. Commit changes once you're ready.

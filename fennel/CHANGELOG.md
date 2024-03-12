@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.4] - 2024-03-10
+- Introduce `bounded` and `idleness` parameters to all sources
+
 ## [1.0.3] - 2024-03-08
 - Add support for period in branch names. 
 
