@@ -34,6 +34,8 @@ def test_source_decorator(client):
             "country": "USA",  # country for every row should become 'USA'
         },
         tier="prod",
+        bounded=True,
+        idleness="1h",
     )
     # docsnip-highlight end
     @dataset

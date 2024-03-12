@@ -91,6 +91,23 @@ As of right now, there are two kinds of values of preproc:
   a constant value.
 </Expandable>
 
+
+<Expandable title="bounded" type="bool" defaultVal="False">
+When not set or set as `False`, it indicates that the source possesses infinite 
+amount of data that is continuously increasing. 
+
+When set as `True`, it indicates that the source possesses finite amount of data
+that does not expand.
+
+</Expandable>
+
+
+<Expandable title="idleness" type="Optional[Duration]" defaultVal="None">
+When non-null, signifies that a bounded source is expected to be closed after a
+specified duration. It is invalid if set for unbounded sources.
+
+</Expandable>
+
 </LeftSection>
 <RightSection>
 <pre snippet="api-reference/sources/source#source_decorator"

@@ -1237,6 +1237,8 @@ def test_s3_source_with_path():
         "every": "3600s",
         "disorder": "1209600s",
         "timestampField": "timestamp",
+        "bounded": False,
+        "idleness": None,
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -1295,3 +1297,151 @@ def test_s3_source_with_path():
         assert (
             suffix == expected_suffix
         ), f"Expected suffix: {expected_suffix}, got: {suffix}"
+
+
+def test_bounded_source_with_idleness():
+    @source(
+        mysql.table(
+            "users",
+            cursor="added_on",
+        ),
+        every="1h",
+        disorder="20h",
+        bounded=True,
+        idleness="1h",
+        cdc="append",
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDataset)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    assert len(sync_request.sources) == 1
+    dataset_request = sync_request.datasets[0]
+    d = {
+        "name": "UserInfoDataset",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "user_id",
+                        "dtype": {"int_type": {}},
+                    }
+                ],
+            },
+            "values": {
+                "fields": [
+                    {
+                        "name": "name",
+                        "dtype": {"string_type": {}},
+                    },
+                    {
+                        "name": "gender",
+                        "dtype": {"string_type": {}},
+                    },
+                    {
+                        "name": "dob",
+                        "dtype": {"string_type": {}},
+                    },
+                    {
+                        "name": "age",
+                        "dtype": {"int_type": {}},
+                    },
+                    {
+                        "name": "account_creation_date",
+                        "dtype": {"timestamp_type": {}},
+                    },
+                    {
+                        "name": "country",
+                        "dtype": {"optional_type": {"of": {"string_type": {}}}},
+                    },
+                ]
+            },
+            "timestamp": "timestamp",
+        },
+        "metadata": {
+            "owner": "test@test.com",
+        },
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "user_id": {},
+            "name": {},
+            "gender": {},
+            "dob": {"description": "Users date of birth"},
+            "age": {},
+            "account_creation_date": {},
+            "country": {},
+            "timestamp": {},
+        },
+        "isSourceDataset": True,
+        "version": 1,
+    }
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    expected_dataset_request.pycode.Clear()
+    dataset_request.pycode.Clear()
+    assert dataset_request == expected_dataset_request, error_message(
+        dataset_request, expected_dataset_request
+    )
+
+    assert len(sync_request.sources) == 1
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "mysql_table": {
+                "db": {
+                    "name": "mysql",
+                    "mysql": {
+                        "host": "localhost",
+                        "database": "test",
+                        "user": "root",
+                        "password": "root",
+                        "port": 3306,
+                    },
+                },
+                "table_name": "users",
+            },
+        },
+        "dataset": "UserInfoDataset",
+        "every": "3600s",
+        "disorder": "72000s",
+        "bounded": True,
+        "idleness": "3600s",
+        "cursor": "added_on",
+        "timestamp_field": "timestamp",
+        "dsVersion": 1,
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+
+    # External DBs
+    assert len(sync_request.extdbs) == 1
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "mysql",
+        "mysql": {
+            "host": "localhost",
+            "database": "test",
+            "user": "root",
+            "password": "root",
+            "port": 3306,
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
