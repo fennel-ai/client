@@ -61,7 +61,8 @@ right now.
 
 `"native"` means that the underlying system exposes CDC natively and that Fennel
 should tap into that. As of right now, native CDC is only available for 
-[Deltalake](/api-reference/sources/deltalake) and [Hudi](/api-reference/sources/hudi).
+[Deltalake](/api-reference/sources/deltalake) & [Hudi](/api-reference/sources/hudi)
+and will soon be available for more sources including MySQL and Postgres.
 
 `"debezium"` means that the raw data itself is laid out in debezium layout out
 of which valid CDC data can be constructed. This is only possible for sources
@@ -97,14 +98,15 @@ When not set or set as `False`, it indicates that the source possesses infinite
 amount of data that is continuously increasing. 
 
 When set as `True`, it indicates that the source possesses finite amount of data
-that does not expand.
+and that it will exhaust at some point. In such cases, `idleness` must also be set.
 
 </Expandable>
 
 
 <Expandable title="idleness" type="Optional[Duration]" defaultVal="None">
-When non-null, signifies that a bounded source is expected to be closed after a
-specified duration. It is invalid if set for unbounded sources.
+Only relevant when `bounded` is set to `True` - in such cases, the bounded source
+is assumed to have exhausted after Fennel is unable to obtain any new data despite
+continuously asking for at least `idleness` period.
 
 </Expandable>
 

@@ -37,7 +37,7 @@ The warehouse that should be used to access Snowflake.
 The name of the database where the relevant data resides.
 </Expandable>
 
-<Expandable title="src_schema" type="str">
+<Expandable title="schema" type="str">
 The schema where the required data table(s) resides.
 </Expandable>
 

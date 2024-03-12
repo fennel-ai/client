@@ -132,35 +132,29 @@ of that column on another column.
 
 
 ### Since
-The `since` field in the source provides a way to ingest data from a specific time onwards from the source. 
-
-Typically, the data sources could contain data from a long time ago, but based on the use case, we may only want to 
-ingest data from a specific time onwards. The `since` field allows us to do that. 
-
-The `since` field is a `datetime` instance.
+The `since` param (of type `datetime`) in the source provides a way to ingest 
+data from a specific time onwards from the source. When set, only the rows 
+having the value of their timestamp field >= the `since` value are ingested. 
 
 ### Until
-The `until` field provides a way to limit ingestion of a particular source to end at a particular timestamp.
+Analogous to `since`, `until`, when set restricts the ingestion to only those
+rows where the value of the timestamp field is < the `until` value.
 
-When deriving datasets that are unions of batch and realtime sources, `until` and `since` can be used to control when
-to switch between sources. For example, read from s3 `until` a timestamp, and from that timestamp onwards, read from kafka
-using `since`.  
+`since` and `until` are very useful when building datasets that are union of 
+batch & realtime sources. For example, read from s3 `until` a timestamp, and 
+from that same timestamp onwards, read from kafka using `since`.  
 
 ### Bounded
-The `bounded` field in the source indicates whether the source possesses  a finite amount of data that does not expand.
-It is assigned a value of True when the source has limited data, with the default value being False.
-
-This ensures correct watermark values are propagated to the downstream pipelines. Without this, say an unbounded source
-with no data flow will cause the watermarks to be stuck and will have cost and performance implications.
+By default, Fennel assumes all data sources are unbounded and will keep getting 
+new data. However, a source can be marked as finite by setting `bounded` to True.
+In such cases, if Fennel is unable to obtain any new data from source despite 
+trying for at least `idleness` period, Fennel assumes that the source has been
+exhausted. This allows Fennel to free up any state that isn't needed any more, 
+thereby saving costs and improving performance.
 
 ### Idleness
-The `idleness` field, when non-null, signifies that a bounded source is 
-expected to be closed after a specified duration. It is invalid if set for
-unbounded sources
-
-Let's see an example on how to use bounded and idleness parameters:
-
-<pre snippet="concepts/introduction#bounded_idleness"></pre>
+The `idleness` field, when non-None, signifies that a bounded source is 
+expected to be marked closed after a specified duration of idleness. 
 
 ## Load Impact of Sources
 

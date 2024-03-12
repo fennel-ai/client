@@ -14,7 +14,7 @@ def test_webhook_basic(client):
     from fennel.sources import source, Webhook
     from fennel.datasets import dataset, field
 
-    webhook = Webhook(name="prod_webhook")
+    webhook = Webhook(name="prod_webhook", retention="14d")
 
     @source(webhook.endpoint("User"), disorder="14d", cdc="append")
     @dataset
