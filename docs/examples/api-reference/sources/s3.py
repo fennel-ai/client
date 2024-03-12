@@ -116,7 +116,9 @@ def test_s3_source_path(client):
         aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
     )
 
-    bucket = s3.bucket("data", path="user/*/date-%Y-%m-%d/*", format="parquet")
+    bucket = s3.bucket(
+        "data", path="user/*/date-%Y-%m-%d/*", format="parquet", spread="2d"
+    )
     # docsnip-highlight end
 
     # docsnip-highlight next-line

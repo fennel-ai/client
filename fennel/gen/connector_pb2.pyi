@@ -536,6 +536,7 @@ class S3Table(google.protobuf.message.Message):
     DB_FIELD_NUMBER: builtins.int
     PRE_SORTED_FIELD_NUMBER: builtins.int
     PATH_SUFFIX_FIELD_NUMBER: builtins.int
+    SPREAD_FIELD_NUMBER: builtins.int
     bucket: builtins.str
     path_prefix: builtins.str
     delimiter: builtins.str
@@ -544,6 +545,8 @@ class S3Table(google.protobuf.message.Message):
     def db(self) -> global___ExtDatabase: ...
     pre_sorted: builtins.bool
     path_suffix: builtins.str
+    @property
+    def spread(self) -> google.protobuf.duration_pb2.Duration: ...
     def __init__(
         self,
         *,
@@ -554,9 +557,11 @@ class S3Table(google.protobuf.message.Message):
         db: global___ExtDatabase | None = ...,
         pre_sorted: builtins.bool = ...,
         path_suffix: builtins.str = ...,
+        spread: google.protobuf.duration_pb2.Duration | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bucket", b"bucket", "db", b"db", "delimiter", b"delimiter", "format", b"format", "path_prefix", b"path_prefix", "path_suffix", b"path_suffix", "pre_sorted", b"pre_sorted"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_spread", b"_spread", "db", b"db", "spread", b"spread"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_spread", b"_spread", "bucket", b"bucket", "db", b"db", "delimiter", b"delimiter", "format", b"format", "path_prefix", b"path_prefix", "path_suffix", b"path_suffix", "pre_sorted", b"pre_sorted", "spread", b"spread"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_spread", b"_spread"]) -> typing_extensions.Literal["spread"] | None: ...
 
 global___S3Table = S3Table
 
