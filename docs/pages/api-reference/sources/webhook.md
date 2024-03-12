@@ -15,6 +15,12 @@ the Python SDK.
 A name to identify the source. This name should be unique across all Fennel sources.
 </Expandable>
 
+<Expandable title="retention" type="Duration" defaultVal="14d">
+Data sent to webhook is buffered for the duration `retention`. That is, if the 
+data has been logged to a webhook, datasets defined later that source from this 
+webhook will still see that data upto this duration.
+</Expandable>
+
 #### Connector Parameters
 <Expandable title="endpoint" type="str">
 The endpoint for the given webhook to which the data will be sent.

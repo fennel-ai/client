@@ -48,6 +48,7 @@ sidebar:
       - "api-reference/operators/rename"
       - "api-reference/operators/window"
       - "api-reference/operators/summarize"
+      - "api-reference/operators/union"
 
   - slug: "api-reference/sources"
     title: "Sources"
