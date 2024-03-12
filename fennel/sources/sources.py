@@ -49,6 +49,21 @@ def source(
     bounded: bool = False,
     idleness: Optional[Duration] = None,
 ) -> Callable[[T], Any]:
+    """
+    Decorator to specify the source of data for a dataset. The source can be
+    a webhook, a table in a database, a file in S3, a topic in Kafka, etc.
+    Refer to https://fennel.ai/docs/api-reference/sources/ for more details.
+
+    :param conn: The external data source to connect to.
+    :param disorder: The max out of order delay that can be tolerated.
+    :param cdc: The change data capture strategy to use, either "append", "debezium", "upsert" or "native".
+    :param every: The frequency at which to fetch data from the source ( Applicable for batch sources only ).
+    :param since: The start time from which to fetch data.
+    :param until: The end time until which to fetch data.
+    :param tier: Tier selector to use for the source, for eg "dev", "staging", "prod" etc.
+    :param preproc: Preprocessing steps to apply to the data before it is used in the dataset.
+    :return:
+    """
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
             raise TypeError("Expected a DataSource, found %s" % type(conn))
