@@ -2077,11 +2077,11 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, Quantile):
                 dtype = input_schema.get_type(agg.of)
-                if dtype is pd.Float64Dtype or (
-                    fennel_is_optional(dtype)
-                    and fennel_get_optional_inner(dtype) is pd.Float64Dtype
-                ):
-                    values[agg.into_field] = pd.Float64Dtype  # type: ignore
+                if dtype is pd.Float64Dtype or dtype is pd.Int64Dtype:
+                    if agg.default is not None:
+                        values[agg.into_field] = pd.Float64Dtype  # type: ignore
+                    else:
+                        values[agg.into_field] = Optional[pd.Float64Dtype]  # type: ignore
                 else:
                     raise TypeError(
                         f"Cannot get quantile of field {agg.of} of type {dtype_to_string(dtype)}"

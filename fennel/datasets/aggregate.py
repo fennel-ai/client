@@ -111,7 +111,6 @@ class Sum(AggregateType):
 class Average(AggregateType):
     of: str
     default: float = 0.0
-    approx: bool = False
 
     def to_proto(self):
         return spec_proto.PreSpec(
@@ -144,6 +143,15 @@ class Quantile(AggregateType):
                 quantile=self.p,
             )
         )
+
+    def validate(self):
+        if not self.approx:
+            return NotImplementedError(
+                "Exact quantile approximation are not yet supported, please set approx=True"
+            )
+
+        if self.p > 1.0 or self.p < 0.0:
+            return ValueError(f"Expect p value between 0 and 1, found {self.p}")
 
     def signature(self):
         return f"quantile_{self.of}_{self.window.signature()}"

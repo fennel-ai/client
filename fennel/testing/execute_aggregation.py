@@ -21,6 +21,7 @@ from fennel.datasets import (
 )
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_pd_dtype
+from sortedcontainers import SortedList
 
 # Type of data, 1 indicates insert -1 indicates delete.
 FENNEL_ROW_TYPE = "__fennel_row_type__"
@@ -343,10 +344,10 @@ class QuantileState(AggState):
     def __init__(self, default, p):
         self.p = p
         self.default = default
-        self.vals = []
+        self.vals = SortedList()
 
     def add_val_to_state(self, val):
-        self.vals.append(val)
+        self.vals.add(val)
         return self.get_val()
 
     def del_val_from_state(self, val):
@@ -356,7 +357,6 @@ class QuantileState(AggState):
     def get_val(self) -> List:
         if len(self.vals) == 0:
             return self.default
-        self.vals.sort()
         index = int(math.floor(self.p * len(self.vals))) + 1
         return self.vals[min(len(self.vals) - 1, max(index - 1, 0))]
 
