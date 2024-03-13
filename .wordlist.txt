@@ -291,3 +291,7 @@ utf
 uuid
 webhook
 webhooks
+uDDsketch
+Quantile
+quantile
+quantiles

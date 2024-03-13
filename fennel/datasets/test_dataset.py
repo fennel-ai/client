@@ -16,6 +16,7 @@ from fennel.datasets import (
     Average,
     Stddev,
     Sum,
+    Quantile,
 )
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib import includes, meta, inputs
@@ -1266,6 +1267,7 @@ def test_dataset_with_complex_pipe():
         timestamp: datetime
         num_merchant_fraudulent_transactions: int
         num_merchant_fraudulent_transactions_7d: int
+        median_transaction_amount: float
 
         @pipeline
         @inputs(Activity, UserInfoDataset)
@@ -1324,6 +1326,14 @@ def test_dataset_with_complex_pipe():
                             cls.num_merchant_fraudulent_transactions_7d
                         ),
                     ),
+                    Quantile(
+                        of="transaction_amount",
+                        default=0.0,
+                        p=0.5,
+                        window="1w",
+                        into_field=str(cls.median_transaction_amount),
+                        approx=True,
+                    ),
                 ]
             )
 
@@ -1352,6 +1362,10 @@ def test_dataset_with_complex_pipe():
                         "name": "num_merchant_fraudulent_transactions_7d",
                         "dtype": {"int_type": {}},
                     },
+                    {
+                        "name": "median_transaction_amount",
+                        "dtype": {"double_type": {}},
+                    },
                 ]
             },
             "timestamp": "timestamp",
@@ -1365,6 +1379,7 @@ def test_dataset_with_complex_pipe():
             "num_merchant_fraudulent_transactions": {},
             "num_merchant_fraudulent_transactions_7d": {},
             "timestamp": {},
+            "median_transaction_amount": {},
         },
         "pycode": {},
     }
@@ -1496,7 +1511,7 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[6]
     o = {
-        "id": "d7d235e0397bf22f09131d7a2650343e",
+        "id": "2522d12fd1a18fd5e5e02ceea6eb9a51",
         "isRoot": True,
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
@@ -1514,6 +1529,16 @@ def test_dataset_with_complex_pipe():
                     "count": {
                         "name": "num_merchant_fraudulent_transactions_7d",
                         "window": {"sliding": {"duration": "604800s"}},
+                    }
+                },
+                {
+                    "quantile": {
+                        "name": "median_transaction_amount",
+                        "window": {"sliding": {"duration": "604800s"}},
+                        "quantile": 0.5,
+                        "default": 0.0,
+                        "of": "transaction_amount",
+                        "approx": True,
                     }
                 },
             ],

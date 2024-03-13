@@ -129,7 +129,7 @@ class Client:
             False,
             300,
         )
-        if response.headers.get("content-type") == "application/json":
+        if response.headers.get("Content-Type") == "application/json":
             res_json = response.json()
         else:
             res_json = {}

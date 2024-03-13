@@ -75,6 +75,7 @@ sidebar:
       - "api-reference/aggregations/stddev"
       - "api-reference/aggregations/lastk"
       - "api-reference/aggregations/distinct"
+      - "api-reference/aggregations/quantile"
 
 
   - slug: "api-reference/expectations"
