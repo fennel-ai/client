@@ -501,7 +501,7 @@ class GroupBy:
     def window(
         self,
         type: str,
-        field: str,
+        into_field: str,
         gap: Optional[str] = None,
         duration: Optional[str] = None,
         stride: Optional[str] = None,
@@ -512,7 +512,7 @@ class GroupBy:
             self.node,
             keys=list(self.keys),
             type=WindowType(type),
-            field=field,
+            field=into_field,
             gap=gap,
             duration=duration,
             stride=stride,
@@ -869,13 +869,36 @@ class WindowOperator(_Node):
         keys.append(field)
         self.keys = keys
         self.type = type
-        self.gap_timedelta = gap if gap is None else duration_to_timedelta(gap)
-        self.duration_timedelta = (
-            duration if duration is None else duration_to_timedelta(duration)
-        )
-        self.stride_timedelta = (
-            stride if stride is None else duration_to_timedelta(stride)
-        )
+        if duration == "forever" or gap == "forever" or stride == "forever":
+            raise ValueError("'forever' is not a valid duration value.")
+
+        try:
+            self.gap_timedelta = (
+                gap if gap is None else duration_to_timedelta(gap)
+            )
+        except ValueError:
+            raise ValueError(
+                "Failed when parsing gap, duration is not parsable."
+            )
+        try:
+            self.duration_timedelta = (
+                duration
+                if duration is None
+                else duration_to_timedelta(duration)
+            )
+        except ValueError:
+            raise ValueError(
+                "Failed when parsing duration, duration is not parsable."
+            )
+        try:
+            self.stride_timedelta = (
+                stride if stride is None else duration_to_timedelta(stride)
+            )
+        except ValueError:
+            raise ValueError(
+                "Failed when parsing stride, duration is not parsable."
+            )
+
         if type == WindowType.Hopping:
             if timedelta_to_micros(self.duration_timedelta) < timedelta_to_micros(self.stride_timedelta):  # type: ignore
                 raise ValueError(

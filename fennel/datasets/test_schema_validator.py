@@ -1082,7 +1082,7 @@ def test_window_without_key_fails():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby().window(
-                    type="session", gap="10m", field="window"
+                    type="session", gap="10m", into_field="window"
                 )
 
     assert (
@@ -1112,7 +1112,7 @@ def test_window_incorrect_schema_optional_key():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", gap="10m", field="window"
+                    type="session", gap="10m", into_field="window"
                 )
 
     assert (
@@ -1142,7 +1142,7 @@ def test_window_incorrect_schema_nokey():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", gap="10m", field="window"
+                    type="session", gap="10m", into_field="window"
                 )
 
     assert (
@@ -1171,7 +1171,7 @@ def test_window_incorrect_schema_missing_field():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", gap="10m", field="window_struct"
+                    type="session", gap="10m", into_field="window_struct"
                 )
 
     assert (
@@ -1201,7 +1201,7 @@ def test_window_incorrect_schema_dtype_field():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", gap="10m", field="window_struct"
+                    type="session", gap="10m", into_field="window_struct"
                 )
 
     assert (
@@ -1231,7 +1231,7 @@ def test_window_wrong_field():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("u_id").window(
-                    type="session", gap="10m", field="window"
+                    type="session", gap="10m", into_field="window"
                 )
 
     assert (
@@ -1261,7 +1261,7 @@ def test_window_wrong_type():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="tumblegg", gap="10m", field="window"
+                    type="tumblegg", gap="10m", into_field="window"
                 )
 
     assert (
@@ -1291,10 +1291,12 @@ def test_window_invalid_gap():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", gap="10m 5yy", field="window"
+                    type="session", gap="10m 5yy", into_field="window"
                 )
 
-    assert str(e.value) == """Invalid character `y` in duration `10m 5yy`"""
+    assert (
+        str(e.value) == """Failed when parsing gap, duration is not parsable."""
+    )
 
 
 def test_window_field_invalid_name():
@@ -1320,7 +1322,7 @@ def test_window_field_invalid_name():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", gap="10m", field="uuid"
+                    type="session", gap="10m", into_field="uuid"
                 )
 
     assert (
@@ -1350,7 +1352,7 @@ def test_window_field_invalid_name():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", gap="10m", field="page_id"
+                    type="session", gap="10m", into_field="page_id"
                 )
 
     assert (
@@ -1380,7 +1382,7 @@ def test_window_field_without_valid_parameters():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", duration="2s", field="window"
+                    type="session", duration="2s", into_field="window"
                 )
 
     assert str(e.value) == """'sessionize window' must specify gap"""
@@ -1405,7 +1407,7 @@ def test_window_field_without_valid_parameters():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="tumbling", field="window", gap="5s"
+                    type="tumbling", into_field="window", gap="5s"
                 )
 
     assert str(e.value) == """'tumbling window' must specify duration"""
@@ -1430,7 +1432,7 @@ def test_window_field_without_valid_parameters():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="hopping", field="window", stride="5s"
+                    type="hopping", into_field="window", stride="5s"
                 )
 
     assert str(e.value) == """'hopping window' must specify duration"""
@@ -1455,7 +1457,7 @@ def test_window_field_without_valid_parameters():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="hopping", field="window", duration="5s"
+                    type="hopping", into_field="window", duration="5s"
                 )
 
     assert str(e.value) == """'hopping window' must specify stride"""
@@ -1481,7 +1483,7 @@ def test_window_field_without_valid_parameters():
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
                     type="hopping",
-                    field="window",
+                    into_field="window",
                     duration="5s",
                     stride="5s",
                     gap="1s",
@@ -1509,7 +1511,7 @@ def test_window_field_without_valid_parameters():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="session", field="window", gap="5s", duration="5s"
+                    type="session", into_field="window", gap="5s", duration="5s"
                 )
 
     assert (
@@ -1537,7 +1539,10 @@ def test_window_field_without_valid_parameters():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="tumbling", field="window", gap="5s", duration="5s"
+                    type="tumbling",
+                    into_field="window",
+                    gap="5s",
+                    duration="5s",
                 )
 
     assert str(e.value) == """'tumbling window' doesn't allow gap parameter"""
@@ -1562,7 +1567,10 @@ def test_window_field_without_valid_parameters():
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return app_event.groupby("user_id").window(
-                    type="hopping", field="window", stride="6s", duration="5s"
+                    type="hopping",
+                    into_field="window",
+                    stride="6s",
+                    duration="5s",
                 )
 
     assert (
@@ -1593,7 +1601,7 @@ def test_double_summary():
             def pipeline_window(cls, app_event: Dataset):
                 return (
                     app_event.groupby("user_id")
-                    .window(type="session", gap="2s", field="window")
+                    .window(type="session", gap="2s", into_field="window")
                     .summarize(
                         field="concat_page_id",
                         dtype=str,
