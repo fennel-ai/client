@@ -23,6 +23,7 @@ from fennel.datasets import (
     Count,
     Stddev,
     Distinct,
+    Quantile,
 )
 from fennel.lib import includes, meta, inputs
 from fennel.dtypes import between, oneof, struct
@@ -528,6 +529,7 @@ class MovieRatingCalculated:
     sum_ratings: float
     min_ratings: float
     max_ratings: float
+    median_ratings: float
     stddev_ratings: float
     distinct_users: List[int]
     t: datetime
@@ -558,6 +560,14 @@ class MovieRatingCalculated:
                     window="forever",
                     of="rating",
                     into_field=str(cls.max_ratings),
+                    default=0.0,
+                ),
+                Quantile(
+                    window="forever",
+                    of="rating",
+                    p=0.5,
+                    approx=True,
+                    into_field=str(cls.median_ratings),
                     default=0.0,
                 ),
                 Stddev(
@@ -1158,7 +1168,7 @@ class TestBasicAggregate(unittest.TestCase):
             ts,
             movie=names,
         )
-        assert df.shape == (2, 9)
+        assert df.shape == (2, 10)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
         assert df["num_ratings"].tolist() == [4, 5]
@@ -1173,6 +1183,7 @@ class TestBasicAggregate(unittest.TestCase):
                 )
             ]
         )
+        assert [round(x) for x in df["median_ratings"]] == [3, 4]
         assert df["distinct_users"].tolist() == [[18231], [18231]]
 
 

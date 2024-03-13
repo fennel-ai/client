@@ -5,6 +5,7 @@ from math import sqrt
 from typing import Dict, List, Type
 
 import pandas as pd
+import math
 
 from fennel.datasets import (
     AggregateType,
@@ -16,9 +17,11 @@ from fennel.datasets import (
     Min,
     Max,
     Stddev,
+    Quantile,
 )
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_pd_dtype
+from sortedcontainers import SortedList
 
 # Type of data, 1 indicates insert -1 indicates delete.
 FENNEL_ROW_TYPE = "__fennel_row_type__"
@@ -337,6 +340,27 @@ class DistinctState(AggState):
         return list(self.counter.keys())
 
 
+class QuantileState(AggState):
+    def __init__(self, default, p):
+        self.p = p
+        self.default = default
+        self.vals = SortedList()
+
+    def add_val_to_state(self, val):
+        self.vals.add(val)
+        return self.get_val()
+
+    def del_val_from_state(self, val):
+        self.vals.remove(val)
+        return self.get_val()
+
+    def get_val(self) -> List:
+        if len(self.vals) == 0:
+            return self.default
+        index = int(math.floor(self.p * len(self.vals))) + 1
+        return self.vals[min(len(self.vals) - 1, max(index - 1, 0))]
+
+
 def get_aggregated_df(
     input_df: pd.DataFrame,
     aggregate: AggregateType,
@@ -413,6 +437,8 @@ def get_aggregated_df(
                     state[key] = StddevState(aggregate.default)
                 elif isinstance(aggregate, Distinct):
                     state[key] = DistinctState()
+                elif isinstance(aggregate, Quantile):
+                    state[key] = QuantileState(aggregate.default, aggregate.p)
                 else:
                     raise Exception(
                         f"Unsupported aggregate function {aggregate}"

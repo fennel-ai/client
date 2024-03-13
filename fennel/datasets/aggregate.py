@@ -126,6 +126,40 @@ class Average(AggregateType):
         return f"avg_{self.of}_{self.window.signature()}"
 
 
+class Quantile(AggregateType):
+    p: float
+    default: Optional[float] = None
+    approx: bool = False
+    of: str
+
+    def to_proto(self):
+        return spec_proto.PreSpec(
+            quantile=spec_proto.Quantile(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+                default=self.default,
+                approx=self.approx,
+                quantile=self.p,
+            )
+        )
+
+    def validate(self):
+        if not self.approx:
+            return NotImplementedError(
+                "Exact quantile approximation are not yet supported, please set approx=True"
+            )
+
+        if self.p > 1.0 or self.p < 0.0:
+            return ValueError(f"Expect p value between 0 and 1, found {self.p}")
+
+    def signature(self):
+        return f"quantile_{self.of}_{self.window.signature()}"
+
+    def agg_type(self):
+        return "quantile"
+
+
 class Max(AggregateType):
     of: str
     default: float

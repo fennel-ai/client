@@ -9,4 +9,5 @@ from fennel.datasets.aggregate import (
     Average,
     AggregateType,
     Stddev,
+    Quantile,
 )
