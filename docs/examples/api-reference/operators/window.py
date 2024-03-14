@@ -12,12 +12,7 @@ class TestAssignSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import (
-            dataset,
-            field,
-            pipeline,
-            Dataset,
-        )
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
         from fennel.dtypes import Window
@@ -36,8 +31,7 @@ class TestAssignSnips(unittest.TestCase):
             # docsnip-highlight start
             # groupby field becomes the key field
             uid: int = field(key=True)
-            # new key fields are added to the dataset by the window operation
-            # Window now become a key after operator
+            # window also becomes a key field
             window: Window = field(key=True)
             # docsnip-highlight end
             timestamp: datetime = field(timestamp=True)
@@ -45,11 +39,11 @@ class TestAssignSnips(unittest.TestCase):
             @pipeline
             @inputs(Transaction)
             def window_pipeline(cls, ds: Dataset):
-                # docsnip-highlight start
-                return ds.groupby("uid").window(
-                    type="session", gap="15m", into_field="window"
+                return (
+                    ds.groupby("uid")
+                    # docsnip-highlight next-line
+                    .window(type="session", gap="15m", into_field="window")
                 )
-                # docsnip-highlight end
 
         # /docsnip
 
@@ -116,21 +110,13 @@ class TestAssignSnips(unittest.TestCase):
     def test_miss_window_key(self, client):
         with pytest.raises(Exception):
             # docsnip miss_window_key
-            from fennel.datasets import (
-                dataset,
-                field,
-                pipeline,
-                Dataset,
-            )
+            from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
             from fennel.sources import source, Webhook
-            from fennel.dtypes import Window
 
             webhook = Webhook(name="webhook")
 
-            @source(
-                webhook.endpoint("Transaction"), disorder="14d", cdc="append"
-            )
+            @source(webhook.endpoint("txn"), disorder="14d", cdc="append")
             @dataset
             class Transaction:
                 uid: int
@@ -140,7 +126,7 @@ class TestAssignSnips(unittest.TestCase):
             @dataset
             class Session:
                 # docsnip-highlight start
-                # groupby field becomes the key field
+                # schema doesn't contain a key field of type Window
                 uid: int = field(key=True)
                 # docsnip-highlight end
                 timestamp: datetime = field(timestamp=True)
@@ -163,21 +149,14 @@ class TestAssignSnips(unittest.TestCase):
             Exception, match="'forever' is not a valid duration value."
         ):
             # docsnip invalid_window
-            from fennel.datasets import (
-                dataset,
-                field,
-                pipeline,
-                Dataset,
-            )
+            from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
             from fennel.sources import source, Webhook
             from fennel.dtypes import Window
 
             webhook = Webhook(name="webhook")
 
-            @source(
-                webhook.endpoint("Transaction"), disorder="14d", cdc="append"
-            )
+            @source(webhook.endpoint("txn"), disorder="14d", cdc="append")
             @dataset
             class Transaction:
                 uid: int
@@ -186,10 +165,7 @@ class TestAssignSnips(unittest.TestCase):
 
             @dataset
             class Session:
-                # groupby field becomes the key field
                 uid: int = field(key=True)
-                # new key fields are added to the dataset by the window operation
-                # Window now become a key after operator
                 window: Window = field(key=True)
                 timestamp: datetime = field(timestamp=True)
 
@@ -197,11 +173,10 @@ class TestAssignSnips(unittest.TestCase):
                 @inputs(Transaction)
                 def window_pipeline(cls, ds: Dataset):
                     return ds.groupby("uid").window(
-                        # docsnip-highlight start
                         type="tumbling",
+                        # docsnip-highlight next-line
                         duration="forever",
                         into_field="window",
-                        # docsnip-highlight end
                     )
 
             # /docsnip
