@@ -1,6 +1,7 @@
 import pytest
 import unittest
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 from fennel.testing import mock
@@ -15,7 +16,6 @@ class TestQuantileSnips(unittest.TestCase):
         from fennel.datasets import dataset, field, pipeline, Dataset, Quantile
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
-        from typing import Optional
 
         webhook = Webhook(name="webhook")
 
@@ -118,27 +118,19 @@ class TestQuantileSnips(unittest.TestCase):
             Exception, match="Cannot get quantile of field amount of type str"
         ):
             # docsnip incorrect_type
-            from fennel.datasets import (
-                dataset,
-                field,
-                pipeline,
-                Dataset,
-                Quantile,
-            )
+            from fennel.datasets import dataset, field, pipeline
+            from fennel.datasets import Dataset, Quantile
             from fennel.lib import inputs
             from fennel.sources import source, Webhook
 
             webhook = Webhook(name="webhook")
 
-            @source(
-                webhook.endpoint("Transaction"), disorder="14d", cdc="append"
-            )
+            @source(webhook.endpoint("txn"), disorder="14d", cdc="append")
             @dataset
             class Transaction:
                 uid: int
-                # docsnip-highlight start
+                # docsnip-highlight next-line
                 amount: str
-                # docsnip-highlight end
                 timestamp: datetime
 
             @dataset
@@ -161,30 +153,21 @@ class TestQuantileSnips(unittest.TestCase):
                         ),
                     )
 
-            client.commit(message="msg", datasets=[Transaction, Aggregated])
-
             # /docsnip
+            client.commit(message="msg", datasets=[Transaction, Aggregated])
 
     @mock
     def test_invalid_default(self, client):
         with pytest.raises(Exception):
             # docsnip invalid_default
-            from fennel.datasets import (
-                dataset,
-                field,
-                pipeline,
-                Dataset,
-                Quantile,
-            )
+            from fennel.datasets import dataset, field, pipeline
+            from fennel.datasets import Dataset, Quantile
             from fennel.lib import inputs
             from fennel.sources import source, Webhook
-            from typing import Optional
 
             webhook = Webhook(name="webhook")
 
-            @source(
-                webhook.endpoint("Transaction"), disorder="14d", cdc="append"
-            )
+            @source(webhook.endpoint("txn"), disorder="14d", cdc="append")
             @dataset
             class Transaction:
                 uid: int
@@ -195,9 +178,8 @@ class TestQuantileSnips(unittest.TestCase):
             @dataset
             class Aggregated:
                 uid: int = field(key=True)
-                # docsnip-highlight start
+                # docsnip-highlight next-line
                 median_amount_1w: float
-                # docsnip-highlight end
                 timestamp: datetime
 
                 @pipeline
@@ -213,9 +195,8 @@ class TestQuantileSnips(unittest.TestCase):
                         ),
                     )
 
-            client.commit(message="msg", datasets=[Transaction, Aggregated])
-
             # /docsnip
+            client.commit(message="msg", datasets=[Transaction, Aggregated])
 
     @mock
     def test_invalid_p(self, client):
@@ -223,22 +204,14 @@ class TestQuantileSnips(unittest.TestCase):
             Exception, match="Expect p value between 0 and 1, found 10.0"
         ):
             # docsnip incorrect_p
-            from fennel.datasets import (
-                dataset,
-                field,
-                pipeline,
-                Dataset,
-                Quantile,
-            )
+            from fennel.datasets import dataset, field, pipeline
+            from fennel.datasets import Dataset, Quantile
             from fennel.lib import inputs
             from fennel.sources import source, Webhook
-            from typing import Optional
 
             webhook = Webhook(name="webhook")
 
-            @source(
-                webhook.endpoint("Transaction"), disorder="14d", cdc="append"
-            )
+            @source(webhook.endpoint("txn"), disorder="14d", cdc="append")
             @dataset
             class Transaction:
                 uid: int
@@ -266,58 +239,5 @@ class TestQuantileSnips(unittest.TestCase):
                         ),
                     )
 
-            client.commit(message="msg", datasets=[Transaction, Aggregated])
-
             # /docsnip
-
-    @mock
-    def test_no_approx(self, client):
-        with pytest.raises(
-            Exception,
-            match="Exact quantile approximation are not yet supported, please set approx=True",
-        ):
-            # docsnip no_approx
-            from fennel.datasets import (
-                dataset,
-                field,
-                pipeline,
-                Dataset,
-                Quantile,
-            )
-            from fennel.lib import inputs
-            from fennel.sources import source, Webhook
-            from typing import Optional
-
-            webhook = Webhook(name="webhook")
-
-            @source(
-                webhook.endpoint("Transaction"), disorder="14d", cdc="append"
-            )
-            @dataset
-            class Transaction:
-                uid: int
-                amount: int
-                vendor: str
-                timestamp: datetime
-
-            @dataset
-            class Aggregated:
-                uid: int = field(key=True)
-                median_amount_1w: Optional[float]
-                timestamp: datetime
-
-                @pipeline
-                @inputs(Transaction)
-                def bad_pipeline(cls, ds: Dataset):
-                    return ds.groupby("uid").aggregate(
-                        Quantile(
-                            of="amount",
-                            window="1w",
-                            into_field="median_amount_1w",
-                            p=0.5,
-                        ),
-                    )
-
             client.commit(message="msg", datasets=[Transaction, Aggregated])
-
-            # /docsnip

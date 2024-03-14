@@ -8,16 +8,11 @@ import pytest
 __owner__ = "hoang@fennel.ai"
 
 
-class TestAssignSnips(unittest.TestCase):
+class TestSummarizeSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import (
-            dataset,
-            field,
-            pipeline,
-            Dataset,
-        )
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
         from fennel.dtypes import Window
@@ -33,12 +28,10 @@ class TestAssignSnips(unittest.TestCase):
 
         @dataset
         class Session:
-            # docsnip-highlight start
-            # groupby field becomes the key field
             uid: int = field(key=True)
-            # new fields are added to the dataset by the window operation
-            # Window now become a key after operator
             window: Window = field(key=True)
+            # docsnip-highlight start
+            # new field added by the summarize operator
             total_amount: int
             # docsnip-highlight end
             timestamp: datetime = field(timestamp=True)
@@ -46,17 +39,18 @@ class TestAssignSnips(unittest.TestCase):
             @pipeline
             @inputs(Transaction)
             def window_pipeline(cls, ds: Dataset):
-                # docsnip-highlight start
                 return (
-                    ds.groupby("uid")
-                    .window(type="session", gap="15m", into_field="window")
+                    ds.groupby("uid").window(
+                        type="session", gap="15m", into_field="window"
+                    )
+                    # docsnip-highlight start
                     .summarize(
                         "total_amount",
                         int,
                         lambda df: df["amount"].sum(),
                     )
+                    # docsnip-highlight end
                 )
-                # docsnip-highlight end
 
         # /docsnip
 
@@ -122,24 +116,16 @@ class TestAssignSnips(unittest.TestCase):
 
     @mock
     def test_type_error(self, client):
-        # docsnip wrong_type
-
         with pytest.raises(Exception):
-            from fennel.datasets import (
-                dataset,
-                field,
-                pipeline,
-                Dataset,
-            )
+            # docsnip wrong_type
+            from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
             from fennel.sources import source, Webhook
             from fennel.dtypes import Window
 
             webhook = Webhook(name="webhook")
 
-            @source(
-                webhook.endpoint("Transaction"), disorder="14d", cdc="append"
-            )
+            @source(webhook.endpoint("txn"), disorder="14d", cdc="append")
             @dataset
             class Transaction:
                 uid: int
@@ -148,12 +134,10 @@ class TestAssignSnips(unittest.TestCase):
 
             @dataset
             class Session:
-                # groupby field becomes the key field
                 uid: int = field(key=True)
-                # new fields are added to the dataset by the window operation
-                # Window now become a key after operator
                 window: Window = field(key=True)
                 # docsnip-highlight start
+                # type 'float' doesn't match the type in summarize below
                 total_amount: float
                 # docsnip-highlight end
                 timestamp: datetime = field(timestamp=True)
@@ -179,24 +163,16 @@ class TestAssignSnips(unittest.TestCase):
 
     @mock
     def test_runtime_error(self, client):
-        # docsnip runtime_error
-
         with pytest.raises(Exception):
-            from fennel.datasets import (
-                dataset,
-                field,
-                pipeline,
-                Dataset,
-            )
+            # docsnip runtime_error
+            from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
             from fennel.sources import source, Webhook
             from fennel.dtypes import Window
 
             webhook = Webhook(name="webhook")
 
-            @source(
-                webhook.endpoint("Transaction"), disorder="14d", cdc="append"
-            )
+            @source(webhook.endpoint("txn"), disorder="14d", cdc="append")
             @dataset
             class Transaction:
                 uid: int
@@ -205,14 +181,9 @@ class TestAssignSnips(unittest.TestCase):
 
             @dataset
             class Session:
-                # groupby field becomes the key field
                 uid: int = field(key=True)
-                # new fields are added to the dataset by the window operation
-                # Window now become a key after operator
                 window: Window = field(key=True)
-                # docsnip-highlight start
                 total_amount: str
-                # docsnip-highlight end
                 timestamp: datetime = field(timestamp=True)
 
                 @pipeline
@@ -225,6 +196,7 @@ class TestAssignSnips(unittest.TestCase):
                             "total_amount",
                             str,
                             # docsnip-highlight start
+                            # lambda returns int, not str; hence runtime error
                             lambda df: df["amount"].sum(),
                             # docsnip-highlight end
                         )
