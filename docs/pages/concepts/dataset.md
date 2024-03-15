@@ -82,6 +82,26 @@ status="error" message="Multile datetime fields without explicit timestamp field
     highlight="9">
 </pre>
 
+### Versioning
+
+All Fennel datasets are versioned and each version is immutable. The version of 
+a dataset can be explicitly specified in the `@dataset` decorator as follows:
+
+<pre snippet="datasets/datasets#dataset_version"></pre>
+
+Increasing the version of a dataset can be accompanied with any other changes -
+changing schema, changing source, change pipeline code etc. In either scenario,
+Fennel recomputes the full dataset when the version is incremented.
+
+The version of a dataset also captures all its ancestory graph. In other words, 
+when the version of a dataset is incremented, the version of all downstream 
+datasets that depend on it must also be incremented, leading to their 
+reconstruction as well. 
+
+As of right now, Fennel doesn't support keeping two versions of a dataset alive
+simultaneously and recommends to either create datasets with differet names or
+run two parallel branches with different versions of the dataset.
+
 ### Meta Flags
 
 Datasets can be annotated with useful meta information via 
