@@ -132,7 +132,7 @@ of that column on another column.
 
 
 ### Since
-The `since` param (of type `datetime`) in the source provides a way to ingest 
+The `since` parameter (of type `datetime`) in the source provides a way to ingest 
 data from a specific time onwards from the source. When set, only the rows 
 having the value of their timestamp field >= the `since` value are ingested. 
 

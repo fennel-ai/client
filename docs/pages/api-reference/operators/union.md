@@ -19,12 +19,12 @@ are present in the output datasets.
 
 
 #### Errors
-<Expandable title="Unioning datasets with different schemas">
+<Expandable title="Taking union of datasets with different schemas">
 Union operator is defined only when both the input datasets have the same
 schema. Commit error to apply union on input datasets with different schemas.
 </Expandable>
 
-<Expandable title="Unioning keyed datasets">
+<Expandable title="Taking union of keyed datasets">
 Commit error to apply union on input datasets with key columns.
 </Expandable>
 
@@ -34,6 +34,15 @@ Commit error to apply union on input datasets with key columns.
 <pre snippet="api-reference/operators/union#basic" status="success"
     message="Union an s3 and kafka dataset">
 </pre>
+
+<pre snippet="api-reference/operators/explode#exploding_non_list" status="error"
+    message="Exploding a non-list column" highlight="5, 17">
+</pre>
+
+<pre snippet="api-reference/operators/explode#exploding_missing" status="error"
+    message="Exploding a non-existent column" highlight="17">
+</pre>
+
 </RightSection>
 
 </Divider>

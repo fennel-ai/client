@@ -81,7 +81,7 @@ Typically, streaming engines support three types of windows:
    with 2 min stride, when queried at 10:03min & 10 sec, it will look at period 
    between 9:52-10:02am.
 3. **Session** - dynamic length based on user events. Often used for very specific 
-   purposes differnt from other kinds of windows.
+   purposes different from other kinds of windows.
 
 Fennel supports all of these via the [window operator](/api-reference/operators/window). 
 However, Machine learning use cases often require another kind of window - Continuous.  
@@ -89,7 +89,7 @@ However, Machine learning use cases often require another kind of window - Conti
 **Continuous Windows**
 
 As the name implies, with a 10 min continuous windows, a query at 10:03min & 10sec 
-should cover the priod from 9:53 min & 10sec to 10:03 min & 10 sec. Clearly, 
+should cover the period from 9:53 min & 10sec to 10:03 min & 10 sec. Clearly, 
 continuous windows are lot harder to support efficiently and require some read 
 side aggregation. 
 
