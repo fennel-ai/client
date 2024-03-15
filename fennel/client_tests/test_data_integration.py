@@ -71,11 +71,10 @@ class TestMovieInfo103(unittest.TestCase):
 
         # Do some lookups
         now = datetime.utcnow()
-        movie_ids = pd.Series([1, 2, 23, 123343])
-        ts = pd.Series([now, now, now, now])
-        df, found = MovieInfo103.lookup(
-            ts,
-            movieId=movie_ids,
+        keys = pd.DataFrame({"movieId": [1, 2, 23, 123343]})
+        df, found = client.lookup(
+            "MovieInfo103",
+            keys=keys,
         )
         assert found.tolist() == [True, True, True, False]
         assert df["title"].tolist() == [
@@ -94,9 +93,10 @@ class TestMovieInfo103(unittest.TestCase):
         # Do some lookups with a timestamp
         past = datetime.utcfromtimestamp(1672858160)
         ts = pd.Series([past, past, now, past])
-        df, found = MovieInfo103.lookup(
-            ts,
-            movieId=movie_ids,
+        df, found = client.lookup(
+            "MovieInfo103",
+            timestamps=ts,
+            keys=keys,
         )
         assert found.tolist() == [False, False, True, False]
 

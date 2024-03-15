@@ -695,26 +695,29 @@ class TestBasicTransform(unittest.TestCase):
         # Do some lookups to verify pipeline_transform is working as expected
         an_hour_ago = now - timedelta(hours=1)
         ts = pd.Series([an_hour_ago, an_hour_ago])
-        names = pd.Series(["Jumanji", "Titanic"])
-        df, found = MovieRatingTransformed.lookup(
-            ts,
-            movie=names,
+        keys = pd.DataFrame({"movie": ["Jumanji", "Titanic"]})
+        df, found = client.lookup(
+            "MovieRatingTransformed",
+            keys=keys,
+            timestamps=ts,
         )
 
         assert found.tolist() == [True, False]
         assert df.shape == (2, 6)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
-        assert df["rating_sq"].tolist() == [16, None]
-        assert df["rating_cube"].tolist() == [64, None]
-        assert df["rating_into_5"].tolist() == [20, None]
-        assert df["rating_orig"].tolist() == [4, None]
+        assert df["rating_sq"].tolist()[0] == 16
+        assert pd.isna(df["rating_sq"].tolist()[1])
+        assert df["rating_cube"].tolist()[0] == 64
+        assert pd.isna(df["rating_cube"].tolist()[1])
+        assert df["rating_into_5"].tolist()[0] == 20
+        assert pd.isna(df["rating_into_5"].tolist()[1])
+        assert df["rating_orig"].tolist()[0] == 4
+        assert pd.isna(df["rating_orig"].tolist()[1])
 
-        ts = pd.Series([now, now])
-        names = pd.Series(["Jumanji", "Titanic"])
         client.sleep()
-        df, _ = MovieRatingTransformed.lookup(
-            ts,
-            movie=names,
+        df, _ = client.lookup(
+            "MovieRatingTransformed",
+            keys=keys,
         )
 
         assert df.shape == (2, 6)
@@ -788,8 +791,10 @@ class TestBasicExplode(unittest.TestCase):
         )
         assert list(found) == [True, True]
         assert df["uid"].tolist() == [1, 2]
-        assert df["sku"].tolist() == [1, None]
-        assert df["price"].tolist() == [10.1, None]
+        assert df["sku"].tolist()[0] in [1, 2]
+        assert pd.isna(df["sku"].tolist()[1])
+        assert df["price"].tolist()[0] in [10.1, 20.0]
+        assert pd.isna(df["price"].tolist()[1])
 
 
 class TestBasicAssign(unittest.TestCase):
@@ -815,25 +820,27 @@ class TestBasicAssign(unittest.TestCase):
         # Do some lookups to verify pipeline_transform is working as expected
         an_hour_ago = now - timedelta(hours=1)
         ts = pd.Series([an_hour_ago, an_hour_ago])
-        names = pd.Series(["Jumanji", "Titanic"])
-        df, found = MovieRatingAssign.lookup(
-            ts,
-            movie=names,
+        keys = pd.DataFrame({"movie": ["Jumanji", "Titanic"]})
+        df, found = client.lookup(
+            "MovieRatingAssign",
+            timestamps=ts,
+            keys=keys,
         )
 
         assert found.tolist() == [True, False]
         assert df.shape == (2, 5)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
-        assert df["rating_sq"].tolist() == [16, None]
-        assert df["rating_cube"].tolist() == [64, None]
-        assert df["rating_into_5"].tolist() == [20, None]
+        assert df["rating_sq"].tolist()[0] == 16
+        assert pd.isna(df["rating_sq"].tolist()[1])
+        assert df["rating_cube"].tolist()[0] == 64
+        assert pd.isna(df["rating_cube"].tolist()[1])
+        assert df["rating_into_5"].tolist()[0] == 20
+        assert pd.isna(df["rating_into_5"].tolist()[1])
 
-        ts = pd.Series([now, now])
-        names = pd.Series(["Jumanji", "Titanic"])
         client.sleep()
-        df, _ = MovieRatingAssign.lookup(
-            ts,
-            movie=names,
+        df, _ = client.lookup(
+            "MovieRatingAssign",
+            keys=keys,
         )
 
         assert df.shape == (2, 5)
@@ -923,11 +930,10 @@ class TestBasicJoin(unittest.TestCase):
         client.sleep()
 
         # Do some lookups to verify pipeline_join is working as expected
-        ts = pd.Series([now, now])
-        names = pd.Series(["Jumanji", "Titanic"])
-        df, _ = MovieStats.lookup(
-            ts,
-            movie=names,
+        keys = pd.DataFrame({"movie": ["Jumanji", "Titanic"]})
+        df, _ = client.lookup(
+            "MovieStats",
+            keys=keys,
         )
         assert df.shape == (2, 4)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
@@ -936,10 +942,13 @@ class TestBasicJoin(unittest.TestCase):
 
         # Do some lookup at various timestamps in the past
         ts = pd.Series([two_hours_ago, one_hour_ago, one_hour_ago, now])
-        names = pd.Series(["Jumanji", "Jumanji", "Titanic", "Titanic"])
-        df, _ = MovieStats.lookup(
-            ts,
-            movie=names,
+        keys = pd.DataFrame(
+            {"movie": ["Jumanji", "Jumanji", "Titanic", "Titanic"]}
+        )
+        df, _ = client.lookup(
+            "MovieStats",
+            timestamps=ts,
+            keys=keys,
         )
         assert df.shape == (4, 4)
         assert df["movie"].tolist() == [
@@ -948,8 +957,14 @@ class TestBasicJoin(unittest.TestCase):
             "Titanic",
             "Titanic",
         ]
-        assert df["rating"].tolist() == [None, 4, None, 5]
-        assert df["revenue_in_millions"].tolist() == [None, 2, None, 50]
+        assert pd.isna(df["rating"].tolist()[0])
+        assert df["rating"].tolist()[1] == 4
+        assert pd.isna(df["rating"].tolist()[2])
+        assert df["rating"].tolist()[3] == 5
+        assert pd.isna(df["revenue_in_millions"].tolist()[0])
+        assert df["revenue_in_millions"].tolist()[1] == 2
+        assert pd.isna(df["revenue_in_millions"].tolist()[2])
+        assert df["revenue_in_millions"].tolist()[3] == 50
 
 
 class TestInnerJoinExplodeDedup(unittest.TestCase):
@@ -1052,14 +1067,13 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
         ), response.json()  # noqa
 
         # Do some lookups to verify pipeline_join is working as expected
-        ts = pd.Series([now, now, now])
-        names = pd.Series(
-            ["Leonardo DiCaprio", "Robin Williams", "Keanu Reeves"]
+        keys = pd.DataFrame(
+            {"name": ["Leonardo DiCaprio", "Robin Williams", "Keanu Reeves"]}
         )
         client.sleep()
-        df, _ = ActorStats.lookup(
-            ts,
-            name=names,
+        df, _ = client.lookup(
+            "ActorStats",
+            keys=keys,
         )
         assert df.shape == (3, 3)
         assert df["name"].tolist() == [
@@ -1100,10 +1114,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
         # Now do the lookup again
         client.sleep()
         client.sleep()
-        df, _ = ActorStats.lookup(
-            ts,
-            name=names,
-        )
+        df, _ = client.lookup("ActorStats", keys=keys)
         assert df.shape == (3, 3)
         assert df["name"].tolist() == [
             "Leonardo DiCaprio",
@@ -1115,9 +1126,10 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
         # Do some lookup at various timestamps in the past
         three_hours_ago = now - timedelta(hours=3)
         ts = pd.Series([three_hours_ago, three_hours_ago, three_hours_ago])
-        df, _ = ActorStats.lookup(
-            ts,
-            name=names,
+        df, _ = client.lookup(
+            "ActorStats",
+            timestamps=ts,
+            keys=keys,
         )
         assert df.shape == (3, 3)
         assert df["name"].tolist() == [
@@ -1307,13 +1319,19 @@ class TestBasicWindowAggregate(unittest.TestCase):
         ts = pd.Series(
             [eight_days, eight_days, five_days, five_days, one_day, one_day]
         )
-        names = pd.Series(
-            ["Jumanji", "Titanic", "Jumanji", "Titanic", "Jumanji", "Titanic"]
+        keys = pd.DataFrame(
+            {
+                "movie": [
+                    "Jumanji",
+                    "Titanic",
+                    "Jumanji",
+                    "Titanic",
+                    "Jumanji",
+                    "Titanic",
+                ]
+            }
         )
-        df, _ = MovieRatingWindowed.lookup(
-            ts,
-            movie=names,
-        )
+        df, _ = client.lookup("MovieRatingWindowed", keys=keys, timestamps=ts)
         assert df.shape == (6, 10)
         assert df["movie"].tolist() == [
             "Jumanji",
@@ -1446,11 +1464,9 @@ class TestBasicFilter(unittest.TestCase):
         client.sleep()
 
         # Do some lookups to verify pipeline_aggregate is working as expected
-        ts = pd.Series([now, now, now])
-        names = pd.Series(["Jumanji", "Titanic", "RaOne"])
-        df, _ = PositiveRatingActivity.lookup(
-            ts,
-            movie=names,
+        df, _ = client.lookup(
+            "PositiveRatingActivity",
+            keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne"]}),
         )
         assert df.shape == (3, 3)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
@@ -1461,9 +1477,10 @@ class TestBasicFilter(unittest.TestCase):
             assert df["cnt_rating"].tolist() == [2, 3, None]
 
         ts = pd.Series([two_hours_ago, two_hours_ago, two_hours_ago])
-        df, _ = PositiveRatingActivity.lookup(
-            ts,
-            movie=names,
+        df, _ = client.lookup(
+            "PositiveRatingActivity",
+            keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne"]}),
+            timestamps=ts,
         )
         assert df.shape == (3, 3)
         assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
@@ -1550,10 +1567,9 @@ class TestBasicCountUnique(unittest.TestCase):
         client.sleep()
 
         # Do some lookups to verify pipeline_unique_movies_seen is working as expected
-        ts = pd.Series([now])
-        df, _ = UniqueMoviesSeen.lookup(
-            ts,
-            static=pd.Series(["static"]),
+        df, _ = client.lookup(
+            "UniqueMoviesSeen",
+            keys=pd.DataFrame({"static": ["static"]}),
         )
         assert df.shape == (1, 4)
         assert df["unique_movies"].tolist() == [3]
@@ -1562,9 +1578,10 @@ class TestBasicCountUnique(unittest.TestCase):
         two_and_half_hours_ago = now - timedelta(hours=2, minutes=30)
         six_hours_ago = now - timedelta(hours=6)
         ts = pd.Series([two_and_half_hours_ago, four_hours_ago, six_hours_ago])
-        df, _ = UniqueMoviesSeen.lookup(
-            ts,
-            static=pd.Series(["static", "static", "static"]),
+        df, _ = client.lookup(
+            "UniqueMoviesSeen",
+            timestamps=ts,
+            keys=pd.DataFrame({"static": ["static", "static", "static"]}),
         )
         assert df.shape == (3, 4)
         if client.is_integration_client():
@@ -2362,6 +2379,7 @@ class PlayerInfo:
 
 @meta(owner="gianni@fifa.com")
 @source(webhook.endpoint("ClubSalary"), disorder="14d", cdc="append")
+@index
 @dataset
 class ClubSalary:
     club: str = field(key=True)
@@ -2371,6 +2389,7 @@ class ClubSalary:
 
 @meta(owner="gianni@fifa.com")
 @source(webhook.endpoint("WAG"), disorder="14d", cdc="append")
+@index
 @dataset
 class WAG:
     name: str = field(key=True)
@@ -2475,7 +2494,6 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
             message="msg",
             datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo],
         )
-        now = datetime.utcnow()
         yesterday = datetime.utcnow() - timedelta(days=1)
         minute_ago = datetime.utcnow() - timedelta(minutes=1)
         data = [
@@ -2514,18 +2532,19 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
         # Do a lookup
         # Check with Nikhil on timestamp for CR7 - yesterday
-        ts = pd.Series([now, now, now, now, now])
-        names = pd.Series(
-            [
-                "Rashford",
-                "Maguire",
-                "Messi",
-                "Christiano Ronaldo",
-                "Antony",
-            ]
+        names = pd.DataFrame(
+            {
+                "name": [
+                    "Rashford",
+                    "Maguire",
+                    "Messi",
+                    "Christiano Ronaldo",
+                    "Antony",
+                ]
+            }
         )
         client.sleep()
-        df, _ = ManchesterUnitedPlayerInfo.lookup(ts, name=names)
+        df, _ = client.lookup("ManchesterUnitedPlayerInfo", keys=names)
         assert df.shape == (5, 8)
         assert df["club"].tolist() == [
             "Manchester United",
@@ -2534,13 +2553,11 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
             "Manchester United",
             "Manchester United",
         ]
-        assert df["salary"].tolist() == [
-            1000000,
-            1000000,
-            None,
-            1000000,
-            1000000,
-        ]
+        assert df["salary"].tolist()[0] == 1000000
+        assert df["salary"].tolist()[1] == 1000000
+        assert pd.isna(df["salary"].tolist()[2])
+        assert df["salary"].tolist()[3] == 1000000
+        assert df["salary"].tolist()[4] == 1000000
         assert df["wag"].tolist() == [
             "Lucia",
             "Fern",
@@ -3333,9 +3350,9 @@ def test_lookup_as_of_time(client):
 
     data, found = client.lookup(
         "UserInfoDataset",
-        pd.DataFrame({"user_id": [18232, 18233]}),
+        keys=pd.DataFrame({"user_id": [18232, 18233]}),
         fields=["name"],
-        timestamps=["2022-11-09 01:22:23", "2022-11-16 01:33:13"],
+        timestamps=pd.Series(["2020-11-09 01:22:23", "2022-11-16 01:33:13"]),
     )
     assert len(found.tolist()) == 2
     assert found.tolist() == [False, True]

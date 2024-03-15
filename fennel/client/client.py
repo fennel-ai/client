@@ -357,7 +357,7 @@ class Client:
             raise Exception(
                 "Server returned invalid response for list branches."
             )
-        return resp["branches"]
+        return [branch.get("name") for branch in resp["branches"]]
 
     def checkout(self, name: str):
         """Checkouts the client to another branch.
@@ -629,7 +629,8 @@ class Client:
             "keys": keys,
             "fields": fields,
         }
-        if timestamps:
+        if isinstance(timestamps, pd.Series):
+            timestamps = timestamps.tolist()
             for idx in range(len(timestamps)):
                 if isinstance(timestamps[idx], datetime):
                     timestamps[idx] = str(timestamps[idx])

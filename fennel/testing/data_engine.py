@@ -91,7 +91,7 @@ class DataEngine(object):
 
     def get_dataset_fields(self, dataset_name: str) -> List[str]:
         """
-        Returns list of dataset fields apart from keyed fields and timestamp field.
+        Returns list of dataset fields.
         Args:
             dataset_name: (str) - Name of the dataset.
         Returns:
@@ -280,35 +280,35 @@ class DataEngine(object):
                 return resp
         return FakeResponse(200, "OK")
 
-    def lookup(self, dataset_name: str, ts: pd.Series, *args, **kwargs):
-        if dataset_name not in self.datasets:
-            raise KeyError(f"Dataset: {dataset_name} not found")
-
-        fennel.datasets.datasets.dataset_lookup = partial(
-            self._dataset_lookup_impl,
-            [dataset_name],
-            None,
-            True,
-        )
-
-        timestamps = cast_col_to_dtype(
-            ts,
-            schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
-        )
-
-        dataframe, found = self.datasets[dataset_name].dataset.lookup(
-            timestamps,
-            *args,
-            **kwargs,
-        )
-
-        fennel.datasets.datasets.dataset_lookup = partial(
-            self._dataset_lookup_impl,
-            None,
-            None,
-            True,
-        )
-        return dataframe, found
+    # def lookup(self, dataset_name: str, ts: pd.Series, *args, **kwargs):
+    #     if dataset_name not in self.datasets:
+    #         raise KeyError(f"Dataset: {dataset_name} not found")
+    #
+    #     fennel.datasets.datasets.dataset_lookup = partial(
+    #         self._dataset_lookup_impl,
+    #         [dataset_name],
+    #         None,
+    #         True,
+    #     )
+    #
+    #     timestamps = cast_col_to_dtype(
+    #         ts,
+    #         schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
+    #     )
+    #
+    #     dataframe, found = self.datasets[dataset_name].dataset.lookup(
+    #         timestamps,
+    #         *args,
+    #         **kwargs,
+    #     )
+    #
+    #     fennel.datasets.datasets.dataset_lookup = partial(
+    #         self._dataset_lookup_impl,
+    #         None,
+    #         None,
+    #         True,
+    #     )
+    #     return dataframe, found
 
     def get_dataset_lookup_impl(
         self,
@@ -368,7 +368,12 @@ class DataEngine(object):
 
         if not use_as_of and not index.online:
             raise ValueError(
-                f"Please define an online index on dataset : {cls_name} : {index}"
+                f"Please define an online index on dataset : {cls_name}"
+            )
+
+        if use_as_of and index.offline == IndexDuration.none:
+            raise ValueError(
+                f"Please define an offline index on dataset : {cls_name}"
             )
 
         join_columns = keys.columns.tolist()
@@ -435,6 +440,9 @@ class DataEngine(object):
                 except ValueError as err:
                     raise ValueError(err)
                 df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
+                df.rename(
+                    columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True
+                )
                 result_dfs.append(df)
             # Get common columns
             common_columns = set(result_dfs[0].columns)
