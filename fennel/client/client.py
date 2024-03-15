@@ -631,6 +631,7 @@ class Client:
         }
         if isinstance(timestamps, pd.Series):
             timestamps = timestamps.tolist()
+        if timestamps:
             for idx in range(len(timestamps)):
                 if isinstance(timestamps[idx], datetime):
                     timestamps[idx] = str(timestamps[idx])

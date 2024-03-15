@@ -44,7 +44,7 @@ def test_invalid_dataset_lookup():
     with pytest.raises(ValueError) as e:
 
         @featureset
-        class Featureset1:
+        class Featureset2:
             user_id: int = feature(id=1)
             age: int = feature(id=2).extract(field=Dataset2.age, default=10)
 
@@ -56,7 +56,7 @@ def test_invalid_dataset_lookup():
     with pytest.raises(ValueError) as e:
 
         @featureset
-        class Featureset1:
+        class Featureset3:
             user_id: int = feature(id=1)
             age: int = feature(id=2)
 
@@ -75,7 +75,7 @@ def test_invalid_dataset_lookup():
     with pytest.raises(ValueError) as e:
 
         @featureset
-        class Featureset1:
+        class Featureset4:
             user_id: int = feature(id=1)
             age: int = feature(id=2)
 
