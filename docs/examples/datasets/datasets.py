@@ -3,6 +3,8 @@ from typing import Optional
 
 import pytest
 
+__owner__ = "nikhil@fennel.ai"
+
 
 def test_basic_dataset():
     # docsnip user_dataset
@@ -19,14 +21,13 @@ def test_basic_dataset():
 
     # /docsnip
 
-    __owner__ = "nikhil@fennel.ai"
-
     # docsnip dataset_version
-    @dataset(version=2) # docsnip-highlight
-    class User:
-        uid: int = field(key=True)
-        dob: datetime
+    @dataset(version=2)  # docsnip-highlight
+    class Product:
+        pid: int = field(key=True)
+        price: float
         update_time: datetime = field(timestamp=True)
+
     # /docsnip
 
 

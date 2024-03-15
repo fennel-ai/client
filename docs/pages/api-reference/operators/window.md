@@ -45,7 +45,7 @@ or `"hopping"`.
 
 <Expandable title="stride" type="Duration">
 The interval between the start of two successive windows. Only relevant when the
-`type` is `"hopping"`. It is invalid for stide to be greater than the overall
+`type` is `"hopping"`. It is invalid for `stride` to be greater than the overall
 `duration`.
 </Expandable>
 
