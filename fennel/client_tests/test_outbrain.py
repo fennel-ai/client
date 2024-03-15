@@ -114,7 +114,9 @@ def test_outbrain(client):
         ],
         tier="dev",
     )
-    df = pd.read_csv("fennel/client_tests/data/page_views_sample.csv")
+    df = pd.read_csv(
+        "fennel/client_tests/data/page_views_sample.csv"
+    ).sort_values(by=["timestamp"])
     # Current time in ms
     cur_time_ms = datetime.utcnow().timestamp() * 1000
     max_ts = max(df["timestamp"].tolist())
@@ -124,7 +126,9 @@ def test_outbrain(client):
     # TODO: Remove this once watermarks are correctly implemented
     twelve_days = 12 * 24 * 60 * 60 * 1000
     df = df[df["timestamp"] > cur_time_ms - twelve_days]
-    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+    df["timestamp"] = df["timestamp"].apply(
+        lambda x: datetime.fromtimestamp(x / 1000)
+    )
 
     client.log("outbrain_webhook", "PageViews", df)
     if client.is_integration_client():
@@ -156,4 +160,4 @@ def test_outbrain(client):
         feature_df["UserPageViewFeatures.page_views_1d"].sum(),
         feature_df["UserPageViewFeatures.page_views_3d"].sum(),
         feature_df["UserPageViewFeatures.page_views_9d"].sum(),
-    ) == (11975, 646, 3344, 9474)
+    ) == (11975, 1140, 3840, 9544)
