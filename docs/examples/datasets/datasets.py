@@ -19,6 +19,16 @@ def test_basic_dataset():
 
     # /docsnip
 
+    __owner__ = "nikhil@fennel.ai"
+
+    # docsnip dataset_version
+    @dataset(version=2) # docsnip-highlight
+    class User:
+        uid: int = field(key=True)
+        dob: datetime
+        update_time: datetime = field(timestamp=True)
+    # /docsnip
+
 
 # valid - has no key fields, which is fine.
 # no explicitly marked timestamp fields so update_time, which is of type

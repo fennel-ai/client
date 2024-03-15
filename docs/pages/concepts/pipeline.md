@@ -71,6 +71,41 @@ significantly reduce costs/performance of doing continuous sliding aggregations.
 And it's possible that even this constraint will be removed in the future.
 
 
+### Windowing
+
+Typically, streaming engines support three types of windows:
+
+1. **Tumbling** - fixed length, non-overlapping window. With 10 min windows, when 
+   queried at 10:03 min & 10 sec, it will look at period between 9:50-10:00am.
+2. **Hopping (aka sliding)** - fixed length but overlapping windows. With 10 min windows
+   with 2 min stride, when queried at 10:03min & 10 sec, it will look at period 
+   between 9:52-10:02am.
+3. **Session** - dynamic length based on user events. Often used for very specific 
+   purposes differnt from other kinds of windows.
+
+Fennel supports all of these via the [window operator](/api-reference/operators/window). 
+However, Machine learning use cases often require another kind of window - Continuous.  
+
+**Continuous Windows**
+
+As the name implies, with a 10 min continuous windows, a query at 10:03min & 10sec 
+should cover the priod from 9:53 min & 10sec to 10:03 min & 10 sec. Clearly, 
+continuous windows are lot harder to support efficiently and require some read 
+side aggregation. 
+
+A common way of supporting continuous windows is to store all the raw events in 
+the window and aggregate them (say sum them up) during the request. This is an 
+O(N) operation and for high volume and/or long windows, this can get very slow.
+
+To avoid this, Fennel does partial aggregation in tiles during the write path 
+itself and does the final assembly of all tiles during the read path - this 
+makes final assembly O(1) while incurring at most 1% error.
+
+Because of this trick, calculating continuous windows becomes sufficiently 
+efficient. And given their ability to capture more current data, they are the 
+most common/default windows in Fennel and are supported via the 
+[aggregate operator](/api-reference/operators/aggregated).
+
 ### Power of Fennel Pipelines
 
 Fennel pipelines have a bunch of really desirable properties:
