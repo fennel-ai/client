@@ -138,7 +138,7 @@ class Client:
             for line in summary:
                 print(line, end="")
         else:
-            raise Exception("commit failed: {}".format(response.text))
+            print("Commit was successful however summary generation failed.")
         return response
 
     def log(

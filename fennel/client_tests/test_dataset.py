@@ -743,7 +743,7 @@ class Orders:
 @dataset
 class Derived:
     uid: int = field(key=True)
-    sku: Optional[int]
+    sku: int = field(key=True)
     price: Optional[float]
     timestamp: datetime
 
@@ -753,7 +753,8 @@ class Derived:
         return (
             ds.explode("skus", "prices")
             .rename({"skus": "sku", "prices": "price"})
-            .groupby("uid")
+            .dropnull("sku")
+            .groupby("uid", "sku")
             .first()
         )
 
@@ -787,13 +788,10 @@ class TestBasicExplode(unittest.TestCase):
         # do lookup on the WithSquare dataset
         df, found = client.lookup(
             dataset_name="Derived",
-            keys=pd.DataFrame({"uid": [1, 2]}),
+            keys=pd.DataFrame({"uid": [1, 2], "sku": [1, 2]}),
         )
-        assert list(found) == [True, True]
-        assert df["uid"].tolist() == [1, 2]
-        assert df["sku"].tolist()[0] in [1, 2]
-        assert pd.isna(df["sku"].tolist()[1])
-        assert df["price"].tolist()[0] in [10.1, 20.0]
+        assert list(found) == [True, False]
+        assert df["price"].tolist()[0] == 10.1
         assert pd.isna(df["price"].tolist()[1])
 
 
