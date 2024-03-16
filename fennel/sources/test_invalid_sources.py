@@ -10,6 +10,7 @@ from fennel.sources import (
     MySQL,
     S3,
     Snowflake,
+    Redshift,
     Kafka,
     Kinesis,
     at_timestamp,
@@ -53,6 +54,13 @@ kafka = Kafka(
 kinesis = Kinesis(
     name="kinesis_src",
     role_arn="arn:aws:iam::123456789012:role/test-role",
+)
+
+redshift = Redshift(
+    name="redshift_src",
+    s3_access_role_arn="arn:aws:iam::123:role/Redshift",
+    db_name="test",
+    host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
 )
 
 
@@ -250,6 +258,12 @@ def test_multiple_sources(client):
             every="1h",
             cdc="append",
             disorder="2d",
+        )
+        @source(
+            redshift.table("test_schema", "test_table", cursor="added_on"),
+            disorder="14d",
+            cdc="append",
+            every="1h",
         )
         @dataset
         class UserInfoDataset:

@@ -391,6 +391,34 @@ class Kinesis(DataSource):
         return ["role_arn"]
 
 
+class Redshift(DataSource):
+    s3_access_role_arn: str
+    db_name: str
+    host: str
+    port: int = 5439
+
+    def table(
+        self, schema_name: str, table_name: str, cursor: str
+    ) -> TableConnector:
+        return TableConnector(self, table_name, cursor, schema_name)
+
+    def required_fields(self) -> List[str]:
+        return ["schema", "table", "cursor"]
+
+    @staticmethod
+    def get(name: str) -> Redshift:
+        return Redshift(
+            name=name,
+            _get=True,
+            s3_access_role_arn="",
+            db_name="",
+            host="",
+        )
+
+    def identifier(self) -> str:
+        return f"[Redshift: {self.name}]"
+
+
 # ------------------------------------------------------------------------------
 # DataConnector
 # ------------------------------------------------------------------------------
@@ -433,15 +461,17 @@ class WebhookConnector(DataConnector):
 
 class TableConnector(DataConnector):
     """DataConnectors which only need a table name and a cursor to be
-    specified. Includes BigQuery, MySQL, Postgres, and Snowflake."""
+    specified. Includes BigQuery, MySQL, Postgres, Snowflake and Redshift."""
 
+    schema_name: Optional[str]
     table_name: str
     cursor: str
 
-    def __init__(self, source, table_name, cursor):
+    def __init__(self, source, table_name, cursor, schema_name=None):
         self.data_source = source
         self.table_name = table_name
         self.cursor = cursor
+        self.schema_name = schema_name
 
     def identifier(self) -> str:
         return f"{self.data_source.identifier()}(table={self.table_name})"
