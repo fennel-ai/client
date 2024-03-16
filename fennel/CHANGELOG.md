@@ -15,6 +15,9 @@
 ## [1.1.0] - 2024-03-15
 - Introduce offline and online index on datasets.
 
+## [1.0.6] - 2024-03-16
+- Support `redshift` source
+
 ## [1.0.5] - 2024-03-012
 - Introduce `spread` for S3 sources
 
