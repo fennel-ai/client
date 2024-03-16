@@ -159,3 +159,34 @@ def test_bigquery_basic(client):
 
     # /docsnip
     client.commit(message="some commit msg", datasets=[UserClick])
+
+@mock
+def test_redshift_basic(client):
+    os.environ["DB_NAME"] = "some-db-name"
+    # docsnip redshift_source
+    from fennel.sources import source, Redshift
+    from fennel.datasets import dataset
+
+    # docsnip-highlight start
+    redshift = Redshift(
+        name="my_redshift",
+        s3_access_role_arn="arn:aws:iam::123:role/Redshift",
+        db_name=os.environ["DB_NAME"],
+        host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+        port=5439,  # could be omitted, defaults to 5439
+    )
+    # docsnip-highlight end
+
+    @source(
+        redshift.table("schema", "user", cursor="timestamp"),
+        disorder="14d",
+        cdc="append",
+    )  # docsnip-highlight
+    @dataset
+    class UserClick:
+        uid: int
+        ad_id: int
+        timestamp: datetime
+
+    # /docsnip
+    client.commit(message="some commit msg", datasets=[UserClick])
