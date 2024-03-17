@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Extract Historical Progress
-
-<Divider>
-<LeftSection>
 Method to monitor the progress of a run of `extract_historical` query.
 
 #### Parameters
@@ -31,8 +28,7 @@ A completion rate of 1.0 indicates that all processing has been completed.
 A completion rate of 1.0 and failure rate of 0 means that all processing has 
 been completed successfully.
 </Expandable>
-</LeftSection>
-<RightSection>
+
 ===
 <pre name="Request" snippet="api-reference/client/extract#extract_historical_progress"
   status="success" message="Checking progress of a prior extract historical request"
@@ -42,8 +38,3 @@ been completed successfully.
   status="success" message="Sample response of extract historical progress"
 ></pre>
 ===
-</RightSection>
-</Divider>
-
-
-

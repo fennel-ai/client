@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Extract Historical
-
-<Divider>
-<LeftSection>
 Method to query the historical values of features. Typically used for training 
 data generation or batch inference.
 
@@ -76,6 +73,19 @@ mapping features to column names can be provided.
 This should be setup only when `input_s3` is provided.
 </Expandable>
 
+===
+<pre name="Request" snippet="api-reference/client/extract#extract_historical_api"
+  status="success" message="Example with `format='pandas'` & default s3 output"
+></pre>
+<pre name="Response" snippet="api-reference/client/extract#extract_historical_response"
+  status="success" message="Response of extract historical"
+></pre>
+===
+
+<pre snippet="api-reference/client/extract#extract_historical_s3"
+  status="success" message="Example specifying input and output s3 buckets"
+></pre>
+
 #### Returns
 <Expandable title="type" type="Dict[str, Any]">
 Immediately returns a dictionary containing the following information:
@@ -115,19 +125,3 @@ features/extractors - including any intermediate ones that need to be computed
 in order to resolve the path from the input features to the output features.
 </Expandable>
 
-</LeftSection>
-<RightSection>
-===
-<pre name="Request" snippet="api-reference/client/extract#extract_historical_api"
-  status="success" message="Example with `format='pandas'` & default s3 output"
-></pre>
-<pre name="Response" snippet="api-reference/client/extract#extract_historical_response"
-  status="success" message="Response of extract historical"
-></pre>
-===
-
-<pre snippet="api-reference/client/extract#extract_historical_s3"
-  status="success" message="Example specifying input and output s3 buckets"
-></pre>
-</RightSection>
-</Divider>

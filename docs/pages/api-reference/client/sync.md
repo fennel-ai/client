@@ -5,9 +5,6 @@ status: published
 ---
 
 ### Sync
-
-<Divider>
-<LeftSection>
 Sends the local dataset and featureset definitions to the server for verification,
 storage and processing.
 
@@ -37,11 +34,6 @@ those with matching values. Rules of selection:
   or same as `tier` or is `~x` for some other x
 </Expandable>
 
-
-</LeftSection>
-<RightSection>
 <pre snippet="api-reference/client/sync#basic" status="success"
     message="Silver source and no extractor are synced" highlight="7-8, 21, 25-29">
 </pre>
-</RightSection>
-</Divider>
