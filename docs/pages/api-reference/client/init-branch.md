@@ -6,8 +6,7 @@ status: published
 
 `init_branch`
 ### Init Branch
-<Divider>
-<LeftSection>
+
 Creates a new empty branch and checks out the client to point towards it.
 
 #### Parameters
@@ -37,10 +36,7 @@ Raises an error if the auth token isn't valid. Not applicable to the mock client
 Raises an error if the account corresponding to the auth token doesn't carry 
 the permission to create a new branch. Not applicable to the mock client.
 </Expandable>
-</LeftSection>
-<RightSection>
+
 <pre snippet="api-reference/client/branch#init_branch" status="success"
     message="Create a new empty branch 'mybranch'">
 </pre>
-</RightSection>
-</Divider>

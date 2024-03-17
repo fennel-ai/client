@@ -7,8 +7,6 @@ status: published
 
 ### Track Offline Query
 
-<Divider>
-<LeftSection>
 Method to monitor the progress of a run of offline query.
 
 #### Parameters
@@ -33,8 +31,7 @@ A completion rate of 1.0 indicates that all processing has been completed.
 A completion rate of 1.0 and failure rate of 0 means that all processing has 
 been completed successfully.
 </Expandable>
-</LeftSection>
-<RightSection>
+
 ===
 <pre name="Request" snippet="api-reference/client/query#extract_historical_progress"
   status="success" message="Checking progress of a prior extract historical request"
@@ -44,8 +41,7 @@ been completed successfully.
   status="success" message="Sample response of track_offline_query"
 ></pre>
 ===
-</RightSection>
-</Divider>
+
 
 
 

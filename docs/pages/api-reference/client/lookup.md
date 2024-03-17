@@ -6,8 +6,6 @@ status: published
 
 ### Lookup
 
-<Divider>
-<LeftSection>
 Method to lookup rows of keyed datasets.
 
 #### Parameters
@@ -35,12 +33,8 @@ Timestamp itself can either be passed as `datetime` or `str` (e.g. by using
 `pd.to_datetime` or `int` denoting seconds/milliseconds/microseconds since epoch).
 </Expandable>
 
-</LeftSection>
-<RightSection>
 <pre snippet="api-reference/client/lookup#basic" status="success"
     message="Example of doing lookup on dataset" highlight="27-38">
 </pre>
-</RightSection>
-</Divider>
 
 

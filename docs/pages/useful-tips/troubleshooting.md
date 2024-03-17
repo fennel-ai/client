@@ -26,9 +26,14 @@ You can also print the full contents of Fennel datasets at any time by calling
 `client.get_dataset_df(dataset_name)` using the mock client and printing 
 the resulting dataframe.
 
+===
 <pre snippet="useful-tips/debugging#print_dataset"
   status="success" message="Obtaining full dataset from mock client"
 ></pre>
+<pre snippet="useful-tips/debugging#print_dataset"
+  status="success" message="Obtaining full dataset from mock client"
+></pre>
+===
 
 :::warning
 This debug functionality is only available in the mock client. You can instead 

@@ -5,8 +5,6 @@ status: published
 ---
 ### Query Offline
 
-<Divider>
-<LeftSection>
 Method to query the historical values of features. Typically used for training 
 data generation or batch inference.
 
@@ -115,8 +113,6 @@ features/extractors - including any intermediate ones that need to be computed
 in order to resolve the path from the input features to the output features.
 </Expandable>
 
-</LeftSection>
-<RightSection>
 ===
 <pre name="Request" snippet="api-reference/client/query#extract_historical_api"
   status="success" message="Example with `format='pandas'` & default s3 output"
@@ -129,6 +125,3 @@ in order to resolve the path from the input features to the output features.
 <pre snippet="api-reference/client/query#extract_historical_s3"
   status="success" message="Example specifying input and output s3 buckets"
 ></pre>
-
-</RightSection>
-</Divider>
