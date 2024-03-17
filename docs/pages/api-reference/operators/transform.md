@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Transform
-
-<Divider>
-<LeftSection>
 Catch all operator to add/remove/update columns.
 
 #### Parameters
@@ -22,6 +19,9 @@ The expected schema of the output dataset. If not specified, the schema of the
 input dataset is used.
 </Expandable>
 
+<pre snippet="api-reference/operators/transform#basic" status="success"
+    message="Adding column amount_sq" highlight="12, 21">
+</pre>
 
 #### Returns
 
@@ -29,7 +29,6 @@ input dataset is used.
 Returns a dataset with the schema as specified in `schema` and rows as transformed
 by the transform function.
 </Expandable>
-
 
 #### Errors
 
@@ -42,13 +41,6 @@ the provided `schema`.
 Sync error if transform tries to modify key/timestamp columns.
 </Expandable>
 
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/transform#basic" status="success"
-    message="Adding column amount_sq" highlight="12, 21">
-</pre>
-
 <pre snippet="api-reference/operators/transform#modifying_keys" status="error"
     message="Modifying key or timestamp columns" highlight="4, 9, 10, 23">
 </pre>
@@ -56,6 +48,3 @@ Sync error if transform tries to modify key/timestamp columns.
 <pre snippet="api-reference/operators/transform#incorrect_type" status="error"
     message="Runtime error: amount_sq is of type int, not str" highlight="12, 21">
 </pre>
-</RightSection>
-
-</Divider>

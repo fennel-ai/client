@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Aggregate
-
-<Divider>
-<LeftSection>
 Operator to do continuous window aggregations. Aggregate operator must always
 be preceded by a [groupby](/api-reference/operators#groupby) operator.
 
@@ -21,6 +18,10 @@ See [aggregations](/api-reference/aggregations) for the full list of aggregate
 functions.
 </Expandable>
 
+<pre snippet="api-reference/operators/aggregate#basic" status="success"
+    message="Aggregate count & sum of transactions in rolling windows"
+    highlight="19, 20">
+</pre>
 
 #### Returns
 <Expandable type="Dataset">
@@ -35,14 +36,4 @@ corresponding column in the input dataset.
 Aggregate is the terminal operator - no other operator can follow it and no 
 other datasets can be derived from the dataset containing this pipeline.
 :::
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/aggregate#basic" status="success"
-    message="Aggregate count & sum of transactions in rolling windows"
-    highlight="19, 20">
-</pre>
-
-</RightSection>
-</Divider>
 

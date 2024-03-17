@@ -5,9 +5,6 @@ status: published
 ---
 
 ### Filter
-
-<Divider>
-<LeftSection>
 Operator to selectively `filter` out rows from a dataset. 
 
 #### Parameters
@@ -17,6 +14,10 @@ The actual filter function - takes a pandas dataframe containing a batch of rows
 from the input dataset and is expected to return a series of booleans of the 
 same length. Only rows corresponding to `True` are retained in the output dataset.
 </Expandable>
+
+<pre snippet="api-reference/operators/filter#basic" status="success" 
+   message="Filtering out rows where city is London" highlight="23">
+</pre>
 
 #### Returns
 <Expandable type="Dataset">
@@ -31,16 +32,6 @@ Runtime error if the value returned from the lambda isn't a pandas Series of
 the bool and of the same length as the input dataframe.
 </Expandable>
 
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/filter#basic" status="success" 
-   message="Filtering out rows where city is London" highlight="23">
-</pre>
 <pre snippet="api-reference/operators/filter#incorrect_type" status="error" 
    message="Runtime Error: Lambda returns str, not bool" highlight="23">
 </pre>
-
-</RightSection>
-
-</Divider>
