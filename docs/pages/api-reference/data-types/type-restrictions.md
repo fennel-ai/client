@@ -5,9 +5,6 @@ status: 'published'
 ---
 
 ### Type Restrictions
-<Divider>
-<LeftSection>
-
 Fennel type restrictions allow you to put additional constraints on 
 base types and restrict the set of valid values in some form. 
 
@@ -46,9 +43,6 @@ json encoding) as a regular base type. It's just that Fennel will reject data of
 base type that doesn't meet the restriction.
 :::
 
-</LeftSection>
-<RightSection>
 <pre snippet="api-reference/data-types#dataset_type_restrictions" />
-</RightSection>
-</Divider>
+
 
