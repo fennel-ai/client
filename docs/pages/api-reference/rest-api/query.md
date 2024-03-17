@@ -4,8 +4,6 @@ order: 1
 status: 'published'
 ---
 
-<Divider>
-<LeftSection>
 `POST /api/v1/branch/:branch_name/query`
 ### Query
 
@@ -62,8 +60,6 @@ Float between 0-1 describing the sample rate to be used for logging features
 #### Returns
 The response dataframe is returned as column oriented json.
 
-</LeftSection>
-<RightSection>
 <pre snippet="api-reference/rest-api#rest_extract_api_columnar"
     status="success" message="With column oriented data">
 </pre>
@@ -71,7 +67,3 @@ The response dataframe is returned as column oriented json.
 <pre snippet="api-reference/rest-api#rest_extract_api" status="success"
     message="With row oriented data">
 </pre>
-
-</RightSection>
-</Divider>
-
