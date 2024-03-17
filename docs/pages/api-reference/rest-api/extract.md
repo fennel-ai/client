@@ -4,8 +4,6 @@ order: 1
 status: 'published'
 ---
 
-<Divider>
-<LeftSection>
 `POST /api/v1/extract`
 ### Extract
 
@@ -55,11 +53,6 @@ Float between 0-1 describing the sample rate to be used for logging features
 (only relevant when `log` is set to `true`).
 </Expandable>
 
-#### Returns
-The response dataframe is returned as column oriented json.
-
-</LeftSection>
-<RightSection>
 <pre snippet="api-reference/rest-api#rest_extract_api_columnar"
     status="success" message="With column oriented data">
 </pre>
@@ -68,6 +61,5 @@ The response dataframe is returned as column oriented json.
     message="With row oriented data">
 </pre>
 
-</RightSection>
-</Divider>
-
+#### Returns
+The response dataframe is returned as column oriented json.
