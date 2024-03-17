@@ -4,8 +4,6 @@ order: 0
 status: published
 ---
 ### Webhook
-<Divider>
-<LeftSection>
 A push-based data connector, making it convenient for sending arbitrary JSON data 
 to Fennel. Data can be pushed to a webhook endpoint either via the REST API or via 
 the Python SDK.
@@ -33,6 +31,16 @@ Multiple datasets could be reading from the same webhook endpoint - in which cas
 they all get the exact same data.
 </Expandable>
 
+<pre snippet="api-reference/sources/webhook#webhook_define"
+    status="success" message="Two datasets sourcing from endpoints of the same webook"
+    highlight="4, 6, 13">
+</pre>
+<pre snippet="api-reference/sources/webhook#log_data_sdk"
+    status="success" message="Pushing data into webhook via Python SDK">
+</pre>
+<pre snippet="api-reference/sources/webhook#log_data_rest_api"
+    status="success" message="Pushing data into webhook via REST API">
+</pre>
 
 #### Errors
 <Expandable title="Schema mismatch errors">
@@ -46,17 +54,3 @@ Unlike all other sources, Webhook does work with mock client. As a result, it's
 very effective for quick prototyping and unit testing.
 :::
 
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/sources/webhook#webhook_define"
-    status="success" message="Two datasets sourcing from endpoints of the same webook"
-    highlight="4, 6, 13">
-</pre>
-<pre snippet="api-reference/sources/webhook#log_data_sdk"
-    status="success" message="Pushing data into webhook via Python SDK">
-</pre>
-<pre snippet="api-reference/sources/webhook#log_data_rest_api"
-    status="success" message="Pushing data into webhook via REST API">
-</pre>
-</RightSection>
-</Divider>

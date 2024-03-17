@@ -4,9 +4,6 @@ order: 0
 status: draft
 ---
 ### BigQuery
-
-<Divider>
-<LeftSection>
 Data connector to Google BigQuery databases.
 
 #### Database Parameters
@@ -54,14 +51,6 @@ as an error during commit with the real Fennel servers.
 Note: Mock client can not talk to any external data source and hence is unable to
 do this validation at commit time.
 </Expandable>
-
-
-</LeftSection>
-
-<RightSection>
-</RightSection>
-
-</Divider>
 
 #### BigQuery Credentials
 

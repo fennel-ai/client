@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Avro Registry
-
-<Divider>
-<LeftSection>
 Several Fennel sources work with Avro format. When using Avro, it's common
 to keep the schemas in a centralized schema registry instead of including schema
 with each message.
@@ -43,11 +40,7 @@ Token to be used for authentication with the schema registry. Only one of
 username/password or token must be provided.
 </Expandable>
 
-</LeftSection>
-<RightSection>
 <pre snippet="api-reference/sources/kafka#kafka_with_avro"
     status="success" message="Using avro registry with kafka"
     highlight="13-18, 20">
 </pre>
-</RightSection>
-</Divider>

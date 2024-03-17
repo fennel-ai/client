@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Snowflake
-
-<Divider>
-<LeftSection>
 Data connector to Snowflake databases.
 
 #### Database Parameters
@@ -67,6 +64,10 @@ contenders.
 Note that this field doesn't even need to be a part of the Fennel dataset. 
 </Expandable>
 
+<pre snippet="api-reference/sources/sql#snowflake_source"
+    status="success" message="Defining and using a snowflake source">
+</pre>
+
 #### Errors
 <Expandable title="Connectivity Issues">
 Fennel tries to test the connection with your Snowflake during `commit` itself so any
@@ -84,13 +85,6 @@ Fennel console after initiating any data sync.
 </Expandable>
 
 
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/sources/sql#snowflake_source"
-    status="success" message="Defining and using a snowflake source">
-</pre>
-</RightSection>
-</Divider>
 
 
 
