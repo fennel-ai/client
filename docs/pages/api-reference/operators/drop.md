@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Drop
-
-<Divider>
-<LeftSection>
 Operator to drop one or more non-key non-timestamp columns from a dataset.
 
 #### Parameters
@@ -16,6 +13,9 @@ List of columns in the incoming dataset that should be dropped. This can be pass
 either as unpacked *args or as a Python list.
 </Expandable>
 
+<pre snippet="api-reference/operators/drop#basic" status="success"
+    message="Can pass names via *args or kwarg columns" highlight="21, 22">
+</pre>
 
 #### Returns
 
@@ -33,19 +33,9 @@ Commit error on removing any key columns or the timestamp column.
 Commit error on removing any column that doesn't exist in the input dataset.
 </Expandable>
 
-</LeftSection>
-
-
-<RightSection>
-<pre snippet="api-reference/operators/drop#basic" status="success"
-    message="Can pass names via *args or kwarg columns" highlight="21, 22">
-</pre>
 <pre snippet="api-reference/operators/drop#incorrect_type" status="error"
     message="Can not drop key or timestamp columns" highlight="16">
 </pre>
 <pre snippet="api-reference/operators/drop#missing_column" status="error"
     message="Can not drop a non-existent column" highlight="17">
 </pre>
-
-</RightSection>
-</Divider>

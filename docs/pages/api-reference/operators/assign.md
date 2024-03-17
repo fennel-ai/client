@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Assign
-
-<Divider>
-<LeftSection>
 Operator to add a new column to a dataset - the added column is neither a key column
 nor a timestamp column.
 
@@ -29,6 +26,10 @@ the value of the new column for each row in the dataframe.
 Fennel verifies at runtime that the returned series matches the declared `dtype`.
 </Expandable>
 
+<pre snippet="api-reference/operators/assign#basic" status="success" 
+    message="Adding new column 'amount_sq' of type int" highlight="18, 24"
+>
+</pre>
 
 #### Returns
 <Expandable type="Dataset">
@@ -44,17 +45,7 @@ Runtime error if the value returned from the lambda isn't a pandas Series of
 the declared type and the same length as the input dataframe.
 </Expandable>
 
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/assign#basic" status="success" 
-    message="Adding new column 'amount_sq' of type int" highlight="18, 24"
->
-</pre>
 <pre snippet="api-reference/operators/assign#incorrect_type" status="error" 
     message="Runtime error: returns float, not int" highlight="18, 25"
 >
 </pre>
-</RightSection>
-
-</Divider>

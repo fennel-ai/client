@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Rename
-
-<Divider>
-<LeftSection>
 Operator to rename columns of a dataset.
 
 #### Parameters
@@ -17,6 +14,8 @@ Dictionary mapping from old column names to their new names.
 All columns should still have distinct and valid names post renaming.
 
 </Expandable>
+
+<pre snippet="api-reference/operators/rename#basic" status="success" message="Rename weight -> weight_lb & height -> height_in"></pre>
 
 #### Returns
 <Expandable type="Dataset">
@@ -34,16 +33,3 @@ in the rename dictionary.
 Commit error if after renaming, there will be two columns in the dataset having
 the same name.
 </Expandable>
-
-</LeftSection>
-
-
-
-<RightSection>
-    <pre snippet="api-reference/operators/rename#basic"
-        status="success" message="Rename weight -> weight_lb & height -> height_in"
-    ></pre>
-</RightSection>
-
-</Divider>
-

@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Window
-
-<Divider>
-<LeftSection>
 Operator to do aggregation of events into windows based on their timestamps. 
 Window operator must always be preceded by a [groupby](/api-reference/operators#groupby) operator.
 
@@ -54,6 +51,10 @@ The name of the field in the output dataset that should store the result of this
 aggregation. This field is expected to be of type `"Window"`.
 </Expandable>
 
+<pre snippet="api-reference/operators/window#basic" status="success"
+    message="Aggregate event into sessions that are 15 minutes apart">
+</pre>
+
 #### Returns
 <Expandable type="Dataset">
 Returns a dataset where all columns passed to `groupby` become the key columns 
@@ -74,27 +75,14 @@ While `"forever"` is a valid duration and can be used for aggregation, it's not
 a valid duration value for either tumbling or hopping window.
 </Expandable>
 
-
 <Expandable title="Missing window key">
 This `into_field` field is expected to be a key and of type `Window`.
 </Expandable>
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/window#basic" status="success"
-    message="Aggregate event into sessions that are 15 minutes apart">
-</pre>
-
 
 <pre snippet="api-reference/operators/window#miss_window_key" status="error"
     message="Missing window key in schema">
 </pre>
 
-
 <pre snippet="api-reference/operators/window#invalid_window" status="error"
     message="Forever is not a valid duration, only valid duration allowed">
 </pre>
-
-</RightSection>
-</Divider>
-

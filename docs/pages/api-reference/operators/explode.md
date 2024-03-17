@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Explode
-
-<Divider>
-<LeftSection>
 Operator to explode lists in a single row to form multiple rows, analogous to 
 to the `explode`function in [Pandas](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.explode.html).
 
@@ -21,6 +18,10 @@ unpacked *args or kwarg `columns` mapping to an explicit list.
 All the columns should be of type `List[T]` for some `T` in the input dataset and
 after explosion, they get converted to a column of type `Optional[T]`.
 </Expandable>
+
+<pre snippet="api-reference/operators/explode#basic" status="success"
+    message="Exploding skus and prices together" highlight="19">
+</pre>
 
 #### Returns
 <Expandable type="Dataset">
@@ -51,13 +52,6 @@ length, otherwise a runtime error is raised. Note that the lists can be of
 different type across rows.
 </Expandable>
 
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/explode#basic" status="success"
-    message="Exploding skus and prices together" highlight="19">
-</pre>
-
 <pre snippet="api-reference/operators/explode#exploding_non_list" status="error"
     message="Exploding a non-list column" highlight="5, 17">
 </pre>
@@ -65,7 +59,3 @@ different type across rows.
 <pre snippet="api-reference/operators/explode#exploding_missing" status="error"
     message="Exploding a non-existent column" highlight="17">
 </pre>
-
-</RightSection>
-
-</Divider>

@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Union
-
-<Divider>
-<LeftSection>
 Operator to union rows from two datasets of the identical schema. Only 
 applicable to keyless datasets. Written as simple `+` operator on two datasets.
 
@@ -17,6 +14,9 @@ rows from both of them. If both contain the identical row, two copies of that ro
 are present in the output datasets.
 </Expandable>
 
+<pre snippet="api-reference/operators/union#basic" status="success"
+    message="Union an s3 and kafka dataset">
+</pre>
 
 #### Errors
 <Expandable title="Taking union of datasets with different schemas">
@@ -28,13 +28,6 @@ schema. Commit error to apply union on input datasets with different schemas.
 Commit error to apply union on input datasets with key columns.
 </Expandable>
 
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/union#basic" status="success"
-    message="Union an s3 and kafka dataset">
-</pre>
-
 <pre snippet="api-reference/operators/explode#exploding_non_list" status="error"
     message="Exploding a non-list column" highlight="5, 17">
 </pre>
@@ -42,7 +35,3 @@ Commit error to apply union on input datasets with key columns.
 <pre snippet="api-reference/operators/explode#exploding_missing" status="error"
     message="Exploding a non-existent column" highlight="17">
 </pre>
-
-</RightSection>
-
-</Divider>
