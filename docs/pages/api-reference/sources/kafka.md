@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Kafka
-
-<Divider>
-<LeftSection>
 Data connector to any data store that speaks the Kafka protocol (e.g. Native 
 Kafka, MSK, Redpanda etc.)
 
@@ -53,6 +50,12 @@ The format of the data in Kafka topic. Both `"json"` and
 [Avro](/api-reference/sources/avro) supported.
 </Expandable>
 
+<pre snippet="api-reference/sources/kafka#basic"
+    status="success" message="Sourcing json data from kafka to a dataset"
+    highlight="4-11, 13">
+</pre>
+
+
 #### Errors
 <Expandable title="Connectivity problems">
 Fennel server tries to connect with the Kafka broker during the `sync` operation
@@ -68,15 +71,3 @@ Schema validity of data in Kafka can only be checked at runtime. Any rows that
 can not be parsed are rejected. Please keep an eye on the 'Errors' tab of 
 Fennel console after initiating any data sync.
 </Expandable>
-
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/sources/kafka#basic"
-    status="success" message="Sourcing json data from kafka to a dataset"
-    highlight="4-11, 13">
-</pre>
-</RightSection>
-
-
-</Divider>

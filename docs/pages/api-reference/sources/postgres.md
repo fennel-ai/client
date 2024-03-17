@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Postgres
-
-<Divider>
-<LeftSection>
 Data connector to Postgres databases.
 
 #### Database Parameters
@@ -68,6 +65,10 @@ It is recommended to put an index on the `cursor` field so that Fennel ingestion
 queries don't create too much load on your Postgres database.
 :::
 
+<pre snippet="api-reference/sources/sql#postgres_source"
+    status="success" message="Sourcing dataset from a postgres table">
+</pre>
+
 #### Errors
 <Expandable title="Connectivity Issues">
 Fennel tries to test the connection with your Postgres during sync itself so any
@@ -83,12 +84,3 @@ Schema validity of data in Postgres is checked at runtime. Any rows that
 can not be parsed are rejected. Please keep an eye on the 'Errors' tab of 
 Fennel console after initiating any data sync.
 </Expandable>
-
-
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/sources/sql#postgres_source"
-    status="success" message="Sourcing dataset from a postgres table">
-</pre>
-</RightSection>
-</Divider>

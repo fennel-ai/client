@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Kinesis
-
-<Divider>
-<LeftSection>
 Data connector to ingest data from AWS Kinesis.
 
 #### Parameters for Defining Source
@@ -69,10 +66,6 @@ can not be parsed are rejected. Please keep an eye on the 'Errors' tab of
 Fennel console after initiating any data sync.
 </Expandable>
 
-
-</LeftSection>
-
-<RightSection>
 <pre snippet="api-reference/sources/kinesis#kinesis_at_timestamp"
     status="success" message="Using explicit timestamp as init position"
     highlight="4-15">
@@ -81,8 +74,6 @@ Fennel console after initiating any data sync.
 <pre snippet="api-reference/sources/kinesis#kinesis_latest"
     status="success" message="Using latest as init position" highlight="11">
 </pre>
-</RightSection>
-</Divider>
 
 #### Managing Kinesis Access
 
