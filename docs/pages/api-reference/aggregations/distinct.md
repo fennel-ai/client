@@ -4,10 +4,6 @@ order: 0
 status: published
 ---
 ### Distinct
-
-<Divider>
-<LeftSection>
-
 Aggregation to computes a set of distinct values for each group within a window. 
 
 #### Parameters
@@ -32,6 +28,10 @@ If set to True, the list is sorted by natural comparison order. However, as of
 right now, this must be set to False since `ordered` mode isn't supported yet.
 </Expandable>
 
+<pre snippet="api-reference/aggregations/distinct#basic" status="success" 
+    message="Distinct in window of 1 day">
+</pre>
+
 #### Returns
 <Expandable type="List[T]">
 Stores the result of the aggregation in the appropriate column of the output 
@@ -52,13 +52,6 @@ Storing the full set of distinct values can get costly so it's recommended to us
 `Distinct` only for sets of small cardinality (say < 100)
 :::
 
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/aggregations/distinct#basic" status="success" 
-    message="Distinct in window of 1 day">
-</pre>
 <pre snippet="api-reference/aggregations/distinct#incorrect_type" status="error" 
     message="amounts should be of type List[int], not int">
 </pre>
-</RightSection>
-</Divider>

@@ -4,10 +4,6 @@ order: 0
 status: published
 ---
 ### LastK
-
-<Divider>
-<LeftSection>
-
 Aggregation to computes a rolling list of the latest values for each group 
 within a window. 
 
@@ -39,6 +35,10 @@ If set to True, only distinct values are stored else values stored in the last
 can have duplicates too.
 </Expandable>
 
+<pre snippet="api-reference/aggregations/lastk#basic" status="success" 
+    message="LastK in window of 1 day">
+</pre>
+
 #### Returns
 <Expandable type="List[T]">
 Stores the result of the aggregation in the appropriate field of the output 
@@ -58,14 +58,6 @@ Storing the full set of values and maintaining order between them can get costly
 so use this aggregation only when needed.
 :::
 
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/aggregations/lastk#basic" status="success" 
-    message="LastK in window of 1 day">
-</pre>
 <pre snippet="api-reference/aggregations/lastk#incorrect_type" status="error" 
     message="amounts should be of type List[int], not int">
 </pre>
-
-</RightSection>
-</Divider>

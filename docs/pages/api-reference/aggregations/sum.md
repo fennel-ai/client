@@ -4,10 +4,6 @@ order: 0
 status: published
 ---
 ### Sum
-
-<Divider>
-<LeftSection>
-
 Aggregation to compute a rolling sum for each group within a window. 
 
 #### Parameters
@@ -27,12 +23,15 @@ aggregation. This field is expected to be of type `int` or `float` - same as the
 type of the field in the input dataset corresponding to `of`.
 </Expandable>
 
+<pre snippet="api-reference/aggregations/sum#basic" status="success" 
+    message="Sum up amount in 1 week and forever windows">
+</pre>
+
 #### Returns
 <Expandable type="Union[int, float]">
 Accumulates the count in the appropriate field of the output dataset. If there 
 are no rows to count, by default, it returns 0 (or 0.0 if `of` is float).
 </Expandable>
-
 
 #### Errors
 <Expandable title="Sum on non int/float types">
@@ -41,12 +40,3 @@ The input column denoted by `of` must either be of `int` or `float` types.
 Note that unlike SQL, even aggregations over `Optional[int]` or `Optional[float]` 
 aren't allowed.
 </Expandable>
-
-
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/aggregations/sum#basic" status="success" 
-    message="Sum up amount in 1 week and forever windows">
-</pre>
-</RightSection>
-</Divider>

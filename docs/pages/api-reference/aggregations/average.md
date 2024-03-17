@@ -4,10 +4,6 @@ order: 0
 status: published
 ---
 ### Average
-
-<Divider>
-<LeftSection>
-
 Aggregation to computes a rolling average for each group within a window. 
 
 #### Parameters
@@ -37,6 +33,9 @@ Stores the result of the aggregation in the appropriate field of the output
 dataset. If there are no rows in the aggregation window, `default` is used.
 </Expandable>
 
+<pre snippet="api-reference/aggregations/avg#basic" status="success" 
+    message="Average in rolling window of 1 day & 1 week">
+</pre>
 
 #### Errors
 <Expandable title="Average on non int/float types">
@@ -51,18 +50,9 @@ The type of the field denoted by `into_field` in the output dataset and that of
 `default` should both be `float`.
 </Expandable>
 
-
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/aggregations/avg#basic" status="success" 
-    message="Average in rolling window of 1 day & 1 week">
-</pre>
 <pre snippet="api-reference/aggregations/avg#incorrect_type" status="error" 
     message="Can not take average over string, only int or float">
 </pre>
 <pre snippet="api-reference/aggregations/avg#non_matching_types" status="error" 
     message="Invalid type: ret is int but should be float">
 </pre>
-
-</RightSection>
-</Divider>

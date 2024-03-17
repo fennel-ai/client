@@ -4,10 +4,6 @@ order: 0
 status: published
 ---
 ### Count
-
-<Divider>
-<LeftSection>
-
 Aggregation to compute a rolling count for each group within a window. 
 
 #### Parameters
@@ -40,12 +36,15 @@ Name of the field in the input dataset which should be used for `unique`. Only
 relevant when `unique` is set to True. 
 </Expandable>
 
+<pre snippet="api-reference/aggregations/count#basic" status="success" 
+    message="Count # of transaction & distinct vendors per user">
+</pre>
+
 #### Returns
 <Expandable type="int">
 Accumulates the count in the appropriate field of the output dataset. If there 
 are no rows to count, by default, it returns 0.
 </Expandable>
-
 
 #### Errors
 <Expandable title="Count unique on unhashable type">
@@ -62,10 +61,4 @@ As of right now, it's a sync error to try to compute unique count without settin
 Maintaining unique counts is substantially more costly than maintaining 
 non-unique counts so use it only when truly needed.
 :::
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/aggregations/count#basic" status="success" 
-    message="Count # of transaction & distinct vendors per user">
-</pre>
-</RightSection>
-</Divider>
+
