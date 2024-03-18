@@ -266,6 +266,7 @@ quantile
 quantiles
 quickstart
 realtime
+redshift
 regex
 regexes
 replaylog
