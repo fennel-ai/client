@@ -25,7 +25,7 @@ postgres = Postgres.get(name="my_rdbms")
 warehouse = Snowflake.get(name="my_warehouse")
 kafka = Kafka.get(name="my_kafka")
 webhook = Webhook(name="fennel_webhook")
-redshift = Redshift(name="my_redshift")
+redshift = Redshift.get(name="my_redshift")
 
 # /docsnip
 
