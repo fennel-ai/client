@@ -485,20 +485,20 @@ def _extractor_to_proto(
                 inputs.append(feature_to_proto_as_input(f))
         elif isinstance(input, Featureset):
             raise TypeError(
-                f"Extractor input {input} is a Featureset, please use a"
-                f"DataFrame of features"
+                f"`{extractor.name}` extractor input `{input}` is a Featureset, please use a"
+                f"dataframe of features"
             )
         else:
             raise TypeError(
-                f"Extractor input {input} is not a Feature or "
-                f"a DataFrame of features, but a {type(input)}"
+                f"`{extractor.name}` extractor input `{input}` is not a feature or "
+                f"a dataframe of features, but of type {type(input)}"
             )
 
     extractor_field_info = None
     if extractor.extractor_type == ExtractorType.LOOKUP:
         if not extractor.derived_extractor_info:
             raise TypeError(
-                f"Lookup extractor {extractor.name} must have DatasetLookupInfo"
+                f"Lookup extractor `{extractor.name}` must have DatasetLookupInfo"
             )
         extractor_field_info = _to_field_lookup_proto(
             extractor.derived_extractor_info
