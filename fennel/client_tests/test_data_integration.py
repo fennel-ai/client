@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field
+from fennel.datasets import dataset, field, index
 from fennel.lib import meta
 from fennel.sources import source, S3, Webhook
 from fennel.testing import mock
@@ -32,6 +32,7 @@ webhook = Webhook(name="fennel_webhook")
     cdc="append",
     tier="prod",
 )
+@index
 @dataset
 class MovieInfo103:
     movieId: int = field(key=True).meta(description="Movie ID")  # type: ignore
@@ -69,12 +70,11 @@ class TestMovieInfo103(unittest.TestCase):
         client.sleep()
 
         # Do some lookups
-        now = datetime.now()
-        movie_ids = pd.Series([1, 2, 23, 123343])
-        ts = pd.Series([now, now, now, now])
-        df, found = MovieInfo103.lookup(
-            ts,
-            movieId=movie_ids,
+        now = datetime.utcnow()
+        keys = pd.DataFrame({"movieId": [1, 2, 23, 123343]})
+        df, found = client.lookup(
+            "MovieInfo103",
+            keys=keys,
         )
         assert found.tolist() == [True, True, True, False]
         assert df["title"].tolist() == [
@@ -93,9 +93,10 @@ class TestMovieInfo103(unittest.TestCase):
         # Do some lookups with a timestamp
         past = datetime.utcfromtimestamp(1672858160)
         ts = pd.Series([past, past, now, past])
-        df, found = MovieInfo103.lookup(
-            ts,
-            movieId=movie_ids,
+        df, found = client.lookup(
+            "MovieInfo103",
+            timestamps=ts,
+            keys=keys,
         )
         assert found.tolist() == [False, False, True, False]
 
@@ -111,7 +112,7 @@ class TestMovieInfo103(unittest.TestCase):
         time.sleep(10)
 
         # Do some lookups
-        now = datetime.now()
+        now = datetime.utcnow()
         movie_ids = pd.Series([1, 2, 23, 123343])
         ts = pd.Series([now, now, now, now])
         df, found = MovieInfo103.lookup(

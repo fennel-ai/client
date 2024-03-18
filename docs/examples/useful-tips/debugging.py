@@ -5,6 +5,7 @@ from datetime import datetime
 
 import pandas as pd
 
+from fennel.datasets import index
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -27,8 +28,9 @@ class TestDebugSnips(unittest.TestCase):
             city: str
             signup_time: datetime
 
+        @index
         @dataset
-        class Procssed:
+        class Processed:
             uid: int = field(key=True)
             city: str
             country: str
@@ -46,7 +48,7 @@ class TestDebugSnips(unittest.TestCase):
 
         # /docsnip
 
-        client.commit(message="msg", datasets=[User, Procssed])
+        client.commit(message="msg", datasets=[User, Processed])
         # log some rows to the dataset
         client.log(
             "webhook",
@@ -79,7 +81,7 @@ class TestDebugSnips(unittest.TestCase):
                 datetime(2021, 1, 1, 0, 0, 0),
             ]
         )
-        df, found = Procssed.lookup(ts, uid=pd.Series([1, 2, 3]))
+        df, found = Processed.lookup(ts, uid=pd.Series([1, 2, 3]))
         assert found.tolist() == [False, True, True]
         assert df["uid"].tolist()[1:] == [2, 3]
         assert df["city"].tolist()[1:] == ["San Francisco", "New York"]

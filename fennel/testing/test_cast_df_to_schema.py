@@ -20,7 +20,7 @@ def test_cast_int():
     df = pd.DataFrame(
         {
             "int_field": ["1", "2", "3"],
-            "created_ts": [datetime.now() for _ in range(3)],
+            "created_ts": [datetime.utcnow() for _ in range(3)],
         }
     )
     schema = fields_to_dsschema(TestDataset.fields)
@@ -37,7 +37,7 @@ def test_cast_string():
     df = pd.DataFrame(
         {
             "string_field": [123, 456, 789],
-            "created_ts": [datetime.now() for _ in range(3)],
+            "created_ts": [datetime.utcnow() for _ in range(3)],
         }
     )
     schema = fields_to_dsschema(TestDataset.fields)
@@ -54,7 +54,7 @@ def test_cast_optional_string():
     df = pd.DataFrame(
         {
             "int_field": ["123", None, "789"],
-            "created_ts": [datetime.now() for _ in range(3)],
+            "created_ts": [datetime.utcnow() for _ in range(3)],
         }
     )
     schema = fields_to_dsschema(TestDataset.fields)
@@ -76,7 +76,7 @@ def test_cast_bool():
     df = pd.DataFrame(
         {
             "bool_field": [1, 0, 1],
-            "created_ts": [datetime.now() for _ in range(3)],
+            "created_ts": [datetime.utcnow() for _ in range(3)],
         }
     )
     schema = fields_to_dsschema(TestDataset.fields)
@@ -97,7 +97,7 @@ def test_cast_type_restrictions():
             "age": ["21", "22", "23"],
             "gender": [1, 2, 3],
             "email": [1223423, 1223423, 1223423],
-            "created_ts": [datetime.now() for _ in range(3)],
+            "created_ts": [datetime.utcnow() for _ in range(3)],
         }
     )
     schema = fields_to_dsschema(TestDataset.fields)
@@ -183,7 +183,7 @@ def test_null_in_non_optional_field():
     df = pd.DataFrame(
         {
             "non_optional_field": [1, None, 2],
-            "created_ts": [datetime.now() for _ in range(3)],
+            "created_ts": [datetime.utcnow() for _ in range(3)],
         }
     )
     schema = fields_to_dsschema(TestDataset.fields)
@@ -204,7 +204,7 @@ def test_cast_failure_for_incorrect_type():
     df = pd.DataFrame(
         {
             "int_field": ["not_an_int", "123", "456"],
-            "created_ts": [datetime.now() for _ in range(3)],
+            "created_ts": [datetime.utcnow() for _ in range(3)],
         }
     )
     schema = fields_to_dsschema(TestDataset.fields)

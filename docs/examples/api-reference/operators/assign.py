@@ -12,7 +12,7 @@ class TestAssignSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.datasets import dataset, field, pipeline, Dataset, index
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 
@@ -25,6 +25,7 @@ class TestAssignSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
+        @index
         @dataset
         class WithSquare:
             uid: int = field(key=True)

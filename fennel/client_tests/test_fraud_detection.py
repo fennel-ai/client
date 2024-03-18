@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Sum
+from fennel.datasets import dataset, field, pipeline, Dataset, Sum, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.sources import source, Webhook
@@ -53,6 +53,7 @@ class Regions:
 
 
 @meta(owner="henry@fennel.ai")
+@index
 @dataset
 class UserTransactionSums:
     cc_num: int = field(key=True)  # needs to be key for groubpby
@@ -150,7 +151,7 @@ def test_fraud_detection_pipeline(client):
     region_to_state = region_to_state.rename(columns={0: "region"}).reset_index(
         drop=True
     )
-    region_to_state.insert(0, "created_at", datetime.now())
+    region_to_state.insert(0, "created_at", datetime.utcnow())
     # Upload transaction_data dataframe to the Transactions dataset on the mock client
     transaction_data_sample = pd.read_csv(
         "fennel/client_tests/data/fraud_sample.csv"

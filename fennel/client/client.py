@@ -138,7 +138,7 @@ class Client:
             for line in summary:
                 print(line, end="")
         else:
-            raise Exception("commit failed: {}".format(response.text))
+            print("Commit was successful however summary generation failed.")
         return response
 
     def log(
@@ -357,7 +357,7 @@ class Client:
             raise Exception(
                 "Server returned invalid response for list branches."
             )
-        return resp["branches"]
+        return [branch.get("name") for branch in resp["branches"]]
 
     def checkout(self, name: str):
         """Checkouts the client to another branch.
@@ -629,6 +629,8 @@ class Client:
             "keys": keys,
             "fields": fields,
         }
+        if isinstance(timestamps, pd.Series):
+            timestamps = timestamps.tolist()
         if timestamps:
             for idx in range(len(timestamps)):
                 if isinstance(timestamps[idx], datetime):

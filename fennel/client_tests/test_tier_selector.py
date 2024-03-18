@@ -4,7 +4,7 @@ from typing import List
 import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
-from fennel.datasets import dataset, pipeline, field, Dataset, Sum
+from fennel.datasets import dataset, pipeline, field, Dataset, Sum, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import meta, inputs, outputs
 from fennel.sources import source, Webhook
@@ -20,6 +20,7 @@ webhook = Webhook(name="fennel_webhook")
 @source(
     webhook.endpoint("MovieInfo2"), cdc="append", disorder="14d", tier="staging"
 )
+@index
 @dataset
 class MovieInfo:
     title: str = field(key=True)
@@ -46,6 +47,7 @@ class TicketSale:
 
 
 @meta(owner="abhay@fennel.ai")
+@index
 @dataset
 class ActorStats:
     name: str = field(key=True)

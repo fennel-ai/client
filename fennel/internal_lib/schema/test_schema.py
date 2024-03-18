@@ -39,7 +39,7 @@ def test_get_data_type():
     assert get_datatype(type(x)) == proto.DataType(
         string_type=proto.StringType()
     )
-    x: datetime = datetime.now()
+    x: datetime = datetime.utcnow()
 
     assert get_datatype(type(x)) == proto.DataType(
         timestamp_type=proto.TimestampType()
@@ -174,7 +174,7 @@ def test_additional_dtypes_invalid():
 
 
 def test_valid_schema():
-    now = datetime.now()
+    now = datetime.utcnow()
     yesterday = now - timedelta(days=1)
 
     data = [
@@ -305,7 +305,7 @@ def test_valid_schema():
 
 
 def test_invalid_schema():
-    now = datetime.now()
+    now = datetime.utcnow()
     yesterday = now - timedelta(days=1)
 
     data = [
@@ -436,7 +436,7 @@ def test_invalid_schema():
 
 
 def test_invalid_schema_additional_types():
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         [18232, "Ross9", 212, "transgender", 5, now],
     ]

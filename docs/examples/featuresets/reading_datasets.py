@@ -6,7 +6,7 @@ __owner__ = "ml-team@fennel.ai"
 
 
 # docsnip featuresets_reading_datasets
-from fennel.datasets import dataset, field
+from fennel.datasets import dataset, field, index
 from fennel.sources import source, Webhook
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import inputs, outputs
@@ -15,6 +15,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+@index
 @dataset
 class User:
     uid: int = field(key=True)

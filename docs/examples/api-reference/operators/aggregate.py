@@ -18,6 +18,7 @@ class TestAssignSnips(unittest.TestCase):
             Dataset,
             Count,
             Sum,
+            index,
         )
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
@@ -31,6 +32,7 @@ class TestAssignSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
+        @index
         @dataset
         class Aggregated:
             # docsnip-highlight start

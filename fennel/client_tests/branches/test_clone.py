@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from fennel._vendor import requests
-from fennel.datasets import Dataset, dataset, field, pipeline, Count
+from fennel.datasets import Dataset, dataset, field, pipeline, Count, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import inputs, outputs
 from fennel.sources import source, Webhook
@@ -15,6 +15,7 @@ __owner__ = "nitin@fennel.com"
 
 
 @source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@index
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -26,6 +27,7 @@ class UserInfoDataset:
     timestamp: datetime = field(timestamp=True)
 
 
+@index
 @dataset
 class GenderStats:
     gender: str = field(key=True)
@@ -40,6 +42,7 @@ class GenderStats:
         )
 
 
+@index
 @dataset
 class CountryStats:
     country_code: int = field(key=True)
@@ -65,6 +68,7 @@ class UserInfoFeatureset:
 
 
 def _get_changed_dataset(filter_condition):
+    @index
     @dataset(version=2)
     class GenderStats:
         gender: str = field(key=True)
@@ -85,12 +89,14 @@ def _get_changed_dataset(filter_condition):
 
 def _get_source_changed_datasets():
     @source(wh.endpoint("UserInfoDataset3"), disorder="14d", cdc="append")
+    @index
     @dataset(version=2)
     class UserInfoDataset:
         user_id: int = field(key=True)
         gender: int
         timestamp: datetime = field(timestamp=True)
 
+    @index
     @dataset(version=2)
     class GenderStats:
         gender: int = field(key=True)

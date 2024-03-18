@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field
+from fennel.datasets import dataset, field, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import (
     includes,
@@ -30,6 +30,7 @@ webhook = Webhook(name="fennel_webhook")
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@index
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -197,7 +198,7 @@ class TestSimpleExtractor(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -246,6 +247,7 @@ class Velocity:
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("FlightDataset"), disorder="14d", cdc="append")
+@index
 @dataset
 class FlightDataset:
     id: int = field(key=True)
@@ -582,6 +584,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 @source(
     webhook.endpoint("DocumentContentDataset"), disorder="14d", cdc="append"
 )
+@index
 @dataset
 class DocumentContentDataset:
     doc_id: int = field(key=True)
@@ -685,7 +688,7 @@ class TestDocumentDataset(unittest.TestCase):
         if client.is_integration_client():
             return
 
-        yesterday = datetime.now() - timedelta(days=1)
+        yesterday = datetime.utcnow() - timedelta(days=1)
 
         feature_df = client.query_offline(
             outputs=[DocumentFeatures],

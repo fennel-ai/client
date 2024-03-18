@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from fennel.datasets import dataset, field
+from fennel.datasets import dataset, field, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.sources import source, Webhook
@@ -14,6 +14,7 @@ webhook = Webhook(name="fennel_webhook")
 # docsnip datasets_lookup
 @meta(owner="data-eng-oncall@fennel.ai")
 @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+@index
 @dataset
 class User:
     uid: int = field(key=True)
@@ -46,7 +47,7 @@ class UserFeature:
 @mock
 def test_user_dataset_lookup(client):
     client.commit(message="msg", datasets=[User], featuresets=[UserFeature])
-    now = datetime.now()
+    now = datetime.utcnow()
 
     data = [
         [1, "San Francisco", "New York", now - timedelta(days=1)],

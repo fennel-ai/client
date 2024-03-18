@@ -14,6 +14,7 @@ from fennel.datasets import (
     Sum,
     LastK,
     Distinct,
+    index,
 )
 from fennel.lib import meta, inputs, outputs
 from fennel.sources import Webhook
@@ -27,6 +28,7 @@ webhook = Webhook(name="fennel_webhook")
 
 @meta(owner="abhay@fennel.ai")
 @source(webhook.endpoint("MovieInfo"), cdc="append", disorder="14d")
+@index
 @dataset
 class MovieInfo:
     title: str = field(key=True)
@@ -45,6 +47,7 @@ class TicketSale:
 
 
 @meta(owner="abhay@fennel.ai")
+@index
 @dataset
 class ActorStats:
     name: str = field(key=True)

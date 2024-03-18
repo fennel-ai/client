@@ -2,6 +2,8 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
+
+from fennel.datasets import index
 from fennel.testing import mock
 import pytest
 
@@ -26,6 +28,7 @@ class TestAssignSnips(unittest.TestCase):
             amount: int
             timestamp: datetime = field(timestamp=True)
 
+        @index
         @dataset
         class Session:
             # docsnip-highlight start

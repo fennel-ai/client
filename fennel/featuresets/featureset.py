@@ -22,6 +22,7 @@ from typing import (
 
 
 from fennel.datasets import Dataset, Field
+from fennel.datasets.datasets import get_index, IndexDuration
 from fennel.gen.featureset_pb2 import ExtractorType
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
@@ -160,6 +161,20 @@ def extractor(
                 f"depends_on must be a list of Datasets, not a"
                 f" {type(depends_on)}"
             )
+
+        # check whether datasets in depends have either offline or online index
+        for dataset in depends_on:
+            index = get_index(dataset)
+            if index is None:
+                raise ValueError(
+                    f"Please define either an offline or online index on dataset : {dataset._name} for extractor to work."
+                )
+
+            if not index.online and index.offline == IndexDuration.none:
+                raise ValueError(
+                    f"Please define either an offline or online index on dataset : {dataset._name} for extractor to work."
+                )
+
         setattr(extractor_func, DEPENDS_ON_DATASETS_ATTR, list(depends_on))
         if not hasattr(extractor_func, FENNEL_INPUTS):
             inputs = []
@@ -402,6 +417,22 @@ class Feature:
                         f"Dataset key `{k}` not found in provider `{provider._name}` for extractor `{name}`"
                     )
                 provider_features.append(feature)
+
+        dataset = field.dataset
+        if dataset is None:
+            raise ValueError(
+                f"Dataset `{field.dataset_name}` not found for field `{field}`"
+            )
+        index = get_index(dataset)
+        if index is None:
+            raise ValueError(
+                f"Please define either an offline or online index on dataset : {dataset._name} for extractor to work."
+            )
+
+        if not index.online and index.offline == IndexDuration.none:
+            raise ValueError(
+                f"Please define either an offline or online index on dataset : {dataset._name} for extractor to work."
+            )
 
         self.extractor = Extractor(
             name=f"_fennel_lookup_{field}",
