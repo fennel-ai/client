@@ -1750,7 +1750,7 @@ def index(obj: Dataset) -> Dataset: ...  # noqa: E704
 
 
 def index(
-    obj: Dataset = None,
+    obj: Optional[Dataset] = None,
     type: Literal["primary"] = DEFAULT_INDEX_TYPE,  # type: ignore
     online: bool = DEFAULT_INDEX_ONLINE,
     offline: Optional[str] = DEFAULT_INDEX_OFFLINE,
@@ -1834,7 +1834,7 @@ def indices_from_ds(
     Optional[index_proto.OnlineIndex], Optional[index_proto.OfflineIndex]
 ]:
     """
-    Returns OnlineIdexProto and OfflineIndexProto associated with the dataset respectively.
+    Returns OnlineIndexProto and OfflineIndexProto associated with the dataset respectively.
     Args:
         obj: Dataset
             Object
@@ -1874,14 +1874,6 @@ def indices_from_ds(
         raise ValueError(
             "Currently only forever retention is supported for Offline Index"
         )
-        # duration = duration_proto.Duration()
-        # duration.FromTimedelta(index_obj.offline)
-        # offline = index_proto.OfflineIndex(
-        #     ds_version=obj.version,
-        #     ds_name=obj._name,
-        #     index_type=index_type,
-        #     duration=index_proto.IndexDuration(duration=duration),
-        # )
     return online_index, offline_index
 
 

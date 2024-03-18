@@ -13,7 +13,7 @@ webhook = Webhook(name="fennel_webhook")
 
 def test_invalid_dataset_lookup():
     """
-    This tests whether that a dataset without both offline and online cannot be added to depends_on of a extractor.
+    This tests that a dataset without both offline and online index cannot be added to depends_on of an extractor.
     """
 
     @dataset
@@ -95,7 +95,7 @@ def test_invalid_dataset_lookup():
 @mock
 def test_invalid_dataset_online_lookup(client):
     """
-    This tests whether that a dataset doing online lookup without online index is not allowed.
+    This tests that a dataset doing online lookup without online index is not allowed.
     """
 
     @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="append")
@@ -152,7 +152,7 @@ def test_invalid_dataset_online_lookup(client):
 @mock
 def test_invalid_dataset_offline_lookup(client):
     """
-    This tests whether that a dataset doing offline lookup without online index is not allowed.
+    This tests that a dataset doing offline lookup without offline index is not allowed.
     """
 
     @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="append")
