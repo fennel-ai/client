@@ -68,6 +68,7 @@ PrivateLink
 Pulumi
 PyO
 Pydantic
+Quantile
 RBAC
 RHS
 ROI
@@ -77,10 +78,13 @@ RedPanda
 Redpanda
 RegisterStreamConsumer
 RocksDB
+Rowset
+Rowsets
 SASL
 SDK
 SHA
 SLA
+SSD
 SSDs
 SSL
 SSO
@@ -157,6 +161,7 @@ csv
 dataclass
 dataflow
 dataframe
+dataplane
 dataset
 dataset's
 datasets
@@ -169,6 +174,7 @@ declaratively
 dedup
 deltalake
 denormalize
+destructions
 dev
 df
 dfe
@@ -186,6 +192,7 @@ featuresets
 fintech
 frontend
 func
+gRPC
 geocoding
 geoid
 gh
@@ -200,6 +207,7 @@ html
 hudi
 hyperloglog
 iam
+incrementing
 init
 interop
 ip
@@ -249,20 +257,27 @@ protobuf
 protobufs
 publicSubnets
 py
+quantile
+quantiles
 quickstart
 realtime
 regex
 regexes
+replaylog
 repo
+rowset
+rowsets
 runtime
 sasl
 scalability
 scalable
+schedulable
 schemaless
 schemas
 sdk
 signup
 signups
+snapshotted
 snowflakecomputing
 src
 stateful
@@ -273,6 +288,7 @@ sts
 subnets
 tiering
 timeframes
+uDDsketch
 ubuntu
 uid
 uids
@@ -291,7 +307,3 @@ utf
 uuid
 webhook
 webhooks
-uDDsketch
-Quantile
-quantile
-quantiles

@@ -6,60 +6,66 @@ status: 'published'
 
 # Overview
 
-Here are some of the key ideas & principles behind Fennel's architecture that
-allow it to meet its [design goals](/):
+Here is a simplified view of Fennel's data plane architecture:
 
-## Read Write Separation
+![Diagram](/assets/architecture_overview.jpg)
 
-This is arguably the most critical architecture decision that differentiates
-Fennel from many other similar systems. You can read about this in more detail
-[here](/architecture/read-write-separation).
 
-## Kappa Architecture
+## Compiling Commit to Jobs & Topics
 
-Fennel uses a Kappa like architecture to operate on streaming and offline data.
-This enables Fennel to maintain a single code path to power the data operations
-and have the same pipeline declarations work seamlessly in both realtime and
-batch sources. This side-steps a lot of issues intrinsic to the Lambda
-architecture, which is the most mainstream alternative to Kappa.
+During [commit](/api-reference/client/commit), the client converts all datasets
+and featuresets into protobufs and sends those over to the Fennel dataplane. 
+Within the dataplane, a service called _definition server_ intercepts the 
+request. 
 
-## Hybrid Materialized Views
+Definition server builds an entity graph out of the protobufs (e.g. dataset, pipeline,
+features etc are node and edges between them representing various kinds of 
+relationships) and does a bunch of validations on the graph - these validations
+encode, for instance, that it's invalid to mutate a pipeline without incrementing
+the dataset version.
 
-To reduce read latencies, data on the write path is pre-materialized and stored
-in datasets. The main downside of materializing views is that it may lead to
-wasted computation and storage for data that is never read. Fennel's read write
-separation minimizes this downside by giving control to the end user for what
-computation to pre-materialize and what computation to on the read path.
+Assuming all validations pass, the graph is converted into _blueprints_ - the 
+logical description of the _physical assets_ (like Kafka topics, internal jobs)
+that need to be created. Then, a bank of all existing physical assets is checked
+to see if an isomorphic asset already exists (say created via another branch). 
+Either way, ref-counts for all assets are incremented/decremented and any new 
+desired assets are created and any unwanted assets are destroyed.
 
-## Minimal Sync Communication for Horizontal Scaling
+## Atomicity of Asset Changes
 
-Every single subsystem within Fennel is designed with horizontal scalability in mind.
-While ability to scale out is usually desirable, if not done well, lots of independent
-nodes can lead to inter-node overheads leading to capacity of the system not growing
-linearly with hardware capacity. It also creates failure modes like cascades of failures.
+Once the system knows the list of physical assets to create, actually materializing
+them is rather challenging. In fact, there are three key constraints on this
+process:
 
-Fennel minimizes these by reducing cross-node sync communication - it does so by keeping
-some local state with each node (which needs no communication), keeping global metadata
-in centrally accessible Postgres, and making all communication async - within node
-communication via async Rust channels and cross-node communication via Kafka (vs sync RPCs)
+1. It involves talking to systems like Kafka, Postgres etc, any of which can fail
+   for any reason at any point in time
+2. The commit either succeeds and all new assets are created or it fails and 
+   nothing should change (i.e. no new stray assets)
+3. If commit requires decommissioning of assets (say Kafka topics), it can't be 
+   destroyed until the rest of the commit has succeeded, else existing state will
+   be lost.
 
-## Async Rust (using Tokio)
+Fennel creates a Ledger of all asset creations and a separate ledger for asset
+destructions - and this ledge is able to provide pseudo-atomicity guarantees. 
+Further, Fennel interleaves these ledges with some Postgres transaction 
+semantics in order to satisfy all the three constraints.
 
-All Fennel services are written in Rust with tight control over CPU and memory
-footprints. Further, since feature engineering is a very IO heavy workload on
-both read and write sides, Fennel heavily depends on async Rust to release CPU
-for other tasks while one task is waiting on some resource. For instance, each
-`job` in Fennel's streaming system gets managed as an async task enabling many
-jobs to share the same CPU core with minimal context switch overhead. This
-enables Fennel to efficiently utilize all the CPU available to it.
 
-## Embedded Python
+## Overview of Core Engine
 
-Fennel's philosophy is to let users write in real Python with their familiar
-libraries vs having to learn new DSLs. But this requires lot of back and forth
-between Python land (which is bound by GIL) and the rest of the Rust system.
-Fennel handles this by embedding a Python interpreter inside Rust binaries
-(via PyO3). This enables Fennel to cross the Python/Rust boundary very
-cheaply, while still being async. [PEP 684](https://discuss.python.org/t/pep-684-a-per-interpreter-gil/19583)
-further allows Fennel to eliminate GIL bottleneck by embedding multiple
-Python sub-interpreters in Rust threads.
+Fennel runs a replicated fleet of "engines" - service that does the heavy lifting
+of all compute. These engines are polling Postgres to read any changes to job
+definitions (aka Job Registry) and spin up corresponding jobs. See [core engine](/architecture/core-engine)
+to learn more about the inner workings of the engine.
+
+## Query Read
+
+Any request to read feature values is intercepted by an auto-scaling fleet of
+query servers. These servers, at any point of time, have a pre-computed graph of all
+the entities (like datasets, features, indices etc.) that exist. Upon intercepting
+a query request, they convert the query to a physical plan - the order in which
+extractors must be run to go from the input features to the output features.
+
+As part of executing the physical plan, these query servers run extractor code
+via a fleet of Python executors and lookup indices by reading the state of jobs
+running on engines.

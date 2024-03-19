@@ -23,8 +23,12 @@ sidebar:
     title: "Architecture"
     pages:
       - "architecture/overview"
-      - "architecture/technologies"
+      - "architecture/core-engine"
+      - "architecture/storage-model"
+      - "architecture/formalism"
+      - "architecture/key-ideas"
       - "architecture/read-write-separation"
+      - "architecture/technologies"
       - "architecture/cost-optimizations"
 
   - slug: "security"
