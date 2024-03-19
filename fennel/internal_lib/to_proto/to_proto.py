@@ -478,13 +478,13 @@ def _extractor_to_proto(
                 inputs.append(feature_to_proto_as_input(f))
         elif isinstance(input, Featureset):
             raise TypeError(
-                f"{extractor_name} Extractor input {input} is a Featureset, please use a"
-                f"DataFrame of features"
+                f"{extractor_name} extractor input {input} is a Featureset, please use a"
+                f"dataFrame of features"
             )
         else:
             raise TypeError(
-                f"{extractor_name} Extractor input {input} is not a Feature or "
-                f"a DataFrame of features, but a {type(input)}"
+                f"{extractor_name} extractor input {input} is not a feature or "
+                f"a dataFrame of features, but a {type(input)}"
             )
 
     extractor_field_info = None
