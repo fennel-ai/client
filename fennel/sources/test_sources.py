@@ -407,6 +407,13 @@ redshift = Redshift(
 def test_tier_selector_on_source():
     @meta(owner="test@test.com")
     @source(
+        redshift.table("test_schema", "test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="append",
+        every="1h",
+        tier=["dev-3"],
+    )
+    @source(
         kafka.topic("test_topic"), disorder="14d", cdc="append", tier=["dev-2"]
     )
     @source(
@@ -433,12 +440,6 @@ def test_tier_selector_on_source():
         cdc="append",
         tier=["dev"],
     )
-    @source(
-        redshift.table("test_schema", "test_table", cursor="added_on"),
-        disorder="14d",
-        cdc="append",
-        every="1h",
-    )
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
@@ -457,7 +458,7 @@ def test_tier_selector_on_source():
         view._get_sync_request_proto()
     assert (
         str(e.value)
-        == "Dataset UserInfoDataset has multiple sources (4) defined. Please define only one source per dataset, or check your tier selection."
+        == "Dataset UserInfoDataset has multiple sources (5) defined. Please define only one source per dataset, or check your tier selection."
     )
     sync_request = view._get_sync_request_proto(tier="prod")
     assert len(sync_request.datasets) == 1
@@ -1191,6 +1192,7 @@ def test_multiple_sources():
                     },
                     "name": "redshift_src",
                 },
+                "schemaName": "test_schema",
                 "tableName": "test_table",
             }
         },

@@ -281,7 +281,7 @@ def test_multiple_sources(client):
 
     assert (
         str(e.value)
-        == "Dataset `UserInfoDataset` has more than one source defined, found 4 sources."
+        == "Dataset `UserInfoDataset` has more than one source defined, found 5 sources."
     )
 
 
