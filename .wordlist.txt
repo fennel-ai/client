@@ -8,6 +8,7 @@ AssumeRole
 Auth
 Avro
 BigTable
+Bytewax
 CIDR
 DDL
 DSL
@@ -100,6 +101,7 @@ TestCase
 TestDataset
 Tokio
 Tokio's
+UDFs
 UI
 UserCreator
 UserCreditScore
@@ -117,6 +119,7 @@ WIP
 WithSquare
 YAML
 actioned
+ad-hoc
 ai
 allowlists
 api
@@ -161,6 +164,8 @@ csv
 dataclass
 dataflow
 dataframe
+dataframe
+dataframes
 dataplane
 dataset
 dataset's
