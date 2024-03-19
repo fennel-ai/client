@@ -3,6 +3,7 @@ import gzip
 import json
 import math
 import re
+import urllib.parse
 from datetime import datetime
 from typing import Dict, Optional, Any, Set, List, Union, Tuple
 from urllib.parse import urljoin
@@ -123,7 +124,7 @@ class Client:
         sync_request = self._get_sync_request_proto(message, tier)
         response = self._post_bytes(
             "{}/branch/{}/commit?preview={}".format(
-                V1_API, self._branch, str(preview).lower()
+                V1_API, self._encoded_branch_name(), str(preview).lower()
             ),
             sync_request.SerializeToString(),
             False,
@@ -272,7 +273,8 @@ class Client:
             req["sampling_rate"] = sampling_rate
 
         response = self._post_json(
-            "{}/branch/{}/query".format(V1_API, self._branch), req
+            "{}/branch/{}/query".format(V1_API, self._encoded_branch_name()),
+            req,
         )
         if response.status_code != requests.codes.OK:
             raise Exception(response.json())
@@ -308,7 +310,9 @@ class Client:
         """
         _validate_branch_name(name)
         self._branch = name
-        return self._post_json(f"{V1_API}/branch/{name}/init", {})
+        return self._post_json(
+            f"{V1_API}/branch/{self._encoded_branch_name()}/init", {}
+        )
 
     def clone_branch(self, name: str, from_branch: str):
         """Clone a branch from another branch.
@@ -326,7 +330,9 @@ class Client:
         """
         req = {"clone_from": from_branch}
         self._branch = name
-        return self._post_json(f"{V1_API}/branch/{name}/init", req)
+        return self._post_json(
+            f"{V1_API}/branch/{self._encoded_branch_name()}/init", req
+        )
 
     def delete_branch(self, name: str):
         """Delete a branch.
@@ -339,7 +345,9 @@ class Client:
         name (str): The name of the branch to delete.
 
         """
-        response = self._post_json(f"{V1_API}/branch/{name}/delete", {})
+        response = self._post_json(
+            f"{V1_API}/branch/{self._encoded_branch_name(name)}/delete", {}
+        )
         self.checkout(_MAIN_BRANCH)
         return response
 
@@ -554,7 +562,10 @@ class Client:
             "s3_output": _s3_connector_dict(output_s3) if output_s3 else None,
         }
         return self._post_json(
-            "{}/branch/{}/query_offline".format(V1_API, self._branch), req
+            "{}/branch/{}/query_offline".format(
+                V1_API, self._encoded_branch_name()
+            ),
+            req,
         )
 
     def track_offline_query(self, request_id):
@@ -573,7 +584,7 @@ class Client:
 
         """
         return self._get(
-            f"{V1_API}/branch/{self._branch}/query_offline/status?request_id={request_id}"
+            f"{V1_API}/branch/{self._encoded_branch_name()}/query_offline/status?request_id={request_id}"
         )
 
     def cancel_offline_query(self, request_id):
@@ -592,7 +603,7 @@ class Client:
 
         """
         return self._post_json(
-            f"{V1_API}/branch/{self._branch}/query_offline/cancel?request_id={request_id}",
+            f"{V1_API}/branch/{self._encoded_branch_name()}/query_offline/cancel?request_id={request_id}",
             {},
         )
 
@@ -638,7 +649,7 @@ class Client:
             req["timestamps"] = timestamps
         response = self._post_json(
             "{}/branch/{}/dataset/{}/lookup".format(
-                V1_API, self._branch, dataset_name
+                V1_API, self._encoded_branch_name(), dataset_name
             ),
             req,
         )
@@ -666,7 +677,7 @@ class Client:
         """
         return self._get(
             "{}/branch/{}/dataset/{}/inspect?n={}".format(
-                V1_API, self._branch, dataset_name, n
+                V1_API, self._encoded_branch_name(), dataset_name, n
             )
         ).json()
 
@@ -674,6 +685,12 @@ class Client:
 
     def _url(self, path):
         return urljoin(self.url, path)
+
+    def _encoded_branch_name(self, name: Optional[str] = None) -> str:
+        if name:
+            return urllib.parse.quote_plus(name)
+        else:
+            return urllib.parse.quote_plus(self._branch)
 
     @staticmethod
     def _get_session():
