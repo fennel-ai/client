@@ -4,10 +4,6 @@ order: 0
 status: published
 ---
 ### Quantile
-
-<Divider>
-<LeftSection>
-
 Aggregation to compute rolling quantiles (aka percentiles) for each group 
 within a window. 
 
@@ -49,6 +45,9 @@ structure to compute approximate quantiles with an error bound set to be within
 1% of the true value.
 </Expandable>
 
+<pre snippet="api-reference/aggregations/quantile#basic" status="success" 
+    message="Median in rolling windows of 1 day & 1 week">
+</pre>
 
 #### Returns
 <Expandable type="Union[float, Optional[float]]">
@@ -81,13 +80,6 @@ quantiles for now but requires this kwarg to be set explicitly to both set the
 right expectations and be compatible with future addition of exact quantiles.
 </Expandable>
 
-
-</LeftSection>
-<RightSection>
-
-<pre snippet="api-reference/aggregations/quantile#basic" status="success" 
-    message="Median in rolling windows of 1 day & 1 week">
-</pre>
 <pre snippet="api-reference/aggregations/quantile#incorrect_type" status="error" 
     message="Can not take quantile over string, only int or float">
 </pre>
@@ -97,6 +89,3 @@ right expectations and be compatible with future addition of exact quantiles.
 <pre snippet="api-reference/aggregations/quantile#incorrect_p" status="error" 
     message="p is invalid, can only be between [0, 1]">
 </pre>
-
-</RightSection>
-</Divider>

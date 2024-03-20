@@ -5,9 +5,6 @@ status: published
 ---
 
 ### Join
-
-<Divider>
-<LeftSection>
 Operator to join two datasets. The right hand side dataset must have 
 one or more key columns and the join operation is performed on these columns.
 
@@ -62,6 +59,10 @@ condition to join like `WHERE left_time - d1 < right_time AND right_time < left_
    should be available for the event time of the LHS data.
 </Expandable>
 
+<pre snippet="api-reference/operators/join#basic" status="success"
+   message="Inner join on 'merchant'">
+</pre>
+
 #### Returns
 <Expandable type="Dataset">
 Returns a dataset representing the joined dataset having the same keys & timestamp
@@ -94,14 +95,3 @@ A common way to work-around this is to rename columns via the [rename](/api-refe
 Commit error if the number/type of the join columns on the left and right side
 don't match.
 </Expandable>
-
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/join#basic" status="success"
-   message="Inner join on 'merchant'">
-</pre>
-</RightSection>
-
-
-</Divider>

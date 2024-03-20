@@ -6,8 +6,6 @@ status: published
 
 `clone_branch`
 ### Clone Branch
-<Divider>
-<LeftSection>
 Clones an existing branch into a new branch and checks out the client to 
 point towards it.
 
@@ -40,10 +38,7 @@ permissions to create a new branch. Also raises an error if the token doesn't ha
 access to entities defined in the source branch. Auth/permissions checks are not 
 applicable to the mock client.
 </Expandable>
-</LeftSection>
-<RightSection>
+
 <pre snippet="api-reference/client/branch#clone_branch" status="success"
     message="Clone 'base' branch into 'mybranch'">
 </pre>
-</RightSection>
-</Divider>

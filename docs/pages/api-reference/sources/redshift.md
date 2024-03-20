@@ -4,9 +4,6 @@ order: 0
 status: draft
 ---
 ### Redshift
-
-<Divider>
-<LeftSection>
 Data connector to Snowflake databases.
 
 #### Database Parameters
@@ -77,12 +74,7 @@ Note: Mock client can not talk to any external data source and hence is unable t
 do this validation at commit time.
 </Expandable>
 
-
-</LeftSection>
-<RightSection>
 <pre snippet="api-reference/sources/sql#snowflake_source"></pre>
-</RightSection>
-</Divider>
 
 
 

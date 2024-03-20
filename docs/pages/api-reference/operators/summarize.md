@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Summarize
-
-<Divider>
-<LeftSection>
 Operator to compute arbitrary aggregation summary over events in a window and 
 augment that as a new field in the dataset.
 
@@ -31,6 +28,10 @@ guarantees are made about the ordering of rows in this input dataframe.
 Fennel verifies at runtime that the returned series matches the declared `dtype`.
 </Expandable>
 
+<pre snippet="api-reference/operators/summarize#basic" status="success"
+    message="Calculate total amount per window in 15-min session windows">
+</pre>
+
 #### Returns
 <Expandable type="Dataset">
 Returns a dataset where all columns passed to groupby become the key columns, 
@@ -45,13 +46,6 @@ Runtime error if the value returned from the lambda isn't a value of
 the declared type.
 </Expandable>
 
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/summarize#basic" status="success"
-    message="Calculate total amount per window in 15-min session windows">
-</pre>
-
 <pre snippet="api-reference/operators/summarize#wrong_type" status="error"
     message="The summarize result is defined as int but assign to type float">
 </pre>
@@ -59,7 +53,4 @@ the declared type.
 <pre snippet="api-reference/operators/summarize#runtime_error" status="error"
     message="The summarize result is an int but got a str in the schema type">
 </pre>
-
-</RightSection>
-</Divider>
 

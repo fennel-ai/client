@@ -6,8 +6,6 @@ status: published
 
 `delete_branch`
 ### Delete Branch
-<Divider>
-<LeftSection>
 Deletes an existing branch and checks out the client to point to the `main` branch.
 
 #### Parameters
@@ -30,10 +28,7 @@ the permission to delete branches. Also raises an error if the token doesn't hav
 edit access to the entities in the branch being deleted. Not applicable to the 
 mock client.
 </Expandable>
-</LeftSection>
-<RightSection>
+
 <pre snippet="api-reference/client/branch#delete_branch" status="success"
     message="Delete an existing branch">
 </pre>
-</RightSection>
-</Divider>

@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Groupby
-
-<Divider>
-<LeftSection>
 Operator to group rows of incoming datasets to be processed by the next operator.
 
 Technically, groupby isn't a standalone operator by itself since its output isn't
@@ -21,6 +18,9 @@ List of keys in the incoming dataset along which the rows should be grouped. Thi
 can be passed as unpacked *args or a Python list.
 </Expandable>
 
+<pre snippet="api-reference/operators/groupby#basic" status="success"
+    message="Groupby category before using first">
+</pre>
 
 #### Errors
 <Expandable title="Grouping by non-existent columns">
@@ -31,15 +31,6 @@ Commit error if trying to group by columns that don't exist in the input dataset
 Commit error if trying to do a groupby via the timestamp column of the input dataset.
 </Expandable>
 
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/groupby#basic" status="success"
-    message="Groupby category before using first">
-</pre>
-
 <pre snippet="api-reference/operators/groupby#non_existent_column" status="error"
     message="Groupby using a non-existent column">
 </pre>
-</RightSection>
-</Divider>

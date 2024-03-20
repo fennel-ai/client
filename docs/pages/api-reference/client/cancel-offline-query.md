@@ -5,9 +5,6 @@ status: published
 ---
 `cancel_offline_query`
 ### Cancel Offline Query
-
-<Divider>
-<LeftSection>
 Method to cancel a previously issued `query_offline` request.
 
 #### Parameters
@@ -15,6 +12,16 @@ Method to cancel a previously issued `query_offline` request.
 The unique request ID returned by the `query_offline` operation that needs
 to be canceled.
 </Expandable>
+
+===
+<pre name="Request" snippet="api-reference/client/query#extract_historical_cancel"
+  status="success" message="Canceling offline query with given ID"
+></pre>
+
+<pre name="Response" snippet="api-reference/client/query#extract_historical_response"
+  status="success" message="Sample response of cancel_offline_query"
+></pre>
+===
 
 #### Returns
 <Expandable title="type" type="Dict[str, Any]">
@@ -33,16 +40,4 @@ A completion rate of 1.0 indicates that all processing had been completed.
 A completion rate of 1.0 and failure rate of 0 means that all processing had 
 been completed successfully.
 </Expandable>
-</LeftSection>
-<RightSection>
-===
-<pre name="Request" snippet="api-reference/client/query#extract_historical_cancel"
-  status="success" message="Canceling offline query with given ID"
-></pre>
 
-<pre name="Response" snippet="api-reference/client/query#extract_historical_response"
-  status="success" message="Sample response of cancel_offline_query"
-></pre>
-===
-</RightSection>
-</Divider>
