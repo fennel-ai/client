@@ -28,6 +28,7 @@ _DEFAULT_CONNECT_TIMEOUT = 10
 _DEFAULT_TIMEOUT = 30
 # Name of the default branch
 _MAIN_BRANCH = "main"
+_BRANCH_HEADER_NAME = "X-FENNEL-BRANCH"
 
 
 class Client:
@@ -123,9 +124,7 @@ class Client:
                 self.add(featureset)
         sync_request = self._get_sync_request_proto(message, tier)
         response = self._post_bytes(
-            "{}/branch/{}/commit?preview={}".format(
-                V1_API, self._encoded_branch_name(), str(preview).lower()
-            ),
+            "{}/commit?preview={}".format(V1_API, str(preview).lower()),
             sync_request.SerializeToString(),
             False,
             300,
@@ -273,7 +272,9 @@ class Client:
             req["sampling_rate"] = sampling_rate
 
         response = self._post_json(
-            "{}/branch/{}/query".format(V1_API, self._encoded_branch_name()),
+            "{}/query".format(
+                V1_API,
+            ),
             req,
         )
         if response.status_code != requests.codes.OK:
@@ -310,9 +311,7 @@ class Client:
         """
         _validate_branch_name(name)
         self._branch = name
-        return self._post_json(
-            f"{V1_API}/branch/{self._encoded_branch_name()}/init", {}
-        )
+        return self._post_json(f"{V1_API}/init", {})
 
     def clone_branch(self, name: str, from_branch: str):
         """Clone a branch from another branch.
@@ -330,9 +329,7 @@ class Client:
         """
         req = {"clone_from": from_branch}
         self._branch = name
-        return self._post_json(
-            f"{V1_API}/branch/{self._encoded_branch_name()}/init", req
-        )
+        return self._post_json(f"{V1_API}/init", req)
 
     def delete_branch(self, name: str):
         """Delete a branch.
@@ -345,9 +342,7 @@ class Client:
         name (str): The name of the branch to delete.
 
         """
-        response = self._post_json(
-            f"{V1_API}/branch/{self._encoded_branch_name(name)}/delete", {}
-        )
+        response = self._post_json(f"{V1_API}/delete", {})
         self.checkout(_MAIN_BRANCH)
         return response
 
@@ -562,8 +557,8 @@ class Client:
             "s3_output": _s3_connector_dict(output_s3) if output_s3 else None,
         }
         return self._post_json(
-            "{}/branch/{}/query_offline".format(
-                V1_API, self._encoded_branch_name()
+            "{}/query_offline".format(
+                V1_API,
             ),
             req,
         )
@@ -584,7 +579,7 @@ class Client:
 
         """
         return self._get(
-            f"{V1_API}/branch/{self._encoded_branch_name()}/query_offline/status?request_id={request_id}"
+            f"{V1_API}/query_offline/status?request_id={request_id}"
         )
 
     def cancel_offline_query(self, request_id):
@@ -603,7 +598,7 @@ class Client:
 
         """
         return self._post_json(
-            f"{V1_API}/branch/{self._encoded_branch_name()}/query_offline/cancel?request_id={request_id}",
+            f"{V1_API}/query_offline/cancel?request_id={request_id}",
             {},
         )
 
@@ -648,9 +643,7 @@ class Client:
                     timestamps[idx] = str(timestamps[idx])
             req["timestamps"] = timestamps
         response = self._post_json(
-            "{}/branch/{}/dataset/{}/lookup".format(
-                V1_API, self._encoded_branch_name(), dataset_name
-            ),
+            "{}/dataset/{}/lookup".format(V1_API, dataset_name),
             req,
         )
         resp_json = response.json()
@@ -676,9 +669,7 @@ class Client:
 
         """
         return self._get(
-            "{}/branch/{}/dataset/{}/inspect?n={}".format(
-                V1_API, self._encoded_branch_name(), dataset_name, n
-            )
+            "{}/dataset/{}/inspect?n={}".format(V1_API, dataset_name, n)
         ).json()
 
     # ----------------------- Private methods -----------------------
@@ -686,11 +677,11 @@ class Client:
     def _url(self, path):
         return urljoin(self.url, path)
 
-    def _encoded_branch_name(self, name: Optional[str] = None) -> str:
-        if name:
-            return urllib.parse.quote_plus(name)
-        else:
-            return urllib.parse.quote_plus(self._branch)
+    def _add_branch_name_header(
+        self, headers: Dict[str, str]
+    ) -> Dict[str, str]:
+        headers[_BRANCH_HEADER_NAME] = self._branch
+        return headers
 
     @staticmethod
     def _get_session():
@@ -709,15 +700,14 @@ class Client:
         return to_sync_request_proto(self.to_register_objects, message, tier)
 
     def _get(self, path: str):
-        headers = None
+        headers = {}
 
         if self.token:
-            headers = {}
             headers["Authorization"] = "Bearer " + self.token
         response = self.http.request(
             "GET",
             self._url(path),
-            headers=headers,
+            headers=self._add_branch_name_header(headers),
             timeout=_DEFAULT_TIMEOUT,
         )
         check_response(response)
@@ -761,7 +751,7 @@ class Client:
             "POST",
             self._url(path),
             data=data,
-            headers=headers,
+            headers=self._add_branch_name_header(headers),
             timeout=timeout,
         )
         check_response(response)
