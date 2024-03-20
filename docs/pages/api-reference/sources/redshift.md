@@ -4,9 +4,6 @@ order: 0
 status: draft
 ---
 ### Redshift
-
-<Divider>
-<LeftSection>
 Data connector to Snowflake databases.
 
 #### Database Parameters
@@ -67,6 +64,8 @@ contenders.
 Note that this field doesn't even need to be a part of the Fennel dataset. 
 </Expandable>
 
+<pre snippet="api-reference/sources/sql#snowflake_source"></pre>
+
 #### Errors
 <Expandable title="Connectivity Issues">
 Fennel tries to test the connection with your Snowflake during sync itself so any
@@ -76,14 +75,3 @@ as an error during sync with the real Fennel servers.
 Note: Mock client can not talk to any external data source and hence is unable to
 do this validation at sync time.
 </Expandable>
-
-
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/sources/sql#snowflake_source"></pre>
-</RightSection>
-</Divider>
-
-
-
-

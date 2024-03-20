@@ -6,9 +6,6 @@ status: published
 
 `POST /api/v1/log`
 ### Log
-<Divider>
-<LeftSection>
-
 Method to push data into Fennel datasets via [webhook endpoints](/api-reference/sources/webhook)
 via REST API.
 
@@ -42,8 +39,4 @@ The data to be logged to the webhook. This json string could either be:
   column as a json array.
 </Expandable>
 
-</LeftSection>
-<RightSection>
 <pre snippet="api-reference/rest-api#rest_log_api"></pre>
-</RightSection>
-</Divider>

@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Extract
-
-<Divider>
-<LeftSection>
 Method to query the latest value of features (typically for online inference).
 
 #### Parameters
@@ -45,6 +42,9 @@ The rate at which feature data should be sampled before logging. Only relevant
 when `log` is set to True.
 </Expandable>
 
+<pre snippet="api-reference/client/extract#basic" status="success"
+    message="Extracting two features" highlight="19-23">
+</pre>
 
 #### Returns
 <Expandable title="type" type="Union[pd.Dataframe, pd.Series]">
@@ -76,11 +76,3 @@ Fennel checks that the passed token has sufficient permissions for each of the
 features/extractors - including any intermediate ones that need to be computed
 in order to resolve the path from the input features to the output features.
 </Expandable>
-
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/client/extract#basic" status="success"
-    message="Extracting two features" highlight="19-23">
-</pre>
-</RightSection>
-</Divider>

@@ -4,11 +4,9 @@ order: 3
 status: 'published'
 ---
 
-
 ### Core Types
-<Divider>
-<LeftSection>
 Fennel supports the following data types, expressed as native Python type hints.
+
 <Expandable type="int">
 Implemented as signed 8 byte integer (`int64`)
 </Expandable>
@@ -67,9 +65,6 @@ across types. For instance, it will be a compile or runtime error if something
 was expected to be of type `float` but received an `int` instead.
 :::
 
-</LeftSection>
-<RightSection>
-    <pre snippet="api-reference/data-types#struct_type" />
-</RightSection>
-</Divider>
+<pre snippet="api-reference/data-types#struct_type" />  
+
 

@@ -5,9 +5,6 @@ status: published
 ---
 
 ### Join
-
-<Divider>
-<LeftSection>
 Operator to join two datasets. The right hand side dataset must have 
 one or more key columns and the join operation is performed on these columns.
 
@@ -24,6 +21,10 @@ Required kwarg indicating whether the join should be an inner join (`how="inner"
 or a left-outer join (`how="left"`). With `"left"`, the output dataset may have
 a row even if there is no matching row on the right side. 
 </Expandable>
+
+<pre snippet="api-reference/operators/join#basic" status="success"
+   message="Inner join on 'merchant'">
+</pre>
 
 
 <Expandable title="on" type="Optional[List[str]]" defaultVal="None">
@@ -95,14 +96,3 @@ before the join.
 Sync error if the number/type of the join columns on the left and right side
 don't match.
 </Expandable>
-
-</LeftSection>
-
-<RightSection>
-<pre snippet="api-reference/operators/join#basic" status="success"
-   message="Inner join on 'merchant'">
-</pre>
-</RightSection>
-
-
-</Divider>

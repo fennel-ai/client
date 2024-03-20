@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Log
-
-<Divider>
-<LeftSection>
 Method to push data into Fennel datasets via [webhook endpoints](/api-reference/sources/webhook).
 
 #### Parameters
@@ -35,6 +32,10 @@ in chunks can lead to situation where some chunks have been ingested but others
 weren't.
 </Expandable>
 
+<pre snippet="api-reference/client/log#basic" status="success" 
+    message="Logging data to webhook via client" highlight="17-24">
+</pre>
+
 #### Errors
 <Expandable title="Invalid webhook endpoint">
 Fennel will throw an error (equivalent to 404) if no endpoint with the given
@@ -50,11 +51,3 @@ data doesn't match the schema of the attached datasets.
 You may want to keep an eye on the 'Errors' tab of Fennel console after 
 initiating any data sync.
 </Expandable>
-</LeftSection>
-<RightSection>
-
-<pre snippet="api-reference/client/log#basic" status="success" 
-    message="Logging data to webhook via client" highlight="17-24">
-</pre>
-</RightSection>
-</Divider>

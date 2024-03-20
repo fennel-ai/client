@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Dropnull
-
-<Divider>
-<LeftSection>
 Operator to drop rows containing null values (aka None in Python speak) in
 the given columns.
 
@@ -22,6 +19,14 @@ in the dataset.
 
 </Expandable>
 
+<pre snippet="api-reference/operators/dropnull#basic" status="success"
+    message="Dropnull on city & country, but not gender" highlight="23">
+</pre>
+<pre snippet="api-reference/operators/dropnull#dropnull_all" status="success"
+    message="Applies to all optional columns if none is given explicitly"
+    highlight="23">
+</pre>
+
 #### Returns
 <Expandable type="Dataset">
 Returns a dataset with the same name & number of columns as the input dataset but
@@ -36,17 +41,7 @@ Sync error to pass a column without an optional type.
 <Expandable title="Dropnull on non-existent columns">
 Sync error to pass a column that doesn't exist in the input dataset.
 </Expandable>
-</LeftSection>
 
-
-<RightSection>
-<pre snippet="api-reference/operators/dropnull#basic" status="success"
-    message="Dropnull on city & country, but not gender" highlight="23">
-</pre>
-<pre snippet="api-reference/operators/dropnull#dropnull_all" status="success"
-    message="Applies to all optional columns if none is given explicitly"
-    highlight="23">
-</pre>
 <pre snippet="api-reference/operators/dropnull#missing_column" status="error"
     message="Dropnull on a non-existent column" highlight="17">
 </pre>
@@ -54,6 +49,3 @@ Sync error to pass a column that doesn't exist in the input dataset.
 <pre snippet="api-reference/operators/dropnull#non_optional_column" status="error"
     message="Dropnull on a non-optional column" highlight="5, 16">
 </pre>
-</RightSection>
-
-</Divider>

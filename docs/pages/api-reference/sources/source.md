@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Source Decorator
-
-<Divider>
-<LeftSection>
 All Fennel sources are wrapped in the `@source` decorator applied on top of the
 datasets. This decorator specifies a bunch of options to configure the ingestion
 mechanism that apply to most data sources.
@@ -81,11 +78,7 @@ As of right now, there are two kinds of values of preproc:
   a constant value.
 </Expandable>
 
-</LeftSection>
-<RightSection>
 <pre snippet="api-reference/sources/source#source_decorator"
     status="success" message="Specifying options in source decorator"
     highlight="8-19">
 </pre>
-</RightSection>
-</Divider>

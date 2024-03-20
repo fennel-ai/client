@@ -4,10 +4,6 @@ order: 0
 status: published
 ---
 ### Stddev
-
-<Divider>
-<LeftSection>
-
 Aggregation to computes a rolling standard deviation for each group within a window. 
 
 #### Parameters
@@ -31,6 +27,10 @@ Standard deviation over an empty set of rows isn't well defined - Fennel
 returns `default` in such cases.
 </Expandable>
 
+<pre snippet="api-reference/aggregations/stddev#basic" status="success" 
+    message="Standard deviation in window of 1 day & week">
+</pre>
+
 #### Returns
 <Expandable type="float">
 Stores the result of the aggregation in the appropriate field of the output 
@@ -51,18 +51,9 @@ The type of the field denoted by `into_field` in the output dataset and that of
 `default` should both be `float`.
 </Expandable>
 
-
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/aggregations/stddev#basic" status="success" 
-    message="Standard deviation in window of 1 day & week">
-</pre>
 <pre snippet="api-reference/aggregations/stddev#incorrect_type" status="error" 
     message="Can not take stddev over string, only int or float">
 </pre>
 <pre snippet="api-reference/aggregations/stddev#non_matching_types" status="error" 
     message="Invalid type: ret is int but should be float">
 </pre>
-
-</RightSection>
-</Divider>

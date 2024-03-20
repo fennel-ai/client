@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Rename
-
-<Divider>
-<LeftSection>
 Operator to rename columns of a dataset.
 
 #### Parameters
@@ -15,8 +12,9 @@ Operator to rename columns of a dataset.
 Dictionary mapping from old column names to their new names.
 
 All columns should still have distinct and valid names post renaming.
-
 </Expandable>
+
+<pre snippet="api-reference/operators/rename#basic"></pre>
 
 #### Returns
 <Expandable type="Dataset">
@@ -34,14 +32,3 @@ in the rename dictionary.
 Sync error if after renaming, there will be two columns in the dataset having
 the same name.
 </Expandable>
-
-</LeftSection>
-
-
-
-<RightSection>
-    <pre snippet="api-reference/operators/rename#basic"></pre>
-</RightSection>
-
-</Divider>
-

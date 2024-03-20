@@ -4,10 +4,6 @@ order: 0
 status: published
 ---
 ### Min
-
-<Divider>
-<LeftSection>
-
 Aggregation to computes a rolling min for each group within a window. 
 
 #### Parameters
@@ -33,6 +29,10 @@ in such cases. The type of `default` must be same as that of `of` in the input
 dataset.
 </Expandable>
 
+<pre snippet="api-reference/aggregations/min#basic" status="success" 
+    message="Minimum in rolling window of 1 day & 1 week">
+</pre>
+
 #### Returns
 <Expandable type="Union[int, float]">
 Stores the result of the aggregation in the appropriate field of the output 
@@ -54,18 +54,9 @@ The type of the field denoted by `into_field` in the output dataset and that of
 input dataset.
 </Expandable>
 
-
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/aggregations/min#basic" status="success" 
-    message="Minimum in rolling window of 1 day & 1 week">
-</pre>
 <pre snippet="api-reference/aggregations/min#incorrect_type" status="error" 
     message="Can not take min over string, only int or float">
 </pre>
 <pre snippet="api-reference/aggregations/min#non_matching_types" status="error" 
     message="amt is float but min_1d is int">
 </pre>
-
-</RightSection>
-</Divider>

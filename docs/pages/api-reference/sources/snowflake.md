@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Snowflake
-
-<Divider>
-<LeftSection>
 Data connector to Snowflake databases.
 
 #### Database Parameters
@@ -67,6 +64,8 @@ contenders.
 Note that this field doesn't even need to be a part of the Fennel dataset. 
 </Expandable>
 
+<pre snippet="api-reference/sources/sql#snowflake_source"></pre>
+
 #### Errors
 <Expandable title="Connectivity Issues">
 Fennel tries to test the connection with your Snowflake during sync itself so any
@@ -82,14 +81,4 @@ Schema validity of data in Snowflake is checked at runtime. Any rows that
 can not be parsed are rejected. Please keep an eye on the 'Errors' tab of 
 Fennel console after initiating any data sync.
 </Expandable>
-
-
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/sources/sql#snowflake_source"></pre>
-</RightSection>
-</Divider>
-
-
-
 

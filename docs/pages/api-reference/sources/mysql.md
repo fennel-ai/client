@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### MySQL
-
-<Divider>
-<LeftSection>
 Data connector to MySQL databases.
 
 #### Database Parameters
@@ -68,6 +65,10 @@ It is recommended to put an index on the `cursor` field so that Fennel ingestion
 queries don't create too much load on your MySQL
 :::
 
+<pre snippet="api-reference/sources/sql#mysql_source"
+    status="success" message="Sourcing dataset from a mysql table">
+</pre>
+
 #### Errors
 <Expandable title="Connectivity Issues">
 Fennel tries to test the connection with your MySQL during sync itself so any
@@ -83,11 +84,3 @@ Schema validity of data in MySQL is checked at runtime. Any rows that
 can not be parsed are rejected. Please keep an eye on the 'Errors' tab of 
 Fennel console after initiating any data sync.
 </Expandable>
-
-</LeftSection>
-<RightSection>
-<pre snippet="api-reference/sources/sql#mysql_source"
-    status="success" message="Sourcing dataset from a mysql table">
-</pre>
-</RightSection>
-</Divider>

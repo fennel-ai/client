@@ -4,9 +4,6 @@ order: 0
 status: published
 ---
 ### Extract Historical Cancel Request
-
-<Divider>
-<LeftSection>
 Method to cancel a previously issued `extract_historical` request.
 
 #### Parameters
@@ -14,6 +11,16 @@ Method to cancel a previously issued `extract_historical` request.
 The unique request ID returned by the `extract_historical` operation that needs
 to be canceled.
 </Expandable>
+
+===
+<pre name="Request" snippet="api-reference/client/extract#extract_historical_cancel"
+  status="success" message="Canceling extract historical request with given ID"
+></pre>
+
+<pre name="Response" snippet="api-reference/client/extract#extract_historical_response"
+  status="success" message="Sample response of extract historical cancellation"
+></pre>
+===
 
 #### Returns
 <Expandable title="type" type="Dict[str, Any]">
@@ -32,19 +39,3 @@ A completion rate of 1.0 indicates that all processing had been completed.
 A completion rate of 1.0 and failure rate of 0 means that all processing had 
 been completed successfully.
 </Expandable>
-</LeftSection>
-<RightSection>
-===
-<pre name="Request" snippet="api-reference/client/extract#extract_historical_cancel"
-  status="success" message="Canceling extract historical request with given ID"
-></pre>
-
-<pre name="Response" snippet="api-reference/client/extract#extract_historical_response"
-  status="success" message="Sample response of extract historical cancellation"
-></pre>
-===
-</RightSection>
-</Divider>
-
-
-
