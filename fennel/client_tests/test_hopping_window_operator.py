@@ -6,7 +6,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import sources
-from fennel.datasets import dataset, Dataset, pipeline, field
+from fennel.datasets import dataset, Dataset, pipeline, field, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib.aggregate import Average, LastK
 from fennel.lib.metadata import meta
@@ -33,6 +33,7 @@ class WindowStats:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class Sessions:
     user_id: int = field(key=True)
@@ -60,6 +61,7 @@ class Sessions:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class SessionStats:
     user_id: int = field(key=True)
@@ -184,7 +186,7 @@ def test_hopping_window_operator(client):
 
     client.sleep()
 
-    now = datetime.now()
+    now = datetime.utcnow()
     ts = pd.Series([now])
     user_id_keys = pd.Series([1])
     window_keys = pd.Series(

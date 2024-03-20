@@ -569,7 +569,7 @@ class S3Connector(DataConnector):
                 suffix_portion = True
                 # ensure we have a valid strftime format specifier
                 try:
-                    formatted = datetime.now().strftime(part)
+                    formatted = datetime.utcnow().strftime(part)
                     datetime.strptime(formatted, part)
                     suffix.append(part)
                 except ValueError:

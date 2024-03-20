@@ -17,6 +17,7 @@ def test_basic(client):
         Dataset,
         Average,
         Stddev,
+        index,
     )
     from fennel.lib import inputs
     from fennel.sources import source, Webhook
@@ -30,6 +31,7 @@ def test_basic(client):
         amt: int
         timestamp: datetime
 
+    @index
     @dataset
     class Aggregated:
         uid: int = field(key=True)

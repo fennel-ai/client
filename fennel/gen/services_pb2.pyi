@@ -11,6 +11,7 @@ import featureset_pb2
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.message
+import index_pb2
 import sys
 
 if sys.version_info >= (3, 8):
@@ -35,6 +36,8 @@ class SyncRequest(google.protobuf.message.Message):
     EXTDBS_FIELD_NUMBER: builtins.int
     EXPECTATIONS_FIELD_NUMBER: builtins.int
     MESSAGE_FIELD_NUMBER: builtins.int
+    OFFLINE_INDICES_FIELD_NUMBER: builtins.int
+    ONLINE_INDICES_FIELD_NUMBER: builtins.int
     @property
     def datasets(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[dataset_pb2.CoreDataset]: ...
     @property
@@ -56,6 +59,10 @@ class SyncRequest(google.protobuf.message.Message):
     @property
     def expectations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[expectations_pb2.Expectations]: ...
     message: builtins.str
+    @property
+    def offline_indices(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[index_pb2.OfflineIndex]: ...
+    @property
+    def online_indices(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[index_pb2.OnlineIndex]: ...
     def __init__(
         self,
         *,
@@ -70,7 +77,9 @@ class SyncRequest(google.protobuf.message.Message):
         extdbs: collections.abc.Iterable[connector_pb2.ExtDatabase] | None = ...,
         expectations: collections.abc.Iterable[expectations_pb2.Expectations] | None = ...,
         message: builtins.str = ...,
+        offline_indices: collections.abc.Iterable[index_pb2.OfflineIndex] | None = ...,
+        online_indices: collections.abc.Iterable[index_pb2.OnlineIndex] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "expectations", b"expectations", "extdbs", b"extdbs", "extractors", b"extractors", "feature_sets", b"feature_sets", "features", b"features", "message", b"message", "models", b"models", "operators", b"operators", "pipelines", b"pipelines", "sources", b"sources"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "expectations", b"expectations", "extdbs", b"extdbs", "extractors", b"extractors", "feature_sets", b"feature_sets", "features", b"features", "message", b"message", "models", b"models", "offline_indices", b"offline_indices", "online_indices", b"online_indices", "operators", b"operators", "pipelines", b"pipelines", "sources", b"sources"]) -> None: ...
 
 global___SyncRequest = SyncRequest

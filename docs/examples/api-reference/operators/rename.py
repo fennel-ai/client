@@ -11,7 +11,7 @@ class TestRenameSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.datasets import dataset, field, pipeline, Dataset, index
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 
@@ -27,6 +27,7 @@ class TestRenameSnips(unittest.TestCase):
             # docsnip-highlight end
             timestamp: datetime
 
+        @index
         @dataset
         class Derived:
             uid: int = field(key=True)

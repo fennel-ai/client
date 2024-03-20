@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 
-from fennel.datasets import dataset, field, pipeline, Dataset, LastK, Min
+from fennel.datasets import dataset, field, pipeline, Dataset, LastK, Min, index
 from fennel.lib import inputs
 from fennel.sources import Webhook, source
 
@@ -62,6 +62,7 @@ class LocationToNewMarketArea:
     created: datetime
 
 
+@index
 @dataset
 class IdToMarketAreaDS:
     id: int = field(key=True)
@@ -111,6 +112,7 @@ class VehicleSummary:
     created: datetime
 
 
+@index
 @dataset
 class MarketAreaDS:
     vehicle_id: int = field(key=True)

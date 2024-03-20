@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.datasets import dataset, pipeline, field, Dataset, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import meta, inputs, outputs
 from fennel.sources import source, Webhook
@@ -49,6 +49,7 @@ class MemberDataset:
 
 
 @meta(owner="test@fennel.ai")
+@index
 @dataset
 class MemberActivityDatasetCopy:
     domain: str = field(key=True)
@@ -150,6 +151,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             createdAt: datetime = field(timestamp=True)
 
         @meta(owner="test@fennel.ai")
+        @index
         @dataset
         class MemberActivityDatasetCopy:
             domain: str = field(key=True)

@@ -9,7 +9,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import sources
-from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum
+from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.dtypes import Embedding, oneof
@@ -131,6 +131,7 @@ class Document:
         return df
 
 
+@index
 @dataset
 class DocumentIndexed:
     doc_id: int = field(key=True)
@@ -216,6 +217,7 @@ class DocumentContentDataset:
         )
 
 
+@index
 @dataset
 class DocumentContentDatasetIndexed:
     doc_id: int = field(key=True)
@@ -232,6 +234,7 @@ class DocumentContentDatasetIndexed:
         return ds.groupby("doc_id").first()
 
 
+@index
 @dataset
 class TopWordsCount:
     word: str = field(key=True)
@@ -276,6 +279,7 @@ class UserActivity:
     timestamp: datetime
 
 
+@index
 @dataset
 class UserEngagementDataset:
     user_id: int = field(key=True)
@@ -325,6 +329,7 @@ class UserEngagementDataset:
         )
 
 
+@index
 @dataset
 class DocumentEngagementDataset:
     doc_id: int = field(key=True)
@@ -543,15 +548,19 @@ class TestSearchExample(unittest.TestCase):
         now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
 
-        doc_ids = pd.Series([141234, 143354, 33234, 11111])
+        doc_ids = pd.DataFrame({"doc_id": [141234, 143354, 33234, 11111]})
         ts = pd.Series([now, now, now, now])
-        df, found = DocumentIndexed.lookup(ts, doc_id=doc_ids)
+        df, found = client.lookup(
+            "DocumentIndexed", keys=doc_ids, timestamps=ts
+        )
         assert df.shape == (4, 6)
         assert found.tolist() == [True, True, True, False]
 
-        doc_ids = pd.Series([141234, 143354, 33234, 11111])
+        doc_ids = pd.DataFrame({"doc_id": [141234, 143354, 33234, 11111]})
         ts = pd.Series([yesterday, yesterday, yesterday, yesterday])
-        df, found = DocumentIndexed.lookup(ts, doc_id=doc_ids)
+        df, found = client.lookup(
+            "DocumentIndexed", keys=doc_ids, timestamps=ts
+        )
         assert df.shape == (4, 6)
         assert found.tolist() == [False, False, True, False]
 

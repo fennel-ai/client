@@ -12,12 +12,13 @@ __owner__ = "data-eng@fennel.ai"
 
 def test_datasets_basic():
     # docsnip datasets
-    from fennel.datasets import dataset, field
+    from fennel.datasets import dataset, field, index
     from fennel.sources import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
 
     @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+    @index
     @dataset
     class User:
         uid: int = field(key=True)
@@ -41,8 +42,17 @@ def test_datasets_basic():
 def test_pipeline_basic():
     User, Transaction = test_datasets_basic()
     # docsnip pipeline
-    from fennel.datasets import pipeline, Dataset, dataset, field, Count, Sum
+    from fennel.datasets import (
+        pipeline,
+        Dataset,
+        dataset,
+        field,
+        Count,
+        Sum,
+        index,
+    )
 
+    @index
     @dataset
     class UserTransactionsAbroad:
         uid: int = field(key=True)
@@ -77,7 +87,7 @@ def test_transaction_aggregation_example(client):
     client.commit(
         message="msg", datasets=[User, Transaction, UserTransactionsAbroad]
     )
-    now = datetime.now()
+    now = datetime.utcnow()
     dob = now - timedelta(days=365 * 30)
     data = [
         [1, dob, "US", now - timedelta(days=1)],
@@ -165,7 +175,7 @@ def test_fraud(client):
     # /docsnip
     # # Sync the dataset
     client.commit(message="msg", datasets=[Activity, FraudActivity])
-    now = datetime.now()
+    now = datetime.utcnow()
     minute_ago = now - timedelta(minutes=1)
     data = [
         [
@@ -216,7 +226,7 @@ def test_fraud(client):
 @mock
 def test_multiple_pipelines(client):
     # docsnip multiple_pipelines
-    from fennel.datasets import dataset, field, Count
+    from fennel.datasets import dataset, field, Count, index
     from fennel.sources import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
@@ -240,6 +250,7 @@ def test_multiple_pipelines(client):
         return df
 
     @meta(owner="me@fennel.ai")
+    @index
     @dataset
     class LoginStats:
         uid: int = field(key=True)
@@ -276,7 +287,7 @@ def test_multiple_pipelines(client):
     client.commit(
         message="msg", datasets=[AndroidLogins, IOSLogins, LoginStats]
     )
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [
         [1, now],
         [1, now - timedelta(days=1)],

@@ -4,8 +4,6 @@ import pandas as pd
 import pytest
 
 from fennel.testing import mock
-from fennel.datasets import pipeline
-from fennel.datasets.aggregate import Max
 
 __owner__ = "aditya@fennel.ai"
 
@@ -13,7 +11,7 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.datasets import dataset, field, Dataset, Min
+    from fennel.datasets import dataset, field, Dataset, index, pipeline, Max
     from fennel.lib import inputs
     from fennel.sources import source, Webhook
 
@@ -26,6 +24,7 @@ def test_basic(client):
         amt: float
         timestamp: datetime
 
+    @index
     @dataset
     class Aggregated:
         uid: int = field(key=True)
@@ -37,7 +36,7 @@ def test_basic(client):
 
         @pipeline
         @inputs(Transaction)
-        def pipeline(cls, ds: Dataset):
+        def def_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
                 # docsnip-highlight start
                 Max(of="amt", window="1d", default=-1.0, into_field="max_1d"),
@@ -112,7 +111,7 @@ def test_basic(client):
 def test_invalid_type(client):
     with pytest.raises(Exception):
         # docsnip incorrect_type
-        from fennel.datasets import dataset, field, Dataset
+        from fennel.datasets import dataset, field, Dataset, pipeline, Max
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 
@@ -134,7 +133,7 @@ def test_invalid_type(client):
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def def_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight next-line
                     Max(of="zip", window="1d", default="max", into_field="max"),
@@ -147,7 +146,7 @@ def test_invalid_type(client):
 def test_non_matching_types(client):
     with pytest.raises(Exception):
         # docsnip non_matching_types
-        from fennel.datasets import dataset, field, Dataset, Min
+        from fennel.datasets import dataset, field, Dataset, Max, pipeline
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 
@@ -170,7 +169,7 @@ def test_non_matching_types(client):
 
             @pipeline
             @inputs(Transaction)
-            def pipeline(cls, ds: Dataset):
+            def def_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight next-line
                     Max(of="amt", window="1d", default=1, into_field="max_1d"),

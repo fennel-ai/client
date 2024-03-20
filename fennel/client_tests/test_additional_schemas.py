@@ -36,7 +36,7 @@ class TestDataset(unittest.TestCase):
     def test_log_with_additional_schema(self, client):
         # Log correct data
         client.commit(message="msg", datasets=[UserInfoDataset])
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             {
                 "user_id": 1,
@@ -53,7 +53,7 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
         # Log incorrect data
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             {
                 "user_id": 1,
@@ -83,7 +83,7 @@ class TestDataset(unittest.TestCase):
                 "between, but the value `123` is out of bounds. Error found during checking schema for `UserInfoDataset`.')]"
             )
 
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             {
                 "user_id": 1,
@@ -111,7 +111,7 @@ class TestDataset(unittest.TestCase):
                 == str(e.value)
             )
 
-        now = datetime.now()
+        now = datetime.utcnow()
         data = [
             {
                 "user_id": 1,

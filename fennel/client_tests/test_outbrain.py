@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Count
+from fennel.datasets import dataset, field, pipeline, Dataset, Count, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import meta, inputs, outputs
 from fennel.sources import S3, Webhook
@@ -39,6 +39,7 @@ class PageViews:
 
 
 @meta(owner="xiao@fennel.ai")
+@index
 @dataset
 class PageViewsByUser:
     uuid: str = field(key=True)
@@ -113,9 +114,11 @@ def test_outbrain(client):
         ],
         tier="dev",
     )
-    df = pd.read_csv("fennel/client_tests/data/page_views_sample.csv")
+    df = pd.read_csv(
+        "fennel/client_tests/data/page_views_sample.csv"
+    ).sort_values(by=["timestamp"])
     # Current time in ms
-    cur_time_ms = datetime.now().timestamp() * 1000
+    cur_time_ms = datetime.utcnow().timestamp() * 1000
     max_ts = max(df["timestamp"].tolist())
     # Shift all the data such that the most recent data point has timestamp = cur_time_ms
     df["timestamp"] = df["timestamp"] + cur_time_ms - max_ts
@@ -123,7 +126,9 @@ def test_outbrain(client):
     # TODO: Remove this once watermarks are correctly implemented
     twelve_days = 12 * 24 * 60 * 60 * 1000
     df = df[df["timestamp"] > cur_time_ms - twelve_days]
-    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+    df["timestamp"] = df["timestamp"].apply(
+        lambda x: datetime.fromtimestamp(x / 1000)
+    )
 
     client.log("outbrain_webhook", "PageViews", df)
     if client.is_integration_client():

@@ -5,9 +5,18 @@ from typing import Optional, List
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Sum, Min, Max
-from fennel.lib import meta, inputs
+from fennel.datasets import (
+    dataset,
+    field,
+    pipeline,
+    Dataset,
+    Sum,
+    Min,
+    Max,
+    index,
+)
 from fennel.dtypes import Window
+from fennel.lib import meta, inputs
 
 
 @meta(owner="test@test.com")
@@ -19,6 +28,7 @@ class MovieRating:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class MovieRevenue:
     movie: str = field(key=True)
@@ -228,6 +238,7 @@ class Activity:
 
 
 @meta(owner="me@fennel.ai")
+@index
 @dataset(history="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
@@ -517,6 +528,7 @@ def test_transform():
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class B:
     b1: str = field(key=True)
@@ -549,6 +561,7 @@ def test_join_schema_validation_value():
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class C:
     b1: int = field(key=True)
@@ -558,6 +571,7 @@ class C:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class E:
     a1: int = field(key=True)
@@ -1596,7 +1610,7 @@ def test_double_summary():
             window: Window = field(key=True)
             t: datetime
 
-            @pipeline()
+            @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
                 return (
@@ -1621,4 +1635,41 @@ def test_double_summary():
     assert (
         str(e.value)
         == """'window' operator already have a summary field with name concat_page_id. window operator can only have 1 summary"""
+    )
+
+
+def test_join_with_wrong_right_index():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @index(offline=None)
+        @dataset
+        class Users:
+            user_id: str = field(key=True)
+            age: int
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class Login:
+            user_id: str
+            cookie: str
+            t: datetime
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class LoginEvent:
+            user_id: str
+            cookie: str
+            age: int
+            t: datetime
+
+            @pipeline
+            @inputs(Login, Users)
+            def pipeline(cls, login: Dataset, users: Dataset):
+                return login.join(users, on=["user_id"], how="inner")
+
+    assert (
+        str(e.value)
+        == """`offline` needs to be set on index of the right dataset `Users` for `'[Pipeline:pipeline]->join node'`."""
     )

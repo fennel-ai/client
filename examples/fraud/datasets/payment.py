@@ -17,6 +17,7 @@ from fennel.datasets import (
     field,
     pipeline,
     Dataset,
+    index,
 )
 from fennel.lib import inputs
 from fennel.sources import Webhook, source
@@ -39,6 +40,7 @@ class ChargesDS:
     created: datetime = field(timestamp=True)
 
 
+@index
 @dataset
 class TransactionsDS:
     driver_id: int = field(key=True)
@@ -92,6 +94,7 @@ class PaymentEventDS:
     created: datetime
 
 
+@index
 @dataset
 class LastPaymentDS:
     driver_id: int = field(key=True)
@@ -125,6 +128,7 @@ class LastPaymentDS:
         )
 
 
+@index
 @dataset
 class PaymentDS:
     driver_id: int = field(key=True)

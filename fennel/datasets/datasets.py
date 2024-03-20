@@ -24,11 +24,13 @@ from typing import (
     Set,
 )
 
+import google.protobuf.duration_pb2 as duration_proto
 import numpy as np
 import pandas as pd
 from typing_extensions import Literal
 
-import fennel.gen.window_pb2 as window_proto
+import fennel.gen.index_pb2 as index_proto
+from fennel._vendor.pydantic import BaseModel  # type: ignore
 from fennel.datasets.aggregate import (
     AggregateType,
     Average,
@@ -100,6 +102,11 @@ RESERVED_FIELD_NAMES = [
     "timestamp_field",
     "fqn",
 ]
+
+INDEX_FIELD = "__fennel_index__"
+DEFAULT_INDEX_TYPE = "primary"
+DEFAULT_INDEX_OFFLINE = "forever"
+DEFAULT_INDEX_ONLINE = True
 
 primitive_numeric_types = [int, float, pd.Int64Dtype, pd.Float64Dtype]
 
@@ -1701,6 +1708,176 @@ def sync_validation_for_pipelines(pipelines: List[Pipeline], ds_name: str):
 
 
 # ---------------------------------------------------------------------
+# Index
+# ---------------------------------------------------------------------
+
+
+class IndexType(str, Enum):
+    primary = "primary"
+
+    @classmethod
+    def _missing_(cls, value):
+        valid_types = [m.value for m in cls]
+        raise ValueError(
+            f"`{value}` is not a valid index 'type'. "
+            f"Following types are allowed {valid_types}"
+        )
+
+
+class IndexDuration(Enum):
+    none = None
+    forever = "forever"
+    duration = datetime.timedelta
+
+
+class Index(BaseModel):
+    type: IndexType
+    online: bool
+    offline: IndexDuration
+
+
+@overload
+def index(  # noqa: E704
+    *,
+    type: Literal["primary"] = DEFAULT_INDEX_TYPE,  # type: ignore
+    online: bool = DEFAULT_INDEX_ONLINE,
+    offline: Optional[str] = DEFAULT_INDEX_OFFLINE,
+) -> Callable[[Dataset], Dataset]: ...
+
+
+@overload
+def index(obj: Dataset) -> Dataset: ...  # noqa: E704
+
+
+def index(
+    obj: Optional[Dataset] = None,
+    type: Literal["primary"] = DEFAULT_INDEX_TYPE,  # type: ignore
+    online: bool = DEFAULT_INDEX_ONLINE,
+    offline: Optional[str] = DEFAULT_INDEX_OFFLINE,
+) -> Union[Callable[[Dataset], Dataset], Dataset]:
+    """index decorator, defaults to a dataset with primary index, online set to true and forever lookup.
+
+    index decorator is used to add a index object mainly to dataset object.
+    It takes in the following arguments:
+    Parameters
+    ----------
+    obj: Dataset
+        Object
+    type : Literal["primary"]
+        Type of index in the dataset, choose from (`primary`)
+    online : str
+        Whether we want to do lookup on the dataset.
+    offline : Optional[str]
+        Use this if we want to do lookup on past value or the following the dataset wants to be used as RHS
+        in `join` operator.
+    """
+
+    def _create_indexed_dataset(
+        obj: Dataset,
+        type: Literal["primary"],
+        online: bool,
+        offline: Optional[str],
+    ):
+        if not isinstance(obj, Dataset):
+            raise ValueError(
+                "`index` decorator can only be called on a Dataset."
+            )
+
+        if hasattr(obj, INDEX_FIELD):
+            raise ValueError(
+                "`index` can only be called once on a Dataset. Found more than one index decorators on "
+                f"Dataset `{obj._name}`."
+            )
+
+        if type == IndexType.primary and len(obj.key_fields) < 1:
+            raise ValueError(
+                "Index decorator is only applicable for datasets with keyed fields. Found zero key fields."
+            )
+
+        if offline is None:
+            offline_enum = IndexDuration.none
+        elif offline == "forever":
+            offline_enum = IndexDuration.forever
+        else:
+            raise ValueError(
+                "Currently offline index only supports `None` and `forever`"
+            )
+
+        index_obj = Index(
+            type=IndexType(type),
+            online=online,
+            offline=offline_enum,
+        )
+        setattr(obj, INDEX_FIELD, index_obj)
+        return obj
+
+    def wrap(c: Dataset) -> Dataset:
+        return _create_indexed_dataset(c, type, online, offline)  # type: ignore
+
+    if obj is None:
+        # We're being called as @index(arguments)
+        return wrap
+    obj = cast(Dataset, obj)
+    # @index decorator was used without arguments
+    return wrap(obj)
+
+
+def get_index(obj: Dataset) -> Optional[Index]:
+    if not hasattr(obj, INDEX_FIELD):
+        return None
+    return getattr(obj, INDEX_FIELD)
+
+
+def indices_from_ds(
+    obj: Dataset,
+) -> Tuple[
+    Optional[index_proto.OnlineIndex], Optional[index_proto.OfflineIndex]
+]:
+    """
+    Returns OnlineIndexProto and OfflineIndexProto associated with the dataset respectively.
+    Args:
+        obj: Dataset
+            Object
+    Returns:
+        Tuple[Optional[index_proto.OnlineIndex], Optional[index_proto.OfflineIndex]]
+    """
+    if len(obj.key_fields) == 0:
+        return None, None
+
+    index_obj = get_index(obj)
+    if index_obj is None:
+        return None, None
+
+    # Hard coding primary now, since only one type is supported currently
+    index_type = index_proto.IndexType.PRIMARY
+
+    if index_obj.online:
+        online_index = index_proto.OnlineIndex(
+            ds_version=obj.version,
+            ds_name=obj._name,
+            index_type=index_type,
+            duration=index_proto.IndexDuration(forever="forever"),
+        )
+    else:
+        online_index = None
+
+    if index_obj.offline == IndexDuration.none:
+        offline_index = None
+    elif index_obj.offline == IndexDuration.forever:
+        offline_index = index_proto.OfflineIndex(
+            ds_version=obj.version,
+            ds_name=obj._name,
+            index_type=index_type,
+            duration=index_proto.IndexDuration(forever="forever"),
+        )
+    else:
+        raise ValueError(
+            "Currently only forever retention is supported for Offline Index"
+        )
+    return online_index, offline_index
+
+
+# ---------------------------------------------------------------------
 # Visitor
 # ---------------------------------------------------------------------
 
@@ -2144,7 +2321,21 @@ class SchemaValidator(Visitor):
         def is_subset(subset: List[str], superset: List[str]) -> bool:
             return set(subset).issubset(set(superset))
 
+        def validate_right_index(right_dataset: Dataset):
+            right_index = get_index(right_dataset)
+            if right_index is None:
+                raise ValueError(
+                    f"Index needs to be set on the right dataset `{right_dataset._name}` for `{output_schema_name}`."
+                )
+
+            if right_index.offline == IndexDuration.none:
+                raise ValueError(
+                    f"`offline` needs to be set on index of the right dataset `{right_dataset._name}` "
+                    f"for `{output_schema_name}`."
+                )
+
         validate_join_bounds(obj.within)
+        validate_right_index(obj.dataset)
 
         if obj.on is not None and len(obj.on) > 0:
             # obj.on should be the key of the right dataset

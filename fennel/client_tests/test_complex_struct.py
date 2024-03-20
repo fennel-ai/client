@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, Dataset, field, pipeline, LastK
+from fennel.datasets import dataset, Dataset, field, pipeline, LastK, index
 from fennel.dtypes import struct
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import inputs, outputs
@@ -19,6 +19,7 @@ __owner__ = "nitin@fennel.ai"
 @struct
 class Lookup:
     movie_id: int
+    director_id: int
 
 
 @struct
@@ -51,6 +52,7 @@ class MovieDS:
     timestamp: datetime = field(timestamp=True)
 
 
+@index
 @dataset
 class MovieInfo:
     director_id: int = field(key=True)

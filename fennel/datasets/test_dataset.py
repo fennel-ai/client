@@ -17,10 +17,11 @@ from fennel.datasets import (
     Stddev,
     Sum,
     Quantile,
+    index,
 )
+from fennel.dtypes import Embedding, Window
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib import includes, meta, inputs
-from fennel.dtypes import Embedding, Window
 from fennel.sources import source, Webhook, Kafka
 from fennel.testing import *
 
@@ -29,6 +30,7 @@ __owner__ = "ml-eng@fennel.ai"
 
 
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@index
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(owner="xyz@fennel.ai")  # type: ignore
@@ -119,6 +121,20 @@ def test_simple_dataset():
             {
                 "name": "fennel_webhook",
                 "webhook": {"name": "fennel_webhook", "retention": "2592000s"},
+            }
+        ],
+        "offlineIndices": [
+            {
+                "dsName": "UserInfoDataset",
+                "dsVersion": 1,
+                "duration": {"forever": "forever"},
+            }
+        ],
+        "onlineIndices": [
+            {
+                "dsName": "UserInfoDataset",
+                "dsVersion": 1,
+                "duration": {"forever": "forever"},
             }
         ],
     }
@@ -549,6 +565,7 @@ def test_dataset_with_pipes():
         t: datetime
 
     @meta(owner="test@test.com")
+    @index
     @dataset
     class B:
         b1: int = field(key=True)
@@ -699,6 +716,7 @@ def test_dataset_with_pipes_bounds():
         t: datetime
 
     @meta(owner="test@test.com")
+    @index
     @dataset
     class B:
         b1: int = field(key=True)
@@ -2629,6 +2647,7 @@ def test_pipeline_with_tier_selector():
 
     @meta(owner="test@test.com")
     @source(kafka.topic("orders2"), disorder="1h", cdc="append")
+    @index
     @dataset
     class B:
         b1: int = field(key=True)

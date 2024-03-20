@@ -12,7 +12,14 @@ class TestCountSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, Count
+        from fennel.datasets import (
+            dataset,
+            field,
+            pipeline,
+            Dataset,
+            Count,
+            index,
+        )
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 
@@ -26,6 +33,7 @@ class TestCountSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
+        @index
         @dataset
         class Aggregated:
             uid: int = field(key=True)

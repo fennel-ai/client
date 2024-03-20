@@ -6,7 +6,7 @@ import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as fs_proto
-from fennel.datasets import dataset, field
+from fennel.datasets import dataset, field, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.gen.services_pb2 import SyncRequest
@@ -23,6 +23,7 @@ webhook = Webhook(name="fennel_webhook")
     tags=["test"],
     deprecated=True,
 )
+@index
 @dataset
 @source(webhook.endpoint("UserInfoDataset"), cdc="append", disorder="14d")
 class UserInfoDataset:
