@@ -4,7 +4,7 @@ from typing import Optional
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Sum, Count
+from fennel.datasets import dataset, field, pipeline, Dataset, Sum, Count, index
 from fennel.lib import inputs
 from fennel.dtypes import Window
 from fennel.sources import source, Webhook
@@ -23,6 +23,7 @@ class Activity:
     timestamp: datetime
 
 
+@index
 @dataset
 class MerchantCategory:
     merchant: int = field(key=True)

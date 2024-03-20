@@ -13,14 +13,15 @@ from fennel.datasets import (
     Average,
     Stddev,
     Distinct,
+    index,
 )
+from fennel.dtypes import struct
 from fennel.lib import (
     meta,
     inputs,
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.dtypes import struct
 from fennel.sources import Webhook, source
 from fennel.testing import *
 
@@ -635,6 +636,7 @@ def test_dataset_incorrect_join():
             name: str
             timestamp: datetime
 
+        @index
         @dataset
         class ABC:
             user_id: int = field(key=True)
@@ -857,6 +859,7 @@ def test_join():
             v: int
             t: datetime
 
+        @index
         @dataset
         class B:
             b1: int = field(key=True)
@@ -976,4 +979,39 @@ def test_invalid_assign_schema(client):
     assert (
         str(e.value)
         == "Error while executing pipeline `location_ds` in dataset `LocationDS`: Error in assign node for column `latitude_int` for pipeline `LocationDS2.location_ds`, Field `latitude_int` is of type int, but the column in the dataframe is of type `Float64`. Error found during checking schema for `LocationDS2.location_ds`."
+    )
+
+
+def test_non_keyed_index_dataset_raises_exception():
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @index(type="primary", online=True, offline=None)
+        @dataset
+        class Users:
+            user_id: str
+            age: int
+            t: datetime
+
+    assert (
+        str(e.value)
+        == "Index decorator is only applicable for datasets with keyed fields. Found zero key fields."
+    )
+
+
+def test_two_indexes_dataset_raises_exception():
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @index(type="primary", online=True, offline=None)
+        @index(type="primary", online=True, offline=None)
+        @dataset
+        class Users:
+            user_id: str = field(key=True)
+            age: int
+            t: datetime
+
+    assert (
+        str(e.value)
+        == "`index` can only be called once on a Dataset. Found more than one index decorators on Dataset `Users`."
     )

@@ -9,7 +9,7 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.datasets import dataset, field
+    from fennel.datasets import dataset, field, index
     from fennel.sources import source, Webhook
     from fennel.featuresets import featureset, feature, extractor
 
@@ -27,6 +27,7 @@ def test_basic(client):
         cdc="append",
         tier="silver",
     )
+    @index
     @dataset
     class Transaction:
         txid: int = field(key=True)

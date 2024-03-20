@@ -188,7 +188,7 @@ def test_invalid_kinesis_source():
         @source(
             kinesis.stream(
                 "test_stream",
-                at_timestamp(datetime.now()),
+                at_timestamp(datetime.utcnow()),
                 format="csv",
             )
         )

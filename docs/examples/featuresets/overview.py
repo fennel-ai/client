@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field
+from fennel.datasets import dataset, field, index
 from fennel.sources import source, Webhook
 from fennel.testing import mock, InternalTestClient
 
@@ -180,6 +180,7 @@ def test_multiple_features_extracted(client):
 
     # /docsnip
     @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="append")
+    @index
     @dataset
     class UserInfo:
         uid: int = field(key=True)
@@ -225,7 +226,7 @@ def test_multiple_features_extracted(client):
         datasets=[UserInfo],
         featuresets=[UserLocationFeatures],
     )
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
     df = pd.DataFrame(data, columns=["uid", "city", "update_time"])
     res = client.log("fennel_webhook", "UserInfo", df)
@@ -251,6 +252,7 @@ def test_multiple_features_extracted(client):
 @mock
 def test_extractors_across_featuresets(client):
     @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="append")
+    @index
     @dataset
     class UserInfo:
         uid: int = field(key=True)
@@ -303,7 +305,7 @@ def test_extractors_across_featuresets(client):
         datasets=[UserInfo],
         featuresets=[Request, UserLocationFeaturesRefactored],
     )
-    now = datetime.now()
+    now = datetime.utcnow()
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
     df = pd.DataFrame(data, columns=["uid", "city", "update_time"])
     res = client.log("fennel_webhook", "UserInfo", df)

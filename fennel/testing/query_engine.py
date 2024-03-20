@@ -62,8 +62,12 @@ class QueryEngine:
         else:
             fields = dataset_fields
 
+        use_as_of = True if isinstance(timestamps, pd.Series) else False
+
         fennel.datasets.datasets.dataset_lookup = partial(
-            data_engine.get_dataset_lookup_impl(None, [dataset_name]),
+            data_engine.get_dataset_lookup_impl(
+                None, [dataset_name], use_as_of
+            ),
         )
 
         timestamps = (
@@ -89,7 +93,7 @@ class QueryEngine:
         )
 
         fennel.datasets.datasets.dataset_lookup = partial(
-            data_engine.get_dataset_lookup_impl(None, None),
+            data_engine.get_dataset_lookup_impl(None, None, False),
         )
         if len(fields) == 1:
             return pd.Series(name=fields[0], data=data[fields[0]]), found
@@ -103,6 +107,7 @@ class QueryEngine:
         input_dataframe: pd.DataFrame,
         outputs: List[Union[Feature, Featureset, str]],
         timestamps: pd.Series,
+        use_as_of: bool,
     ):
         """
         Runs list of extractors on data engine.
@@ -113,6 +118,7 @@ class QueryEngine:
             input_dataframe: (pd.DataFrame) - Keys against extractors will extract data from data engine.
             outputs: (List[Union[Feature, Featureset, str]]) - Output features.
             timestamps: (pd.Series) - Timestamp as of which extractors will extract data from data engine.
+            use_as_of: (bool) - Whether to do offline or online lookups
         Returns:
             pandas dataframe
         """
@@ -152,7 +158,11 @@ class QueryEngine:
 
             if extractor.extractor_type == ProtoExtractorType.LOOKUP:
                 output = self._compute_lookup_extractor(
-                    data_engine, extractor, timestamps.copy(), intermediate_data
+                    data_engine,
+                    extractor,
+                    timestamps.copy(),
+                    intermediate_data,
+                    use_as_of,
                 )
                 self._check_schema_exceptions(output, dsschema, extractor.name)
                 continue
@@ -160,7 +170,9 @@ class QueryEngine:
             allowed_datasets = self._get_allowed_datasets(extractor)
             fennel.datasets.datasets.dataset_lookup = (
                 data_engine.get_dataset_lookup_impl(
-                    extractor.name, allowed_datasets
+                    extractor.name,
+                    allowed_datasets,
+                    use_as_of,
                 )
             )
             extractor_fqn = f"{extractor.featureset}.{extractor.name}"
@@ -174,7 +186,7 @@ class QueryEngine:
                     f"failed to run with error: {e}. "
                 )
             fennel.datasets.datasets.dataset_lookup = partial(
-                data_engine.get_dataset_lookup_impl(None, None)
+                data_engine.get_dataset_lookup_impl(None, None, False)
             )
             if not isinstance(output, (pd.Series, pd.DataFrame)):
                 raise Exception(
@@ -339,6 +351,7 @@ class QueryEngine:
         extractor: Extractor,
         timestamps: pd.Series,
         intermediate_data: Dict[str, pd.Series],
+        use_as_of: bool,
     ) -> pd.Series:
         if len(extractor.output_features) != 1:
             raise ValueError(
@@ -355,7 +368,7 @@ class QueryEngine:
         allowed_datasets = self._get_allowed_datasets(extractor)
         fennel.datasets.datasets.dataset_lookup = (
             data_engine.get_dataset_lookup_impl(
-                extractor.name, allowed_datasets
+                extractor.name, allowed_datasets, use_as_of
             )
         )
         results, _ = extractor.depends_on[0].lookup(
@@ -392,7 +405,7 @@ class QueryEngine:
             )
             results.replace({np.nan: None}, inplace=True)
         fennel.datasets.datasets.dataset_lookup = (
-            data_engine.get_dataset_lookup_impl(None, None)
+            data_engine.get_dataset_lookup_impl(None, None, False)
         )
         results.name = extractor.fqn_output_features()[0]
         intermediate_data[extractor.fqn_output_features()[0]] = results

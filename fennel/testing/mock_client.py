@@ -130,6 +130,7 @@ class MockClient(Client):
             input_dataframe,
             outputs,
             timestamps,
+            False,
         )
 
     def query_offline(
@@ -176,6 +177,7 @@ class MockClient(Client):
             input_dataframe,
             outputs,
             timestamps,
+            True,
         )
         assert output_df.shape[0] == len(timestamps), (
             f"Output dataframe has {output_df.shape[0]} rows, but there are only {len(timestamps)} "

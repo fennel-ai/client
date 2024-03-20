@@ -6,7 +6,7 @@ import pytest
 from dateutil.relativedelta import relativedelta  # type: ignore
 
 from fennel import meta, Count, featureset, feature, extractor
-from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.datasets import dataset, field, pipeline, Dataset, index
 from fennel.lib import inputs, outputs
 from fennel.sources import Webhook
 from fennel.sources import source
@@ -17,6 +17,7 @@ webhook = Webhook(name="fennel_webhook")
 __owner__ = "uber-data@eng.com"
 
 
+@index
 @dataset
 @source(
     webhook.endpoint("RiderDataset"), cdc="append", disorder="14d", tier="local"
@@ -27,6 +28,7 @@ class RiderDataset:
     birthdate: datetime
 
 
+@index
 @dataset
 @source(
     webhook.endpoint("RiderCreditScoreDataset"),
@@ -40,6 +42,7 @@ class RiderCreditScoreDataset:
     score: float
 
 
+@index
 @dataset
 @source(
     webhook.endpoint("CountryLicenseDataset"),
@@ -68,6 +71,7 @@ class ReservationsDataset:
     created: datetime
 
 
+@index
 @dataset
 @source(
     webhook.endpoint("NumCompletedTripsDataset"),
@@ -180,7 +184,7 @@ class RiderFeatures:
     def extract_age_years(
         cls, ts: pd.Series, birthdate: pd.Series
     ) -> pd.DataFrame:
-        age_years = (datetime.now() - birthdate).dt.total_seconds() / (
+        age_years = (datetime.utcnow() - birthdate).dt.total_seconds() / (
             60 * 60 * 24 * 365
         )
         age_years = age_years.astype(int)
@@ -356,7 +360,7 @@ def test_complex_auto_gen_extractors(client):
     assert extracted_df["RiderFeatures.dl_state"].to_list() == ["US", "Unknown"]
     assert extracted_df["RiderFeatures.is_us_dl"].to_list() == [True, False]
 
-    age_years = datetime.now().year - 2000
+    age_years = datetime.utcnow().year - 2000
     assert extracted_df["RiderFeatures.age_years"].to_list() == [30, age_years]
     assert extracted_df["RiderFeatures.dl_state_population"].to_list() == [
         328200000,

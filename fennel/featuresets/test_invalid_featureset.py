@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from fennel import meta
-from fennel.datasets import dataset, field
+from fennel.datasets import dataset, field, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import inputs, outputs
 from fennel.sources import source, Webhook
@@ -19,6 +19,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@index
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

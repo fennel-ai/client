@@ -6,7 +6,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import sources
-from fennel.datasets import dataset, Dataset, pipeline, field, LastK
+from fennel.datasets import dataset, Dataset, pipeline, field, LastK, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.dtypes import struct
@@ -39,6 +39,7 @@ class MovieCast:
 
 
 @meta(owner="test@test.com")
+@index
 @dataset
 class MovieInfo:
     movie: Movie = field(key=True)

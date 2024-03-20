@@ -28,6 +28,7 @@ def test_overview(client):
     # since docs requires not compilable credentials.
 
     from fennel.sources import source, Kafka, Postgres
+    from fennel.datasets import index
 
     postgres = Postgres.get(name="postgres")
     kafka = Kafka.get(name="kafka")
@@ -37,6 +38,7 @@ def test_overview(client):
     user_table = postgres.table("user", cursor="signup_at")
 
     @source(user_table, every="1m", disorder="7d", cdc="append", tier="prod")
+    @index
     @dataset
     class User:
         uid: int = field(key=True)
@@ -55,10 +57,11 @@ def test_overview(client):
 
     # /docsnip
 
-    from fennel.datasets import pipeline, Dataset, Count, Sum
+    from fennel.datasets import pipeline, Dataset, Count, Sum, index
     from fennel.lib import inputs
 
     # docsnip pipeline
+    @index
     @dataset
     class UserTransactionsAbroad:
         uid: int = field(key=True)
@@ -140,7 +143,7 @@ def test_overview(client):
         tier="local",
     )
 
-    now = datetime.now()
+    now = datetime.utcnow()
     dob = now - timedelta(days=365 * 30)
     data = [
         [1, dob, "US", now - timedelta(days=1)],
@@ -216,8 +219,8 @@ def test_overview(client):
             {
                 "UserFeature.uid": [1, 3],
                 "timestamp": [
-                    datetime.now(),
-                    datetime.now() - timedelta(days=1),
+                    datetime.utcnow(),
+                    datetime.utcnow() - timedelta(days=1),
                 ],
             }
         ),
@@ -348,13 +351,14 @@ def dummy_function():
 
 @mock
 def test_branches(client):
-    from fennel.datasets import dataset, field
+    from fennel.datasets import dataset, field, index
     from fennel.featuresets import feature, featureset, extractor
     from fennel.sources import Webhook, source
 
     webhook = Webhook(name="some_webhook")
 
     @source(webhook.endpoint("endpoint1"), disorder="14d", cdc="append")
+    @index
     @dataset
     class SomeDataset:
         uid: int = field(key=True)

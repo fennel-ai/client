@@ -13,7 +13,11 @@ from frozendict import frozendict
 import fennel.datasets.datasets
 import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Dataset, Pipeline
-from fennel.datasets.datasets import sync_validation_for_pipelines
+from fennel.datasets.datasets import (
+    sync_validation_for_pipelines,
+    get_index,
+    IndexDuration,
+)
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.internal_lib.duration import Duration, duration_to_timedelta
 from fennel.internal_lib.schema import data_schema_check
@@ -79,6 +83,7 @@ class DataEngine(object):
             self._dataset_lookup_impl,
             None,
             None,
+            False,
         )
 
     def get_datasets(self) -> List[Dataset]:
@@ -86,7 +91,7 @@ class DataEngine(object):
 
     def get_dataset_fields(self, dataset_name: str) -> List[str]:
         """
-        Returns list of dataset fields apart from keyed fields and timestamp field.
+        Returns list of dataset fields.
         Args:
             dataset_name: (str) - Name of the dataset.
         Returns:
@@ -275,44 +280,48 @@ class DataEngine(object):
                 return resp
         return FakeResponse(200, "OK")
 
-    def lookup(self, dataset_name: str, ts: pd.Series, *args, **kwargs):
-        if dataset_name not in self.datasets:
-            raise KeyError(f"Dataset: {dataset_name} not found")
-
-        fennel.datasets.datasets.dataset_lookup = partial(
-            self._dataset_lookup_impl,
-            [dataset_name],
-            None,
-        )
-
-        timestamps = cast_col_to_dtype(
-            ts,
-            schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
-        )
-
-        dataframe, found = self.datasets[dataset_name].dataset.lookup(
-            timestamps,
-            *args,
-            **kwargs,
-        )
-
-        fennel.datasets.datasets.dataset_lookup = partial(
-            self._dataset_lookup_impl,
-            None,
-            None,
-        )
-        return dataframe, found
+    # def lookup(self, dataset_name: str, ts: pd.Series, *args, **kwargs):
+    #     if dataset_name not in self.datasets:
+    #         raise KeyError(f"Dataset: {dataset_name} not found")
+    #
+    #     fennel.datasets.datasets.dataset_lookup = partial(
+    #         self._dataset_lookup_impl,
+    #         [dataset_name],
+    #         None,
+    #         True,
+    #     )
+    #
+    #     timestamps = cast_col_to_dtype(
+    #         ts,
+    #         schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
+    #     )
+    #
+    #     dataframe, found = self.datasets[dataset_name].dataset.lookup(
+    #         timestamps,
+    #         *args,
+    #         **kwargs,
+    #     )
+    #
+    #     fennel.datasets.datasets.dataset_lookup = partial(
+    #         self._dataset_lookup_impl,
+    #         None,
+    #         None,
+    #         True,
+    #     )
+    #     return dataframe, found
 
     def get_dataset_lookup_impl(
         self,
         extractor_name: Optional[str],
         allowed_datasets: Optional[List[str]],
+        use_as_of: bool,
     ) -> Callable:
         """
         Return the lookup implementation function that be monkey-patched during lookup
         Args:
             extractor_name: (Optional[str]) - Name of the extractor calling the lookup function.
             allowed_datasets: (Optional[List[str]]) - List of allowed datasets that an extractor can lookup from.
+            use_as_of: (bool) - Whether to do offline or online lookup
         Returns:
             Callable - The lookup implementation
         """
@@ -320,12 +329,14 @@ class DataEngine(object):
             self._dataset_lookup_impl,
             extractor_name,
             allowed_datasets,
+            use_as_of,
         )
 
     def _dataset_lookup_impl(
         self,
         extractor_name: Optional[str],
         allowed_datasets: Optional[List[str]],
+        use_as_of: bool,
         cls_name: str,
         ts: pd.Series,
         fields: List[str],
@@ -342,6 +353,29 @@ class DataEngine(object):
                 f"Use `depends_on` param in @extractor to specify dataset "
                 f"dependencies."
             )
+
+        index = get_index(self.datasets[cls_name].dataset)
+
+        if index is None:
+            raise ValueError(
+                f"Please define an index on dataset : {cls_name} for loookup"
+            )
+
+        if use_as_of and index.offline == IndexDuration.none:
+            raise ValueError(
+                f"Please define an offline index on dataset : {cls_name}"
+            )
+
+        if not use_as_of and not index.online:
+            raise ValueError(
+                f"Please define an online index on dataset : {cls_name}"
+            )
+
+        if use_as_of and index.offline == IndexDuration.none:
+            raise ValueError(
+                f"Please define an offline index on dataset : {cls_name}"
+            )
+
         join_columns = keys.columns.tolist()
         if keys.isnull().values.any():
             null_rows = keys[keys.isnull().any(axis=1)]
@@ -406,6 +440,9 @@ class DataEngine(object):
                 except ValueError as err:
                     raise ValueError(err)
                 df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
+                df.rename(
+                    columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True
+                )
                 result_dfs.append(df)
             # Get common columns
             common_columns = set(result_dfs[0].columns)

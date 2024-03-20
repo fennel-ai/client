@@ -10,7 +10,14 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.datasets import dataset, field, pipeline, Dataset, Average
+    from fennel.datasets import (
+        dataset,
+        field,
+        pipeline,
+        Dataset,
+        Average,
+        index,
+    )
     from fennel.lib import inputs
     from fennel.sources import source, Webhook
 
@@ -23,6 +30,7 @@ def test_basic(client):
         amt: int
         timestamp: datetime
 
+    @index
     @dataset
     class Aggregated:
         uid: int = field(key=True)

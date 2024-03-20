@@ -5,10 +5,9 @@ from typing import Optional
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, pipeline, field, Dataset, Count
+from fennel.datasets import dataset, pipeline, field, Dataset, Count, index
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib import (
-    meta,
     inputs,
     outputs,
     expectations,
@@ -35,6 +34,7 @@ webhook = Webhook(name="fennel_webhook")
 table = postgres.table("product", cursor="last_modified")
 
 
+@index
 @dataset
 @source(table, disorder="1d", cdc="append", every="1m", tier="prod")
 @source(webhook.endpoint("Product"), disorder="1d", cdc="append", tier="dev")
@@ -69,6 +69,7 @@ class Order:
 
 
 # docsnip pipelines
+@index
 @dataset
 class UserSellerOrders:
     uid: int = field(key=True)

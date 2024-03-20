@@ -13,7 +13,7 @@ class TestFilterSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.datasets import dataset, field, pipeline, Dataset, index
         from fennel.lib import inputs
         from fennel.sources import source, Webhook
 
@@ -26,6 +26,7 @@ class TestFilterSnips(unittest.TestCase):
             city: str
             signup_time: datetime
 
+        @index
         @dataset
         class Filtered:
             uid: int = field(key=True)

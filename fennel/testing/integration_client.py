@@ -16,7 +16,7 @@ try:
 
     sys.path.insert(
         0,
-        "/nix/store/4f7n9rxn2ra9i640yji2j346br3gbfh9-python3-3.11.8-env/lib/python3.11/site-packages",
+        "/nix/store/c5h0h9xmlhhjsv616647fhf3aj1vd5pq-python3-3.11.8-env/lib/python3.11/site-packages",
     )
     from fennel_client_lib import HttpServer  # type: ignore
     from fennel_dataset import lookup  # type: ignore
@@ -28,6 +28,7 @@ from fennel._vendor.requests import Response  # type: ignore
 
 def lookup_wrapper(
     branch: str,
+    use_as_of: bool,
     ds_name: str,
     ts: pd.Series,
     fields: List[str],
@@ -36,7 +37,9 @@ def lookup_wrapper(
     # convert to pyarrow datastructures
     ts_pa = pa.Array.from_pandas(ts)
     keys_pa = pa.RecordBatch.from_pandas(keys)
-    ret_pa, found_pa = lookup(branch, ds_name, ts_pa, fields, keys_pa)
+    ret_pa, found_pa = lookup(
+        branch, use_as_of, ds_name, ts_pa, fields, keys_pa
+    )
 
     # convert back to pandas
     return ret_pa.to_pandas(), found_pa.to_pandas()
@@ -52,9 +55,10 @@ class IntegrationClient(Client):
         url = url or "dummy"
         token = token or "caput-draconis"
         branch = branch or "main"
+        use_as_of = False
         super().__init__(url, token, branch)
         self._http = HttpServer()
-        fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, branch)  # type: ignore
+        fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, branch, use_as_of)  # type: ignore
 
     def is_integration_client(self):
         return True
@@ -77,18 +81,22 @@ class IntegrationClient(Client):
 
     def checkout(self, name: str):
         self._branch = name
-        fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, name)  # type: ignore
+        fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, name, False)  # type: ignore
 
     def init_branch(self, name: str):
         resp = super().init_branch(name)
-        fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, name)
+        fennel.datasets.datasets.dataset_lookup = partial(
+            lookup_wrapper, name, False
+        )
         # Time taken by view to refresh
         time.sleep(7)
         return resp
 
     def clone_branch(self, name: str, from_branch: str):
         resp = super().clone_branch(name, from_branch)
-        fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, name)
+        fennel.datasets.datasets.dataset_lookup = partial(
+            lookup_wrapper, name, False
+        )
         # Time taken by view to refresh
         time.sleep(7)
         return resp
