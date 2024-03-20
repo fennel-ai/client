@@ -3,6 +3,9 @@
 	"start_urls": [
 		"https://fennel.ai/docs"
 	],
+    "stop_urls": [
+        "https://fennel.ai/docs/api-reference/(?!\\d+\\.\\d+\\.\\d+/?).*"
+    ],
 	"sitemap_urls": [
 		"https://fennel.ai/docs/sitemap.xml"
 	],
@@ -18,5 +21,8 @@
 		"lvl4": "main h4",
 		"lvl5": "main h5",
 		"text": "main p:not(#section_title)"
-	}
+	},
+    "selectors_exclude": [
+        "#sidenav"
+    ]
 }
