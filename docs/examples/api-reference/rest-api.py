@@ -50,10 +50,11 @@ class TestRestAPI(unittest.TestCase):
         # /docsnip
 
         # docsnip rest_extract_api
-        url = "{}/api/v1/branch/{}/query".format(SERVER, BRANCH_NAME)
+        url = "{}/api/v1/query".format(SERVER)
         headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer <API-TOKEN>",
+            "X-FENNEL-BRANCH": BRANCH_NAME,
         }
         data = [
             {"UserFeatures.userid": 1},
@@ -73,10 +74,11 @@ class TestRestAPI(unittest.TestCase):
         # /docsnip
 
         # docsnip rest_extract_api_columnar
-        url = "{}/api/v1/branch/{}/query".format(SERVER, BRANCH_NAME)
+        url = "{}/api/v1/query".format(SERVER)
         headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer <API-TOKEN>",
+            "X-FENNEL-BRANCH": BRANCH_NAME,
         }
         data = {"UserFeatures.userid": [1, 2, 3]}
         req = {
