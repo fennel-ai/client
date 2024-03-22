@@ -1,4 +1,7 @@
 # Changelog
+## [1.1.1] - 2024-03-20
+- Moving branch name to headers from path variable.
+
 ## [1.1.0] - 2024-03-15
 - Introduce offline and online index on datasets.
 

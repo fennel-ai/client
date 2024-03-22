@@ -4,7 +4,7 @@ order: 1
 status: 'published'
 ---
 
-`POST /api/v1/branch/:branch_name/query`
+`POST /api/v1/query`
 ### Query
 
 API to extract a set of output features given known values of some input features. 
@@ -19,9 +19,8 @@ Fennel uses bearer token for authorization. Pass along a valid token that has
 permissions to log data to the webhook.
 </Expandable>
 
-#### Query Parameters
-<Expandable title="branch_name" type="str">
-The name of the branch against which we want to query.
+<Expandable title="X-FENNEL-BRANCH" type="Bearer {str}">
+Fennel uses header for passing branch name to the server against which we want to query.
 </Expandable>
 
 #### Body Parameters:
