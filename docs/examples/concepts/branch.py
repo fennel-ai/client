@@ -30,9 +30,7 @@ def test_branches_basic(client):
 
     # docsnip basic
     client.init_branch("branch1")
-    client.checkout(
-        "branch1"
-    )  # this is noop: init_branch checks out new branch
+    client.checkout("branch1")  # noop: init_branch checks out new branch
     client.commit(
         message="some module: some git like commit message",
         datasets=[Dataset],
@@ -40,9 +38,7 @@ def test_branches_basic(client):
     )
 
     client.init_branch("branch2")
-    client.checkout(
-        "branch2"
-    )  # this is noop: init_branch checks out new branch
+    client.checkout("branch2")  # noop: init_branch checks out new branch
     client.commit(
         message="another module: some git like commit message",
         datasets=[Dataset],
@@ -78,6 +74,7 @@ def test_branches_clone(client):
         featuresets=[SomeFeatureset],
     )
 
+    # docsnip-highlight next-line
     client.clone_branch("branch1", "branch2")
     client.checkout("branch2")
     # /docsnip

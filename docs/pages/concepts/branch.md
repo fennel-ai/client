@@ -37,7 +37,8 @@ independent copy of all the datasets/featuresets in the original branch. After
 the clone, the datasets/featuresets in the new branch can be modified arbitrarily
 without influencing the original branch.
 
-<pre snippet="concepts/branch#clone" message="Cloning branch1 into a new branch branch2">
+<pre snippet="concepts/branch#clone" 
+    message="Cloning branch1 into a new branch branch2">
 </pre>
 
 ### Copy-on-Write Clone

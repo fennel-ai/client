@@ -60,13 +60,13 @@ def test_featureset_many_extractors():
 
         @extractor
         @inputs(duration)
-        @outputs(over_2hrs)
+        @outputs(over_2hrs)  # docsnip-highlight
         def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
             return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
         @extractor
         @inputs(duration)
-        @outputs(over_3hrs)
+        @outputs(over_3hrs)  # docsnip-highlight
         def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
             return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
 
@@ -89,7 +89,7 @@ def test_multiple_extractors_of_same_feature(client):
 
         @extractor(tier=["default"])
         @inputs(duration)
-        @outputs(over_2hrs, over_3hrs)
+        @outputs(over_2hrs, over_3hrs)  # docsnip-highlight
         def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.DataFrame:
             two_hrs = durations > 2 * 3600
             three_hrs = durations > 3 * 3600
@@ -97,7 +97,7 @@ def test_multiple_extractors_of_same_feature(client):
 
         @extractor(tier=["non-default"])
         @inputs(duration)
-        @outputs(over_3hrs)
+        @outputs(over_3hrs)  # docsnip-highlight
         def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
             return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
 
@@ -128,7 +128,7 @@ def test_remote_feature_as_input():
         over_limit: bool = feature(id=2)
 
         @extractor
-        @inputs(Length.limit_secs, duration)
+        @inputs(Length.limit_secs, duration)  # docsnip-highlight
         @outputs(over_limit)
         def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
             return pd.Series(name="over_limit", data=durations > limits)
@@ -153,7 +153,7 @@ def test_remote_feature_as_output():
 
             @extractor
             @inputs(limit_secs, duration)
-            @outputs(Request.too_long)
+            @outputs(Request.too_long)  # docsnip-highlight
             def e(cls, ts: pd.Series, limits: pd.Series, durations: pd.Series):
                 return pd.Series(name="movie_too_long", data=durations > limits)
 

@@ -42,15 +42,8 @@ def test_datasets_basic():
 def test_pipeline_basic():
     User, Transaction = test_datasets_basic()
     # docsnip pipeline
-    from fennel.datasets import (
-        pipeline,
-        Dataset,
-        dataset,
-        field,
-        Count,
-        Sum,
-        index,
-    )
+    from fennel.datasets import pipeline, Dataset, dataset, field, index
+    from fennel.datasets import Count, Sum
 
     @index
     @dataset
@@ -61,7 +54,7 @@ def test_pipeline_basic():
         amount_1w: float
         timestamp: datetime
 
-        @classmethod
+        # docsnip-highlight start
         @pipeline
         @inputs(User, Transaction)
         def first_pipeline(cls, user: Dataset, transaction: Dataset):
@@ -74,6 +67,8 @@ def test_pipeline_basic():
                 Sum(of="amount", window="1d", into_field="amount_1d"),
                 Sum(of="amount", window="1w", into_field="amount_1w"),
             )
+
+        # docsnip-highlight end
 
     # /docsnip
     return UserTransactionsAbroad
@@ -163,10 +158,12 @@ def test_fraud(client):
         @inputs(Activity)
         def create_fraud_dataset(cls, activity: Dataset):
             return (
+                # docsnip-highlight next-line
                 activity.filter(lambda df: df["action_type"] == "report")
                 .assign(
                     "amount_cents",
                     float,
+                    # docsnip-highlight next-line
                     lambda df: df["amount"].astype(float) / 100,
                 )
                 .drop("action_type", "amount")

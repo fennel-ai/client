@@ -3,7 +3,7 @@ title: Source Decorator
 order: 0
 status: published
 ---
-### Source Decorator
+### Source
 All Fennel sources are wrapped in the `@source` decorator applied on top of the
 datasets. This decorator specifies a bunch of options to configure the ingestion
 mechanism that apply to most data sources.

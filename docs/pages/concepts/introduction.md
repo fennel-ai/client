@@ -19,6 +19,7 @@ This dataset has four columns -- `uid` (of type int), `dob` (of type datetime),
 `country` (of type string), and `signup_time` (of type datetime). For now, 
 ignore the `field(...)` descriptors - they'd be explained soon.
 
+### Sources
 How to get data into a dataset? It's possible to hydrate datasets from external 
 data sources. First we define the external sources by providing the required 
 credentials:
@@ -38,22 +39,32 @@ The first dataset will poll postgres table for new updates every minute and
 hydrate itself with new data. The second dataset hydrates itself from a kafka 
 topic. There are few more kwargs set here like `disorder` and `cdc` - ignore 
 them for now - though if you are interested, you can read about them and sources 
-in general [here](/concepts/source).  
+in general [here](/concepts/source). 
 
 Besides Postgres and Kafka, Fennel supports connectors with many other sources. 
 See [full list](/api-reference/sources).
 
+
+### Pipeline
 Once you have one or more "sourced" datasets, you can derive new datasets from 
 existing datasets by writing simple declarative Python code - it's 
 unimaginatively called a pipeline. Let's look at one such pipeline:
 
 <pre snippet="concepts/introduction#pipeline" highlight="3"></pre>
 
+So we can define datasets, source them from external datasets, derive them 
+via pipelines, and do temporal primary key lookups on them via indices. What has 
+all this to do with features? How to write a feature in Fennel? Well, this is 
+where we have to talk about the second main concept - featureset.
+
+### Index
 It's possible to do low latency lookups on these datasets using dataset keys. 
 Earlier you were asked to ignore the field descriptors -- it's time to revisit 
 those. If you look carefully, line with `field(key=True)` above defines `uid` 
-to be a key (dataset can have multi-column keys too). If we know the uid of a 
-user, we can ask this dataset for the value of the rest of the columns:
+to be a key (dataset can have multi-column keys too). Keyed datasets can be
+indexed by applying `@index` decorator - this tells Fennel to build some auxiliary
+data structure to look up the value of a row with a given uid (or more generally
+the value of all the key fields).
 
 <pre snippet="concepts/introduction#dataset_lookup"></pre>
 
@@ -65,12 +76,6 @@ data as the data evolves and can go back in time to do a lookup. This movement
 of data is tagged with whatever field is tagged with `field(timestamp=True)`. In 
 fact, this ability to track time evolution enables Fennel to use the same code 
 to generate both online and offline features.
-
-
-So we can define datasets, source them from external datasets, derive them 
-via pipelines, and do temporal primary key lookups on them. What has all this to do 
-with features? How to write a feature in Fennel? Well, this is where we have to 
-talk about the second main concept - featureset.
 
 ## Featureset
 
@@ -126,7 +131,6 @@ This makes a POST request to Fennel and commits the dataset on the server. Fenne
 may reject this commit request if there is any error with any dataset or 
 featureset e.g. if a dataset already exists with this name or somehow this 
 dataset is malformed.
-
 
 Overtime, you'd have many more datasets and featuresets - you'd send all of them
 in a commit call. And with that, the validation can become lot more complex e.g 

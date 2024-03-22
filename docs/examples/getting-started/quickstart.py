@@ -34,10 +34,10 @@ webhook = Webhook(name="fennel_webhook")
 table = postgres.table("product", cursor="last_modified")
 
 
-@index
-@dataset
 @source(table, disorder="1d", cdc="append", every="1m", tier="prod")
 @source(webhook.endpoint("Product"), disorder="1d", cdc="append", tier="dev")
+@index
+@dataset
 class Product:
     product_id: int = field(key=True)
     seller_id: int

@@ -62,8 +62,7 @@ Here are some examples of valid and invalid datasets:
 
 
 <pre snippet="datasets/datasets#invalid_user_dataset_optional_key_field"
-    status="error" message="Key fields can not have optional type"
-    highlight="7">
+    status="error" message="Key fields can not have optional type">
 </pre>
 
 
@@ -73,14 +72,38 @@ Here are some examples of valid and invalid datasets:
 
 
 <pre snippet="datasets/datasets#invalid_user_dataset_ambiguous_timestamp_field"
-status="error" message="Multile datetime fields without explicit timestamp field"
-    highlight="9,10">
+    status="error" 
+    message="Multile datetime fields without explicit timestamp field">
 </pre>
 
 <pre snippet="datasets/datasets#valid_dataset_multiple_datetime_fields"
-    status="success" message="Multiple datetime fields but one explicit timestamp field"
-    highlight="9">
+    status="success" 
+    message="Multiple datetime fields but one explicit timestamp field">
 </pre>
+
+### Index
+
+Keyed datasets can be indexed by applying the `@index` decorator and indexed
+datasets can be looked up via the `lookup` method on datasets.
+
+<pre snippet="datasets/datasets#dataset_index_basic" status="success" 
+    message="Creates online & offline indices on key field 'uid'">
+</pre>
+
+<pre snippet="datasets/datasets#invalid_index" status="error"
+    message="Can not index datasets without keys">
+</pre>
+
+By default, `@index` builds both the online and full historical offline indices.
+That can be configured by setting `online` and `offline` kwargs on the 
+decorator (the default configuration is `online` set to True and `offline` set
+to `forever`).
+
+<pre snippet="datasets/datasets#dataset_index_advanced"></pre>
+
+Selectively turning only one of these on can be a good way to save storage & 
+compute costs. A dataset needs to be indexed with `offline` set to `forever` for 
+it to be joinable as the RHS dataset.
 
 ### Versioning
 
@@ -90,8 +113,9 @@ a dataset can be explicitly specified in the `@dataset` decorator as follows:
 <pre snippet="datasets/datasets#dataset_version"></pre>
 
 Increasing the version of a dataset can be accompanied with any other changes -
-changing schema, changing source, change pipeline code etc. In either scenario,
-Fennel recomputes the full dataset when the version is incremented.
+changing schema, changing source, change pipeline code, adding/removing index etc. 
+In either scenario, Fennel recomputes the full dataset when the version is 
+incremented.
 
 The version of a dataset also captures all its ancestry graph. In other words, 
 when the version of a dataset is incremented, the version of all downstream 
