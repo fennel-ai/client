@@ -26,6 +26,7 @@ Let's look at an example:
 
 ```python
 @meta(owner='nikhil@xyz.ai', tags=['PII', 'hackathon'])
+@index
 @dataset
 class User:
     uid: int = field(key=True)
@@ -36,10 +37,10 @@ class User:
 @meta(owner='feed-team@xyz.ai')
 @featureset
 class UserFeatures:
-    uid: int = feature(id=1)
-    zip: str = feature(id=2).meta(tags=['PII'])
-    bmi: float = feature(id=3).meta(owner='alan@xyz.ai')
-    bmr: float = feature(id=4).meta(deprecated=True)
+    uid: int = feature()
+    zip: str = feature().meta(tags=['PII'])
+    bmi: float = feature().meta(owner='alan@xyz.ai')
+    bmr: float = feature().meta(deprecated=True)
     ..
 
     @meta(description='based on algorithm specified here: bit.ly/xyy123')

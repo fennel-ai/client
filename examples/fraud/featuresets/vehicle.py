@@ -10,11 +10,9 @@ __owner__ = "eng@app.com"
 
 @featureset
 class VehicleFS:
-    vehicle_id: int = feature(id=1).extract(feature=Request.vehicle_id)
-    market_area_id: int = feature(id=2).extract(
-        field=MarketAreaDS.market_area_id, default=0
-    )
-    vehicle_state: str = feature(id=3)
+    vehicle_id: int = feature(ref=Request.vehicle_id)
+    market_area_id: int = feature(ref=MarketAreaDS.market_area_id, default=0)
+    vehicle_state: str = feature()
 
     @extractor(depends_on=[MarketAreaDS], version=1)
     @inputs(vehicle_id)

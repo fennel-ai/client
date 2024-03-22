@@ -8,7 +8,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import (
     includes,
     inputs,
@@ -51,13 +51,13 @@ class UserInfoDataset:
 @meta(owner="test@test.com")
 @featureset
 class UserInfoSingleExtractor:
-    userid: int = feature(id=1)
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
-    age_squared: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    userid: int = F()
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age_squared: int = F()
+    age_cubed: int = F()
+    is_name_common: bool = F()
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(depends_on=[UserInfoDataset])  # type: ignore
     @inputs(userid)
     @outputs(age, age_squared, age_cubed, is_name_common)
     def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
@@ -88,17 +88,17 @@ def get_country_geoid(country: str) -> int:
 @meta(owner="test@test.com")
 @featureset
 class UserInfoMultipleExtractor:
-    userid: int = feature(id=1)
-    name: str = feature(id=2)
-    country_geoid: int = feature(id=3)
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
-    age_squared: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
-    age_reciprocal: float = feature(id=8)
-    age_doubled: int = feature(id=9)
+    userid: int = F()
+    name: str = F()
+    country_geoid: int = F()
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age_squared: int = F()
+    age_cubed: int = F()
+    is_name_common: bool = F()
+    age_reciprocal: float = F()
+    age_doubled: int = F()
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(depends_on=[UserInfoDataset])  # type: ignore
     @inputs(userid)
     @outputs(age, name)
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
@@ -140,7 +140,7 @@ class UserInfoMultipleExtractor:
         # returns a dataframe with extra columns
         return pd.DataFrame([d4, d3, d2]).T
 
-    @extractor(depends_on=[UserInfoDataset], version=2)
+    @extractor(depends_on=[UserInfoDataset], version=2)  # type: ignore
     @includes(get_country_geoid)
     @inputs(userid)
     @outputs(country_geoid)
@@ -261,48 +261,29 @@ class FlightDataset:
 @meta(owner="test@test.com")
 @featureset
 class FlightRequest:
-    id: int = feature(id=1)
-
-
-@meta(owner="test@test.com")
-@featureset
-class FlightCrewRequest:
-    id: int = feature(id=1)
-    airline: str = feature(id=2)
+    id: int = F()
 
 
 @meta(owner="test@test.com")
 @featureset
 class GeneratedFeatures:
-    # alias
-    user_id: int = feature(id=1).extract(feature=UserInfoSingleExtractor.userid)  # type: ignore
-    # lookup default provider
-    country: str = feature(id=3).extract(  # type: ignore
-        field=UserInfoDataset.country,
-        default="pluto",
-    )
-    # more lookups with complex types
-    # the following 2 features will be batched on the server side
-    velocity: Velocity = feature(id=4).extract(  # type: ignore
-        field=FlightDataset.v_cruising,
+    user_id: int = F(ref=UserInfoSingleExtractor.userid)  # type: ignore
+    id: int = F(ref=FlightRequest.id)  # type: ignore
+    country: str = F(ref=UserInfoDataset.country, default="pluto")  # type: ignore
+    velocity: Velocity = F(
+        ref=FlightDataset.v_cruising,  # type: ignore
         default=Velocity(500.0, 0),  # type: ignore
-        provider=FlightRequest,
     )
-    layout: Dict[str, Optional[int]] = feature(id=5).extract(  # type: ignore
-        field=FlightDataset.layout,
+    layout: Dict[str, Optional[int]] = F(
+        ref=FlightDataset.layout,  # type: ignore
         default={"economy": 0},
-        provider=FlightRequest,
     )
-    # We use a different provider here to test that different providers can be used
-    pilots: List[int] = feature(id=6).extract(  # type: ignore
-        field=FlightDataset.pilot_ids,
+    pilots: List[int] = F(
+        ref=FlightDataset.pilot_ids,  # type: ignore
         default=[0, 0, 0],
-        provider=FlightCrewRequest,
     )
-    # Optional feature
-    base_region: Optional[str] = feature(id=7).extract(  # type: ignore
-        field=FlightDataset.region,
-        provider=FlightRequest,
+    base_region: Optional[str] = F(
+        ref=FlightDataset.region,  # type: ignore
     )
 
 
@@ -318,7 +299,6 @@ class TestDerivedExtractor(unittest.TestCase):
                 UserInfoSingleExtractor,
                 GeneratedFeatures,
                 FlightRequest,
-                FlightCrewRequest,
             ],
         )
         now = datetime.utcnow()
@@ -361,14 +341,11 @@ class TestDerivedExtractor(unittest.TestCase):
             inputs=[
                 UserInfoSingleExtractor.userid,
                 FlightRequest.id,
-                FlightCrewRequest.id,
             ],
             input_dataframe=pd.DataFrame(
                 {
                     "UserInfoSingleExtractor.userid": [18232, 18234, 7],
                     "FlightRequest.id": [555, 1131, 4032],
-                    "FlightCrewRequest.id": [555, 1131, 4032],
-                    "FlightCrewRequest.airline": ["AA", "WN", "WN"],
                 }
             ),
         )
@@ -460,9 +437,9 @@ class TestExtractorDAGResolution(unittest.TestCase):
 @meta(owner="test@test.com")
 @featureset
 class UserInfoTransformedFeatures:
-    age_power_four: int = feature(id=1)
-    is_name_common: bool = feature(id=2)
-    country_geoid_square: int = feature(id=3)
+    age_power_four: int = F()
+    is_name_common: bool = F()
+    country_geoid_square: int = F()
 
     @extractor
     @inputs(
@@ -597,12 +574,12 @@ class DocumentContentDataset:
 @meta(owner="aditya@fennel.ai")
 @featureset
 class DocumentFeatures:
-    doc_id: int = feature(id=1)
-    bert_embedding: Embedding[4] = feature(id=2)
-    fast_text_embedding: Embedding[3] = feature(id=3)
-    num_words: int = feature(id=4)
+    doc_id: int = F()
+    bert_embedding: Embedding[4] = F()
+    fast_text_embedding: Embedding[3] = F()
+    num_words: int = F()
 
-    @extractor(depends_on=[DocumentContentDataset])
+    @extractor(depends_on=[DocumentContentDataset])  # type: ignore
     @inputs(doc_id)
     @outputs(num_words, bert_embedding, fast_text_embedding)
     def get_doc_features(cls, ts: pd.Series, doc_id: pd.Series):

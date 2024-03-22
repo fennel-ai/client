@@ -14,14 +14,14 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.featuresets import featureset, feature, extractor
+    from fennel.featuresets import featureset, feature as F, extractor
     from fennel.lib import inputs, outputs
 
     @featureset
     class Numbers:
-        num: int = feature(id=1)
-        is_even: bool = feature(id=2)
-        is_odd: bool = feature(id=3)
+        num: int = F()
+        is_even: bool = F()
+        is_odd: bool = F()
 
         @extractor
         @inputs(num)

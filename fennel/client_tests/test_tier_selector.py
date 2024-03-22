@@ -5,7 +5,7 @@ import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 from fennel.datasets import dataset, pipeline, field, Dataset, Sum, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.testing import *
@@ -100,15 +100,15 @@ class ActorStats:
 @meta(owner="zaki@fennel.ai")
 @featureset
 class RequestFeatures:
-    name: str = feature(id=1)
+    name: str = F()
 
 
 @meta(owner="abhay@fennel.ai")
 @featureset
 class ActorFeatures:
-    revenue: int = feature(id=1)
+    revenue: int = F()
 
-    @extractor(depends_on=[ActorStats], tier="prod")
+    @extractor(depends_on=[ActorStats], tier="prod")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs(revenue)
     def extract_revenue(cls, ts: pd.Series, name: pd.Series):
@@ -116,7 +116,7 @@ class ActorFeatures:
         df = df.fillna(0)
         return df["revenue"]
 
-    @extractor(depends_on=[ActorStats], tier="staging")
+    @extractor(depends_on=[ActorStats], tier="staging")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs(revenue)
     def extract_revenue2(cls, ts: pd.Series, name: pd.Series):

@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 
 from fennel.datasets import dataset, pipeline, field, Dataset, Count, index
-from fennel.featuresets import feature, featureset, extractor
+from fennel.featuresets import feature as F, featureset, extractor
 from fennel.lib import (
     inputs,
     outputs,
@@ -97,10 +97,10 @@ class UserSellerOrders:
 # docsnip features
 @featureset
 class UserSellerFeatures:
-    uid: int = feature(id=1)
-    seller_id: int = feature(id=2)
-    num_orders_1d: int = feature(id=3)
-    num_orders_1w: int = feature(id=4)
+    uid: int = F()
+    seller_id: int = F()
+    num_orders_1d: int = F()
+    num_orders_1w: int = F()
 
     @extractor(depends_on=[UserSellerOrders])
     @inputs(uid, seller_id)

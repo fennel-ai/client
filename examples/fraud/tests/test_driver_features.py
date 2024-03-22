@@ -107,4 +107,4 @@ class TestCreditScore:
                 }
             ),
         )
-        assert feature_df.shape == (5, 1)
+        assert feature_df.shape == (5, 2)

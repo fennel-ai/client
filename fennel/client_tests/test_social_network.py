@@ -5,7 +5,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, Dataset, pipeline, Count, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.dtypes import regex, oneof
 from fennel.sources import source, Webhook
@@ -107,18 +107,18 @@ class UserCategoryDataset:
 @meta(owner="feature-team@myspace.com")
 @featureset
 class Request:
-    user_id: str = feature(id=1)
-    category: str = feature(id=2)
+    user_id: str = F()
+    category: str = F()
 
 
 @meta(owner="feature-team@myspace.com")
 @featureset
 class UserFeatures:
-    num_views: int = feature(id=2)
-    num_category_views: int = feature(id=3)
-    category_view_ratio: float = feature(id=4)
+    num_views: int = F()
+    num_category_views: int = F()
+    category_view_ratio: float = F()
 
-    @extractor(depends_on=[UserViewsDataset])
+    @extractor(depends_on=[UserViewsDataset])  # type: ignore
     @inputs(Request.user_id)
     @outputs(num_views)
     def extract_user_views(cls, ts: pd.Series, user_ids: pd.Series):
@@ -127,7 +127,7 @@ class UserFeatures:
 
         return views["num_views"]
 
-    @extractor(depends_on=[UserCategoryDataset, UserViewsDataset])
+    @extractor(depends_on=[UserCategoryDataset, UserViewsDataset])  # type: ignore
     @inputs(Request.user_id, Request.category)
     @outputs(category_view_ratio, num_category_views)
     def extractor_category_view(

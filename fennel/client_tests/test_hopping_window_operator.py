@@ -7,7 +7,7 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel import sources
 from fennel.datasets import dataset, Dataset, pipeline, field, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib.aggregate import Average, LastK
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs, Window, struct
@@ -124,13 +124,13 @@ class SessionStats:
 @meta(owner="test@test.com")
 @featureset
 class UserSessionStats:
-    user_id: int = feature(id=1)
-    avg_count: float = feature(id=2)
-    avg_length: float = feature(id=3)
-    last_visitor_session: List[Window] = feature(id=4)
-    avg_star: float = feature(id=5)
+    user_id: int = F()
+    avg_count: float = F()
+    avg_length: float = F()
+    last_visitor_session: List[Window] = F()
+    avg_star: float = F()
 
-    @extractor(depends_on=[SessionStats])
+    @extractor(depends_on=[SessionStats])  # type: ignore
     @inputs(user_id)
     @outputs(avg_count, avg_length, last_visitor_session, avg_star)
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):

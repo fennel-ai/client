@@ -92,16 +92,16 @@ def test_overview(client):
 
     from datetime import timedelta
 
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
     from fennel.lib import inputs, outputs
 
     # docsnip featureset
     @featureset
     class UserFeature:
-        uid: int = feature(id=1)
-        country: str = feature(id=2)
-        age: float = feature(id=3)
-        dob: datetime = feature(id=4)
+        uid: int = F()
+        country: str = F()
+        age: float = F()
+        dob: datetime = F()
 
         # docsnip-highlight start
         @extractor(depends_on=[User])
@@ -361,7 +361,7 @@ def dummy_function():
 @mock
 def test_branches(client):
     from fennel.datasets import dataset, field, index
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
     from fennel.sources import Webhook, source
 
     webhook = Webhook(name="some_webhook")
@@ -377,10 +377,8 @@ def test_branches(client):
 
     @featureset
     class SomeFeatureset:
-        uid: int = feature(id=1)
-        country: str = feature(id=2).extract(
-            field=SomeDataset.country, default="unknown"
-        )
+        uid: int = F()
+        country: str = F(ref=SomeDataset.country, default="unknown")
 
     # docsnip branches
     client.init_branch("dev")

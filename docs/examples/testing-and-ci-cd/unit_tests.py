@@ -97,19 +97,19 @@ class TestDataset(unittest.TestCase):
 # /docsnip
 
 # docsnip featuresets_testing
-from fennel.featuresets import feature, featureset, extractor
+from fennel.featuresets import feature as F, featureset, extractor
 
 
 @meta(owner="test@test.com")
 @featureset
 class UserInfoFeatures:
-    userid: int = feature(id=1)
-    name: str = feature(id=2)
+    userid: int = F()
+    name: str = F()
     # The users gender among male/female/non-binary
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-    age_squared: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    age: int = F().meta(owner="aditya@fennel.ai")
+    age_squared: int = F()
+    age_cubed: int = F()
+    is_name_common: bool = F()
 
     @extractor
     @inputs(age, name)
@@ -177,14 +177,14 @@ class UserInfoDataset:
 @meta(owner="test@test.com")
 @featureset
 class UserInfoMultipleExtractor:
-    userid: int = feature(id=1)
-    name: str = feature(id=2)
-    country_geoid: int = feature(id=3)
+    userid: int = F()
+    name: str = F()
+    country_geoid: int = F()
     # The users gender among male/female/non-binary
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-    age_squared: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    age: int = F().meta(owner="aditya@fennel.ai")
+    age_squared: int = F()
+    age_cubed: int = F()
+    is_name_common: bool = F()
 
     @extractor(depends_on=[UserInfoDataset])
     @inputs(userid)
