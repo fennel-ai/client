@@ -4,8 +4,6 @@ order: 0
 status: published
 ---
 ### Redshift
-<Divider>
-<LeftSection>
 Data connector to Redshift databases.
 
 #### Database Parameters
@@ -67,11 +65,7 @@ can not be parsed are rejected. Please keep an eye on the 'Errors' tab of
 Fennel console after initiating any data sync.
 </Expandable>
 
-</LeftSection>
-<RightSection>
 <pre snippet="api-reference/sources/sql#redshift_source"></pre>
-</RightSection>
-</Divider>
 
 
 
