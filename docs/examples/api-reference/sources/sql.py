@@ -134,18 +134,15 @@ def test_bigquery_basic(client):
         name="my_bigquery",
         project_id="my_project",
         dataset_id="my_dataset",
-        credentials_json='{"type": "service_account",'
-        '"project_id": "my_project",'
-        '"private_key_id": "5db2bc8fa9a1ef33817a421569b6e6266",'
-        '"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqh\n-----END PRIVATE KEY-----\n",'
-        '"client_email":"username@myr_pojectiam.gserviceaccount.com",'
-        '"client_id": "1131669200881087123",'
-        '"auth_uri": "https://accounts.google.com/o/oauth2/auth",'
-        '"token_uri": "https://oauth2.googleapis.com/token", '
-        '"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",'
-        '"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/username'
-        '@myr_pojectiam.gserviceaccount.com",'
-        '"universe_domain": "googleapis.com}',
+        credentials_json="""{
+        "type": "service_account",
+        "project_id": "fake-project-356105",
+        "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",
+        "client_id": "103688493243243272951",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
+        }""",
     )
     # docsnip-highlight end
 

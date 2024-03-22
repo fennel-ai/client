@@ -767,7 +767,7 @@ def test_multiple_sources():
                 "db": {
                     "name": "bq_movie_tags",
                     "bigquery": {
-                        "dataset": "movie_tags",
+                        "datasetId": "movie_tags",
                         "credentialsJson": '{\n        "type": "service_account",\n        "project_id": "fake-project-356105",\n        "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",\n        "client_id": "103688493243243272951",\n        "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n        "token_uri": "https://oauth2.googleapis.com/token",\n        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"\n    }',
                         "projectId": "gold-cocoa-356105",
                     },
@@ -791,7 +791,7 @@ def test_multiple_sources():
     e = {
         "name": "bq_movie_tags",
         "bigquery": {
-            "dataset": "movie_tags",
+            "datasetId": "movie_tags",
             "credentialsJson": '{\n        "type": "service_account",\n        "project_id": "fake-project-356105",\n        "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",\n        "client_id": "103688493243243272951",\n        "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n        "token_uri": "https://oauth2.googleapis.com/token",\n        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"\n    }',
             "projectId": "gold-cocoa-356105",
         },

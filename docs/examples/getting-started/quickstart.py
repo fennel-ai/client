@@ -13,7 +13,7 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.sources import source, Postgres, Snowflake, Kafka, Webhook, BigQuery
+from fennel.sources import source, Postgres, Snowflake, Kafka, Webhook
 from fennel.testing import MockClient
 
 __owner__ = "nikhil@fennel.ai"
@@ -25,7 +25,6 @@ postgres = Postgres.get(name="my_rdbms")
 warehouse = Snowflake.get(name="my_warehouse")
 kafka = Kafka.get(name="my_kafka")
 webhook = Webhook(name="fennel_webhook")
-bigquery = BigQuery(name="my_bigquery")
 
 
 # /docsnip

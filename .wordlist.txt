@@ -139,6 +139,7 @@ backend
 backfill
 backfilled
 balancer
+bigquery
 binlog
 bmi
 bmr
