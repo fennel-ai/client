@@ -1,4 +1,7 @@
 # Changelog
+## [1.1.2] - 2024-03-22
+- Support `bigquery` source
+
 ## [1.1.1] - 2024-03-20
 - Moving branch name to headers from path variable.
 

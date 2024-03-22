@@ -55,6 +55,21 @@ kinesis = Kinesis(
     role_arn="arn:aws:iam::123456789012:role/test-role",
 )
 
+bigquery = BigQuery(
+    name="bigquery_src",
+    project_id="my_project",
+    dataset_id="my_dataset",
+    credentials_json="""{
+        "type": "service_account",
+        "project_id": "fake-project-356105",
+        "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",
+        "client_id": "103688493243243272951",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
+    }""",
+)
+
 
 def test_simple_source():
     with pytest.raises(TypeError) as e:
@@ -251,6 +266,12 @@ def test_multiple_sources(client):
             cdc="append",
             disorder="2d",
         )
+        @source(
+            bigquery.table("test_table", cursor="added_on"),
+            disorder="14d",
+            cdc="append",
+            every="1h",
+        )
         @dataset
         class UserInfoDataset:
             user_id: int = field(key=True)
@@ -267,7 +288,7 @@ def test_multiple_sources(client):
 
     assert (
         str(e.value)
-        == "Dataset `UserInfoDataset` has more than one source defined, found 4 sources."
+        == "Dataset `UserInfoDataset` has more than one source defined, found 5 sources."
     )
 
 
