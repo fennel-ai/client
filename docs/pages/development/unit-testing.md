@@ -35,7 +35,7 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(found, expected)    
 ```
 
-Here we imported `mock_client` from the `testing`. This is a decorator which 
+Here we imported `mock` from `fennel.testing`. This is a decorator which 
 can be used to decorate test functions - and the decorator supplies an extra 
 argument called `client` to the test. Once the `client` object reaches the 
 body of the test, you can do all operations that are typically done on a real 
@@ -59,10 +59,9 @@ Here is an end to end example. Suppose our regular non-test code looks like this
 And you want to test that data reaching `RatingActivity` dataset correctly 
 propagates to `MovieRating` dataset via the pipeline. You could write the 
 following unit test to do so:
-
 <pre snippet="testing-and-ci-cd/unit_tests#datasets_testing"></pre>
 
-### Testing Featuresets
+## Testing Featuresets
 Extractors are simple Python functions and, hence, can be unit tested directly.
 
 <pre snippet="testing-and-ci-cd/unit_tests#featuresets_testing"></pre>

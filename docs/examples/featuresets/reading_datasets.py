@@ -15,9 +15,11 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+# docsnip-highlight start
 @index
 @dataset
-class User:
+# docsnip-highlight end
+class User:  # docsnip-highlight
     uid: int = field(key=True)
     name: str
     timestamp: datetime
@@ -28,10 +30,11 @@ class UserFeatures:
     uid: int = feature(id=1)
     name: str = feature(id=2)
 
-    @extractor(depends_on=[User])
+    @extractor(depends_on=[User])  # docsnip-highlight
     @inputs(uid)
     @outputs(name)
     def func(cls, ts: pd.Series, uids: pd.Series):
+        # docsnip-highlight next-line
         names, found = User.lookup(ts, uid=uids)
         names.fillna("Unknown", inplace=True)
         return names[["name"]]

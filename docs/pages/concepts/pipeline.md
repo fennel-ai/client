@@ -18,28 +18,24 @@ And we want to create a dataset which represents some stats about the
 transactions made by a user in a country different from their home country.
 We will write that dataset as follows:
 
-<pre snippet="datasets/pipelines#pipeline" highlight="14-25"></pre>
+<pre snippet="datasets/pipelines#pipeline"></pre>
 
 There is a lot happening here so let's break it down line by line:
 
-* Lines 5-11 are defining a regular dataset. Note that this dataset has the
+* First, a regular dataset schema is defined - this dataset has the
  schema that we desire to create via the pipeline.
-* Highlighted lines describe the actual pipeline code - we will come to that in a second.
-* Line 13 declares that this is a classmethod - all pipelines are classmethods.
-`pipeline` decorator itself wraps `classmethod` decorator so you can omit
-`classmethod` in practice - here it is shown for just describing the concept.
-* Line 14 declares that the decorated function represents a pipeline.
-* Line 15 declares all the input datasets that are needed for this pipeline to
+* `@pipeline` decorator signifies that the decorated method is a pipeline.
+* `@inputs` decorator declares the input datasets that are needed for this pipeline to
  derive the output dataset. In this case, this pipeline is declaring that it
  starts from `User` and `Transaction` datasets.
-* Notice the signature of the pipeline function in line 16 - it takes 2 arguments
-besides `cls` - they are essentially symbols for `User` dataset and `Transaction`
-dataset respectively.
-* Pipeline's function body is able to manipulate these symbols and create other dataset
-objects. For instance, line 17 joins these two datasets and the resulting dataset
-is stored in variable `joined`. Line 18 does a `filter` operation on `joined` and
-stores the result in another dataset called `abroad`. Finally lines 21-25
-aggregate the `abroad` dataset and create a dataset matching the intended schema.
+* Notice the signature of the pipeline function - it takes 2 arguments
+  besides `cls` (every pipeline is a classmethod). They are essentially symbols 
+  for `User` dataset and `Transaction` dataset respectively.
+* Pipeline's function body is able to manipulate these symbols and create other 
+  dataset objects. For instance, these two datasets are joined via `join` and 
+  the resulting dataset is stored in variable `joined` followed by a`filter` 
+  operation and a `groupby` / `aggregate` operation to create the dataset 
+  matching the intended schema.
 
 That's it - your first Fennel pipeline! Now let's look at a few more related
 ideas.
@@ -61,7 +57,7 @@ ecosystem. For such Python based operators, input/outputs variables
 are Pandas DataFrames or Pandas Series. Here is an example with `filter` and
 `assign` operator:
 
-<pre snippet="datasets/pipelines#transform_pipeline" highlight="12, 16"></pre>
+<pre snippet="datasets/pipelines#transform_pipeline"></pre>
 
 
 The only constraint on the pipeline topology is that `aggregate` has to be the

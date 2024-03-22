@@ -75,24 +75,22 @@ doesn't know how to compute that feature and hence that feature must always be
 provided as an input to the resolution process.
 
 <pre snippet="featuresets/overview#featureset_many_extractors"
-   status="success" message="Can have multiple extractors for different features"
-   highlight="12, 18">
+   status="success" 
+   message="Can have multiple extractors for different features">
 </pre>
 
 <pre snippet="featuresets/overview#featureset_extractors_of_same_feature"
-   status="error" message="Multiple extractors extracting the same feature over_3hrs"
-   highlight="15, 23">
+   status="error" 
+   message="Multiple extractors extracting the same feature over_3hrs">
 </pre>
 
 <pre snippet="featuresets/overview#remote_feature_as_input"
-   status="success" message="Input feature coming from another featureset"
-   highlight="14">
+   status="success" message="Input feature coming from another featureset">
 </pre>
 
 Invalid - output feature of extractor from another featureset
 <pre snippet="featuresets/overview#remote_feature_as_output"
    status="error" message="Extractor outputs feature from another featureset"
-   highlight="15"
 ></pre>
 
 ### Extractor Resolution
@@ -110,7 +108,6 @@ extractors and find a path via extractors to go from a set of input features
 to a set of output features. This allows you to reuse feature logic and not have
 every feature depend on root level inputs like uid.
 
-
 ### Dataset Lookups
 
 A large fraction of real world ML features are built on top of stored data.
@@ -118,9 +115,7 @@ However, featuresets don't have any storage of their own and are completely
 stateless. Instead, they are able to do random lookups on datasets and use
 that for the feature computation. Let's see an example:
 
-<pre snippet="featuresets/reading_datasets#featuresets_reading_datasets"
-   highlight="10, 20, 23, 24"
-></pre>
+<pre snippet="featuresets/reading_datasets#featuresets_reading_datasets"></pre>
 
 In this example, the extractor is just looking up the value of `name` given the
 `uid` from the `User` dataset and returning that as feature value. Note a couple

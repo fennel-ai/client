@@ -5,23 +5,15 @@ import pandas as pd
 import requests
 
 # docsnip datasets
-from fennel.datasets import (
-    dataset,
-    field,
-    pipeline,
-    Dataset,
-    Count,
-    Sum,
-    Average,
-    index,
-)
+from fennel.datasets import dataset, field, pipeline, Dataset, index
+from fennel.datasets import Count, Sum, Average
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.sources import source, Webhook
 
+__owner__ = "test@test.com"
 webhook = Webhook(name="fennel_webhook")
 
 
-@meta(owner="test@test.com")
 @source(webhook.endpoint("RatingActivity"), disorder="14d", cdc="append")
 @dataset
 class RatingActivity:
@@ -31,7 +23,6 @@ class RatingActivity:
     t: datetime
 
 
-@meta(owner="test@test.com")
 @index
 @dataset
 class MovieRating:
@@ -56,13 +47,13 @@ class MovieRating:
 
 # docsnip datasets_testing
 import unittest
-
-from fennel.testing import mock
+from fennel.testing import mock  # docsnip-highlight
 
 
 class TestDataset(unittest.TestCase):
+    # docsnip-highlight next-line
     @mock
-    def test_dataset(self, client):
+    def test_dataset(self, client):  # docsnip-highlight
         # Sync the dataset
         client.commit(
             message="datasets: add RatingActivity and MovieRating",

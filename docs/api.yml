@@ -63,7 +63,6 @@ sidebar:
       - "api-reference/sources/deltalake"
       - "api-reference/sources/hudi"
       - "api-reference/sources/avro"
-      - "api-reference/sources/source"
 
   - slug: "api-reference/aggregations"
     title: "Aggregations"
@@ -78,6 +77,17 @@ sidebar:
       - "api-reference/aggregations/distinct"
       - "api-reference/aggregations/quantile"
 
+  - slug: "api-reference/decorators"
+    title: "Decorators"
+    pages:
+      - "api-reference/decorators/meta"
+      - "api-reference/decorators/source"
+      - "api-reference/decorators/dataset"
+      - "api-reference/decorators/pipeline"
+      - "api-reference/decorators/inputs"
+      - "api-reference/decorators/outputs"
+      - "api-reference/decorators/extractor"
+      - "api-reference/decorators/indexed"
 
   - slug: "api-reference/expectations"
     title: "Expectations"

@@ -219,6 +219,7 @@ ip
 ish
 ith
 jdbc
+joinable
 json
 jsonl
 kafka

@@ -31,6 +31,54 @@ def test_basic_dataset():
     # /docsnip
 
 
+def test_dataset_index_basic():
+    def _basic():
+        # docsnip dataset_index_basic
+        from fennel.datasets import dataset, field, index
+
+        @index  # docsnip-highlight
+        @dataset
+        class User:
+            uid: int = field(key=True)  # docsnip-highlight
+            dob: datetime
+            country: str
+            update_time: datetime = field(timestamp=True)
+
+        # /docsnip
+
+    def _advanced():
+        # docsnip dataset_index_advanced
+        from fennel.datasets import dataset, field, index
+
+        @index(online=True, offline=None)  # docsnip-highlight
+        @dataset
+        class User:
+            uid: int = field(key=True)
+            dob: datetime
+            country: str
+            update_time: datetime = field(timestamp=True)
+
+        # /docsnip
+
+    _basic()
+    _advanced()
+
+
+def test_invalid_index():
+    with pytest.raises(Exception):
+        # docsnip invalid_index
+        from fennel.datasets import dataset, index
+
+        @index  # docsnip-highlight
+        @dataset
+        class UserValidDataset:
+            uid: int
+            country: str
+            update_time: datetime
+
+        # /docsnip
+
+
 # valid - has no key fields, which is fine.
 # no explicitly marked timestamp fields so update_time, which is of type
 # datetime is automatically assumed to be the timestamp field
@@ -44,7 +92,7 @@ def test_valid_user_dataset():
     class UserValidDataset:
         uid: int
         country: str
-        update_time: datetime
+        update_time: datetime  # docsnip-highlight
 
     # /docsnip
 
@@ -59,8 +107,10 @@ def test_valid_dataset_multiple_datetime_fields():
     class User:
         uid: int
         country: str
+        # docsnip-highlight start
         update_time: datetime = field(timestamp=True)
         signup_time: datetime
+        # docsnip-highlight end
 
     # /docsnip
 
@@ -124,7 +174,7 @@ def test_optional_key_field():
         @meta(owner="test@fennel.ai")
         @dataset
         class User:
-            uid: Optional[int] = field(key=True)
+            uid: Optional[int] = field(key=True)  # docsnip-highlight
             country: str
             update_time: datetime
 
@@ -164,8 +214,10 @@ def test_ambiguous_timestamp_field():
         class User:
             uid: int
             country: str
+            # docsnip-highlight start
             created_time: datetime
             updated_time: datetime
+            # docsnip-highlight end
 
         # /docsnip
     assert "Multiple timestamp fields are not supported" in str(e.value)

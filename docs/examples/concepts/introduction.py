@@ -37,6 +37,7 @@ def test_overview(client):
     # docsnip external_data_sources
     user_table = postgres.table("user", cursor="signup_at")
 
+    # docsnip-highlight next-line
     @source(user_table, every="1m", disorder="7d", cdc="append", tier="prod")
     @index
     @dataset
@@ -46,6 +47,7 @@ def test_overview(client):
         country: str
         signup_at: datetime = field(timestamp=True)
 
+    # docsnip-highlight next-line
     @source(kafka.topic("txn"), disorder="1d", cdc="append", tier="prod")
     @dataset
     class Transaction:
@@ -70,6 +72,7 @@ def test_overview(client):
         amount_1w: float
         timestamp: datetime = field(timestamp=True)
 
+        # docsnip-highlight start
         @pipeline
         @inputs(User, Transaction)
         def first_pipeline(cls, user: Dataset, transaction: Dataset):
@@ -82,6 +85,8 @@ def test_overview(client):
                 Sum(of="amount", window="1d", into_field="amount_1d"),
                 Sum(of="amount", window="1w", into_field="amount_1w"),
             )
+
+        # docsnip-highlight end
 
     # /docsnip
 
@@ -98,6 +103,7 @@ def test_overview(client):
         age: float = feature(id=3)
         dob: datetime = feature(id=4)
 
+        # docsnip-highlight start
         @extractor(depends_on=[User])
         @inputs(uid)
         @outputs(age)
@@ -106,6 +112,8 @@ def test_overview(client):
             df.fillna(datetime(1970, 1, 1), inplace=True)
             age = (ts - df["dob"]).dt.days / 365  # age is calculated as of `ts`
             return pd.DataFrame(age, columns=["age"])
+
+        # docsnip-highlight end
 
         @extractor(depends_on=[User])
         @inputs(uid)
@@ -184,6 +192,7 @@ def test_overview(client):
     # docsnip dataset_lookup
     uids = pd.Series([1, 2, 3, 4])
     ts = pd.Series([now, now, now, now])
+    # docsnip-highlight next-line
     data, found = UserTransactionsAbroad.lookup(ts, uid=uids)
     # /docsnip
 
