@@ -1,7 +1,7 @@
 ---
 title: BigQuery
 order: 0
-status: draft
+status: published
 ---
 ### BigQuery
 Data connector to Google BigQuery databases.
@@ -54,9 +54,7 @@ do this validation at commit time.
 
 #### BigQuery Credentials
 
-<details>
-<summary>How to obtain credentials? </summary>
-
+<Expandable title="How to obtain credentials?">
 Interfacing with BigQuery requires credentials for
 a [Service Account](https://cloud.google.com/iam/docs/service-accounts) with the "BigQuery User" and "BigQuery Data
 Editor" roles, which grants permissions to run BigQuery jobs, write to BigQuery Datasets, and read table metadata. It is
@@ -79,4 +77,6 @@ At this point, you should have a service account with the "BigQuery User" projec
 For Service Account Key JSON, enter the Google
 Cloud [Service Account Key in JSON format](https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
 
-</details>
+</Expandable>
+
+<pre snippet="api-reference/sources/sql#bigquery_source"></pre>

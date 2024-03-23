@@ -897,7 +897,7 @@ def _bigquery_to_ext_db_proto(
         name=name,
         bigquery=connector_proto.Bigquery(
             project_id=project_id,
-            dataset=dataset_id,
+            dataset_id=dataset_id,
             credentials_json=credentials_json,
         ),
     )
