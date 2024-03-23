@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from dateutil.relativedelta import relativedelta  # type: ignore
 
-from fennel import meta, Count, featureset, feature, extractor
+from fennel import meta, Count, featureset, feature as F, extractor
 from fennel.datasets import dataset, field, pipeline, Dataset, index
 from fennel.lib import inputs, outputs
 from fennel.sources import Webhook
@@ -101,24 +101,24 @@ class NumCompletedTripsDataset:
 
 @featureset
 class RequestFeatures0:
-    ts: datetime = feature(id=1)
-    rider_id: int = feature(id=2)
+    ts: datetime = F()
+    rider_id: int = F()
 
 
 @featureset
 class RequestFeatures1:
-    ts: datetime = feature(id=1)
-    id1: int = feature(id=2).extract(feature=RequestFeatures0.rider_id)  # type: ignore
+    ts: datetime = F()
+    id1: int = F(ref=RequestFeatures0.rider_id)  # type: ignore
 
 
 @featureset
 class RequestFeatures2:
-    ts: datetime = feature(id=1)
-    id2: int = feature(id=2).extract(feature=RequestFeatures1.id1)  # type: ignore
-    const: int = feature(id=3)
-    num_trips: int = feature(id=4).extract(  # type: ignore
-        field=NumCompletedTripsDataset.count_num_completed_trips,
-        provider=RequestFeatures0,
+    ts: datetime = F()
+    id2: int = F(ref=RequestFeatures1.id1)  # type: ignore
+    rider_id: int = F(ref=RequestFeatures0.rider_id)  # type: ignore
+    const: int = F()
+    num_trips: int = F(
+        ref=NumCompletedTripsDataset.count_num_completed_trips,  # type: ignore
         default=0,
     )
 
@@ -131,43 +131,39 @@ class RequestFeatures2:
 
 @featureset
 class RequestFeatures3:
-    ts: datetime = feature(id=1)
-    rider_id: int = feature(id=2).extract(feature=RequestFeatures2.id2)  # type: ignore
-    vehicle_id: int = feature(id=3)
-    reservation_id: Optional[int] = feature(id=4)
+    ts: datetime = F()
+    rider_id: int = F(ref=RequestFeatures2.id2)  # type: ignore
+    vehicle_id: int = F()
+    reservation_id: Optional[int] = F()
 
 
 @featureset
 class RiderFeatures:
-    id: int = feature(id=1).extract(feature=RequestFeatures2.id2)  # type: ignore
-    created: datetime = feature(id=2).extract(  # type: ignore
-        field=RiderDataset.created,
-        provider=RequestFeatures3,
+    id: int = F(ref=RequestFeatures2.id2)  # type: ignore
+    rider_id: int = F(ref=RequestFeatures3.rider_id)  # type: ignore
+    created: datetime = F(
+        ref=RiderDataset.created,  # type: ignore
         default=datetime(2000, 1, 1, 0, 0, 0),
     )
-    birthdate: datetime = feature(id=3).extract(  # type: ignore
-        field=RiderDataset.birthdate,
-        provider=RequestFeatures3,
+    birthdate: datetime = F(
+        ref=RiderDataset.birthdate,  # type: ignore
         default=datetime(2000, 1, 1, 0, 0, 0),
     )
-    age_years: int = feature(id=4)
-    ais_score: float = feature(id=5).extract(  # type: ignore
-        field=RiderCreditScoreDataset.score,
-        provider=RequestFeatures3,
+    age_years: int = F()
+    ais_score: float = F(
+        ref=RiderCreditScoreDataset.score,  # type: ignore
         default=-1.0,
     )
-    dl_state: str = feature(id=6).extract(  # type: ignore
-        field=CountryLicenseDataset.country_code,
-        provider=RequestFeatures3,
+    dl_state: str = F(
+        ref=CountryLicenseDataset.country_code,  # type: ignore
         default="Unknown",
     )
-    is_us_dl: bool = feature(id=7)
-    num_past_completed_trips: int = feature(id=8).extract(  # type: ignore
-        field=NumCompletedTripsDataset.count_num_completed_trips,
-        provider=RequestFeatures3,
+    is_us_dl: bool = F()
+    num_past_completed_trips: int = F(
+        ref=NumCompletedTripsDataset.count_num_completed_trips,  # type: ignore
         default=0,
     )
-    dl_state_population: int = feature(id=9)
+    dl_state_population: int = F()
 
     @extractor
     @inputs(dl_state)

@@ -5,7 +5,7 @@ import pytest
 
 from fennel._vendor import requests
 from fennel.datasets import Dataset, dataset, field, pipeline, Count, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.testing import mock
@@ -59,12 +59,12 @@ class CountryStats:
 
 @featureset
 class UserInfoFeatureset:
-    user_id: int = feature(id=1)
-    name: str = feature(id=2).extract(field=UserInfoDataset.name, default="None")  # type: ignore
-    age: int = feature(id=3).extract(field=UserInfoDataset.age, default=1)  # type: ignore
-    gender: str = feature(id=4).extract(field=UserInfoDataset.gender, default="None")  # type: ignore
-    country_code: int = feature(id=5).extract(field=UserInfoDataset.country_code, default=1)  # type: ignore
-    email: str = feature(id=6).extract(field=UserInfoDataset.email, default="None")  # type: ignore
+    user_id: int = F()
+    name: str = F(ref=UserInfoDataset.name, default="None")  # type: ignore
+    age: int = F(ref=UserInfoDataset.age, default=1)  # type: ignore
+    gender: str = F(ref=UserInfoDataset.gender, default="None")  # type: ignore
+    country_code: int = F(ref=UserInfoDataset.country_code, default=1)  # type: ignore
+    email: str = F(ref=UserInfoDataset.email, default="None")  # type: ignore
 
 
 def _get_changed_dataset(filter_condition):
@@ -116,12 +116,12 @@ def _get_source_changed_datasets():
 def _get_changed_featureset():
     @featureset
     class UserInfoFeatureset:
-        user_id: int = feature(id=1)
-        name: str = feature(id=2).extract(field=UserInfoDataset.name, default="None")  # type: ignore
-        age: int = feature(id=3)
-        gender: str = feature(id=4).extract(field=UserInfoDataset.gender, default="None")  # type: ignore
-        country_code: int = feature(id=5)
-        email: str = feature(id=6).extract(field=UserInfoDataset.email, default="None")  # type: ignore
+        user_id: int = F()
+        name: str = F(ref=UserInfoDataset.name, default="None")  # type: ignore
+        age: int = F()
+        gender: str = F(ref=UserInfoDataset.gender, default="None")  # type: ignore
+        country_code: int = F()
+        email: str = F(ref=UserInfoDataset.email, default="None")  # type: ignore
 
         @extractor(depends_on=[UserInfoDataset], version=2)
         @inputs(user_id)

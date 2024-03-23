@@ -12,8 +12,8 @@ from fennel import featureset, feature
 
 @featureset
 class TicketFeatures:
-    ticket_id: str = feature(id=1)
-    price: int = feature(id=2).extract(field=Ticket.price, default=0)
+    ticket_id: str = feature()
+    price: int = feature(ref=Ticket.price, default=0)
 
 
 # /docsnip

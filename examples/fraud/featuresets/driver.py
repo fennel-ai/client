@@ -17,8 +17,8 @@ __owner__ = "eng@app.com"
 
 @featureset
 class AgeFS:
-    account_age: float = feature(id=1)
-    age: float = feature(id=2)
+    account_age: float = feature()
+    age: float = feature()
 
     @extractor(depends_on=[DriverDS])
     @inputs(Request.driver_id)
@@ -36,19 +36,19 @@ class AgeFS:
 
 @featureset
 class ReservationLevelFS:
-    driver_id: int = feature(id=1).extract(feature=Request.driver_id)
-    guest_protection_level: Optional[str] = feature(id=2).extract(
-        field=RentCarCheckoutEventDS.protection_level,
+    driver_id: int = feature(ref=Request.driver_id)
+    guest_protection_level: Optional[str] = feature(
+        ref=RentCarCheckoutEventDS.protection_level,
     )
-    total_trip_price_amount: float = feature(id=3).extract(
-        field=RentCarCheckoutEventDS.total_trip_price_amount,
+    total_trip_price_amount: float = feature(
+        ref=RentCarCheckoutEventDS.total_trip_price_amount,
         default=0.0,
     )
-    delivery_type: oneof(str, ["AIRPORT", "HOME"]) = feature(id=4).extract(
-        field=RentCarCheckoutEventDS.delivery_type,
+    delivery_type: oneof(str, ["AIRPORT", "HOME"]) = feature(
+        ref=RentCarCheckoutEventDS.delivery_type,
         default="AIRPORT",
     )
-    trip_duration_hours: float = feature(id=5)
+    trip_duration_hours: float = feature()
 
     @extractor(depends_on=[RentCarCheckoutEventDS])
     @inputs(Request.driver_id)
@@ -68,9 +68,8 @@ class ReservationLevelFS:
 
 @featureset
 class CreditScoreFS:
-    # or you could define a feature named driver_id and extract it from Request.driver_id
-    ais_score: float = feature(id=1).extract(
-        field=DriverCreditScoreDS.score,
+    driver_id: int = feature(ref=Request.driver_id)
+    ais_score: float = feature(
+        ref=DriverCreditScoreDS.score,
         default=0.0,
-        provider=Request,
     )

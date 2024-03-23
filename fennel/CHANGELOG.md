@@ -1,4 +1,9 @@
 # Changelog
+## [1.1.3] - 2024-03-23
+- Moved feature.extract() to feature().
+- Removed id from feature.
+- Removed provider from feature.extract().
+
 ## [1.1.2] - 2024-03-22
 - Support `bigquery` source
 

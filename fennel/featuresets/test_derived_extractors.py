@@ -6,7 +6,7 @@ from typing import Optional
 
 import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
 from fennel.dtypes import struct
 from fennel.sources import source, Webhook
@@ -36,8 +36,8 @@ class UserInfoDataset:
 @meta(owner="test@test.com")
 @featureset
 class User:
-    id: int = feature(id=1)
-    age: float = feature(id=2)
+    id: int = F()
+    age: float = F()
 
 
 def test_valid_derived_extractors():
@@ -51,37 +51,26 @@ def test_valid_derived_extractors():
     @featureset
     class UserInfo:
         # alias feature
-        user_id: int = feature(id=1).extract(feature=User.id)
+        user_id: int = F(ref=User.id)
         # lookup derived feature
-        gender: str = feature(id=2).extract(
-            field=UserInfoDataset.gender,
+        gender: str = F(
+            ref=UserInfoDataset.gender,
             default="unspecified",
         )
         # lookup with meta
-        age_years: int = (
-            feature(id=3)
-            .extract(
-                field=UserInfoDataset.age,
-                default=0,
-            )
-            .meta(owner="zaki@fennel.ai")
-        )
+        age_years: int = F(
+            ref=UserInfoDataset.age,
+            default=0,
+        ).meta(owner="zaki@fennel.ai")
         # deprecated feature
-        dob: str = (
-            feature(id=4)
-            .extract(
-                field=UserInfoDataset.dob,
-                default="unspecified",
-            )
-            .meta(deprecated=True)
-        )
+        dob: str = F(
+            ref=UserInfoDataset.dob,
+            default="unspecified",
+        ).meta(deprecated=True)
         # depends on derived feature
-        age_group: AgeGroup = feature(id=5)
-
+        age_group: AgeGroup = F()
         # optional lookup derived feature
-        optional_nickname: Optional[str] = feature(id=6).extract(
-            field=UserInfoDataset.nickname,
-        )
+        optional_nickname: Optional[str] = F(ref=UserInfoDataset.nickname)
 
         @extractor(depends_on=[UserInfoDataset])
         @inputs(age_years)
@@ -100,9 +89,9 @@ def test_valid_derived_extractors():
     @featureset
     class AgeInfo:
         # alias a feature that has an explicit extractor
-        age_group: AgeGroup = feature(id=1).extract(feature=UserInfo.age_group)
+        age_group: AgeGroup = F(ref=UserInfo.age_group)
         # alias a feature that has a derived extractor
-        age: int = feature(id=2).extract(feature=UserInfo.age_years)
+        age: int = F(ref=UserInfo.age_years)
 
     view = InternalTestClient()
     view.add(UserInfoDataset)
@@ -153,21 +142,18 @@ def test_valid_derived_extractors():
     # The comments above the feature declarations are captured as metadata
     expected_features = [
         {
-            "id": 1,
             "name": "user_id",
             "dtype": {"int_type": {}},
             "metadata": {"description": "alias feature"},
             "feature_set_name": "UserInfo",
         },
         {
-            "id": 2,
             "name": "gender",
             "dtype": {"string_type": {}},
             "metadata": {"description": "lookup derived feature"},
             "feature_set_name": "UserInfo",
         },
         {
-            "id": 3,
             "name": "age_years",
             "dtype": {"int_type": {}},
             "metadata": {
@@ -177,7 +163,6 @@ def test_valid_derived_extractors():
             "feature_set_name": "UserInfo",
         },
         {
-            "id": 4,
             "name": "dob",
             "dtype": {"string_type": {}},
             "metadata": {
@@ -187,21 +172,18 @@ def test_valid_derived_extractors():
             "feature_set_name": "UserInfo",
         },
         {
-            "id": 5,
             "name": "age_group",
             "dtype": {"struct_type": age_group_struct_type},
             "metadata": {"description": "depends on derived feature"},
             "feature_set_name": "UserInfo",
         },
         {
-            "id": 6,
             "name": "optional_nickname",
             "dtype": {"optional_type": {"of": {"string_type": {}}}},
             "metadata": {"description": "optional lookup derived feature"},
             "feature_set_name": "UserInfo",
         },
         {
-            "id": 1,
             "name": "age_group",
             "dtype": {"struct_type": age_group_struct_type},
             "metadata": {
@@ -210,7 +192,6 @@ def test_valid_derived_extractors():
             "feature_set_name": "AgeInfo",
         },
         {
-            "id": 2,
             "name": "age",
             "dtype": {"int_type": {}},
             "metadata": {
@@ -219,14 +200,12 @@ def test_valid_derived_extractors():
             "feature_set_name": "AgeInfo",
         },
         {
-            "id": 1,
             "name": "id",
             "dtype": {"int_type": {}},
             "metadata": {},
             "feature_set_name": "User",
         },
         {
-            "id": 2,
             "name": "age",
             "dtype": {"double_type": {}},
             "metadata": {},

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, pipeline, field, Dataset, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.testing import *
@@ -18,9 +18,9 @@ webhook = Webhook(name="fennel_webhook")
 @meta(owner="test@fennel.ai")
 @featureset
 class Query:
-    shortcut_id: int = feature(id=1)
-    member_id: int = feature(id=2)
-    domain: str = feature(id=3)
+    shortcut_id: int = F()
+    member_id: int = F()
+    domain: str = F()
 
 
 @meta(owner="test@fennel.ai")
@@ -70,10 +70,10 @@ class MemberActivityDatasetCopy:
 @meta(owner="test@fennel.ai")
 @featureset
 class DomainFeatures:
-    domain: str = feature(id=1)
-    domain_used_count: int = feature(id=2)
+    domain: str = F()
+    domain_used_count: int = F()
 
-    @extractor(depends_on=[MemberActivityDatasetCopy])
+    @extractor(depends_on=[MemberActivityDatasetCopy])  # type: ignore
     @inputs(Query.domain)
     @outputs(domain, domain_used_count)
     def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
@@ -105,8 +105,8 @@ class TestInvalidSync(unittest.TestCase):
 @meta(owner="test@fennel.ai")
 @featureset
 class DomainFeatures2:
-    domain: str = feature(id=1)
-    domain_used_count: int = feature(id=2)
+    domain: str = F()
+    domain_used_count: int = F()
 
     @extractor()
     @inputs(Query.domain)
@@ -171,8 +171,8 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
         @meta(owner="test@fennel.ai")
         @featureset
         class DomainFeatures:
-            domain: str = feature(id=1)
-            domain_used_count: int = feature(id=2)
+            domain: str = F()
+            domain_used_count: int = F()
 
             @extractor(depends_on=[MemberActivityDatasetCopy])
             @inputs(Query.domain)

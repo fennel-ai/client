@@ -13,13 +13,13 @@ __owner__ = "nikhil@fennel.ai"
 
 def test_featureset_overview():
     # docsnip featureset
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
     from fennel.lib import inputs, outputs
 
     @featureset
     class Movie:
-        duration: int = feature(id=1)
-        over_2hrs: bool = feature(id=2)
+        duration: int = F()
+        over_2hrs: bool = F()
 
         @extractor
         @inputs(duration)
@@ -37,26 +37,26 @@ def test_featureset_overview():
 
 def test_featureset_zero_extractors():
     # docsnip featureset_zero_extractors
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset
 
     @featureset
     class MoviesZeroExtractors:
-        duration: int = feature(id=1)
-        over_2hrs: bool = feature(id=2)
+        duration: int = F()
+        over_2hrs: bool = F()
 
     # /docsnip
 
 
 def test_featureset_many_extractors():
     # docsnip featureset_many_extractors
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
     from fennel.lib import inputs, outputs
 
     @featureset
     class MoviesManyExtractors:
-        duration: int = feature(id=1)
-        over_2hrs: bool = feature(id=2)
-        over_3hrs: bool = feature(id=3)
+        duration: int = F()
+        over_2hrs: bool = F()
+        over_3hrs: bool = F()
 
         @extractor
         @inputs(duration)
@@ -76,16 +76,16 @@ def test_featureset_many_extractors():
 @mock
 def test_multiple_extractors_of_same_feature(client):
     # docsnip featureset_extractors_of_same_feature
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
     from fennel.lib import meta, inputs, outputs
 
     @meta(owner="aditya@xyz.ai")
     @featureset
     class Movies:
-        duration: int = feature(id=1)
-        over_2hrs: bool = feature(id=2)
+        duration: int = F()
+        over_2hrs: bool = F()
         # invalid: both e1 & e2 output `over_3hrs`
-        over_3hrs: bool = feature(id=3)
+        over_3hrs: bool = F()
 
         @extractor(tier=["default"])
         @inputs(duration)
@@ -115,17 +115,17 @@ def test_multiple_extractors_of_same_feature(client):
 
 def test_remote_feature_as_input():
     # docsnip remote_feature_as_input
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
     from fennel.lib import inputs, outputs
 
     @featureset
     class Length:
-        limit_secs: int = feature(id=1)
+        limit_secs: int = F()
 
     @featureset
     class MoviesForeignFeatureInput:
-        duration: int = feature(id=1)
-        over_limit: bool = feature(id=2)
+        duration: int = F()
+        over_limit: bool = F()
 
         @extractor
         @inputs(Length.limit_secs, duration)  # docsnip-highlight
@@ -139,17 +139,17 @@ def test_remote_feature_as_input():
 def test_remote_feature_as_output():
     with pytest.raises(Exception):
         # docsnip remote_feature_as_output
-        from fennel.featuresets import feature, featureset, extractor
+        from fennel.featuresets import feature as F, featureset, extractor
         from fennel.lib import inputs, outputs
 
         @featureset
         class Request:
-            too_long: bool = feature(id=1)
+            too_long: bool = F()
 
         @featureset
         class Movies:
-            duration: int = feature(id=1)
-            limit_secs: int = feature(id=2)
+            duration: int = F()
+            limit_secs: int = F()
 
             @extractor
             @inputs(limit_secs, duration)
@@ -163,13 +163,13 @@ def test_remote_feature_as_output():
 @pytest.mark.slow
 @mock
 def test_multiple_features_extracted(client):
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
     from fennel.lib import inputs, outputs
 
     @featureset
     class Movie:
-        duration: int = feature(id=1)
-        over_2hrs: bool = feature(id=2)
+        duration: int = F()
+        over_2hrs: bool = F()
 
         # docsnip featureset_extractor
         @extractor
@@ -188,14 +188,14 @@ def test_multiple_features_extracted(client):
         update_time: datetime = field(timestamp=True)
 
     # docsnip multiple_feature_extractor
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
     from fennel.lib import inputs, outputs
 
     @featureset
     class UserLocationFeatures:
-        uid: int = feature(id=1)
-        latitude: float = feature(id=2)
-        longitude: float = feature(id=3)
+        uid: int = F()
+        latitude: float = F()
+        longitude: float = F()
 
         @extractor(depends_on=[UserInfo])
         @inputs(uid)
@@ -260,20 +260,20 @@ def test_extractors_across_featuresets(client):
         update_time: datetime = field(timestamp=True)
 
     # docsnip extractors_across_featuresets
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
     from fennel.lib import inputs, outputs
 
     @featureset
     class Request:
-        uid: int = feature(id=1)
-        request_timestamp: datetime = feature(id=2)
-        ip: str = feature(id=3)
+        uid: int = F()
+        request_timestamp: datetime = F()
+        ip: str = F()
 
     @featureset
     class UserLocationFeaturesRefactored:
-        uid: int = feature(id=1)
-        latitude: float = feature(id=2)
-        longitude: float = feature(id=3)
+        uid: int = F()
+        latitude: float = F()
+        longitude: float = F()
 
         @extractor(depends_on=[UserInfo])
         @inputs(Request.uid)

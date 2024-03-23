@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.testing import mock
@@ -33,8 +33,8 @@ def test_invalid_dataset_lookup():
 
         @featureset
         class Featureset1:
-            user_id: int = feature(id=1)
-            age: int = feature(id=2).extract(field=Dataset1.age, default=10)
+            user_id: int = F()
+            age: int = F(ref=Dataset1.age, default=10)
 
     assert (
         str(e.value)
@@ -45,8 +45,8 @@ def test_invalid_dataset_lookup():
 
         @featureset
         class Featureset2:
-            user_id: int = feature(id=1)
-            age: int = feature(id=2).extract(field=Dataset2.age, default=10)
+            user_id: int = F()
+            age: int = F(ref=Dataset2.age, default=10)
 
     assert (
         str(e.value)
@@ -57,8 +57,8 @@ def test_invalid_dataset_lookup():
 
         @featureset
         class Featureset3:
-            user_id: int = feature(id=1)
-            age: int = feature(id=2)
+            user_id: int = F()
+            age: int = F()
 
             @inputs(user_id)
             @outputs(age)
@@ -76,8 +76,8 @@ def test_invalid_dataset_lookup():
 
         @featureset
         class Featureset4:
-            user_id: int = feature(id=1)
-            age: int = feature(id=2)
+            user_id: int = F()
+            age: int = F()
 
             @inputs(user_id)
             @outputs(age)
@@ -108,13 +108,13 @@ def test_invalid_dataset_online_lookup(client):
 
     @featureset
     class Featureset1:
-        user_id: int = feature(id=1)
-        age: int = feature(id=2).extract(field=Dataset1.age, default=10)
+        user_id: int = F()
+        age: int = F(ref=Dataset1.age, default=10)
 
     @featureset
     class Featureset2:
-        user_id: int = feature(id=1)
-        age: int = feature(id=2)
+        user_id: int = F()
+        age: int = F()
 
         @extractor(depends_on=[Dataset1])
         @inputs(user_id)
@@ -165,13 +165,13 @@ def test_invalid_dataset_offline_lookup(client):
 
     @featureset
     class Featureset1:
-        user_id: int = feature(id=1)
-        age: int = feature(id=2).extract(field=Dataset1.age, default=10)
+        user_id: int = F()
+        age: int = F(ref=Dataset1.age, default=10)
 
     @featureset
     class Featureset2:
-        user_id: int = feature(id=1)
-        age: int = feature(id=2)
+        user_id: int = F()
+        age: int = F()
 
         @extractor(depends_on=[Dataset1])
         @inputs(user_id)

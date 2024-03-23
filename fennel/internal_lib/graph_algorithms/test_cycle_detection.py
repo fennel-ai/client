@@ -1,17 +1,17 @@
 import pandas as pd
 import pytest
 
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.internal_lib.graph_algorithms import is_extractor_graph_cyclic
 from fennel.lib import inputs, outputs
 
 
 @featureset
 class A:
-    a1: int = feature(id=1)
-    a2: int = feature(id=2)
-    a3: int = feature(id=3)
-    a4: int = feature(id=4)
+    a1: int = F()
+    a2: int = F()
+    a3: int = F()
+    a4: int = F()
 
     @extractor
     @inputs(a1)

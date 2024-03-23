@@ -7,7 +7,7 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, Dataset, field, pipeline, LastK, index
 from fennel.dtypes import struct
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
 from fennel.sources import Webhook, source
 from fennel.testing import mock
@@ -90,19 +90,21 @@ class MovieInfo:
 
 @featureset
 class Request:
-    director_id: int = feature(id=1)
-    movie_id: int = feature(id=2)
-    director_movie_id: Lookup = feature(id=3)
+    director_id: int = F()
+    movie_id: int = F()
+    director_movie_id: Lookup = F()
 
 
 @featureset
 class MovieFeatures:
-    role_list_py: List[Role] = feature(id=1)
-    role_list_assign: List[Role] = feature(id=2).extract(field=MovieInfo.role_list, default=[], provider=Request)  # type: ignore
-    role_list_struct: List[Role] = feature(id=3)
-    movie_budget: MovieBudget = feature(id=4)
+    director_id: int = F(ref=Request.director_id)  # type: ignore
+    movie_id: int = F(ref=Request.movie_id)  # type: ignore
+    role_list_py: List[Role] = F()
+    role_list_assign: List[Role] = F(ref=MovieInfo.role_list, default=[])  # type: ignore
+    role_list_struct: List[Role] = F()
+    movie_budget: MovieBudget = F()
 
-    @extractor(depends_on=[MovieInfo])
+    @extractor(depends_on=[MovieInfo])  # type: ignore
     @inputs(Request.director_id, Request.movie_id)
     @outputs(role_list_py)
     def extract_cast(
@@ -112,7 +114,7 @@ class MovieFeatures:
         res = res.rename(columns={"role_list": "role_list_py"})
         return pd.Series(res["role_list_py"].fillna("").apply(list))
 
-    @extractor(depends_on=[MovieInfo])
+    @extractor(depends_on=[MovieInfo])  # type: ignore
     @inputs(Request.director_movie_id)
     @outputs(role_list_struct)
     def extract_cast_struct(cls, ts: pd.Series, director_movie_ids: pd.Series):
@@ -124,7 +126,7 @@ class MovieFeatures:
         res = res.rename(columns={"role_list": "role_list_struct"})
         return pd.Series(res["role_list_struct"].fillna("").apply(list))
 
-    @extractor(depends_on=[MovieInfo])
+    @extractor(depends_on=[MovieInfo])  # type: ignore
     @inputs(Request.director_id, Request.movie_id)
     @outputs(movie_budget)
     def extract_movie_budget(

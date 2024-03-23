@@ -28,12 +28,12 @@ class UserInfoDataset:
 
 @featureset
 class UserInfoFeatureset:
-    user_id: str = feature(id=1)
-    name: str = feature(id=2).extract(field=UserInfoDataset.name, default="None")  # type: ignore
-    age: int = feature(id=3).extract(field=UserInfoDataset.age, default=1)  # type: ignore
-    gender: str = feature(id=4).extract(field=UserInfoDataset.gender, default="None")  # type: ignore
-    country_code: int = feature(id=5).extract(field=UserInfoDataset.country_code, default=1)  # type: ignore
-    email: str = feature(id=6).extract(field=UserInfoDataset.email, default="None")  # type: ignore
+    user_id: str = feature()
+    name: str = feature(ref=UserInfoDataset.name, default="None")  # type: ignore
+    age: int = feature(ref=UserInfoDataset.age, default=1)  # type: ignore
+    gender: str = feature(ref=UserInfoDataset.gender, default="None")  # type: ignore
+    country_code: int = feature(ref=UserInfoDataset.country_code, default=1)  # type: ignore
+    email: str = feature(ref=UserInfoDataset.email, default="None")  # type: ignore
 
 
 @pytest.mark.integration

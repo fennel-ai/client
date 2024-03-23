@@ -6,7 +6,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.sources import source, Webhook
 from fennel.testing import mock
@@ -42,13 +42,13 @@ def power_4(x: int) -> int:
 @meta(owner="test@test.com")
 @featureset
 class UserInfoExtractor:
-    userid: int = feature(id=1)
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
-    age_power_four: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    userid: int = F()
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age_power_four: int = F()
+    age_cubed: int = F()
+    is_name_common: bool = F()
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(depends_on=[UserInfoDataset])  # type: ignore
     @inputs(userid)
     @outputs(age, age_power_four, age_cubed, is_name_common)
     def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
@@ -118,13 +118,11 @@ def test_invalid_code_changes(client):
         @meta(owner="test@test.com")
         @featureset
         class UserInfoExtractorInvalid:
-            userid: int = feature(id=1)
-            age: int = feature(id=4).meta(
-                owner="aditya@fennel.ai"
-            )  # type: ignore
-            age_power_four: int = feature(id=5)
-            age_cubed: int = feature(id=6)
-            is_name_common: bool = feature(id=7)
+            userid: int = F()
+            age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+            age_power_four: int = F()
+            age_cubed: int = F()
+            is_name_common: bool = F()
 
             @extractor(depends_on=[UserInfoDataset])
             @includes(power_4, cube)
@@ -159,13 +157,11 @@ def test_invalid_code_changes(client):
         @meta(owner="test@test.com")
         @featureset
         class UserInfoExtractorInvalid:
-            userid: int = feature(id=1)
-            age: int = feature(id=4).meta(
-                owner="aditya@fennel.ai"
-            )  # type: ignore
-            age_power_four: int = feature(id=5)
-            age_cubed: int = feature(id=6)
-            is_name_common: bool = feature(id=7)
+            userid: int = F()
+            age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+            age_power_four: int = F()
+            age_cubed: int = F()
+            is_name_common: bool = F()
 
             @extractor(depends_on=[UserInfoDataset])
             @includes(power_4_alt, cube)
@@ -205,14 +201,12 @@ def test_invalid_code_changes(client):
         @meta(owner="test@test.com")
         @featureset
         class UserInfoExtractorInvalid:
-            userid: int = feature(id=1)
-            age: int = feature(id=4).meta(
-                owner="aditya@fennel.ai"
-            )  # type: ignore
-            age_power_four: int = feature(id=5)
-            age_cubed: int = feature(id=6)
-            is_name_common: bool = feature(id=7)
-            another_feature: int = feature(id=8)
+            userid: int = F()
+            age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+            age_power_four: int = F()
+            age_cubed: int = F()
+            is_name_common: bool = F()
+            another_feature: int = F()
 
             @extractor(depends_on=[UserInfoDataset], version=1)
             @includes(power_4, cube)

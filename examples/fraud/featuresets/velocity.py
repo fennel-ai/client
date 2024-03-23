@@ -17,19 +17,19 @@ __owner__ = "eng@app.com"
 
 @featureset
 class DriverVelocityFS:
-    driver_id: int = feature(id=1).extract(feature=Request.driver_id)
-    percent_past_guest_cancelled_trips: float = feature(id=2)
-    num_past_completed_trips: int = feature(id=3).extract(
-        field=NumCompletedTripsDS.num_past_completed_trips, default=0
+    driver_id: int = feature(ref=Request.driver_id)
+    percent_past_guest_cancelled_trips: float = feature()
+    num_past_completed_trips: int = feature(
+        ref=NumCompletedTripsDS.num_past_completed_trips, default=0
     )
-    num_logins_last_day: int = feature(id=4).extract(
-        field=LoginsLastDayDS.num_logins_last_day, default=0
+    num_logins_last_day: int = feature(
+        ref=LoginsLastDayDS.num_logins_last_day, default=0
     )
-    num_checkout_pages_last_day: int = feature(id=5).extract(
-        field=CheckoutPagesLastDayDS.num_checkout_pages_last_day, default=0
+    num_checkout_pages_last_day: int = feature(
+        ref=CheckoutPagesLastDayDS.num_checkout_pages_last_day, default=0
     )
-    num_past_approved_trips: int = feature(id=6).extract(
-        field=PastApprovedDS.num_past_approved_trips, default=0
+    num_past_approved_trips: int = feature(
+        ref=PastApprovedDS.num_past_approved_trips, default=0
     )
 
     @extractor(depends_on=[NumCompletedTripsDS, CancelledTripsDS], version=1)

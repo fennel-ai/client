@@ -1,6 +1,6 @@
 import pandas as pd
 
-from fennel.featuresets import feature, featureset, extractor
+from fennel.featuresets import feature as F, featureset, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
@@ -8,8 +8,8 @@ from fennel.testing import mock
 @meta(owner="data-eng-oncall@fennel.ai")
 @featureset
 class User:
-    id: int = feature(id=1)
-    age: float = feature(id=2)
+    id: int = F()
+    age: float = F()
 
     @extractor
     @inputs(id)
@@ -22,10 +22,10 @@ class User:
 @meta(owner="data-eng-oncall@fennel.ai")
 @featureset
 class UserPost:
-    uid: int = feature(id=1)
-    pid: int = feature(id=2)
-    score: float = feature(id=3)
-    affinity: float = feature(id=4)
+    uid: int = F()
+    pid: int = F()
+    score: float = F()
+    affinity: float = F()
 
     @extractor
     @inputs(uid, pid)
@@ -43,7 +43,7 @@ class UserPost:
 @meta(owner="data-eng-oncall@fennel.ai")
 @featureset
 class Request:
-    ip: str = feature(id=1)
+    ip: str = F()
 
 
 @mock
