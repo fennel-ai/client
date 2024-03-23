@@ -464,6 +464,11 @@ def feature_to_proto_as_input(f: Feature) -> fs_proto.Input:
 def _extractor_to_proto(
     extractor: Extractor, fs: Featureset, fs_obj_map: Dict[str, Featureset]
 ) -> fs_proto.Extractor:
+    extractor_name = (
+        extractor.name
+        if extractor.extractor_type == ExtractorType.PY_FUNC
+        else "Auto Generated"
+    )
     inputs = []
     for input in extractor.inputs:
         if isinstance(input, Feature):
@@ -473,13 +478,13 @@ def _extractor_to_proto(
                 inputs.append(feature_to_proto_as_input(f))
         elif isinstance(input, Featureset):
             raise TypeError(
-                f"Extractor input {input} is a Featureset, please use a"
-                f"DataFrame of features"
+                f"{extractor_name} extractor input {input} is a Featureset, please use a"
+                f"dataFrame of features"
             )
         else:
             raise TypeError(
-                f"Extractor input {input} is not a Feature or "
-                f"a DataFrame of features, but a {type(input)}"
+                f"{extractor_name} extractor input {input} is not a feature or "
+                f"a dataFrame of features, but a {type(input)}"
             )
 
     extractor_field_info = None
