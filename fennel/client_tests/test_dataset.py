@@ -10,13 +10,23 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field, pipeline, Dataset
-from fennel.lib.aggregate import Min, Max
-from fennel.lib.aggregate import Sum, Average, Count, Stddev, Distinct
-from fennel.client import Client
-from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
-from fennel.lib.schema import between, oneof, inputs, struct
+from fennel.datasets import (
+    dataset,
+    field,
+    pipeline,
+    Dataset,
+    Min,
+    Max,
+    Sum,
+    Average,
+    Count,
+    Stddev,
+    Distinct,
+    Quantile,
+    index,
+)
+from fennel.lib import includes, meta, inputs
+from fennel.dtypes import between, oneof, struct
 from fennel.sources import source, Webhook, ref
 from fennel.testing import almost_equal, mock, InternalTestClient
 
@@ -3344,15 +3354,16 @@ def test_lookup_as_of_time(client):
     )
     assert len(found.tolist()) == 2
     assert found.tolist() == [False, True]
-    assert len(data) == 2
-    assert data[0]["name"] is None
-    assert data[1]["name"] == "Monica"
+    assert data.shape[0] == 2
+    assert data.tolist() == [None, "Monica"]
 
 
 @pytest.mark.integration
 @mock
 def test_erase_key(client):
-    client.sync(datasets=[UserInfoDataset, UserInfoDatasetDerived])
+    client.commit(
+        message="msg", datasets=[UserInfoDataset, UserInfoDatasetDerived]
+    )
     data = [
         [18232, "Ross", 24, "USA", "2022-11-10 01:22:23"],
         [18233, "Monica", 24, "USA", "2022-11-15 01:33:13"],
@@ -3364,25 +3375,31 @@ def test_erase_key(client):
 
     response = client.log("fennel_webhook", "UserInfoDataset", df)
     assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
 
     data, found = client.lookup(
         "UserInfoDatasetDerived",
-        [{"user_id": 18232}],
+        pd.DataFrame({"user_id": [18232]}),
         fields=["name"],
     )
     assert len(found.tolist()) == 1
     assert found.tolist() == [True]
     assert len(data) == 1
-    assert data[0]["name"] == "Ross"
+    assert data[0] == "Ross"
+
+    # Issue deletion
+
+    response = client.erase(
+        "UserInfoDatasetDerived", pd.DataFrame({"user_id": [18232]})
+    )
+    assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
 
     # Should be deleted
 
-    response = client.erase("UserInfoDatasetDerived", [{"user_id": 18232}])
-    assert response.status_code == requests.codes.OK, response.json()
-
     data, found = client.lookup(
         "UserInfoDatasetDerived",
-        [{"user_id": 18232}],
+        pd.DataFrame({"user_id": [18232]}),
         fields=["name"],
     )
     assert len(found.tolist()) == 1
@@ -3400,10 +3417,11 @@ def test_erase_key(client):
     df = pd.DataFrame(data, columns=columns)
 
     response = client.log("fennel_webhook", "UserInfoDataset", df)
+    client.sleep()
 
     data, found = client.lookup(
         "UserInfoDatasetDerived",
-        [{"user_id": 18232}],
+        pd.DataFrame({"user_id": [18232]}),
         fields=["name"],
     )
     assert len(found.tolist()) == 1

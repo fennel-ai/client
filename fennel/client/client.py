@@ -671,7 +671,7 @@ class Client:
             "{}/dataset/{}/inspect?n={}".format(V1_API, dataset_name, n)
         ).json()
 
-    def erase(self, dataset_name: str, erase_keys: List[Dict[str, Any]]):
+    def erase(self, dataset_name: str, erase_keys: pd.DataFrame):
         """
         Issue erasure of data that associated with the erase key, any new data that
         associated with the key will be purge and won't be reflected in downstream dataset.
@@ -694,10 +694,11 @@ class Client:
         Response status
         """
         req = {
-            "dataset_name": dataset_name,
-            "erase_keys": erase_keys,
+            "erase_keys": erase_keys.to_dict(orient="records"),
         }
-        return self._post_json("{}/erase".format(V1_API), req)
+        return self._post_json(
+            "{}/dataset/{}/erase".format(V1_API, dataset_name), req
+        ).json()
 
     # ----------------------- Private methods -----------------------
 

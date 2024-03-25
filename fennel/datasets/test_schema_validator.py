@@ -1674,6 +1674,7 @@ def test_join_with_wrong_right_index():
         == """`offline` needs to be set on index of the right dataset `Users` for `'[Pipeline:pipeline]->join node'`."""
     )
 
+
 def test_conflicting_key_field_error():
     with pytest.raises(ValueError) as e:
 

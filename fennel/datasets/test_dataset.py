@@ -3210,12 +3210,12 @@ def test_erase_key():
         avg_session_secs: float
         t: datetime
 
-        @pipeline(version=1)
+        @pipeline
         @inputs(PageViewEvent)
         def pipeline_window(cls, app_event: Dataset):
             sessions = (
                 app_event.groupby("user_id")
-                .window(type="session", gap="10m", field="window")
+                .window(type="session", gap="10m", into_field="window")
                 .assign(
                     "duration_secs",
                     int,
@@ -3255,6 +3255,7 @@ def test_erase_key():
             "timestamp": "t",
             "erase_keys": ["user_id"],
         },
+        "version": 1,
         "metadata": {"owner": "nitin@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
