@@ -160,6 +160,7 @@ def test_bigquery_basic(client):
     # /docsnip
     client.commit(message="some commit msg", datasets=[UserClick])
 
+
 @mock
 def test_redshift_basic(client):
     os.environ["DB_NAME"] = "some-db-name"
