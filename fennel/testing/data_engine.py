@@ -383,6 +383,11 @@ class DataEngine(object):
         if data is not None:
             self.datasets[dataset_name].data = data[data.apply(is_kept, axis=1)]
 
+        if self.datasets[dataset_name].aggregated_datasets is not None:
+            data = self.datasets[dataset_name].aggregated_datasets
+            for col, df in data.items():
+                data[col] = df[df.apply(is_kept, axis=1)]
+
     def _dataset_lookup_impl(
         self,
         extractor_name: Optional[str],
@@ -688,12 +693,15 @@ class DataEngine(object):
                 self.datasets[pipeline.dataset_name].aggregated_datasets = (
                     ret.agg_result
                 )
+                self._filter_erase_key(dataset_name)
                 continue
 
             # Recursively log the output of the pipeline to the datasets
             resp = self._internal_log(pipeline.dataset_name, ret.df)
             if resp.status_code != 200:
                 return resp
+
+        self._filter_erase_key(dataset_name)
         return FakeResponse(200, "OK")
 
     def _merge_df(self, df: pd.DataFrame, dataset_name: str):
@@ -745,8 +753,6 @@ class DataEngine(object):
             ].dataset.timestamp_field
             self.datasets[dataset_name].data = df.sort_values(timestamp_field)
             self.datasets[dataset_name].prev_log_time = datetime.utcnow()
-
-        self._filter_erase_key(dataset_name)
 
     def _process_data_connector(
         self, dataset: Dataset, tier: Optional[str] = None
