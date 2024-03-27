@@ -15,6 +15,7 @@ sidebar:
       - "api-reference/client/delete-branch"
       - "api-reference/client/checkout"
       - "api-reference/client/branch"
+      - "api-reference/client/erase"
 
   - slug: "api-reference/rest-api"
     title: "REST API"
