@@ -311,8 +311,8 @@ class Client:
             dataset_name = "dataset_name"
 
         Parameters:
-        dataset_name (str): The name of the dataset.
-        erase_keys (List[Dict[str, Any]]): A list of keys, key(s), and its value, is a represented in a dictionary.
+        dataset_name (Union[str, Dataset]): The name of the dataset.
+        erase_keys (pd.DataFrame): A list of keys, key(s), and its value, is a represented in a dictionary.
 
         Returns:
         Response status
