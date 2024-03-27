@@ -1,4 +1,8 @@
 # Changelog
+## [1.1.3] - 2024-03-25
+- Add `erase_key` to Dataset to give user ability to erase certain entitiy from dataset
+- Add `erase` method for client and mock client.
+
 ## [1.1.2] - 2024-03-22
 - Support `bigquery` source
 
@@ -28,7 +32,6 @@
 - Add support for branches in Fennel.
 - Change/Rename all client methods.
 - Introduce versioning for datasets.
-
 ## [0.20.20] - 2024-02-14
 - Make `cdc` and `disorder` non-optional fields on a data source with reasonable default values.
 - remove `with_source` on the `@sources` decorator. This has been deprecated in favor using `tier=` on the data source

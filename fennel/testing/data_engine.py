@@ -29,6 +29,7 @@ from fennel.testing.test_utils import (
     cast_df_to_schema,
     cast_col_to_dtype,
 )
+from dataclasses import field
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -68,6 +69,7 @@ class _Dataset:
     aggregated_datasets: Optional[Dict[str, Any]] = None
     idleness: Optional[Duration] = None
     prev_log_time: Optional[datetime] = None
+    erased_keys: List[Dict[str, Any]] = field(default_factory=list)
 
     def empty_df(self):
         return pd.DataFrame(columns=self.fields)
@@ -209,6 +211,7 @@ class DataEngine(object):
                 pre_proc=pre_proc,
                 idleness=idleness,
                 prev_log_time=datetime.utcnow(),
+                erased_keys=[],
             )
 
             if (
@@ -280,6 +283,34 @@ class DataEngine(object):
                 return resp
         return FakeResponse(200, "OK")
 
+    def erase(self, dataset_name: str, erase_keys: List[Dict[str, Any]]):
+        if dataset_name not in self.datasets:
+            return FakeResponse(404, f"Dataset {dataset_name} not " f"found")
+        schema = self.datasets[dataset_name].core_dataset.dsschema
+        for erase_key in erase_keys:
+            for field_name in erase_key.keys():
+                all_fields = list(schema.keys.fields) + list(
+                    schema.values.fields
+                )
+                if field_name not in [f.name for f in all_fields]:
+                    raise ValueError(f"Field: {field_name} not in dataset")
+                if field_name not in [f.name for f in schema.keys.fields]:
+                    raise ValueError(
+                        f"Field: {field_name} not in a key field in dataset"
+                    )
+                if field_name not in schema.erase_keys:
+                    raise ValueError(
+                        f"Field: {field_name} is not an erase key field in dataset"
+                    )
+            if len(erase_key.keys()) != len(schema.erase_keys):
+                raise ValueError("Not enough erase key were provided")
+
+        self.datasets[dataset_name].erased_keys.extend(erase_keys)
+
+        self._filter_erase_key(dataset_name)
+
+        return FakeResponse(200, "OK")
+
     # def lookup(self, dataset_name: str, ts: pd.Series, *args, **kwargs):
     #     if dataset_name not in self.datasets:
     #         raise KeyError(f"Dataset: {dataset_name} not found")
@@ -331,6 +362,31 @@ class DataEngine(object):
             allowed_datasets,
             use_as_of,
         )
+
+    def _filter_erase_key(
+        self,
+        dataset_name: str,
+    ):
+        def is_kept(row):
+            for erase_key in self.datasets[dataset_name].erased_keys:
+                match_all = True
+                for erase_col in erase_key.keys():
+                    if row[erase_col] != erase_key[erase_col]:
+                        match_all = False
+                        break
+                if match_all:
+                    return False
+            return True
+
+        data = self.datasets[dataset_name].data
+
+        if data is not None:
+            self.datasets[dataset_name].data = data[data.apply(is_kept, axis=1)]
+
+        if self.datasets[dataset_name].aggregated_datasets is not None:
+            data = self.datasets[dataset_name].aggregated_datasets
+            for col, df in data.items():
+                data[col] = df[df.apply(is_kept, axis=1)]
 
     def _dataset_lookup_impl(
         self,
@@ -637,12 +693,15 @@ class DataEngine(object):
                 self.datasets[pipeline.dataset_name].aggregated_datasets = (
                     ret.agg_result
                 )
+                self._filter_erase_key(dataset_name)
                 continue
 
             # Recursively log the output of the pipeline to the datasets
             resp = self._internal_log(pipeline.dataset_name, ret.df)
             if resp.status_code != 200:
                 return resp
+
+        self._filter_erase_key(dataset_name)
         return FakeResponse(200, "OK")
 
     def _merge_df(self, df: pd.DataFrame, dataset_name: str):
@@ -653,46 +712,47 @@ class DataEngine(object):
                 dataset_name
             ].dataset.timestamp_field
             self.datasets[dataset_name].data = df.sort_values(timestamp_field)
-            return
+        else:
+            # Filter the dataframe to only include the columns in the schema
+            columns = self.datasets[dataset_name].fields
+            input_columns = df.columns.tolist()
+            # Check that input columns are a subset of the dataset columns
+            if not set(columns).issubset(set(input_columns)):
+                raise ValueError(
+                    f"Dataset columns {columns} are not a subset of "
+                    f"Input columns {input_columns}"
+                )
+            df = df[columns]
 
-        # Filter the dataframe to only include the columns in the schema
-        columns = self.datasets[dataset_name].fields
-        input_columns = df.columns.tolist()
-        # Check that input columns are a subset of the dataset columns
-        if not set(columns).issubset(set(input_columns)):
-            raise ValueError(
-                f"Dataset columns {columns} are not a subset of "
-                f"Input columns {input_columns}"
-            )
-        df = df[columns]
+            if len(self.datasets[dataset_name].dataset.key_fields) > 0:
+                df = df.sort_values(
+                    self.datasets[dataset_name].dataset.timestamp_field
+                )
+                try:
+                    df = df.groupby(
+                        self.datasets[dataset_name].dataset.key_fields,
+                        as_index=False,
+                    ).last()
+                except Exception:
+                    # This happens when struct fields are present in the key fields
+                    # Convert key fields to string, group by and then drop the key
+                    # column
+                    df["__fennel__key__"] = df[
+                        self.datasets[dataset_name].dataset.key_fields
+                    ].apply(lambda x: str(dict(x)), axis=1)
+                    df = df.groupby("__fennel__key__", as_index=False).last()
+                    df = df.drop(columns="__fennel__key__")
+                df = df.reset_index(drop=True)
 
-        if len(self.datasets[dataset_name].dataset.key_fields) > 0:
-            df = df.sort_values(
-                self.datasets[dataset_name].dataset.timestamp_field
-            )
-            try:
-                df = df.groupby(
-                    self.datasets[dataset_name].dataset.key_fields,
-                    as_index=False,
-                ).last()
-            except Exception:
-                # This happens when struct fields are present in the key fields
-                # Convert key fields to string, group by and then drop the key
-                # column
-                df["__fennel__key__"] = df[
-                    self.datasets[dataset_name].dataset.key_fields
-                ].apply(lambda x: str(dict(x)), axis=1)
-                df = df.groupby("__fennel__key__", as_index=False).last()
-                df = df.drop(columns="__fennel__key__")
-            df = df.reset_index(drop=True)
+            if isinstance(self.datasets[dataset_name].data, pd.DataFrame):
+                df = pd.concat([self.datasets[dataset_name].data, df])
 
-        if isinstance(self.datasets[dataset_name].data, pd.DataFrame):
-            df = pd.concat([self.datasets[dataset_name].data, df])
-
-        # Sort by timestamp
-        timestamp_field = self.datasets[dataset_name].dataset.timestamp_field
-        self.datasets[dataset_name].data = df.sort_values(timestamp_field)
-        self.datasets[dataset_name].prev_log_time = datetime.utcnow()
+            # Sort by timestamp
+            timestamp_field = self.datasets[
+                dataset_name
+            ].dataset.timestamp_field
+            self.datasets[dataset_name].data = df.sort_values(timestamp_field)
+            self.datasets[dataset_name].prev_log_time = datetime.utcnow()
 
     def _process_data_connector(
         self, dataset: Dataset, tier: Optional[str] = None

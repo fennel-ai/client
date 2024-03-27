@@ -123,6 +123,7 @@ class Field:
     key: bool
     timestamp: bool
     dtype: Optional[Type]
+    erase_key: bool
 
     def signature(self) -> str:
         if self.dtype is None:
@@ -176,6 +177,7 @@ def get_field(
             key=False,
             timestamp=False,
             dtype=dtype,
+            erase_key=False,
         )
 
     description = get_meta_attr(field, "description")
@@ -194,7 +196,12 @@ def get_field(
 def field(
     key: bool = False,
     timestamp: bool = False,
+    erase_key: bool = False,
 ) -> T:  # type: ignore
+    if erase_key and not key:
+        raise ValueError("Non key field cannot be an erase key field.")
+    if timestamp and key:
+        raise ValueError("Timestamp field cannot be a key.")
     return cast(
         T,
         # Initially None fields are assigned later
@@ -205,6 +212,7 @@ def field(
             timestamp=timestamp,
             name=None,
             dtype=None,
+            erase_key=erase_key,
         ),
     )
 
@@ -1375,6 +1383,7 @@ class Dataset(_Node[T]):
     _history: datetime.timedelta
     _fields: List[Field]
     _key_fields: List[str]
+    _erase_key_fields: List[str]
     _pipelines: List[Pipeline]
     _timestamp_field: str
     __fennel_original_cls__: Any
@@ -1401,6 +1410,7 @@ class Dataset(_Node[T]):
         self._set_timestamp_field()
         self._set_key_fields()
         self._version = version
+        self._set_erase_key_fields()
         self._history = history
         self.__fennel_original_cls__ = cls
         propogate_fennel_attributes(cls, self)
@@ -1515,6 +1525,13 @@ class Dataset(_Node[T]):
             if field.key:
                 key_fields.append(field.name)
         self._key_fields = key_fields
+
+    def _set_erase_key_fields(self):
+        erase_key_fields = []
+        for field in self._fields:
+            if field.erase_key:
+                erase_key_fields.append(field.name)
+        self._erase_key_fields = erase_key_fields
 
     def __repr__(self):
         return f"Dataset({self.__name__}, {self._fields})"
@@ -1658,6 +1675,10 @@ class Dataset(_Node[T]):
     @property
     def key_fields(self):
         return self._key_fields
+
+    @property
+    def erase_key_fields(self):
+        return self._erase_key_fields
 
     @property
     def on_demand(self):

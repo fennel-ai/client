@@ -332,20 +332,24 @@ class DSSchema(google.protobuf.message.Message):
     KEYS_FIELD_NUMBER: builtins.int
     VALUES_FIELD_NUMBER: builtins.int
     TIMESTAMP_FIELD_NUMBER: builtins.int
+    ERASE_KEYS_FIELD_NUMBER: builtins.int
     @property
     def keys(self) -> global___Schema: ...
     @property
     def values(self) -> global___Schema: ...
     timestamp: builtins.str
+    @property
+    def erase_keys(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         keys: global___Schema | None = ...,
         values: global___Schema | None = ...,
         timestamp: builtins.str = ...,
+        erase_keys: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["keys", b"keys", "values", b"values"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["keys", b"keys", "timestamp", b"timestamp", "values", b"values"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["erase_keys", b"erase_keys", "keys", b"keys", "timestamp", b"timestamp", "values", b"values"]) -> None: ...
 
 global___DSSchema = DSSchema
 

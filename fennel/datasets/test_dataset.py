@@ -3193,3 +3193,82 @@ def test_window_operator_with_aggregation():
     assert operator_req == expected_operator_request, error_message(
         operator_req, expected_operator_request
     )
+
+
+def test_erase_key():
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class PageViewEvent:
+        user_id: str
+        page_id: str
+        t: datetime
+
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class Sessions:
+        user_id: str = field(key=True, erase_key=True)
+        avg_session_secs: float
+        t: datetime
+
+        @pipeline
+        @inputs(PageViewEvent)
+        def pipeline_window(cls, app_event: Dataset):
+            sessions = (
+                app_event.groupby("user_id")
+                .window(type="session", gap="10m", into_field="window")
+                .assign(
+                    "duration_secs",
+                    int,
+                    lambda df: (df["window"].end - df["window"].begin).secs(),
+                )
+                .groupby("user_id")
+                .aggregate(
+                    Average(
+                        of="duration_secs",
+                        window="forever",
+                        into_field="avg_session_secs",
+                    )
+                )
+            )
+            return sessions
+
+    view = InternalTestClient()
+    view.add(Sessions)  # type: ignore
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "Sessions",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "user_id",
+                        "dtype": {"stringType": {}},
+                    },
+                ]
+            },
+            "values": {
+                "fields": [
+                    {"name": "avg_session_secs", "dtype": {"double_type": {}}}
+                ]
+            },
+            "timestamp": "t",
+            "erase_keys": ["user_id"],
+        },
+        "version": 1,
+        "metadata": {"owner": "nitin@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "user_id": {},
+            "avg_session_secs": {},
+            "t": {},
+        },
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )

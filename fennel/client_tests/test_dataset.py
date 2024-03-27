@@ -55,7 +55,7 @@ class UserInfoDataset:
 @index
 @dataset
 class UserInfoDatasetDerived:
-    user_id: int = field(key=True).meta(description="User ID")  # type: ignore
+    user_id: int = field(key=True, erase_key=True).meta(description="User ID")  # type: ignore
     name: str = field().meta(description="User name")  # type: ignore
     country_name: Optional[str]
     ts: datetime = field(timestamp=True)
@@ -528,7 +528,7 @@ class RatingActivity:
 @dataset
 class MovieRatingCalculated:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
-        key=True
+        key=True, erase_key=True
     )
     rating: float
     num_ratings: int
@@ -1400,6 +1400,65 @@ class TestBasicWindowAggregate(unittest.TestCase):
                 )
             ]
         )
+
+    @pytest.mark.integration
+    @mock
+    def test_basic_aggregate_with_erase(self, client):
+        # # Sync the dataset
+        client.commit(
+            message="msg",
+            datasets=[MovieRatingCalculated, RatingActivity],
+        )
+        now = datetime.utcnow()
+        one_hour_ago = now - timedelta(hours=1)
+        two_hours_ago = now - timedelta(hours=2)
+        three_hours_ago = now - timedelta(hours=3)
+        four_hours_ago = now - timedelta(hours=4)
+        five_hours_ago = now - timedelta(hours=5)
+
+        data = [
+            [18231, 2, "Jumanji", five_hours_ago],
+            [18231, 3, "Jumanji", four_hours_ago],
+            [18231, 2, "Jumanji", three_hours_ago],
+            [18231, 5, "Jumanji", five_hours_ago],
+            [18231, 4, "Titanic", three_hours_ago],
+            [18231, 3, "Titanic", two_hours_ago],
+            [18231, 5, "Titanic", one_hour_ago],
+            [18231, 5, "Titanic", now - timedelta(minutes=1)],
+            [18231, 3, "Titanic", two_hours_ago],
+        ]
+        columns = ["userid", "rating", "movie", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK
+
+        client.sleep()
+        response = client.erase(
+            MovieRatingCalculated, pd.DataFrame({"movie": ["Jumanji"]})
+        )
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+        client.sleep()
+        client.sleep()
+        client.sleep()
+        client.sleep()
+
+        # Do some lookups to verify pipeline_aggregate is working as expected
+        df, found = client.lookup(
+            "MovieRatingCalculated",
+            pd.DataFrame({"movie": ["Jumanji", "Titanic"]}),
+        )
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+        assert found.to_list() == [False, True]
+
+        ts = pd.Series([now, now])
+        df, found = client.lookup(
+            "MovieRatingCalculated",
+            pd.DataFrame({"movie": ["Jumanji", "Titanic"]}),
+            timestamps=ts,
+        )
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+        assert found.to_list() == [False, True]
 
 
 @meta(owner="test@test.com")
@@ -3356,3 +3415,98 @@ def test_lookup_as_of_time(client):
     assert found.tolist() == [False, True]
     assert data.shape[0] == 2
     assert data.tolist() == [None, "Monica"]
+
+
+@pytest.mark.integration
+@mock
+def test_erase_key(client):
+    client.commit(
+        message="msg", datasets=[UserInfoDataset, UserInfoDatasetDerived]
+    )
+    data = [
+        [18232, "Ross", 24, "USA", "2022-11-10 01:22:23"],
+        [18233, "Monica", 24, "USA", "2022-11-15 01:33:13"],
+        [18234, "Chandler", 24, "USA", "2022-11-16 01:22:23"],
+        [18235, "Rachel", 24, "USA", "2022-11-17 01:33:13"],
+    ]
+    columns = ["user_id", "name", "age", "country", "timestamp"]
+    df = pd.DataFrame(data, columns=columns)
+
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
+    assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
+
+    data, found = client.lookup(
+        "UserInfoDatasetDerived",
+        pd.DataFrame({"user_id": [18232]}),
+        fields=["name"],
+    )
+    assert len(found.tolist()) == 1
+    assert found.tolist() == [True]
+    assert len(data) == 1
+    assert data[0] == "Ross"
+
+    # Issue deletion
+
+    response = client.erase(
+        UserInfoDatasetDerived, pd.DataFrame({"user_id": [18232]})
+    )
+    assert response.status_code == requests.codes.OK, response.json()
+    client.sleep()
+    client.sleep()
+    client.sleep()
+    client.sleep()
+    client.sleep()
+
+    # Should be deleted
+    data, found = client.lookup(
+        "UserInfoDatasetDerived",
+        pd.DataFrame({"user_id": [18232]}),
+        fields=["name"],
+    )
+    assert len(found.tolist()) == 1
+    assert found.tolist() == [False]
+
+    # Should be deleted as of
+    now = datetime.utcnow()
+    data, found = client.lookup(
+        "UserInfoDatasetDerived",
+        pd.DataFrame({"user_id": [18232]}),
+        fields=["name"],
+        timestamps=pd.Series([now]),
+    )
+    assert len(found.tolist()) == 1
+    assert found.tolist() == [False]
+
+    # Even when logging again it should be filter out
+
+    data = [
+        [18232, "Ross", 24, "USA", "2022-11-10 01:22:23"],
+        [18233, "Monica", 24, "USA", "2022-11-15 01:33:13"],
+        [18234, "Chandler", 24, "USA", "2022-11-16 01:22:23"],
+        [18235, "Rachel", 24, "USA", "2022-11-17 01:33:13"],
+    ]
+    columns = ["user_id", "name", "age", "country", "timestamp"]
+    df = pd.DataFrame(data, columns=columns)
+
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
+    client.sleep()
+    client.sleep()
+    client.sleep()
+
+    data, found = client.lookup(
+        "UserInfoDatasetDerived",
+        pd.DataFrame({"user_id": [18232]}),
+        fields=["name"],
+    )
+    assert len(found.tolist()) == 1
+    assert found.tolist() == [False]
+
+    data, found = client.lookup(
+        "UserInfoDatasetDerived",
+        pd.DataFrame({"user_id": [18232]}),
+        fields=["name"],
+        timestamps=pd.Series([now]),
+    )
+    assert len(found.tolist()) == 1
+    assert found.tolist() == [False]

@@ -217,6 +217,24 @@ class MockClient(Client):
             .to_dict(orient="records")
         )
 
+    def erase(
+        self, dataset_name: Union[str, Dataset], erase_keys: pd.DataFrame
+    ):
+        branch_class = self._get_branch()
+        data_engine = branch_class.get_data_engine()
+        if isinstance(dataset_name, Dataset):
+            dataset_name = dataset_name.__name__
+        elif isinstance(dataset_name, str):
+            dataset_name = dataset_name
+        else:
+            raise TypeError(
+                f"Expected a list of datasets, got `{dataset_name.__name__}`"
+                f" of type `{type(dataset_name)}` instead."
+            )
+        return data_engine.erase(
+            dataset_name, erase_keys.to_dict(orient="records")
+        )
+
     # ----------------------- Branch API's -----------------------------------
 
     def init_branch(self, name: str):

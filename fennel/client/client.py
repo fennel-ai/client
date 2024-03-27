@@ -4,7 +4,7 @@ import json
 import math
 import re
 from datetime import datetime
-from typing import Dict, Optional, Any, Set, List, Union, Tuple
+from typing import Dict, Optional, Any, Set, List, Union, Tuple, Type
 from urllib.parse import urljoin
 
 import pandas as pd
@@ -292,6 +292,46 @@ class Client:
                     lambda x: parse_json(output_feature_name_to_type[col], x)
                 )
         return df
+
+    def erase(
+        self, dataset_name: Union[str, Dataset], erase_keys: pd.DataFrame
+    ):
+        """
+        Issue erasure of data that associated with the erase key, any new data that
+        associated with the key will be purge and won't be reflected in downstream dataset.
+
+        Example:
+            We have a dataset named Test which has two erase keyed fields named A and B
+            Suppose we want to erase these key from this dataset
+
+            keys = [
+                {"A": "valueA1", "B": "valueB1"},
+                {"A": "valueA2", "B": "valueB2"}
+            ]
+            dataset_name = "dataset_name"
+
+        Parameters:
+        dataset_name (Union[str, Dataset]): The name of the dataset.
+        erase_keys (pd.DataFrame): A list of keys, key(s), and its value, is a represented in a dictionary.
+
+        Returns:
+        Response status
+        """
+        req = {
+            "erase_keys": erase_keys.to_dict(orient="records"),
+        }
+        if isinstance(dataset_name, Dataset):
+            dataset_name = dataset_name.__name__
+        elif isinstance(dataset_name, str):
+            dataset_name = dataset_name
+        else:
+            raise TypeError(
+                f"Expected a list of datasets, got `{dataset_name.__name__}`"
+                f" of type `{type(dataset_name)}` instead."
+            )
+        return self._post_json(
+            "{}/dataset/{}/erase".format(V1_API, dataset_name), req
+        )
 
     # ----------------------- Branch API's -----------------------------------
 
