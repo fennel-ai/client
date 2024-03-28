@@ -2647,9 +2647,9 @@ class SchemaValidator(Visitor):
         output_schema = copy.deepcopy(obj.dsschema())
         if len(output_schema.keys) == 0:
             raise ValueError(
-                f"'group_by' before 'last' in {self.pipeline_name} must specify at least one key"
+                f"'group_by' before 'latest' in {self.pipeline_name} must specify at least one key"
             )
-        output_schema.name = f"'[Pipeline:{self.pipeline_name}]->last node'"
+        output_schema.name = f"'[Pipeline:{self.pipeline_name}]->lastest node'"
         return output_schema
 
     def visitWindow(self, obj) -> DSSchema:

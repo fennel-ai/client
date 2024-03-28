@@ -83,7 +83,7 @@ class MockClient(Client):
         if at_least_one_ok:
             return FakeResponse(200, "OK")
         else:
-            FakeResponse(
+            return FakeResponse(
                 404,
                 f"Webhook endpoint {webhook}_{endpoint} not "
                 f"found in any branch",
