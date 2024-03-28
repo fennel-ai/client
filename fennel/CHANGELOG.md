@@ -1,4 +1,7 @@
 # Changelog
+## [1.1.4] - 2024-03-28
+- Add last operator to the client.
+
 ## [1.1.3] - 2024-03-25
 - Add `erase_key` to Dataset to give user ability to erase certain entitiy from dataset
 - Add `erase` method for client and mock client.

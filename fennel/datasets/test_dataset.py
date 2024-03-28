@@ -2227,6 +2227,127 @@ def test_first_operator():
     )
 
 
+def test_last_operator():
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class RatingActivity:
+        userid: int = field(key=True)
+        movie: str = field(key=True)
+        rating: float
+        t: datetime
+
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class LastMovieSeen:
+        userid: int = field(key=True)
+        rating: float
+        movie: str
+        t: datetime
+
+        @pipeline
+        @inputs(RatingActivity)
+        def pipeline_last_movie_seen(cls, rating: Dataset):
+            return rating.groupby("userid").latest()
+
+    view = InternalTestClient()
+    view.add(LastMovieSeen)  # type: ignore
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "name": "LastMovieSeen",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "userid",
+                        "dtype": {"int_type": {}},
+                    }
+                ]
+            },
+            "values": {
+                "fields": [
+                    {
+                        "name": "rating",
+                        "dtype": {"double_type": {}},
+                    },
+                    {
+                        "name": "movie",
+                        "dtype": {"string_type": {}},
+                    },
+                ]
+            },
+            "timestamp": "t",
+        },
+        "version": 1,
+        "metadata": {"owner": "aditya@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "userid": {},
+            "movie": {},
+            "rating": {},
+            "t": {},
+        },
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[0]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+    # Only one pipeline
+    assert len(sync_request.pipelines) == 1
+    pipeline_req = sync_request.pipelines[0]
+    pipeline_req.pycode.Clear()
+    p = {
+        "name": "pipeline_last_movie_seen",
+        "dataset_name": "LastMovieSeen",
+        "signature": "pipeline_last_movie_seen",
+        "metadata": {},
+        "input_dataset_names": ["RatingActivity"],
+        "pycode": {},
+        "ds_version": 1,
+    }
+    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
+    assert pipeline_req == expected_pipeline_request, error_message(
+        pipeline_req, expected_pipeline_request
+    )
+
+    # 1 operators
+    assert len(sync_request.operators) == 2
+    operator_req = sync_request.operators[0]
+    o = {
+        "id": "RatingActivity",
+        "is_root": False,
+        "pipeline_name": "pipeline_last_movie_seen",
+        "dataset_name": "LastMovieSeen",
+        "dataset_ref": {
+            "referring_dataset_name": "RatingActivity",
+        },
+        "ds_version": 1,
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+    operator_req = sync_request.operators[1]
+    o = {
+        "id": "883e720f07ee6c1ecf924ca31416b8c3",
+        "is_root": True,
+        "pipelineName": "pipeline_last_movie_seen",
+        "datasetName": "LastMovieSeen",
+        "latest": {"operandId": "RatingActivity", "by": ["userid"]},
+        "ds_version": 1,
+    }
+    expected_operator_request = ParseDict(o, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+
+
 @meta(owner="e2@company.com")
 @dataset
 class Document:

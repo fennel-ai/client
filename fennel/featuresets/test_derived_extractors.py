@@ -247,7 +247,7 @@ def test_valid_derived_extractors():
 
     expected_extractors = [
         {
-            "name": "_fennel_alias_id",
+            "name": "_fennel_alias_User.id",
             "datasets": [],
             "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
             "features": ["user_id"],
@@ -259,7 +259,7 @@ def test_valid_derived_extractors():
             "field_info": None,
         },
         {
-            "name": "_fennel_lookup_gender",
+            "name": "_fennel_lookup_UserInfoDataset.gender",
             "datasets": ["UserInfoDataset"],
             "inputs": [
                 {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
@@ -276,7 +276,7 @@ def test_valid_derived_extractors():
             },
         },
         {
-            "name": "_fennel_lookup_age",
+            "name": "_fennel_lookup_UserInfoDataset.age",
             "datasets": ["UserInfoDataset"],
             "inputs": [
                 {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
@@ -293,7 +293,7 @@ def test_valid_derived_extractors():
             },
         },
         {
-            "name": "_fennel_lookup_dob",
+            "name": "_fennel_lookup_UserInfoDataset.dob",
             "datasets": ["UserInfoDataset"],
             "inputs": [
                 {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
@@ -310,7 +310,7 @@ def test_valid_derived_extractors():
             },
         },
         {
-            "name": "_fennel_lookup_nickname",
+            "name": "_fennel_lookup_UserInfoDataset.nickname",
             "datasets": ["UserInfoDataset"],
             "inputs": [
                 {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
@@ -346,7 +346,7 @@ def test_valid_derived_extractors():
             "field_info": None,
         },
         {
-            "name": "_fennel_alias_age_group",
+            "name": "_fennel_alias_UserInfo.age_group",
             "datasets": [],
             "inputs": [
                 {
@@ -365,7 +365,7 @@ def test_valid_derived_extractors():
             "field_info": None,
         },
         {
-            "name": "_fennel_alias_age_years",
+            "name": "_fennel_alias_UserInfo.age_years",
             "datasets": [],
             "inputs": [
                 {

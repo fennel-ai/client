@@ -56,7 +56,7 @@ def _topological_sort(
     return stack, feature_to_extractor_map
 
 
-def get_vertices_and_eges(
+def get_vertices_and_edges(
     extractors: List[Extractor],
 ) -> Tuple[Set[str], Set[Tuple[str, str]]]:
     """
@@ -142,7 +142,7 @@ def get_extractor_order(
             # Find an extractor for this feature
             if feature not in feature_to_extractor_map:
                 # Draw DAG
-                vertices, edges = get_vertices_and_eges(extractors)
+                vertices, edges = get_vertices_and_edges(extractors)
                 draw_graph(vertices, edges)
                 raise ValueError(f"No extractor found for feature `{feature}`.")
             extractor = feature_to_extractor_map[feature]

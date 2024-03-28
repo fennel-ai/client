@@ -415,7 +415,7 @@ def test_extractor_tier_selector():
     assert len(sync_request.features) == 8
 
     extractor_req = sync_request.extractors[0]
-    assert extractor_req.name == "_fennel_alias_user_id"
+    assert extractor_req.name == "_fennel_alias_Request.user_id"
 
     extractor_req = sync_request.extractors[1]
-    assert extractor_req.name == "_fennel_lookup_avg_income"
+    assert extractor_req.name == "_fennel_lookup_UserInfoDataset.avg_income"

@@ -21,6 +21,7 @@ try:
     from fennel_client_lib import HttpServer  # type: ignore
     from fennel_dataset import lookup  # type: ignore
 except ImportError:
+    print("Failed to import fennel_client_lib")
     pass
 import fennel.datasets.datasets
 from fennel._vendor.requests import Response  # type: ignore
