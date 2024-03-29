@@ -513,6 +513,11 @@ class GroupBy:
             self.keys = self.keys[0]  # type: ignore
         return First(self.node, list(self.keys))  # type: ignore
 
+    def latest(self) -> _Node:
+        if len(self.keys) == 1 and isinstance(self.keys[0], list):
+            self.keys = self.keys[0]  # type: ignore
+        return Latest(self.node, list(self.keys))  # type: ignore
+
     def window(
         self,
         type: str,
@@ -584,6 +589,34 @@ class Explode(_Node):
 
 
 class First(_Node):
+    def __init__(self, node: _Node, keys: List[str]):
+        super().__init__()
+        self.keys = keys
+        self.node = node
+        self.node.out_edges.append(self)
+
+    def signature(self):
+        if isinstance(self.node, Dataset):
+            return fhash(self.node._name, self.keys)
+        return fhash(self.node.signature(), self.keys)
+
+    def dsschema(self):
+        input_schema = self.node.dsschema()
+        keys = {f: input_schema.get_type(f) for f in self.keys}
+        value_fields = [
+            f
+            for f in {**input_schema.values, **input_schema.keys}
+            if f not in self.keys and f != input_schema.timestamp
+        ]
+        values = {f: input_schema.get_type(f) for f in value_fields}
+        return DSSchema(
+            keys=keys,
+            timestamp=input_schema.timestamp,
+            values=values,
+        )
+
+
+class Latest(_Node):
     def __init__(self, node: _Node, keys: List[str]):
         super().__init__()
         self.keys = keys
@@ -1929,6 +1962,8 @@ class Visitor:
             return self.visitExplode(obj)
         elif isinstance(obj, First):
             return self.visitFirst(obj)
+        elif isinstance(obj, Latest):
+            return self.visitLatest(obj)
         elif isinstance(obj, DropNull):
             return self.visitDropNull(obj)
         elif isinstance(obj, Assign):
@@ -1972,6 +2007,9 @@ class Visitor:
         raise NotImplementedError()
 
     def visitFirst(self, obj):
+        raise NotImplementedError()
+
+    def visitLatest(self, obj):
         raise NotImplementedError()
 
     def visitDropNull(self, obj):
@@ -2603,6 +2641,15 @@ class SchemaValidator(Visitor):
                 f"'group_by' before 'first' in {self.pipeline_name} must specify at least one key"
             )
         output_schema.name = f"'[Pipeline:{self.pipeline_name}]->first node'"
+        return output_schema
+
+    def visitLatest(self, obj) -> DSSchema:
+        output_schema = copy.deepcopy(obj.dsschema())
+        if len(output_schema.keys) == 0:
+            raise ValueError(
+                f"'group_by' before 'latest' in {self.pipeline_name} must specify at least one key"
+            )
+        output_schema.name = f"'[Pipeline:{self.pipeline_name}]->lastest node'"
         return output_schema
 
     def visitWindow(self, obj) -> DSSchema:

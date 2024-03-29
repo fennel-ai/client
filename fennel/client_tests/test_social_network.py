@@ -1,9 +1,11 @@
 from datetime import datetime
+from typing import List
 
 import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
+from fennel import LastK
 from fennel.datasets import dataset, field, Dataset, pipeline, Count, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import meta, inputs, outputs
@@ -101,6 +103,42 @@ class UserCategoryDataset:
         )
 
 
+@index
+@meta(owner="ml-eng@myspace.com")
+@dataset
+class LastViewedPost:
+    user_id: str = field(key=True)
+    post_id: int
+    time_stamp: datetime
+
+    @pipeline
+    @inputs(ViewData)
+    def last_viewed_post(cls, view_data: Dataset):
+        return view_data.groupby("user_id").latest()
+
+
+@index
+@meta(owner="ml-eng@myspace.com")
+@dataset
+class LastViewedPostByAgg:
+    user_id: str = field(key=True)
+    post_id: List[int]
+    time_stamp: datetime
+
+    @pipeline
+    @inputs(ViewData)
+    def last_viewed_post(cls, view_data: Dataset):
+        return view_data.groupby("user_id").aggregate(
+            LastK(
+                into_field="post_id",
+                of="post_id",
+                window="forever",
+                limit=1,
+                dedup=False,
+            )
+        )
+
+
 # --- Featuresets ---
 
 
@@ -114,9 +152,16 @@ class Request:
 @meta(owner="feature-team@myspace.com")
 @featureset
 class UserFeatures:
+    user_id: str = feature(id=1).extract(feature=Request.user_id)  # type: ignore
     num_views: int = feature(id=2)
     num_category_views: int = feature(id=3)
     category_view_ratio: float = feature(id=4)
+    last_viewed_post: int = feature(id=5).extract(  # type: ignore
+        field=LastViewedPost.post_id, default=-1
+    )
+    last_viewed_post2: List[int] = feature(id=6).extract(  # type: ignore
+        field=LastViewedPostByAgg.post_id, default=[-1]
+    )
 
     @extractor(depends_on=[UserViewsDataset])
     @inputs(Request.user_id)
@@ -152,7 +197,6 @@ class UserFeatures:
         )
 
 
-@pytest.mark.slow
 @mock
 def test_social_network(client):
     client.commit(
@@ -164,6 +208,8 @@ def test_social_network(client):
             CityInfo,
             UserViewsDataset,
             UserCategoryDataset,
+            LastViewedPost,
+            LastViewedPostByAgg,
         ],
         featuresets=[Request, UserFeatures],
     )
@@ -216,5 +262,12 @@ def test_social_network(client):
     if client.is_integration_client():
         return
 
+    # Assert that both the last_viewed_post and last_viewed_post2 features are extracted correctly
+    last_post_viewed = feature_df["UserFeatures.last_viewed_post"].to_list()
+    last_post_viewed2 = [
+        x[0] for x in feature_df["UserFeatures.last_viewed_post2"].to_list()
+    ]
+    assert last_post_viewed == [936609766, 735291550]
+    assert last_post_viewed2 == last_post_viewed
     df = client.get_dataset_df("UserCategoryDataset")
     assert df.shape == (1998, 4)

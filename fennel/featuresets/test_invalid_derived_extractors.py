@@ -163,5 +163,5 @@ def test_invalid_missing_fields():
 
     assert (
         str(e.value)
-        == "Dataset key `user_id` not found in provider `UserRequest` for extractor `_fennel_lookup_age`"
+        == "Dataset key `user_id` not found in provider `UserRequest` for extractor `_fennel_lookup_UserInfoDataset.age`"
     )

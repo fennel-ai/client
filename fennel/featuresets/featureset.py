@@ -388,7 +388,7 @@ class Feature:
         # aliasing
         if feature:
             self.extractor = Extractor(
-                name=f"_fennel_alias_{feature}",
+                name=f"_fennel_alias_{feature.fqn_}",
                 extractor_type=ExtractorType.ALIAS,
                 inputs=[feature],
                 outputs=[self.id],
@@ -397,9 +397,14 @@ class Feature:
             )
             return self
         provider_features = []
+
         # If provider is none, then the provider is this featureset. The input features
         # are captured once this featureset is initialized
-        name = f"_fennel_lookup_{field}"
+        name = (
+            f"_fennel_lookup_{field.fqn()}"  # type: ignore
+            if field
+            else f"_fennel_alias_{feature.fqn_}"  # type: ignore
+        )
         field = cast(Field, field)
         ds = None
         if provider:
@@ -435,7 +440,7 @@ class Feature:
             )
 
         self.extractor = Extractor(
-            name=f"_fennel_lookup_{field}",
+            name=f"_fennel_lookup_{field.fqn()}",
             extractor_type=ExtractorType.LOOKUP,
             inputs=provider_features,
             outputs=[self.id],

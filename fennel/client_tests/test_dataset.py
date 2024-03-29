@@ -1739,6 +1739,127 @@ class TestBasicDistinct(unittest.TestCase):
 @meta(owner="abhay@fennel.ai")
 @index
 @dataset
+class LastMovieSeen:
+    userid: int = field(key=True)
+    rating: float
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
+    t: datetime
+
+    @pipeline
+    @inputs(RatingActivity)
+    def pipeline_last_movie_seen(cls, rating: Dataset):
+        return rating.groupby("userid").latest()
+
+
+@meta(owner="abhay@fennel.ai")
+@index
+@dataset
+class NumTimesLastMovie:
+    """
+    Given a movie, count the number of times it was the last movie seen by a user
+    """
+
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True
+    )
+    count: int
+    t: datetime
+
+    @pipeline
+    @inputs(LastMovieSeen)
+    def pipeline_num_last(cls, first_movies: Dataset):
+        return first_movies.groupby("movie").aggregate(
+            [
+                Count(
+                    window="forever",
+                    into_field=str(cls.count),
+                )
+            ]
+        )
+
+
+class TestLastOp(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_last_op(self, client):
+        # # Sync the dataset
+        client.commit(
+            message="msg",
+            datasets=[LastMovieSeen, RatingActivity, NumTimesLastMovie],
+        )
+        now = datetime.utcnow()
+        five_hours_ago = now - timedelta(hours=5)
+        three_hours_ago = now - timedelta(hours=3)
+        two_hours_ago = now - timedelta(hours=2)
+        one_hour_ago = now - timedelta(hours=2)
+        minute_ago = now - timedelta(minutes=1)
+        data = [
+            [18231, 4.5, "Jumanji", five_hours_ago],
+            [18232, 3, "Titanic", five_hours_ago],
+            [18233, 5, "Titanic", five_hours_ago],
+            [18234, 4, "RaOne", five_hours_ago],
+        ]
+        columns = ["userid", "rating", "movie", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+        # Do some lookups to verify pipeline_first_movie_seen is working as expected
+        ts = pd.Series([now, now, now, now])
+        df, _ = LastMovieSeen.lookup(
+            ts,
+            userid=pd.Series([18231, 18232, 18233, 18234]),
+        )
+        assert df.shape == (4, 4)
+        assert df["movie"].tolist() == [
+            "Jumanji",
+            "Titanic",
+            "Titanic",
+            "RaOne",
+        ]
+        assert df["rating"].tolist() == [4.5, 3, 5, 4]
+
+        # Now, log some more data at later times. We should still get the same results as before.
+        data = [
+            [18232, 3, "Titanic", two_hours_ago + timedelta(minutes=1)],
+            [18231, 3.5, "Jumanji", three_hours_ago],
+            [18234, 4, "Titanic", minute_ago],
+            [18231, 2, "RaOne", one_hour_ago],
+            [18233, 3, "RaOne", minute_ago],
+            [18232, 1, "RaOne", two_hours_ago],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+        # Do some lookups to verify pipeline_first_movie_seen is working as expected
+        ts = pd.Series([now, now, now, now])
+        df, _ = LastMovieSeen.lookup(
+            ts,
+            userid=pd.Series([18231, 18232, 18233, 18234]),
+        )
+        assert df.shape == (4, 4)
+        assert df["movie"].tolist() == [
+            "RaOne",
+            "Titanic",
+            "RaOne",
+            "Titanic",
+        ]
+        assert df["rating"].tolist() == [2.0, 3.0, 3.0, 4.0]
+
+        # Do some lookups to verify pipeline_num_first is working as expected
+        ts = pd.Series([now, now, now])
+        df, _ = NumTimesLastMovie.lookup(
+            ts,
+            movie=pd.Series(["Jumanji", "Titanic", "RaOne"]),
+        )
+        assert df.shape == (3, 3)
+        assert df["count"].tolist() == [None, 2, 2]
+
+
+@meta(owner="abhay@fennel.ai")
+@index
+@dataset
 class FirstMovieSeen:
     userid: int = field(key=True)
     rating: float
