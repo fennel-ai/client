@@ -8,7 +8,7 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, index
 from fennel.lib import meta
-from fennel.sources import source, S3, Webhook
+from fennel.connectors import source, S3, Webhook
 from fennel.testing import mock
 
 s3 = S3(

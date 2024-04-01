@@ -7,7 +7,7 @@ __owner__ = "ml-team@fennel.ai"
 
 # docsnip featuresets_reading_datasets
 from fennel.datasets import dataset, field, index
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import inputs, outputs
 

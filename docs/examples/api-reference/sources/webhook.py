@@ -11,7 +11,7 @@ __owner__ = "nikhil@fennel.ai"
 @mock
 def test_webhook_basic(client):
     # docsnip webhook_define
-    from fennel.sources import source, Webhook
+    from fennel.connectors import source, Webhook
     from fennel.datasets import dataset, field
 
     webhook = Webhook(name="prod_webhook", retention="14d")

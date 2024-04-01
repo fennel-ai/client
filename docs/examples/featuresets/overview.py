@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, field, index
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 from fennel.testing import mock, InternalTestClient
 
 webhook = Webhook(name="fennel_webhook")

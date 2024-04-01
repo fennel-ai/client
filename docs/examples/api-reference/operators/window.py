@@ -16,7 +16,7 @@ class TestAssignSnips(unittest.TestCase):
         # docsnip basic
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
         from fennel.dtypes import Window
 
         webhook = Webhook(name="webhook")
@@ -115,7 +115,7 @@ class TestAssignSnips(unittest.TestCase):
             # docsnip miss_window_key
             from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 
@@ -154,7 +154,7 @@ class TestAssignSnips(unittest.TestCase):
             # docsnip invalid_window
             from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
             from fennel.dtypes import Window
 
             webhook = Webhook(name="webhook")

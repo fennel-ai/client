@@ -16,7 +16,7 @@ class TestDebugSnips(unittest.TestCase):
     def test_basic(self, client):
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib.schema import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -97,7 +97,7 @@ class TestDebugSnips(unittest.TestCase):
         # docsnip print_dataset
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib.schema import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -148,7 +148,7 @@ class TestDebugSnips(unittest.TestCase):
     def test_astype(self, client):
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib.schema import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 

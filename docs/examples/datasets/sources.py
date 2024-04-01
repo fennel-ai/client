@@ -11,7 +11,7 @@ os.environ["USERNAME"] = "username"
 os.environ["PASSWORD"] = "password"
 
 # docsnip postgres_source
-from fennel.sources import source, Postgres
+from fennel.connectors import source, Postgres
 
 postgres = Postgres(
     name=os.getenv("POSTGRES_NAME"),

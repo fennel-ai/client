@@ -7,7 +7,7 @@ from typing import Optional
 from fennel.datasets import dataset, field, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import meta, inputs, outputs
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 
 from fennel.testing import *
 

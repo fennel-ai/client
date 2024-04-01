@@ -20,7 +20,7 @@ def test_basic(client):
         index,
     )
     from fennel.lib import inputs
-    from fennel.sources import source, Webhook
+    from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="webhook")
 
@@ -128,7 +128,7 @@ def test_invalid_type(client):
             Stddev,
         )
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -173,7 +173,7 @@ def test_non_matching_types(client):
             Stddev,
         )
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 

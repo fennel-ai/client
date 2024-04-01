@@ -90,7 +90,7 @@ def test_basic(client):
 
     with pytest.raises(Exception):
         # docsnip extract_historical_s3
-        from fennel.sources import S3
+        from fennel.connectors import S3
 
         s3 = S3(
             name="extract_hist_input",

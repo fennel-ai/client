@@ -13,7 +13,7 @@ class TestDedupSnips(unittest.TestCase):
         # docsnip basic
         from fennel.datasets import dataset, pipeline, Dataset
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -83,7 +83,7 @@ class TestDedupSnips(unittest.TestCase):
         # docsnip dedup_by_all
         from fennel.datasets import dataset, pipeline, Dataset
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 

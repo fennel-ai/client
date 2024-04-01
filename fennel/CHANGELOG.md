@@ -1,4 +1,7 @@
 # Changelog
+## [1.1.6] - 2024-04-02
+- Changed `fennel.sources` to `fennel.connectors`.
+
 ## [1.1.5] - 2024-04-01
 - Support `redshift` source
 

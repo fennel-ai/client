@@ -8,7 +8,7 @@ def test_dataset_deleted():
     # docsnip dataset_deleted
     from fennel.datasets import dataset, field
     from fennel.lib import meta
-    from fennel.sources import source, Webhook
+    from fennel.connectors import source, Webhook
 
     @meta(owner="mohit@fennel.ai", deleted=True)
     @source(
@@ -30,7 +30,7 @@ def test_gh_actions_dataset():
     # docsnip gh_action_dataset
     from fennel.datasets import dataset, field
     from fennel.lib import meta
-    from fennel.sources import source, Webhook
+    from fennel.connectors import source, Webhook
 
     @meta(owner="mohit@fennel.ai")
     @source(

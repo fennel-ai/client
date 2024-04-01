@@ -10,7 +10,7 @@ __owner__ = "aditya@fennel.ai"
 def test_basic(client):
     # docsnip basic
     from fennel.datasets import dataset, field, index
-    from fennel.sources import source, Webhook
+    from fennel.connectors import source, Webhook
 
     # first define & sync a dataset that sources from a webhook
     webhook = Webhook(name="some_webhook")

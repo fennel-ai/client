@@ -7,7 +7,7 @@ import fennel.datasets.datasets
 from fennel.datasets import dataset, field, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import inputs, outputs
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")

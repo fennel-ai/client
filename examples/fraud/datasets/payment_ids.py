@@ -6,7 +6,7 @@ from datetime import datetime
 
 from fennel.datasets import dataset, field, pipeline, Dataset, index
 from fennel.lib import inputs
-from fennel.sources import Webhook, source
+from fennel.connectors import Webhook, source
 
 __owner__ = "eng@app.com"
 

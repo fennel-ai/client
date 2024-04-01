@@ -7,7 +7,7 @@ from typing import Optional
 
 from fennel.datasets import dataset, field, pipeline, Dataset, Count, index
 from fennel.lib import inputs
-from fennel.sources import Webhook, source
+from fennel.connectors import Webhook, source
 
 __owner__ = "eng@app.com"
 

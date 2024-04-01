@@ -17,7 +17,7 @@ from fennel.lib import (
     expect_column_pair_values_A_to_be_greater_than_B,
 )
 from fennel.dtypes import oneof
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")

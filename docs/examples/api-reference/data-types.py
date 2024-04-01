@@ -46,7 +46,7 @@ def test_restrictions(client):
     # imports for datasets
     from fennel.datasets import dataset, field
     from fennel.lib import meta
-    from fennel.sources import source, Webhook
+    from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
 

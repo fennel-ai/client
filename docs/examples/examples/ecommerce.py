@@ -8,7 +8,7 @@ import requests
 from fennel.datasets import dataset, pipeline, field, Dataset, Count, index
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib import meta, inputs, outputs
-from fennel.sources import Postgres, source, Webhook
+from fennel.connectors import Postgres, source, Webhook
 from fennel.testing import mock
 
 # /docsnip

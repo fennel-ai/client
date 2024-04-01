@@ -5,15 +5,15 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel import sources
+from fennel import connectors
 from fennel.datasets import dataset, Dataset, pipeline, field, LastK, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.dtypes import struct
-from fennel.sources import source
+from fennel.connectors import source
 from fennel.testing import mock
 
-webhook = sources.Webhook(name="fennel_webhook")
+webhook = connectors.Webhook(name="fennel_webhook")
 
 
 @struct

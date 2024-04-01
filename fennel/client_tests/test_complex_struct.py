@@ -9,7 +9,7 @@ from fennel.datasets import dataset, Dataset, field, pipeline, LastK, index
 from fennel.dtypes import struct
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import inputs, outputs
-from fennel.sources import Webhook, source
+from fennel.connectors import Webhook, source
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")

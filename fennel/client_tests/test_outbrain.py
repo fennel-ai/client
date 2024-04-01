@@ -6,8 +6,8 @@ import pytest
 from fennel.datasets import dataset, field, pipeline, Dataset, Count, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import meta, inputs, outputs
-from fennel.sources import S3, Webhook
-from fennel.sources import source
+from fennel.connectors import S3, Webhook
+from fennel.connectors import source
 from fennel.testing import mock
 
 s3 = S3(

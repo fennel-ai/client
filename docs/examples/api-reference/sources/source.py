@@ -14,7 +14,7 @@ def test_source_decorator(client):
     os.environ["SCHEMA_REGISTRY_USERNAME"] = "test"
     os.environ["SCHEMA_REGISTRY_PASSWORD"] = "test"
     # docsnip source_decorator
-    from fennel.sources import source, S3, ref
+    from fennel.connectors import source, S3, ref
     from fennel.datasets import dataset, field
 
     s3 = S3(name="my_s3")  # using IAM role based access

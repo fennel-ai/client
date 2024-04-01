@@ -22,7 +22,7 @@ class TestQuantileSnips(unittest.TestCase):
             index,
         )
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -129,7 +129,7 @@ class TestQuantileSnips(unittest.TestCase):
             from fennel.datasets import dataset, field, pipeline
             from fennel.datasets import Dataset, Quantile
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 
@@ -171,7 +171,7 @@ class TestQuantileSnips(unittest.TestCase):
             from fennel.datasets import dataset, field, pipeline
             from fennel.datasets import Dataset, Quantile
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 
@@ -215,7 +215,7 @@ class TestQuantileSnips(unittest.TestCase):
             from fennel.datasets import dataset, field, pipeline
             from fennel.datasets import Dataset, Quantile
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 

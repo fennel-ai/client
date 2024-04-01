@@ -12,7 +12,7 @@ def test_basic(client):
     # docsnip basic
     from fennel.datasets import dataset, field, pipeline, Dataset, Min, index
     from fennel.lib import inputs
-    from fennel.sources import source, Webhook
+    from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="webhook")
 
@@ -112,7 +112,7 @@ def test_invalid_type(client):
         # docsnip incorrect_type
         from fennel.datasets import dataset, field, pipeline, Dataset, Min
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -148,7 +148,7 @@ def test_non_matching_types(client):
         # docsnip non_matching_types
         from fennel.datasets import dataset, field, pipeline, Dataset, Min
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 

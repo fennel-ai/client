@@ -21,7 +21,7 @@ import fennel.gen.pycode_pb2 as pycode_proto
 import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.services_pb2 as services_proto
-import fennel.sources as sources
+import fennel.connectors as connectors
 from fennel.datasets import Dataset, Pipeline, Field
 from fennel.datasets.datasets import (
     sync_validation_for_pipelines,
@@ -45,7 +45,7 @@ from fennel.internal_lib.to_proto.source_code import (
 from fennel.internal_lib.to_proto.source_code import to_includes_proto
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr, OWNER
-from fennel.sources import kinesis
+from fennel.connectors import kinesis
 from fennel.utils import fennel_get_source
 
 
@@ -114,7 +114,7 @@ def to_sync_request_proto(
 
     for obj in registered_objs:
         if isinstance(obj, Dataset):
-            is_source_dataset = hasattr(obj, sources.SOURCE_FIELD)
+            is_source_dataset = hasattr(obj, connectors.SOURCE_FIELD)
             if len(obj._pipelines) == 0 and not is_source_dataset:
                 raise ValueError(
                     f"Dataset {obj._name} has no pipelines defined. "
@@ -212,7 +212,7 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
             ref_includes={},
             imports=imports,
         ),
-        is_source_dataset=hasattr(ds, sources.SOURCE_FIELD),
+        is_source_dataset=hasattr(ds, connectors.SOURCE_FIELD),
     )
 
 
@@ -330,7 +330,7 @@ def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
 
 
 def _validate_source_pre_proc(
-    pre_proc: Dict[str, sources.PreProcValue], ds: Dataset
+    pre_proc: Dict[str, connectors.PreProcValue], ds: Dataset
 ):
     for field_name, pre_proc_val in pre_proc.items():
         ds_field = None
@@ -344,7 +344,7 @@ def _validate_source_pre_proc(
                 "but the field is not defined in the dataset."
             )
         # If the pre_proc is a `ref`, then skip - we can't check the value type or if the exists in the dataset
-        if isinstance(pre_proc_val, sources.Ref):
+        if isinstance(pre_proc_val, connectors.Ref):
             continue
         # Else check that the data type matches the field type
         if ds_field.dtype != type(pre_proc_val):
@@ -365,9 +365,9 @@ def sources_from_ds(
     :param timestamp_field: An optional column that can be used to sort the
     data from the source.
     """
-    if hasattr(ds, sources.SOURCE_FIELD):
-        all_sources: List[sources.DataConnector] = getattr(
-            ds, sources.SOURCE_FIELD
+    if hasattr(ds, connectors.SOURCE_FIELD):
+        all_sources: List[connectors.DataConnector] = getattr(
+            ds, connectors.SOURCE_FIELD
         )
         filtered_sources = [
             source
@@ -563,9 +563,9 @@ def _to_field_lookup_proto(
 
 
 def _pre_proc_value_to_proto(
-    pre_proc_value: sources.PreProcValue,
+    pre_proc_value: connectors.PreProcValue,
 ) -> connector_proto.PreProcValue:
-    if isinstance(pre_proc_value, sources.Ref):
+    if isinstance(pre_proc_value, connectors.Ref):
         return connector_proto.PreProcValue(
             ref=pre_proc_value.name,
         )
@@ -607,7 +607,7 @@ def _pre_proc_value_to_proto(
 
 
 def _pre_proc_to_proto(
-    pre_proc: Optional[Dict[str, sources.PreProcValue]]
+    pre_proc: Optional[Dict[str, connectors.PreProcValue]]
 ) -> Mapping[str, connector_proto.PreProcValue]:
     if pre_proc is None:
         return {}
@@ -618,24 +618,24 @@ def _pre_proc_to_proto(
 
 
 def _conn_to_source_proto(
-    connector: sources.DataConnector,
+    connector: connectors.DataConnector,
     dataset_name: str,
     ds_version: int,
     timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
-    if isinstance(connector, sources.S3Connector):
+    if isinstance(connector, connectors.S3Connector):
         return _s3_conn_to_source_proto(
             connector, dataset_name, ds_version, timestamp_field
         )
-    elif isinstance(connector, sources.TableConnector):
+    elif isinstance(connector, connectors.TableConnector):
         return _table_conn_to_source_proto(
             connector, dataset_name, ds_version, timestamp_field
         )
-    elif isinstance(connector, sources.KafkaConnector):
+    elif isinstance(connector, connectors.KafkaConnector):
         return _kafka_conn_to_source_proto(connector, dataset_name, ds_version)
-    elif isinstance(connector, sources.WebhookConnector):
+    elif isinstance(connector, connectors.WebhookConnector):
         return _webhook_to_source_proto(connector, dataset_name, ds_version)
-    elif isinstance(connector, sources.KinesisConnector):
+    elif isinstance(connector, connectors.KinesisConnector):
         return _kinesis_conn_to_source_proto(
             connector, dataset_name, ds_version
         )
@@ -644,7 +644,7 @@ def _conn_to_source_proto(
 
 
 def _webhook_to_source_proto(
-    connector: sources.WebhookConnector, dataset_name: str, ds_version: int
+    connector: connectors.WebhookConnector, dataset_name: str, ds_version: int
 ):
     data_source = connector.data_source
     ext_db = connector_proto.ExtDatabase(
@@ -679,12 +679,12 @@ def _webhook_to_source_proto(
 
 
 def _kafka_conn_to_source_proto(
-    connector: sources.KafkaConnector,
+    connector: connectors.KafkaConnector,
     dataset_name: str,
     ds_version: int,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
-    if not isinstance(data_source, sources.Kafka):
+    if not isinstance(data_source, connectors.Kafka):
         raise ValueError("KafkaConnector must have Kafka as data_source")
     ext_db = _kafka_to_ext_db_proto(
         data_source.name,
@@ -741,13 +741,13 @@ def _kafka_to_ext_db_proto(
 
 
 def _s3_conn_to_source_proto(
-    connector: sources.S3Connector,
+    connector: connectors.S3Connector,
     dataset_name: str,
     ds_version: int,
     timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
-    if not isinstance(data_source, sources.S3):
+    if not isinstance(data_source, connectors.S3):
         raise ValueError("S3Connector must have S3 as data_source")
     ext_db = _s3_to_ext_db_proto(
         data_source.name,
@@ -832,29 +832,29 @@ def _s3_to_ext_table_proto(
 
 
 def _table_conn_to_source_proto(
-    connector: sources.TableConnector,
+    connector: connectors.TableConnector,
     dataset_name: str,
     ds_version: int,
     timestamp_field: str,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
-    if isinstance(data_source, sources.BigQuery):
+    if isinstance(data_source, connectors.BigQuery):
         return _bigquery_conn_to_source_proto(
             connector, data_source, dataset_name, ds_version, timestamp_field
         )
-    elif isinstance(data_source, sources.Snowflake):
+    elif isinstance(data_source, connectors.Snowflake):
         return _snowflake_conn_to_source_proto(
             connector, data_source, dataset_name, ds_version, timestamp_field
         )
-    elif isinstance(data_source, sources.MySQL):
+    elif isinstance(data_source, connectors.MySQL):
         return _mysql_conn_to_source_proto(
             connector, data_source, dataset_name, ds_version, timestamp_field
         )
-    elif isinstance(data_source, sources.Postgres):
+    elif isinstance(data_source, connectors.Postgres):
         return _pg_conn_to_source_proto(
             connector, data_source, dataset_name, ds_version, timestamp_field
         )
-    elif isinstance(data_source, sources.Redshift):
+    elif isinstance(data_source, connectors.Redshift):
         return _redshift_conn_to_source_proto(
             connector, data_source, dataset_name, ds_version, timestamp_field
         )
@@ -863,8 +863,8 @@ def _table_conn_to_source_proto(
 
 
 def _bigquery_conn_to_source_proto(
-    connector: sources.TableConnector,
-    data_source: sources.BigQuery,
+    connector: connectors.TableConnector,
+    data_source: connectors.BigQuery,
     dataset_name: str,
     ds_version: int,
     timestamp_field: str,
@@ -931,8 +931,8 @@ def _bigquery_to_ext_table_proto(
 
 
 def _redshift_conn_to_source_proto(
-    connector: sources.TableConnector,
-    data_source: sources.Redshift,
+    connector: connectors.TableConnector,
+    data_source: connectors.Redshift,
     dataset_name: str,
     ds_version: int,
     timestamp_field: str,
@@ -1009,8 +1009,8 @@ def _redshift_to_ext_table_proto(
 
 
 def _snowflake_conn_to_source_proto(
-    connector: sources.TableConnector,
-    data_source: sources.Snowflake,
+    connector: connectors.TableConnector,
+    data_source: connectors.Snowflake,
     dataset_name: str,
     ds_version: int,
     timestamp_field: str,
@@ -1088,8 +1088,8 @@ def _snowflake_to_ext_table_proto(
 
 
 def _mysql_conn_to_source_proto(
-    connector: sources.TableConnector,
-    data_source: sources.MySQL,
+    connector: connectors.TableConnector,
+    data_source: connectors.MySQL,
     dataset_name: str,
     ds_version: int,
     timestamp_field: str,
@@ -1178,8 +1178,8 @@ def _mysql_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
 
 
 def _pg_conn_to_source_proto(
-    connector: sources.TableConnector,
-    data_source: sources.Postgres,
+    connector: connectors.TableConnector,
+    data_source: connectors.Postgres,
     dataset_name: str,
     ds_version: int,
     timestamp_field: str,
@@ -1269,7 +1269,7 @@ def _pg_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
 
 
 def _kinesis_conn_to_source_proto(
-    connector: sources.KinesisConnector,
+    connector: connectors.KinesisConnector,
     dataset_name: str,
     ds_version: int,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
@@ -1385,11 +1385,11 @@ def to_cdc_proto(cdc: str) -> connector_proto.CDCStrategy.ValueType:
 
 
 def to_kafka_format_proto(
-    format: Optional[str | sources.Avro],
+    format: Optional[str | connectors.Avro],
 ) -> Optional[connector_proto.KafkaFormat]:
     if format is None or format == "json":
         return connector_proto.KafkaFormat(json=connector_proto.JsonFormat())
-    if isinstance(format, sources.Avro):
+    if isinstance(format, connectors.Avro):
         if format.registry != "confluent":
             raise ValueError(f"Registry unsupported: {format.registry}")
         return connector_proto.KafkaFormat(

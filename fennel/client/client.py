@@ -14,7 +14,7 @@ from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature, is_valid_feature
 from fennel.internal_lib.schema import parse_json
 from fennel.internal_lib.to_proto import to_sync_request_proto
-from fennel.sources import S3Connector
+from fennel.connectors import S3Connector
 from fennel.utils import check_response, to_columnar_json
 
 V1_API = "/api/v1"

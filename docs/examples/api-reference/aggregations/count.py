@@ -21,7 +21,7 @@ class TestCountSnips(unittest.TestCase):
             index,
         )
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 

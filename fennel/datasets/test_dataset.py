@@ -22,7 +22,7 @@ from fennel.datasets import (
 from fennel.dtypes import Embedding, Window
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib import includes, meta, inputs
-from fennel.sources import source, Webhook, Kafka
+from fennel.connectors import source, Webhook, Kafka
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook", retention="30d")

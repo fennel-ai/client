@@ -13,7 +13,7 @@ from fennel.internal_lib.duration import (
 )
 from fennel.internal_lib.duration.duration import is_valid_duration
 from fennel.lib.includes import TierSelector
-from fennel.sources.kinesis import at_timestamp
+from fennel.connectors.kinesis import at_timestamp
 
 T = TypeVar("T")
 SOURCE_FIELD = "__fennel_data_sources__"

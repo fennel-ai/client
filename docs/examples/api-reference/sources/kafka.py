@@ -11,7 +11,7 @@ def test_kafka_source(client):
     os.environ["KAFKA_USERNAME"] = "test"
     os.environ["KAFKA_PASSWORD"] = "test"
     # docsnip basic
-    from fennel.sources import source, Kafka
+    from fennel.connectors import source, Kafka
     from fennel.datasets import dataset, field
 
     # docsnip-highlight start
@@ -47,7 +47,7 @@ def test_kafka_with_avro(client):
     os.environ["SCHEMA_REGISTRY_USERNAME"] = "test"
     os.environ["SCHEMA_REGISTRY_PASSWORD"] = "test"
     # docsnip kafka_with_avro
-    from fennel.sources import source, Kafka, Avro
+    from fennel.connectors import source, Kafka, Avro
     from fennel.datasets import dataset, field
 
     kafka = Kafka(

@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 
 from fennel.datasets import dataset, field
-from fennel.sources import Webhook
+from fennel.connectors import Webhook
 from fennel.testing import mock
 
 __owner__ = "owner@example.com"
@@ -27,7 +27,7 @@ def test_overview(client):
     # This docsnip is not used in the docs, but is used in the tests
     # since docs requires not compilable credentials.
 
-    from fennel.sources import source, Kafka, Postgres
+    from fennel.connectors import source, Kafka, Postgres
     from fennel.datasets import index
 
     postgres = Postgres.get(name="postgres")
@@ -247,7 +247,7 @@ def test_source_snip():
     os.environ["POSTGRES_PASSWORD"] = "some-password"
 
     # docsnip source
-    from fennel.sources import source, Postgres
+    from fennel.connectors import source, Postgres
     from fennel.datasets import dataset
 
     # docsnip-highlight start
@@ -283,7 +283,7 @@ def test_bounded_idleness_snip():
     os.environ["POSTGRES_PASSWORD"] = "some-password"
 
     # docsnip bounded_idleness
-    from fennel.sources import source, Postgres, Webhook
+    from fennel.connectors import source, Postgres, Webhook
     from fennel.datasets import dataset, Dataset
     from fennel import pipeline
     from fennel.lib import inputs
@@ -362,7 +362,7 @@ def dummy_function():
 def test_branches(client):
     from fennel.datasets import dataset, field, index
     from fennel.featuresets import feature, featureset, extractor
-    from fennel.sources import Webhook, source
+    from fennel.connectors import Webhook, source
 
     webhook = Webhook(name="some_webhook")
 

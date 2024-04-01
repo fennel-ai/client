@@ -8,8 +8,8 @@ from dateutil.relativedelta import relativedelta  # type: ignore
 from fennel import meta, Count, featureset, feature, extractor
 from fennel.datasets import dataset, field, pipeline, Dataset, index
 from fennel.lib import inputs, outputs
-from fennel.sources import Webhook
-from fennel.sources import source
+from fennel.connectors import Webhook
+from fennel.connectors import source
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")

@@ -18,7 +18,7 @@ from fennel.lib import (
     expect_column_values_to_be_between,
 )
 from fennel.dtypes import Embedding, struct
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 ################################################################################

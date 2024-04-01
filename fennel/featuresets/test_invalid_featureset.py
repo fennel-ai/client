@@ -9,7 +9,7 @@ from fennel import meta
 from fennel.datasets import dataset, field, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import inputs, outputs
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 
 # noinspection PyUnresolvedReferences
 from fennel.testing import *
