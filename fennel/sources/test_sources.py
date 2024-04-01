@@ -12,6 +12,7 @@ from fennel.sources import (
     source,
     MySQL,
     S3,
+    Redshift,
     Snowflake,
     BigQuery,
     Kafka,
@@ -395,9 +396,23 @@ kinesis = Kinesis(
     role_arn="arn:aws:iam::123456789012:role/test-role",
 )
 
+redshift = Redshift(
+    name="redshift_src",
+    s3_access_role_arn="arn:aws:iam::123:role/Redshift",
+    db_name="test",
+    host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+)
+
 
 def test_tier_selector_on_source():
     @meta(owner="test@test.com")
+    @source(
+        redshift.table("test_schema", "test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="append",
+        every="1h",
+        tier=["dev-3"],
+    )
     @source(
         kafka.topic("test_topic"), disorder="14d", cdc="append", tier=["dev-2"]
     )
@@ -443,7 +458,7 @@ def test_tier_selector_on_source():
         view._get_sync_request_proto()
     assert (
         str(e.value)
-        == "Dataset UserInfoDataset has multiple sources (4) defined. Please define only one source per dataset, or check your tier selection."
+        == "Dataset UserInfoDataset has multiple sources (5) defined. Please define only one source per dataset, or check your tier selection."
     )
     sync_request = view._get_sync_request_proto(tier="prod")
     assert len(sync_request.datasets) == 1
@@ -1139,6 +1154,72 @@ def test_multiple_sources():
     expected_source = ParseDict(e, connector_proto.Source())
     assert source_req == expected_source, error_message(
         source_req, expected_source
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        redshift.table("test_schema", "test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="append",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetRedshift:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # redshift source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetRedshift)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "redshiftTable": {
+                "db": {
+                    "redshift": {
+                        "s3_access_role_arn": "arn:aws:iam::123:role/Redshift",
+                        "database": "test",
+                        "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+                        "port": 5439,
+                    },
+                    "name": "redshift_src",
+                },
+                "schemaName": "test_schema",
+                "tableName": "test_table",
+            }
+        },
+        "dataset": "UserInfoDatasetRedshift",
+        "dsVersion": 1,
+        "every": "3600s",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "redshift_src",
+        "redshift": {
+            "s3_access_role_arn": "arn:aws:iam::123:role/Redshift",
+            "database": "test",
+            "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+            "port": 5439,
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
     )
 
 

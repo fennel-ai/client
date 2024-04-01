@@ -15,7 +15,7 @@ A name to identify the source. The name should be unique across all Fennel sourc
 The hostname of the database.
 </Expandable>
 
-<Expandable title="port" type="Optional[str]" defaultVal="5432">
+<Expandable title="port" type="Optional[int]" defaultVal="5432">
 The port to connect to.
 </Expandable>
 

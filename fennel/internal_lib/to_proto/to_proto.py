@@ -854,6 +854,10 @@ def _table_conn_to_source_proto(
         return _pg_conn_to_source_proto(
             connector, data_source, dataset_name, ds_version, timestamp_field
         )
+    elif isinstance(data_source, sources.Redshift):
+        return _redshift_conn_to_source_proto(
+            connector, data_source, dataset_name, ds_version, timestamp_field
+        )
     else:
         raise ValueError(f"Unknown data source type: {type(data_source)}")
 
@@ -921,6 +925,84 @@ def _bigquery_to_ext_table_proto(
     return connector_proto.ExtTable(
         bigquery_table=connector_proto.BigqueryTable(
             db=db,
+            table_name=table_name,
+        ),
+    )
+
+
+def _redshift_conn_to_source_proto(
+    connector: sources.TableConnector,
+    data_source: sources.Redshift,
+    dataset_name: str,
+    ds_version: int,
+    timestamp_field: str,
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    ext_db = _redshift_to_ext_db_proto(
+        name=data_source.name,
+        s3_access_role_arn=data_source.s3_access_role_arn,
+        host=data_source.host,
+        port=data_source.port,
+        database=data_source.db_name,
+    )
+
+    if not connector.schema_name:
+        raise AttributeError(
+            "schema_name should always be set for Redshift source"
+        )
+    ext_table = _redshift_to_ext_table_proto(
+        db=ext_db,
+        schema_name=connector.schema_name,
+        table_name=connector.table_name,
+    )
+    return (
+        ext_db,
+        connector_proto.Source(
+            table=ext_table,
+            dataset=dataset_name,
+            ds_version=ds_version,
+            cursor=connector.cursor,
+            every=to_duration_proto(connector.every),
+            disorder=to_duration_proto(connector.disorder),
+            timestamp_field=timestamp_field,
+            cdc=to_cdc_proto(connector.cdc),
+            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            starting_from=_to_timestamp_proto(connector.since),
+            until=_to_timestamp_proto(connector.until),
+            bounded=connector.bounded,
+            idleness=(
+                to_duration_proto(connector.idleness)
+                if connector.idleness
+                else None
+            ),
+        ),
+    )
+
+
+def _redshift_to_ext_db_proto(
+    name: str,
+    s3_access_role_arn: str,
+    host: str,
+    port: int,
+    database: str,
+) -> connector_proto.ExtDatabase:
+    return connector_proto.ExtDatabase(
+        name=name,
+        redshift=connector_proto.Redshift(
+            s3_access_role_arn=s3_access_role_arn,
+            host=host,
+            port=port,
+            database=database,
+        ),
+    )
+
+
+def _redshift_to_ext_table_proto(
+    db: connector_proto.ExtDatabase, schema_name: str, table_name: str
+) -> connector_proto.ExtTable:
+    return connector_proto.ExtTable(
+        redshift_table=connector_proto.RedshiftTable(
+            db=db,
+            schema_name=schema_name,
             table_name=table_name,
         ),
     )

@@ -4,6 +4,7 @@ from fennel.sources.sources import (
     Postgres,
     S3,
     Kafka,
+    Redshift,
     Snowflake,
     Webhook,
     source,

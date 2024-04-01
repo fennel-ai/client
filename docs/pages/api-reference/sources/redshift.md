@@ -1,53 +1,71 @@
 ---
 title: Redshift
 order: 0
-status: draft
+status: published
 ---
 ### Redshift
-Data connector to Snowflake databases.
+Data connector to Redshift databases.
 
 #### Database Parameters
 <Expandable title="name" type="str">
 A name to identify the source. The name should be unique across all Fennel sources.
 </Expandable>
 
-<Expandable title="account" type="str">
+<Expandable title="s3_access_role_arn" type="str">
+IAM role to be used by Redshift to access S3. Redshift uses S3 as middle-man while executing large queries.
+Steps to set up IAM role:
+- Create an IAM role by following this [documentation](https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html#authorizing-redshift-service-creating-an-iam-role). Make sure to provide full access to S3 since we store temporary data in S3 and read from it
+- Associate IAM role with Redshift cluster by following this [documentation](https://docs.aws.amazon.com/redshift/latest/mgmt/copy-unload-iam-role.html#copy-unload-iam-role-associating-with-clusters). Refer the sample policy JSON below:
 
-Snowflake account identifier. This is the first part of the URL used to access 
-Snowflake. For example, if the URL is `https://<account>.snowflakecomputing.com`, 
-then the account is `<account>`. 
-
-This is usually of the form `<ORG_ID>-<ACCOUNT_ID>`. Refer to the 
-[Snowflake documentation](https://docs.snowflake.com/en/user-guide/admin-account-identifier#finding-the-organization-and-account-name-for-an-account) 
-to find the account identifier.
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "redshift:DescribeClusters",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "redshift:ModifyClusterIamRoles",
+                "redshift:CreateCluster"
+            ],
+            "Resource": [
+                "arn:aws:redshift-serverless:us-west-2:82448945123:workgroup/0541e0ae-2ad1-4fe0-b2f3-4d6c1d3453e" # Redshift workgroup ARN
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": [
+                "arn:aws:iam::82448945123:role/RedshiftS3AccessRole", # ARN of role created above
+            ]
+        }
+    ]
+}
+```
 </Expandable>
 
-<Expandable title="role" type="str">
-The role that should be used by Fennel to access Snowflake.
-</Expandable>
-
-<Expandable title="warehouse" type="str">
-The warehouse that should be used to access Snowflake.
-</Expandable>
 
 <Expandable title="db_name" type="str">
 The name of the database where the relevant data resides.
 </Expandable>
 
-<Expandable title="src_schema" type="str">
-The schema where the required data table(s) resides.
+<Expandable title="host" type="str">
+The hostname of the database.
 </Expandable>
 
-<Expandable title="username" type="str">
-The username which should be used to access Snowflake. This username should 
-have required permissions to assume the provided `role`.
-</Expandable>
-
-<Expandable title="password" type="str">
-The password associated with the username.
+<Expandable title="port" type="Optional[int]" defaultVal="5439">
+The port to connect to.
 </Expandable>
 
 #### Table Parameters
+<Expandable title="schema" type="str">
+The name of the schema where the required data table resides.
+</Expandable>
+
 <Expandable title="table" type="str">
 The name of the table within the database that should be ingested.
 </Expandable>
@@ -66,15 +84,21 @@ Note that this field doesn't even need to be a part of the Fennel dataset.
 
 #### Errors
 <Expandable title="Connectivity Issues">
-Fennel tries to test the connection with your Snowflake during commit itself so any
-connectivity issue (e.g. wrong host name, username, password etc) is flagged as
+Fennel tries to test the connection with your Redshift during `commit` itself so any
+connectivity issue (e.g. wrong database name, host name, port, etc) is flagged as
 as an error during commit with the real Fennel servers.
 
 Note: Mock client can not talk to any external data source and hence is unable to
 do this validation at commit time.
 </Expandable>
 
-<pre snippet="api-reference/sources/sql#snowflake_source"></pre>
+<Expandable title="Schema mismatch errors">
+Schema validity of data in Redshift is checked at runtime. Any rows that 
+can not be parsed are rejected. Please keep an eye on the 'Errors' tab of 
+Fennel console after initiating any data sync.
+</Expandable>
+
+<pre snippet="api-reference/sources/sql#redshift_source"></pre>
 
 
 

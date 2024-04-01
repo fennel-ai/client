@@ -10,6 +10,7 @@ from fennel.sources import (
     MySQL,
     S3,
     Snowflake,
+    Redshift,
     Kafka,
     Kinesis,
     at_timestamp,
@@ -68,6 +69,13 @@ bigquery = BigQuery(
         "token_uri": "https://oauth2.googleapis.com/token",
         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
     }""",
+)
+
+redshift = Redshift(
+    name="redshift_src",
+    s3_access_role_arn="arn:aws:iam::123:role/Redshift",
+    db_name="test",
+    host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
 )
 
 
@@ -272,6 +280,12 @@ def test_multiple_sources(client):
             cdc="append",
             every="1h",
         )
+        @source(
+            redshift.table("test_schema", "test_table", cursor="added_on"),
+            disorder="14d",
+            cdc="append",
+            every="1h",
+        )
         @dataset
         class UserInfoDataset:
             user_id: int = field(key=True)
@@ -288,7 +302,7 @@ def test_multiple_sources(client):
 
     assert (
         str(e.value)
-        == "Dataset `UserInfoDataset` has more than one source defined, found 5 sources."
+        == "Dataset `UserInfoDataset` has more than one source defined, found 6 sources."
     )
 
 

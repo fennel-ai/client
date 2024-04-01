@@ -1,4 +1,7 @@
 # Changelog
+## [1.1.5] - 2024-04-01
+- Support `redshift` source
+
 ## [1.1.4] - 2024-03-28
 - Add latest operator to the client.
 
