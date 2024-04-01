@@ -1837,14 +1837,19 @@ class TestLastOp(unittest.TestCase):
         ]
         assert df["rating"].tolist() == [2.0, 3.0, 3.0, 4.0]
 
-        # Do some lookups to verify pipeline_num_first is working as expected
+        # Do some lookups to verify pipeline_num_last is working as expected
         ts = pd.Series([now, now, now])
         df, _ = NumTimesLastMovie.lookup(
             ts,
             movie=pd.Series(["Jumanji", "Titanic", "RaOne"]),
         )
         assert df.shape == (3, 3)
-        assert df["count"].tolist() == [None, 2, 2]
+        if client.is_integration_client():
+            # Our backends return 0 instead of None, since we correct things
+            # while client recomputes from scratch and doesnt see Jumanji as the last movie
+            assert df["count"].tolist() == [0, 2, 2]
+        else:
+            assert df["count"].tolist() == [None, 2, 2]
 
 
 @meta(owner="abhay@fennel.ai")

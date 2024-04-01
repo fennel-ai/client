@@ -16,7 +16,7 @@ from fennel.datasets import (
     Distinct,
     index,
 )
-from fennel.dtypes import struct
+from fennel.dtypes import struct, Window
 from fennel.lib import (
     meta,
     inputs,
@@ -926,12 +926,12 @@ def test_invalid_assign_schema(client):
     @source(
         webhook.endpoint("mysql_relayrides.location"),
         disorder="14d",
-        cdc="upsert",
+        cdc="append",
         tier="local",
     )
     @dataset
     class LocationDS:
-        id: int = field(key=True)
+        id: int
         latitude: float
         longitude: float
         created: datetime
@@ -1070,4 +1070,87 @@ def test_source_and_pipelines_together(client):
     assert (
         str(e.value)
         == "Dataset `UserInfoDatasetDerived` has a source and pipelines defined. Please define either a source or pipelines, not both."
+    )
+
+
+__owner__ = "aditya@fennel.ai"
+
+
+def test_invalid_operators_over_keyed_datasets():
+    # First operator over keyed datasets is not defined
+    with pytest.raises(Exception) as e:
+
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            a2: int
+            t: datetime
+
+        @dataset
+        class ABCDataset:
+            a2: int = field(key=True)
+            a1: int
+            t: datetime
+
+            @pipeline
+            @inputs(A)
+            def pipeline1(cls, a: Dataset):
+                return a.groupby("a2").first()
+
+    assert (
+        str(e.value)
+        == "First over keyed datasets is not defined. Found dataset with keys `['a1']` in pipeline `pipeline1`"
+    )
+
+    # Latest operator over keyed datasets is not defined
+    with pytest.raises(Exception) as e:
+
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            a2: int
+            t: datetime
+
+        @dataset
+        class ABCDataset2:
+            a1: int = field(key=True)
+            a2: int
+            t: datetime
+
+            @pipeline
+            @inputs(A)
+            def pipeline1(cls, a: Dataset):
+                return a.groupby("a2").latest()
+
+    assert (
+        str(e.value)
+        == "Latest over keyed datasets is not defined. Found dataset with keys `['a1']` in pipeline `pipeline1`"
+    )
+
+    # Windows over keyed datasets is not defined
+    with pytest.raises(Exception) as e:
+
+        @dataset
+        class Events:
+            event_id: int = field(key=True)
+            user_id: int
+            page_id: int
+            t: datetime
+
+        @dataset
+        class Sessions:
+            user_id: int = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+
+            @pipeline
+            @inputs(Events)
+            def pipeline1(cls, a: Dataset):
+                return a.groupby("user_id").window(
+                    type="session", gap="60m", into_field="window"
+                )
+
+    assert (
+        str(e.value)
+        == "Window operator over keyed datasets is not defined. Found dataset with keys `['event_id']` in pipeline `pipeline1`"
     )

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List
 
 import pandas as pd
-
+import pytest
 import fennel._vendor.requests as requests
 from fennel import LastK
 from fennel.connectors import source, Webhook
@@ -188,6 +188,7 @@ class UserFeatures:
         )
 
 
+@pytest.mark.integration
 @mock
 def test_social_network(client):
     client.commit(
@@ -213,6 +214,17 @@ def test_social_network(client):
     view_data_df["time_stamp"] = view_data_df["time_stamp"].apply(
         lambda x: datetime.strptime(x, "%m/%d/%Y %H:%M %p")
     )
+    # # Advance all timestamps by 6 years
+    user_data_df["timestamp"] = pd.to_datetime(
+        user_data_df["timestamp"]
+    ) + pd.DateOffset(years=4)
+    post_data_df["timestamp"] = pd.to_datetime(
+        post_data_df["timestamp"]
+    ) + pd.DateOffset(years=4)
+    view_data_df["time_stamp"] = view_data_df["time_stamp"] + pd.DateOffset(
+        years=4
+    )
+
     res = client.log("fennel_webhook", "UserInfo", user_data_df)
     assert res.status_code == requests.codes.OK, res.json()
 
@@ -220,14 +232,19 @@ def test_social_network(client):
     assert res.status_code == requests.codes.OK, res.json()
     res = client.log("fennel_webhook", "ViewData", view_data_df)
     assert res.status_code == requests.codes.OK, res.json()
-    now = datetime.utcnow()
-    ts = pd.Series([now, now, now])
     if client.is_integration_client():
         client.sleep(120)
-    df, found = CityInfo.lookup(
-        ts=ts,
-        city=pd.Series(["Wufeng", "Coyaima", "San Angelo"]),
-        gender=pd.Series(["Male", "Male", "Female"]),
+
+    keys = pd.DataFrame(
+        {
+            "city": ["Wufeng", "Coyaima", "San Angelo"],
+            "gender": ["Male", "Male", "Female"],
+        }
+    )
+
+    df, found = client.lookup(
+        "CityInfo",
+        keys=keys,
     )
     assert found.to_list() == [True, True, True]
 
@@ -250,9 +267,6 @@ def test_social_network(client):
         feature_df["UserFeatures.category_view_ratio"].to_list(),
     ) == ([2, 4], [0, 1], [0.0, 0.25])
 
-    if client.is_integration_client():
-        return
-
     # Assert that both the last_viewed_post and last_viewed_post2 features are extracted correctly
     last_post_viewed = feature_df["UserFeatures.last_viewed_post"].to_list()
     last_post_viewed2 = [
@@ -260,5 +274,8 @@ def test_social_network(client):
     ]
     assert last_post_viewed == [936609766, 735291550]
     assert last_post_viewed2 == last_post_viewed
+
+    if client.is_integration_client():
+        return
     df = client.get_dataset_df("UserCategoryDataset")
     assert df.shape == (1998, 4)

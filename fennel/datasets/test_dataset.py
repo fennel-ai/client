@@ -2107,8 +2107,8 @@ def test_first_operator():
     @meta(owner="abhay@fennel.ai")
     @dataset
     class RatingActivity:
-        userid: int = field(key=True)
-        movie: str = field(key=True)
+        userid: int
+        movie: str
         rating: float
         t: datetime
 
@@ -2228,8 +2228,8 @@ def test_last_operator():
     @meta(owner="aditya@fennel.ai")
     @dataset
     class RatingActivity:
-        userid: int = field(key=True)
-        movie: str = field(key=True)
+        userid: int
+        movie: str
         rating: float
         t: datetime
 

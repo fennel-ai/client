@@ -16,7 +16,7 @@ try:
 
     sys.path.insert(
         0,
-        "/nix/store/c5h0h9xmlhhjsv616647fhf3aj1vd5pq-python3-3.11.8-env/lib/python3.11/site-packages",
+        "/nix/store/l2jqs4pdkwaag6wj45wqqllsz0qac7ls-python3-3.11.8-env/lib/python3.11/site-packages",
     )
     from fennel_client_lib import HttpServer  # type: ignore
     from fennel_dataset import lookup  # type: ignore
@@ -151,10 +151,6 @@ class IntegrationClient(Client):
         if code != 200:
             raise Exception(f"Server returned: {code}, {content}")
         return FakeResponse(code, content)
-
-    def __del__(self):
-        self._http.close()
-        time.sleep(8)
 
 
 class FakeResponse(Response):
