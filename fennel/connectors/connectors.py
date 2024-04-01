@@ -112,17 +112,25 @@ def source(
 
 
 def sink(
-    conn: DataConnector, every: Optional[Duration] = None
+    conn: DataConnector,
+    cdc: str,
+    tier: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[T], Any]:
+    if not isinstance(conn, DataConnector):
+        if not isinstance(conn, DataSource):
+            raise TypeError("Expected a DataSource, found %s" % type(conn))
+        raise TypeError(
+            f"{conn.name} does not specify required fields "
+            f"{', '.join(conn.required_fields())}."
+        )
+
     def decorator(dataset_cls: T):
-        if every is not None:
-            conn.every = every
-        if hasattr(dataset_cls, SINK_FIELD):
-            connectors = getattr(dataset_cls, SINK_FIELD)
-            connectors.append(conn)
-            setattr(dataset_cls, SINK_FIELD, connectors)
-        else:
-            setattr(dataset_cls, SINK_FIELD, [conn])
+        conn.cdc = cdc
+        conn.tiers = TierSelector(tier)
+        connectors = getattr(dataset_cls, SINK_FIELD, [])
+        connectors.append(conn)
+        setattr(dataset_cls, SINK_FIELD, connectors)
+
         return dataset_cls
 
     return decorator
@@ -455,9 +463,9 @@ class DataConnector:
     are only created by code and are attached to a dataset."""
 
     data_source: DataSource
-    every: Duration
-    disorder: Duration
     cdc: str
+    every: Optional[Duration] = None
+    disorder: Optional[Duration] = None
     since: Optional[datetime] = None
     until: Optional[datetime] = None
     tiers: TierSelector

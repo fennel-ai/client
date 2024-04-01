@@ -879,16 +879,22 @@ class Sink(google.protobuf.message.Message):
 
     TABLE_FIELD_NUMBER: builtins.int
     DATASET_FIELD_NUMBER: builtins.int
+    DS_VERSION_FIELD_NUMBER: builtins.int
+    CDC_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
+    ds_version: builtins.int
+    cdc: global___CDCStrategy.ValueType
     def __init__(
         self,
         *,
         table: global___ExtTable | None = ...,
         dataset: builtins.str = ...,
+        ds_version: builtins.int = ...,
+        cdc: global___CDCStrategy.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dataset", b"dataset", "table", b"table"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["cdc", b"cdc", "dataset", b"dataset", "ds_version", b"ds_version", "table", b"table"]) -> None: ...
 
 global___Sink = Sink

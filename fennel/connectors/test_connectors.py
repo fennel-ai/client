@@ -6,11 +6,13 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
-from fennel.datasets import dataset, field
+from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib import meta
+from fennel.lib.params import inputs
 from fennel.connectors import (
     source,
     Mongo,
+    sink,
     MySQL,
     S3,
     Redshift,
@@ -413,7 +415,7 @@ mongo = Mongo(
 )
 
 
-def test_tier_selector_on_source():
+def test_tier_selector_on_connector():
     @meta(owner="test@test.com")
     @source(
         mongo.collection("test_table", cursor="added_on"),
@@ -468,8 +470,37 @@ def test_tier_selector_on_source():
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
 
+    @meta(owner="test@test.com")
+    @sink(
+        kafka.topic("test_topic1"),
+        cdc="debezium",
+        tier=["prod"],
+    )
+    @sink(
+        kafka.topic("test_topic2"),
+        cdc="debezium",
+        tier=["staging"],
+    )
+    @dataset
+    class UserInfoDatasetDerived:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+        @pipeline
+        @inputs(UserInfoDataset)
+        def create_user_transactions(cls, dataset: Dataset):
+            return dataset
+
     view = InternalTestClient()
     view.add(UserInfoDataset)
+    view.add(UserInfoDatasetDerived)
     with pytest.raises(ValueError) as e:
         view._get_sync_request_proto()
     assert (
@@ -477,9 +508,10 @@ def test_tier_selector_on_source():
         == "Dataset UserInfoDataset has multiple sources (6) defined. Please define only one source per dataset, or check your tier selection."
     )
     sync_request = view._get_sync_request_proto(tier="prod")
-    assert len(sync_request.datasets) == 1
+    assert len(sync_request.datasets) == 2
     assert len(sync_request.sources) == 1
-    assert len(sync_request.extdbs) == 1
+    assert len(sync_request.sinks) == 1
+    assert len(sync_request.extdbs) == 2
     source_request = sync_request.sources[0]
     s = {
         "table": {
@@ -508,10 +540,38 @@ def test_tier_selector_on_source():
     assert source_request == expected_source_request, error_message(
         source_request, expected_source_request
     )
+
+    sink_request = sync_request.sinks[0]
+    s = {
+        "table": {
+            "kafka_topic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrap_servers": "localhost:9092",
+                        "security_protocol": "PLAINTEXT",
+                        "sasl_mechanism": "PLAIN",
+                        "sasl_plain_username": "test",
+                        "sasl_plain_password": "test",
+                    },
+                },
+                "topic": "test_topic1",
+                "format": {"json": {}},
+            }
+        },
+        "dataset": "UserInfoDatasetDerived",
+        "dsVersion": 1,
+        "cdc": "Debezium",
+    }
+    expected_sink_request = ParseDict(s, connector_proto.Sink())
+    assert sink_request == expected_sink_request, error_message(
+        sink_request, expected_sink_request
+    )
     sync_request = view._get_sync_request_proto(tier="staging")
-    assert len(sync_request.datasets) == 1
+    assert len(sync_request.datasets) == 2
     assert len(sync_request.sources) == 1
-    assert len(sync_request.extdbs) == 1
+    assert len(sync_request.sinks) == 1
+    assert len(sync_request.extdbs) == 2
     source_request = sync_request.sources[0]
     s = {
         "table": {
@@ -541,6 +601,134 @@ def test_tier_selector_on_source():
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
         source_request, expected_source_request
+    )
+
+    sink_request = sync_request.sinks[0]
+    s = {
+        "table": {
+            "kafka_topic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrap_servers": "localhost:9092",
+                        "security_protocol": "PLAINTEXT",
+                        "sasl_mechanism": "PLAIN",
+                        "sasl_plain_username": "test",
+                        "sasl_plain_password": "test",
+                    },
+                },
+                "topic": "test_topic2",
+                "format": {"json": {}},
+            }
+        },
+        "dataset": "UserInfoDatasetDerived",
+        "dsVersion": 1,
+        "cdc": "Debezium",
+    }
+    expected_sink_request = ParseDict(s, connector_proto.Sink())
+    assert sink_request == expected_sink_request, error_message(
+        sink_request, expected_sink_request
+    )
+
+
+def test_multiple_sinks():
+    @meta(owner="test@test.com")
+    @source(
+        s3.bucket(
+            bucket_name="all_ratings",
+            prefix="prod/apac/",
+            presorted=True,
+            format="delta",
+        ),
+        every="1h",
+        disorder="2d",
+        cdc="append",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+        until=datetime.strptime("2022-02-28T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetS3:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    @meta(owner="test@test.com")
+    @sink(
+        kafka.topic("test_topic2"),
+        cdc="debezium",
+    )
+    @dataset
+    class UserInfoDatasetDerived:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+        @pipeline
+        @inputs(UserInfoDatasetS3)
+        def create_user_transactions(cls, dataset: Dataset):
+            return dataset
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetS3)
+    view.add(UserInfoDatasetDerived)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 2
+    assert len(sync_request.sinks) == 1
+    assert len(sync_request.extdbs) == 2
+
+    # kafka sink
+    sink_request = sync_request.sinks[0]
+    s = {
+        "table": {
+            "kafka_topic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrap_servers": "localhost:9092",
+                        "security_protocol": "PLAINTEXT",
+                        "sasl_mechanism": "PLAIN",
+                        "sasl_plain_username": "test",
+                        "sasl_plain_password": "test",
+                    },
+                },
+                "topic": "test_topic2",
+                "format": {"json": {}},
+            }
+        },
+        "dataset": "UserInfoDatasetDerived",
+        "dsVersion": 1,
+        "cdc": "Debezium",
+    }
+    expected_sink_request = ParseDict(s, connector_proto.Sink())
+    assert sink_request == expected_sink_request, error_message(
+        sink_request, expected_sink_request
+    )
+    extdb_request = sync_request.extdbs[1]
+    e = {
+        "name": "kafka_src",
+        "kafka": {
+            "bootstrap_servers": "localhost:9092",
+            "security_protocol": "PLAINTEXT",
+            "sasl_mechanism": "PLAIN",
+            "sasl_plain_username": "test",
+            "sasl_plain_password": "test",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
     )
 
 

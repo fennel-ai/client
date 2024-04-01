@@ -8,6 +8,7 @@ from fennel.lib import meta
 from fennel.connectors import (
     source,
     Mongo,
+    sink,
     MySQL,
     S3,
     Snowflake,
@@ -257,6 +258,33 @@ def test_invalid_kinesis_source():
 
 
 @mock
+def test_sink_on_source(client):
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="test@test.com")
+        @source(kafka.topic("test_topic"), disorder="14d", cdc="append")
+        @sink(kafka.topic("test_topic_2"), cdc="debezium")
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        client.commit(message="msg", datasets=[UserInfoDataset], featuresets=[])
+
+    assert (
+        str(e.value)
+        == "Dataset `UserInfoDataset` error: Cannot define sinks on a source dataset"
+    )
+
+
+@mock
 def test_multiple_sources(client):
     with pytest.raises(Exception) as e:
 
@@ -317,7 +345,7 @@ def test_multiple_sources(client):
 
     assert (
         str(e.value)
-        == "Dataset `UserInfoDataset` has more than one source defined, found 7 sources."
+        == "Dataset `UserInfoDataset` has more than one source defined, found 7 sources"
     )
 
 

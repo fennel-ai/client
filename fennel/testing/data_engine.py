@@ -755,19 +755,31 @@ class DataEngine(object):
     def _process_data_connector(
         self, dataset: Dataset, tier: Optional[str] = None
     ) -> Tuple[Optional[Dict[str, PreProcValue]], bool, Optional[Duration]]:
-        connector = getattr(dataset, connectors.SOURCE_FIELD)
-        connector = connector if isinstance(connector, list) else [connector]
-        connector = [x for x in connector if x.tiers.is_entity_selected(tier)]
-        if len(connector) > 1:
+        is_source_dataset = hasattr(dataset, connectors.SOURCE_FIELD)
+        sinks = getattr(dataset, connectors.SINK_FIELD, [])
+
+        if len(sinks) > 0 and is_source_dataset:
             raise ValueError(
-                f"Dataset `{dataset._name}` has more than one source defined, found {len(connector)} sources."
+                f"Dataset `{dataset._name}` error: Cannot define sinks on a source dataset"
             )
-        if len(connector) == 0:
+
+        sources = getattr(dataset, connectors.SOURCE_FIELD)
+        sources = sources if isinstance(sources, list) else [sources]
+        sources = [x for x in sources if x.tiers.is_entity_selected(tier)]
+        if len(sources) > 1:
+            raise ValueError(
+                f"Dataset `{dataset._name}` has more than one source defined, found {len(sources)} sources"
+            )
+        if len(sources) == 0:
             return None, False, None
-        connector = connector[0]
-        if isinstance(connector, connectors.WebhookConnector):
-            src = connector.data_source
-            webhook_endpoint = f"{src.name}:{connector.endpoint}"
+        source = sources[0]
+        if isinstance(source, connectors.WebhookConnector):
+            src = source.data_source
+            webhook_endpoint = f"{src.name}:{source.endpoint}"
             self.webhook_to_dataset_map[webhook_endpoint].append(dataset._name)
-            return connector.pre_proc, connector.bounded, connector.idleness
+            return (
+                source.pre_proc,
+                source.bounded,
+                source.idleness,
+            )
         return None, False, None

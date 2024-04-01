@@ -99,6 +99,7 @@ def to_sync_request_proto(
     pipelines = []
     operators = []
     conn_sources = []
+    conn_sinks = []
     external_dbs_by_name = {}
     external_dbs = []
     featuresets = []
@@ -134,17 +135,28 @@ def to_sync_request_proto(
             if offline_index:
                 offline_indices.append(offline_index)
 
-            res = sources_from_ds(obj, obj.timestamp_field, tier)
-            if res is None:
-                continue
-            (ext_db, s) = res
-            conn_sources.append(s)
-            # dedup external dbs by the name
-            # TODO(mohit): Also validate that if the name is the same, there should
-            # be no difference in the other fields
-            if ext_db.name not in external_dbs_by_name:
-                external_dbs_by_name[ext_db.name] = ext_db
-                external_dbs.append(ext_db)
+            sources = sources_from_ds(obj, obj.timestamp_field, tier)
+            if sources is not None:
+                (ext_db, s) = sources
+                conn_sources.append(s)
+                # dedup external dbs by the name
+                # TODO(mohit): Also validate that if the name is the same, there should
+                # be no difference in the other fields
+                if ext_db.name not in external_dbs_by_name:
+                    external_dbs_by_name[ext_db.name] = ext_db
+                    external_dbs.append(ext_db)
+
+            db_with_sinks = sinks_from_ds(obj, is_source_dataset, tier)
+
+            for ext_db, sinks in db_with_sinks:
+                conn_sinks.append(sinks)
+                # dedup external dbs by the name
+                # TODO(mohit): Also validate that if the name is the same, there should
+                # be no difference in the other fields
+                if ext_db.name not in external_dbs_by_name:
+                    external_dbs_by_name[ext_db.name] = ext_db
+                    external_dbs.append(ext_db)
+
         elif isinstance(obj, Featureset):
             featuresets.append(featureset_to_proto(obj))
             features.extend(features_from_fs(obj))
@@ -159,6 +171,7 @@ def to_sync_request_proto(
         features=features,
         extractors=extractors,
         sources=conn_sources,
+        sinks=conn_sinks,
         extdbs=external_dbs,
         expectations=expectations,
         offline_indices=offline_indices,
@@ -388,6 +401,38 @@ def sources_from_ds(
             filtered_source, ds._name, ds.version, timestamp_field
         )
     return None  # type: ignore
+
+
+def sinks_from_ds(
+    ds: Dataset, is_source_dataset: bool = False, tier: Optional[str] = None
+) -> List[Tuple[connector_proto.ExtDatabase, connector_proto.Sink]]:
+    """
+    Returns the source proto for a dataset if it exists
+
+    :param ds: The dataset to get the source proto for.
+    :param source_field: The attr for the source field.
+    :param timestamp_field: An optional column that can be used to sort the
+    data from the source.
+    """
+    if hasattr(ds, connectors.SINK_FIELD):
+        all_sinks: List[connectors.DataConnector] = getattr(
+            ds, connectors.SINK_FIELD
+        )
+        filtered_sinks = [
+            sink for sink in all_sinks if sink.tiers.is_entity_selected(tier)
+        ]
+
+        if len(filtered_sinks) > 0 and is_source_dataset:
+            raise ValueError(
+                f"Dataset {ds._name} error: Cannot define sinks on a source dataset"
+            )
+
+        return [
+            _conn_to_sink_proto(sink, ds._name, ds.version)
+            for sink in filtered_sinks
+        ]
+
+    return []  # type: ignore
 
 
 # ------------------------------------------------------------------------------
@@ -643,6 +688,19 @@ def _conn_to_source_proto(
         raise ValueError(f"Unknown connector type: {type(connector)}")
 
 
+def _conn_to_sink_proto(
+    connector: connectors.DataConnector,
+    dataset_name: str,
+    ds_version: int,
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    if isinstance(connector, connectors.KafkaConnector):
+        return _kafka_conn_to_sink_proto(connector, dataset_name, ds_version)
+    else:
+        raise ValueError(
+            f"Unsupported connector type: {type(connector)} for sink"
+        )
+
+
 def _webhook_to_source_proto(
     connector: connectors.WebhookConnector, dataset_name: str, ds_version: int
 ):
@@ -717,6 +775,37 @@ def _kafka_conn_to_source_proto(
         ),
     )
     return (ext_db, source)
+
+
+def _kafka_conn_to_sink_proto(
+    connector: connectors.KafkaConnector,
+    dataset_name: str,
+    ds_version: int,
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Sink]:
+    data_source = connector.data_source
+    if not isinstance(data_source, connectors.Kafka):
+        raise ValueError("KafkaConnector must have Kafka as data_source")
+    ext_db = _kafka_to_ext_db_proto(
+        data_source.name,
+        data_source.bootstrap_servers,
+        data_source.security_protocol,
+        data_source.sasl_mechanism,
+        data_source.sasl_plain_username,
+        data_source.sasl_plain_password,
+    )
+    sink = connector_proto.Sink(
+        table=connector_proto.ExtTable(
+            kafka_topic=connector_proto.KafkaTopic(
+                topic=connector.topic,
+                db=ext_db,
+                format=to_kafka_format_proto(connector.format),
+            ),
+        ),
+        dataset=dataset_name,
+        ds_version=ds_version,
+        cdc=to_cdc_proto(connector.cdc),
+    )
+    return ext_db, sink
 
 
 def _kafka_to_ext_db_proto(

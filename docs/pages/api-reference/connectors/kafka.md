@@ -54,6 +54,10 @@ The format of the data in Kafka topic. Both `"json"` and
     status="success" message="Sourcing json data from kafka to a dataset"
 ></pre>
 
+<pre snippet="api-reference/sinks/kafka#basic"
+    status="success" message="Capturing change from a dataset to a Kafka Sink"
+></pre>
+
 #### Errors
 <Expandable title="Connectivity problems">
 Fennel server tries to connect with the Kafka broker during the `commit` operation

@@ -276,6 +276,74 @@ def test_source_snip():
     # /docsnip
 
 
+def test_sink_snip():
+    os.environ["POSTGRES_HOST"] = "some-host"
+    os.environ["POSTGRES_DB_NAME"] = "some-db-name"
+    os.environ["POSTGRES_USERNAME"] = "some-username"
+    os.environ["POSTGRES_PASSWORD"] = "some-password"
+    os.environ["KAFKA_HOST"] = "some-host"
+    os.environ["KAFKA_USERNAME"] = "some-username"
+    os.environ["KAFKA_PASSWORD"] = "some-password"
+
+    from fennel.connectors import source, Postgres
+    from fennel.datasets import dataset
+
+    # docsnip-highlight start
+    postgres = Postgres(
+        name="my-postgres",
+        host=os.environ["POSTGRES_HOST"],
+        db_name=os.environ["POSTGRES_DB_NAME"],
+        port=5432,
+        username=os.environ["POSTGRES_USERNAME"],
+        password=os.environ["POSTGRES_PASSWORD"],
+    )
+    # docsnip-highlight end
+
+    # docsnip-highlight next-line
+    table = postgres.table("user", cursor="update_time")
+
+    # docsnip-highlight next-line
+    @source(table, disorder="14d", cdc="append", every="1m")
+    @dataset
+    class UserLocation:
+        uid: int
+        city: str
+        country: str
+        update_time: datetime
+
+    from fennel.connectors import sink, Kafka
+    from fennel.datasets import dataset, pipeline, Dataset
+    from fennel.lib.params import inputs
+
+    # docsnip-highlight start
+    kafka = Kafka(
+        name="kafka_src",
+        bootstrap_servers=os.environ["KAFKA_HOST"],
+        security_protocol="PLAINTEXT",
+        sasl_mechanism="PLAIN",
+        sasl_plain_username=os.environ["KAFKA_USERNAME"],
+        sasl_plain_password=os.environ["KAFKA_PASSWORD"],
+    )
+    # docsnip-highlight end
+
+    # docsnip sink
+    # docsnip-highlight next-line
+    @sink(kafka.topic("user_location"), cdc="debezium")
+    @dataset
+    class UserLocationFiltered:
+        uid: int
+        city: str
+        country: str
+        update_time: datetime
+
+        @pipeline
+        @inputs(UserLocation)
+        def user_location_count(cls, dataset: Dataset):
+            return dataset.filter(lambda row: row["country"] != "United States")
+
+    # /docsnip
+
+
 def test_bounded_idleness_snip():
     os.environ["POSTGRES_HOST"] = "some-host"
     os.environ["POSTGRES_DB_NAME"] = "some-db-name"
