@@ -184,7 +184,6 @@ class Operator(google.protobuf.message.Message):
     ASSIGN_FIELD_NUMBER: builtins.int
     DROPNULL_FIELD_NUMBER: builtins.int
     WINDOW_FIELD_NUMBER: builtins.int
-    LATEST_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
     id: builtins.str
     """Every operator has an ID assigned by the client"""
@@ -225,8 +224,6 @@ class Operator(google.protobuf.message.Message):
     def dropnull(self) -> global___Dropnull: ...
     @property
     def window(self) -> global___WindowOperatorKind: ...
-    @property
-    def latest(self) -> global___Latest: ...
     name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -255,12 +252,11 @@ class Operator(google.protobuf.message.Message):
         assign: global___Assign | None = ...,
         dropnull: global___Dropnull | None = ...,
         window: global___WindowOperatorKind | None = ...,
-        latest: global___Latest | None = ...,
         name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "explode", b"explode", "filter", b"filter", "first", b"first", "join", b"join", "kind", b"kind", "latest", b"latest", "rename", b"rename", "transform", b"transform", "union", b"union", "window", b"window"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_name", b"dataset_name", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "ds_version", b"ds_version", "explode", b"explode", "filter", b"filter", "first", b"first", "id", b"id", "is_root", b"is_root", "join", b"join", "kind", b"kind", "latest", b"latest", "name", b"name", "pipeline_name", b"pipeline_name", "rename", b"rename", "transform", b"transform", "union", b"union", "window", b"window"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union", "filter", "dataset_ref", "rename", "drop", "explode", "dedup", "first", "assign", "dropnull", "window", "latest"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "explode", b"explode", "filter", b"filter", "first", b"first", "join", b"join", "kind", b"kind", "rename", b"rename", "transform", b"transform", "union", b"union", "window", b"window"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["aggregate", b"aggregate", "assign", b"assign", "dataset_name", b"dataset_name", "dataset_ref", b"dataset_ref", "dedup", b"dedup", "drop", b"drop", "dropnull", b"dropnull", "ds_version", b"ds_version", "explode", b"explode", "filter", b"filter", "first", b"first", "id", b"id", "is_root", b"is_root", "join", b"join", "kind", b"kind", "name", b"name", "pipeline_name", b"pipeline_name", "rename", b"rename", "transform", b"transform", "union", b"union", "window", b"window"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["aggregate", "join", "transform", "union", "filter", "dataset_ref", "rename", "drop", "explode", "dedup", "first", "assign", "dropnull", "window"] | None: ...
 
 global___Operator = Operator
 
@@ -666,31 +662,6 @@ class First(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["by", b"by", "operand_id", b"operand_id", "operand_name", b"operand_name"]) -> None: ...
 
 global___First = First
-
-@typing_extensions.final
-class Latest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    OPERAND_ID_FIELD_NUMBER: builtins.int
-    BY_FIELD_NUMBER: builtins.int
-    OPERAND_NAME_FIELD_NUMBER: builtins.int
-    operand_id: builtins.str
-    @property
-    def by(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    operand_name: builtins.str
-    """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
-    THE CLIENT
-    """
-    def __init__(
-        self,
-        *,
-        operand_id: builtins.str = ...,
-        by: collections.abc.Iterable[builtins.str] | None = ...,
-        operand_name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["by", b"by", "operand_id", b"operand_id", "operand_name", b"operand_name"]) -> None: ...
-
-global___Latest = Latest
 
 @typing_extensions.final
 class WindowOperatorKind(google.protobuf.message.Message):

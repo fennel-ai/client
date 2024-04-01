@@ -1,4 +1,7 @@
 # Changelog
+## [1.1.5] - 2024-04-01
+- Support `redshift` source
+
 ## [1.1.4] - 2024-03-28
 - Add latest operator to the client.
 
@@ -14,9 +17,6 @@
 
 ## [1.1.0] - 2024-03-15
 - Introduce offline and online index on datasets.
-
-## [1.0.6] - 2024-03-16
-- Support `redshift` source
 
 ## [1.0.5] - 2024-03-012
 - Introduce `spread` for S3 sources
