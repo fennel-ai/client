@@ -15,7 +15,7 @@ class TestSelectSnips(unittest.TestCase):
         # docsnip basic
         from fennel.datasets import dataset, field, pipeline, Dataset, index
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -108,7 +108,7 @@ class TestSelectSnips(unittest.TestCase):
             # docsnip missing_key
             from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 
@@ -138,7 +138,7 @@ class TestSelectSnips(unittest.TestCase):
             # docsnip missing_column
             from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 

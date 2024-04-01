@@ -8,7 +8,7 @@ import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 from fennel.datasets import dataset, field
 from fennel.lib import meta
-from fennel.sources import (
+from fennel.connectors import (
     source,
     MySQL,
     S3,

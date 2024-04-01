@@ -27,7 +27,7 @@ from fennel.datasets import (
 )
 from fennel.lib import includes, meta, inputs
 from fennel.dtypes import between, oneof, struct
-from fennel.sources import source, Webhook, ref
+from fennel.connectors import source, Webhook, ref
 from fennel.testing import almost_equal, mock, InternalTestClient
 
 ################################################################################

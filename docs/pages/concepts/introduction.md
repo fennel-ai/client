@@ -25,10 +25,10 @@ data sources. First we define the external sources by providing the required
 credentials:
 
 ```python
-from fennel.sources import source, Postgres, Kafka
+from fennel.connectors import source, Postgres, Kafka
 
-postgres = Postgres(host=...<credentials>..)
-kafka = Kafka(...<credentials>..)
+postgres = Postgres(host=... < credentials >..)
+kafka = Kafka(... < credentials >..)
 ```
 
 Then we define the datasets that will hydrate themselves from these sources:

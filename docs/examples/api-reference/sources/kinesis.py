@@ -11,7 +11,7 @@ def test_kinesis_init_position(client):
     os.environ["KINESIS_ROLE_ARN"] = "some-role-arn"
     os.environ["KINESIS_ORDERS_STREAM_ARN"] = "some-stream-arn"
     # docsnip kinesis_at_timestamp
-    from fennel.sources import source, Kinesis
+    from fennel.connectors import source, Kinesis
     from fennel.datasets import dataset, field
 
     # docsnip-highlight start
@@ -44,7 +44,7 @@ def test_kinesis_latest(client):
     os.environ["KINESIS_ROLE_ARN"] = "some-role-arn"
     os.environ["KINESIS_ORDERS_STREAM_ARN"] = "some-stream-arn"
     # docsnip kinesis_latest
-    from fennel.sources import source, Kinesis
+    from fennel.connectors import source, Kinesis
     from fennel.datasets import dataset, field
 
     kinesis = Kinesis(

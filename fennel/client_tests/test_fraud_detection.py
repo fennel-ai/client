@@ -5,7 +5,7 @@ import pandas as pd
 from fennel.datasets import dataset, field, pipeline, Dataset, Sum, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import meta, inputs, outputs
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")

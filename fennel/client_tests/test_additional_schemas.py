@@ -8,7 +8,7 @@ import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field
 from fennel.lib import meta
 from fennel.dtypes import oneof, regex, between
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+"

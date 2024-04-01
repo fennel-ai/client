@@ -21,7 +21,7 @@ class TestSumSnips(unittest.TestCase):
             index,
         )
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -121,7 +121,7 @@ class TestSumSnips(unittest.TestCase):
             # docsnip incorrect_type
             from fennel.datasets import dataset, field, pipeline, Dataset, Sum
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 

@@ -8,22 +8,22 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel import sources
+from fennel import connectors
 from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum, index
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.dtypes import Embedding, oneof
-from fennel.sources import source
+from fennel.connectors import source
 from fennel.testing import mock
 
-biq_query = sources.BigQuery(
+biq_query = connectors.BigQuery(
     name="bg_source",
     project_id="my-project-356105",
     dataset_id="query_data",
     credentials_json="{}",
 )
 
-s3 = sources.S3(
+s3 = connectors.S3(
     name="s3_source",
     bucket="engagement",
     path_prefix="prod/apac/",
@@ -31,7 +31,7 @@ s3 = sources.S3(
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
 )
 
-webhook = sources.Webhook(name="fennel_webhook")
+webhook = connectors.Webhook(name="fennel_webhook")
 
 __owner__ = "data-eng@fennel.ai"
 

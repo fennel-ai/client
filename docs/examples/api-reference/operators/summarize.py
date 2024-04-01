@@ -16,7 +16,7 @@ class TestSummarizeSnips(unittest.TestCase):
         # docsnip basic
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
         from fennel.dtypes import Window
 
         webhook = Webhook(name="webhook")
@@ -123,7 +123,7 @@ class TestSummarizeSnips(unittest.TestCase):
             # docsnip wrong_type
             from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
             from fennel.dtypes import Window
 
             webhook = Webhook(name="webhook")
@@ -170,7 +170,7 @@ class TestSummarizeSnips(unittest.TestCase):
             # docsnip runtime_error
             from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
             from fennel.dtypes import Window
 
             webhook = Webhook(name="webhook")

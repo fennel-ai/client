@@ -15,7 +15,7 @@ class TestDropnullSnips(unittest.TestCase):
         # docsnip basic
         from fennel.datasets import dataset, field, pipeline, Dataset, index
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -101,7 +101,7 @@ class TestDropnullSnips(unittest.TestCase):
         # docsnip dropnull_all
         from fennel.datasets import dataset, field, pipeline, Dataset, index
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -188,7 +188,7 @@ class TestDropnullSnips(unittest.TestCase):
             # docsnip missing_column
             from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 
@@ -219,7 +219,7 @@ class TestDropnullSnips(unittest.TestCase):
             # docsnip non_optional_column
             from fennel.datasets import dataset, field, pipeline, Dataset
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 

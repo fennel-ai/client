@@ -20,7 +20,7 @@ from fennel.datasets import (
     index,
 )
 from fennel.lib import inputs
-from fennel.sources import Webhook, source
+from fennel.connectors import Webhook, source
 
 __owner__ = "eng@app.com"
 

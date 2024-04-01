@@ -11,7 +11,7 @@ def test_s3_source_prefix(client):
     os.environ["AWS_ACCESS_KEY_ID"] = "some-access-key"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "some-secret"
     # docsnip s3_prefix
-    from fennel.sources import source, S3
+    from fennel.connectors import source, S3
     from fennel.datasets import dataset, field
 
     # docsnip-highlight start
@@ -44,7 +44,7 @@ def test_s3_delta(client):
     os.environ["AWS_ACCESS_KEY_ID"] = "some-access-key"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "some-secret"
     # docsnip s3_delta
-    from fennel.sources import source, S3
+    from fennel.connectors import source, S3
     from fennel.datasets import dataset, field
 
     s3 = S3(
@@ -75,7 +75,7 @@ def test_s3_hudi(client):
     os.environ["AWS_ACCESS_KEY_ID"] = "some-access-key"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "some-secret"
     # docsnip s3_hudi
-    from fennel.sources import source, S3
+    from fennel.connectors import source, S3
     from fennel.datasets import dataset, field
 
     s3 = S3(
@@ -106,7 +106,7 @@ def test_s3_source_path(client):
     os.environ["AWS_ACCESS_KEY_ID"] = "some-access-key"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "some-secret"
     # docsnip s3_path
-    from fennel.sources import source, S3
+    from fennel.connectors import source, S3
     from fennel.datasets import dataset, field
 
     # docsnip-highlight start

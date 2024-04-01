@@ -7,7 +7,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 from fennel.datasets import dataset, pipeline, field, Dataset, Sum, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import meta, inputs, outputs
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")

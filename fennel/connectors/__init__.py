@@ -1,13 +1,12 @@
-# for backward compatibility, will be removed in the future.
 from fennel.connectors.connectors import (
     BigQuery,
     MySQL,
     Postgres,
     S3,
     Kafka,
-    Redshift,
     Snowflake,
     Webhook,
+    Redshift,
     source,
     sink,
     SOURCE_FIELD,

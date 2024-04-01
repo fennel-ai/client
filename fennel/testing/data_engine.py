@@ -11,7 +11,6 @@ import pandas as pd
 from frozendict import frozendict
 
 import fennel.datasets.datasets
-import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Dataset, Pipeline
 from fennel.datasets.datasets import (
     sync_validation_for_pipelines,
@@ -22,12 +21,11 @@ from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.internal_lib.duration import Duration, duration_to_timedelta
 from fennel.internal_lib.schema import data_schema_check
 from fennel.internal_lib.to_proto import dataset_to_proto
-from fennel.sources import sources, PreProcValue
+from fennel.connectors import connectors, PreProcValue
 from fennel.testing.executor import Executor
 from fennel.testing.test_utils import (
     FakeResponse,
     cast_df_to_schema,
-    cast_col_to_dtype,
 )
 from dataclasses import field
 
@@ -41,11 +39,11 @@ logger = logging.getLogger(__name__)
 
 
 def _preproc_df(
-    df: pd.DataFrame, pre_proc: Dict[str, sources.PreProcValue]
+    df: pd.DataFrame, pre_proc: Dict[str, connectors.PreProcValue]
 ) -> pd.DataFrame:
     new_df = df.copy()
     for col, pre_proc_value in pre_proc.items():
-        if isinstance(pre_proc_value, sources.Ref):
+        if isinstance(pre_proc_value, connectors.Ref):
             col_name = pre_proc_value.name
             if col_name not in df.columns:
                 raise ValueError(
@@ -65,7 +63,7 @@ class _Dataset:
     dataset: Dataset
     bounded: bool
     data: Optional[pd.DataFrame] = None
-    pre_proc: Optional[Dict[str, sources.PreProcValue]] = None
+    pre_proc: Optional[Dict[str, connectors.PreProcValue]] = None
     aggregated_datasets: Optional[Dict[str, Any]] = None
     idleness: Optional[Duration] = None
     prev_log_time: Optional[datetime] = None
@@ -192,14 +190,14 @@ class DataEngine(object):
                     f" of type `{type(dataset)}` instead."
                 )
             core_dataset = dataset_to_proto(dataset)
-            if hasattr(dataset, sources.SOURCE_FIELD):
+            if hasattr(dataset, connectors.SOURCE_FIELD):
                 pre_proc, bounded, idleness = self._process_data_connector(
                     dataset, tier
                 )
             else:
                 pre_proc, bounded, idleness = None, False, None
 
-            is_source_dataset = hasattr(dataset, sources.SOURCE_FIELD)
+            is_source_dataset = hasattr(dataset, connectors.SOURCE_FIELD)
             fields = [f.name for f in dataset.fields]
 
             self.datasets[dataset._name] = _Dataset(
@@ -757,7 +755,7 @@ class DataEngine(object):
     def _process_data_connector(
         self, dataset: Dataset, tier: Optional[str] = None
     ) -> Tuple[Optional[Dict[str, PreProcValue]], bool, Optional[Duration]]:
-        connector = getattr(dataset, sources.SOURCE_FIELD)
+        connector = getattr(dataset, connectors.SOURCE_FIELD)
         connector = connector if isinstance(connector, list) else [connector]
         connector = [x for x in connector if x.tiers.is_entity_selected(tier)]
         if len(connector) > 1:
@@ -767,7 +765,7 @@ class DataEngine(object):
         if len(connector) == 0:
             return None, False, None
         connector = connector[0]
-        if isinstance(connector, sources.WebhookConnector):
+        if isinstance(connector, connectors.WebhookConnector):
             src = connector.data_source
             webhook_endpoint = f"{src.name}:{connector.endpoint}"
             self.webhook_to_dataset_map[webhook_endpoint].append(dataset._name)

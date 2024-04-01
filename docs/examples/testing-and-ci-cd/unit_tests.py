@@ -8,7 +8,7 @@ import requests
 from fennel.datasets import dataset, field, pipeline, Dataset, index
 from fennel.datasets import Count, Sum, Average
 from fennel.lib import includes, meta, inputs, outputs
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 
 __owner__ = "test@test.com"
 webhook = Webhook(name="fennel_webhook")

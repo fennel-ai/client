@@ -7,7 +7,7 @@ import pytest
 from fennel.datasets import dataset, pipeline, field, Dataset, index
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import meta, inputs, outputs
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 from fennel.testing import *
 
 # noinspection PyUnresolvedReferences

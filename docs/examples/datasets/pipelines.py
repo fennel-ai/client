@@ -13,7 +13,7 @@ __owner__ = "data-eng@fennel.ai"
 def test_datasets_basic():
     # docsnip datasets
     from fennel.datasets import dataset, field, index
-    from fennel.sources import source, Webhook
+    from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
 
@@ -133,7 +133,7 @@ def test_transaction_aggregation_example(client):
 @mock
 def test_fraud(client):
     from fennel.datasets import dataset, field
-    from fennel.sources import source, Webhook
+    from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
 
@@ -224,7 +224,7 @@ def test_fraud(client):
 def test_multiple_pipelines(client):
     # docsnip multiple_pipelines
     from fennel.datasets import dataset, field, Count, index
-    from fennel.sources import source, Webhook
+    from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
 

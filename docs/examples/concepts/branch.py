@@ -8,7 +8,7 @@ __owner__ = "nikhil@fennel.ai"
 
 @mock
 def test_branches_basic(client):
-    from fennel.sources import Webhook, source
+    from fennel.connectors import Webhook, source
     from fennel.datasets import dataset
     from fennel.featuresets import featureset, feature
 
@@ -49,7 +49,7 @@ def test_branches_basic(client):
 
 @mock
 def test_branches_clone(client):
-    from fennel.sources import Webhook, source
+    from fennel.connectors import Webhook, source
     from fennel.datasets import dataset, field
     from fennel.featuresets import featureset, feature
 

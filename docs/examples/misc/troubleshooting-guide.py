@@ -5,7 +5,7 @@ from typing import Optional
 from fennel.datasets import dataset
 from fennel.datasets import pipeline, Dataset
 from fennel.lib import meta, inputs
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 
 webhook = Webhook(name="fennel_webhook")
 

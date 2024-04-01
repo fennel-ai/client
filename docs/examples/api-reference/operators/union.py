@@ -20,7 +20,7 @@ class TesUnionSnips(unittest.TestCase):
         # docsnip basic
         from fennel.datasets import dataset, pipeline, Dataset
         from fennel.lib import inputs
-        from fennel.sources import source, S3, Kafka
+        from fennel.connectors import source, S3, Kafka
 
         cutoff = datetime(2024, 1, 1, 0, 0, 0)
         s3 = S3(name="mys3")

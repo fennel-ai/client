@@ -5,7 +5,7 @@ import pytest
 
 from fennel.datasets import dataset, field
 from fennel.lib import meta
-from fennel.sources import (
+from fennel.connectors import (
     source,
     MySQL,
     S3,

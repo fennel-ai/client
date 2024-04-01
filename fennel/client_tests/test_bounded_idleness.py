@@ -6,7 +6,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, index
-from fennel.sources import Webhook, source
+from fennel.connectors import Webhook, source
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")

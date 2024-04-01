@@ -3,7 +3,7 @@ from typing import Optional
 
 from fennel.datasets import dataset, field, index
 from fennel.dtypes import oneof
-from fennel.sources import Webhook, S3, MySQL, source
+from fennel.connectors import Webhook, S3, MySQL, source
 
 __owner__ = "eng@app.com"
 

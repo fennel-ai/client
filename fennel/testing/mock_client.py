@@ -17,7 +17,7 @@ from fennel.internal_lib.graph_algorithms import (
 )
 from fennel.internal_lib.schema import get_datatype
 from fennel.lib import includes  # noqa
-from fennel.sources.sources import S3Connector
+from fennel.connectors.connectors import S3Connector
 from fennel.testing.branch import Branch
 from fennel.testing.integration_client import IntegrationClient
 from fennel.testing.query_engine import QueryEngine

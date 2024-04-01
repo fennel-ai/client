@@ -8,7 +8,7 @@ import requests
 from fennel.datasets import dataset, field, index
 from fennel.featuresets import feature, featureset, extractor
 from fennel.lib import includes, meta, inputs, outputs
-from fennel.sources import source, Webhook
+from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
@@ -135,7 +135,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
 
         with self.assertRaises(NotImplementedError) as e:
             # docsnip query_offline_s3
-            from fennel.sources import S3
+            from fennel.connectors import S3
 
             s3 = S3(
                 name="extract_hist_input",

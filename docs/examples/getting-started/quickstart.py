@@ -13,7 +13,14 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.sources import source, Postgres, Snowflake, Kafka, Webhook, Redshift
+from fennel.connectors import (
+    source,
+    Postgres,
+    Snowflake,
+    Kafka,
+    Webhook,
+    Redshift,
+)
 from fennel.testing import MockClient
 
 __owner__ = "nikhil@fennel.ai"

@@ -17,7 +17,7 @@ class TestExplodeSnips(unittest.TestCase):
         # docsnip basic
         from fennel.datasets import dataset, pipeline, Dataset
         from fennel.lib import inputs
-        from fennel.sources import source, Webhook
+        from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
@@ -93,7 +93,7 @@ class TestExplodeSnips(unittest.TestCase):
             # docsnip exploding_non_list
             from fennel.datasets import dataset, pipeline, Dataset
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 
@@ -125,7 +125,7 @@ class TestExplodeSnips(unittest.TestCase):
             # docsnip exploding_missing
             from fennel.datasets import dataset, pipeline, Dataset
             from fennel.lib import inputs
-            from fennel.sources import source, Webhook
+            from fennel.connectors import source, Webhook
 
             webhook = Webhook(name="webhook")
 

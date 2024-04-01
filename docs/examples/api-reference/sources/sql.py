@@ -12,7 +12,7 @@ def test_mysql_basic(client):
     os.environ["MYSQL_PASSWORD"] = "some-password"
     os.environ["DB_NAME"] = "some-db-name"
     # docsnip mysql_source
-    from fennel.sources import source, MySQL
+    from fennel.connectors import source, MySQL
     from fennel.datasets import dataset, field
 
     # docsnip-highlight start
@@ -52,7 +52,7 @@ def test_postgres_basic(client):
     os.environ["POSTGRES_PASSWORD"] = "some-password"
     os.environ["DB_NAME"] = "some-db-name"
     # docsnip postgres_source
-    from fennel.sources import source, Postgres
+    from fennel.connectors import source, Postgres
     from fennel.datasets import dataset, field
 
     # docsnip-highlight start
@@ -91,7 +91,7 @@ def test_snowflake_basic(client):
     os.environ["SNOWFLAKE_PASSWORD"] = "some-password"
     os.environ["DB_NAME"] = "some-db-name"
     # docsnip snowflake_source
-    from fennel.sources import source, Snowflake
+    from fennel.connectors import source, Snowflake
     from fennel.datasets import dataset
 
     # docsnip-highlight start
@@ -126,7 +126,7 @@ def test_snowflake_basic(client):
 def test_bigquery_basic(client):
     os.environ["DB_NAME"] = "some-db-name"
     # docsnip bigquery_source
-    from fennel.sources import source, BigQuery
+    from fennel.connectors import source, BigQuery
     from fennel.datasets import dataset
 
     # docsnip-highlight start
@@ -165,7 +165,7 @@ def test_bigquery_basic(client):
 def test_redshift_basic(client):
     os.environ["DB_NAME"] = "some-db-name"
     # docsnip redshift_source
-    from fennel.sources import source, Redshift
+    from fennel.connectors import source, Redshift
     from fennel.datasets import dataset
 
     # docsnip-highlight start

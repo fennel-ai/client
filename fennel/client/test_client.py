@@ -1,7 +1,7 @@
 # Unit Tests for client.py
 
 from fennel.client.client import _s3_connector_dict, _validate_branch_name
-from fennel.sources.sources import S3
+from fennel.connectors.connectors import S3
 
 import pytest
 

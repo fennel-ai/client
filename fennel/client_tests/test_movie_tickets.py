@@ -17,8 +17,8 @@ from fennel.datasets import (
     index,
 )
 from fennel.lib import meta, inputs, outputs
-from fennel.sources import Webhook
-from fennel.sources import source
+from fennel.connectors import Webhook
+from fennel.connectors import source
 from fennel.testing import mock, MockClient
 
 client = MockClient()

@@ -22,7 +22,7 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.sources import Webhook, source
+from fennel.connectors import Webhook, source
 from fennel.testing import *
 
 __owner__ = "eng@fennel.ai"

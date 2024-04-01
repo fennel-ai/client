@@ -1,5 +1,5 @@
 import fennel.client
-import fennel.sources
+import fennel.connectors
 from fennel.datasets import (
     dataset,
     field,
