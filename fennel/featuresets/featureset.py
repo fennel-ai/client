@@ -629,7 +629,13 @@ class Featureset:
                 outputs = []
                 for i, output in enumerate(extractor.user_defined_outputs):
                     if isinstance(output, str):
-                        outputs.append(self._feature_map[output])
+                        try:
+                            outputs.append(self._feature_map[output])
+                        except KeyError:
+                            raise ValueError(
+                                f"When using strings in 'outputs' for an extractor, one can only choose from the features defined in the current featureset. "
+                                f"Please choose an output from : {list(self._feature_map.keys())} found : `{output}` in extractor : `{extractor.name}`."
+                            )
                     elif isinstance(output, Feature):
                         outputs.append(output)
                     else:
@@ -643,7 +649,13 @@ class Featureset:
             inputs = []
             for input in extractor.user_defined_inputs:
                 if isinstance(input, str):
-                    inputs.append(self._feature_map[input])
+                    try:
+                        inputs.append(self._feature_map[input])
+                    except KeyError:
+                        raise ValueError(
+                            f"When using strings in 'inputs' for an extractor, one can only choose from the features defined in the current featureset. "
+                            f"Please choose an input from : {list(self._feature_map.keys())} found : `{input}` in extractor : `{extractor.name}`."
+                        )
                 elif isinstance(input, Feature):
                     inputs.append(input)
                 else:
