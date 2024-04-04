@@ -39,7 +39,7 @@ Overall, the structure could look something like this:
 
 ```bash
 fennel-project/
-    | sources.py
+    | connectors.py
     | datasets/
         | __init__.py
         | user.py
@@ -72,7 +72,7 @@ dataset field types all match the contents of the sample file.
 With this, the directory structure may look like this:
 ```bash highlight="3-6"
 fennel-project/
-    | sources.py
+    | connectors.py
     | data/ 
         | user_signups.csv
         | transactions.parquet

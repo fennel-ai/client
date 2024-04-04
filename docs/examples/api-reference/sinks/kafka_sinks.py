@@ -7,13 +7,35 @@ __owner__ = "nikhil@fennel.ai"
 
 
 @mock
-def test_kafka_source(client):
+def test_kafka_sink(client):
     os.environ["KAFKA_USERNAME"] = "test"
     os.environ["KAFKA_PASSWORD"] = "test"
-    # docsnip basic
+
     from fennel.connectors import source, Kafka
     from fennel.datasets import dataset, field
 
+    kafka = Kafka(
+        name="my_kafka",
+        bootstrap_servers="localhost:9092",  # could come via os env var too
+        security_protocol="SASL_PLAINTEXT",
+        sasl_mechanism="PLAIN",
+        sasl_plain_username=os.environ["KAFKA_USERNAME"],
+        sasl_plain_password=os.environ["KAFKA_PASSWORD"],
+    )
+
+    @source(
+        kafka.topic("user", format="json"), disorder="14d", cdc="append"
+    )  # docsnip-highlight
+    @dataset
+    class SomeDataset:
+        uid: int = field(key=True)
+        email: str
+        timestamp: datetime
+
+    from fennel.connectors import source, Kafka
+    from fennel.datasets import dataset, field, pipeline, Dataset
+    from fennel.lib.params import inputs
+
     # docsnip-highlight start
     kafka = Kafka(
         name="my_kafka",
@@ -25,54 +47,25 @@ def test_kafka_source(client):
     )
     # docsnip-highlight end
 
-    # docsnip-highlight start
-    @source(kafka.topic("user", format="json"), disorder="14d", cdc="append")
-    # docsnip-highlight end
+    # docsnip basic
+    from fennel.connectors import sink
+
     @dataset
-    class SomeDataset:
+    @sink(kafka.topic("gmail_filtered"), cdc="debezium")  # docsnip-highlight
+    class SomeDatasetFiltered:
         uid: int = field(key=True)
         email: str
         timestamp: datetime
 
-    # /docsnip
-
-    client.commit(message="some commit msg", datasets=[SomeDataset])
-
-
-@mock
-def test_kafka_with_avro(client):
-    os.environ["KAFKA_USERNAME"] = "test"
-    os.environ["KAFKA_PASSWORD"] = "test"
-    os.environ["SCHEMA_REGISTRY_URL"] = "http://localhost:8081"
-    os.environ["SCHEMA_REGISTRY_USERNAME"] = "test"
-    os.environ["SCHEMA_REGISTRY_PASSWORD"] = "test"
-    # docsnip kafka_with_avro
-    from fennel.connectors import source, Kafka, Avro
-    from fennel.datasets import dataset, field
-
-    kafka = Kafka(
-        name="my_kafka",
-        bootstrap_servers="localhost:9092",  # could come via os env var too
-        security_protocol="SASL_PLAINTEXT",
-        sasl_mechanism="PLAIN",
-        sasl_plain_username=os.environ["KAFKA_USERNAME"],
-        sasl_plain_password=os.environ["KAFKA_PASSWORD"],
-    )
-
-    avro = Avro(
-        registry="confluent",
-        url=os.environ["SCHEMA_REGISTRY_URL"],
-        username=os.environ["SCHEMA_REGISTRY_USERNAME"],
-        password=os.environ["SCHEMA_REGISTRY_PASSWORD"],
-    )
-
-    @source(kafka.topic("user", format=avro), disorder="14d", cdc="append")
-    @dataset
-    class SomeDataset:
-        uid: int = field(key=True)
-        email: str
-        timestamp: datetime
+        @pipeline
+        @inputs(SomeDataset)
+        def gmail_filtered(cls, dataset: Dataset):
+            return dataset.filter(
+                lambda row: row["email"].contains("gmail.com")
+            )
 
     # /docsnip
 
-    client.commit(message="msg", datasets=[SomeDataset])
+    client.commit(
+        message="some commit msg", datasets=[SomeDataset, SomeDatasetFiltered]
+    )

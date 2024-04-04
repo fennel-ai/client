@@ -1,4 +1,7 @@
 # Changelog
+## [1.1.8] - 2024-04-04
+- Support `kafka` sink
+
 ## [1.1.7] - 2024-04-03
 - Support `mongo` source
 

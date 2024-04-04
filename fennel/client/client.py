@@ -465,7 +465,7 @@ class Client:
         The following parameters are only relevant when format is "csv", "json"
             or "parquet".
 
-        input_s3 (Optional[sources.S3Connector]): The info for the input S3
+        input_s3 (Optional[connectors.S3Connector]): The info for the input S3
             data, containing bucket, prefix, and optional access key id and
             secret key
 
