@@ -96,7 +96,12 @@ class MockClient(Client):
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
         tier: Optional[str] = None,
+        incremental: bool = False,
     ):
+        if incremental:
+            return ValueError(
+                "Incremental mode is not supported for mock client."
+            )
         return self._get_branch().commit(datasets, featuresets, preview, tier)
 
     def query(
