@@ -631,6 +631,56 @@ def test_tier_selector_on_connector():
     )
 
 
+def test_kafka_sink_and_source_doesnt_create_extra_extdbs():
+    @meta(owner="test@test.com")
+    @source(
+        kafka.topic("test_topic"), disorder="14d", cdc="append", tier=["prod"]
+    )
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    @meta(owner="test@test.com")
+    @sink(
+        kafka.topic("test_topic1"),
+        cdc="debezium",
+        tier=["prod"],
+    )
+    @dataset
+    class UserInfoDatasetDerived:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+        @pipeline
+        @inputs(UserInfoDataset)
+        def create_user_transactions(cls, dataset: Dataset):
+            return dataset
+
+    view = InternalTestClient()
+    view.add(UserInfoDataset)
+    view.add(UserInfoDatasetDerived)
+    sync_request = view._get_sync_request_proto(tier="prod")
+    assert len(sync_request.datasets) == 2
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.sinks) == 1
+    assert len(sync_request.extdbs) == 1
+
+
 def test_multiple_sinks():
     @meta(owner="test@test.com")
     @source(

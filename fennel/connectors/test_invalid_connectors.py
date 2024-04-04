@@ -285,6 +285,83 @@ def test_sink_on_source(client):
 
 
 @mock
+def test_invalid_sink(client):
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="test@test.com")
+        @source(kafka.topic("test_topic"), disorder="14d", cdc="append")
+        @sink(kafka.topic("test_topic_2", format="csv"), cdc="debezium")
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        client.commit(message="msg", datasets=[UserInfoDataset], featuresets=[])
+
+    assert (
+        str(e.value)
+        == 'Sink only support "json" format for now, found debezium'
+    )
+
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="test@test.com")
+        @source(kafka.topic("test_topic"), disorder="14d", cdc="append")
+        @sink(kafka.topic("test_topic_2", format="json"), cdc="native")
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        client.commit(message="msg", datasets=[UserInfoDataset], featuresets=[])
+
+    assert str(e.value) == 'Sink only support "debezium" cdc, found native'
+
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="test@test.com")
+        @source(kafka.topic("test_topic"), disorder="14d", cdc="append")
+        @sink(
+            kinesis.stream(
+                "test_stream", format="json", init_position=datetime(2023, 1, 5)
+            ),
+            cdc="debezium",
+        )
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        client.commit(message="msg", datasets=[UserInfoDataset], featuresets=[])
+
+    assert (
+        str(e.value)
+        == "Sink only support Kafka Connector, found <class 'fennel.connectors.connectors.KinesisConnector'>"
+    )
+
+
+@mock
 def test_multiple_sources(client):
     with pytest.raises(Exception) as e:
 

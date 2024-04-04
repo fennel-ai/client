@@ -135,9 +135,9 @@ def to_sync_request_proto(
             if offline_index:
                 offline_indices.append(offline_index)
 
-            sources = sources_from_ds(obj, obj.timestamp_field, tier)
-            if sources is not None:
-                (ext_db, s) = sources
+            source = source_from_ds(obj, obj.timestamp_field, tier)
+            if source is not None:
+                (ext_db, s) = source
                 conn_sources.append(s)
                 # dedup external dbs by the name
                 # TODO(mohit): Also validate that if the name is the same, there should
@@ -367,7 +367,7 @@ def _validate_source_pre_proc(
             )
 
 
-def sources_from_ds(
+def source_from_ds(
     ds: Dataset, timestamp_field: str, tier: Optional[str] = None
 ) -> Optional[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
     """

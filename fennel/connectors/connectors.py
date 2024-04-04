@@ -124,6 +124,19 @@ def sink(
             f"{', '.join(conn.required_fields())}."
         )
 
+    if not isinstance(conn, KafkaConnector):
+        raise TypeError(
+            "Sink only support Kafka Connector, found %s" % type(conn)
+        )
+
+    if cdc != "debezium":
+        raise TypeError('Sink only support "debezium" cdc, found %s' % cdc)
+
+    if conn.format != "json":
+        raise TypeError(
+            'Sink only support "json" format for now, found %s' % cdc
+        )
+
     def decorator(dataset_cls: T):
         conn.cdc = cdc
         conn.tiers = TierSelector(tier)
