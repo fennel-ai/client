@@ -43,7 +43,7 @@ The name of the table within the database that should be ingested.
 The name of the field in the table that acts as `cursor` for ingestion i.e. 
 a field that is approximately monotonic and only goes up with time. 
 
-Fennel issues queries of the form `select * from table where {cursor} >= {last_cursor - disorder}`
+Fennel issues queries of the form `db.collection.find({"cursor": { "$gte": last_cursor - disorder } })`
 to get data it hasn't seen before. Auto increment IDs or timestamps corresponding
 to `modified_at` (vs `created_at` unless the field doesn't change) are good
 contenders.
@@ -63,7 +63,7 @@ queries don't create too much load on your MongoDB database.
 #### Errors
 <Expandable title="Connectivity Issues">
 Fennel tries to test the connection with your MongoDB during `commit` itself so any
-connectivity issue (e.g. wrong host name, username, password etc) is flagged as
+connectivity issue (e.g. wrong host name, username, password etc) is flagged
 as an error during commit with the real Fennel servers.
 
 Note: Mock client can not talk to any external data source and hence is unable to
