@@ -1265,17 +1265,17 @@ def test_multiple_sources():
 
     s = {
         "table": {
-            "mongoTable": {
+            "mongoCollection": {
                 "db": {
                     "mongo": {
                         "host": "atlascluster.ushabcd.mongodb.net",
-                        "db_name": "mongo",
-                        "username": "username",
+                        "database": "mongo",
+                        "user": "username",
                         "password": "password",
                     },
                     "name": "mongo_src",
                 },
-                "tableName": "test_table",
+                "collectionName": "test_table",
             }
         },
         "dataset": "UserInfoDatasetMongo",
@@ -1294,8 +1294,8 @@ def test_multiple_sources():
         "name": "mongo_src",
         "mongo": {
             "host": "atlascluster.ushabcd.mongodb.net",
-            "db_name": "mongo",
-            "username": "username",
+            "database": "mongo",
+            "user": "username",
             "password": "password",
         },
     }

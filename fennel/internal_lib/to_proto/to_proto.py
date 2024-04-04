@@ -1027,10 +1027,6 @@ def _mongo_conn_to_source_proto(
         password=data_source.password,
     )
 
-    if not connector.schema_name:
-        raise AttributeError(
-            "schema_name should always be set for Mongo source"
-        )
     ext_table = _mongo_to_ext_table_proto(
         db=ext_db,
         table_name=connector.table_name,
@@ -1068,7 +1064,7 @@ def _mongo_to_ext_db_proto(
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
-        redshift=connector_proto.Mongo(
+        mongo=connector_proto.Mongo(
             host=host,
             database=database,
             user=user,
@@ -1081,7 +1077,7 @@ def _mongo_to_ext_table_proto(
     db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
-        redshift_table=connector_proto.MongoCollection(
+        mongo_collection=connector_proto.MongoCollection(
             db=db,
             collection_name=table_name,
         ),
