@@ -15,6 +15,7 @@ from fennel.lib import (
 )
 from fennel.connectors import (
     source,
+    Mongo,
     Postgres,
     Snowflake,
     Kafka,
@@ -33,6 +34,7 @@ warehouse = Snowflake.get(name="my_warehouse")
 kafka = Kafka.get(name="my_kafka")
 webhook = Webhook(name="fennel_webhook")
 redshift = Redshift.get(name="my_redshift")
+mongo = Mongo.get(name="my_mongo")
 
 # /docsnip
 

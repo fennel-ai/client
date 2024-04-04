@@ -191,3 +191,35 @@ def test_redshift_basic(client):
 
     # /docsnip
     client.commit(message="some commit msg", datasets=[UserClick])
+
+
+@mock
+def test_mongo_basic(client):
+    os.environ["DB_NAME"] = "some-db-name"
+    # docsnip mongo_source
+    from fennel.connectors import source, Mongo
+    from fennel.datasets import dataset
+
+    # docsnip-highlight start
+    mongo = Mongo(
+        name="mongo_src",
+        host="atlascluster.ushabcd.mongodb.net",
+        db_name="mongo",
+        username="username",
+        password="password",
+    )
+    # docsnip-highlight end
+
+    @source(
+        mongo.collection("user", cursor="timestamp"),
+        disorder="14d",
+        cdc="append",
+    )  # docsnip-highlight
+    @dataset
+    class UserClick:
+        uid: int
+        ad_id: int
+        timestamp: datetime
+
+    # /docsnip
+    client.commit(message="some commit msg", datasets=[UserClick])

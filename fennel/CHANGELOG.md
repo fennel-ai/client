@@ -1,4 +1,7 @@
 # Changelog
+## [1.1.7] - 2024-04-03
+- Support `mongo` source
+
 ## [1.1.6] - 2024-04-02
 - Changed `fennel.sources` to `fennel.connectors`.
 

@@ -60,6 +60,7 @@ sidebar:
       - "api-reference/sources/mysql"
       - "api-reference/sources/postgres"
       - "api-reference/sources/redshift"
+      - "api-reference/sources/mongo"
       - "api-reference/sources/snowflake"
       - "api-reference/sources/bigquery"
       - "api-reference/sources/s3"

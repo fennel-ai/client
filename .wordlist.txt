@@ -233,6 +233,7 @@ lifecycle
 lookup
 lookups
 metaflags
+mongo
 msgs
 multicolumn
 mybranch

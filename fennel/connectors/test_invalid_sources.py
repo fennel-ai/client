@@ -7,6 +7,7 @@ from fennel.datasets import dataset, field
 from fennel.lib import meta
 from fennel.connectors import (
     source,
+    Mongo,
     MySQL,
     S3,
     Snowflake,
@@ -76,6 +77,14 @@ redshift = Redshift(
     s3_access_role_arn="arn:aws:iam::123:role/Redshift",
     db_name="test",
     host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+)
+
+mongo = Mongo(
+    name="mongo_src",
+    host="atlascluster.ushabcd.mongodb.net",
+    db_name="mongo",
+    username="username",
+    password="password",
 )
 
 
@@ -286,6 +295,12 @@ def test_multiple_sources(client):
             cdc="append",
             every="1h",
         )
+        @source(
+            mongo.collection("test_table", cursor="added_on"),
+            disorder="14d",
+            cdc="append",
+            every="1h",
+        )
         @dataset
         class UserInfoDataset:
             user_id: int = field(key=True)
@@ -302,7 +317,7 @@ def test_multiple_sources(client):
 
     assert (
         str(e.value)
-        == "Dataset `UserInfoDataset` has more than one source defined, found 6 sources."
+        == "Dataset `UserInfoDataset` has more than one source defined, found 7 sources."
     )
 
 

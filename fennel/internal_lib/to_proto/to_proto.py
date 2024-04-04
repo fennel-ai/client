@@ -858,6 +858,10 @@ def _table_conn_to_source_proto(
         return _redshift_conn_to_source_proto(
             connector, data_source, dataset_name, ds_version, timestamp_field
         )
+    elif isinstance(data_source, connectors.Mongo):
+        return _mongo_conn_to_source_proto(
+            connector, data_source, dataset_name, ds_version, timestamp_field
+        )
     else:
         raise ValueError(f"Unknown data source type: {type(data_source)}")
 
@@ -1004,6 +1008,82 @@ def _redshift_to_ext_table_proto(
             db=db,
             schema_name=schema_name,
             table_name=table_name,
+        ),
+    )
+
+
+def _mongo_conn_to_source_proto(
+    connector: connectors.TableConnector,
+    data_source: connectors.Mongo,
+    dataset_name: str,
+    ds_version: int,
+    timestamp_field: str,
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    ext_db = _mongo_to_ext_db_proto(
+        name=data_source.name,
+        host=data_source.host,
+        database=data_source.db_name,
+        user=data_source.username,
+        password=data_source.password,
+    )
+
+    if not connector.schema_name:
+        raise AttributeError(
+            "schema_name should always be set for Mongo source"
+        )
+    ext_table = _mongo_to_ext_table_proto(
+        db=ext_db,
+        table_name=connector.table_name,
+    )
+    return (
+        ext_db,
+        connector_proto.Source(
+            table=ext_table,
+            dataset=dataset_name,
+            ds_version=ds_version,
+            cursor=connector.cursor,
+            every=to_duration_proto(connector.every),
+            disorder=to_duration_proto(connector.disorder),
+            timestamp_field=timestamp_field,
+            cdc=to_cdc_proto(connector.cdc),
+            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            starting_from=_to_timestamp_proto(connector.since),
+            until=_to_timestamp_proto(connector.until),
+            bounded=connector.bounded,
+            idleness=(
+                to_duration_proto(connector.idleness)
+                if connector.idleness
+                else None
+            ),
+        ),
+    )
+
+
+def _mongo_to_ext_db_proto(
+    name: str,
+    host: str,
+    database: str,
+    user: str,
+    password: str,
+) -> connector_proto.ExtDatabase:
+    return connector_proto.ExtDatabase(
+        name=name,
+        redshift=connector_proto.Mongo(
+            host=host,
+            database=database,
+            user=user,
+            password=password,
+        ),
+    )
+
+
+def _mongo_to_ext_table_proto(
+    db: connector_proto.ExtDatabase, table_name: str
+) -> connector_proto.ExtTable:
+    return connector_proto.ExtTable(
+        redshift_table=connector_proto.MongoCollection(
+            db=db,
+            collection_name=table_name,
         ),
     )
 
