@@ -6,6 +6,7 @@ from fennel.connectors.connectors import (
     S3,
     Kafka,
     Redshift,
+    Mongo,
     Snowflake,
     Webhook,
     source,

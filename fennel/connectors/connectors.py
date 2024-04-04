@@ -419,6 +419,33 @@ class Redshift(DataSource):
         return f"[Redshift: {self.name}]"
 
 
+class Mongo(DataSource):
+    host: str
+    db_name: str
+    username: str
+    password: str
+
+    def collection(self, collection_name: str, cursor: str) -> TableConnector:
+        return TableConnector(self, table_name=collection_name, cursor=cursor)
+
+    def required_fields(self) -> List[str]:
+        return ["table", "cursor"]
+
+    @staticmethod
+    def get(name: str) -> Mongo:
+        return Mongo(
+            name=name,
+            _get=True,
+            host="",
+            db_name="",
+            username="",
+            password="",
+        )
+
+    def identifier(self) -> str:
+        return f"[Mongo: {self.name}]"
+
+
 # ------------------------------------------------------------------------------
 # DataConnector
 # ------------------------------------------------------------------------------

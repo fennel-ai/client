@@ -10,6 +10,7 @@ from fennel.datasets import dataset, field
 from fennel.lib import meta
 from fennel.connectors import (
     source,
+    Mongo,
     MySQL,
     S3,
     Redshift,
@@ -403,9 +404,24 @@ redshift = Redshift(
     host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
 )
 
+mongo = Mongo(
+    name="mongo_src",
+    host="atlascluster.ushabcd.mongodb.net",
+    db_name="mongo",
+    username="username",
+    password="password",
+)
+
 
 def test_tier_selector_on_source():
     @meta(owner="test@test.com")
+    @source(
+        mongo.collection("test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="append",
+        every="1h",
+        tier=["dev-3"],
+    )
     @source(
         redshift.table("test_schema", "test_table", cursor="added_on"),
         disorder="14d",
@@ -458,7 +474,7 @@ def test_tier_selector_on_source():
         view._get_sync_request_proto()
     assert (
         str(e.value)
-        == "Dataset UserInfoDataset has multiple sources (5) defined. Please define only one source per dataset, or check your tier selection."
+        == "Dataset UserInfoDataset has multiple sources (6) defined. Please define only one source per dataset, or check your tier selection."
     )
     sync_request = view._get_sync_request_proto(tier="prod")
     assert len(sync_request.datasets) == 1
@@ -1215,6 +1231,72 @@ def test_multiple_sources():
             "database": "test",
             "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
             "port": 5439,
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        mongo.collection("test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="append",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetMongo:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mongo source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMongo)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+
+    s = {
+        "table": {
+            "mongoCollection": {
+                "db": {
+                    "mongo": {
+                        "host": "atlascluster.ushabcd.mongodb.net",
+                        "database": "mongo",
+                        "user": "username",
+                        "password": "password",
+                    },
+                    "name": "mongo_src",
+                },
+                "collectionName": "test_table",
+            }
+        },
+        "dataset": "UserInfoDatasetMongo",
+        "dsVersion": 1,
+        "every": "3600s",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "mongo_src",
+        "mongo": {
+            "host": "atlascluster.ushabcd.mongodb.net",
+            "database": "mongo",
+            "user": "username",
+            "password": "password",
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
