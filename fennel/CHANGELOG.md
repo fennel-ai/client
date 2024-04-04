@@ -1,4 +1,7 @@
 # Changelog
+## [1.1.9] - 2024-04-04
+- Adding capability to do incremental mode during commit.
+
 ## [1.1.8] - 2024-04-04
 - Support `kafka` sink
 
