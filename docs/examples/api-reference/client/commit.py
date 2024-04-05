@@ -51,6 +51,7 @@ def test_basic(client):
         featuresets=[TransactionFeatures],
         preview=False,  # default is False, so didn't need to include this
         tier="silver",
+        incremental=False,  # default is False, so didn't need to include this
     )
     # docsnip-highlight end
     # /docsnip
