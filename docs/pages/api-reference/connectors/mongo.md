@@ -29,9 +29,9 @@ The password associated with the username.
 </Expandable>
 
 :::info
-We use [SRV connection format](https://www.mongodb.com/docs/manual/reference/connection-string/#std-label-connections-dns-seedlist) 
+Fennel uses [SRV connection format](https://www.mongodb.com/docs/manual/reference/connection-string/#std-label-connections-dns-seedlist) 
 for authentication which is supported in Mongo versions 3.6 and later. If you have 
-a self-hosted DB with version earlier than 3.6, please reach out to Fennel support
+a self-hosted DB with version earlier than 3.6, please reach out to Fennel support.
 :::
 
 #### Table Parameters
