@@ -99,7 +99,7 @@ class MockClient(Client):
         incremental: bool = False,
     ):
         if incremental:
-            return ValueError(
+            raise ValueError(
                 "Incremental mode is not supported for mock client."
             )
         return self._get_branch().commit(datasets, featuresets, preview, tier)

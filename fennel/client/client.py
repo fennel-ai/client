@@ -125,9 +125,7 @@ class Client:
                 self.add(featureset)
         sync_request = self._get_sync_request_proto(message, tier)
         response = self._post_bytes(
-            "{}/commit?preview={}&incremental={}".format(
-                V1_API, str(preview).lower(), str(incremental).lower()
-            ),
+            f"{V1_API}/commit?preview={str(preview).lower()}&incremental={str(incremental).lower()}",
             sync_request.SerializeToString(),
             False,
             300,
