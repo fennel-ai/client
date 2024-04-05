@@ -82,6 +82,7 @@ class Client:
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
         tier: Optional[str] = None,
+        incremental: bool = False,
     ):
         """Commit the changes to the branch pointed to by the client.
 
@@ -95,7 +96,8 @@ class Client:
             the server.
         featuresets (Optional[List[Featureset]]):  List of featuresets to
             register with the server.
-
+        incremental (bool):  If the commit is only used for adding datasets and featuresets and not changing
+            anything existing.
         Returns:
         ----------
         None
@@ -123,7 +125,7 @@ class Client:
                 self.add(featureset)
         sync_request = self._get_sync_request_proto(message, tier)
         response = self._post_bytes(
-            "{}/commit?preview={}".format(V1_API, str(preview).lower()),
+            f"{V1_API}/commit?preview={str(preview).lower()}&incremental={str(incremental).lower()}",
             sync_request.SerializeToString(),
             False,
             300,

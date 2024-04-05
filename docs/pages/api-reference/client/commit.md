@@ -34,6 +34,15 @@ it only works with real client/server and mock client/server ignore it.
 :::
 </Expandable>
 
+<Expandable title="incremental" type="bool" defaultVal="False">
+If set to True, server tries to add the additional datasets and featuresets to 
+the existing datasets and features already committed.
+
+:::info
+Since it's incremental, changes to existing datasets / featuresets are not allowed.
+:::
+</Expandable>
+
 <Expandable title="tier" type="Optional[str]" defaultVal="None">
 Selector to optionally commit only a subset of sources, pipelines and extractors -
 those with matching values. Rules of selection:
