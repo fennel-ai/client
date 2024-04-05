@@ -25,12 +25,12 @@ def test_basic(client):
 
     client.commit(message="some commit msg", datasets=[Transaction])
 
-    # Issued erase key of uid 1, 2, 3 to
-    keys = pd.DataFrame({"uid": [1, 2, 3]})
+    # docsnip-highlight start
     client.erase(
         Transaction,
-        erase_keys=keys,
+        erase_keys=pd.DataFrame({"uid": [1, 2, 3]}),
     )
+    # docsnip-highlight end
     # /docsnip
 
     # log some rows to the webhook

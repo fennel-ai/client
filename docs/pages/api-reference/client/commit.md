@@ -35,12 +35,10 @@ it only works with real client/server and mock client/server ignore it.
 </Expandable>
 
 <Expandable title="incremental" type="bool" defaultVal="False">
-If set to True, server tries to add the additional datasets and featuresets to 
-the existing datasets and features already committed.
-
-:::info
-Since it's incremental, changes to existing datasets / featuresets are not allowed.
-:::
+If set to True, Fennel assumes that only those datasets/featuresets are
+provided to `commit` operation that are potentially changing in any form. Any 
+previously existing datasets/featuresets that are not included in the `commit` 
+operation are left unchanged.
 </Expandable>
 
 <Expandable title="tier" type="Optional[str]" defaultVal="None">
@@ -53,4 +51,8 @@ those with matching values. Rules of selection:
 
 <pre snippet="api-reference/client/commit#basic" status="success"
     message="Silver source and no extractor are committed">
+</pre>
+
+<pre snippet="api-reference/client/commit#incremental" status="success"
+    message="Second commit adds a featureset & leaves dataset unchanged">
 </pre>

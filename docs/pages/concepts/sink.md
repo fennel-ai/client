@@ -6,22 +6,26 @@ status: 'published'
 
 # Sink
 
-You can export data out of Fennel datasets by defining Sinks. Change data capture are published through 
-a Kafka topic using debezium format.  
+Analogous to [Sources](/concepts/source), Fennel also supports sinks to export 
+data out of Fennel into your data stores.
 
-<pre snippet="concepts/introduction#sink"></pre>
+<pre snippet="concepts/introduction#sink_main" status="success" 
+  message="Writing a Fennel dataset to a Kafka topic">
+</pre>
 
-In this example, first an object is created that knows how to connect with your
-Kafka cluster. Then we specify the topic within this Kafka (i.e. `user_location`) 
-that we intend to write data to. And finally, a decorator is added on top of the 
-dataset which indicate that we should write the output of this dataset to Kafka topic.
+In this example, a regular Fennel dataset is being created using a pipeline. But 
+it's desired to write it out to a Kafka topic as new updates arrive in the dataset.
 
-And that's it - once this is written, `UserLocationFiltered` dataset will start 
+Like Sources, first an object is created that knows how to connect with your
+Kafka cluster. And `sink` decorator is applied on the dataset that needs to be 
+written out - this decorator knows that destination if a Kafka topic and that
+the CDC data needs to be written out in the debezium format.
+
+That's it - once this is written, `UserLocationFiltered` dataset will start 
 publishing changes to your Kafka.
 
-### CDC
-Fennel publish changes to sinks on changes in the dataset. There's a few way you can read these changes:
+As of right now, Fennel only supports Kafka sinks and writes data in the debezium
+format. Given the ubiquity of debezium connectors, you should be able to further 
+pipe this debezium data from Kafka to your data store of choice.
 
-* `debezium`:  Output change data capture (CDC) log in Debezium format.
-
-We will add more CDC strategy in the future updates
+More data stores and cdc strategies will be supported in the future updates.

@@ -288,7 +288,6 @@ def test_sink_snip():
     from fennel.connectors import source, Postgres
     from fennel.datasets import dataset
 
-    # docsnip-highlight start
     postgres = Postgres(
         name="my-postgres",
         host=os.environ["POSTGRES_HOST"],
@@ -297,12 +296,9 @@ def test_sink_snip():
         username=os.environ["POSTGRES_USERNAME"],
         password=os.environ["POSTGRES_PASSWORD"],
     )
-    # docsnip-highlight end
 
-    # docsnip-highlight next-line
     table = postgres.table("user", cursor="update_time")
 
-    # docsnip-highlight next-line
     @source(table, disorder="14d", cdc="append", every="1m")
     @dataset
     class UserLocation:
@@ -311,11 +307,11 @@ def test_sink_snip():
         country: str
         update_time: datetime
 
+    # docsnip sink_main
     from fennel.connectors import sink, Kafka
     from fennel.datasets import dataset, pipeline, Dataset
     from fennel.lib.params import inputs
 
-    # docsnip-highlight start
     kafka = Kafka(
         name="kafka_src",
         bootstrap_servers=os.environ["KAFKA_HOST"],
@@ -324,9 +320,7 @@ def test_sink_snip():
         sasl_plain_username=os.environ["KAFKA_USERNAME"],
         sasl_plain_password=os.environ["KAFKA_PASSWORD"],
     )
-    # docsnip-highlight end
 
-    # docsnip sink
     # docsnip-highlight next-line
     @sink(kafka.topic("user_location"), cdc="debezium")
     @dataset

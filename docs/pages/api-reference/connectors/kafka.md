@@ -22,7 +22,6 @@ single server (e.g. `localhost:9092`) or a comma separated list of several
 servers (e.g. `localhost:9092,another.host:9092`).
 </Expandable>
 
-
 <Expandable title="security_protocol" type='"PLAINTEXT" | "SASL_PLAINTEXT" | "SASL_SSL"'>
 Protocol used to communicate with the brokers. 
 </Expandable>

@@ -28,12 +28,10 @@ def test_mysql_basic(client):
     # docsnip-highlight end
 
     # docsnip-highlight next-line
-    @source(
-        mysql.table("user", cursor="updated_at"),
-        disorder="14d",
-        cdc="upsert",
-        every="1m",
-    )
+    table = mysql.table("user", cursor="updated_at")
+
+    # docsnip-highlight next-line
+    @source(table, disorder="14d", cdc="upsert", every="1m")
     @dataset
     class User:
         uid: int = field(key=True)
@@ -68,12 +66,10 @@ def test_postgres_basic(client):
     # docsnip-highlight end
 
     # docsnip-highlight next-line
-    @source(
-        postgres.table("user", cursor="updated_at"),
-        disorder="14d",
-        cdc="upsert",
-        every="1m",
-    )
+    table = postgres.table("user", cursor="updated_at")
+
+    # docsnip-highlight next-line
+    @source(table, disorder="14d", cdc="upsert", every="1m")
     @dataset
     class User:
         uid: int = field(key=True)
@@ -107,11 +103,11 @@ def test_snowflake_basic(client):
     )
     # docsnip-highlight end
 
-    @source(
-        snowflake.table("User", cursor="timestamp"),
-        disorder="14d",
-        cdc="append",
-    )  # docsnip-highlight
+    # docsnip-highlight next-line
+    table = snowflake.table("User", cursor="timestamp")
+
+    # docsnip-highlight next-line
+    @source(table, disorder="14d", cdc="append")
     @dataset
     class UserClick:
         uid: int
@@ -130,7 +126,7 @@ def test_bigquery_basic(client):
     from fennel.datasets import dataset
 
     # docsnip-highlight start
-    bigquery = BigQuery(
+    bq = BigQuery(
         name="my_bigquery",
         project_id="my_project",
         dataset_id="my_dataset",
@@ -146,11 +142,11 @@ def test_bigquery_basic(client):
     )
     # docsnip-highlight end
 
-    @source(
-        bigquery.table("user", cursor="timestamp"),
-        disorder="14d",
-        cdc="append",
-    )  # docsnip-highlight
+    # docsnip-highlight next-line
+    table = bq.table("user", cursor="timestamp")
+
+    # docsnip-highlight next-line
+    @source(table, disorder="14d", cdc="append")
     @dataset
     class UserClick:
         uid: int
@@ -178,11 +174,11 @@ def test_redshift_basic(client):
     )
     # docsnip-highlight end
 
-    @source(
-        redshift.table("schema", "user", cursor="timestamp"),
-        disorder="14d",
-        cdc="append",
-    )  # docsnip-highlight
+    # docsnip-highlight next-line
+    table = redshift.table("schema", "user", cursor="timestamp")
+
+    # docsnip-highlight next-line
+    @source(table, disorder="14d", cdc="append")
     @dataset
     class UserClick:
         uid: int
@@ -210,11 +206,10 @@ def test_mongo_basic(client):
     )
     # docsnip-highlight end
 
-    @source(
-        mongo.collection("user", cursor="timestamp"),
-        disorder="14d",
-        cdc="append",
-    )  # docsnip-highlight
+    # docsnip-highlight next-line
+    collection = mongo.collection("user", cursor="timestamp")
+
+    @source(collection, disorder="14d", cdc="append")  # docsnip-highlight
     @dataset
     class UserClick:
         uid: int

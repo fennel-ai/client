@@ -13,9 +13,9 @@ sidebar:
     pages:
       - "concepts/introduction"
       - "concepts/source"
-      - "concepts/sink"
       - "concepts/dataset"
       - "concepts/pipeline"
+      - "concepts/sink"
       - "concepts/featureset"
       - "concepts/branch"
 
