@@ -832,7 +832,7 @@ def _validate_branch_name(branch: str):
     Branch name should only contain alphanumeric characters, hyphens or underscores or a period.
     :param branch:
     """
-    pattern = r"^[a-zA-Z0-9_.-]+$"
+    pattern = r"^[a-zA-Z0-9_.\-/]+$"
     if not re.match(pattern, branch):
         raise ValueError(
             f"Branch name should only contain alphanumeric characters, hyphens, underscores or a period, found {branch}."
