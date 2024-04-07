@@ -126,6 +126,11 @@ class TestDataset(unittest.TestCase):
         response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
 
+        sample = client.inspect("UserInfoDataset", n=1)
+        assert len(sample) == 1
+        sample = client.inspect("UserInfoDataset")
+        assert len(sample) == 2
+
     @pytest.mark.integration
     @mock
     def test_simple_select_rename(self, client):

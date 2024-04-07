@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.2.1] - 2024-04-07
+- Fix inspect api for mock client
+
 ## [1.2.0] - 2024-04-02
 - Moved feature.extract() to feature().
 - Removed id from feature.
