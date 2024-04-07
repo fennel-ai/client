@@ -1,4 +1,10 @@
 # Changelog
+
+## [1.2.0] - 2024-04-02
+- Moved feature.extract() to feature().
+- Removed id from feature.
+- Removed provider from feature.extract().
+
 ## [1.1.9] - 2024-04-04
 - Adding capability to do incremental mode during commit.
 

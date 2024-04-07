@@ -9,7 +9,7 @@ from fraud.datasets.velocity import (
 from fraud.featuresets.request import Request
 
 from fennel import extractor
-from fennel.featuresets import featureset, feature
+from fennel.featuresets import featureset, feature as F
 from fennel.lib import inputs, outputs
 
 __owner__ = "eng@app.com"
@@ -17,24 +17,22 @@ __owner__ = "eng@app.com"
 
 @featureset
 class DriverVelocityFS:
-    driver_id: int = feature(id=1).extract(feature=Request.driver_id)
-    percent_past_guest_cancelled_trips: float = feature(id=2)
-    num_past_completed_trips: int = feature(id=3).extract(
-        field=NumCompletedTripsDS.num_past_completed_trips, default=0
+    driver_id: int = F(Request.driver_id)
+    percent_past_guest_cancelled_trips: float
+    num_past_completed_trips: int = F(
+        NumCompletedTripsDS.num_past_completed_trips, default=0
     )
-    num_logins_last_day: int = feature(id=4).extract(
-        field=LoginsLastDayDS.num_logins_last_day, default=0
+    num_logins_last_day: int = F(LoginsLastDayDS.num_logins_last_day, default=0)
+    num_checkout_pages_last_day: int = F(
+        CheckoutPagesLastDayDS.num_checkout_pages_last_day, default=0
     )
-    num_checkout_pages_last_day: int = feature(id=5).extract(
-        field=CheckoutPagesLastDayDS.num_checkout_pages_last_day, default=0
-    )
-    num_past_approved_trips: int = feature(id=6).extract(
-        field=PastApprovedDS.num_past_approved_trips, default=0
+    num_past_approved_trips: int = F(
+        PastApprovedDS.num_past_approved_trips, default=0
     )
 
     @extractor(depends_on=[NumCompletedTripsDS, CancelledTripsDS], version=1)
     @inputs(driver_id)
-    @outputs(percent_past_guest_cancelled_trips)
+    @outputs("percent_past_guest_cancelled_trips")
     def calculate_percent_past_guest_cancelled_trips(
         cls, ts: pd.Series, driver_ids: pd.Series
     ):

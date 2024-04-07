@@ -10,7 +10,7 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel import connectors
 from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.dtypes import Embedding, oneof
 from fennel.connectors import source
@@ -367,20 +367,18 @@ class DocumentEngagementDataset:
 
 @featureset
 class Query:
-    doc_id: int = feature(id=1)
-    user_id: int = feature(id=2)
+    doc_id: int
+    user_id: int
 
 
 @featureset
 class UserBehaviorFeatures:
-    user_id: int = feature(id=1)
-    num_views: int = feature(id=2).meta(  # type: ignore
-        owner="aditya@fennel.ai"
-    )
-    num_short_views_7d: int = feature(id=3)
-    num_long_views: int = feature(id=4)
+    user_id: int
+    num_views: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    num_short_views_7d: int
+    num_long_views: int
 
-    @extractor(depends_on=[UserEngagementDataset])
+    @extractor(depends_on=[UserEngagementDataset])  # type: ignore
     @inputs(Query.user_id)
     def get_user_features(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserEngagementDataset.lookup(  # type: ignore
@@ -391,33 +389,33 @@ class UserBehaviorFeatures:
 
 @featureset
 class DocumentFeatures:
-    doc_id: int = feature(id=1)
-    num_views: int = feature(id=2)
-    num_views_7d: int = feature(id=3)
-    total_timespent_minutes: float = feature(id=4)
-    num_views_28d: int = feature(id=5)
+    doc_id: int
+    num_views: int
+    num_views_7d: int
+    total_timespent_minutes: float
+    num_views_28d: int
 
-    @extractor(depends_on=[DocumentEngagementDataset])
+    @extractor(depends_on=[DocumentEngagementDataset])  # type: ignore
     @inputs(Query.doc_id)
     def get_doc_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentEngagementDataset.lookup(  # type: ignore
             ts, doc_id=doc_id  # type: ignore
         )
-        df[str(cls.total_timespent_minutes)] = df["total_timespent"] / 60
+        df["total_timespent_minutes"] = df["total_timespent"] / 60
         df.drop("total_timespent", axis=1, inplace=True)
         return df
 
 
 @featureset
 class DocumentContentFeatures:
-    doc_id: int = feature(id=1)
-    bert_embedding: Embedding[128] = feature(id=2)
-    fast_text_embedding: Embedding[256] = feature(id=3)
-    num_words: int = feature(id=4)
-    num_stop_words: int = feature(id=5)
-    top_10_unique_words: List[str] = feature(id=6)
+    doc_id: int
+    bert_embedding: Embedding[128]
+    fast_text_embedding: Embedding[256]
+    num_words: int
+    num_stop_words: int
+    top_10_unique_words: List[str]
 
-    @extractor(depends_on=[DocumentContentDatasetIndexed])
+    @extractor(depends_on=[DocumentContentDatasetIndexed])  # type: ignore
     @inputs(Query.doc_id)
     def get_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentContentDatasetIndexed.lookup(  # type: ignore
@@ -429,12 +427,12 @@ class DocumentContentFeatures:
 
 @featureset
 class TopWordsFeatures:
-    word: str = feature(id=1)
-    count: int = feature(id=2)
+    word: str
+    count: int
 
-    @extractor(depends_on=[TopWordsCount])
-    @inputs(word)
-    @outputs(count)
+    @extractor(depends_on=[TopWordsCount])  # type: ignore
+    @inputs("word")
+    @outputs("count")
     def get_counts(cls, ts: pd.Series, word: pd.Series):
         df, _ = TopWordsCount.lookup(ts, word=word)  # type: ignore
         df = df.fillna(0)

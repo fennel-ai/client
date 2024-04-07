@@ -8,7 +8,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import (
     includes,
     inputs,
@@ -51,27 +51,27 @@ class UserInfoDataset:
 @meta(owner="test@test.com")
 @featureset
 class UserInfoSingleExtractor:
-    userid: int = feature(id=1)
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
-    age_squared: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    userid: int
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age_squared: int
+    age_cubed: int
+    is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])
-    @inputs(userid)
-    @outputs(age, age_squared, age_cubed, is_name_common)
+    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @inputs("userid")
+    @outputs("age", "age_squared", "age_cubed", "is_name_common")
     def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        df[str(cls.userid)] = user_id
-        df[str(cls.age_squared)] = df["age"] ** 2
-        df[str(cls.age_cubed)] = df["age"] ** 3
-        df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])
+        df["userid"] = user_id
+        df["age_squared"] = df["age"] ** 2
+        df["age_cubed"] = df["age"] ** 3
+        df["is_name_common"] = df["name"].isin(["John", "Mary", "Bob"])
         return df[
             [
-                str(cls.age),
-                str(cls.age_squared),
-                str(cls.age_cubed),
-                str(cls.is_name_common),
+                "age",
+                "age_squared",
+                "age_cubed",
+                "is_name_common",
             ]
         ]
 
@@ -88,48 +88,48 @@ def get_country_geoid(country: str) -> int:
 @meta(owner="test@test.com")
 @featureset
 class UserInfoMultipleExtractor:
-    userid: int = feature(id=1)
-    name: str = feature(id=2)
-    country_geoid: int = feature(id=3)
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
-    age_squared: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
-    age_reciprocal: float = feature(id=8)
-    age_doubled: int = feature(id=9)
+    userid: int
+    name: str
+    country_geoid: int
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age_squared: int
+    age_cubed: int
+    is_name_common: bool
+    age_reciprocal: float
+    age_doubled: int
 
-    @extractor(depends_on=[UserInfoDataset])
-    @inputs(userid)
-    @outputs(age, name)
+    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @inputs("userid")
+    @outputs("age", "name")
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        return df[[str(cls.age), str(cls.name)]]
+        return df[["age", "name"]]
 
     @extractor
-    @inputs(age, name)
-    @outputs(age_squared, age_cubed, is_name_common)
+    @inputs("age", "name")
+    @outputs("age_squared", "age_cubed", "is_name_common")
     def get_age_and_name_features(
         cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         is_name_common = name.isin(cls.get_common_names())
         df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
-            str(cls.age_squared),
-            str(cls.age_cubed),
-            str(cls.is_name_common),
+            "age_squared",
+            "age_cubed",
+            "is_name_common",
         ]
         return df
 
     @extractor
-    @inputs(age)
-    @outputs(age_reciprocal)
+    @inputs("age")
+    @outputs("age_reciprocal")
     def get_age_reciprocal(cls, ts: pd.Series, age: pd.Series):
         d = age.apply(lambda x: 1 / (x / (3600.0 * 24)) + 0.01)
         return pd.Series(name="age_reciprocal", data=d)
 
     @extractor
-    @inputs(age)
-    @outputs(age_doubled)
+    @inputs("age")
+    @outputs("age_doubled")
     def get_age_doubled(cls, ts: pd.Series, age: pd.Series):
         d2 = age.apply(lambda x: x * 2)
         d2.name = "age_doubled"
@@ -140,10 +140,10 @@ class UserInfoMultipleExtractor:
         # returns a dataframe with extra columns
         return pd.DataFrame([d4, d3, d2]).T
 
-    @extractor(depends_on=[UserInfoDataset], version=2)
+    @extractor(depends_on=[UserInfoDataset], version=2)  # type: ignore
     @includes(get_country_geoid)
-    @inputs(userid)
-    @outputs(country_geoid)
+    @inputs("userid")
+    @outputs("country_geoid")
     def get_country_geoid_extractor(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df["country_geoid"] = df["country"].apply(get_country_geoid)
@@ -261,48 +261,29 @@ class FlightDataset:
 @meta(owner="test@test.com")
 @featureset
 class FlightRequest:
-    id: int = feature(id=1)
-
-
-@meta(owner="test@test.com")
-@featureset
-class FlightCrewRequest:
-    id: int = feature(id=1)
-    airline: str = feature(id=2)
+    id: int
 
 
 @meta(owner="test@test.com")
 @featureset
 class GeneratedFeatures:
-    # alias
-    user_id: int = feature(id=1).extract(feature=UserInfoSingleExtractor.userid)  # type: ignore
-    # lookup default provider
-    country: str = feature(id=3).extract(  # type: ignore
-        field=UserInfoDataset.country,
-        default="pluto",
-    )
-    # more lookups with complex types
-    # the following 2 features will be batched on the server side
-    velocity: Velocity = feature(id=4).extract(  # type: ignore
-        field=FlightDataset.v_cruising,
+    user_id: int = F(UserInfoSingleExtractor.userid)  # type: ignore
+    id: int = F(FlightRequest.id)  # type: ignore
+    country: str = F(UserInfoDataset.country, default="pluto")  # type: ignore
+    velocity: Velocity = F(
+        FlightDataset.v_cruising,  # type: ignore
         default=Velocity(500.0, 0),  # type: ignore
-        provider=FlightRequest,
     )
-    layout: Dict[str, Optional[int]] = feature(id=5).extract(  # type: ignore
-        field=FlightDataset.layout,
+    layout: Dict[str, Optional[int]] = F(
+        FlightDataset.layout,  # type: ignore
         default={"economy": 0},
-        provider=FlightRequest,
     )
-    # We use a different provider here to test that different providers can be used
-    pilots: List[int] = feature(id=6).extract(  # type: ignore
-        field=FlightDataset.pilot_ids,
+    pilots: List[int] = F(
+        FlightDataset.pilot_ids,  # type: ignore
         default=[0, 0, 0],
-        provider=FlightCrewRequest,
     )
-    # Optional feature
-    base_region: Optional[str] = feature(id=7).extract(  # type: ignore
-        field=FlightDataset.region,
-        provider=FlightRequest,
+    base_region: Optional[str] = F(
+        FlightDataset.region,  # type: ignore
     )
 
 
@@ -318,7 +299,6 @@ class TestDerivedExtractor(unittest.TestCase):
                 UserInfoSingleExtractor,
                 GeneratedFeatures,
                 FlightRequest,
-                FlightCrewRequest,
             ],
         )
         now = datetime.utcnow()
@@ -361,14 +341,11 @@ class TestDerivedExtractor(unittest.TestCase):
             inputs=[
                 UserInfoSingleExtractor.userid,
                 FlightRequest.id,
-                FlightCrewRequest.id,
             ],
             input_dataframe=pd.DataFrame(
                 {
                     "UserInfoSingleExtractor.userid": [18232, 18234, 7],
                     "FlightRequest.id": [555, 1131, 4032],
-                    "FlightCrewRequest.id": [555, 1131, 4032],
-                    "FlightCrewRequest.airline": ["AA", "WN", "WN"],
                 }
             ),
         )
@@ -460,9 +437,9 @@ class TestExtractorDAGResolution(unittest.TestCase):
 @meta(owner="test@test.com")
 @featureset
 class UserInfoTransformedFeatures:
-    age_power_four: int = feature(id=1)
-    is_name_common: bool = feature(id=2)
-    country_geoid_square: int = feature(id=3)
+    age_power_four: int
+    is_name_common: bool
+    country_geoid_square: int
 
     @extractor
     @inputs(
@@ -481,9 +458,9 @@ class UserInfoTransformedFeatures:
         country_geoid = country_geoid**2
         return pd.DataFrame(
             {
-                str(cls.age_power_four): age_power_four,
-                str(cls.is_name_common): is_name_common,
-                str(cls.country_geoid_square): country_geoid,
+                "age_power_four": age_power_four,
+                "is_name_common": is_name_common,
+                "country_geoid_square": country_geoid,
             }
         )
 
@@ -597,29 +574,29 @@ class DocumentContentDataset:
 @meta(owner="aditya@fennel.ai")
 @featureset
 class DocumentFeatures:
-    doc_id: int = feature(id=1)
-    bert_embedding: Embedding[4] = feature(id=2)
-    fast_text_embedding: Embedding[3] = feature(id=3)
-    num_words: int = feature(id=4)
+    doc_id: int
+    bert_embedding: Embedding[4]
+    fast_text_embedding: Embedding[3]
+    num_words: int
 
-    @extractor(depends_on=[DocumentContentDataset])
-    @inputs(doc_id)
-    @outputs(num_words, bert_embedding, fast_text_embedding)
+    @extractor(depends_on=[DocumentContentDataset])  # type: ignore
+    @inputs("doc_id")
+    @outputs("num_words", "bert_embedding", "fast_text_embedding")
     def get_doc_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore
 
-        df[str(cls.bert_embedding)] = df[str(cls.bert_embedding)].apply(
+        df["bert_embedding"] = df["bert_embedding"].apply(
             lambda x: x if x is not None else [0, 0, 0, 0]
         )
-        df[str(cls.fast_text_embedding)] = df[
-            str(cls.fast_text_embedding)
-        ].apply(lambda x: x if x is not None else [0, 0, 0])
-        df[str(cls.num_words)].fillna(0, inplace=True)
+        df["fast_text_embedding"] = df["fast_text_embedding"].apply(
+            lambda x: x if x is not None else [0, 0, 0]
+        )
+        df["num_words"].fillna(0, inplace=True)
         return df[
             [
-                str(cls.bert_embedding),
-                str(cls.fast_text_embedding),
-                str(cls.num_words),
+                "bert_embedding",
+                "fast_text_embedding",
+                "num_words",
             ]
         ]
 

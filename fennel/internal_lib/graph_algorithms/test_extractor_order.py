@@ -1,26 +1,26 @@
 import pandas as pd
 
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.internal_lib.graph_algorithms import get_extractor_order
 from fennel.lib import inputs, outputs
 
 
 @featureset
 class A:
-    a1: int = feature(id=1)
-    a2: int = feature(id=2)
-    root: int = feature(id=3)
+    a1: int
+    a2: int
+    root: int
 
     @extractor
-    @inputs(root)
+    @inputs("root")
     def a1_a2(cls, ts: pd.Series, root: pd.Series):
         pass
 
 
 @featureset
 class B:
-    b1: int = feature(id=1)
-    b2: int = feature(id=2)
+    b1: int
+    b2: int
 
     @extractor
     @inputs(A.a1, A.a2)
@@ -51,20 +51,20 @@ def test_simple_extractor_path():
 
 @featureset
 class C:
-    c1: int = feature(id=1)
-    c2: int = feature(id=2)
-    c3: int = feature(id=3)
-    c4: int = feature(id=4)
+    c1: int
+    c2: int
+    c3: int
+    c4: int
 
     @extractor
     @inputs(A.root)
-    @outputs(c1)
+    @outputs("c1")
     def c1_from_root(cls, ts: pd.Series, a1: pd.Series):
         pass
 
     @extractor
-    @inputs(c1)
-    @outputs(c2, c3, c4)
+    @inputs("c1")
+    @outputs("c2", "c3", "c4")
     def from_c1(cls, ts: pd.Series, c1: pd.Series):
         pass
 
@@ -92,32 +92,32 @@ def test_complex_extractor_path():
 
 @featureset
 class UserInfo:
-    userid: int = feature(id=1)
-    name: str = feature(id=2)
-    country_geoid: int = feature(id=3)
+    userid: int
+    name: str
+    country_geoid: int
     # The users gender among male/female/non-binary
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
-    age_squared: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age_squared: int
+    age_cubed: int
+    is_name_common: bool
 
     @extractor
-    @inputs(userid)
-    @outputs(age, name)
+    @inputs("userid")
+    @outputs("age", "name")
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
         pass
 
     @extractor
-    @inputs(age, name)
-    @outputs(age_squared, age_cubed, is_name_common)
+    @inputs("age", "name")
+    @outputs("age_squared", "age_cubed", "is_name_common")
     def get_age_and_name_features(
         cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         pass
 
     @extractor
-    @inputs(userid)
-    @outputs(country_geoid)
+    @inputs("userid")
+    @outputs("country_geoid")
     def get_country_geoid(cls, ts: pd.Series, user_id: pd.Series):
         pass
 
@@ -136,8 +136,8 @@ def test_age_feature_extraction():
 
 @featureset
 class UserInfoTransformedFeatures:
-    age_power_four: int = feature(id=1)
-    is_name_common: bool = feature(id=2)
+    age_power_four: int
+    is_name_common: bool
 
     @extractor
     @inputs(UserInfo.age, UserInfo.is_name_common)

@@ -5,7 +5,7 @@ from typing import List, Optional
 import pandas as pd
 import requests
 
-from fennel import featureset, extractor, feature
+from fennel import featureset, extractor, feature as F
 from fennel.datasets import (
     dataset,
     field,
@@ -145,25 +145,25 @@ class ActorStatsList:
 @meta(owner="zaki@fennel.ai")
 @featureset
 class RequestFeatures:
-    name: str = feature(id=1)
+    name: str
 
 
 @meta(owner="abhay@fennel.ai")
 @featureset
 class ActorFeatures:
-    revenue: int = feature(id=1)
+    revenue: int
 
-    @extractor(depends_on=[ActorStats], tier="prod")
+    @extractor(depends_on=[ActorStats], tier="prod")  # type: ignore
     @inputs(RequestFeatures.name)
-    @outputs(revenue)
+    @outputs("revenue")
     def extract_revenue(cls, ts: pd.Series, name: pd.Series):
         df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
         df = df.fillna(0)
         return df["revenue"]
 
-    @extractor(depends_on=[ActorStats], tier="staging")
+    @extractor(depends_on=[ActorStats], tier="staging")  # type: ignore
     @inputs(RequestFeatures.name)
-    @outputs(revenue)
+    @outputs("revenue")
     def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
         df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
         df = df.fillna(0)

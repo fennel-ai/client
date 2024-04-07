@@ -11,7 +11,7 @@ def test_basic(client):
     # docsnip basic
     from fennel.datasets import dataset, field, index
     from fennel.connectors import source, Webhook
-    from fennel.featuresets import featureset, feature, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
 
     webhook = Webhook(name="some_webhook")
 
@@ -36,9 +36,9 @@ def test_basic(client):
 
     @featureset
     class TransactionFeatures:
-        txid: int = feature(id=1)
-        amount: int = feature(id=2).extract(field=Transaction.amount, default=0)
-        amount_is_high: bool = feature(id=3)
+        txid: int
+        amount: int = F(Transaction.amount, default=0)
+        amount_is_high: bool
 
         @extractor(tier="bronze")
         def some_fn(cls, ts, amount: pd.Series):

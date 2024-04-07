@@ -8,7 +8,7 @@ __owner__ = "ml-team@fennel.ai"
 # docsnip featuresets_reading_datasets
 from fennel.datasets import dataset, field, index
 from fennel.connectors import source, Webhook
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import inputs, outputs
 
 webhook = Webhook(name="fennel_webhook")
@@ -27,12 +27,12 @@ class User:  # docsnip-highlight
 
 @featureset
 class UserFeatures:
-    uid: int = feature(id=1)
-    name: str = feature(id=2)
+    uid: int
+    name: str
 
     @extractor(depends_on=[User])  # docsnip-highlight
-    @inputs(uid)
-    @outputs(name)
+    @inputs("uid")
+    @outputs("name")
     def func(cls, ts: pd.Series, uids: pd.Series):
         # docsnip-highlight next-line
         names, found = User.lookup(ts, uid=uids)
@@ -46,13 +46,13 @@ class UserFeatures:
 # docsnip derived_extractors
 @featureset
 class Request:
-    user_id: int = feature(id=1)
+    user_id: int
 
 
 @featureset
 class UserFeaturesDerived:
-    uid: int = feature(id=1).extract(feature=Request.user_id)
-    name: str = feature(id=2).extract(field=User.name, default="Unknown")
+    uid: int = F(Request.user_id)
+    name: str = F(User.name, default="Unknown")
 
 
 # /docsnip
@@ -61,14 +61,13 @@ class UserFeaturesDerived:
 # docsnip derived_extractor_with_provider
 @featureset
 class Request2:
-    uid: int = feature(id=1)
+    uid: int
 
 
 @featureset
 class UserFeaturesDerived2:
-    name: str = feature(id=1).extract(
-        field=User.name, provider=Request2, default="Unknown"
-    )
+    uid: int = F(Request2.uid)
+    name: str = F(User.name, default="Unknown")
 
 
 # /docsnip

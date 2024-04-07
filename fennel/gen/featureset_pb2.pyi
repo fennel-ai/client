@@ -72,13 +72,11 @@ global___CoreFeatureset = CoreFeatureset
 class Feature(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    ID_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
     DTYPE_FIELD_NUMBER: builtins.int
     METADATA_FIELD_NUMBER: builtins.int
     FEATURE_SET_NAME_FIELD_NUMBER: builtins.int
     TAGS_FIELD_NUMBER: builtins.int
-    id: builtins.int
     name: builtins.str
     @property
     def dtype(self) -> schema_pb2.DataType: ...
@@ -90,7 +88,6 @@ class Feature(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        id: builtins.int = ...,
         name: builtins.str = ...,
         dtype: schema_pb2.DataType | None = ...,
         metadata: metadata_pb2.Metadata | None = ...,
@@ -98,7 +95,7 @@ class Feature(google.protobuf.message.Message):
         tags: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "metadata", b"metadata"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "feature_set_name", b"feature_set_name", "id", b"id", "metadata", b"metadata", "name", b"name", "tags", b"tags"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "feature_set_name", b"feature_set_name", "metadata", b"metadata", "name", b"name", "tags", b"tags"]) -> None: ...
 
 global___Feature = Feature
 

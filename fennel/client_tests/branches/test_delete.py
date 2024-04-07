@@ -5,7 +5,7 @@ import pytest
 
 from fennel._vendor import requests
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, feature
+from fennel.featuresets import featureset, feature as F
 from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
@@ -28,17 +28,17 @@ class UserInfoDataset:
 
 @featureset
 class Request:
-    user_id: int = feature(id=1)
+    user_id: int
 
 
 @featureset
 class UserInfoFeatureset:
-    user_id: int = feature(id=1).extract(feature=Request.user_id)  # type: ignore
-    name: str = feature(id=2).extract(field=UserInfoDataset.name, default="None")  # type: ignore
-    age: int = feature(id=3).extract(field=UserInfoDataset.age, default=0)  # type: ignore
-    gender: str = feature(id=4).extract(field=UserInfoDataset.gender, default="None")  # type: ignore
-    country_code: int = feature(id=5).extract(field=UserInfoDataset.country_code, default=0)  # type: ignore
-    email: str = feature(id=6).extract(field=UserInfoDataset.email, default="None")  # type: ignore
+    user_id: int = F(Request.user_id)  # type: ignore
+    name: str = F(UserInfoDataset.name, default="None")  # type: ignore
+    age: int = F(UserInfoDataset.age, default=0)  # type: ignore
+    gender: str = F(UserInfoDataset.gender, default="None")  # type: ignore
+    country_code: int = F(UserInfoDataset.country_code, default=0)  # type: ignore
+    email: str = F(UserInfoDataset.email, default="None")  # type: ignore
 
 
 @pytest.mark.integration

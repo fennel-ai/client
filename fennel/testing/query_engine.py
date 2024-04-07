@@ -135,7 +135,8 @@ class QueryEngine:
                     feature.dtype
                 )
             fields = []
-            for feature_str in extractor.output_features:
+            for feature in extractor.outputs:
+                feature_str = feature.name
                 feature_str = f"{extractor.featureset}.{feature_str}"
                 if feature_str not in feature_schema:
                     raise ValueError(f"Feature `{feature_str}` not found")
@@ -353,9 +354,9 @@ class QueryEngine:
         intermediate_data: Dict[str, pd.Series],
         use_as_of: bool,
     ) -> pd.Series:
-        if len(extractor.output_features) != 1:
+        if len(extractor.outputs) != 1:
             raise ValueError(
-                f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.output_features)}"
+                f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.outputs)}"
             )
         if len(extractor.depends_on) != 1:
             raise ValueError(
@@ -363,7 +364,7 @@ class QueryEngine:
             )
 
         input_features = {
-            k.name: intermediate_data[k] for k in extractor.inputs  # type: ignore
+            k.name: intermediate_data[k.fqn()] for k in extractor.inputs  # type: ignore
         }
         allowed_datasets = self._get_allowed_datasets(extractor)
         fennel.datasets.datasets.dataset_lookup = (

@@ -7,7 +7,7 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel import LastK
 from fennel.datasets import dataset, field, Dataset, pipeline, Count, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.dtypes import regex, oneof
 from fennel.connectors import source, Webhook
@@ -145,36 +145,34 @@ class LastViewedPostByAgg:
 @meta(owner="feature-team@myspace.com")
 @featureset
 class Request:
-    user_id: str = feature(id=1)
-    category: str = feature(id=2)
+    user_id: str
+    category: str
 
 
 @meta(owner="feature-team@myspace.com")
 @featureset
 class UserFeatures:
-    user_id: str = feature(id=1).extract(feature=Request.user_id)  # type: ignore
-    num_views: int = feature(id=2)
-    num_category_views: int = feature(id=3)
-    category_view_ratio: float = feature(id=4)
-    last_viewed_post: int = feature(id=5).extract(  # type: ignore
-        field=LastViewedPost.post_id, default=-1
-    )
-    last_viewed_post2: List[int] = feature(id=6).extract(  # type: ignore
-        field=LastViewedPostByAgg.post_id, default=[-1]
+    user_id: str = F(Request.user_id)  # type: ignore
+    num_views: int
+    num_category_views: int
+    category_view_ratio: float
+    last_viewed_post: int = F(LastViewedPost.post_id, default=-1)  # type: ignore
+    last_viewed_post2: List[int] = F(
+        LastViewedPostByAgg.post_id, default=[-1]  # type: ignore
     )
 
-    @extractor(depends_on=[UserViewsDataset])
+    @extractor(depends_on=[UserViewsDataset])  # type: ignore
     @inputs(Request.user_id)
-    @outputs(num_views)
+    @outputs("num_views")
     def extract_user_views(cls, ts: pd.Series, user_ids: pd.Series):
         views, _ = UserViewsDataset.lookup(ts, user_id=user_ids)  # type: ignore
         views = views.fillna(0)
 
         return views["num_views"]
 
-    @extractor(depends_on=[UserCategoryDataset, UserViewsDataset])
+    @extractor(depends_on=[UserCategoryDataset, UserViewsDataset])  # type: ignore
     @inputs(Request.user_id, Request.category)
-    @outputs(category_view_ratio, num_category_views)
+    @outputs("category_view_ratio", "num_category_views")
     def extractor_category_view(
         cls,
         ts: pd.Series,

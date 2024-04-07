@@ -5,7 +5,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional
 
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
 from fennel.connectors import source, Webhook
 
@@ -33,53 +33,20 @@ class UserInfoDataset:
 @meta(owner="test@test.com")
 @featureset
 class User:
-    id: int = feature(id=1)
-    age: float = feature(id=2)
+    id: int
+    age: float
 
 
 def test_invalid_multiple_extracts():
-    with pytest.raises(TypeError) as e:
-
-        @featureset
-        class UserInfo1:
-            user_id: int = feature(id=1).extract(feature=User.id)
-            age: int = (
-                feature(id=2)
-                .extract(
-                    field=UserInfoDataset.age,
-                    default=0,
-                )
-                .extract(feature=User.age)
-            )
-
-    assert str(e.value) == "extract() can only be called once for feature id=2"
-
-    with pytest.raises(TypeError) as e:
-
-        @featureset
-        class UserInfo2:
-            user_id: int = feature(id=1).extract(feature=User.id)
-            age: int = (
-                feature(id=2)
-                .extract(
-                    field=UserInfoDataset.age,
-                    default=0,
-                )
-                .meta(owner="zaki@fennel.ai")
-                .extract(feature=User.age)
-            )
-
-    assert str(e.value) == "extract() can only be called once for feature id=2"
-
     # Tests a derived and manual extractor for the same feature
     with pytest.raises(TypeError) as e:
 
         @meta(owner="user@xyz.ai")
         @featureset
         class UserInfo3:
-            user_id: int = feature(id=1).extract(feature=User.id)
-            age: int = feature(id=2).extract(
-                field=UserInfoDataset.age,
+            user_id: int = F(User.id)
+            age: int = F(
+                UserInfoDataset.age,
                 default=0,
             )
 
@@ -102,33 +69,16 @@ def test_invalid_multiple_extracts():
 
 def test_invalid_missing_fields():
     # no field nor feature
-    with pytest.raises(TypeError) as e:
+    with pytest.raises(ValueError) as e:
 
         @featureset
         class UserInfo4:
-            user_id: int = feature(id=1).extract(feature=User.id)
-            age: int = feature(id=2).extract(
-                default=0,
-            )
+            user_id: int = F(User.id)
+            age: int = F(default=0)
 
     assert (
         str(e.value)
-        == "Exactly one of field or feature must be specified to extract feature id=2"
-    )
-
-    # both field and feature specified
-    with pytest.raises(TypeError) as e:
-
-        @featureset
-        class UserInfo5:
-            user_id: int = feature(id=1).extract(feature=User.id)
-            age: int = feature(id=2).extract(
-                field=UserInfoDataset.age, default=0, feature=User.age
-            )
-
-    assert (
-        str(e.value)
-        == "Exactly one of field or feature must be specified to extract feature id=2"
+        == 'Please specify a reference to a field of a dataset to use "default" param'
     )
 
     # missing dataset key in current featureset
@@ -136,32 +86,9 @@ def test_invalid_missing_fields():
 
         @featureset
         class UserInfo6:
-            age: int = feature(id=2).extract(
-                field=UserInfoDataset.age,
-                default=0,
-            )
+            age: int = F(UserInfoDataset.age, default=0)
 
     assert (
         str(e.value)
         == "Key field `user_id` for dataset `UserInfoDataset` not found in provider `UserInfo6` for feature: `age` auto generated extractor"
-    )
-
-    # missing dataset key in provider
-    with pytest.raises(ValueError) as e:
-
-        @featureset
-        class UserRequest:
-            name: str = feature(id=1)
-
-        @featureset
-        class UserInfo8:
-            age: int = feature(id=2).extract(
-                field=UserInfoDataset.age,
-                provider=UserRequest,
-                default=0,
-            )
-
-    assert (
-        str(e.value)
-        == "Dataset key `user_id` not found in provider `UserRequest` for extractor `_fennel_lookup_UserInfoDataset.age`"
     )

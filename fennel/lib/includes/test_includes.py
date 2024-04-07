@@ -7,7 +7,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel._vendor.requests as requests
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.connectors import source, Webhook
 from fennel.testing import *
@@ -48,28 +48,28 @@ def power_4(x: int) -> int:
 @meta(owner="test@test.com")
 @featureset
 class UserInfoSingleExtractor:
-    userid: int = feature(id=1)
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")  # type: ignore
-    age_power_four: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    userid: int
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age_power_four: int
+    age_cubed: int
+    is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(depends_on=[UserInfoDataset])  # type: ignore
     @includes(power_4, cube)
-    @inputs(userid)
-    @outputs(age, age_power_four, age_cubed, is_name_common)
+    @inputs("userid")
+    @outputs(age, "age_power_four", "age_cubed", "is_name_common")
     def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
-        df[str(cls.userid)] = user_id
-        df[str(cls.age_power_four)] = power_4(df["age"])
-        df[str(cls.age_cubed)] = cube(df["age"])
-        df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])
+        df["userid"] = user_id
+        df["age_power_four"] = power_4(df["age"])
+        df["age_cubed"] = cube(df["age"])
+        df["is_name_common"] = df["name"].isin(["John", "Mary", "Bob"])
         return df[
             [
-                str(cls.age),
-                str(cls.age_power_four),
-                str(cls.age_cubed),
-                str(cls.is_name_common),
+                "age",
+                "age_power_four",
+                "age_cubed",
+                "is_name_common",
             ]
         ]
 

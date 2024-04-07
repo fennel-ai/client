@@ -7,7 +7,7 @@ import pytest
 
 from fennel import meta
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import inputs, outputs
 from fennel.connectors import source, Webhook
 
@@ -37,8 +37,8 @@ class UserInfoDataset:
 @meta(owner="aditya@fennel.ai")
 @featureset
 class User:
-    id: int = feature(id=1)
-    age: float = feature(id=2)
+    id: int
+    age: float
 
 
 def test_featureset_as_input():
@@ -46,12 +46,12 @@ def test_featureset_as_input():
 
         @featureset
         class UserInfoInvalid:
-            userid: int = feature(id=1)
-            home_geoid: int = feature(id=2)
+            userid: int
+            home_geoid: int
 
             @extractor(depends_on=[UserInfoDataset])
             @inputs(User)
-            @outputs(userid, home_geoid)
+            @outputs("userid", "home_geoid")
             def get_user_info1(cls, ts: pd.Series, user: pd.Series):
                 pass
 
@@ -67,28 +67,28 @@ def test_complex_featureset():
         @meta(owner="aditya@fennel.ai")
         @featureset
         class UserInfo:
-            userid: int = feature(id=1)
-            home_geoid: int = feature(id=2)
+            userid: int
+            home_geoid: int
             # The users gender among male/female/non-binary
-            gender: str = feature(id=3)
-            age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-            income: int = feature(id=5)
+            gender: str
+            age: int = F().meta(owner="aditya@fennel.ai")
+            income: int
 
             @extractor(depends_on=[UserInfoDataset])
             @inputs(User.id)
-            @outputs(userid, home_geoid)
+            @outputs("userid", "home_geoid")
             def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
             @extractor(depends_on=[UserInfoDataset])
             @inputs(User.id)
-            @outputs(gender, age)
+            @outputs("gender", "age")
             def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
             @extractor
             @inputs(User.id)
-            @outputs(gender)
+            @outputs("gender")
             def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
@@ -107,12 +107,12 @@ def test_extract_anoather_featureset():
 
         @featureset
         class UserInfo:
-            userid: int = feature(id=1)
-            home_geoid: int = feature(id=2)
+            userid: int
+            home_geoid: int
             # The users gender among male/female/non-binary
-            gender: str = feature(id=3)
-            age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-            income: int = feature(id=5)
+            gender: str
+            age: int = F().meta(owner="aditya@fennel.ai")
+            income: int
 
             @extractor
             @inputs(User.id)
@@ -129,12 +129,12 @@ def test_extract_anoather_featureset():
 
         @featureset
         class UserInfo2:
-            userid: int = feature(id=1)
-            home_geoid: int = feature(id=2)
+            userid: int
+            home_geoid: int
             # The users gender among male/female/non-binary
-            gender: str = feature(id=3)
-            age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-            income: int = feature(id=5)
+            gender: str
+            age: int = F().meta(owner="aditya@fennel.ai")
+            income: int
 
             @extractor
             @inputs(User.id)
@@ -144,19 +144,19 @@ def test_extract_anoather_featureset():
 
     assert (
         str(e.value)
-        == "Extractor `get_user_info3` can only return a set of features, but found type <class 'fennel.featuresets.featureset.Featureset'> in output annotation."
+        == "Extractor `get_user_info3` can only return a set of features or strings, but found type <class 'fennel.featuresets.featureset.Featureset'> in output annotation."
     )
 
     with pytest.raises(TypeError) as e:
 
         @featureset
         class UserInfo3:
-            userid: int = feature(id=1)
-            home_geoid: int = feature(id=2)
+            userid: int
+            home_geoid: int
             # The users gender among male/female/non-binary
-            gender: str = feature(id=3)
-            age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-            income: int = feature(id=5)
+            gender: str
+            age: int = F().meta(owner="aditya@fennel.ai")
+            income: int
 
             @extractor
             @inputs(User.id)
@@ -173,12 +173,12 @@ def test_extract_anoather_featureset():
 
         @featureset
         class UserInfo4:
-            userid: int = feature(id=1)
-            home_geoid: int = feature(id=2)
+            userid: int
+            home_geoid: int
             # The users gender among male/female/non-binary
-            gender: str = feature(id=3)
-            age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-            income: int = feature(id=5)
+            gender: str
+            age: int = F().meta(owner="aditya@fennel.ai")
+            income: int
 
             @extractor(version="2")
             @inputs(User.id)
@@ -188,59 +188,15 @@ def test_extract_anoather_featureset():
     assert str(e.value) == "version for extractor must be an int."
 
 
-def test_missing_id():
-    with pytest.raises(TypeError) as e:
-
-        @featureset
-        class UserInfo:
-            userid: int = feature()
-            home_geoid: int = feature(id=2)
-
-    assert (
-        str(e.value) == "feature() missing 1 required positional argument: 'id'"
-    )
-
-
-def test_duplicate_id():
-    with pytest.raises(ValueError) as e:
-
-        @featureset
-        class UserInfo:
-            userid: int = feature(id=1)
-            home_geoid: int = feature(id=2)
-            age: int = feature(id=1)
-
-    assert (
-        str(e.value)
-        == "Feature `age` has a duplicate id `1` in featureset `UserInfo`."
-    )
-
-
-def test_deprecated_id():
-    with pytest.raises(ValueError) as e:
-
-        @featureset
-        class UserInfo:
-            userid: int = feature(id=1)
-            home_geoid: int = feature(id=2)
-            age: int = feature(id=3).meta(deprecated=True)
-            credit_score: int = feature(id=3)
-
-    assert (
-        str(e.value) == "Feature `credit_score` has a duplicate id `3` in "
-        "featureset `UserInfo`."
-    )
-
-
 def test_invalid_featureset():
     with pytest.raises(ValueError) as e:
 
         @featureset
         class UserInfo:
-            extractors: List[int] = feature(id=1)
-            home_geoid: int = feature(id=2)
-            age: int = feature(id=3).meta(deprecated=True)
-            credit_score: int = feature(id=3)
+            extractors: List[int]
+            home_geoid: int
+            age: int = F().meta(deprecated=True)
+            credit_score: int
 
     assert (
         str(e.value)
@@ -250,10 +206,10 @@ def test_invalid_featureset():
 
 @featureset
 class UserInfo2:
-    user_id: int = feature(id=1)
-    home_geoid: int = feature(id=2)
-    age: int = feature(id=3).extract(field=UserInfoDataset.age, default=0)  # type: ignore
-    credit_score: int = feature(id=4)
+    user_id: int
+    home_geoid: int
+    age: int = F(UserInfoDataset.age, default=0)  # type: ignore
+    credit_score: int
 
 
 @mock
@@ -269,10 +225,10 @@ def test_invalid_autogenerated_extractors(client):
 
         @featureset
         class UserInfo:
-            user_id: int = feature(id=1)
-            home_geoid: int = feature(id=2)
-            age: int = feature(id=3).extract(field=UserInfoDataset.age)
-            credit_score: int = feature(id=4)
+            user_id: int
+            home_geoid: int
+            age: int = F(UserInfoDataset.age)
+            credit_score: int
 
     # age should be optional[int]
     if sys.version_info < (3, 9):
@@ -290,12 +246,10 @@ def test_invalid_autogenerated_extractors(client):
 
         @featureset
         class UserInfo1:
-            user_id: int = feature(id=1)
-            home_geoid: int = feature(id=2)
-            age: float = feature(id=3).extract(
-                field=UserInfoDataset.age, default=0
-            )
-            credit_score: int = feature(id=4)
+            user_id: int
+            home_geoid: int
+            age: float = F(UserInfoDataset.age, default=0)
+            credit_score: int
 
     # age should be int
     assert (
@@ -307,18 +261,16 @@ def test_invalid_autogenerated_extractors(client):
 
         @featureset
         class UserInfo2:
-            home_geoid: int = feature(id=2)
-            age: int = feature(id=3)
-            credit_score: int = feature(id=4)
+            home_geoid: int
+            age: int
+            credit_score: int
 
         @featureset
         class UserInfo2:
-            user_id: int = feature(id=1)
-            home_geoid: float = feature(id=2).extract(
-                feature=UserInfo2.home_geoid
-            )
-            age: int = feature(id=3)
-            credit_score: int = feature(id=4)
+            user_id: int
+            home_geoid: float = F(UserInfo2.home_geoid)
+            age: int
+            credit_score: int
 
     # home_geoid should be int
     assert (
@@ -330,12 +282,10 @@ def test_invalid_autogenerated_extractors(client):
 
         @featureset
         class UserInfo3:
-            user_id: int = feature(id=1)
-            home_geoid: int = feature(id=2)
-            age: int = feature(id=4).extract(
-                field=UserInfoDataset.age, default=0.0
-            )
-            credit_score: int = feature(id=5)
+            user_id: int
+            home_geoid: int
+            age: int = F(UserInfoDataset.age, default=0.0)
+            credit_score: int
 
     # default value for age should be 0
     assert (
@@ -347,15 +297,70 @@ def test_invalid_autogenerated_extractors(client):
 
         @featureset
         class UserInfo4:
-            user_id: int = feature(id=1)
-            home_geoid: int = feature(id=2)
-            country: str = feature(id=4).extract(
-                field=UserInfoDataset.country, default=0.0
-            )
-            credit_score: int = feature(id=5)
+            user_id: int
+            home_geoid: int
+            country: str = F(UserInfoDataset.country, default=0.0)
+            credit_score: int
 
     # default value for age should be 0
     assert (
         str(e.value)
         == "Default value `0.0` for feature `UserInfo4.country` has incorrect default value: Expected type str, got <class 'float'> for value 0.0"
+    )
+
+
+@mock
+def test_invalid_extractors(client):
+    with pytest.raises(ValueError) as e:
+        """
+        Testing failure when choose an invalid string in inputs of an extractor
+        """
+
+        @featureset
+        class Featureset1:
+            user_id: int
+            home_geoid: int
+            country: str
+            credit_score: int
+
+            @extractor
+            @inputs("user_ids")
+            @outputs("home_geoid")
+            def my_extractor(cls, ts: pd.Series, user_ids: pd.Series):
+                return pd.Series([0] * user_ids.shape[0], name="home_geoid")
+
+    # default value for age should be 0
+    assert (
+        str(e.value)
+        == "When using strings in 'inputs' for an extractor, one can only choose from "
+        "the features defined in the current featureset. Please choose an input from : "
+        "['user_id', 'home_geoid', 'country', 'credit_score'] found : `user_ids` in "
+        "extractor : `my_extractor`."
+    )
+
+    with pytest.raises(ValueError) as e:
+        """
+        Testing failure when choose an invalid string in outputs of an extractor
+        """
+
+        @featureset
+        class Featureset2:
+            user_id: int
+            home_geoid: int
+            country: str
+            credit_score: int
+
+            @extractor
+            @inputs("user_ids")
+            @outputs("home_geoids")
+            def my_extractor(cls, ts: pd.Series, user_ids: pd.Series):
+                return pd.Series([0] * user_ids.shape[0], name="home_geoid")
+
+    # default value for age should be 0
+    assert (
+        str(e.value)
+        == "When using strings in 'outputs' for an extractor, one can only choose from "
+        "the features defined in the current featureset. Please choose an output from : "
+        "['user_id', 'home_geoid', 'country', 'credit_score'] found : `home_geoids` in "
+        "extractor : `my_extractor`."
     )
