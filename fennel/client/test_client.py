@@ -103,6 +103,7 @@ def test_valid_branch_names():
         "main-branch-1-2",
         "main-branch_1-2-3",
         "aditya_1-2-3",
+        "aditya/branch-testing",
     ]
     for name in valid_names:
         _validate_branch_name(name)
@@ -113,7 +114,6 @@ def test_valid_branch_names():
         "main/branch" "@branchname" "branch$name",
         "branch name",
         "branch-name-1$",
-        "aditya/branch-testing",
     ]
     for name in invalid_names:
         with pytest.raises(Exception) as e:

@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.2.2] - 2024-04-07
+- Allow / in branch name 
+
 ## [1.2.1] - 2024-04-07
 - Fix inspect api for mock client
 
