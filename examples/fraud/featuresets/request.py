@@ -1,11 +1,11 @@
-from fennel.featuresets import featureset, feature
+from fennel.featuresets import featureset, feature as F
 
 __owner__ = "eng@app.com"
 
 
 @featureset
 class Request:
-    driver_id: int = feature(id=1)
-    reservation_id: int = feature(id=2)
-    vehicle_id: int = feature(id=3)
-    session_id: str = feature(id=4)
+    driver_id: int
+    reservation_id: int
+    vehicle_id: int
+    session_id: str

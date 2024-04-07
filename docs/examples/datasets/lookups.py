@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.connectors import source, Webhook
 from fennel.testing import mock
@@ -26,13 +26,13 @@ class User:
 @meta(owner="data-eng-oncall@fennel.ai")
 @featureset
 class UserFeature:
-    uid: int = feature(id=1)
-    name: str = feature(id=2)
-    in_home_city: bool = feature(id=3)
+    uid: int
+    name: str
+    in_home_city: bool
 
     @extractor(depends_on=[User])
-    @inputs(uid)
-    @outputs(in_home_city)
+    @inputs("uid")
+    @outputs("in_home_city")
     def func(cls, ts: pd.Series, uid: pd.Series):
         df, _found = User.lookup(ts, uid=uid)
         return pd.Series(

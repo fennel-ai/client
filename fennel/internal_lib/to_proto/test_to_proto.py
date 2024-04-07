@@ -4,7 +4,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.internal_lib.to_proto.to_proto import to_extractor_pycode
 from fennel.lib import includes, outputs
 from fennel.testing import *
@@ -45,13 +45,13 @@ class TestDataset:
 
 @featureset
 class TestFeatureset:
-    f1: int = feature(id=1)
-    f2: int = feature(id=2)
-    f3: int = feature(id=3)
+    f1: int
+    f2: int
+    f3: int
 
-    @extractor(depends_on=[TestDataset])
+    @extractor(depends_on=[TestDataset])  # type: ignore
     @includes(A, B, C)
-    @outputs(f2, f3)
+    @outputs("f2", "f3")
     def test_extractor(cls, ts):
         pass
 
@@ -66,9 +66,9 @@ def rm_imports(pycode: pycode_proto.PyCode) -> pycode_proto.PyCode:
 def test_includes():
     f = {
         "entryPoint": "TestFeatureset_test_extractor",
-        "sourceCode": "@extractor(depends_on=[TestDataset])\n@includes(A, B, C)\n@outputs(f2, f3)\ndef test_extractor(cls, ts):\n    pass\n",
-        "coreCode": "@extractor(depends_on=[TestDataset])\n@includes(A, B, C)\n@outputs(f2, f3)\ndef test_extractor(cls, ts):\n    pass\n",
-        "generatedCode": '\n\n\n\n\ndef b1():\n    return 2\n\n\n\ndef a1():\n    return 1\n\n\n\n@includes(a1, b1)\ndef A():\n    return 11\n\n\n\ndef B():\n    return 22\n\n\n\ndef c1():\n    return 3\n\n\n\n@includes(c1)\ndef C():\n    return 33\n\n\n@index\n@dataset\nclass TestDataset:\n    a1: int = field(key=True)\n    t: datetime = field(timestamp=True)\n\n\n@featureset\nclass TestFeatureset:\n    f1: int = feature(id=1)\n    f2: int = feature(id=2)\n    f3: int = feature(id=3)\n\n    @extractor(depends_on=[TestDataset])\n    @includes(A, B, C)\n    @outputs(f2, f3)\n    def test_extractor(cls, ts):\n        pass\n\ndef TestFeatureset_test_extractor(*args, **kwargs):\n    x = TestFeatureset.__fennel_original_cls__\n    return getattr(x, "test_extractor")(*args, **kwargs)\n    ',
+        "source_code": '@extractor(depends_on=[TestDataset])  # type: ignore\n@includes(A, B, C)\n@outputs("f2", "f3")\ndef test_extractor(cls, ts):\n    pass\n',
+        "core_code": '@extractor(depends_on=[TestDataset])  # type: ignore\n@includes(A, B, C)\n@outputs("f2", "f3")\ndef test_extractor(cls, ts):\n    pass\n',
+        "generated_code": '\n\n\n\n\ndef b1():\n    return 2\n\n\n\ndef a1():\n    return 1\n\n\n\n@includes(a1, b1)\ndef A():\n    return 11\n\n\n\ndef B():\n    return 22\n\n\n\ndef c1():\n    return 3\n\n\n\n@includes(c1)\ndef C():\n    return 33\n\n\n@index\n@dataset\nclass TestDataset:\n    a1: int = field(key=True)\n    t: datetime = field(timestamp=True)\n\n\n@featureset\nclass TestFeatureset:\n    f1: int\n    f2: int\n    f3: int\n\n    @extractor(depends_on=[TestDataset])  # type: ignore\n    @includes(A, B, C)\n    @outputs("f2", "f3")\n    def test_extractor(cls, ts):\n        pass\n\ndef TestFeatureset_test_extractor(*args, **kwargs):\n    x = TestFeatureset.__fennel_original_cls__\n    return getattr(x, "test_extractor")(*args, **kwargs)\n    ',
         "includes": [
             {
                 "entryPoint": "A",

@@ -7,7 +7,7 @@ from typing import Optional
 
 import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
 from fennel.connectors import source, Webhook
 from fennel.testing import *
@@ -35,20 +35,20 @@ class UserInfoDataset:
 @meta(owner="test@test.com")
 @featureset
 class User:
-    id: int = feature(id=1)
-    age: float = feature(id=2)
+    id: int
+    age: float
 
 
 def test_simple_featureset():
     @meta(owner="test@test.com")
     @featureset
     class UserInfo:
-        userid: int = feature(id=1)
-        home_geoid: int = feature(id=2)
+        userid: int
+        home_geoid: int
         # The users gender among male/female/non-binary
-        gender: str = feature(id=3)
-        age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-        income: int = feature(id=5).meta(deprecated=True)
+        gender: str
+        age: int = F().meta(owner="aditya@fennel.ai")
+        income: int = F().meta(deprecated=True)
 
         @extractor(depends_on=[UserInfoDataset], version=2)
         @inputs(User.id, User.age)
@@ -89,7 +89,6 @@ def test_simple_featureset():
     # features
     actual_feature = sync_request.features[0]
     f = {
-        "id": 1,
         "name": "userid",
         "dtype": {"int_type": {}},
         "metadata": {},
@@ -101,7 +100,6 @@ def test_simple_featureset():
     )
     actual_feature = sync_request.features[1]
     f = {
-        "id": 2,
         "name": "home_geoid",
         "dtype": {"int_type": {}},
         "metadata": {},
@@ -113,7 +111,6 @@ def test_simple_featureset():
     )
     actual_feature = sync_request.features[2]
     f = {
-        "id": 3,
         "name": "gender",
         "dtype": {"string_type": {}},
         "metadata": {
@@ -127,7 +124,6 @@ def test_simple_featureset():
     )
     actual_feature = sync_request.features[3]
     f = {
-        "id": 4,
         "name": "age",
         "dtype": {"int_type": {}},
         "metadata": {"owner": "aditya@fennel.ai"},
@@ -139,7 +135,6 @@ def test_simple_featureset():
     )
     actual_feature = sync_request.features[4]
     f = {
-        "id": 5,
         "name": "income",
         "dtype": {"int_type": {}},
         "metadata": {"deprecated": True},
@@ -183,29 +178,29 @@ def test_complex_featureset():
     @meta(owner="test@test.com")
     @featureset
     class UserInfo:
-        userid: int = feature(id=1)
-        home_geoid: int = feature(id=2)
+        userid: int
+        home_geoid: int
         # The users gender among male/female/non-binary
-        gender: str = feature(id=3)
-        age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-        income: int = feature(id=5)
+        gender: str
+        age: int = F().meta(owner="aditya@fennel.ai")
+        income: int
 
         @extractor(depends_on=[UserInfoDataset])
         @inputs(User.id)
-        @outputs(userid, home_geoid)
+        @outputs("userid", "home_geoid")
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
         @extractor(depends_on=[UserInfoDataset])
         @inputs(User.id)
-        @outputs(gender, age)
+        @outputs("gender", "age")
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
         @extractor
         @inputs(User.id)
-        @outputs(income)
-        def get_user_info3(cls, ts: pd.Series, user_id: pd.Series) -> income:
+        @outputs("income")
+        def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
     view = InternalTestClient()
@@ -231,7 +226,6 @@ def test_complex_featureset():
     # features
     actual_feature = sync_request.features[0]
     f = {
-        "id": 1,
         "name": "userid",
         "dtype": {"int_type": {}},
         "metadata": {},
@@ -243,7 +237,6 @@ def test_complex_featureset():
     )
     actual_feature = sync_request.features[1]
     f = {
-        "id": 2,
         "name": "home_geoid",
         "dtype": {"int_type": {}},
         "metadata": {},
@@ -255,7 +248,6 @@ def test_complex_featureset():
     )
     actual_feature = sync_request.features[2]
     f = {
-        "id": 3,
         "name": "gender",
         "dtype": {"string_type": {}},
         "metadata": {
@@ -269,7 +261,6 @@ def test_complex_featureset():
     )
     actual_feature = sync_request.features[3]
     f = {
-        "id": 4,
         "name": "age",
         "dtype": {"int_type": {}},
         "metadata": {"owner": "aditya@fennel.ai"},
@@ -281,7 +272,6 @@ def test_complex_featureset():
     )
     actual_feature = sync_request.features[4]
     f = {
-        "id": 5,
         "name": "income",
         "dtype": {"int_type": {}},
         "metadata": {},
@@ -352,34 +342,31 @@ def test_extractor_tier_selector():
     @meta(owner="aditya@fennel.ai")
     @featureset
     class Request:
-        user_id: int = feature(id=1)
+        user_id: int
 
     @meta(owner="aditya@fennel.ai")
     @featureset
     class UserInfo:
-        userid: int = feature(id=1).extract(
-            feature=Request.user_id, tier=["~staging", "~prod"]
-        )
-        home_geoid: int = feature(id=2)
+        user_id: int = F(Request.user_id, tier=["~staging", "~prod"])
+        home_geoid: int
         # The users gender among male/female/non-binary
-        gender: str = feature(id=3)
-        age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-        income: int = feature(id=5).extract(  # type: ignore
-            field=UserInfoDataset.avg_income,
-            provider=Request,
+        gender: str
+        age: int = F().meta(owner="aditya@fennel.ai")
+        income: int = F(
+            UserInfoDataset.avg_income,
             default=1,
             tier=["~prod"],
         )
 
         @extractor(depends_on=[UserInfoDataset], tier=["~prod", "~dev"])
         @inputs(User.id)
-        @outputs(userid, home_geoid)
+        @outputs(user_id, "home_geoid")
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
         @extractor(depends_on=[UserInfoDataset], tier=["prod"])
         @inputs(User.id)
-        @outputs(userid, home_geoid)
+        @outputs(user_id, "home_geoid")
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 

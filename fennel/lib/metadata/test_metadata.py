@@ -7,7 +7,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as fs_proto
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib import meta, inputs, outputs
@@ -230,12 +230,12 @@ def test_simple_featureset():
     @meta(owner="aditya@fennel.ai", description="test", tags=["test"])
     @featureset
     class UserInfoSimple:
-        userid: int = feature(id=1)
-        home_geoid: int = feature(id=2)
+        userid: int
+        home_geoid: int
         # The users gender among male/female
-        gender: str = feature(id=3)
-        age_no_bar: int = feature(id=4).meta(owner="srk@bollywood.com")
-        income: int = feature(id=5).meta(deprecated=True)
+        gender: str
+        age_no_bar: int = F().meta(owner="srk@bollywood.com")
+        income: int = F().meta(deprecated=True)
 
     view = InternalTestClient()
     view.add(UserInfoSimple)
@@ -261,7 +261,6 @@ def test_simple_featureset():
     assert len(sync_request.features) == 5
     actual_feature = sync_request.features[0]
     f = {
-        "id": 1,
         "name": "userid",
         "dtype": {"int_type": {}},
         "metadata": {},
@@ -273,7 +272,6 @@ def test_simple_featureset():
     )
     actual_feature = sync_request.features[1]
     f = {
-        "id": 2,
         "name": "home_geoid",
         "dtype": {"int_type": {}},
         "metadata": {},
@@ -285,7 +283,6 @@ def test_simple_featureset():
     )
     actual_feature = sync_request.features[2]
     f = {
-        "id": 3,
         "name": "gender",
         "dtype": {"string_type": {}},
         "metadata": {"description": "The users gender among male/female"},
@@ -297,7 +294,6 @@ def test_simple_featureset():
     )
     actual_feature = sync_request.features[3]
     f = {
-        "id": 4,
         "name": "age_no_bar",
         "dtype": {"int_type": {}},
         "metadata": {"owner": "srk@bollywood.com"},
@@ -309,7 +305,6 @@ def test_simple_featureset():
     )
     actual_feature = sync_request.features[4]
     f = {
-        "id": 5,
         "name": "income",
         "dtype": {"int_type": {}},
         "metadata": {"deprecated": True},
@@ -325,36 +320,36 @@ def test_featureset_with_extractors():
     @meta(owner="test@test.com")
     @featureset
     class User:
-        id: int = feature(id=1)
-        age: float = feature(id=2)
+        id: int
+        age: float
 
     @featureset
     @meta(owner="yolo@liveonce.com")
     class UserInfo:
-        userid: int = feature(id=1)
-        home_geoid: int = feature(id=2)
+        userid: int
+        home_geoid: int
         # The users gender among male/female
-        gender: str = feature(id=3)
-        age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-        income: int = feature(id=5)
+        gender: str
+        age: int = F().meta(owner="aditya@fennel.ai")
+        income: int
 
         @extractor(depends_on=[UserInfoDataset])
         @meta(owner="a@xyz.com", description="top_meta")
         @inputs(User.id)
-        @outputs(userid, home_geoid)
+        @outputs("userid", "home_geoid")
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
         @extractor(depends_on=[UserInfoDataset])
         @inputs(User.id)
-        @outputs(gender, age)
+        @outputs("gender", "age")
         @meta(owner="b@xyz.com", description="middle_meta")
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
         @extractor(depends_on=[UserInfoDataset])
         @inputs(User.id)
-        @outputs(income)
+        @outputs("income")
         @meta(owner="c@xyz.com", description="bottom_meta")
         def get_user_info3(cls, ts: pd.Series, user_id: pd.Series):
             pass

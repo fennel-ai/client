@@ -11,14 +11,14 @@ In many cases, it's important to write features about a composite of two or more
 ```python
 @featureset
 class User:
-    id: int = feature(id=1)
-    name: str = feature(id=2)
+    id: int = feature()
+    name: str = feature()
     ..
 
 @featureset
 class Post:
-    id: int = feature(id=1)
-    creator_uid: int = feature(id=2)    
+    id: int = feature()
+    creator_uid: int = feature()    
     ...
     
     @extractor
@@ -29,9 +29,9 @@ class Post:
 @featureset
 class UserCreator:
     # describes features for (uid, creator_uid) pairs
-    viewer: int = feature(id=1)
-    creator: int = feature(id=2)
-    affinity: float = feature(id=3)
+    viewer: int = feature()
+    creator: int = feature()
+    affinity: float = feature()
     ...
 
     @extractor
@@ -43,9 +43,9 @@ class UserCreator:
 @featureset
 class UserPost:
     # describes features for (uid, pid) pairs
-    uid: int = feature(id=1)
-    pid: int = feature(id=2)
-    viewer_author_affinity = feature(id=3)
+    uid: int = feature()
+    pid: int = feature()
+    viewer_author_affinity = feature()
     ...
     
     @extractor

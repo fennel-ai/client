@@ -4,7 +4,7 @@ from typing import Optional, List
 import pandas as pd
 
 from fennel.datasets import dataset, field, Dataset, pipeline, Sum, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.internal_lib.to_proto.source_code import (
     get_featureset_core_code,
@@ -76,23 +76,23 @@ class User:
 
 @featureset
 class UserFeature:
-    uid: int = feature(id=1)
-    country: str = feature(id=2)
-    age: float = feature(id=3)
-    dob: datetime = feature(id=4)
+    uid: int
+    country: str
+    age: float
+    dob: datetime
 
     @extractor
-    @inputs(uid)
-    @outputs(age)
+    @inputs("uid")
+    @outputs("age")
     def get_age(cls, ts: pd.Series, uids: pd.Series):
         dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])  # type: ignore
         # Using ts instead of datetime.utcnow() to make extract_historical work as of for the extractor
         ages = ts - dobs
         return pd.Series(ages)
 
-    @extractor(depends_on=[User])
-    @inputs(uid)
-    @outputs(country)
+    @extractor(depends_on=[User])  # type: ignore
+    @inputs("uid")
+    @outputs("country")
     def get_country(cls, ts: pd.Series, uids: pd.Series):
         countries, _ = User.lookup(  # type: ignore
             ts=ts, uid=uids, fields=["country"]
@@ -126,16 +126,16 @@ def power_4(x: int) -> int:
 
 @featureset
 class UserInfoExtractor:
-    userid: int = feature(id=1)
-    age: int = feature(id=4)
-    age_power_four: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    userid: int
+    age: int
+    age_power_four: int
+    age_cubed: int
+    is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(depends_on=[UserInfoDataset])  # type: ignore
     @includes(power_4, cube)
-    @inputs(userid)
-    @outputs(age, age_power_four, age_cubed, is_name_common)
+    @inputs("userid")
+    @outputs("age", "age_power_four", "age_cubed", "is_name_common")
     def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
         df, _ = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df[str(cls.userid)] = user_id
@@ -144,10 +144,10 @@ class UserInfoExtractor:
         df[str(cls.is_name_common)] = df["name"].isin(["John", "Mary", "Bob"])
         return df[
             [
-                str(cls.age),
-                str(cls.age_power_four),
-                str(cls.age_cubed),
-                str(cls.is_name_common),
+                "age",
+                "age_power_four",
+                "age_cubed",
+                "is_name_common",
             ]
         ]
 
@@ -156,10 +156,10 @@ def test_source_code_gen():
     expected_source_code = """
 @featureset
 class UserFeature:
-    uid: int = feature(id=1)
-    country: str = feature(id=2)
-    age: float = feature(id=3)
-    dob: datetime = feature(id=4)
+    uid: int
+    country: str
+    age: float
+    dob: datetime
 """
 
     assert expected_source_code == get_featureset_core_code(UserFeature)
@@ -175,11 +175,11 @@ class UserAgeAggregated:
     expected_source_code = """
 @featureset
 class UserInfoExtractor:
-    userid: int = feature(id=1)
-    age: int = feature(id=4)
-    age_power_four: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    userid: int
+    age: int
+    age_power_four: int
+    age_cubed: int
+    is_name_common: bool
 """
     assert expected_source_code == get_featureset_core_code(UserInfoExtractor)
 

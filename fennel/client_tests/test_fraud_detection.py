@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 
 from fennel.datasets import dataset, field, pipeline, Dataset, Sum, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.connectors import source, Webhook
 from fennel.testing import mock
@@ -73,14 +73,14 @@ class UserTransactionSums:
 @meta(owner="henry@fennel.ai")
 @featureset
 class UserTransactionSumsFeatures:
-    cc_num: int = feature(id=1)
-    sum_amt_1d: float = feature(id=2)
-    sum_amt_7d: float = feature(id=3)
+    cc_num: int
+    sum_amt_1d: float
+    sum_amt_7d: float
 
     # If come from different featuresets have to include full path x.y
-    @extractor(depends_on=[UserTransactionSums])
-    @inputs(cc_num)
-    @outputs(sum_amt_1d, sum_amt_7d)
+    @extractor(depends_on=[UserTransactionSums])  # type: ignore
+    @inputs("cc_num")
+    @outputs("sum_amt_1d", "sum_amt_7d")
     def my_extractor(cls, ts: pd.Series, cc_nums: pd.Series):
         df, found = UserTransactionSums.lookup(ts, cc_num=cc_nums)  # type: ignore
 

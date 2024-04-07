@@ -7,7 +7,7 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel import connectors
 from fennel.datasets import dataset, Dataset, pipeline, field, LastK, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.dtypes import struct
 from fennel.connectors import source
@@ -65,20 +65,20 @@ class MovieInfo:
 @meta(owner="test@test.com")
 @featureset
 class MovieFeatures:
-    movie: Movie = feature(id=1)
-    cast_list: List[Cast] = feature(id=2)
-    average_cast_age: float = feature(id=3)
+    movie: Movie
+    cast_list: List[Cast]
+    average_cast_age: float
 
-    @extractor(depends_on=[MovieInfo])
-    @inputs(movie)
-    @outputs(cast_list)
+    @extractor(depends_on=[MovieInfo])  # type: ignore
+    @inputs("movie")
+    @outputs("cast_list")
     def extract_cast(cls, ts: pd.Series, movie: pd.Series):
         res, _ = MovieInfo.lookup(ts, movie=movie)  # type: ignore
         return pd.Series(res["cast_list"])
 
-    @extractor(depends_on=[MovieInfo])
-    @inputs(movie)
-    @outputs(average_cast_age)
+    @extractor(depends_on=[MovieInfo])  # type: ignore
+    @inputs("movie")
+    @outputs("average_cast_age")
     def extract_average_cast_age(cls, ts: pd.Series, movie: pd.Series):
         res, _ = MovieInfo.lookup(ts, movie=movie)  # type: ignore
         res["total_cast_age"] = res["cast_list"].apply(

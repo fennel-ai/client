@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import dataset, field, pipeline, Dataset, Count, index
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
 from fennel.connectors import S3, Webhook
 from fennel.connectors import source
@@ -69,21 +69,21 @@ class PageViewsByUser:
 @meta(owner="aditya@fennel.ai")
 @featureset
 class Request:
-    uuid: str = feature(id=1)
-    document_id: int = feature(id=2)
+    uuid: str
+    document_id: int
 
 
 @meta(owner="aditya@fennel.ai")
 @featureset
 class UserPageViewFeatures:
-    page_views: int = feature(id=1)
-    page_views_1d: int = feature(id=2)
-    page_views_3d: int = feature(id=3)
-    page_views_9d: int = feature(id=4)
+    page_views: int
+    page_views_1d: int
+    page_views_3d: int
+    page_views_9d: int
 
-    @extractor(depends_on=[PageViewsByUser], version=2)
+    @extractor(depends_on=[PageViewsByUser], version=2)  # type: ignore
     @inputs(Request.uuid)
-    @outputs(page_views, page_views_1d, page_views_3d, page_views_9d)
+    @outputs("page_views", "page_views_1d", "page_views_3d", "page_views_9d")
     def extract(cls, ts: pd.Series, uuids: pd.Series):
         page_views, found = PageViewsByUser.lookup(  # type: ignore
             ts, uuid=uuids

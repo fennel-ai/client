@@ -5,7 +5,7 @@ from typing import List, no_type_check
 
 import fennel.datasets.datasets
 from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
 from fennel.connectors import source, Webhook
 from fennel.testing import *
@@ -55,16 +55,16 @@ def test_dataset_lookup():
 
     @featureset
     class UserAgeFeatures:
-        userid: int = feature(id=1)
-        name: str = feature(id=2)
+        userid: int
+        name: str
         # The users gender among male/female/non-binary
-        age_sq: int = feature(id=3).meta(owner="aditya@fennel.ai")
-        age_cube: int = feature(id=4).meta(owner="mohit@fennel.ai")
-        gender: str = feature(id=5)
+        age_sq: int = F().meta(owner="aditya@fennel.ai")
+        age_cube: int = F().meta(owner="mohit@fennel.ai")
+        gender: str
 
         @extractor(depends_on=[UserInfoDataset])
-        @inputs(userid, name)
-        @outputs(age_sq, gender)
+        @inputs("userid", "name")
+        @outputs("age_sq", "gender")
         @no_type_check
         def user_age_sq(
             cls, ts: pd.Series, user_id: pd.Series, names: pd.Series
@@ -80,8 +80,8 @@ def test_dataset_lookup():
             return df[["age_sq", "gender"]]
 
         @extractor(depends_on=[UserInfoDataset])
-        @inputs(userid, name)
-        @outputs(age_cube)
+        @inputs("userid", "name")
+        @outputs("age_cube")
         @no_type_check
         def user_age_cube(
             cls,

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from fennel.featuresets import feature, featureset, extractor
+from fennel.featuresets import feature as F, featureset, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
@@ -8,12 +8,12 @@ from fennel.testing import mock
 @meta(owner="data-eng-oncall@fennel.ai")
 @featureset
 class User:
-    id: int = feature(id=1)
-    age: float = feature(id=2)
+    id: int
+    age: float
 
     @extractor
-    @inputs(id)
-    @outputs(age)
+    @inputs("id")
+    @outputs("age")
     def user_age(cls, ts: pd.Series, id: pd.Series):
         # Mock age calculation based on user id
         return pd.Series(name="age", data=id * 10)
@@ -22,14 +22,14 @@ class User:
 @meta(owner="data-eng-oncall@fennel.ai")
 @featureset
 class UserPost:
-    uid: int = feature(id=1)
-    pid: int = feature(id=2)
-    score: float = feature(id=3)
-    affinity: float = feature(id=4)
+    uid: int
+    pid: int
+    score: float
+    affinity: float
 
     @extractor
-    @inputs(uid, pid)
-    @outputs(score, affinity)
+    @inputs("uid", "pid")
+    @outputs("score", "affinity")
     def user_post_affinity(cls, ts: pd.Series, uid: pd.Series, pid: pd.Series):
         # Mock affinity calculation based on user id and post id
         return pd.DataFrame(
@@ -43,7 +43,7 @@ class UserPost:
 @meta(owner="data-eng-oncall@fennel.ai")
 @featureset
 class Request:
-    ip: str = feature(id=1)
+    ip: str
 
 
 @mock

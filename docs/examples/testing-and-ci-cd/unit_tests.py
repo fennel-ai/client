@@ -97,23 +97,23 @@ class TestDataset(unittest.TestCase):
 # /docsnip
 
 # docsnip featuresets_testing
-from fennel.featuresets import feature, featureset, extractor
+from fennel.featuresets import feature as F, featureset, extractor
 
 
 @meta(owner="test@test.com")
 @featureset
 class UserInfoFeatures:
-    userid: int = feature(id=1)
-    name: str = feature(id=2)
+    userid: int
+    name: str
     # The users gender among male/female/non-binary
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-    age_squared: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    age: int = F().meta(owner="aditya@fennel.ai")
+    age_squared: int
+    age_cubed: int
+    is_name_common: bool
 
     @extractor
-    @inputs(age, name)
-    @outputs(age_squared, age_cubed, is_name_common)
+    @inputs(age, "name")
+    @outputs("age_squared", "age_cubed", "is_name_common")
     def get_age_and_name_features(
         cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
@@ -177,41 +177,41 @@ class UserInfoDataset:
 @meta(owner="test@test.com")
 @featureset
 class UserInfoMultipleExtractor:
-    userid: int = feature(id=1)
-    name: str = feature(id=2)
-    country_geoid: int = feature(id=3)
+    userid: int
+    name: str
+    country_geoid: int
     # The users gender among male/female/non-binary
-    age: int = feature(id=4).meta(owner="aditya@fennel.ai")
-    age_squared: int = feature(id=5)
-    age_cubed: int = feature(id=6)
-    is_name_common: bool = feature(id=7)
+    age: int = F().meta(owner="aditya@fennel.ai")
+    age_squared: int
+    age_cubed: int
+    is_name_common: bool
 
     @extractor(depends_on=[UserInfoDataset])
-    @inputs(userid)
-    @outputs(age, name)
+    @inputs("userid")
+    @outputs("age", "name")
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)
         return df[["age", "name"]]
 
     @extractor
-    @inputs(age, name)
-    @outputs(age_squared, age_cubed, is_name_common)
+    @inputs("age", "name")
+    @outputs("age_squared", "age_cubed", "is_name_common")
     def get_age_and_name_features(
         cls, ts: pd.Series, user_age: pd.Series, name: pd.Series
     ):
         is_name_common = name.isin(["John", "Mary", "Bob"])
         df = pd.concat([user_age**2, user_age**3, is_name_common], axis=1)
         df.columns = [
-            str(cls.age_squared),
-            str(cls.age_cubed),
-            str(cls.is_name_common),
+            "age_squared",
+            "age_cubed",
+            "is_name_common",
         ]
         return df
 
     @extractor(depends_on=[UserInfoDataset])
     @includes(get_country_geoid)
-    @inputs(userid)
-    @outputs(country_geoid)
+    @inputs("userid")
+    @outputs("country_geoid")
     def get_country_geoid_extractor(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
         df["country_geoid"] = df["country"].apply(get_country_geoid)

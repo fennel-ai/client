@@ -482,7 +482,6 @@ def features_from_fs(fs: Featureset) -> List[fs_proto.Feature]:
 
 def _feature_to_proto(f: Feature) -> fs_proto.Feature:
     return fs_proto.Feature(
-        id=f.id,
         name=f.name,
         metadata=get_metadata_proto(f),
         dtype=get_datatype(f.dtype),
@@ -555,7 +554,7 @@ def _extractor_to_proto(
             dataset._name for dataset in extractor.get_dataset_dependencies()
         ],
         inputs=inputs,
-        features=extractor.output_features,
+        features=[feature.name for feature in extractor.outputs],
         metadata=get_metadata_proto(extractor.func),
         version=extractor.version,
         pycode=to_extractor_pycode(extractor, fs, fs_obj_map),

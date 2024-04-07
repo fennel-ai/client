@@ -92,21 +92,21 @@ def test_overview(client):
 
     from datetime import timedelta
 
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import featureset, extractor
     from fennel.lib import inputs, outputs
 
     # docsnip featureset
     @featureset
     class UserFeature:
-        uid: int = feature(id=1)
-        country: str = feature(id=2)
-        age: float = feature(id=3)
-        dob: datetime = feature(id=4)
+        uid: int
+        country: str
+        age: float
+        dob: datetime
 
         # docsnip-highlight start
         @extractor(depends_on=[User])
-        @inputs(uid)
-        @outputs(age)
+        @inputs("uid")
+        @outputs("age")
         def get_age(cls, ts: pd.Series, uids: pd.Series):
             df, _ = User.lookup(ts=ts, uid=uids, fields=["dob"])
             df.fillna(datetime(1970, 1, 1), inplace=True)
@@ -116,8 +116,8 @@ def test_overview(client):
         # docsnip-highlight end
 
         @extractor(depends_on=[User])
-        @inputs(uid)
-        @outputs(country)
+        @inputs("uid")
+        @outputs("country")
         def get_country(cls, ts: pd.Series, uids: pd.Series):
             countries, _ = User.lookup(ts=ts, uid=uids, fields=["country"])
             countries = countries.fillna("unknown")
@@ -429,7 +429,7 @@ def dummy_function():
 @mock
 def test_branches(client):
     from fennel.datasets import dataset, field, index
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset
     from fennel.connectors import Webhook, source
 
     webhook = Webhook(name="some_webhook")
@@ -445,10 +445,8 @@ def test_branches(client):
 
     @featureset
     class SomeFeatureset:
-        uid: int = feature(id=1)
-        country: str = feature(id=2).extract(
-            field=SomeDataset.country, default="unknown"
-        )
+        uid: int
+        country: str = F(SomeDataset.country, default="unknown")
 
     # docsnip branches
     client.init_branch("dev")

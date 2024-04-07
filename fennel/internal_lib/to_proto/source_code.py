@@ -224,6 +224,7 @@ def get_all_imports() -> str:
         "from fennel.connectors.connectors import *",
         "from fennel.datasets import *",
         "from fennel.featuresets import *",
+        "from fennel.featuresets import feature as F",
         "from fennel.lib.expectations import *",
         "from fennel.internal_lib.schema import *",
         "from fennel.internal_lib.utils import *",
