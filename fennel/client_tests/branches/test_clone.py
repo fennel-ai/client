@@ -165,8 +165,9 @@ def test_simple_clone(client):
 def test_clone_errors(client):
     # can not clone from non-existent branch
     assert client.list_branches() == ["main"]
-    response = client.clone_branch("test-branch", from_branch="random")
-    assert response.status_code == requests.codes.BAD_REQUEST
+    with pytest.raises(Exception) as e:
+        client.clone_branch("test-branch", from_branch="random")
+    assert str(e.value) == "Branch `random` does not exist"
 
     # does work when the branch exists
     assert client.list_branches() == ["main"]
@@ -174,8 +175,9 @@ def test_clone_errors(client):
     assert client.list_branches() == ["main", "test-branch"]
 
     # can not clone to an existing branch
-    response = client.clone_branch("test-branch", from_branch="main")
-    assert response.status_code == requests.codes.BAD_REQUEST
+    with pytest.raises(Exception) as e:
+        client.clone_branch("main", from_branch="test-branch")
+    assert str(e.value) == "Branch `main` already exists"
 
 
 @pytest.mark.integration

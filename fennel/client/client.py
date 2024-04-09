@@ -383,8 +383,17 @@ class Client:
         name (str): The name of the branch to delete.
 
         """
+        if name == _MAIN_BRANCH:
+            raise Exception("Cannot delete the main branch.")
+
+        cur_branch = self._branch
+        self.checkout(name)
         response = self._post_json(f"{V1_API}/delete", {})
-        self.checkout(_MAIN_BRANCH)
+        if name == cur_branch:
+            print("Deleting current branch, checking out to main branch")
+            self.checkout(_MAIN_BRANCH)
+        else:
+            self.checkout(cur_branch)
         return response
 
     def list_branches(self) -> List[str]:
