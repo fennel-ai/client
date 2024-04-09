@@ -41,6 +41,7 @@ class UnBoundedClicksDS:
     timestamp: datetime = field(timestamp=True)
 
 
+@pytest.mark.slow
 @mock
 def test_idleness_for_bounded_source(client):
     client.commit(

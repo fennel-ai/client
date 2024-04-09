@@ -49,8 +49,9 @@ def test_delete_branch(client):
 
     # can not delete the main branch
     assert client.list_branches() == ["main"]
-    response = client.delete_branch("main")
-    assert response.status_code == requests.codes.BAD_REQUEST
+    with pytest.raises(Exception) as e:
+        client.delete_branch("main")
+    assert str(e.value) == "Cannot delete main branch"
 
     resp = client.clone_branch("test-branch", "main")
     assert resp.status_code == requests.codes.OK

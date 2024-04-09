@@ -75,6 +75,6 @@ def test_branches_clone(client):
     )
 
     # docsnip-highlight next-line
-    client.clone_branch("branch1", "branch2")
+    client.clone_branch(name="branch2", from_branch="branch1")
     client.checkout("branch2")
     # /docsnip
