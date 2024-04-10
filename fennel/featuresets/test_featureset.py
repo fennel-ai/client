@@ -50,7 +50,7 @@ def test_simple_featureset():
         age: int = F().meta(owner="aditya@fennel.ai")
         income: int = F().meta(deprecated=True)
 
-        @extractor(depends_on=[UserInfoDataset], version=2)
+        @extractor(deps=[UserInfoDataset], version=2)
         @inputs(User.id, User.age)
         def get_user_info(
             cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
@@ -185,13 +185,13 @@ def test_complex_featureset():
         age: int = F().meta(owner="aditya@fennel.ai")
         income: int
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs(User.id)
         @outputs("userid", "home_geoid")
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs(User.id)
         @outputs("gender", "age")
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
@@ -358,19 +358,19 @@ def test_extractor_tier_selector():
             tier=["~prod"],
         )
 
-        @extractor(depends_on=[UserInfoDataset], tier=["~prod", "~dev"])
+        @extractor(deps=[UserInfoDataset], tier=["~prod", "~dev"])
         @inputs(User.id)
         @outputs(user_id, "home_geoid")
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset], tier=["prod"])
+        @extractor(deps=[UserInfoDataset], tier=["prod"])
         @inputs(User.id)
         @outputs(user_id, "home_geoid")
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset], tier=["prod"])
+        @extractor(deps=[UserInfoDataset], tier=["prod"])
         @inputs(User.id)
         @outputs(income)
         def get_user_income(cls, ts: pd.Series, user_id: pd.Series):

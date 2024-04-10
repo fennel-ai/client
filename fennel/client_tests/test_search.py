@@ -378,7 +378,7 @@ class UserBehaviorFeatures:
     num_short_views_7d: int
     num_long_views: int
 
-    @extractor(depends_on=[UserEngagementDataset])  # type: ignore
+    @extractor(deps=[UserEngagementDataset])  # type: ignore
     @inputs(Query.user_id)
     def get_user_features(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserEngagementDataset.lookup(  # type: ignore
@@ -395,7 +395,7 @@ class DocumentFeatures:
     total_timespent_minutes: float
     num_views_28d: int
 
-    @extractor(depends_on=[DocumentEngagementDataset])  # type: ignore
+    @extractor(deps=[DocumentEngagementDataset])  # type: ignore
     @inputs(Query.doc_id)
     def get_doc_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentEngagementDataset.lookup(  # type: ignore
@@ -415,7 +415,7 @@ class DocumentContentFeatures:
     num_stop_words: int
     top_10_unique_words: List[str]
 
-    @extractor(depends_on=[DocumentContentDatasetIndexed])  # type: ignore
+    @extractor(deps=[DocumentContentDatasetIndexed])  # type: ignore
     @inputs(Query.doc_id)
     def get_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentContentDatasetIndexed.lookup(  # type: ignore
@@ -430,7 +430,7 @@ class TopWordsFeatures:
     word: str
     count: int
 
-    @extractor(depends_on=[TopWordsCount])  # type: ignore
+    @extractor(deps=[TopWordsCount])  # type: ignore
     @inputs("word")
     @outputs("count")
     def get_counts(cls, ts: pd.Series, word: pd.Series):

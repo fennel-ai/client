@@ -161,7 +161,7 @@ class UserFeatures:
         LastViewedPostByAgg.post_id, default=[-1]  # type: ignore
     )
 
-    @extractor(depends_on=[UserViewsDataset])  # type: ignore
+    @extractor(deps=[UserViewsDataset])  # type: ignore
     @inputs(Request.user_id)
     @outputs("num_views")
     def extract_user_views(cls, ts: pd.Series, user_ids: pd.Series):
@@ -170,7 +170,7 @@ class UserFeatures:
 
         return views["num_views"]
 
-    @extractor(depends_on=[UserCategoryDataset, UserViewsDataset])  # type: ignore
+    @extractor(deps=[UserCategoryDataset, UserViewsDataset])  # type: ignore
     @inputs(Request.user_id, Request.category)
     @outputs("category_view_ratio", "num_category_views")
     def extractor_category_view(

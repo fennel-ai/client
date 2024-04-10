@@ -73,7 +73,7 @@ class DomainFeatures:
     domain: str
     domain_used_count: int
 
-    @extractor(depends_on=[MemberActivityDatasetCopy])  # type: ignore
+    @extractor(deps=[MemberActivityDatasetCopy])  # type: ignore
     @inputs(Query.domain)
     @outputs("domain", "domain_used_count")
     def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
@@ -174,7 +174,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             domain: str
             domain_used_count: int
 
-            @extractor(depends_on=[MemberActivityDatasetCopy])
+            @extractor(deps=[MemberActivityDatasetCopy])
             @inputs(Query.domain)
             @outputs("domain", "domain_used_count")
             def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):

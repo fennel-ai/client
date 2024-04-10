@@ -81,7 +81,7 @@ class UserPageViewFeatures:
     page_views_3d: int
     page_views_9d: int
 
-    @extractor(depends_on=[PageViewsByUser], version=2)  # type: ignore
+    @extractor(deps=[PageViewsByUser], version=2)  # type: ignore
     @inputs(Request.uuid)
     @outputs("page_views", "page_views_1d", "page_views_3d", "page_views_9d")
     def extract(cls, ts: pd.Series, uuids: pd.Series):

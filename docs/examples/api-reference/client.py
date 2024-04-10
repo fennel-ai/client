@@ -47,7 +47,7 @@ class UserFeatures:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(deps=[UserInfoDataset])
     @inputs("userid")
     @outputs("age", "name")
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
@@ -69,7 +69,7 @@ class UserFeatures:
         ]
         return df
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(deps=[UserInfoDataset])
     @includes(get_country_geoid)
     @inputs("userid")
     @outputs("country_geoid")

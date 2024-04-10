@@ -104,7 +104,7 @@ def test_overview(client):
         dob: datetime
 
         # docsnip-highlight start
-        @extractor(depends_on=[User])
+        @extractor(deps=[User])
         @inputs("uid")
         @outputs("age")
         def get_age(cls, ts: pd.Series, uids: pd.Series):
@@ -115,7 +115,7 @@ def test_overview(client):
 
         # docsnip-highlight end
 
-        @extractor(depends_on=[User])
+        @extractor(deps=[User])
         @inputs("uid")
         @outputs("country")
         def get_country(cls, ts: pd.Series, uids: pd.Series):

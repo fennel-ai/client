@@ -49,7 +49,7 @@ def test_featureset_as_input():
             userid: int
             home_geoid: int
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(deps=[UserInfoDataset])
             @inputs(User)
             @outputs("userid", "home_geoid")
             def get_user_info1(cls, ts: pd.Series, user: pd.Series):
@@ -74,13 +74,13 @@ def test_complex_featureset():
             age: int = F().meta(owner="aditya@fennel.ai")
             income: int
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(deps=[UserInfoDataset])
             @inputs(User.id)
             @outputs("userid", "home_geoid")
             def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(deps=[UserInfoDataset])
             @inputs(User.id)
             @outputs("gender", "age")
             def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):

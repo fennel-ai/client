@@ -30,7 +30,7 @@ class DriverVelocityFS:
         PastApprovedDS.num_past_approved_trips, default=0
     )
 
-    @extractor(depends_on=[NumCompletedTripsDS, CancelledTripsDS], version=1)
+    @extractor(deps=[NumCompletedTripsDS, CancelledTripsDS], version=1)
     @inputs(driver_id)
     @outputs("percent_past_guest_cancelled_trips")
     def calculate_percent_past_guest_cancelled_trips(

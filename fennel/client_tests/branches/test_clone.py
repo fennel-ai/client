@@ -123,7 +123,7 @@ def _get_changed_featureset():
         country_code: int
         email: str = F(UserInfoDataset.email, default="None")  # type: ignore
 
-        @extractor(depends_on=[UserInfoDataset], version=2)
+        @extractor(deps=[UserInfoDataset], version=2)
         @inputs("user_id")
         @outputs("age", "country_code")
         def my_extractor(cls, ts: pd.Series, user_id: pd.Series):

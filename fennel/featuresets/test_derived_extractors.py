@@ -72,7 +72,7 @@ def test_valid_derived_extractors():
         # optional lookup derived feature
         optional_nickname: Optional[str] = F(UserInfoDataset.nickname)
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs("age_years")
         @outputs("age_group")
         def get_age_group(cls, ts: pd.Series, age: pd.Series):

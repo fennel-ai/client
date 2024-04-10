@@ -111,7 +111,7 @@ class UserSellerFeatures:
     num_orders_1d: int
     num_orders_1w: int
 
-    @extractor(depends_on=[UserSellerOrders])
+    @extractor(deps=[UserSellerOrders])
     @inputs("uid", "seller_id")
     @outputs("num_orders_1d", "num_orders_1w")
     def myextractor(cls, ts: pd.Series, uids: pd.Series, sellers: pd.Series):
