@@ -210,7 +210,7 @@ def test_clone_after_log(client):
     client.sleep()
 
     _, found = client.lookup(
-        dataset_name="UserInfoDataset",
+        "UserInfoDataset",
         keys=pd.DataFrame({"user_id": [1, 2]}),
     )
     assert found.to_list() == [True, False]
@@ -218,7 +218,7 @@ def test_clone_after_log(client):
     client.clone_branch("test-branch", from_branch="main")
     assert client.branch() == "test-branch"
     _, found = client.lookup(
-        dataset_name="UserInfoDataset",
+        "UserInfoDataset",
         keys=pd.DataFrame({"user_id": [1, 2]}),
     )
     assert found.to_list() == [True, False]
@@ -267,7 +267,7 @@ def test_webhook_log_to_both_clone_parent(client):
 
     assert client.branch() == "test-branch"
     params = {
-        "dataset_name": "GenderStats",
+        "dataset": "GenderStats",
         "keys": pd.DataFrame({"gender": ["male", "F"]}),
         "fields": ["gender", "count"],
     }
@@ -426,7 +426,7 @@ def test_change_dataset_clone_branch(client):
 
     client.checkout("test-branch")
     df, found = client.lookup(
-        dataset_name="GenderStats",
+        "GenderStats",
         keys=pd.DataFrame({"gender": ["male", "F"]}),
         fields=["gender", "count"],
     )
@@ -475,7 +475,7 @@ def test_multiple_clone_branch(client):
     client.sleep()
 
     params = {
-        "dataset_name": "GenderStats",
+        "dataset": "GenderStats",
         "keys": pd.DataFrame({"gender": ["male", "F"]}),
         "fields": ["gender", "count"],
     }
@@ -592,7 +592,7 @@ def test_change_source_dataset_clone_branch(client):
     client.sleep()
 
     params = {
-        "dataset_name": "GenderStats",
+        "dataset": "GenderStats",
         "keys": pd.DataFrame({"gender": [0, 1]}),
         "fields": ["gender", "count"],
     }

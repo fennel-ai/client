@@ -9,8 +9,8 @@ status: published
 Method to lookup rows of keyed datasets.
 
 #### Parameters
-<Expandable title="dataset_name" type="str">
-The name of the dataset to be looked up.
+<Expandable title="dataset" type="Union[str, Dataset]">
+The name of the dataset or Dataset object to be looked up.
 </Expandable>
 
 <Expandable title="keys" type="List[Dict[str, Any]]">

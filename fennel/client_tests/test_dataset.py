@@ -792,7 +792,7 @@ class TestBasicExplode(unittest.TestCase):
 
         # do lookup on the WithSquare dataset
         df, found = client.lookup(
-            dataset_name="Derived",
+            "Derived",
             keys=pd.DataFrame({"uid": [1, 2], "sku": [1, 2]}),
         )
         assert list(found) == [True, False]

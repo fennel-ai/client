@@ -204,11 +204,12 @@ class MockClient(Client):
 
     def lookup(
         self,
-        dataset_name: str,
+        dataset: Union[str, Dataset],
         keys: pd.DataFrame,
         fields: Optional[List[str]] = None,
         timestamps: Optional[pd.Series] = None,
     ) -> Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
+        dataset_name = dataset if isinstance(dataset, str) else dataset._name
         branch_class = self._get_branch()
         data_engine = branch_class.get_data_engine()
         return self.query_engine.lookup(
@@ -217,9 +218,10 @@ class MockClient(Client):
 
     def inspect(
         self,
-        dataset_name: str,
+        dataset: Union[str, Dataset],
         n: int = 10,
     ) -> List[Dict[str, Any]]:
+        dataset_name = dataset if isinstance(dataset, str) else dataset._name
         branch_class = self._get_branch()
         df = branch_class.get_dataset_df(dataset_name)
         if df.shape[0] <= n:
