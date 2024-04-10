@@ -1,5 +1,6 @@
 import dataclasses
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, Union
 
 import pandas as pd
@@ -29,6 +30,7 @@ def is_user_defined_class(cls) -> bool:
     return isinstance(cls, type) and cls.__module__ not in [
         "builtins",
         "datetime",
+        "decimal",
     ]
 
 
@@ -87,6 +89,9 @@ def parse_datetime(value: Union[int, str, datetime]) -> datetime:
 
 
 def cast_col_to_pandas(series: pd.Series, dtype: DataType) -> pd.Series:
+    if not dtype.HasField("optional_type"):
+        if series.isnull().any():
+            raise ValueError("Null values found in non-optional field.")
     if dtype.HasField("optional_type"):
         return cast_col_to_pandas(series, dtype.optional_type.of)
     elif dtype.HasField("int_type"):
@@ -103,5 +108,17 @@ def cast_col_to_pandas(series: pd.Series, dtype: DataType) -> pd.Series:
         return cast_col_to_pandas(series, dtype.one_of_type.of)
     elif dtype.HasField("between_type"):
         return cast_col_to_pandas(series, dtype.between_type.dtype)
+    elif dtype.HasField("decimal_type"):
+        scale = dtype.decimal_type.scale
+        return pd.Series(
+            [
+                (
+                    Decimal("%0.{}f".format(scale) % float(x))
+                    if not isinstance(x, Decimal)
+                    else x
+                )
+                for x in series
+            ]
+        )
     else:
         return series.fillna(pd.NA)

@@ -123,6 +123,11 @@ def struct(cls):
     return dataclasses.dataclass(cls)
 
 
+# ---------------------------------------------------------------------
+# Embedding
+# ---------------------------------------------------------------------
+
+
 @dataclass
 class _Embedding:
     dim: int
@@ -142,6 +147,40 @@ else:
 
         def __class_getitem__(cls, dimensions: int):
             return _Embedding(dimensions)
+
+
+# ---------------------------------------------------------------------
+# Decimal
+# ---------------------------------------------------------------------
+
+
+@dataclass
+class _Decimal:
+    scale: int
+
+
+if TYPE_CHECKING:
+    # Some type that can take an integer and keep mypy happy :)
+    Decimal = pd.Series
+else:
+
+    class Decimal:
+        def __init__(self, scale: int):
+            raise TypeError(
+                "Decimal is a type only and is meant to be used as "
+                "a type hint, for example: Decimal[2]"
+            )
+
+        def __class_getitem__(cls, scale: int):
+            if scale == 0:
+                raise TypeError(
+                    "Scale defined in the decimal type cannot be 0. If you want to use decimal with zero scale then use int type instead."
+                )
+            if scale > 28:
+                raise TypeError(
+                    "Scale defined in the decimal type cannot be greater than 28."
+                )
+            return _Decimal(scale)
 
 
 @dataclass
