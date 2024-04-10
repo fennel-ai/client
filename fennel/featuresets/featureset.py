@@ -68,7 +68,7 @@ RESERVED_FEATURE_NAMES = [
 
 
 def feature(
-    *args: Optional[Union[Feature, Field]],
+    *args: Optional[Any],
     default: Optional[Any] = None,
     version: Optional[int] = None,
     tier: Optional[Union[str, List[str]]] = None,
