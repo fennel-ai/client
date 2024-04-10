@@ -57,7 +57,7 @@ class UserInfoSingleExtractor:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")
     @outputs("age", "age_squared", "age_cubed", "is_name_common")
     def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
@@ -98,7 +98,7 @@ class UserInfoMultipleExtractor:
     age_reciprocal: float
     age_doubled: int
 
-    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")
     @outputs("age", "name")
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
@@ -140,7 +140,7 @@ class UserInfoMultipleExtractor:
         # returns a dataframe with extra columns
         return pd.DataFrame([d4, d3, d2]).T
 
-    @extractor(depends_on=[UserInfoDataset], version=2)  # type: ignore
+    @extractor(deps=[UserInfoDataset], version=2)  # type: ignore
     @includes(get_country_geoid)
     @inputs("userid")
     @outputs("country_geoid")
@@ -579,7 +579,7 @@ class DocumentFeatures:
     fast_text_embedding: Embedding[3]
     num_words: int
 
-    @extractor(depends_on=[DocumentContentDataset])  # type: ignore
+    @extractor(deps=[DocumentContentDataset])  # type: ignore
     @inputs("doc_id")
     @outputs("num_words", "bert_embedding", "fast_text_embedding")
     def get_doc_features(cls, ts: pd.Series, doc_id: pd.Series):

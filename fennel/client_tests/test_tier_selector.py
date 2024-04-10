@@ -108,7 +108,7 @@ class RequestFeatures:
 class ActorFeatures:
     revenue: int
 
-    @extractor(depends_on=[ActorStats], tier="prod")  # type: ignore
+    @extractor(deps=[ActorStats], tier="prod")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs("revenue")
     def extract_revenue(cls, ts: pd.Series, name: pd.Series):
@@ -116,7 +116,7 @@ class ActorFeatures:
         df = df.fillna(0)
         return df["revenue"]
 
-    @extractor(depends_on=[ActorStats], tier="staging")  # type: ignore
+    @extractor(deps=[ActorStats], tier="staging")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs("revenue")
     def extract_revenue2(cls, ts: pd.Series, name: pd.Series):

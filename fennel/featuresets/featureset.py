@@ -166,17 +166,25 @@ def featureset(featureset_cls: Type[T]):
 
 def extractor(
     func: Optional[Callable] = None,
-    depends_on: List[Dataset] = None,
+    deps: List[Dataset] = None,
     version: int = 0,
     tier: Optional[Union[str, List[str]]] = None,
+    **kwargs,
 ):
     """
     extractor is a decorator for a function that extracts a feature from a
     featureset.
     """
-
-    if depends_on is None:
-        depends_on = []
+    if deps is None and kwargs.get("depends_on") is None:
+        deps = []
+    if deps is not None and kwargs.get("depends_on") is not None:
+        raise ValueError("Use only one of 'depends_on' or 'deps' parameter")
+    if kwargs.get("depends_on") is not None:
+        deps = kwargs.get("depends_on")
+        if not isinstance(deps, list):
+            raise TypeError(
+                f"depends_on must be a list of Datasets, not a {type(deps)}"
+            )
 
     def _create_extractor(extractor_func: Callable, version: int):
         if not callable(extractor_func):
@@ -185,14 +193,13 @@ def extractor(
         extractor_name = extractor_func.__name__
         params: List[Union[Feature, str]] = []
         class_method = False
-        if type(depends_on) is not list:
+        if not isinstance(deps, list):
             raise TypeError(
-                f"depends_on must be a list of Datasets, not a"
-                f" {type(depends_on)}"
+                f"deps must be a list of Datasets, not a {type(deps)}"
             )
 
         # check whether datasets in depends have either offline or online index
-        for dataset in depends_on:
+        for dataset in deps:
             index = get_index(dataset)
             if index is None:
                 raise ValueError(
@@ -204,7 +211,7 @@ def extractor(
                     f"Please define either an offline or online index on dataset : {dataset._name} for extractor to work."
                 )
 
-        setattr(extractor_func, DEPENDS_ON_DATASETS_ATTR, list(depends_on))
+        setattr(extractor_func, DEPENDS_ON_DATASETS_ATTR, list(deps))
         if not hasattr(extractor_func, FENNEL_INPUTS):
             inputs = []
         else:

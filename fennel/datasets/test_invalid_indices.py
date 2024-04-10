@@ -62,7 +62,7 @@ def test_invalid_dataset_lookup():
 
             @inputs("user_id")
             @outputs("age")
-            @extractor(depends_on=[Dataset1])
+            @extractor(deps=[Dataset1])
             def extract(cls, ts: pd.Series, user_ids: pd.Series):
                 data, _ = Dataset1.lookup(ts, user_id=user_ids)  # type: ignore
                 return data["age"].fillna(10)
@@ -81,7 +81,7 @@ def test_invalid_dataset_lookup():
 
             @inputs("user_id")
             @outputs("age")
-            @extractor(depends_on=[Dataset2])
+            @extractor(deps=[Dataset2])
             def extract(cls, ts: pd.Series, user_ids: pd.Series):
                 data, _ = Dataset2.lookup(ts, user_id=user_ids)  # type: ignore
                 return data["age"].fillna(10)
@@ -116,7 +116,7 @@ def test_invalid_dataset_online_lookup(client):
         user_id: int
         age: int
 
-        @extractor(depends_on=[Dataset1])
+        @extractor(deps=[Dataset1])
         @inputs("user_id")
         @outputs("age")
         def extract(cls, ts: pd.Series, user_ids: pd.Series):
@@ -173,7 +173,7 @@ def test_invalid_dataset_offline_lookup(client):
         user_id: int
         age: int
 
-        @extractor(depends_on=[Dataset1])
+        @extractor(deps=[Dataset1])
         @inputs("user_id")
         @outputs("age")
         def extract(cls, ts: pd.Series, user_ids: pd.Series):

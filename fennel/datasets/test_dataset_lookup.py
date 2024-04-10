@@ -62,7 +62,7 @@ def test_dataset_lookup():
         age_cube: int = F().meta(owner="mohit@fennel.ai")
         gender: str
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs("userid", "name")
         @outputs("age_sq", "gender")
         @no_type_check
@@ -79,7 +79,7 @@ def test_dataset_lookup():
             df["age_sq"] = df["age"] * df["age"]
             return df[["age_sq", "gender"]]
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs("userid", "name")
         @outputs("age_cube")
         @no_type_check

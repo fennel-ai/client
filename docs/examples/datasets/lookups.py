@@ -30,7 +30,7 @@ class UserFeature:
     name: str
     in_home_city: bool
 
-    @extractor(depends_on=[User])
+    @extractor(deps=[User])
     @inputs("uid")
     @outputs("in_home_city")
     def func(cls, ts: pd.Series, uid: pd.Series):
