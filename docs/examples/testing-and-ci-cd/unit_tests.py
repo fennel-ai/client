@@ -36,9 +36,9 @@ class MovieRating:
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
-            Count(window="7d", into_field="num_ratings"),
-            Sum(window="28d", of="rating", into_field="sum_ratings"),
-            Average(window="12h", of="rating", into_field="rating"),
+            num_ratings=Count(window="7d"),
+            sum_ratings=Sum(window="28d", of="rating"),
+            rating=Average(window="12h", of="rating"),
         )
 
 

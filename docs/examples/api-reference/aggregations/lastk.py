@@ -37,12 +37,11 @@ def test_basic(client):
         def lastk_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
                 # docsnip-highlight start
-                LastK(
+                amounts=LastK(
                     of="amount",
                     limit=10,
                     dedup=False,
                     window="1d",
-                    into_field="amounts",
                 ),
                 # docsnip-highlight end
             )
@@ -138,12 +137,11 @@ def test_invalid_type(client):
             def bad_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    LastK(
+                    amounts=LastK(
                         of="amount",
                         limit=10,
                         dedup=False,
                         window="1d",
-                        into_field="amounts",
                     ),
                     # docsnip-highlight end
                 )

@@ -81,9 +81,9 @@ def test_overview(client):
                 lambda df: df["country"] != df["payment_country"]
             )
             return abroad.groupby("uid").aggregate(
-                Count(window="forever", into_field="count"),
-                Sum(of="amount", window="1d", into_field="amount_1d"),
-                Sum(of="amount", window="1w", into_field="amount_1w"),
+                count=Count(window="forever"),
+                amount_1d=Sum(of="amount", window="1d"),
+                amount_1w=Sum(of="amount", window="1w"),
             )
 
         # docsnip-highlight end

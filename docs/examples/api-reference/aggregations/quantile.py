@@ -48,10 +48,9 @@ class TestQuantileSnips(unittest.TestCase):
             def quantil_pipeline(cls, ds: Dataset):
                 # docsnip-highlight start
                 return ds.groupby("uid").aggregate(
-                    Quantile(
+                    median_amount_1w=Quantile(
                         of="amount",
                         window="1w",
-                        into_field="median_amount_1w",
                         p=0.5,
                         approx=True,
                         default=0.0,
@@ -151,10 +150,9 @@ class TestQuantileSnips(unittest.TestCase):
                 @inputs(Transaction)
                 def bad_pipeline(cls, ds: Dataset):
                     return ds.groupby("uid").aggregate(
-                        Quantile(
+                        median_amount_1w=Quantile(
                             of="amount",
                             window="1w",
-                            into_field="median_amount_1w",
                             p=0.5,
                             approx=True,
                             default=0.0,
@@ -194,10 +192,9 @@ class TestQuantileSnips(unittest.TestCase):
                 @inputs(Transaction)
                 def bad_pipeline(cls, ds: Dataset):
                     return ds.groupby("uid").aggregate(
-                        Quantile(
+                        median_amount_1w=Quantile(
                             of="amount",
                             window="1w",
-                            into_field="median_amount_1w",
                             p=0.5,
                             approx=True,
                         ),
@@ -237,10 +234,9 @@ class TestQuantileSnips(unittest.TestCase):
                 @inputs(Transaction)
                 def bad_pipeline(cls, ds: Dataset):
                     return ds.groupby("uid").aggregate(
-                        Quantile(
+                        median_amount_1w=Quantile(
                             of="amount",
                             window="1w",
-                            into_field="median_amount_1w",
                             # docsnip-highlight next-line
                             p=10.0,
                             approx=True,

@@ -154,8 +154,8 @@ class FraudActivityDataset:
 
         # docsnip aggregate
         aggregated_ds = joined_ds.groupby("merchant_category").aggregate(
-            Sum(of="txn_amount", window="1h", into_field="txn_sum"),
-            Count(window="1h", into_field="txn_count"),
+            txn_sum=Sum(of="txn_amount", window="1h"),
+            txn_count=Count(window="1h"),
         )
         # /docsnip
         return aggregated_ds
