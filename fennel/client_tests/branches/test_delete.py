@@ -33,12 +33,12 @@ class Request:
 
 @featureset
 class UserInfoFeatureset:
-    user_id: int = F(Request.user_id)  # type: ignore
-    name: str = F(UserInfoDataset.name, default="None")  # type: ignore
-    age: int = F(UserInfoDataset.age, default=0)  # type: ignore
-    gender: str = F(UserInfoDataset.gender, default="None")  # type: ignore
-    country_code: int = F(UserInfoDataset.country_code, default=0)  # type: ignore
-    email: str = F(UserInfoDataset.email, default="None")  # type: ignore
+    user_id: int = F(Request.user_id)
+    name: str = F(UserInfoDataset.name, default="None")
+    age: int = F(UserInfoDataset.age, default=0)
+    gender: str = F(UserInfoDataset.gender, default="None")
+    country_code: int = F(UserInfoDataset.country_code, default=0)
+    email: str = F(UserInfoDataset.email, default="None")
 
 
 @pytest.mark.integration
