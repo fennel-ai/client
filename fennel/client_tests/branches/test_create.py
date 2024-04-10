@@ -79,7 +79,7 @@ def test_complex_create(client):
     )
 
     _, found = client.lookup(
-        dataset_name="UserInfoDataset",
+        "UserInfoDataset",
         keys=pd.DataFrame({"user_id": [1, 2]}),
         fields=["age"],
     )
@@ -131,7 +131,7 @@ def test_log(client):
     client.sleep()
 
     _, found = client.lookup(
-        dataset_name="UserInfoDataset",
+        "UserInfoDataset",
         keys=pd.DataFrame({"user_id": [1, 2]}),
         fields=["age"],
     )

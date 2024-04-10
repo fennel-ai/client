@@ -127,7 +127,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
 
         # docsnip lookup
         response = client.lookup(
-            dataset_name="UserInfoDataset",
+            dataset="UserInfoDataset",
             keys=pd.DataFrame({"user_id": [18232]}),
             fields=["name"],
         )

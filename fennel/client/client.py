@@ -656,7 +656,7 @@ class Client:
 
     def lookup(
         self,
-        dataset_name: str,
+        dataset: Union[str, Dataset],
         keys: pd.DataFrame,
         fields: Optional[List[str]] = None,
         timestamps: Optional[pd.Series] = None,
@@ -665,7 +665,7 @@ class Client:
 
         Parameters:
         ----------
-        dataset_name (str): The name of the dataset.
+        dataset (Union[str, Dataset]): The name of the dataset or Dataset object.
         keys (pd.DataFrame): All the keys to lookup.
         fields: (Optional[List[str]]): The fields to lookup. If None, all
             fields are returned.
@@ -679,6 +679,7 @@ class Client:
         corresponding key(s) is found in the dataset.
 
         """
+        dataset_name = dataset if isinstance(dataset, str) else dataset._name
         keys = keys.to_dict(orient="records")
         fields = fields if fields else []
         req = {
@@ -705,12 +706,14 @@ class Client:
             )
         return pd.DataFrame(resp_json["data"]), found
 
-    def inspect(self, dataset_name: str, n: int = 10) -> List[Dict[str, Any]]:
+    def inspect(
+        self, dataset: Union[str, Dataset], n: int = 10
+    ) -> List[Dict[str, Any]]:
         """Inspect the last n rows of a dataset.
 
         Parameters:
         ----------
-        dataset_name (str): The dataset name.
+        dataset (str): The name of the dataset or Dataset object.
         n (int): The number of rows, default is 10.
 
         Returns: List[Dict[str, Any]]:
@@ -718,6 +721,7 @@ class Client:
         A list of dataset rows.
 
         """
+        dataset_name = dataset if isinstance(dataset, str) else dataset._name
         return self._get(
             "{}/dataset/{}/inspect?n={}".format(V1_API, dataset_name, n)
         ).json()
