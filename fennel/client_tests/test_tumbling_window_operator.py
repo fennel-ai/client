@@ -135,7 +135,7 @@ class UserSessionStats:
     last_visitor_session: List[Window]
     avg_star: float
 
-    @extractor(depends_on=[SessionStats])  # type: ignore
+    @extractor(deps=[SessionStats])  # type: ignore
     @inputs("user_id")
     @outputs("avg_count", "avg_length", "last_visitor_session", "avg_star")
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):
@@ -244,7 +244,7 @@ class UserSessionStatsHopping:
     last_visitor_session: List[Window]
     avg_star: float
 
-    @extractor(depends_on=[SessionStatsHopping])  # type: ignore
+    @extractor(deps=[SessionStatsHopping])  # type: ignore
     @inputs("user_id")
     @outputs("avg_count", "avg_length", "last_visitor_session", "avg_star")
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):

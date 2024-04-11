@@ -39,6 +39,9 @@ class MockClient(Client):
 
         # Adding branch
         self.branches_map[branch] = Branch(branch)
+        if branch != MAIN_BRANCH:
+            # We should always have a main branch
+            self.branches_map[MAIN_BRANCH] = Branch(MAIN_BRANCH)
 
     # ----------------- Debug methods -----------------------------------------
 
@@ -83,10 +86,8 @@ class MockClient(Client):
         if at_least_one_ok:
             return FakeResponse(200, "OK")
         else:
-            return FakeResponse(
-                404,
-                f"Webhook endpoint {webhook}_{endpoint} not "
-                f"found in any branch",
+            raise Exception(
+                f"Webhook endpoint {webhook}_{endpoint} not found in any branch"
             )
 
     def commit(
@@ -192,18 +193,23 @@ class MockClient(Client):
         return output_df
 
     def track_offline_query(self, request_id):
-        return FakeResponse(404, "Offline Query features not supported")
+        return FakeResponse(
+            404, "Offline Query features not supported in MockClient"
+        )
 
     def cancel_offline_query(self, request_id):
-        return FakeResponse(404, "Offline Query features not supported")
+        return FakeResponse(
+            404, "Offline Query features not supported in MockClient"
+        )
 
     def lookup(
         self,
-        dataset_name: str,
+        dataset: Union[str, Dataset],
         keys: pd.DataFrame,
         fields: Optional[List[str]] = None,
         timestamps: Optional[pd.Series] = None,
     ) -> Tuple[Union[pd.DataFrame, pd.Series], pd.Series]:
+        dataset_name = dataset if isinstance(dataset, str) else dataset._name
         branch_class = self._get_branch()
         data_engine = branch_class.get_data_engine()
         return self.query_engine.lookup(
@@ -212,9 +218,10 @@ class MockClient(Client):
 
     def inspect(
         self,
-        dataset_name: str,
+        dataset: Union[str, Dataset],
         n: int = 10,
     ) -> List[Dict[str, Any]]:
+        dataset_name = dataset if isinstance(dataset, str) else dataset._name
         branch_class = self._get_branch()
         df = branch_class.get_dataset_df(dataset_name)
         if df.shape[0] <= n:
@@ -250,16 +257,15 @@ class MockClient(Client):
 
     def clone_branch(self, name: str, from_branch: str):
         if name in self.branches_map:
-            return FakeResponse(400, f"Branch name: {name} already exists")
+            raise Exception(f"Branch `{name}` already exists")
+
         if name == from_branch:
-            return FakeResponse(
-                400,
-                "New Branch name cannot be same as the branch that needs to be cloned",
+            raise Exception(
+                "New Branch name cannot be same as the branch that needs to be cloned"
             )
+
         if from_branch not in self.branches_map:
-            return FakeResponse(
-                400, f"Branch name: {from_branch} does not exist"
-            )
+            raise Exception(f"Branch `{from_branch}` does not exist")
         self.branches_map[name] = copy.deepcopy(self.branches_map[from_branch])
         self.branches_map[name].name = name
         self.checkout(name)
@@ -267,11 +273,16 @@ class MockClient(Client):
 
     def delete_branch(self, name: str):
         if name not in self.branches_map:
-            return FakeResponse(400, f"Branch name: {name} does not exist")
+            raise Exception(f"Branch name: {name} does not exist")
         if name == MAIN_BRANCH:
-            return FakeResponse(400, "Cannot delete main branch")
+            raise Exception("Cannot delete main branch")
+        cur_branch = self._branch
         del self.branches_map[name]
-        self._branch = MAIN_BRANCH
+        if cur_branch == name:
+            print("Deleting current branch, checking out to main branch")
+            self.checkout(MAIN_BRANCH)
+        else:
+            self.checkout(cur_branch)
         return FakeResponse(200, "Ok")
 
     def list_branches(self) -> List[str]:

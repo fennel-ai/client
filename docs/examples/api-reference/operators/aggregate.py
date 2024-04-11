@@ -49,8 +49,8 @@ class TestAssignSnips(unittest.TestCase):
             def aggregate_pipeline(cls, ds: Dataset):
                 # docsnip-highlight start
                 return ds.groupby("uid").aggregate(
-                    Count(window="1d", into_field="count_1d"),
-                    Sum(of="amount", window="forever", into_field="total"),
+                    count_1d=Count(window="1d"),
+                    total=Sum(of="amount", window="forever"),
                 )
                 # docsnip-highlight end
 

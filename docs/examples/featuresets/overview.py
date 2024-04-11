@@ -197,7 +197,7 @@ def test_multiple_features_extracted(client):
         latitude: float
         longitude: float
 
-        @extractor(depends_on=[UserInfo])
+        @extractor(deps=[UserInfo])
         @inputs("uid")
         @outputs("latitude", "longitude")
         def get_user_city_coordinates(cls, ts: pd.Series, uid: pd.Series):
@@ -275,7 +275,7 @@ def test_extractors_across_featuresets(client):
         latitude: float
         longitude: float
 
-        @extractor(depends_on=[UserInfo])
+        @extractor(deps=[UserInfo])
         @inputs(Request.uid)
         @outputs("uid", "latitude", "longitude")
         def get_country_geoid(cls, ts: pd.Series, uid: pd.Series):

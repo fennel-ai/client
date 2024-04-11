@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.2.3] - 2024-04-09
+- Fix delete method for client and mock client 
+
 ## [1.2.2] - 2024-04-07
 - Allow / in branch name 
 

@@ -36,9 +36,9 @@ class MovieRating:
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
-            Count(window="7d", into_field="num_ratings"),
-            Sum(window="28d", of="rating", into_field="sum_ratings"),
-            Average(window="12h", of="rating", into_field="rating"),
+            num_ratings=Count(window="7d"),
+            sum_ratings=Sum(window="28d", of="rating"),
+            rating=Average(window="12h", of="rating"),
         )
 
 
@@ -186,7 +186,7 @@ class UserInfoMultipleExtractor:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(deps=[UserInfoDataset])
     @inputs("userid")
     @outputs("age", "name")
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
@@ -208,7 +208,7 @@ class UserInfoMultipleExtractor:
         ]
         return df
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(deps=[UserInfoDataset])
     @includes(get_country_geoid)
     @inputs("userid")
     @outputs("country_geoid")

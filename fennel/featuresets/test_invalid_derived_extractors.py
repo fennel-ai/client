@@ -50,7 +50,7 @@ def test_invalid_multiple_extracts():
                 default=0,
             )
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(deps=[UserInfoDataset])
             @inputs(user_id)
             @outputs(age)
             def get_age(cls, ts: pd.Series, user_id: pd.Series):

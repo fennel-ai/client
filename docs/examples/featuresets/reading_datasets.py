@@ -30,7 +30,7 @@ class UserFeatures:
     uid: int
     name: str
 
-    @extractor(depends_on=[User])  # docsnip-highlight
+    @extractor(deps=[User])  # docsnip-highlight
     @inputs("uid")
     @outputs("name")
     def func(cls, ts: pd.Series, uids: pd.Series):

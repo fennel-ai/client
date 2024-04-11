@@ -81,9 +81,9 @@ def test_overview(client):
                 lambda df: df["country"] != df["payment_country"]
             )
             return abroad.groupby("uid").aggregate(
-                Count(window="forever", into_field="count"),
-                Sum(of="amount", window="1d", into_field="amount_1d"),
-                Sum(of="amount", window="1w", into_field="amount_1w"),
+                count=Count(window="forever"),
+                amount_1d=Sum(of="amount", window="1d"),
+                amount_1w=Sum(of="amount", window="1w"),
             )
 
         # docsnip-highlight end
@@ -104,7 +104,7 @@ def test_overview(client):
         dob: datetime
 
         # docsnip-highlight start
-        @extractor(depends_on=[User])
+        @extractor(deps=[User])
         @inputs("uid")
         @outputs("age")
         def get_age(cls, ts: pd.Series, uids: pd.Series):
@@ -115,7 +115,7 @@ def test_overview(client):
 
         # docsnip-highlight end
 
-        @extractor(depends_on=[User])
+        @extractor(deps=[User])
         @inputs("uid")
         @outputs("country")
         def get_country(cls, ts: pd.Series, uids: pd.Series):

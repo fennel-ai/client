@@ -63,9 +63,9 @@ def test_pipeline_basic():
                 lambda df: df["country"] != df["payment_country"]
             )
             return abroad.groupby("uid").aggregate(
-                Count(window="forever", into_field="count"),
-                Sum(of="amount", window="1d", into_field="amount_1d"),
-                Sum(of="amount", window="1w", into_field="amount_1w"),
+                count=Count(window="forever"),
+                amount_1d=Sum(of="amount", window="1d"),
+                amount_1w=Sum(of="amount", window="1w"),
             )
 
         # docsnip-highlight end
@@ -277,7 +277,7 @@ def test_multiple_pipelines(client):
             )
             union = with_ios_platform + with_android_platform
             return union.groupby(["uid", "platform"]).aggregate(
-                Count(window="1d", into_field="num_logins_1d"),
+                num_logins_1d=Count(window="1d"),
             )
 
     # /docsnip

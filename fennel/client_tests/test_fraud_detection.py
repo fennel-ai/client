@@ -78,7 +78,7 @@ class UserTransactionSumsFeatures:
     sum_amt_7d: float
 
     # If come from different featuresets have to include full path x.y
-    @extractor(depends_on=[UserTransactionSums])  # type: ignore
+    @extractor(deps=[UserTransactionSums])  # type: ignore
     @inputs("cc_num")
     @outputs("sum_amt_1d", "sum_amt_7d")
     def my_extractor(cls, ts: pd.Series, cc_nums: pd.Series):

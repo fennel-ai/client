@@ -33,12 +33,12 @@ class Request:
 
 @featureset
 class UserInfoFeatureset:
-    user_id: int = F(Request.user_id)  # type: ignore
-    name: str = F(UserInfoDataset.name, default="None")  # type: ignore
-    age: int = F(UserInfoDataset.age, default=0)  # type: ignore
-    gender: str = F(UserInfoDataset.gender, default="None")  # type: ignore
-    country_code: int = F(UserInfoDataset.country_code, default=0)  # type: ignore
-    email: str = F(UserInfoDataset.email, default="None")  # type: ignore
+    user_id: int = F(Request.user_id)
+    name: str = F(UserInfoDataset.name, default="None")
+    age: int = F(UserInfoDataset.age, default=0)
+    gender: str = F(UserInfoDataset.gender, default="None")
+    country_code: int = F(UserInfoDataset.country_code, default=0)
+    email: str = F(UserInfoDataset.email, default="None")
 
 
 @pytest.mark.integration
@@ -49,8 +49,9 @@ def test_delete_branch(client):
 
     # can not delete the main branch
     assert client.list_branches() == ["main"]
-    response = client.delete_branch("main")
-    assert response.status_code == requests.codes.BAD_REQUEST
+    with pytest.raises(Exception) as e:
+        client.delete_branch("main")
+    assert str(e.value) == "Cannot delete main branch"
 
     resp = client.clone_branch("test-branch", "main")
     assert resp.status_code == requests.codes.OK

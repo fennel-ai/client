@@ -123,7 +123,7 @@ def _get_changed_featureset():
         country_code: int
         email: str = F(UserInfoDataset.email, default="None")  # type: ignore
 
-        @extractor(depends_on=[UserInfoDataset], version=2)
+        @extractor(deps=[UserInfoDataset], version=2)
         @inputs("user_id")
         @outputs("age", "country_code")
         def my_extractor(cls, ts: pd.Series, user_id: pd.Series):
@@ -165,8 +165,9 @@ def test_simple_clone(client):
 def test_clone_errors(client):
     # can not clone from non-existent branch
     assert client.list_branches() == ["main"]
-    response = client.clone_branch("test-branch", from_branch="random")
-    assert response.status_code == requests.codes.BAD_REQUEST
+    with pytest.raises(Exception) as e:
+        client.clone_branch("test-branch", from_branch="random")
+    assert str(e.value) == "Branch `random` does not exist"
 
     # does work when the branch exists
     assert client.list_branches() == ["main"]
@@ -174,8 +175,9 @@ def test_clone_errors(client):
     assert client.list_branches() == ["main", "test-branch"]
 
     # can not clone to an existing branch
-    response = client.clone_branch("test-branch", from_branch="main")
-    assert response.status_code == requests.codes.BAD_REQUEST
+    with pytest.raises(Exception) as e:
+        client.clone_branch("main", from_branch="test-branch")
+    assert str(e.value) == "Branch `main` already exists"
 
 
 @pytest.mark.integration
@@ -208,7 +210,7 @@ def test_clone_after_log(client):
     client.sleep()
 
     _, found = client.lookup(
-        dataset_name="UserInfoDataset",
+        "UserInfoDataset",
         keys=pd.DataFrame({"user_id": [1, 2]}),
     )
     assert found.to_list() == [True, False]
@@ -216,7 +218,7 @@ def test_clone_after_log(client):
     client.clone_branch("test-branch", from_branch="main")
     assert client.branch() == "test-branch"
     _, found = client.lookup(
-        dataset_name="UserInfoDataset",
+        "UserInfoDataset",
         keys=pd.DataFrame({"user_id": [1, 2]}),
     )
     assert found.to_list() == [True, False]
@@ -265,7 +267,7 @@ def test_webhook_log_to_both_clone_parent(client):
 
     assert client.branch() == "test-branch"
     params = {
-        "dataset_name": "GenderStats",
+        "dataset": "GenderStats",
         "keys": pd.DataFrame({"gender": ["male", "F"]}),
         "fields": ["gender", "count"],
     }
@@ -424,7 +426,7 @@ def test_change_dataset_clone_branch(client):
 
     client.checkout("test-branch")
     df, found = client.lookup(
-        dataset_name="GenderStats",
+        "GenderStats",
         keys=pd.DataFrame({"gender": ["male", "F"]}),
         fields=["gender", "count"],
     )
@@ -473,7 +475,7 @@ def test_multiple_clone_branch(client):
     client.sleep()
 
     params = {
-        "dataset_name": "GenderStats",
+        "dataset": "GenderStats",
         "keys": pd.DataFrame({"gender": ["male", "F"]}),
         "fields": ["gender", "count"],
     }
@@ -590,7 +592,7 @@ def test_change_source_dataset_clone_branch(client):
     client.sleep()
 
     params = {
-        "dataset_name": "GenderStats",
+        "dataset": "GenderStats",
         "keys": pd.DataFrame({"gender": [0, 1]}),
         "fields": ["gender", "count"],
     }

@@ -90,7 +90,7 @@ class UserFeature:
         ages = ts - dobs
         return pd.Series(ages)
 
-    @extractor(depends_on=[User])  # type: ignore
+    @extractor(deps=[User])  # type: ignore
     @inputs("uid")
     @outputs("country")
     def get_country(cls, ts: pd.Series, uids: pd.Series):
@@ -132,7 +132,7 @@ class UserInfoExtractor:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @extractor(deps=[UserInfoDataset])  # type: ignore
     @includes(power_4, cube)
     @inputs("userid")
     @outputs("age", "age_power_four", "age_cubed", "is_name_common")

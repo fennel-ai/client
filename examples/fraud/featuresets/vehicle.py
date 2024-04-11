@@ -14,7 +14,7 @@ class VehicleFS:
     market_area_id: int = F(MarketAreaDS.market_area_id, default=0)
     vehicle_state: str
 
-    @extractor(depends_on=[MarketAreaDS], version=1)
+    @extractor(deps=[MarketAreaDS], version=1)
     @inputs(vehicle_id)
     @outputs("vehicle_state")
     def extract_vehicle_state(cls, ts: pd.Series, vehicle_ids: pd.Series):

@@ -495,10 +495,10 @@ class GroupBy:
         self.node = node
         self.node.out_edges.append(self)
 
-    def aggregate(self, *args) -> _Node:
-        if len(args) == 0:
+    def aggregate(self, *args, **kwargs) -> _Node:
+        if len(args) == 0 and len(kwargs) == 0:
             raise TypeError(
-                "aggregate operator expects atleast one aggregation operation"
+                "aggregate operator expects at least one aggregation operation"
             )
         if len(args) == 1 and isinstance(args[0], list):
             aggregates = args[0]
@@ -506,6 +506,22 @@ class GroupBy:
             aggregates = list(args)
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
+
+        # Adding aggregate to aggregates list from kwargs
+        for key, value in kwargs.items():
+            if not isinstance(value, AggregateType):
+                raise ValueError(f"Invalid aggregate type for field: {key}")
+            value.into_field = key
+            aggregates.append(value)
+
+        # Check if any aggregate has into_field as ""
+        for aggregate in aggregates:
+            if aggregate.into_field == "":
+                raise ValueError(
+                    "Specify the output field name for the aggregate using 'into_field' "
+                    "parameter or through named arguments."
+                )
+
         return Aggregate(self.node, list(self.keys), aggregates)
 
     def first(self) -> _Node:

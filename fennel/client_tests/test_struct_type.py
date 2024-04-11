@@ -69,14 +69,14 @@ class MovieFeatures:
     cast_list: List[Cast]
     average_cast_age: float
 
-    @extractor(depends_on=[MovieInfo])  # type: ignore
+    @extractor(deps=[MovieInfo])  # type: ignore
     @inputs("movie")
     @outputs("cast_list")
     def extract_cast(cls, ts: pd.Series, movie: pd.Series):
         res, _ = MovieInfo.lookup(ts, movie=movie)  # type: ignore
         return pd.Series(res["cast_list"])
 
-    @extractor(depends_on=[MovieInfo])  # type: ignore
+    @extractor(deps=[MovieInfo])  # type: ignore
     @inputs("movie")
     @outputs("average_cast_age")
     def extract_average_cast_age(cls, ts: pd.Series, movie: pd.Series):

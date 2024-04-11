@@ -2,7 +2,7 @@
 
 from fennel.client.client import _s3_connector_dict, _validate_branch_name
 from fennel.connectors.connectors import S3
-
+from fennel.testing import mock
 import pytest
 
 
@@ -121,3 +121,21 @@ def test_valid_branch_names():
         assert "Branch name should only contain alphanumeric characters" in str(
             e
         )
+
+
+@mock
+def test_delete_branch(client):
+    client.init_branch("BranchA")
+    client.init_branch("BranchB")
+    with pytest.raises(Exception) as e:
+        client.init_branch("BranchA")
+    assert str(e.value) == "Branch name: `BranchA` already exists"
+    assert client.list_branches() == ["main", "BranchA", "BranchB"]
+
+    with pytest.raises(Exception) as e:
+        client.delete_branch("main")
+    assert str(e.value) == "Cannot delete main branch"
+    client.delete_branch("BranchA")
+    assert client.list_branches() == ["main", "BranchB"]
+    client.delete_branch("BranchB")
+    assert client.list_branches() == ["main"]

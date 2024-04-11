@@ -54,7 +54,7 @@ class UserInfoSingleExtractor:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @extractor(deps=[UserInfoDataset])  # type: ignore
     @includes(power_4, cube)
     @inputs("userid")
     @outputs(age, "age_power_four", "age_cubed", "is_name_common")

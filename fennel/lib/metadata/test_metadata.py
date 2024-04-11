@@ -333,21 +333,21 @@ def test_featureset_with_extractors():
         age: int = F().meta(owner="aditya@fennel.ai")
         income: int
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @meta(owner="a@xyz.com", description="top_meta")
         @inputs(User.id)
         @outputs("userid", "home_geoid")
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs(User.id)
         @outputs("gender", "age")
         @meta(owner="b@xyz.com", description="middle_meta")
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs(User.id)
         @outputs("income")
         @meta(owner="c@xyz.com", description="bottom_meta")
