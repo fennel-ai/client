@@ -4,9 +4,9 @@ import pandas as pd
 import pytest
 
 from fennel._vendor import requests
-from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, feature as F
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
+from fennel.featuresets import featureset, feature as F
 from fennel.testing import mock
 
 wh = Webhook(name="fennel_webhook")
@@ -14,8 +14,7 @@ __owner__ = "nitin@fennel.com"
 
 
 @source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str

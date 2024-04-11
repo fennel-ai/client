@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -12,7 +13,7 @@ class TestFilterSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, index
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -31,8 +32,7 @@ class TestFilterSnips(unittest.TestCase):
             gender: str
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Dropped:
             uid: int = field(key=True)
             gender: str

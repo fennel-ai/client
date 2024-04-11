@@ -4,9 +4,9 @@ This file contains all the required datasets for linking different payment ids t
 
 from datetime import datetime
 
-from fennel.datasets import dataset, field, pipeline, Dataset, index
-from fennel.lib import inputs
 from fennel.connectors import Webhook, source
+from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.lib import inputs
 
 __owner__ = "eng@app.com"
 
@@ -26,8 +26,7 @@ class PaymentAccountSrcDS:
     created: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 @source(
     webhook.endpoint("PaymentAccountAssociationSrcDS"),
     disorder="14d",
@@ -40,8 +39,7 @@ class PaymentAccountAssociationSrcDS:
     created: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 @source(
     webhook.endpoint("AccountSrcDS"), disorder="14d", cdc="upsert", tier="local"
 )
@@ -51,8 +49,7 @@ class AccountSrcDS:
     created: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class PaymentIdentifierDS:
     """
     This dataset maps driver_id to several ids from multiple tables.

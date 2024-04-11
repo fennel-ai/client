@@ -1,7 +1,8 @@
-import pytest
 from datetime import datetime
 
 import pandas as pd
+import pytest
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -16,7 +17,6 @@ def test_basic(client):
         pipeline,
         Dataset,
         Average,
-        index,
     )
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
@@ -30,8 +30,7 @@ def test_basic(client):
         amt: int
         timestamp: datetime
 
-    @index
-    @dataset
+    @dataset(index=True)
     class Aggregated:
         uid: int = field(key=True)
         # docsnip-highlight start

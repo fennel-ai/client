@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -11,7 +12,7 @@ class TestLatestSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, index
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -24,8 +25,7 @@ class TestLatestSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class LatestOnly:
             uid: int = field(key=True)
             amount: int

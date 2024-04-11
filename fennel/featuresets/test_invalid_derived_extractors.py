@@ -1,14 +1,14 @@
-import pandas as pd
-import pytest
 from datetime import datetime
-from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional
 
-from fennel.datasets import dataset, field, index
+import pandas as pd
+import pytest
+from google.protobuf.json_format import ParseDict  # type: ignore
+
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
-from fennel.connectors import source, Webhook
-
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
@@ -16,8 +16,7 @@ webhook = Webhook(name="fennel_webhook")
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str

@@ -6,6 +6,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import connectors
+from fennel.connectors import source
 from fennel.datasets import (
     dataset,
     Dataset,
@@ -13,12 +14,10 @@ from fennel.datasets import (
     field,
     Average,
     LastK,
-    index,
 )
-from fennel.featuresets import featureset, feature as F, extractor
-from fennel.lib import meta, inputs, outputs
 from fennel.dtypes import Window, struct
-from fennel.connectors import source
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 webhook = connectors.Webhook(name="fennel_webhook")
@@ -40,8 +39,7 @@ class WindowStats:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class Sessions:
     user_id: int = field(key=True)
     window: Window = field(key=True)
@@ -66,8 +64,7 @@ class Sessions:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class SessionStats:
     user_id: int = field(key=True)
     timestamp: datetime = field(timestamp=True)

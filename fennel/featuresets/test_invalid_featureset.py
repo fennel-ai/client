@@ -1,15 +1,15 @@
+import sys
 from datetime import datetime
 from typing import Optional, List
-import sys
 
 import pandas as pd
 import pytest
 
 from fennel import meta
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import inputs, outputs
-from fennel.connectors import source, Webhook
 
 # noinspection PyUnresolvedReferences
 from fennel.testing import *
@@ -19,8 +19,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str

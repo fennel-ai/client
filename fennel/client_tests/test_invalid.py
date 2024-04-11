@@ -4,10 +4,10 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, pipeline, field, Dataset, index
-from fennel.featuresets import featureset, extractor, feature as F
-from fennel.lib import meta, inputs, outputs
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import *
 
 # noinspection PyUnresolvedReferences
@@ -49,8 +49,7 @@ class MemberDataset:
 
 
 @meta(owner="test@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class MemberActivityDatasetCopy:
     domain: str = field(key=True)
     domain_used_count: int
@@ -151,8 +150,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             createdAt: datetime = field(timestamp=True)
 
         @meta(owner="test@fennel.ai")
-        @index
-        @dataset
+        @dataset(index=True)
         class MemberActivityDatasetCopy:
             domain: str = field(key=True)
             domain_used_count: int

@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
+from fennel.connectors import source, Webhook, ref
 from fennel.datasets import (
     dataset,
     field,
@@ -23,11 +24,9 @@ from fennel.datasets import (
     Stddev,
     Distinct,
     Quantile,
-    index,
 )
-from fennel.lib import includes, meta, inputs
 from fennel.dtypes import between, oneof, struct
-from fennel.connectors import source, Webhook, ref
+from fennel.lib import includes, meta, inputs
 from fennel.testing import almost_equal, mock, InternalTestClient
 
 ################################################################################
@@ -41,8 +40,7 @@ __owner__ = "eng@fennel.ai"
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
     name: str = field().meta(description="User name")  # type: ignore
@@ -52,8 +50,7 @@ class UserInfoDataset:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDatasetDerived:
     user_id: int = field(key=True, erase_key=True).meta(description="User ID")  # type: ignore
     name: str = field().meta(description="User name")  # type: ignore
@@ -68,8 +65,7 @@ class UserInfoDatasetDerived:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDatasetDerivedSelect:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
     name: str = field().meta(description="User name")  # type: ignore
@@ -86,8 +82,7 @@ class UserInfoDatasetDerivedSelect:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDatasetDerivedDropnull:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
     name: str = field().meta(description="User name")  # type: ignore
@@ -426,8 +421,7 @@ class TestDataset(unittest.TestCase):
         with self.assertRaises(Exception) as e:
 
             @meta(owner="test@test.com")
-            @index
-            @dataset
+            @dataset(index=True)
             class UserInfoDataset:
                 user_id: int = field(key=True)
                 name: str
@@ -534,8 +528,7 @@ class RatingActivity:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class MovieRatingCalculated:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True, erase_key=True
@@ -616,8 +609,7 @@ class MovieRating:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class MovieRatingTransformed:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True
@@ -658,8 +650,7 @@ class MovieRatingTransformed:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class MovieRatingAssign:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True
@@ -749,8 +740,7 @@ class Orders:
     timestamp: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class Derived:
     uid: int = field(key=True)
     sku: int = field(key=True)
@@ -860,8 +850,7 @@ class TestBasicAssign(unittest.TestCase):
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("MovieRevenue"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class MovieRevenue:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True
@@ -871,8 +860,7 @@ class MovieRevenue:
 
 
 @meta(owner="aditya@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class MovieStats:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True
@@ -981,8 +969,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
     def test_inner_join_with_explode_dedup(self, client):
         @meta(owner="abhay@fennel.ai")
         @source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="upsert")
-        @index
-        @dataset
+        @dataset(index=True)
         class MovieInfo:
             title: str = field(key=True)
             actors: List[str]
@@ -998,8 +985,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             at: datetime
 
         @meta(owner="abhay@fennel.ai")
-        @index
-        @dataset
+        @dataset(index=True)
         class ActorStats:
             name: str = field(key=True)
             revenue: int
@@ -1221,8 +1207,7 @@ class TestBasicAggregate(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class MovieRatingWindowed:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True
@@ -1472,8 +1457,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class PositiveRatingActivity:
     cnt_rating: int
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -1559,8 +1543,7 @@ class TestBasicFilter(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class UniqueMoviesSeen:
     static: str = field(key=True)
     unique_movies: int
@@ -1661,8 +1644,7 @@ class TestBasicCountUnique(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class UserUniqueMoviesSeen:
     userid: int = field(key=True)
     unique_movies: List[str]
@@ -1747,8 +1729,7 @@ class TestBasicDistinct(unittest.TestCase):
 
 
 @meta(owner="abhay@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class LastMovieSeen:
     userid: int = field(key=True)
     rating: float
@@ -1762,8 +1743,7 @@ class LastMovieSeen:
 
 
 @meta(owner="abhay@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class NumTimesLastMovie:
     """
     Given a movie, count the number of times it was the last movie seen by a user
@@ -1868,8 +1848,7 @@ class TestLastOp(unittest.TestCase):
 
 
 @meta(owner="abhay@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class FirstMovieSeen:
     userid: int = field(key=True)
     rating: float
@@ -1883,8 +1862,7 @@ class FirstMovieSeen:
 
 
 @meta(owner="abhay@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class NumTimesFirstMovie:
     """
     Given a movie, count the number of times it was the first movie seen by a user
@@ -1990,8 +1968,7 @@ class TestFirstOp(unittest.TestCase):
 
 
 @meta(owner="abhay@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class FirstMovieSeenWithFilter:
     userid: int = field(key=True)
     rating: float
@@ -2118,8 +2095,7 @@ class Car:
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("DealerDataset"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class Dealer:
     name: str = field(key=True)
     address: str
@@ -2128,8 +2104,7 @@ class Dealer:
 
 
 @meta(owner="test@tesst.com")
-@index
-@dataset
+@dataset(index=True)
 class DealerNumCars:
     name: str = field(key=True)
     num_cars: int
@@ -2271,8 +2246,7 @@ class Activity:
 
 @meta(owner="me@fenne.ai")
 @source(webhook.endpoint("MerchantInfo"), disorder="14d", cdc="upsert")
-@index
-@dataset(history="4m")
+@dataset(index=True, history="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
     category: str
@@ -2281,8 +2255,7 @@ class MerchantInfo:
 
 
 @meta(owner="me@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class FraudReportAggregatedDataset:
     category: str = field(key=True)
     timestamp: datetime
@@ -2487,8 +2460,7 @@ class UserAge2:
 
 
 @meta(owner="me@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class UserAgeAggregated:
     city: str = field(key=True)
     timestamp: datetime
@@ -2567,8 +2539,7 @@ class PlayerInfo:
 
 @meta(owner="gianni@fifa.com")
 @source(webhook.endpoint("ClubSalary"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class ClubSalary:
     club: str = field(key=True)
     timestamp: datetime
@@ -2577,8 +2548,7 @@ class ClubSalary:
 
 @meta(owner="gianni@fifa.com")
 @source(webhook.endpoint("WAG"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class WAG:
     name: str = field(key=True)
     timestamp: datetime
@@ -2586,8 +2556,7 @@ class WAG:
 
 
 @meta(owner="gianni@fifa.com")
-@index
-@dataset
+@dataset(index=True)
 class ManchesterUnitedPlayerInfo:
     name: str = field(key=True)
     timestamp: datetime
@@ -2626,8 +2595,7 @@ class ManchesterUnitedPlayerInfo:
 
 
 @meta(owner="gianni@fifa.com")
-@index
-@dataset
+@dataset(index=True)
 class ManchesterUnitedPlayerInfoBounded:
     name: str = field(key=True)
     timestamp: datetime
@@ -2876,8 +2844,7 @@ def test_join(client):
 
     @source(webhook.endpoint("B"), disorder="14d", cdc="upsert")
     @meta(owner="aditya@fennel.ai")
-    @index
-    @dataset
+    @dataset(index=True)
     class B:
         b1: int = field(key=True)
         v2: int
@@ -2970,8 +2937,7 @@ class CommonEvent:
     payload: str
 
 
-@index
-@dataset
+@dataset(index=True)
 @meta(owner="aditya@fennel.ai.com", description="Location index features")
 class LocationLatLong:
     latlng2: str = field(key=True)
@@ -3084,8 +3050,7 @@ def extract_payload(
     df[json_col] = df[payload_col].apply(lambda x: json.loads(x))
     return df[["timestamp", json_col]]
 
-@index
-@dataset
+@dataset(index=True)
 @meta(owner="aditya@fennel.ai.com", description="Location index features")
 class LocationLatLong:
     latlng2: str = field(key=True)
@@ -3293,8 +3258,7 @@ def test_inner_join_column_name_collision(client):
         created: datetime
         outcome_risk_score: float
 
-    @index
-    @dataset
+    @dataset(index=True)
     @source(
         webhook.endpoint("PaymentAccountDataset"),
         disorder="14d",
@@ -3306,8 +3270,7 @@ def test_inner_join_column_name_collision(client):
         created: datetime
         customer_id: int = field(key=True)
 
-    @index
-    @dataset
+    @dataset(index=True)
     @source(
         webhook.endpoint("PaymentAccountAssociationDataset"),
         disorder="14d",
@@ -3319,8 +3282,7 @@ def test_inner_join_column_name_collision(client):
         created: datetime
         account_id: int
 
-    @index
-    @dataset
+    @dataset(index=True)
     @source(
         webhook.endpoint("AccountDataset"),
         disorder="14d",
@@ -3452,8 +3414,7 @@ def test_inner_join_column_name_collision(client):
         "timestamp": datetime(1970, 1, 1, 0, 0, 0),
     },
 )
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDatasetPreProc:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
     name: str = field().meta(description="User name")  # type: ignore

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -9,7 +10,7 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.datasets import dataset, field, index
+    from fennel.datasets import dataset, field
     from fennel.connectors import source, Webhook
     from fennel.featuresets import feature as F, featureset, extractor
 
@@ -27,8 +28,7 @@ def test_basic(client):
         cdc="upsert",
         tier="silver",
     )
-    @index
-    @dataset
+    @dataset(index=True)
     class Transaction:
         txid: int = field(key=True)
         amount: int

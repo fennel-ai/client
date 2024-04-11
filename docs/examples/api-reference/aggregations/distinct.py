@@ -18,7 +18,6 @@ def test_basic(client):
         pipeline,
         Dataset,
         Distinct,
-        index,
     )
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
@@ -32,8 +31,7 @@ def test_basic(client):
         amount: int
         timestamp: datetime
 
-    @index
-    @dataset
+    @dataset(index=True)
     class Aggregated:
         uid: int = field(key=True)
         # docsnip-highlight next-line

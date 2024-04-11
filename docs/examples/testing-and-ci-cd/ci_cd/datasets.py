@@ -1,7 +1,4 @@
 from datetime import datetime
-from typing import List
-
-from fennel.datasets import index
 
 
 def test_dataset_deleted():
@@ -16,8 +13,7 @@ def test_dataset_deleted():
         disorder="14d",
         cdc="upsert",
     )
-    @index
-    @dataset
+    @dataset(index=True)
     class Ticket:
         ticket_id: str = field(key=True)
         price: int
@@ -38,8 +34,7 @@ def test_gh_actions_dataset():
         disorder="14d",
         cdc="upsert",
     )
-    @index
-    @dataset
+    @dataset(index=True)
     class Ticket:
         ticket_id: str = field(key=True)
         price: int

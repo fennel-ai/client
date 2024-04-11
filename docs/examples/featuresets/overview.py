@@ -3,9 +3,9 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, index
 from fennel.connectors import source, Webhook
-from fennel.testing import mock, MockClient
+from fennel.datasets import dataset, field
+from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 __owner__ = "nikhil@fennel.ai"
@@ -83,9 +83,8 @@ def test_featureset_auto_extractors(client):
     # docsnip featureset_auto_extractors
     from fennel.featuresets import feature  # docsnip-highlight
 
-    @index
     @source(webhook.endpoint("endpoint"), disorder="14d", cdc="upsert")
-    @dataset
+    @dataset(index=True)
     class Movie:
         id: int = field(key=True)
         duration: int
@@ -113,9 +112,8 @@ def test_featureset_auto_extractors(client):
 
     import numpy as np
 
-    @index
     @source(webhook.endpoint("endpoint"), disorder="14d", cdc="upsert")
-    @dataset
+    @dataset(index=True)
     class Movie:
         id: int = field(key=True)
         duration: int
@@ -157,9 +155,8 @@ def test_featureset_alias(client):
     webhook = Webhook(name="fennel_webhook")
 
     # docsnip featureset_alias
-    @index
     @source(webhook.endpoint("Movie"), disorder="14d", cdc="upsert")
-    @dataset
+    @dataset(index=True)
     class Movie:
         id: int = field(key=True)
         duration: int
@@ -184,9 +181,8 @@ def test_featureset_alias(client):
 
     import numpy as np
 
-    @index
     @source(webhook.endpoint("Movie"), disorder="14d", cdc="upsert")
-    @dataset
+    @dataset(index=True)
     class Movie:
         id: int = field(key=True)
         duration: int
@@ -233,9 +229,8 @@ def test_featureset_auto_convention(client):
     # docsnip-highlight next-line
     from fennel.featuresets import feature as F
 
-    @index
     @source(webhook.endpoint("Movie"), disorder="14d", cdc="upsert")
-    @dataset
+    @dataset(index=True)
     class Movie:
         id: int = field(key=True)
         duration: int
@@ -396,8 +391,7 @@ def test_multiple_features_extracted(client):
 
     # /docsnip
     @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="upsert")
-    @index
-    @dataset
+    @dataset(index=True)
     class UserInfo:
         uid: int = field(key=True)
         city: str
@@ -468,8 +462,7 @@ def test_multiple_features_extracted(client):
 @mock
 def test_extractors_across_featuresets(client):
     @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="upsert")
-    @index
-    @dataset
+    @dataset(index=True)
     class UserInfo:
         uid: int = field(key=True)
         city: str

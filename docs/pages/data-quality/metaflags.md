@@ -26,8 +26,7 @@ Let's look at an example:
 
 ```python
 @meta(owner='nikhil@xyz.ai', tags=['PII', 'hackathon'])
-@index
-@dataset
+@dataset(index=True)
 class User:
     uid: int = field(key=True)
     height: float = field().meta(description='in inches')

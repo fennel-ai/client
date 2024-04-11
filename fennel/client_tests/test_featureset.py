@@ -7,7 +7,9 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
+from fennel.dtypes import Embedding, struct
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import (
     includes,
@@ -17,8 +19,6 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.dtypes import Embedding, struct
-from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 ################################################################################
@@ -30,8 +30,7 @@ webhook = Webhook(name="fennel_webhook")
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -247,8 +246,7 @@ class Velocity:
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("FlightDataset"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class FlightDataset:
     id: int = field(key=True)
     ts: datetime = field(timestamp=True)
@@ -561,8 +559,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 @source(
     webhook.endpoint("DocumentContentDataset"), disorder="14d", cdc="upsert"
 )
-@index
-@dataset
+@dataset(index=True)
 class DocumentContentDataset:
     doc_id: int = field(key=True)
     bert_embedding: Embedding[4]

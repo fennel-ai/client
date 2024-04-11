@@ -1,11 +1,9 @@
-import pytest
 import unittest
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 
-from fennel.datasets import index
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -28,8 +26,7 @@ class TestDebugSnips(unittest.TestCase):
             city: str
             signup_time: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Processed:
             uid: int = field(key=True)
             city: str
@@ -146,8 +143,7 @@ class TestDebugSnips(unittest.TestCase):
 
     @mock
     def test_astype(self, client):
-        from fennel.datasets import dataset, field, pipeline, Dataset
-        from fennel.lib.schema import inputs
+        from fennel.datasets import dataset, field
         from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")

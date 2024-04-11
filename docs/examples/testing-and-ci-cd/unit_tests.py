@@ -5,10 +5,10 @@ import pandas as pd
 import requests
 
 # docsnip datasets
-from fennel.datasets import dataset, field, pipeline, Dataset, index
-from fennel.datasets import Count, Sum, Average
-from fennel.lib import includes, meta, inputs, outputs
 from fennel.connectors import source, Webhook
+from fennel.datasets import Count, Sum, Average
+from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.lib import includes, meta, inputs, outputs
 
 __owner__ = "test@test.com"
 webhook = Webhook(name="fennel_webhook")
@@ -23,8 +23,7 @@ class RatingActivity:
     t: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class MovieRating:
     movie: str = field(key=True)
     rating: float
@@ -164,8 +163,7 @@ def get_country_geoid(country: str) -> int:
 # docsnip featuresets_testing_with_dataset
 @meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str

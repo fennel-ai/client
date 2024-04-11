@@ -5,11 +5,11 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, Dataset, field, pipeline, LastK, index
+from fennel.connectors import Webhook, source
+from fennel.datasets import dataset, Dataset, field, pipeline, LastK
 from fennel.dtypes import struct
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
-from fennel.connectors import Webhook, source
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
@@ -52,8 +52,7 @@ class MovieDS:
     timestamp: datetime = field(timestamp=True)
 
 
-@index
-@dataset
+@dataset(index=True)
 class MovieInfo:
     director_id: int = field(key=True)
     movie_id: int = field(key=True)

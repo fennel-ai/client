@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -11,7 +12,7 @@ class TestRenameSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, index
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -27,8 +28,7 @@ class TestRenameSnips(unittest.TestCase):
             # docsnip-highlight end
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Derived:
             uid: int = field(key=True)
             # docsnip-highlight start

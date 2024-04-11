@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -9,15 +10,14 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.datasets import dataset, field, index
+    from fennel.datasets import dataset, field
     from fennel.connectors import source, Webhook
 
     # first define & sync a dataset that sources from a webhook
     webhook = Webhook(name="some_webhook")
 
     @source(webhook.endpoint("some_endpoint"), disorder="14d", cdc="upsert")
-    @index
-    @dataset
+    @dataset(index=True)
     class Transaction:
         uid: int = field(key=True)
         amount: int

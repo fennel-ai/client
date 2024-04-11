@@ -9,11 +9,11 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import connectors
-from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum, index
+from fennel.connectors import source
+from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum
+from fennel.dtypes import Embedding, oneof
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import includes, meta, inputs, outputs
-from fennel.dtypes import Embedding, oneof
-from fennel.connectors import source
 from fennel.testing import mock
 
 biq_query = connectors.BigQuery(
@@ -131,8 +131,7 @@ class Document:
         return df
 
 
-@index
-@dataset
+@dataset(index=True)
 class DocumentIndexed:
     doc_id: int = field(key=True)
     body: str
@@ -217,8 +216,7 @@ class DocumentContentDataset:
         )
 
 
-@index
-@dataset
+@dataset(index=True)
 class DocumentContentDatasetIndexed:
     doc_id: int = field(key=True)
     bert_embedding: Embedding[128]
@@ -234,8 +232,7 @@ class DocumentContentDatasetIndexed:
         return ds.groupby("doc_id").first()
 
 
-@index
-@dataset
+@dataset(index=True)
 class TopWordsCount:
     word: str = field(key=True)
     count: int
@@ -279,8 +276,7 @@ class UserActivity:
     timestamp: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class UserEngagementDataset:
     user_id: int = field(key=True)
     num_views: int
@@ -329,8 +325,7 @@ class UserEngagementDataset:
         )
 
 
-@index
-@dataset
+@dataset(index=True)
 class DocumentEngagementDataset:
     doc_id: int = field(key=True)
     num_views: int
