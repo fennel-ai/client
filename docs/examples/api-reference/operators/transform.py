@@ -18,7 +18,7 @@ class TestAssignSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="upsert")
         @dataset
         class Transaction:
             uid: int = field(key=True)
@@ -77,7 +77,7 @@ class TestAssignSnips(unittest.TestCase):
             webhook = Webhook(name="webhook")
 
             @source(
-                webhook.endpoint("Transaction"), disorder="14d", cdc="append"
+                webhook.endpoint("Transaction"), disorder="14d", cdc="upsert"
             )
             @dataset
             class Transaction:
@@ -117,7 +117,7 @@ class TestAssignSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="upsert")
         @dataset
         class Transaction:
             uid: int = field(key=True)

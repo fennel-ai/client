@@ -43,8 +43,8 @@ mongo = Mongo.get(name="my_mongo")
 table = postgres.table("product", cursor="last_modified")
 
 
-@source(table, disorder="1d", cdc="append", every="1m", tier="prod")
-@source(webhook.endpoint("Product"), disorder="1d", cdc="append", tier="dev")
+@source(table, disorder="1d", cdc="upsert", every="1m", tier="prod")
+@source(webhook.endpoint("Product"), disorder="1d", cdc="upsert", tier="dev")
 @index
 @dataset
 class Product:

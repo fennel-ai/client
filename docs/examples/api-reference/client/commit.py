@@ -18,13 +18,13 @@ def test_basic(client):
     @source(
         webhook.endpoint("endpoint1"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         tier="bronze",
     )
     @source(
         webhook.endpoint("endpoint2"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         tier="silver",
     )
     @index

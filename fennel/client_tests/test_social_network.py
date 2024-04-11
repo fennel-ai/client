@@ -17,7 +17,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="data-eng@myspace.com")
-@source(webhook.endpoint("UserInfo"), cdc="append", disorder="14d")
+@source(webhook.endpoint("UserInfo"), cdc="upsert", disorder="14d")
 @dataset
 class UserInfo:
     user_id: str = field(key=True)
@@ -30,7 +30,7 @@ class UserInfo:
     timestamp: datetime
 
 
-@source(webhook.endpoint("PostInfo"), disorder="14d", cdc="append")
+@source(webhook.endpoint("PostInfo"), disorder="14d", cdc="upsert")
 @index
 @dataset
 @meta(owner="data-eng@myspace.com")

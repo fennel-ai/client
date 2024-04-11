@@ -900,19 +900,3 @@ class Extractor:
         def __init__(self, field: Field, default_val: Optional[Any] = None):
             self.field = field
             self.default = default_val
-
-
-def sync_validation_for_extractors(extractors: List[Extractor]):
-    """
-    This validation function contains the checks that are run just before the sync call.
-    It should only contain checks that are not possible to run during the registration phase/compilation phase.
-    """
-    extracted_features: Set[str] = set()
-    for extractor in extractors:
-        for feature in extractor.outputs:
-            if feature.name in extracted_features:
-                raise TypeError(
-                    f"Feature `{feature.name}` is "
-                    f"extracted by multiple extractors including `{extractor.name}` in featureset `{extractor.featureset}`."
-                )
-            extracted_features.add(feature.name)

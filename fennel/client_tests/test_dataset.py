@@ -40,7 +40,7 @@ __owner__ = "eng@fennel.ai"
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class UserInfoDataset:
@@ -137,6 +137,11 @@ class TestDataset(unittest.TestCase):
         client.commit(
             message="msg",
             datasets=[UserInfoDataset, UserInfoDatasetDerivedSelect],
+        )
+        client.commit(
+            message="add derived dataset",
+            datasets=[UserInfoDatasetDerivedSelect],
+            incremental=True,
         )
         now = datetime.utcnow()
         yesterday = now - pd.Timedelta(days=1)
@@ -598,7 +603,7 @@ class MovieRatingCalculated:
 
 # Copy of above dataset but can be used as an input to another pipeline.
 @meta(owner="test@test.com")
-@source(webhook.endpoint("MovieRating"), disorder="14d", cdc="append")
+@source(webhook.endpoint("MovieRating"), disorder="14d", cdc="upsert")
 @dataset
 class MovieRating:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
@@ -854,7 +859,7 @@ class TestBasicAssign(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("MovieRevenue"), disorder="14d", cdc="append")
+@source(webhook.endpoint("MovieRevenue"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class MovieRevenue:
@@ -975,7 +980,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
     @mock
     def test_inner_join_with_explode_dedup(self, client):
         @meta(owner="abhay@fennel.ai")
-        @source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="upsert")
         @index
         @dataset
         class MovieInfo:
@@ -2112,7 +2117,7 @@ class Car:
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("DealerDataset"), disorder="14d", cdc="append")
+@source(webhook.endpoint("DealerDataset"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class Dealer:
@@ -2265,7 +2270,7 @@ class Activity:
 
 
 @meta(owner="me@fenne.ai")
-@source(webhook.endpoint("MerchantInfo"), disorder="14d", cdc="append")
+@source(webhook.endpoint("MerchantInfo"), disorder="14d", cdc="upsert")
 @index
 @dataset(history="4m")
 class MerchantInfo:
@@ -2561,7 +2566,7 @@ class PlayerInfo:
 
 
 @meta(owner="gianni@fifa.com")
-@source(webhook.endpoint("ClubSalary"), disorder="14d", cdc="append")
+@source(webhook.endpoint("ClubSalary"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class ClubSalary:
@@ -2571,7 +2576,7 @@ class ClubSalary:
 
 
 @meta(owner="gianni@fifa.com")
-@source(webhook.endpoint("WAG"), disorder="14d", cdc="append")
+@source(webhook.endpoint("WAG"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class WAG:
@@ -2861,7 +2866,7 @@ def test_join(client):
         ), "b1 column should not be present, " "{}".format(df.columns)
         return df
 
-    @source(webhook.endpoint("A"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("A"), disorder="14d", cdc="upsert")
     @meta(owner="aditya@fennel.ai")
     @dataset
     class A:
@@ -2869,7 +2874,7 @@ def test_join(client):
         v: int
         t: datetime
 
-    @source(webhook.endpoint("B"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("B"), disorder="14d", cdc="upsert")
     @meta(owner="aditya@fennel.ai")
     @index
     @dataset
@@ -3280,7 +3285,7 @@ def test_inner_join_column_name_collision(client):
     @source(
         webhook.endpoint("PaymentEventDataset"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         tier="local",
     )
     class PaymentEventDataset:
@@ -3293,7 +3298,7 @@ def test_inner_join_column_name_collision(client):
     @source(
         webhook.endpoint("PaymentAccountDataset"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         tier="local",
     )
     class PaymentAccountDataset:
@@ -3306,7 +3311,7 @@ def test_inner_join_column_name_collision(client):
     @source(
         webhook.endpoint("PaymentAccountAssociationDataset"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         tier="local",
     )
     class PaymentAccountAssociationDataset:
@@ -3319,7 +3324,7 @@ def test_inner_join_column_name_collision(client):
     @source(
         webhook.endpoint("AccountDataset"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         tier="local",
     )
     class AccountDataset:
@@ -3440,7 +3445,7 @@ def test_inner_join_column_name_collision(client):
 @source(
     webhook.endpoint("UserInfoDatasetPreProc"),
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     preproc={
         "age": 10,
         "country": ref("upstream.country"),

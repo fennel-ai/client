@@ -111,22 +111,19 @@ class Branch:
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
+        incremental=False,
         tier: Optional[str] = None,
     ):
-        self._reset()
+        if not incremental:
+            self._reset()
         if datasets is None:
             datasets = []
         if featuresets is None:
             featuresets = []
 
-        self.data_engine.add_datasets(datasets, tier)
+        self.data_engine.add_datasets(datasets, incremental, tier)
 
         for featureset in featuresets:
-            if not isinstance(featureset, Featureset):
-                raise TypeError(
-                    f"Expected a list of featuresets, got `{featureset.__name__}`"
-                    f" of type `{type(featureset)}` instead."
-                )
             self.entities.features_for_fs[featureset._name] = features_from_fs(
                 featureset
             )

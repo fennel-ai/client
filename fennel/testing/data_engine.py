@@ -13,7 +13,6 @@ from frozendict import frozendict
 import fennel.datasets.datasets
 from fennel.datasets import Dataset, Pipeline
 from fennel.datasets.datasets import (
-    sync_validation_for_pipelines,
     get_index,
     IndexDuration,
 )
@@ -172,6 +171,7 @@ class DataEngine(object):
     def add_datasets(
         self,
         datasets: List[Dataset],
+        incremental=False,
         tier: Optional[str] = None,
     ):
         """
@@ -184,11 +184,6 @@ class DataEngine(object):
         """
         input_datasets_for_pipelines = defaultdict(list)
         for dataset in datasets:
-            if not isinstance(dataset, Dataset):
-                raise TypeError(
-                    f"Expected a list of datasets, got `{dataset.__name__}`"
-                    f" of type `{type(dataset)}` instead."
-                )
             core_dataset = dataset_to_proto(dataset)
             if hasattr(dataset, connectors.SOURCE_FIELD):
                 pre_proc, bounded, idleness = self._process_data_connector(
@@ -200,17 +195,18 @@ class DataEngine(object):
             is_source_dataset = hasattr(dataset, connectors.SOURCE_FIELD)
             fields = [f.name for f in dataset.fields]
 
-            self.datasets[dataset._name] = _Dataset(
-                fields=fields,
-                is_source_dataset=is_source_dataset,
-                core_dataset=core_dataset,
-                dataset=dataset,
-                bounded=bounded,
-                pre_proc=pre_proc,
-                idleness=idleness,
-                prev_log_time=datetime.utcnow(),
-                erased_keys=[],
-            )
+            if dataset._name not in self.datasets:
+                self.datasets[dataset._name] = _Dataset(
+                    fields=fields,
+                    is_source_dataset=is_source_dataset,
+                    core_dataset=core_dataset,
+                    dataset=dataset,
+                    bounded=bounded,
+                    pre_proc=pre_proc,
+                    idleness=idleness,
+                    prev_log_time=datetime.utcnow(),
+                    erased_keys=[],
+                )
 
             if (
                 not core_dataset.is_source_dataset
@@ -222,7 +218,6 @@ class DataEngine(object):
             selected_pipelines = [
                 x for x in dataset._pipelines if x.tier.is_entity_selected(tier)
             ]
-            sync_validation_for_pipelines(selected_pipelines, dataset._name)
 
             for pipeline in selected_pipelines:
                 for input in pipeline.inputs:

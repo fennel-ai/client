@@ -14,7 +14,7 @@ wh = Webhook(name="fennel_webhook")
 __owner__ = "nitin@fennel.com"
 
 
-@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class UserInfoDataset:
@@ -88,7 +88,7 @@ def _get_changed_dataset(filter_condition):
 
 
 def _get_source_changed_datasets():
-    @source(wh.endpoint("UserInfoDataset3"), disorder="14d", cdc="append")
+    @source(wh.endpoint("UserInfoDataset3"), disorder="14d", cdc="upsert")
     @index
     @dataset(version=2)
     class UserInfoDataset:

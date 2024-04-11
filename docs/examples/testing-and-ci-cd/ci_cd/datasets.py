@@ -14,7 +14,7 @@ def test_dataset_deleted():
     @source(
         Webhook(name="example").endpoint("ticket_sale"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
     )
     @index
     @dataset
@@ -36,7 +36,7 @@ def test_gh_actions_dataset():
     @source(
         Webhook(name="example").endpoint("ticket_sale"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
     )
     @index
     @dataset

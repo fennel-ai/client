@@ -1742,41 +1742,6 @@ class Dataset(_Node[T]):
         return self._version
 
 
-def sync_validation_for_pipelines(pipelines: List[Pipeline], ds_name: str):
-    """
-    This validation function contains the checks that are run just before the sync call.
-    It should only contain checks that are not possible to run during the registration phase/compilation phase.
-    """
-    if len(pipelines) <= 1:
-        return
-
-    tiers: Set[str] = set()
-    for pipeline in pipelines:
-        tier = pipeline.tier.tiers
-        if tier is None:
-            raise ValueError(
-                f"Pipeline : `{pipeline.name}` has no tier. If there are more than one Pipelines for a dataset, "
-                f"please specify tier for each of them as there can only be one Pipeline for each tier."
-            )
-        if isinstance(tier, list):
-            for tier_item in tier:
-                if tier_item in tiers:
-                    raise ValueError(
-                        f"Pipeline : `{pipeline.name}` mapped to Tier : {tier_item} which has more than one "
-                        f"pipeline. Please specify only one."
-                    )
-                else:
-                    tiers.add(tier_item)
-        elif isinstance(tier, str):
-            if tier in tiers:
-                raise ValueError(
-                    f"Pipeline : `{pipeline.name}` mapped to Tier : {tier} which has more than one pipeline. "
-                    f"Please specify only one."
-                )
-            else:
-                tiers.add(tier)
-
-
 # ---------------------------------------------------------------------
 # Index
 # ---------------------------------------------------------------------

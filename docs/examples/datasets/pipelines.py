@@ -17,7 +17,7 @@ def test_datasets_basic():
 
     webhook = Webhook(name="fennel_webhook")
 
-    @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
     @index
     @dataset
     class User:

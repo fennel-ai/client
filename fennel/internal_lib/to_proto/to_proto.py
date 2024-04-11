@@ -4,7 +4,7 @@ import inspect
 import json
 from datetime import datetime
 from textwrap import dedent, indent
-from typing import Any, Dict, List, Optional, Tuple, Mapping
+from typing import Any, Dict, List, Optional, Tuple, Mapping, Set
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -24,17 +24,15 @@ import fennel.gen.services_pb2 as services_proto
 import fennel.connectors as connectors
 from fennel.datasets import Dataset, Pipeline, Field
 from fennel.datasets.datasets import (
-    sync_validation_for_pipelines,
     indices_from_ds,
 )
 from fennel.dtypes.dtypes import FENNEL_STRUCT
 from fennel.featuresets import Featureset, Feature, Extractor, ExtractorType
-from fennel.featuresets.featureset import sync_validation_for_extractors
 from fennel.internal_lib.duration import (
     Duration,
     duration_to_timedelta,
 )
-from fennel.internal_lib.schema import get_datatype
+from fennel.internal_lib.schema import get_datatype, validate_val_with_dtype
 from fennel.internal_lib.to_proto import Serializer
 from fennel.internal_lib.to_proto.source_code import (
     get_featureset_core_code,
@@ -135,7 +133,7 @@ def to_sync_request_proto(
             if offline_index:
                 offline_indices.append(offline_index)
 
-            source = source_from_ds(obj, obj.timestamp_field, tier)
+            source = source_proto_from_ds(obj, tier)
             if source is not None:
                 (ext_db, s) = source
                 conn_sources.append(s)
@@ -276,6 +274,67 @@ def _field_to_proto(field: Field) -> schema_proto.Field:
     )
 
 
+def sync_validation_for_datasets(ds: Dataset, tier: Optional[str] = None):
+    """
+    This validation function contains the checks that are run just before the sync call.
+    It should only contain checks that are not possible to run during the registration phase/compilation phase.
+    """
+    pipelines = []
+    for pipeline in ds._pipelines:
+        if pipeline.tier.is_entity_selected(tier):
+            pipelines.append(pipeline)
+
+    src = source_from_ds(ds, tier)
+    if src is not None and len(pipelines) > 0:
+        raise ValueError(
+            f"Dataset `{ds._name}` has a source and pipelines defined. "
+            f"Please define either a source or pipelines, not both."
+        )
+
+    if src is not None:
+        # If source cdc is append and dataset has key fields, raise error
+        if src.cdc == "append" and len(ds.key_fields) > 0:
+            raise ValueError(
+                f"Dataset `{ds._name}` has key fields and source cdc is append. "
+                f"Please set source cdc to `upsert` or remove key fields."
+            )
+
+        if src.cdc == "upsert" and len(ds.key_fields) == 0:
+            raise ValueError(
+                f"Dataset `{ds._name}` has no key fields and source cdc is upsert. "
+                f"Please set key fields or change source cdc to `append`."
+            )
+
+    if src is None and len(pipelines) == 1:
+        return
+
+    tiers: Set[str] = set()
+    for pipeline in pipelines:
+        tier = pipeline.tier.tiers  # type: ignore
+        if tier is None:
+            raise ValueError(
+                f"Pipeline : `{pipeline.name}` has no tier. If there are more than one Pipelines for a dataset, "
+                f"please specify tier for each of them as there can only be one Pipeline for each tier."
+            )
+        if isinstance(tier, list):
+            for tier_item in tier:
+                if tier_item in tiers:
+                    raise ValueError(
+                        f"Pipeline : `{pipeline.name}` mapped to Tier : {tier_item} which has more than one "
+                        f"pipeline. Please specify only one."
+                    )
+                else:
+                    tiers.add(tier_item)
+        elif isinstance(tier, str):
+            if tier in tiers:
+                raise ValueError(
+                    f"Pipeline : `{pipeline.name}` mapped to Tier : {tier} which has more than one pipeline. "
+                    f"Please specify only one."
+                )
+            else:
+                tiers.add(tier)
+
+
 def pipelines_from_ds(
     ds: Dataset, tier: Optional[str] = None
 ) -> List[ds_proto.Pipeline]:
@@ -283,7 +342,7 @@ def pipelines_from_ds(
     for pipeline in ds._pipelines:
         if pipeline.tier.is_entity_selected(tier):
             pipelines.append(pipeline)
-    sync_validation_for_pipelines(pipelines, ds._name)
+    sync_validation_for_datasets(ds, tier)
     if len(pipelines) == 1:
         pipelines[0].active = True
     pipeline_protos = []
@@ -360,7 +419,7 @@ def _validate_source_pre_proc(
         if isinstance(pre_proc_val, connectors.Ref):
             continue
         # Else check that the data type matches the field type
-        if ds_field.dtype != type(pre_proc_val):
+        if validate_val_with_dtype(ds_field.dtype, pre_proc_val):  # type: ignore
             raise ValueError(
                 f"Dataset {ds._name} has a source with a pre_proc value set for field {field_name}, "
                 f"but the field type does not match the pre_proc value {pre_proc_val} type."
@@ -368,38 +427,44 @@ def _validate_source_pre_proc(
 
 
 def source_from_ds(
-    ds: Dataset, timestamp_field: str, tier: Optional[str] = None
+    ds: Dataset, tier: Optional[str] = None
+) -> Optional[connectors.DataConnector]:
+    if not hasattr(ds, connectors.SOURCE_FIELD):
+        return None
+
+    all_sources: List[connectors.DataConnector] = getattr(
+        ds, connectors.SOURCE_FIELD
+    )
+    filtered_sources = [
+        source
+        for source in all_sources
+        if source.tiers.is_entity_selected(tier)
+    ]
+    if len(filtered_sources) == 0:
+        return None
+    if len(filtered_sources) > 1:
+        raise ValueError(
+            f"Dataset {ds._name} has multiple sources ({len(filtered_sources)}) defined. "
+            f"Please define only one source per dataset, or check your tier selection."
+        )
+    return filtered_sources[0]
+
+
+def source_proto_from_ds(
+    ds: Dataset, tier: Optional[str] = None
 ) -> Optional[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
     """
     Returns the source proto for a dataset if it exists
 
     :param ds: The dataset to get the source proto for.
     :param source_field: The attr for the source field.
-    :param timestamp_field: An optional column that can be used to sort the
-    data from the source.
     """
-    if hasattr(ds, connectors.SOURCE_FIELD):
-        all_sources: List[connectors.DataConnector] = getattr(
-            ds, connectors.SOURCE_FIELD
-        )
-        filtered_sources = [
-            source
-            for source in all_sources
-            if source.tiers.is_entity_selected(tier)
-        ]
-        if len(filtered_sources) == 0:
-            return None
-        if len(filtered_sources) > 1:
-            raise ValueError(
-                f"Dataset {ds._name} has multiple sources ({len(filtered_sources)}) defined. "
-                f"Please define only one source per dataset, or check your tier selection."
-            )
-        filtered_source = filtered_sources[0]
-        if filtered_source.pre_proc:
-            _validate_source_pre_proc(filtered_source.pre_proc, ds)
-        return _conn_to_source_proto(
-            filtered_source, ds._name, ds.version, timestamp_field
-        )
+    src = source_from_ds(ds, tier)
+    if src is not None:
+        if src.pre_proc:
+            _validate_source_pre_proc(src.pre_proc, ds)
+        timestamp_field = ds.timestamp_field
+        return _conn_to_source_proto(src, ds._name, ds.version, timestamp_field)
     return None  # type: ignore
 
 
@@ -424,7 +489,7 @@ def sinks_from_ds(
 
         if len(filtered_sinks) > 0 and is_source_dataset:
             raise ValueError(
-                f"Dataset {ds._name} error: Cannot define sinks on a source dataset"
+                f"Dataset `{ds._name}` error: Cannot define sinks on a source dataset"
             )
 
         return [
@@ -487,6 +552,22 @@ def _feature_to_proto(f: Feature) -> fs_proto.Feature:
         dtype=get_datatype(f.dtype),
         feature_set_name=f.featureset_name,
     )
+
+
+def sync_validation_for_extractors(extractors: List[Extractor]):
+    """
+    This validation function contains the checks that are run just before the sync call.
+    It should only contain checks that are not possible to run during the registration phase/compilation phase.
+    """
+    extracted_features: Set[str] = set()
+    for extractor in extractors:
+        for feature in extractor.outputs:
+            if feature.name in extracted_features:
+                raise TypeError(
+                    f"Feature `{feature.name}` is "
+                    f"extracted by multiple extractors including `{extractor.name}` in featureset `{extractor.featureset}`."
+                )
+            extracted_features.add(feature.name)
 
 
 def extractors_from_fs(

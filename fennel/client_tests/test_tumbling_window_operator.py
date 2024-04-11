@@ -281,7 +281,6 @@ def log_app_events_data(client):
     }
     df = pd.DataFrame(data)
     response = client.log("fennel_webhook", "AppEvent", df)
-    print(response.json())
     assert response.status_code == requests.codes.OK, response.json()
 
 

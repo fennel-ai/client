@@ -21,7 +21,7 @@ class TestDebugSnips(unittest.TestCase):
         webhook = Webhook(name="webhook")
 
         # docsnip basic
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)
@@ -101,7 +101,7 @@ class TestDebugSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)
@@ -153,7 +153,7 @@ class TestDebugSnips(unittest.TestCase):
         webhook = Webhook(name="webhook")
 
         # docsnip astype
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)

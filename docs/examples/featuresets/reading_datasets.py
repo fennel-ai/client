@@ -14,7 +14,7 @@ from fennel.lib import inputs, outputs
 webhook = Webhook(name="fennel_webhook")
 
 
-@source(webhook.endpoint("User"), disorder="14d", cdc="append")
+@source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
 # docsnip-highlight start
 @index
 @dataset
