@@ -498,7 +498,7 @@ class GroupBy:
     def aggregate(self, *args, **kwargs) -> _Node:
         if len(args) == 0 and len(kwargs) == 0:
             raise TypeError(
-                "aggregate operator expects atleast one aggregation operation"
+                "aggregate operator expects at least one aggregation operation"
             )
         if len(args) == 1 and isinstance(args[0], list):
             aggregates = args[0]
@@ -518,7 +518,8 @@ class GroupBy:
         for aggregate in aggregates:
             if aggregate.into_field == "":
                 raise ValueError(
-                    "Please specify the name of the output field for aggregate either through param 'into_field' or via named params"
+                    "Specify the output field name for the aggregate using 'into_field' "
+                    "parameter or through named arguments."
                 )
 
         return Aggregate(self.node, list(self.keys), aggregates)
