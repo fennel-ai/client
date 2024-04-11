@@ -48,8 +48,8 @@ class TestSumSnips(unittest.TestCase):
             def sum_pipeline(cls, ds: Dataset):
                 # docsnip-highlight start
                 return ds.groupby("uid").aggregate(
-                    Sum(of="amount", window="1w", into_field="amount_1w"),
-                    Sum(of="amount", window="forever", into_field="total"),
+                    amount_1w=Sum(of="amount", window="1w"),
+                    total=Sum(of="amount", window="forever"),
                 )
                 # docsnip-highlight end
 
@@ -147,7 +147,7 @@ class TestSumSnips(unittest.TestCase):
                 def bad_pipeline(cls, ds: Dataset):
                     return ds.groupby("uid").aggregate(
                         # docsnip-highlight next-line
-                        Sum(of="vendor", window="forever", into_field="total"),
+                        total=Sum(of="vendor", window="forever"),
                     )
 
             # /docsnip

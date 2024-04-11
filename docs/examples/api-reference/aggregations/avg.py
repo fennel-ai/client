@@ -45,12 +45,8 @@ def test_basic(client):
         def avg_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
                 # docsnip-highlight start
-                Average(
-                    of="amt", window="1d", default=-1.0, into_field="avg_1d"
-                ),
-                Average(
-                    of="amt", window="1w", default=-1.0, into_field="avg_1w"
-                ),
+                avg_1d=Average(of="amt", window="1d", default=-1.0),
+                avg_1w=Average(of="amt", window="1w", default=-1.0),
                 # docsnip-highlight end
             )
 
@@ -146,12 +142,7 @@ def test_invalid_type(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    Average(
-                        of="zip",
-                        window="1d",
-                        default="avg",
-                        into_field="avg_1d",
-                    ),
+                    avg_1d=Average(of="zip", window="1d", default="avg"),
                     # docsnip-highlight end
                 )
 
@@ -189,9 +180,7 @@ def test_non_matching_types(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    Average(
-                        of="amt", window="1d", default=1.0, into_field="ret"
-                    ),
+                    ret=Average(of="amt", window="1d", default=1.0),
                     # docsnip-highlight end
                 )
 

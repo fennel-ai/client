@@ -48,13 +48,12 @@ class TestCountSnips(unittest.TestCase):
             def count_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    Count(window="forever", into_field="num_transactions"),
-                    Count(
+                    num_transactions=Count(window="forever"),
+                    unique_vendors_1w=Count(
                         of="vendor",
                         unique=True,
                         approx=True,
                         window="1w",
-                        into_field="unique_vendors_1w",
                     ),
                     # docsnip-highlight end
                 )

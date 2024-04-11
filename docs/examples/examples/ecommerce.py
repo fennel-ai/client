@@ -63,8 +63,8 @@ class UserSellerOrders:
     @inputs(Order)
     def my_pipeline(cls, orders: Dataset):
         return orders.groupby("uid", "seller_id").aggregate(
-            Count(window="1d", into_field="num_orders_1d"),
-            Count(window="1w", into_field="num_orders_1w"),
+            num_orders_1d=Count(window="1d"),
+            num_orders_1w=Count(window="1w"),
         )
 
 
