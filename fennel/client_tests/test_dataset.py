@@ -2,7 +2,7 @@ import json
 import re
 import time
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from math import sqrt
 from typing import Optional, List, Dict
 
@@ -110,7 +110,7 @@ class TestDataset(unittest.TestCase):
     def test_simple_log(self, client):
         # Sync the dataset
         client.commit(message="msg", datasets=[UserInfoDataset])
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         yesterday = now - pd.Timedelta(days=1)
         data = [
             [18232, "Ross", 32, "USA", now],
@@ -138,7 +138,7 @@ class TestDataset(unittest.TestCase):
             datasets=[UserInfoDatasetDerivedSelect],
             incremental=True,
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         yesterday = now - pd.Timedelta(days=1)
         data = [
             [18232, "Ross", 32, "USA", now],
@@ -185,7 +185,7 @@ class TestDataset(unittest.TestCase):
             datasets=[UserInfoDataset, UserInfoDatasetDerivedDropnull],
         )
         assert response.status_code == requests.codes.OK, response.json()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "Ross", 32, "USA", now],
             [18234, "Monica", None, "Chile", now],
@@ -254,7 +254,7 @@ class TestDataset(unittest.TestCase):
         client.commit(
             message="msg", datasets=[UserInfoDataset, UserInfoDatasetDerived]
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         yesterday = now - pd.Timedelta(days=1)
         data = [
             [18232, "Ross", 32, "USA", now],
@@ -294,7 +294,7 @@ class TestDataset(unittest.TestCase):
         # Sync the dataset
         client.commit(message="msg", datasets=[UserInfoDataset])
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         yesterday = now - pd.Timedelta(days=1)
         data = [
             [18232, "Ross", 32, "USA", now],
@@ -326,7 +326,7 @@ class TestDataset(unittest.TestCase):
         client.sleep(10)
         # Do some lookups
         user_ids = pd.Series([18232, 18234, 1920], dtype="Int64")
-        lookup_now = datetime.utcnow() + pd.Timedelta(minutes=1)
+        lookup_now = datetime.now(timezone.utc) + pd.Timedelta(minutes=1)
         ts = pd.Series([lookup_now, lookup_now, lookup_now])
         df, found = UserInfoDataset.lookup(
             ts,
@@ -337,7 +337,11 @@ class TestDataset(unittest.TestCase):
         assert df["age"].tolist() == [32, 24, None]
         assert df["country"].tolist() == ["USA", "Chile", None]
         if not client.is_integration_client():
-            assert df["timestamp"].tolist() == [now, yesterday, None]
+            assert df["timestamp"].tolist() == [
+                now,
+                yesterday,
+                None,
+            ]
         else:
             df["timestamp"] = df["timestamp"].apply(
                 lambda x: x.replace(second=0, microsecond=0)
@@ -481,7 +485,7 @@ class TestDataset(unittest.TestCase):
 #
 #         # Sync the dataset
 #         client.commit(datasets=[DocumentContentDataset])
-#         now = datetime.utcnow()
+#         now = datetime.now(timezone.utc)
 #         data = [
 #             [18232, np.array([1, 2, 3, 4]), np.array([1, 2, 3]), 10, now],
 #             [
@@ -682,7 +686,7 @@ class TestBasicTransform(unittest.TestCase):
             message="msg",
             datasets=[MovieRating, MovieRatingTransformed, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         two_hours_ago = now - timedelta(hours=2)
         data = [
             ["Jumanji", 4, 343, 789, two_hours_ago],
@@ -804,7 +808,7 @@ class TestBasicAssign(unittest.TestCase):
             message="msg",
             datasets=[MovieRating, MovieRatingAssign, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         two_hours_ago = now - timedelta(hours=2)
         data = [
             ["Jumanji", 4, 343, 789, two_hours_ago],
@@ -906,7 +910,7 @@ class TestBasicJoin(unittest.TestCase):
             message="msg",
             datasets=[MovieRating, MovieRevenue, MovieStats, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         data = [
             ["Jumanji", 4, 343, 789, one_hour_ago],
@@ -1042,7 +1046,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             response.status_code == requests.codes.OK
         ), response.json()  # noqa
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         one_day_ago = now - timedelta(days=1)
         two_hours_ago = now - timedelta(hours=2)
@@ -1155,7 +1159,7 @@ class TestBasicAggregate(unittest.TestCase):
             message="msg",
             datasets=[MovieRatingCalculated, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -1272,7 +1276,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
             message="msg",
             datasets=[MovieRatingWindowed, RatingActivity],
         )
-        true_now = datetime.utcnow()
+        true_now = datetime.now(timezone.utc)
         now = true_now - timedelta(days=10) - timedelta(minutes=1)
         three_hours = now + timedelta(hours=3)
         six_hours = now + timedelta(hours=6)
@@ -1404,7 +1408,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
             message="msg",
             datasets=[MovieRatingCalculated, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -1488,7 +1492,7 @@ class TestBasicFilter(unittest.TestCase):
             message="msg",
             datasets=[PositiveRatingActivity, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -1590,7 +1594,7 @@ class TestBasicCountUnique(unittest.TestCase):
             message="msg",
             datasets=[UniqueMoviesSeen, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -1683,7 +1687,7 @@ class TestBasicDistinct(unittest.TestCase):
             message="msg",
             datasets=[UserUniqueMoviesSeen, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -1777,7 +1781,7 @@ class TestLastOp(unittest.TestCase):
             message="msg",
             datasets=[LastMovieSeen, RatingActivity, NumTimesLastMovie],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         five_hours_ago = now - timedelta(hours=5)
         three_hours_ago = now - timedelta(hours=3)
         two_hours_ago = now - timedelta(hours=2)
@@ -1901,7 +1905,7 @@ class TestFirstOp(unittest.TestCase):
             message="msg",
             datasets=[FirstMovieSeen, RatingActivity, NumTimesFirstMovie],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         five_hours_ago = now - timedelta(hours=5)
         three_hours_ago = now - timedelta(hours=3)
         two_hours_ago = now - timedelta(hours=2)
@@ -1996,7 +2000,7 @@ class TestWaterMark(unittest.TestCase):
             message="msg",
             datasets=[FirstMovieSeenWithFilter, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         minute_ago = now - timedelta(minutes=1)
         data = [
             [18231, 4.5, "Jumanji", minute_ago],
@@ -2144,7 +2148,7 @@ class TestNestedStructType(unittest.TestCase):
             message="msg",
             datasets=[DealerNumCars, Dealer],
         )
-        now = datetime.utcnow() - timedelta(hours=1)
+        now = datetime.now(timezone.utc) - timedelta(hours=1)
         data = {
             "name": ["Test Dealer", "Second Dealer", "Third Dealer"],
             "address": [
@@ -2200,7 +2204,7 @@ class TestNestedStructType(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         # Verify the data by looking it up
         df, _ = Dealer.lookup(
             pd.Series([now, now]),
@@ -2324,7 +2328,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
             message="msg",
             datasets=[MerchantInfo, Activity, FraudReportAggregatedDataset],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         minute_ago = now - timedelta(minutes=1)
         data = [
             [
@@ -2404,7 +2408,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
 
         client.sleep()
 
-        now = datetime.utcnow() + timedelta(minutes=1)
+        now = datetime.now(timezone.utc) + timedelta(minutes=1)
         ts = pd.Series([now, now])
         categories = pd.Series(["grocery", "entertainment"])
         df, _ = FraudReportAggregatedDataset.lookup(ts, category=categories)
@@ -2494,9 +2498,9 @@ class TestAggregateTableDataset(unittest.TestCase):
             message="msg", datasets=[UserAge, UserAge2, UserAgeAggregated]
         )
         client.sleep()
-        yesterday = datetime.utcnow() - timedelta(days=1)
-        now = datetime.utcnow()
-        tomorrow = datetime.utcnow() + timedelta(days=1)
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+        now = datetime.now(timezone.utc)
+        tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
 
         data = [
             ["Sonu", 24, "mumbai", yesterday],
@@ -2655,8 +2659,8 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
             message="msg",
             datasets=[PlayerInfo, ClubSalary, WAG, ManchesterUnitedPlayerInfo],
         )
-        yesterday = datetime.utcnow() - timedelta(days=1)
-        minute_ago = datetime.utcnow() - timedelta(minutes=1)
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+        minute_ago = datetime.now(timezone.utc) - timedelta(minutes=1)
         data = [
             ["Rashford", 25, 71, 154, "Manchester United", minute_ago],
             ["Maguire", 29, 76, 198, "Manchester United", minute_ago],
@@ -2742,7 +2746,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
             ],
         )
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         minute_ago = now - timedelta(minutes=1)
         second_ahead = now + timedelta(seconds=1)
         minute_ahead = now + timedelta(minutes=1)
@@ -2878,7 +2882,7 @@ def test_join(client):
 
     client.commit(message="msg", datasets=[A, B, ABCDataset])
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     df1 = pd.DataFrame(
         {
             "a1": [1, 2, 3],
@@ -3097,17 +3101,17 @@ def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
     data = [
         {
             "name": "LocationLatLong",
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(timezone.utc),
             "payload": '{"user_id": 247, "latitude": 12.3, "longitude": 12.3}',
         },
         {
             "name": "LocationLatLong",
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(timezone.utc),
             "payload": '{"user_id": 248, "latitude": 12.3, "longitude": 12.4}',
         },
         {
             "name": "LocationLatLong",
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(timezone.utc),
             "payload": '{"user_id": 246, "latitude": 12.3, "longitude": 12.3}',
         },
     ]
@@ -3116,7 +3120,7 @@ def LocationLatLong_wrapper_adace968e2(*args, **kwargs):
 
     client.sleep()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     timestamps = pd.Series([now, now])
     res, found = LocationLatLong.lookup(
         ts=timestamps, latlng2=pd.Series(["12.3-12.4", "12.3-12.3"])
@@ -3362,7 +3366,7 @@ def test_inner_join_column_name_collision(client):
         ],
     )
     assert initial.status_code == 200
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     stripe_charge_df = pd.DataFrame(
         {"customer": [1], "created": [now], "outcome_risk_score": [0.5]}
@@ -3432,7 +3436,7 @@ class UserInfoDatasetPreProc:
 def test_dataset_with_pre_proc_log(client):
     # Sync the dataset
     client.commit(message="msg", datasets=[UserInfoDatasetPreProc])
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         [18232, "Ross", "USA"],
         [18234, "Monica", "Chile"],
@@ -3456,7 +3460,7 @@ def test_dataset_with_pre_proc_log(client):
         10,
     ]  # should return the default value of 10 assigned above
     assert df["country"].tolist() == ["USA", "Chile"]
-    epoch = datetime(1970, 1, 1, 0, 0, 0)
+    epoch = datetime(1970, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
     assert df["timestamp"].tolist() == [epoch, epoch]
 
 
@@ -3565,7 +3569,7 @@ def test_erase_key(client):
     assert found.tolist() == [False]
 
     # Should be deleted as of
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data, found = client.lookup(
         "UserInfoDatasetDerived",
         pd.DataFrame({"user_id": [18232]}),

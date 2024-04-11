@@ -1,7 +1,7 @@
 import copy
 import types
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, Dict, List
 
 import numpy as np
@@ -253,7 +253,7 @@ class Executor(Visitor):
         # is the timestamp below which we will not consider any rows from the right dataframe for joins
         def sub_within_low(row):
             if obj.within[0] == "forever":
-                return datetime.min
+                return datetime.min.replace(tzinfo=timezone.utc)
             else:
                 return row[left_timestamp_field] - duration_to_timedelta(
                     obj.within[0]
@@ -682,9 +682,13 @@ class Executor(Visitor):
                         windows_map[end] = (
                             WindowStruct(
                                 event_start=pd.Timestamp(
-                                    end - duration, unit="s"
+                                    end - duration,
+                                    unit="s",
+                                    tzinfo=timezone.utc,
                                 ),
-                                event_end=pd.Timestamp(end, unit="s"),
+                                event_end=pd.Timestamp(
+                                    end, unit="s", tzinfo=timezone.utc
+                                ),
                             ),
                             [],
                         )

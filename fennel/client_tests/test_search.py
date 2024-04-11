@@ -1,6 +1,6 @@
 import unittest
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
 import numpy as np
@@ -437,7 +437,7 @@ class TopWordsFeatures:
 
 class TestSearchExample(unittest.TestCase):
     def log_document_data(self, client):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [141234, "This is a random document", "Random Title", "Sagar", now],
             [
@@ -506,7 +506,7 @@ class TestSearchExample(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
     def log_engagement_data(self, client):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [123, 31234, "view", 5, now],
             [123, 143354, "view", 1, now],
@@ -538,7 +538,7 @@ class TestSearchExample(unittest.TestCase):
         )
         self.log_document_data(client)
         client.sleep()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         yesterday = now - pd.Timedelta(days=1)
 
         doc_ids = pd.DataFrame({"doc_id": [141234, 143354, 33234, 11111]})
@@ -572,7 +572,7 @@ class TestSearchExample(unittest.TestCase):
 
         self.log_engagement_data(client)
         client.sleep(20)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         ts = pd.Series([now, now])
         user_ids = pd.Series([123, 342])
         df, found = UserEngagementDataset.lookup(ts, user_id=user_ids)

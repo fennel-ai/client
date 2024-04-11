@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -97,15 +97,37 @@ class TestSummarizeSnips(unittest.TestCase):
             window=pd.Series(
                 [
                     {
-                        "begin": pd.Timestamp(datetime(2021, 1, 1, 0, 0, 0)),
+                        "begin": pd.Timestamp(
+                            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+                        ),
                         "end": pd.Timestamp(
-                            datetime(2021, 1, 1, 0, 10, 0, microsecond=1)
+                            datetime(
+                                2021,
+                                1,
+                                1,
+                                0,
+                                10,
+                                0,
+                                microsecond=1,
+                                tzinfo=timezone.utc,
+                            )
                         ),
                     },
                     {
-                        "begin": pd.Timestamp(datetime(2021, 1, 2, 0, 10, 0)),
+                        "begin": pd.Timestamp(
+                            datetime(2021, 1, 2, 0, 10, 0, tzinfo=timezone.utc)
+                        ),
                         "end": pd.Timestamp(
-                            datetime(2021, 1, 2, 0, 15, 0, microsecond=1)
+                            datetime(
+                                2021,
+                                1,
+                                2,
+                                0,
+                                15,
+                                0,
+                                microsecond=1,
+                                tzinfo=timezone.utc,
+                            )
                         ),
                     },
                 ]
@@ -248,18 +270,40 @@ class TestSummarizeSnips(unittest.TestCase):
                     [
                         {
                             "begin": pd.Timestamp(
-                                datetime(2021, 1, 1, 0, 0, 0)
+                                datetime(
+                                    2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc
+                                )
                             ),
                             "end": pd.Timestamp(
-                                datetime(2021, 1, 1, 0, 10, 0, microsecond=1)
+                                datetime(
+                                    2021,
+                                    1,
+                                    1,
+                                    0,
+                                    10,
+                                    0,
+                                    microsecond=1,
+                                    tzinfo=timezone.utc,
+                                )
                             ),
                         },
                         {
                             "begin": pd.Timestamp(
-                                datetime(2021, 1, 2, 0, 10, 0)
+                                datetime(
+                                    2021, 1, 2, 0, 10, 0, tzinfo=timezone.utc
+                                )
                             ),
                             "end": pd.Timestamp(
-                                datetime(2021, 1, 2, 0, 15, 0, microsecond=1)
+                                datetime(
+                                    2021,
+                                    1,
+                                    2,
+                                    0,
+                                    15,
+                                    0,
+                                    microsecond=1,
+                                    tzinfo=timezone.utc,
+                                )
                             ),
                         },
                     ]

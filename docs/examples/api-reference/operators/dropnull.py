@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
@@ -94,7 +94,9 @@ class TestDropnullSnips(unittest.TestCase):
         assert df["uid"].tolist()[0] == 1
         assert df["dob"].tolist()[0] == "1990-01-01"
         assert df["gender"].tolist()[0] == "M"
-        assert df["timestamp"].tolist()[0] == datetime(2021, 1, 1, 0, 0, 0)
+        assert df["timestamp"].tolist()[0] == datetime(
+            2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc
+        )
 
     @mock
     def test_dropnull_all(self, client):
@@ -179,7 +181,9 @@ class TestDropnullSnips(unittest.TestCase):
         assert df["uid"].tolist()[0] == 1
         assert df["dob"].tolist()[0] == "1990-01-01"
         assert df["gender"].tolist()[0] == "M"
-        assert df["timestamp"].tolist()[0] == datetime(2021, 1, 1, 0, 0, 0)
+        assert df["timestamp"].tolist()[0] == datetime(
+            2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc
+        )
 
     @mock
     def test_missing_column(self, client):

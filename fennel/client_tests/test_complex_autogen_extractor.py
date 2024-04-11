@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
@@ -170,9 +170,7 @@ class RiderFeatures:
     def extract_age_years(
         cls, ts: pd.Series, birthdate: pd.Series
     ) -> pd.DataFrame:
-        age_years = (datetime.utcnow() - birthdate).dt.total_seconds() / (
-            60 * 60 * 24 * 365
-        )
+        age_years = (ts - birthdate).dt.total_seconds() / (60 * 60 * 24 * 365)
         age_years = age_years.astype(int)
         return pd.DataFrame({"age_years": age_years})
 
@@ -293,8 +291,8 @@ def test_complex_auto_gen_extractors(client):
     rider_df = pd.DataFrame(
         {
             "rider_id": [1],
-            "created": [datetime.utcnow()],
-            "birthdate": [datetime.utcnow() - relativedelta(years=30)],
+            "created": [datetime.now(timezone.utc)],
+            "birthdate": [datetime.now(timezone.utc) - relativedelta(years=30)],
             "country_code": ["US"],
         }
     )
@@ -309,7 +307,7 @@ def test_complex_auto_gen_extractors(client):
             "rider_id": [1],
             "vehicle_id": [1],
             "is_completed_trip": [1],
-            "created": [datetime.utcnow()],
+            "created": [datetime.now(timezone.utc)],
         }
     )
     log_response = client.log(
@@ -322,7 +320,7 @@ def test_complex_auto_gen_extractors(client):
     country_license_df = pd.DataFrame(
         {
             "rider_id": [1],
-            "created": [datetime.utcnow()],
+            "created": [datetime.now(timezone.utc)],
             "country_code": ["US"],
         }
     )
@@ -346,7 +344,7 @@ def test_complex_auto_gen_extractors(client):
     assert extracted_df["RiderFeatures.dl_state"].to_list() == ["US", "Unknown"]
     assert extracted_df["RiderFeatures.is_us_dl"].to_list() == [True, False]
 
-    age_years = datetime.utcnow().year - 2000
+    age_years = datetime.now(timezone.utc).year - 2000
     assert extracted_df["RiderFeatures.age_years"].to_list() == [30, age_years]
     assert extracted_df["RiderFeatures.dl_state_population"].to_list() == [
         328200000,

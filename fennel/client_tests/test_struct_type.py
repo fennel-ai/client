@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 import pandas as pd
@@ -90,7 +90,7 @@ class MovieFeatures:
 
 
 def log_movie_data(client):
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         [
             {"movie_id": 101, "title": "Inception"},

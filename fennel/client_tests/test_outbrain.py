@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -117,7 +117,7 @@ def test_outbrain(client):
         "fennel/client_tests/data/page_views_sample.csv"
     ).sort_values(by=["timestamp"])
     # Current time in ms
-    cur_time_ms = datetime.utcnow().timestamp() * 1000
+    cur_time_ms = datetime.now(timezone.utc).timestamp() * 1000
     max_ts = max(df["timestamp"].tolist())
     # Shift all the data such that the most recent data point has timestamp = cur_time_ms
     df["timestamp"] = df["timestamp"] + cur_time_ms - max_ts
@@ -126,7 +126,7 @@ def test_outbrain(client):
     twelve_days = 12 * 24 * 60 * 60 * 1000
     df = df[df["timestamp"] > cur_time_ms - twelve_days]
     df["timestamp"] = df["timestamp"].apply(
-        lambda x: datetime.fromtimestamp(x / 1000)
+        lambda x: datetime.fromtimestamp(x / 1000, tz=timezone.utc)
     )
 
     client.log("outbrain_webhook", "PageViews", df)

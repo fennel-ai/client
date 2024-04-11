@@ -1,17 +1,19 @@
 import json
 from datetime import datetime
-
 from math import isnan
 from typing import Any, Union, List
-import pandas as pd
+
 import numpy as np
-from fennel._vendor.requests import Response  # type: ignore
-from fennel._vendor import jsondiff  # type: ignore
+import pandas as pd
 from google.protobuf.json_format import MessageToDict
-from fennel.gen.schema_pb2 import DSSchema
+
+from fennel._vendor import jsondiff  # type: ignore
+from fennel._vendor.requests import Response  # type: ignore
 from fennel.gen.dataset_pb2 import Operator, Filter, Transform, Assign
 from fennel.gen.featureset_pb2 import Extractor
 from fennel.gen.pycode_pb2 import PyCode
+from fennel.gen.schema_pb2 import DSSchema
+from fennel.internal_lib.utils import parse_datetime
 
 
 class FakeResponse(Response):
@@ -148,18 +150,6 @@ def cast_col_to_dtype(series: pd.Series, dtype) -> pd.Series:
     return series
 
 
-def parse_datetime(value: Union[int, str, datetime]) -> datetime:
-    if isinstance(value, int):
-        try:
-            return pd.to_datetime(value, unit="s")
-        except ValueError:
-            try:
-                return pd.to_datetime(value, unit="ms")
-            except ValueError:
-                return pd.to_datetime(value, unit="us")
-    return pd.to_datetime(value)
-
-
 def proto_to_dtype(proto_dtype) -> str:
     if proto_dtype.HasField("int_type"):
         return "int"
@@ -208,7 +198,7 @@ def cast_df_to_schema(
     try:
         df[dsschema.timestamp] = pd.to_datetime(
             df[dsschema.timestamp].apply(lambda x: parse_datetime(x))
-        ).astype("datetime64[ns]")
+        )
     except Exception as e:
         raise ValueError(
             f"Failed to cast data logged to timestamp column {dsschema.timestamp}: {e}"

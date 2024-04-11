@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -47,7 +47,7 @@ def test_idleness_for_bounded_source(client):
     )
 
     # Log 3 rows of data
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "display_id": 1,
@@ -73,7 +73,7 @@ def test_idleness_for_bounded_source(client):
     assert response.status_code == requests.codes.OK, response.json()
 
     # We should get data for keys 1 and 2 since they are logged above and no data for 4
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 2, 4])
     df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
@@ -82,7 +82,7 @@ def test_idleness_for_bounded_source(client):
 
     # Sleep for 2 seconds and log 2 more rows of data
     time.sleep(2)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "display_id": 4,
@@ -102,7 +102,7 @@ def test_idleness_for_bounded_source(client):
     assert response.status_code == requests.codes.OK, response.json()
 
     # We should get data for keys 4, 5 since they are logged above and no data for 6
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([4, 5, 6])
     df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
@@ -111,7 +111,7 @@ def test_idleness_for_bounded_source(client):
 
     # Sleep for 5s so that new data which is not logged is not ingested since idleness for this source is 4s
     time.sleep(5)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "display_id": 6,
@@ -132,7 +132,7 @@ def test_idleness_for_bounded_source(client):
 
     # We should get data for key 1 since they are logged above and no data for 6, 7 since we logged the data after
     # the source is closed
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 6, 7])
     df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
@@ -147,7 +147,7 @@ def test_idleness_for_unbounded_source(client):
     )
 
     # Log 3 rows of data
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "display_id": 1,
@@ -173,7 +173,7 @@ def test_idleness_for_unbounded_source(client):
     assert response.status_code == requests.codes.OK, response.json()
 
     # We should get data for keys 1 and 2 since they are logged above and no data for 4
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 2, 4])
     df, _ = UnBoundedClicksDS.lookup(ts, display_id=display_id_keys)
@@ -182,7 +182,7 @@ def test_idleness_for_unbounded_source(client):
 
     # Sleep for 2 seconds and log 2 more rows of data
     time.sleep(2)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "display_id": 4,
@@ -202,7 +202,7 @@ def test_idleness_for_unbounded_source(client):
     assert response.status_code == requests.codes.OK, response.json()
 
     # We should get data for keys 4, 5 since they are logged above and no data for 6
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([4, 5, 6])
     df, _ = UnBoundedClicksDS.lookup(ts, display_id=display_id_keys)
@@ -211,7 +211,7 @@ def test_idleness_for_unbounded_source(client):
 
     # Sleep for 5s and this new data gets ingested since the source is unbounded
     time.sleep(5)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "display_id": 6,
@@ -231,7 +231,7 @@ def test_idleness_for_unbounded_source(client):
     assert response.status_code == requests.codes.OK, response.json()
 
     # We should get data for keys 1, 6, 7 since the data is logged above and source is unbounded
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 6, 7])
     df, _ = UnBoundedClicksDS.lookup(ts, display_id=display_id_keys)

@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -56,7 +56,9 @@ class TestAssignSnips(unittest.TestCase):
         assert df["uid"].tolist() == [1]
         assert df["amount"].tolist() == [10]
         assert df["amount_sq"].tolist() == [100]
-        assert df["timestamp"].tolist() == [datetime(2021, 1, 1, 0, 0, 0)]
+        assert df["timestamp"].tolist() == [
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        ]
         assert found.tolist() == [True]
 
     @mock

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
@@ -78,7 +78,7 @@ def test_simple_invalid_extractor(client):
         datasets=[UserInfoDataset],
         featuresets=[UserInfoExtractor],
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         [18232, "John", 32, "USA", now],
         [18234, "Monica", 24, "Chile", now],

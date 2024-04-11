@@ -1,10 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import pytest
 
-from fennel.datasets import dataset, field
-from fennel.lib import meta
 from fennel.connectors import (
     source,
     Mongo,
@@ -19,6 +17,8 @@ from fennel.connectors import (
     BigQuery,
     S3Connector,
 )
+from fennel.datasets import dataset, field
+from fennel.lib import meta
 
 # noinspection PyUnresolvedReferences
 from fennel.testing import *
@@ -221,7 +221,7 @@ def test_invalid_kinesis_source():
         @source(
             kinesis.stream(
                 "test_stream",
-                at_timestamp(datetime.utcnow()),
+                at_timestamp(datetime.now(timezone.utc)),
                 format="csv",
             )
         )

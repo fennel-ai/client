@@ -1,7 +1,7 @@
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
-from typing import Dict, List, Union, Optional, Any, Tuple
+from typing import Dict, List, Union, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -78,7 +78,12 @@ class QueryEngine:
                 ),
             )
             if timestamps is not None
-            else pd.Series([datetime.utcnow() for _ in range(len(keys))])
+            else cast_col_to_dtype(
+                pd.Series([datetime.now(timezone.utc)] * len(keys)),
+                schema_proto.DataType(
+                    timestamp_type=schema_proto.TimestampType()
+                ),
+            )
         )
         keys = keys.to_dict(orient="records")
 

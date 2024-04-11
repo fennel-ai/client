@@ -65,6 +65,7 @@ from fennel.internal_lib.schema import (
 from fennel.internal_lib.utils import (
     dtype_to_string,
     get_origin,
+    parse_datetime,
 )
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.includes import TierSelector
@@ -1140,10 +1141,12 @@ def dataset(
                 raise ValueError(
                     f"Lookup for dataset `{cls_name}` expects a series of timestamps, found {type(ts)}"
                 )
-            if not np.issubdtype(ts.dtype, np.datetime64):
+            if not pd.api.types.is_datetime64_any_dtype(ts.dtype):
                 raise ValueError(
                     f"Lookup for dataset `{cls_name}` expects a series of timestamps, found {ts.dtype}"
                 )
+            # Parse the timestamp
+            ts = ts.apply(lambda x: parse_datetime(x))
             # extract keys and fields from kwargs
             arr = []
             for key in key_fields:

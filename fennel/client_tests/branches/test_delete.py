@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -77,7 +77,7 @@ def test_complex_delete(client):
     )
     client.clone_branch(name="test-branch", from_branch="main")
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,

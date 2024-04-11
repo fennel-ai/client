@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -186,7 +186,7 @@ def test_clone_after_log(client):
         featuresets=[UserInfoFeatureset],
     )
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -232,7 +232,7 @@ def test_webhook_log_to_both_clone_parent(client):
     resp = client.clone_branch("test-branch", from_branch="main")
     assert resp.status_code == requests.codes.OK, resp.json()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -294,7 +294,7 @@ def test_add_dataset_clone_branch(client):
     )
     assert resp.status_code == requests.codes.OK, resp.json()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -354,7 +354,7 @@ def test_change_dataset_clone_branch(client):
     Clone a branch A → B. Verify A & B both give the same answers.
     Then modify A. Ensure B keeps giving the same answers.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -434,7 +434,7 @@ def test_multiple_clone_branch(client):
     Clone A → B and then again B → C — they are all the same.
     Now modify B and C in different ways - so all three of A, B, C have different graphs/data etc.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -541,7 +541,7 @@ def test_change_source_dataset_clone_branch(client):
         datasets=_get_source_changed_datasets(),
     )
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -567,7 +567,7 @@ def test_change_source_dataset_clone_branch(client):
     assert response.status_code == requests.codes.OK, response.json()
     client.sleep()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -622,7 +622,7 @@ def test_change_extractor_clone_branch(client):
         featuresets=[_get_changed_featureset()],
     )
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,

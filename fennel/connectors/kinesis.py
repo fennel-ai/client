@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Union is needed pre Python 3.10
 from typing import Union
@@ -22,7 +22,7 @@ class at_timestamp(object):
         if isinstance(timestamp, datetime):
             self.timestamp = timestamp
         elif isinstance(timestamp, (int, float)):
-            self.timestamp = datetime.utcfromtimestamp(timestamp)
+            self.timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc)
         elif isinstance(timestamp, str):
             self.timestamp = datetime.fromisoformat(timestamp)
         else:

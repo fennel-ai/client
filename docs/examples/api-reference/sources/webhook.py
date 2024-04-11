@@ -1,6 +1,7 @@
-from datetime import datetime
-from unittest.mock import patch
 import os
+from datetime import datetime, timezone
+from unittest.mock import patch
+
 import pandas as pd
 
 from fennel.testing import mock
@@ -41,9 +42,9 @@ def test_webhook_basic(client):
             "uid": [1, 2, 3],
             "email": ["a@gmail.com", "b@gmail.com", "c@gmail.com"],
             "timestamp": [
-                datetime.utcnow(),
-                datetime.utcnow(),
-                datetime.utcnow(),
+                datetime.now(timezone.utc),
+                datetime.now(timezone.utc),
+                datetime.now(timezone.utc),
             ],
         }
     )

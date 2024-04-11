@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -436,7 +436,7 @@ def test_multiple_features_extracted(client):
         datasets=[UserInfo],
         featuresets=[UserLocationFeatures],
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
     df = pd.DataFrame(data, columns=["uid", "city", "update_time"])
     res = client.log("fennel_webhook", "UserInfo", df)
@@ -514,7 +514,7 @@ def test_extractors_across_featuresets(client):
         datasets=[UserInfo],
         featuresets=[Request, UserLocationFeaturesRefactored],
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [[1, "New York", now], [2, "London", now], [3, "Paris", now]]
     df = pd.DataFrame(data, columns=["uid", "city", "update_time"])
     res = client.log("fennel_webhook", "UserInfo", df)

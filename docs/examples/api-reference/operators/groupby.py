@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -76,8 +76,8 @@ class TestGroupbySnips(unittest.TestCase):
         assert df["category"].tolist() == ["grocery", "electronics"]
         assert df["uid"].tolist() == [1, 2]
         assert df["timestamp"].tolist() == [
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 2, 1, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
         ]
 
     @mock

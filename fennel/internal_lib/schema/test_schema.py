@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -39,7 +39,7 @@ def test_get_data_type():
     assert get_datatype(type(x)) == proto.DataType(
         string_type=proto.StringType()
     )
-    x: datetime = datetime.utcnow()
+    x: datetime = datetime.now(timezone.utc)
 
     assert get_datatype(type(x)) == proto.DataType(
         timestamp_type=proto.TimestampType()
@@ -174,7 +174,8 @@ def test_additional_dtypes_invalid():
 
 
 def test_valid_schema():
-    now = datetime.utcnow()
+    # Replacing tzinfo because the data schema checks expects dtype to be datetime[ns] and not datetime[ns, UTC]
+    now = datetime.now(timezone.utc)
     yesterday = now - timedelta(days=1)
 
     data = [
@@ -305,7 +306,8 @@ def test_valid_schema():
 
 
 def test_invalid_schema():
-    now = datetime.utcnow()
+    # Replacing tzinfo because the data schema checks expects dtype to be datetime[ns] and not datetime[ns, UTC]
+    now = datetime.now(timezone.utc)
     yesterday = now - timedelta(days=1)
 
     data = [
@@ -436,7 +438,8 @@ def test_invalid_schema():
 
 
 def test_invalid_schema_additional_types():
-    now = datetime.utcnow()
+    # Replacing tzinfo because the data schema checks expects dtype to be datetime[ns] and not datetime[ns, UTC]
+    now = datetime.now(timezone.utc)
     data = [
         [18232, "Ross9", 212, "transgender", 5, now],
     ]

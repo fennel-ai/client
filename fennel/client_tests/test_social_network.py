@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 import pandas as pd
@@ -232,6 +232,7 @@ def test_social_network(client):
     assert res.status_code == requests.codes.OK, res.json()
     res = client.log("fennel_webhook", "ViewData", view_data_df)
     assert res.status_code == requests.codes.OK, res.json()
+
     if client.is_integration_client():
         client.sleep(120)
 

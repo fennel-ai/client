@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -148,7 +148,7 @@ def test_overview(client):
         tier="local",
     )
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     dob = now - timedelta(days=365 * 30)
     data = [
         [1, dob, "US", now - timedelta(days=1)],
@@ -225,8 +225,8 @@ def test_overview(client):
             {
                 "UserFeature.uid": [1, 3],
                 "timestamp": [
-                    datetime.utcnow(),
-                    datetime.utcnow() - timedelta(days=1),
+                    datetime.now(timezone.utc),
+                    datetime.now(timezone.utc) - timedelta(days=1),
                 ],
             }
         ),

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
@@ -46,7 +46,7 @@ class UserFeature:
 @mock
 def test_user_dataset_lookup(client):
     client.commit(message="msg", datasets=[User], featuresets=[UserFeature])
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     data = [
         [1, "San Francisco", "New York", now - timedelta(days=1)],
