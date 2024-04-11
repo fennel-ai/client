@@ -1,10 +1,10 @@
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 __owner__ = "nitin@fennel.ai"
@@ -22,7 +22,6 @@ def test_invalid_dataset_lookup():
         ts: int = field(timestamp=True)
         age: int
 
-    @index(online=False, offline=None)
     @dataset
     class Dataset2:
         user_id: int = field(key=True)
@@ -99,8 +98,7 @@ def test_invalid_dataset_online_lookup(client):
     """
 
     @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="upsert")
-    @index(online=False, offline="forever")
-    @dataset
+    @dataset(offline=True)
     class Dataset1:
         user_id: int = field(key=True)
         ts: int = field(timestamp=True)
@@ -156,8 +154,7 @@ def test_invalid_dataset_offline_lookup(client):
     """
 
     @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="upsert")
-    @index(online=True, offline=None)
-    @dataset
+    @dataset(online=True)
     class Dataset1:
         user_id: int = field(key=True)
         ts: int = field(timestamp=True)

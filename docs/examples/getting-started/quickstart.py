@@ -5,14 +5,6 @@ from typing import Optional
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, pipeline, field, Dataset, Count, index
-from fennel.featuresets import feature as F, featureset, extractor
-from fennel.lib import (
-    inputs,
-    outputs,
-    expectations,
-    expect_column_values_to_be_between,
-)
 from fennel.connectors import (
     source,
     Mongo,
@@ -21,6 +13,14 @@ from fennel.connectors import (
     Kafka,
     Webhook,
     Redshift,
+)
+from fennel.datasets import dataset, pipeline, field, Dataset, Count
+from fennel.featuresets import featureset, extractor
+from fennel.lib import (
+    inputs,
+    outputs,
+    expectations,
+    expect_column_values_to_be_between,
 )
 from fennel.testing import MockClient
 
@@ -45,8 +45,7 @@ table = postgres.table("product", cursor="last_modified")
 
 @source(table, disorder="1d", cdc="upsert", every="1m", tier="prod")
 @source(webhook.endpoint("Product"), disorder="1d", cdc="upsert", tier="dev")
-@index
-@dataset
+@dataset(index=True)
 class Product:
     product_id: int = field(key=True)
     seller_id: int
@@ -78,8 +77,7 @@ class Order:
 
 
 # docsnip pipelines
-@index
-@dataset
+@dataset(index=True)
 class UserSellerOrders:
     uid: int = field(key=True)
     seller_id: int = field(key=True)

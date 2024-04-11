@@ -1,8 +1,9 @@
-import pytest
 import unittest
 from datetime import datetime
 
 import pandas as pd
+import pytest
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -18,7 +19,6 @@ class TestSumSnips(unittest.TestCase):
             pipeline,
             Dataset,
             Sum,
-            index,
         )
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
@@ -32,8 +32,7 @@ class TestSumSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Aggregated:
             uid: int = field(key=True)
             # docsnip-highlight start

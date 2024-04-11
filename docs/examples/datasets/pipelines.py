@@ -12,14 +12,13 @@ __owner__ = "data-eng@fennel.ai"
 
 def test_datasets_basic():
     # docsnip datasets
-    from fennel.datasets import dataset, field, index
+    from fennel.datasets import dataset, field
     from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
 
     @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
-    @index
-    @dataset
+    @dataset(index=True)
     class User:
         uid: int = field(key=True)
         dob: datetime
@@ -42,11 +41,10 @@ def test_datasets_basic():
 def test_pipeline_basic():
     User, Transaction = test_datasets_basic()
     # docsnip pipeline
-    from fennel.datasets import pipeline, Dataset, dataset, field, index
+    from fennel.datasets import pipeline, Dataset, dataset, field
     from fennel.datasets import Count, Sum
 
-    @index
-    @dataset
+    @dataset(index=True)
     class UserTransactionsAbroad:
         uid: int = field(key=True)
         count: int
@@ -223,7 +221,7 @@ def test_fraud(client):
 @mock
 def test_multiple_pipelines(client):
     # docsnip multiple_pipelines
-    from fennel.datasets import dataset, field, Count, index
+    from fennel.datasets import dataset, field, Count
     from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
@@ -247,8 +245,7 @@ def test_multiple_pipelines(client):
         return df
 
     @meta(owner="me@fennel.ai")
-    @index
-    @dataset
+    @dataset(index=True)
     class LoginStats:
         uid: int = field(key=True)
         platform: str = field(key=True)

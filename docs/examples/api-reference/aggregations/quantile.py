@@ -1,9 +1,10 @@
-import pytest
 import unittest
 from datetime import datetime
 from typing import Optional
 
 import pandas as pd
+import pytest
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -19,7 +20,6 @@ class TestQuantileSnips(unittest.TestCase):
             pipeline,
             Dataset,
             Quantile,
-            index,
         )
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
@@ -33,8 +33,7 @@ class TestQuantileSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Aggregated:
             uid: int = field(key=True)
             # docsnip-highlight start

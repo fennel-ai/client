@@ -1,13 +1,13 @@
 from datetime import datetime
-
-import pandas as pd
 from typing import List, no_type_check
 
+import pandas as pd
+
 import fennel.datasets.datasets
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
@@ -16,8 +16,7 @@ __owner__ = "test@test.com"
 
 
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str = field(key=True)

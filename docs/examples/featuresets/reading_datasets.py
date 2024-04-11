@@ -1,12 +1,14 @@
 from datetime import datetime
+
 import pandas as pd
+
 from fennel.testing import mock
 
 __owner__ = "ml-team@fennel.ai"
 
 
 # docsnip featuresets_reading_datasets
-from fennel.datasets import dataset, field, index
+from fennel.datasets import dataset, field
 from fennel.connectors import source, Webhook
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import inputs, outputs
@@ -16,8 +18,7 @@ webhook = Webhook(name="fennel_webhook")
 
 @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
 # docsnip-highlight start
-@index
-@dataset
+@dataset(index=True)
 # docsnip-highlight end
 class User:  # docsnip-highlight
     uid: int = field(key=True)

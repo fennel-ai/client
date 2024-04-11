@@ -5,9 +5,9 @@ This file contains all velocity related datasets.
 from datetime import datetime
 from typing import Optional
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Count, index
-from fennel.lib import inputs
 from fennel.connectors import Webhook, source
+from fennel.datasets import dataset, field, pipeline, Dataset, Count
+from fennel.lib import inputs
 
 __owner__ = "eng@app.com"
 
@@ -31,8 +31,7 @@ class ReservationDS:
     created: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class NumCompletedTripsDS:
     driver_id: int = field(key=True)
     num_past_completed_trips: int
@@ -56,8 +55,7 @@ class NumCompletedTripsDS:
         )
 
 
-@index
-@dataset
+@dataset(index=True)
 class CancelledTripsDS:
     driver_id: int = field(key=True)
     num_past_cancelled_trips: int
@@ -95,8 +93,7 @@ class LoginEventsDS:
     created: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class LoginsLastDayDS:
     driver_id: int = field(key=True)
     num_logins_last_day: int
@@ -130,8 +127,7 @@ class BookingFlowCheckoutPageDS:
     device_id: str
 
 
-@index
-@dataset
+@dataset(index=True)
 class CheckoutPagesLastDayDS:
     driver_id: int = field(key=True)
     num_checkout_pages_last_day: int
@@ -171,8 +167,7 @@ class ReservationSummaryDS:
     created: datetime = field(timestamp=True)
 
 
-@index
-@dataset
+@dataset(index=True)
 class PastApprovedDS:
     driver_id: int = field(key=True)
     num_past_approved_trips: int

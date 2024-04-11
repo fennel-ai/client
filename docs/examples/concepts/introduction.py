@@ -3,8 +3,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.datasets import dataset, field
 from fennel.connectors import Webhook
+from fennel.datasets import dataset, field
 from fennel.testing import mock
 
 __owner__ = "owner@example.com"
@@ -28,7 +28,6 @@ def test_overview(client):
     # since docs requires not compilable credentials.
 
     from fennel.connectors import source, Kafka, Postgres
-    from fennel.datasets import index
 
     postgres = Postgres.get(name="postgres")
     kafka = Kafka.get(name="kafka")
@@ -39,8 +38,7 @@ def test_overview(client):
 
     # docsnip-highlight next-line
     @source(user_table, every="1m", disorder="7d", cdc="upsert", tier="prod")
-    @index
-    @dataset
+    @dataset(index=True)
     class User:
         uid: int = field(key=True)
         dob: datetime
@@ -59,12 +57,11 @@ def test_overview(client):
 
     # /docsnip
 
-    from fennel.datasets import pipeline, Dataset, Count, Sum, index
+    from fennel.datasets import pipeline, Dataset, Count, Sum
     from fennel.lib import inputs
 
     # docsnip pipeline
-    @index
-    @dataset
+    @dataset(index=True)
     class UserTransactionsAbroad:
         uid: int = field(key=True)
         count: int
@@ -422,15 +419,14 @@ def dummy_function():
 
 @mock
 def test_branches(client):
-    from fennel.datasets import dataset, field, index
+    from fennel.datasets import dataset, field
     from fennel.featuresets import feature as F, featureset
     from fennel.connectors import Webhook, source
 
     webhook = Webhook(name="some_webhook")
 
     @source(webhook.endpoint("endpoint1"), disorder="14d", cdc="upsert")
-    @index
-    @dataset
+    @dataset(index=True)
     class SomeDataset:
         uid: int = field(key=True)
         dob: datetime

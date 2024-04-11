@@ -6,11 +6,11 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import connectors
-from fennel.datasets import dataset, Dataset, pipeline, field, LastK, index
-from fennel.featuresets import featureset, feature as F, extractor
-from fennel.lib import meta, inputs, outputs
-from fennel.dtypes import struct
 from fennel.connectors import source
+from fennel.datasets import dataset, Dataset, pipeline, field, LastK
+from fennel.dtypes import struct
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 webhook = connectors.Webhook(name="fennel_webhook")
@@ -39,8 +39,7 @@ class MovieCast:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class MovieInfo:
     movie: Movie = field(key=True)
     cast_list: List[Cast]

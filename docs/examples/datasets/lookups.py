@@ -2,10 +2,10 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, feature as F, extractor
-from fennel.lib import meta, inputs, outputs
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
@@ -14,8 +14,7 @@ webhook = Webhook(name="fennel_webhook")
 # docsnip datasets_lookup
 @meta(owner="data-eng-oncall@fennel.ai")
 @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class User:
     uid: int = field(key=True)
     home_city: str

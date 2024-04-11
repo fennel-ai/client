@@ -2,10 +2,10 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Sum, index
-from fennel.featuresets import featureset, feature as F, extractor
-from fennel.lib import meta, inputs, outputs
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field, pipeline, Dataset, Sum
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
@@ -53,8 +53,7 @@ class Regions:
 
 
 @meta(owner="henry@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class UserTransactionSums:
     cc_num: int = field(key=True)  # needs to be key for groubpby
     trans_date_trans_time: datetime = field(timestamp=True)

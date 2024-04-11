@@ -6,7 +6,9 @@ import pytest
 import pandas as pd
 import requests
 
-from fennel import featureset, extractor, feature as F
+from fennel import featureset, extractor
+from fennel.connectors import Webhook
+from fennel.connectors import source
 from fennel.datasets import (
     dataset,
     field,
@@ -15,11 +17,8 @@ from fennel.datasets import (
     Sum,
     LastK,
     Distinct,
-    index,
 )
 from fennel.lib import meta, inputs, outputs
-from fennel.connectors import Webhook
-from fennel.connectors import source
 from fennel.testing import mock, MockClient
 
 client = MockClient()
@@ -29,8 +28,7 @@ webhook = Webhook(name="fennel_webhook")
 
 @meta(owner="abhay@fennel.ai")
 @source(webhook.endpoint("MovieInfo"), cdc="upsert", disorder="14d")
-@index
-@dataset
+@dataset(index=True)
 class MovieInfo:
     title: str = field(key=True)
     actors: List[Optional[str]]  # can be an empty list
@@ -48,8 +46,7 @@ class TicketSale:
 
 
 @meta(owner="abhay@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class ActorStats:
     name: str = field(key=True)
     revenue: int  # type: ignore

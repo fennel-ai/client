@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -17,7 +18,6 @@ def test_basic(client):
         Dataset,
         Average,
         Stddev,
-        index,
     )
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
@@ -31,8 +31,7 @@ def test_basic(client):
         amt: int
         timestamp: datetime
 
-    @index
-    @dataset
+    @dataset(index=True)
     class Aggregated:
         uid: int = field(key=True)
         mean: float
@@ -122,7 +121,6 @@ def test_invalid_type(client):
             field,
             pipeline,
             Dataset,
-            Average,
             Stddev,
         )
         from fennel.lib import inputs
@@ -165,7 +163,6 @@ def test_non_matching_types(client):
             field,
             pipeline,
             Dataset,
-            Average,
             Stddev,
         )
         from fennel.lib import inputs

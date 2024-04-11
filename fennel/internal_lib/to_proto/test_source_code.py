@@ -3,15 +3,15 @@ from typing import Optional, List
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, Dataset, pipeline, Sum, index
-from fennel.featuresets import featureset, feature as F, extractor
-from fennel.lib import includes, meta, inputs, outputs
+from fennel.datasets import dataset, field, Dataset, pipeline, Sum
+from fennel.featuresets import featureset, extractor
 from fennel.internal_lib.to_proto.source_code import (
     get_featureset_core_code,
     get_dataset_core_code,
     lambda_to_python_regular_func,
     remove_source_decorator,
 )
+from fennel.lib import includes, meta, inputs, outputs
 
 
 @meta(owner="me@fennel.ai")
@@ -65,8 +65,7 @@ class UserAgeAggregated:
         )
 
 
-@index
-@dataset
+@dataset(index=True)
 class User:
     uid: int = field(key=True)
     dob: datetime
@@ -101,8 +100,7 @@ class UserFeature:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str

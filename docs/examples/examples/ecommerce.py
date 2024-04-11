@@ -5,10 +5,10 @@ from datetime import datetime, timedelta
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, pipeline, field, Dataset, Count, index
-from fennel.featuresets import feature as F, featureset, extractor
-from fennel.lib import meta, inputs, outputs
 from fennel.connectors import Postgres, source, Webhook
+from fennel.datasets import dataset, pipeline, field, Dataset, Count
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 # /docsnip
@@ -50,8 +50,7 @@ class Order:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class UserSellerOrders:
     uid: int = field(key=True)
     seller_id: int = field(key=True)

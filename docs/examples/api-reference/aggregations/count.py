@@ -18,7 +18,6 @@ class TestCountSnips(unittest.TestCase):
             pipeline,
             Dataset,
             Count,
-            index,
         )
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
@@ -33,8 +32,7 @@ class TestCountSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Aggregated:
             uid: int = field(key=True)
             # docsnip-highlight start

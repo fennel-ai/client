@@ -7,6 +7,7 @@ import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.dataset_pb2 as ds_proto
+from fennel.connectors import source, Webhook, Kafka
 from fennel.datasets import (
     dataset,
     pipeline,
@@ -17,12 +18,10 @@ from fennel.datasets import (
     Stddev,
     Sum,
     Quantile,
-    index,
 )
 from fennel.dtypes import Embedding, Window
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib import includes, meta, inputs
-from fennel.connectors import source, Webhook, Kafka
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook", retention="30d")
@@ -30,8 +29,7 @@ __owner__ = "ml-eng@fennel.ai"
 
 
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True).meta(owner="xyz@fennel.ai")  # type: ignore
     name: str
@@ -566,8 +564,7 @@ def test_dataset_with_pipes():
         t: datetime
 
     @meta(owner="test@test.com")
-    @index
-    @dataset
+    @dataset(index=True)
     class B:
         b1: int = field(key=True)
         t: datetime
@@ -717,8 +714,7 @@ def test_dataset_with_pipes_bounds():
         t: datetime
 
     @meta(owner="test@test.com")
-    @index
-    @dataset
+    @dataset(index=True)
     class B:
         b1: int = field(key=True)
         t: datetime
@@ -2769,8 +2765,7 @@ def test_pipeline_with_tier_selector():
 
     @meta(owner="test@test.com")
     @source(kafka.topic("orders2"), disorder="1h", cdc="upsert")
-    @index
-    @dataset
+    @dataset(index=True)
     class B:
         b1: int = field(key=True)
         t: datetime

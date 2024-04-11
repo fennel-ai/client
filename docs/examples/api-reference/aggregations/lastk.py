@@ -1,8 +1,8 @@
-import pytest
-from typing import List
 from datetime import datetime
+from typing import List
 
 import pandas as pd
+import pytest
 
 from fennel.testing import mock
 
@@ -12,7 +12,7 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.datasets import dataset, field, pipeline, Dataset, LastK, index
+    from fennel.datasets import dataset, field, pipeline, Dataset, LastK
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
 
@@ -25,8 +25,7 @@ def test_basic(client):
         amount: int
         timestamp: datetime
 
-    @index
-    @dataset
+    @dataset(index=True)
     class Aggregated:
         uid: int = field(key=True)
         amounts: List[int]

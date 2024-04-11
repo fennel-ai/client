@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
-from fennel.datasets import dataset, field, index
-from fennel.dtypes import oneof
 from fennel.connectors import Webhook, S3, MySQL, source
+from fennel.datasets import dataset, field
+from fennel.dtypes import oneof
 
 __owner__ = "eng@app.com"
 
@@ -115,8 +115,7 @@ class VehicleSummaryDS:
     cdc="upsert",
     tier="prod",
 )
-@index
-@dataset
+@dataset(index=True)
 class RentCarCheckoutEventDS:
     driver_id: int = field(key=True)
     delivery_type: oneof(str, ["AIRPORT", "HOME"])  # type: ignore
@@ -132,8 +131,7 @@ class RentCarCheckoutEventDS:
 @source(
     webhook.endpoint("DriverDS"), disorder="14d", cdc="upsert", tier="local"
 )
-@index
-@dataset
+@dataset(index=True)
 class DriverDS:
     id: int = field(key=True)
     created: datetime = field(timestamp=True)
@@ -146,8 +144,7 @@ class DriverDS:
     cdc="upsert",
     tier="local",
 )
-@index
-@dataset
+@dataset(index=True)
 class DriverCreditScoreDS:
     driver_id: int = field(key=True)
     score: Optional[float]
