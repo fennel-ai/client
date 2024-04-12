@@ -5,7 +5,7 @@ status: published
 ---
 ### Aggregate
 Operator to do continuous window aggregations. Aggregate operator must always
-be preceded by a [groupby](/api-reference/operators#groupby) operator.
+be preceded by a [groupby](/api-reference/operators/groupby) operator.
 
 #### Parameters
 
