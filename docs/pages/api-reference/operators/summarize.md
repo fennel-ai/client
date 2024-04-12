@@ -7,7 +7,7 @@ status: published
 Operator to compute arbitrary aggregation summary over events in a window and 
 augment that as a new field in the dataset.
 
-Summarize operator must always be preceded by a [window](/api-reference/operators#window) operator.
+Summarize operator must always be preceded by a [window](/api-reference/operators/window) operator.
 
 #### Parameters
 <Expandable title="field" type="str">
@@ -17,7 +17,7 @@ with any existing name on the dataset.
 
 <Expandable title="dtype" type="Type">
 The data type of the new column to be added - must be a valid Fennel supported
-[data type](/api-reference#api-reference/data-types).
+[data type](/api-reference/data-types).
 </Expandable>
 
 <Expandable title="func" type="Callable[pd.Dataframe, pd.Series[T]]">

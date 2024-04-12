@@ -9,7 +9,7 @@ status: 'published'
 Data gets into Fennel datasets via Sources - in fact, sources are the only 
 mechanism for data to reach a Fennel dataset.
 
-Fennel ships with data connectors to all [common datastores](/api-reference/sources) 
+Fennel ships with data connectors to all [common datastores](/api-reference/connectors) 
 so that you can 'source' your Fennel datasets from your external datasets. In 
 addition to the pull based sources that read from external data sources, Fennel
 also ships with a push based source called `Webhook` for you to manually push
@@ -85,9 +85,13 @@ used to configure data sources.
 ### CDC
 Fennel natively supports change data capture (aka CDC) as well as other modes
 of ingestion (e.g. `append`). You can configure the `cdc` parameter to specify
-how should your data be interpreted and converted to valid change log data. More
-often than not, you'd choose `append` to signify that all incoming rows should
-be appended to the dataset such that there are no deletes/updates.
+how should your data be interpreted and converted to valid change log data. 
+
+You'd typically use `append` for sourcing keyless datasets, for instance, event
+streams from Kafka that only have inserts but no deletes/updates. If you want to
+process both inserts/updates (but no deletes) for keyed datasets, `upsert` is a
+good option. Other options are `debezium` if you want Fennel to ingest existing
+CDC stream in debezium format (say from Kafka or S3).
 
 ### Disorder
 Fennel, like many other streaming systems, is designed to robustly handle out

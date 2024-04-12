@@ -62,10 +62,11 @@ def test_incremental(client):
     from fennel.datasets import dataset, field, index
     from fennel.connectors import source, Webhook
     from fennel.featuresets import featureset, feature, extractor
+    from fennel.lib import inputs, outputs
 
     webhook = Webhook(name="some_webhook")
 
-    @source(webhook.endpoint("endpoint"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("endpoint"), disorder="14d", cdc="upsert")
     @index
     @dataset
     class Transaction:
@@ -81,11 +82,13 @@ def test_incremental(client):
 
     @featureset
     class TransactionFeatures:
-        txid: int = feature(id=1)
-        amount: int = feature(id=2).extract(field=Transaction.amount, default=0)
-        amount_is_high: bool = feature(id=3)
+        txid: int
+        amount: int = feature(Transaction.amount, default=0)
+        amount_is_high: bool
 
         @extractor(tier="bronze")
+        @inputs("amount")
+        @outputs("amount_is_high")
         def some_fn(cls, ts, amount: pd.Series):
             return amount.apply(lambda x: x > 100)
 

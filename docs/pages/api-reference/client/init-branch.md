@@ -12,11 +12,9 @@ Creates a new empty branch and checks out the client to point towards it.
 #### Parameters
 <Expandable title="name" type="str">
 The name of the branch that should be created. The name can consist of any alpha
-numeric character `[a-z, A-Z, 0-9]` as well as hyphens `"-"`, underscores `"_"`, and
-periods `"."`
+numeric character `[a-z, A-Z, 0-9]` as well as slashes `"/"`, hyphens `"-"`, 
+underscores `"_"`, and periods `"."`
 
-Most notably, branch names can not yet contain `/` character - reach out to Fennel 
-support if this is needed.
 </Expandable>
 
 #### Errors

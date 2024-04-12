@@ -42,20 +42,7 @@ them for now - though if you are interested, you can read about them and sources
 in general [here](/concepts/source). 
 
 Besides Postgres and Kafka, Fennel supports connectors with many other sources. 
-See [full list](/api-reference/sources).
-
-
-### Pipeline
-Once you have one or more "sourced" datasets, you can derive new datasets from 
-existing datasets by writing simple declarative Python code - it's 
-unimaginatively called a pipeline. Let's look at one such pipeline:
-
-<pre snippet="concepts/introduction#pipeline" highlight="3"></pre>
-
-So we can define datasets, source them from external datasets, derive them 
-via pipelines, and do temporal primary key lookups on them via indices. What has 
-all this to do with features? How to write a feature in Fennel? Well, this is 
-where we have to talk about the second main concept - featureset.
+See [full list](/api-reference/connectors).
 
 ### Index
 It's possible to do low latency lookups on these datasets using dataset keys. 
@@ -76,6 +63,18 @@ data as the data evolves and can go back in time to do a lookup. This movement
 of data is tagged with whatever field is tagged with `field(timestamp=True)`. In 
 fact, this ability to track time evolution enables Fennel to use the same code 
 to generate both online and offline features.
+
+### Pipeline
+Once you have one or more "sourced" datasets, you can derive new datasets from 
+existing datasets by writing simple declarative Python code - it's 
+unimaginatively called a pipeline. Let's look at one such pipeline:
+
+<pre snippet="concepts/introduction#pipeline" highlight="3"></pre>
+
+So we can define datasets, source them from external datasets, derive them 
+via pipelines, and do temporal primary key lookups on them via indices. What has 
+all this to do with features? How to write a feature in Fennel? Well, this is 
+where we have to talk about the second main concept - featureset.
 
 ## Featureset
 

@@ -5,7 +5,7 @@ status: published
 ---
 ### Log
 
-Method to push data into Fennel datasets via [webhook endpoints](/api-reference/sources/webhook).
+Method to push data into Fennel datasets via [webhook endpoints](/api-reference/connectors/webhook).
 
 #### Parameters
 <Expandable title="webhook" type="str">

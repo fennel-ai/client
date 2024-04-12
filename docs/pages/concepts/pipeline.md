@@ -100,7 +100,7 @@ makes final assembly O(1) while incurring at most 1% error.
 Because of this trick, calculating continuous windows becomes sufficiently 
 efficient. And given their ability to capture more current data, they are the 
 most common/default windows in Fennel and are supported via the 
-[aggregate operator](/api-reference/operators/aggregated).
+[aggregate operator](/api-reference/operators/aggregate).
 
 ### Power of Fennel Pipelines
 
