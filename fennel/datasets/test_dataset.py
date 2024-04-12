@@ -108,10 +108,11 @@ def test_simple_dataset():
                             "name": "fennel_webhook",
                             "webhook": {
                                 "name": "fennel_webhook",
-                                "retention": "2592000s",
+                                "retention": "604800s",
                             },
                         },
                         "endpoint": "UserInfoDataset",
+                        "duration": "604800s",
                     }
                 },
                 "dataset": "UserInfoDataset",
@@ -123,7 +124,7 @@ def test_simple_dataset():
         "extdbs": [
             {
                 "name": "fennel_webhook",
-                "webhook": {"name": "fennel_webhook", "retention": "2592000s"},
+                "webhook": {"name": "fennel_webhook", "retention": "604800s"},
             }
         ],
         "offlineIndices": [
@@ -282,10 +283,11 @@ def test_dataset_with_retention():
                             "name": "fennel_webhook",
                             "webhook": {
                                 "name": "fennel_webhook",
-                                "retention": "2592000s",
+                                "retention": "604800s",
                             },
                         },
                         "endpoint": "Activity",
+                        "duration": "604800s",
                     }
                 },
                 "dataset": "Activity",
@@ -296,7 +298,7 @@ def test_dataset_with_retention():
         "extdbs": [
             {
                 "name": "fennel_webhook",
-                "webhook": {"name": "fennel_webhook", "retention": "2592000s"},
+                "webhook": {"name": "fennel_webhook", "retention": "604800s"},
             }
         ],
     }
@@ -433,10 +435,11 @@ def test_nested_dataset():
                             "name": "fennel_webhook",
                             "webhook": {
                                 "name": "fennel_webhook",
-                                "retention": "2592000s",
+                                "retention": "604800s",
                             },
                         },
                         "endpoint": "DealerDataset",
+                        "duration": "604800s",
                     }
                 },
                 "dataset": "Dealer",
@@ -447,7 +450,7 @@ def test_nested_dataset():
         "extdbs": [
             {
                 "name": "fennel_webhook",
-                "webhook": {"name": "fennel_webhook", "retention": "2592000s"},
+                "webhook": {"name": "fennel_webhook", "retention": "604800s"},
             }
         ],
     }

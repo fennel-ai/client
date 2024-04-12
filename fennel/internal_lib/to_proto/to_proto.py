@@ -794,6 +794,7 @@ def _webhook_to_source_proto(
                 endpoint=connector_proto.WebhookEndpoint(
                     endpoint=connector.endpoint,
                     db=ext_db,
+                    duration=to_duration_proto(data_source.retention),
                 ),
             ),
             disorder=to_duration_proto(connector.disorder),

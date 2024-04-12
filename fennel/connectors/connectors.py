@@ -20,6 +20,7 @@ SOURCE_FIELD = "__fennel_data_sources__"
 SINK_FIELD = "__fennel_data_sinks__"
 DEFAULT_EVERY = Duration("30m")
 DEFAULT_DISORDER = Duration("14d")
+DEFAULT_WEBHOOK_RETENTION = Duration("7d")
 DEFAULT_CDC = "append"
 
 
@@ -173,12 +174,26 @@ class DataSource(BaseModel):
 
 
 class Webhook(DataSource):
-    retention: Duration = "14d"
+
+    retention: Duration = DEFAULT_WEBHOOK_RETENTION
+
+    @validator("retention")
+    def validate_retention(cls, value: Duration) -> str:
+        try:
+            is_valid_duration(value)
+        except Exception as e:
+            raise ValueError(
+                f"Please provide a valid duration in webhook source: {cls.name}. Error : {e}"
+            )
+        return value
 
     def required_fields(self) -> List[str]:
         return ["endpoint"]
 
-    def endpoint(self, endpoint: str) -> WebhookConnector:
+    def endpoint(
+        self,
+        endpoint: str,
+    ) -> WebhookConnector:
         return WebhookConnector(self, endpoint)
 
     def identifier(self) -> str:
