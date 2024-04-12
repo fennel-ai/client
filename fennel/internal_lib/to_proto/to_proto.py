@@ -1728,8 +1728,8 @@ def to_extractor_pycode(
                 raise ValueError(
                     f"Extractor `{extractor_fqn}` has an input "
                     f"feature `{input.name}` from featureset "
-                    f"`{input.featureset_name}` which is not synced."
-                    f"Please add the featureset to the sync call."
+                    f"`{input.featureset_name}` which is not committed. "
+                    f"Please add the featureset to the commit call."
                 )
             gen_code = (
                 gen_code
