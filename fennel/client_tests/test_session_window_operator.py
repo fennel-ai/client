@@ -172,7 +172,6 @@ def log_app_events_data(client):
     }
     df = pd.DataFrame(data)
     response = client.log("fennel_webhook", "AppEvent", df)
-    print(response.json())
     assert response.status_code == requests.codes.OK, response.json()
 
 
@@ -223,7 +222,6 @@ def test_session_window_operator(client):
     assert df_session["window"].values[0].end == datetime(
         2023, 1, 16, 11, 0, 33, microsecond=1
     )
-    print(df_session["window_stats"])
     assert df_session["window_stats"].values[0].count == 8
     assert df_session["window_stats"].values[0].avg_star == 3.125
 

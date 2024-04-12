@@ -18,7 +18,7 @@ class TestFilterSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)

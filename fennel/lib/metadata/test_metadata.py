@@ -25,7 +25,7 @@ webhook = Webhook(name="fennel_webhook")
 )
 @index
 @dataset
-@source(webhook.endpoint("UserInfoDataset"), cdc="append", disorder="14d")
+@source(webhook.endpoint("UserInfoDataset"), cdc="upsert", disorder="14d")
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -99,7 +99,7 @@ def test_simple_dataset():
 def test_complex_dataset_with_fields():
     @dataset(history="1y")
     @source(
-        webhook.endpoint("YextUserInfoDataset"), disorder="14d", cdc="append"
+        webhook.endpoint("YextUserInfoDataset"), disorder="14d", cdc="upsert"
     )
     @meta(owner="daniel@yext.com", description="test")
     class YextUserInfoDataset:
@@ -207,6 +207,7 @@ def test_complex_dataset_with_fields():
                 },
                 "dataset": "YextUserInfoDataset",
                 "dsVersion": 1,
+                "cdc": "Upsert",
                 "disorder": "1209600s",
             }
         ],

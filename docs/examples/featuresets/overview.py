@@ -179,7 +179,7 @@ def test_multiple_features_extracted(client):
             return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
     # /docsnip
-    @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="upsert")
     @index
     @dataset
     class UserInfo:
@@ -251,7 +251,7 @@ def test_multiple_features_extracted(client):
 @pytest.mark.slow
 @mock
 def test_extractors_across_featuresets(client):
-    @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="upsert")
     @index
     @dataset
     class UserInfo:

@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime, timedelta
 from typing import List, Optional
+import pytest
 
 import pandas as pd
 import requests
@@ -27,7 +28,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="abhay@fennel.ai")
-@source(webhook.endpoint("MovieInfo"), cdc="append", disorder="14d")
+@source(webhook.endpoint("MovieInfo"), cdc="upsert", disorder="14d")
 @index
 @dataset
 class MovieInfo:
@@ -170,6 +171,51 @@ class ActorFeatures:
         return df["revenue"] * 2
 
 
+def _get_changed_featureset_valid():
+    @meta(owner="abhay@fennel.ai")
+    @featureset
+    class ActorFeatures:
+        revenue: int
+        twice_revenue: int
+
+        @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+        @inputs(RequestFeatures.name)
+        @outputs("revenue")
+        def extract_revenue(cls, ts: pd.Series, name: pd.Series):
+            df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
+            df = df.fillna(0)
+            return df["revenue"]
+
+        @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+        @inputs(RequestFeatures.name)
+        @outputs("twice_revenue")
+        def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
+            df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
+            df = df.fillna(0)
+            df["twice_revenue"] = df["revenue"] * 2
+            return df["twice_revenue"]
+
+    return ActorFeatures
+
+
+def _get_changed_featureset_invalid():
+    @meta(owner="abhay@fennel.ai")
+    @featureset
+    class ActorFeatures:
+        twice_revenue: int
+
+        @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+        @inputs(RequestFeatures.name)
+        @outputs("twice_revenue")
+        def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
+            df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
+            df = df.fillna(0)
+            df["twice_revenue"] = df["revenue"] * 2
+            return df["twice_revenue"]
+
+    return ActorFeatures
+
+
 class TestMovieTicketSale(unittest.TestCase):
     @mock
     def test_movie_ticket_sale(self, client):
@@ -241,3 +287,40 @@ class TestMovieTicketSale(unittest.TestCase):
         assert features.shape == (2, 1)
         assert features["ActorFeatures.revenue"][0] == 50
         assert features["ActorFeatures.revenue"][1] == 398
+
+        client.commit(
+            message="new featureset",
+            featuresets=[_get_changed_featureset_valid()],
+            incremental=True,
+            tier="prod",
+        )  # type: ignore
+
+        features = client.query(
+            inputs=[RequestFeatures.name],  # type: ignore
+            outputs=[_get_changed_featureset_valid()],  # type: ignore
+            input_dataframe=pd.DataFrame(
+                {
+                    "RequestFeatures.name": [
+                        "Robin Williams",
+                        "Leonardo DiCaprio",
+                    ],
+                }
+            ),
+        )
+        assert features.shape == (2, 2)
+        assert features["ActorFeatures.revenue"][0] == 50
+        assert features["ActorFeatures.revenue"][1] == 398
+        assert features["ActorFeatures.twice_revenue"][0] == 100
+        assert features["ActorFeatures.twice_revenue"][1] == 796
+
+        with pytest.raises(Exception) as e:
+            client.commit(
+                message="new featureset",
+                featuresets=[_get_changed_featureset_invalid()],
+                incremental=True,
+                tier="prod",
+            )  # type: ignore
+        assert (
+            str(e.value)
+            == "Featureset ActorFeatures is not a superset of the existing featureset"
+        )

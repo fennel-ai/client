@@ -163,7 +163,7 @@ def get_country_geoid(country: str) -> int:
 
 # docsnip featuresets_testing_with_dataset
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class UserInfoDataset:

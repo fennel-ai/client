@@ -31,7 +31,7 @@ def test_mysql_basic(client):
     @source(
         mysql.table("user", cursor="updated_at"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1m",
     )
     @dataset
@@ -71,7 +71,7 @@ def test_postgres_basic(client):
     @source(
         postgres.table("user", cursor="updated_at"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1m",
     )
     @dataset

@@ -62,7 +62,7 @@ class EventTrackerDS:
     ),
     every="1d",
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="prod",
 )
 @dataset
@@ -75,7 +75,7 @@ class DriverLicenseCountryDS:
 @source(
     webhook.endpoint("VehicleSummaryDS"),
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="local",
 )
 @source(
@@ -85,7 +85,7 @@ class DriverLicenseCountryDS:
     ),
     every="2h",
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="prod",
 )
 @dataset
@@ -102,7 +102,7 @@ class VehicleSummaryDS:
 @source(
     webhook.endpoint("RentCarCheckoutEventDS"),
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="local",
 )
 @source(
@@ -112,7 +112,7 @@ class VehicleSummaryDS:
     ),
     every="2h",
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="prod",
 )
 @index
@@ -130,7 +130,7 @@ class RentCarCheckoutEventDS:
 
 
 @source(
-    webhook.endpoint("DriverDS"), disorder="14d", cdc="append", tier="local"
+    webhook.endpoint("DriverDS"), disorder="14d", cdc="upsert", tier="local"
 )
 @index
 @dataset
@@ -143,7 +143,7 @@ class DriverDS:
 @source(
     webhook.endpoint("DriverCreditScoreDS"),
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="local",
 )
 @index

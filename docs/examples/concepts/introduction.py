@@ -38,7 +38,7 @@ def test_overview(client):
     user_table = postgres.table("user", cursor="signup_at")
 
     # docsnip-highlight next-line
-    @source(user_table, every="1m", disorder="7d", cdc="append", tier="prod")
+    @source(user_table, every="1m", disorder="7d", cdc="upsert", tier="prod")
     @index
     @dataset
     class User:
@@ -126,7 +126,7 @@ def test_overview(client):
     # /docsnip
 
     User = source(
-        webhook.endpoint("User"), disorder="14d", cdc="append", tier="local"
+        webhook.endpoint("User"), disorder="14d", cdc="upsert", tier="local"
     )(User)
     Transaction = source(
         webhook.endpoint("Transaction"),
@@ -434,7 +434,7 @@ def test_branches(client):
 
     webhook = Webhook(name="some_webhook")
 
-    @source(webhook.endpoint("endpoint1"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("endpoint1"), disorder="14d", cdc="upsert")
     @index
     @dataset
     class SomeDataset:

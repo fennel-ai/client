@@ -28,7 +28,7 @@ webhook = Webhook(name="app_webhook")
 
 
 @source(
-    webhook.endpoint("ChargesDS"), disorder="14d", cdc="append", tier="local"
+    webhook.endpoint("ChargesDS"), disorder="14d", cdc="upsert", tier="local"
 )
 @dataset
 class ChargesDS:

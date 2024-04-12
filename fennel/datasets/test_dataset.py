@@ -29,7 +29,7 @@ webhook = Webhook(name="fennel_webhook", retention="30d")
 __owner__ = "ml-eng@fennel.ai"
 
 
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class UserInfoDataset:
@@ -114,6 +114,7 @@ def test_simple_dataset():
                 },
                 "dataset": "UserInfoDataset",
                 "dsVersion": 1,
+                "cdc": "Upsert",
                 "disorder": "1209600s",
             }
         ],
@@ -2760,14 +2761,14 @@ def test_pipeline_with_tier_selector():
     kafka = Kafka.get(name="my_kafka")
 
     @meta(owner="test@test.com")
-    @source(kafka.topic("orders"), disorder="1h", cdc="append")
+    @source(kafka.topic("orders"), disorder="1h", cdc="upsert")
     @dataset
     class A:
         a1: int = field(key=True)
         t: datetime
 
     @meta(owner="test@test.com")
-    @source(kafka.topic("orders2"), disorder="1h", cdc="append")
+    @source(kafka.topic("orders2"), disorder="1h", cdc="upsert")
     @index
     @dataset
     class B:

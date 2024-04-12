@@ -37,7 +37,7 @@ class MemberActivityDataset:
 
 
 @meta(owner="test@fennel.ai")
-@source(webhook.endpoint("MemberDataset"), cdc="append", disorder="14d")
+@source(webhook.endpoint("MemberDataset"), cdc="upsert", disorder="14d")
 @dataset
 class MemberDataset:
     pk: str
@@ -126,7 +126,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
         @source(
             webhook.endpoint("MemberActivityDataset"),
             disorder="14d",
-            cdc="append",
+            cdc="upsert",
         )
         @dataset
         class MemberActivityDataset:
@@ -140,7 +140,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             domain_used_count: int
 
         @meta(owner="test@fennel.ai")
-        @source(webhook.endpoint("MemberDataset"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("MemberDataset"), disorder="14d", cdc="upsert")
         @dataset
         class MemberDataset:
             pk: str

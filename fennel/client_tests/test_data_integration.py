@@ -21,7 +21,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="xiao@fennel.ai")
-@source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="append", tier="dev")
+@source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="upsert", tier="dev")
 @source(
     s3.bucket(
         bucket_name="fennel-demo-data",
@@ -29,7 +29,7 @@ webhook = Webhook(name="fennel_webhook")
     ),
     every="1h",
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="prod",
 )
 @index

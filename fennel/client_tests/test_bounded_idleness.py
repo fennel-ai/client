@@ -15,7 +15,7 @@ __owner__ = "saiharsha@fennel.ai"
 
 @source(
     webhook.endpoint("ClicksDS1"),
-    cdc="append",
+    cdc="upsert",
     disorder="1d",
     bounded=True,
     idleness="4s",
@@ -30,7 +30,7 @@ class BoundedClicksDS:
 
 
 @source(
-    webhook.endpoint("ClicksDS2"), cdc="append", disorder="1d", bounded=False
+    webhook.endpoint("ClicksDS2"), cdc="upsert", disorder="1d", bounded=False
 )
 @index
 @dataset

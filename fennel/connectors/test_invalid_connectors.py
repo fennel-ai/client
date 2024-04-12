@@ -262,7 +262,7 @@ def test_sink_on_source(client):
     with pytest.raises(Exception) as e:
 
         @meta(owner="test@test.com")
-        @source(kafka.topic("test_topic"), disorder="14d", cdc="append")
+        @source(kafka.topic("test_topic"), disorder="14d", cdc="upsert")
         @sink(kafka.topic("test_topic_2"), cdc="debezium")
         @dataset
         class UserInfoDataset:
@@ -422,7 +422,7 @@ def test_multiple_sources(client):
 
     assert (
         str(e.value)
-        == "Dataset `UserInfoDataset` has more than one source defined, found 7 sources"
+        == "Dataset UserInfoDataset has multiple sources (7) defined. Please define only one source per dataset, or check your tier selection."
     )
 
 

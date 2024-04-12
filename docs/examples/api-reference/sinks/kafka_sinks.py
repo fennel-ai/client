@@ -24,7 +24,7 @@ def test_kafka_sink(client):
     )
 
     @source(
-        kafka.topic("user", format="json"), disorder="14d", cdc="append"
+        kafka.topic("user", format="json"), disorder="14d", cdc="upsert"
     )  # docsnip-highlight
     @dataset
     class SomeDataset:

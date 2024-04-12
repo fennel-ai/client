@@ -29,7 +29,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class UserInfoDataset:
@@ -246,7 +246,7 @@ class Velocity:
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("FlightDataset"), disorder="14d", cdc="append")
+@source(webhook.endpoint("FlightDataset"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class FlightDataset:
@@ -559,7 +559,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 
 @meta(owner="aditya@fennel.ai")
 @source(
-    webhook.endpoint("DocumentContentDataset"), disorder="14d", cdc="append"
+    webhook.endpoint("DocumentContentDataset"), disorder="14d", cdc="upsert"
 )
 @index
 @dataset

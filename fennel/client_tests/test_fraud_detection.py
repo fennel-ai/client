@@ -13,7 +13,7 @@ webhook = Webhook(name="fennel_webhook")
 
 @meta(owner="henry@fennel.ai")
 @source(
-    webhook.endpoint("CreditCardTransactions"), cdc="append", disorder="14d"
+    webhook.endpoint("CreditCardTransactions"), cdc="upsert", disorder="14d"
 )
 @dataset
 class CreditCardTransactions:

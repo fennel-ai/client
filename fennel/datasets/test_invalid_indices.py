@@ -98,7 +98,7 @@ def test_invalid_dataset_online_lookup(client):
     This tests that a dataset doing online lookup without online index is not allowed.
     """
 
-    @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="upsert")
     @index(online=False, offline="forever")
     @dataset
     class Dataset1:
@@ -155,7 +155,7 @@ def test_invalid_dataset_offline_lookup(client):
     This tests that a dataset doing offline lookup without offline index is not allowed.
     """
 
-    @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="upsert")
     @index(online=True, offline=None)
     @dataset
     class Dataset1:

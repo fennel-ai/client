@@ -13,7 +13,7 @@ wh = Webhook(name="fennel_webhook")
 __owner__ = "nitin@fennel.com"
 
 
-@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
 @index
 @dataset
 class UserInfoDataset:

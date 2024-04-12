@@ -158,7 +158,7 @@ class CheckoutPagesLastDayDS:
 @source(
     webhook.endpoint("ReservationSummaryDS"),
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="local",
 )
 @dataset

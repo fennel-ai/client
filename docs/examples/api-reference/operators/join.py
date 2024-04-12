@@ -28,7 +28,7 @@ class TestAssignSnips(unittest.TestCase):
             timestamp: datetime
 
         @source(
-            webhook.endpoint("MerchantCategory"), disorder="14d", cdc="append"
+            webhook.endpoint("MerchantCategory"), disorder="14d", cdc="upsert"
         )
         @index
         @dataset
