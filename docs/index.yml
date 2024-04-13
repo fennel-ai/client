@@ -65,6 +65,7 @@ sidebar:
       - "observability/grafana"
       - "observability/newrelic"
       - "observability/alerting"
+      - "observability/lineage"
 
   - slug: "useful-tips"
     title: "Useful Tips"
