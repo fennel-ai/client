@@ -12,7 +12,7 @@ Data related to the provided erase keys is removed and will not be reflected to
 downstream dataset or any subsequent queries.
 
 This method should be used as a way to comply with GDPR and other similar 
-regulations that require "right to be forgotton". For operational deletion/correction
+regulations that require "right to be forgotten". For operational deletion/correction
 of data, regular CDC mechanism must be used instead.
 
 :::warning
