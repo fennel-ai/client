@@ -25,7 +25,7 @@ webhook = Webhook(name="fennel_webhook")
 
 def test_dataset_expectation_creation():
     @meta(owner="test@test.com")
-    @source(webhook.endpoint("UserInfoDS"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("UserInfoDS"), disorder="14d", cdc="upsert")
     @dataset
     class UserInfoDS:
         user_id: int = field(key=True)
@@ -90,7 +90,7 @@ def test_dataset_expectation_creation():
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDS"), disorder="14d", cdc="append")
+@source(webhook.endpoint("UserInfoDS"), disorder="14d", cdc="upsert")
 @dataset
 class UserInfoDS:
     user_id: int = field(key=True)

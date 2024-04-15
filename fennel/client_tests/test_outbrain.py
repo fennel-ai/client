@@ -3,11 +3,11 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Count, index
-from fennel.featuresets import featureset, extractor, feature as F
-from fennel.lib import meta, inputs, outputs
 from fennel.connectors import S3, Webhook
 from fennel.connectors import source
+from fennel.datasets import dataset, field, pipeline, Dataset, Count
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 s3 = S3(
@@ -39,8 +39,7 @@ class PageViews:
 
 
 @meta(owner="xiao@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class PageViewsByUser:
     uuid: str = field(key=True)
     page_views: int
@@ -81,7 +80,7 @@ class UserPageViewFeatures:
     page_views_3d: int
     page_views_9d: int
 
-    @extractor(depends_on=[PageViewsByUser], version=2)  # type: ignore
+    @extractor(deps=[PageViewsByUser], version=2)  # type: ignore
     @inputs(Request.uuid)
     @outputs("page_views", "page_views_1d", "page_views_3d", "page_views_9d")
     def extract(cls, ts: pd.Series, uuids: pd.Series):

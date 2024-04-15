@@ -6,9 +6,9 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field, index
-from fennel.lib import meta
 from fennel.connectors import source, S3, Webhook
+from fennel.datasets import dataset, field
+from fennel.lib import meta
 from fennel.testing import mock
 
 s3 = S3(
@@ -21,7 +21,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="xiao@fennel.ai")
-@source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="append", tier="dev")
+@source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="upsert", tier="dev")
 @source(
     s3.bucket(
         bucket_name="fennel-demo-data",
@@ -29,11 +29,10 @@ webhook = Webhook(name="fennel_webhook")
     ),
     every="1h",
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="prod",
 )
-@index
-@dataset
+@dataset(index=True)
 class MovieInfo103:
     movieId: int = field(key=True).meta(description="Movie ID")  # type: ignore
     title: str = field().meta(  # type: ignore

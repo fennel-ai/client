@@ -43,7 +43,7 @@ client - you can commit datasets/featuresets, log data, extract features etc.
 
 Since external data integration doesn't work in mock server, the only way to 
 bring data to a dataset in the mock server is by explicitly logging data to a
-[webhook](/api-reference/sources/webhook).
+[webhook](/api-reference/connectors/webhook).
 
 
 

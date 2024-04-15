@@ -2,10 +2,9 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
-
-from fennel.datasets import index
-from fennel.testing import mock
 import pytest
+
+from fennel.testing import mock
 
 __owner__ = "hoang@fennel.ai"
 
@@ -28,8 +27,7 @@ class TestSummarizeSnips(unittest.TestCase):
             amount: int
             timestamp: datetime = field(timestamp=True)
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Session:
             uid: int = field(key=True)
             window: Window = field(key=True)

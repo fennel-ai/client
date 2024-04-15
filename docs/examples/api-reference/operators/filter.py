@@ -1,8 +1,8 @@
-import pytest
 import unittest
 from datetime import datetime
 
 import pandas as pd
+import pytest
 
 from fennel.testing import mock
 
@@ -13,21 +13,20 @@ class TestFilterSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, index
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)
             city: str
             signup_time: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Filtered:
             uid: int = field(key=True)
             city: str
@@ -91,7 +90,7 @@ class TestFilterSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)

@@ -6,10 +6,10 @@ import pytest
 from dateutil.relativedelta import relativedelta  # type: ignore
 
 from fennel import meta, Count, featureset, feature as F, extractor
-from fennel.datasets import dataset, field, pipeline, Dataset, index
-from fennel.lib import inputs, outputs
 from fennel.connectors import Webhook
 from fennel.connectors import source
+from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.lib import inputs, outputs
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
@@ -17,10 +17,9 @@ webhook = Webhook(name="fennel_webhook")
 __owner__ = "uber-data@eng.com"
 
 
-@index
-@dataset
+@dataset(index=True)
 @source(
-    webhook.endpoint("RiderDataset"), cdc="append", disorder="14d", tier="local"
+    webhook.endpoint("RiderDataset"), cdc="upsert", disorder="14d", tier="local"
 )
 class RiderDataset:
     rider_id: int = field(key=True)
@@ -28,12 +27,11 @@ class RiderDataset:
     birthdate: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 @source(
     webhook.endpoint("RiderCreditScoreDataset"),
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="local",
 )
 class RiderCreditScoreDataset:
@@ -42,12 +40,11 @@ class RiderCreditScoreDataset:
     score: float
 
 
-@index
-@dataset
+@dataset(index=True)
 @source(
     webhook.endpoint("CountryLicenseDataset"),
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="local",
 )
 @meta(owner="data@eng.com")
@@ -71,14 +68,7 @@ class ReservationsDataset:
     created: datetime
 
 
-@index
-@dataset
-@source(
-    webhook.endpoint("NumCompletedTripsDataset"),
-    disorder="14d",
-    cdc="append",
-    tier="local",
-)
+@dataset(index=True)
 class NumCompletedTripsDataset:
     rider_id: int = field(key=True)
     count_num_completed_trips: int

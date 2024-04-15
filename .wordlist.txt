@@ -26,6 +26,7 @@ Flink
 Flink's
 GCP
 GCP's
+GDPR
 GRPC
 GetRecords
 GetShardIterator
@@ -82,6 +83,7 @@ RocksDB
 Rowset
 Rowsets
 SASL
+SCIM
 SDK
 SHA
 SLA
@@ -176,6 +178,7 @@ datastore
 datastores
 datetime
 dateutil
+deanonymized
 debezium
 declaratively
 dedup
@@ -197,6 +200,7 @@ env
 featureset
 featuresets
 fintech
+forgotten
 frontend
 func
 gRPC
@@ -216,6 +220,7 @@ hyperloglog
 iam
 incrementing
 init
+initializer
 interop
 ip
 ish
@@ -309,6 +314,7 @@ uncomment
 unhashable
 unidirectionally
 unittest
+upsert
 uptime
 uptimes
 url

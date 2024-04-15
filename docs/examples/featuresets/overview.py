@@ -3,9 +3,9 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, index
 from fennel.connectors import source, Webhook
-from fennel.testing import mock, InternalTestClient
+from fennel.datasets import dataset, field
+from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 __owner__ = "nikhil@fennel.ai"
@@ -33,6 +33,221 @@ def test_featureset_overview():
     durations = pd.Series([3600, 7200, 7201, 10800])
     res = Movie.my_extractor(Movie, ts, durations)
     assert res.tolist() == [False, False, True, True]
+
+
+@mock
+def test_feature_versioning(client):
+    # docsnip feature_versioning
+    from fennel.featuresets import featureset, extractor
+    from fennel.lib import inputs, outputs
+
+    @featureset
+    class Movie:
+        duration: int
+        is_long: bool
+
+        @extractor(version=1)  # docsnip-highlight
+        @inputs("duration")
+        @outputs("is_long")
+        def fn(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="is_long", data=durations > 2 * 3600)
+
+    # /docsnip
+
+    def _expanded():
+        # docsnip feature_versioning_increment
+        @featureset
+        class Movie:
+            duration: int
+            is_long: bool
+
+            @extractor(version=2)  # docsnip-highlight
+            @inputs("duration")
+            @outputs("is_long")
+            def fn(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+                return pd.Series(name="is_long", data=durations > 3 * 3600)
+
+        # /docsnip
+
+    _expanded()
+
+
+@mock
+def test_featureset_auto_extractors(client):
+    from fennel.datasets import dataset, field
+    from fennel.featuresets import featureset, extractor
+    from fennel.lib import inputs, outputs
+    from fennel.connectors import source, Webhook
+
+    webhook = Webhook(name="fennel_webhook")
+    # docsnip featureset_auto_extractors
+    from fennel.featuresets import feature  # docsnip-highlight
+
+    @source(webhook.endpoint("endpoint"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class Movie:
+        id: int = field(key=True)
+        duration: int
+        updated_at: datetime
+
+    @featureset
+    class MovieFeatures:
+        id: int
+        # docsnip-highlight next-line
+        duration: int = feature(Movie.duration, default=-1)
+        over_2hrs: bool
+
+        @extractor
+        @inputs("duration")
+        @outputs("over_2hrs")
+        def is_over_2hrs(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
+
+    # /docsnip
+    client.commit(
+        message="some commit message",
+        datasets=[Movie],
+        featuresets=[MovieFeatures],
+    )
+
+    import numpy as np
+
+    @source(webhook.endpoint("endpoint"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class Movie:
+        id: int = field(key=True)
+        duration: int
+        updated_at: datetime
+
+    # docsnip auto_expanded
+    @featureset
+    class MovieFeatures:
+        id: int
+        duration: int
+        over_2hrs: bool
+
+        # docsnip-highlight start
+        @extractor(deps=[Movie], version=1)
+        @inputs("id")
+        @outputs("duration")
+        def get_duration(cls, ts: pd.Series, id: pd.Series) -> pd.Series:
+            df, found = Movie.lookup(ts, id=id)
+            df["duration"] = np.where(found, -1, df["duration"])
+            return df["duration"]
+
+        # docsnip-highlight end
+
+        @extractor
+        @inputs("duration")
+        @outputs("over_2hrs")
+        def is_over_2hrs(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
+
+    # /docsnip
+
+
+@mock
+def test_featureset_alias(client):
+    from fennel.featuresets import featureset, feature, extractor
+    from fennel.lib import inputs, outputs
+    from fennel.connectors import source, Webhook
+
+    webhook = Webhook(name="fennel_webhook")
+
+    # docsnip featureset_alias
+    @source(webhook.endpoint("Movie"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class Movie:
+        id: int = field(key=True)
+        duration: int
+        updated_at: datetime
+
+    @featureset
+    class Request:
+        movie_id: int  # docsnip-highlight
+
+    @featureset
+    class MovieFeatures:
+        id: int = feature(Request.movie_id)  # docsnip-highlight
+        duration: int = feature(Movie.duration, default=-1)
+
+    # /docsnip
+
+    client.commit(
+        message="some commit message",
+        datasets=[Movie],
+        featuresets=[Request, MovieFeatures],
+    )
+
+    import numpy as np
+
+    @source(webhook.endpoint("Movie"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class Movie:
+        id: int = field(key=True)
+        duration: int
+        updated_at: datetime
+
+    @featureset
+    class Request:
+        movie_id: int
+
+    # docsnip featureset_alias_expanded
+    @featureset
+    class MovieFeatures:
+        id: int
+        duration: int
+
+        # docsnip-highlight start
+        @extractor(version=1)
+        @inputs(Request.movie_id)
+        @outputs("id")
+        def get_id(cls, ts: pd.Series, movie_id: pd.Series) -> pd.Series:
+            return movie_id
+
+        # docsnip-highlight end
+
+        @extractor(deps=[Movie], version=1)
+        @inputs("id")
+        @outputs("duration")
+        def get_duration(cls, ts: pd.Series, id: pd.Series) -> pd.Series:
+            df, found = Movie.lookup(ts, id=id)
+            df["duration"] = np.where(found, -1, df["duration"])
+            return df["duration"]
+
+    # /docsnip
+
+
+@mock
+def test_featureset_auto_convention(client):
+    from fennel.datasets import dataset, field
+    from fennel.featuresets import featureset
+    from fennel.connectors import source, Webhook
+
+    webhook = Webhook(name="fennel_webhook")
+    # docsnip featureset_auto_convention
+    # docsnip-highlight next-line
+    from fennel.featuresets import feature as F
+
+    @source(webhook.endpoint("Movie"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class Movie:
+        id: int = field(key=True)
+        duration: int
+        updated_at: datetime
+
+    @featureset
+    class Request:
+        movie_id: int
+
+    @featureset
+    class MovieFeatures:
+        # docsnip-highlight start
+        id: int = F(Request.movie_id)
+        duration: int = F(Movie.duration, default=-1)
+        # docsnip-highlight end
+
+    # /docsnip
 
 
 def test_featureset_zero_extractors():
@@ -84,10 +299,9 @@ def test_multiple_extractors_of_same_feature(client):
     class Movies:
         duration: int
         over_2hrs: bool
-        # invalid: both e1 & e2 output `over_3hrs`
         over_3hrs: bool
 
-        @extractor(tier=["default"])
+        @extractor
         @inputs("duration")
         @outputs("over_2hrs", "over_3hrs")  # docsnip-highlight
         def e1(cls, ts: pd.Series, durations: pd.Series) -> pd.DataFrame:
@@ -95,7 +309,7 @@ def test_multiple_extractors_of_same_feature(client):
             three_hrs = durations > 3 * 3600
             return pd.DataFrame({"over_2hrs": two_hrs, "over_3hrs": three_hrs})
 
-        @extractor(tier=["non-default"])
+        @extractor
         @inputs("duration")
         @outputs("over_3hrs")  # docsnip-highlight
         def e2(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
@@ -103,14 +317,11 @@ def test_multiple_extractors_of_same_feature(client):
 
     # /docsnip
 
-    view = InternalTestClient()
-    view.add(Movies)
-    with pytest.raises(Exception) as e:
-        view._get_sync_request_proto()
-    assert (
-        str(e.value)
-        == "Feature `over_3hrs` is extracted by multiple extractors including `e2` in featureset `Movies`."
-    )
+    with pytest.raises(Exception):
+        client.commit(
+            message="some commit message",
+            featuresets=[Movies],
+        )
 
 
 def test_remote_feature_as_input():
@@ -179,9 +390,8 @@ def test_multiple_features_extracted(client):
             return pd.Series(name="over_2hrs", data=durations > 2 * 3600)
 
     # /docsnip
-    @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="append")
-    @index
-    @dataset
+    @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
     class UserInfo:
         uid: int = field(key=True)
         city: str
@@ -197,7 +407,7 @@ def test_multiple_features_extracted(client):
         latitude: float
         longitude: float
 
-        @extractor(depends_on=[UserInfo])
+        @extractor(deps=[UserInfo])
         @inputs("uid")
         @outputs("latitude", "longitude")
         def get_user_city_coordinates(cls, ts: pd.Series, uid: pd.Series):
@@ -251,9 +461,8 @@ def test_multiple_features_extracted(client):
 @pytest.mark.slow
 @mock
 def test_extractors_across_featuresets(client):
-    @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="append")
-    @index
-    @dataset
+    @source(webhook.endpoint("UserInfo"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
     class UserInfo:
         uid: int = field(key=True)
         city: str
@@ -275,7 +484,7 @@ def test_extractors_across_featuresets(client):
         latitude: float
         longitude: float
 
-        @extractor(depends_on=[UserInfo])
+        @extractor(deps=[UserInfo])
         @inputs(Request.uid)
         @outputs("uid", "latitude", "longitude")
         def get_country_geoid(cls, ts: pd.Series, uid: pd.Series):

@@ -10,7 +10,7 @@ ItemType = Union[str, List[str]]
 class AggregateType(BaseModel):
     window: Last
     # Name of the field the aggregate will  be assigned to
-    into_field: str
+    into_field: str = ""
 
     @validator("window", pre=True)
     # Converting the window into Last object

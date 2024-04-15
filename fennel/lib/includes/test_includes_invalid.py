@@ -5,19 +5,18 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import includes, meta, inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -48,7 +47,7 @@ class UserInfoExtractor:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")
     @outputs(age, "age_power_four", "age_cubed", "is_name_common")
     def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
@@ -124,7 +123,7 @@ def test_invalid_code_changes(client):
             age_cubed: int
             is_name_common: bool
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(deps=[UserInfoDataset])
             @includes(power_4, cube)
             @inputs(userid)
             @outputs(age, age_power_four, age_cubed, is_name_common)
@@ -163,7 +162,7 @@ def test_invalid_code_changes(client):
             age_cubed: int
             is_name_common: bool
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(deps=[UserInfoDataset])
             @includes(power_4_alt, cube)
             @inputs(userid)
             @outputs(age, age_power_four, age_cubed, is_name_common)
@@ -208,7 +207,7 @@ def test_invalid_code_changes(client):
             is_name_common: bool
             another_feature: int
 
-            @extractor(depends_on=[UserInfoDataset], version=1)
+            @extractor(deps=[UserInfoDataset], version=1)
             @includes(power_4, cube)
             @inputs(userid)
             @outputs(age, age_power_four, age_cubed, is_name_common)

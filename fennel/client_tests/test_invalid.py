@@ -4,10 +4,10 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, pipeline, field, Dataset, index
-from fennel.featuresets import featureset, extractor, feature as F
-from fennel.lib import meta, inputs, outputs
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, pipeline, field, Dataset
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import *
 
 # noinspection PyUnresolvedReferences
@@ -37,7 +37,7 @@ class MemberActivityDataset:
 
 
 @meta(owner="test@fennel.ai")
-@source(webhook.endpoint("MemberDataset"), cdc="append", disorder="14d")
+@source(webhook.endpoint("MemberDataset"), cdc="upsert", disorder="14d")
 @dataset
 class MemberDataset:
     pk: str
@@ -49,8 +49,7 @@ class MemberDataset:
 
 
 @meta(owner="test@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class MemberActivityDatasetCopy:
     domain: str = field(key=True)
     domain_used_count: int
@@ -73,7 +72,7 @@ class DomainFeatures:
     domain: str
     domain_used_count: int
 
-    @extractor(depends_on=[MemberActivityDatasetCopy])  # type: ignore
+    @extractor(deps=[MemberActivityDatasetCopy])  # type: ignore
     @inputs(Query.domain)
     @outputs("domain", "domain_used_count")
     def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):
@@ -126,7 +125,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
         @source(
             webhook.endpoint("MemberActivityDataset"),
             disorder="14d",
-            cdc="append",
+            cdc="upsert",
         )
         @dataset
         class MemberActivityDataset:
@@ -140,7 +139,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             domain_used_count: int
 
         @meta(owner="test@fennel.ai")
-        @source(webhook.endpoint("MemberDataset"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("MemberDataset"), disorder="14d", cdc="upsert")
         @dataset
         class MemberDataset:
             pk: str
@@ -151,8 +150,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             createdAt: datetime = field(timestamp=True)
 
         @meta(owner="test@fennel.ai")
-        @index
-        @dataset
+        @dataset(index=True)
         class MemberActivityDatasetCopy:
             domain: str = field(key=True)
             domain_used_count: int
@@ -174,7 +172,7 @@ class TestInvalidExtractorDependsOn(unittest.TestCase):
             domain: str
             domain_used_count: int
 
-            @extractor(depends_on=[MemberActivityDatasetCopy])
+            @extractor(deps=[MemberActivityDatasetCopy])
             @inputs(Query.domain)
             @outputs("domain", "domain_used_count")
             def get_domain_feature(cls, ts: pd.Series, domain: pd.Series):

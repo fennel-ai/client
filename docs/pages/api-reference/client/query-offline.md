@@ -33,10 +33,10 @@ features need to be queried.
 Only relevant when `format` is "pandas".
 </Expandable>
 
-<Expandable title="input_s3" type="Optional[sources.S3]">
+<Expandable title="input_s3" type="Optional[connectors.S3]">
 Sending large volumes of the input data over the wire is often infeasible.
 In such cases, input data can be written to S3 and the location of the file is
-sent as `input_s3` via `S3.bucket()` function of [S3](/api-reference/sources/s3) 
+sent as `input_s3` via `S3.bucket()` function of [S3](/api-reference/connectors/s3) 
 connector. 
 
 This parameter makes sense only when `format` isn't "pandas".
@@ -52,10 +52,10 @@ The name of the column containing the timestamps as of which the feature values
 must be computed.
 </Expandable>
 
-<Expandable title="output_s3" type="Optional[sources.S3]">
+<Expandable title="output_s3" type="Optional[connectors.S3]">
 Specifies the location & other details about the s3 path where the values of
 all the output features should be written. Similar to `input_s3`, this is 
-provided via `S3.bucket()` function of [S3](/api-reference/sources/s3) connector.
+provided via `S3.bucket()` function of [S3](/api-reference/connectors/s3) connector.
 
 If this isn't provided, Fennel writes the results of all requests to a fixed
 default bucket - you can see its details from the return value of `query_offline`

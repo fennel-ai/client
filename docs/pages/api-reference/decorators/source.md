@@ -53,19 +53,28 @@ them and not including them in the computation.
 Specifies how should valid change data be constructed from the ingested data.
 
 `"append"` means that data should be interpreted as sequence of append operations
-with no deletes and no updates. All SQL sources only support `append` CDC of as
-right now.
+with no deletes and no updates. Append can only be applied to keyless datasets (
+to prevent situations where multiple inserts arrive with the same key fields). As
+of right now, all SQL sources, Kafka, Kinesis, S3, and webhook support `append`
+mode.
+
+`"upsert"` means that incoming data will only have inserts but should be 
+interpreted as sequence of upsert operations. It can only be used for keyed 
+datasets and works for every source where append works. Note that in order to 
+support `"upsert"`, Fennel needs to maintain the last seen row for each key which
+has some overhead. As a result, pre-prepared `"debezium"` data should be preferred
+over `"upsert"`.
 
 `"native"` means that the underlying system exposes CDC natively and that Fennel
 should tap into that. As of right now, native CDC is only available for 
-[Deltalake](/api-reference/sources/deltalake) & [Hudi](/api-reference/sources/hudi)
+[Deltalake](/api-reference/connectors/deltalake) & [Hudi](/api-reference/connectors/hudi)
 and will soon be available for more sources including MySQL and Postgres.
 
 `"debezium"` means that the raw data itself is laid out in debezium layout out
 of which valid CDC data can be constructed. This is only possible for sources
-that expose raw schemaless data, namely, [s3](/api-reference/sources/s3), 
-[kinesis](/api-reference/sources/kinesis), [kafka](/api-reference/sources/kafka), 
-and [webhook](/api-reference/sources/webhook).
+that expose raw schemaless data, namely, [s3](/api-reference/connectors/s3), 
+[kinesis](/api-reference/connectors/kinesis), [kafka](/api-reference/connectors/kafka), 
+and [webhook](/api-reference/connectors/webhook).
 </Expandable>
 
 <Expandable title="tier" type="None | str | List[str]" defaultVal="None">

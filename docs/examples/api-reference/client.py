@@ -5,19 +5,18 @@ from typing import Optional
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import feature as F, featureset, extractor
 from fennel.lib import includes, meta, inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -47,7 +46,7 @@ class UserFeatures:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(deps=[UserInfoDataset])
     @inputs("userid")
     @outputs("age", "name")
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
@@ -69,7 +68,7 @@ class UserFeatures:
         ]
         return df
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(deps=[UserInfoDataset])
     @includes(get_country_geoid)
     @inputs("userid")
     @outputs("country_geoid")

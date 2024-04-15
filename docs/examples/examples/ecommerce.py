@@ -5,10 +5,10 @@ from datetime import datetime, timedelta
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, pipeline, field, Dataset, Count, index
-from fennel.featuresets import feature as F, featureset, extractor
-from fennel.lib import meta, inputs, outputs
 from fennel.connectors import Postgres, source, Webhook
+from fennel.datasets import dataset, pipeline, field, Dataset, Count
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 # /docsnip
@@ -50,8 +50,7 @@ class Order:
 
 
 @meta(owner="data-eng-oncall@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class UserSellerOrders:
     uid: int = field(key=True)
     seller_id: int = field(key=True)
@@ -63,8 +62,8 @@ class UserSellerOrders:
     @inputs(Order)
     def my_pipeline(cls, orders: Dataset):
         return orders.groupby("uid", "seller_id").aggregate(
-            Count(window="1d", into_field="num_orders_1d"),
-            Count(window="1w", into_field="num_orders_1w"),
+            num_orders_1d=Count(window="1d"),
+            num_orders_1w=Count(window="1w"),
         )
 
 
@@ -80,7 +79,7 @@ class UserSeller:
     num_orders_1d: int
     num_orders_1w: int
 
-    @extractor(depends_on=[UserSellerOrders])
+    @extractor(deps=[UserSellerOrders])
     @inputs("uid", "seller_id")
     @outputs("num_orders_1d", "num_orders_1w")
     def myextractor(cls, ts: pd.Series, uids: pd.Series, sellers: pd.Series):

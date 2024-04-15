@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -9,15 +10,14 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.datasets import dataset, field, index
+    from fennel.datasets import dataset, field
     from fennel.connectors import source, Webhook
 
     # first define & sync a dataset that sources from a webhook
     webhook = Webhook(name="some_webhook")
 
-    @source(webhook.endpoint("some_endpoint"), disorder="14d", cdc="append")
-    @index
-    @dataset
+    @source(webhook.endpoint("some_endpoint"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
     class Transaction:
         uid: int = field(key=True, erase_key=True)
         amount: int
@@ -25,12 +25,12 @@ def test_basic(client):
 
     client.commit(message="some commit msg", datasets=[Transaction])
 
-    # Issued erase key of uid 1, 2, 3 to
-    keys = pd.DataFrame({"uid": [1, 2, 3]})
+    # docsnip-highlight start
     client.erase(
         Transaction,
-        erase_keys=keys,
+        erase_keys=pd.DataFrame({"uid": [1, 2, 3]}),
     )
+    # docsnip-highlight end
     # /docsnip
 
     # log some rows to the webhook

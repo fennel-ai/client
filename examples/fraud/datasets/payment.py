@@ -8,6 +8,7 @@ from typing import Optional
 import pandas as pd
 from fraud.datasets.payment_ids import PaymentIdentifierDS
 
+from fennel.connectors import Webhook, source
 from fennel.datasets import (
     Count,
     Min,
@@ -17,10 +18,8 @@ from fennel.datasets import (
     field,
     pipeline,
     Dataset,
-    index,
 )
 from fennel.lib import inputs
-from fennel.connectors import Webhook, source
 
 __owner__ = "eng@app.com"
 
@@ -28,7 +27,7 @@ webhook = Webhook(name="app_webhook")
 
 
 @source(
-    webhook.endpoint("ChargesDS"), disorder="14d", cdc="append", tier="local"
+    webhook.endpoint("ChargesDS"), disorder="14d", cdc="upsert", tier="local"
 )
 @dataset
 class ChargesDS:
@@ -40,8 +39,7 @@ class ChargesDS:
     created: datetime = field(timestamp=True)
 
 
-@index
-@dataset
+@dataset(index=True)
 class TransactionsDS:
     driver_id: int = field(key=True)
     min_radar_score: float
@@ -94,8 +92,7 @@ class PaymentEventDS:
     created: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class LastPaymentDS:
     driver_id: int = field(key=True)
     payment_provider: str
@@ -128,8 +125,7 @@ class LastPaymentDS:
         )
 
 
-@index
-@dataset
+@dataset(index=True)
 class PaymentDS:
     driver_id: int = field(key=True)
     num_postal_codes: int

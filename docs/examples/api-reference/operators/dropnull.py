@@ -1,9 +1,10 @@
-import pytest
-from typing import Optional
 import unittest
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
+import pytest
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -13,13 +14,13 @@ class TestDropnullSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, index
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)
@@ -31,8 +32,7 @@ class TestDropnullSnips(unittest.TestCase):
             gender: Optional[str]
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Derived:
             uid: int = field(key=True)
             dob: str
@@ -99,13 +99,13 @@ class TestDropnullSnips(unittest.TestCase):
     @mock
     def test_dropnull_all(self, client):
         # docsnip dropnull_all
-        from fennel.datasets import dataset, field, pipeline, Dataset, index
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)
@@ -117,8 +117,7 @@ class TestDropnullSnips(unittest.TestCase):
             # docsnip-highlight end
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Derived:
             uid: int = field(key=True)
             dob: str

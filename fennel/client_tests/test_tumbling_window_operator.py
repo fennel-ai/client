@@ -6,6 +6,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import connectors
+from fennel.connectors import source
 from fennel.datasets import (
     dataset,
     Dataset,
@@ -13,12 +14,10 @@ from fennel.datasets import (
     field,
     Average,
     LastK,
-    index,
 )
-from fennel.featuresets import featureset, feature as F, extractor
-from fennel.lib import meta, inputs, outputs
 from fennel.dtypes import Window, struct
-from fennel.connectors import source
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 webhook = connectors.Webhook(name="fennel_webhook")
@@ -40,8 +39,7 @@ class WindowStats:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class Sessions:
     user_id: int = field(key=True)
     window: Window = field(key=True)
@@ -66,8 +64,7 @@ class Sessions:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class SessionStats:
     user_id: int = field(key=True)
     timestamp: datetime = field(timestamp=True)
@@ -135,7 +132,7 @@ class UserSessionStats:
     last_visitor_session: List[Window]
     avg_star: float
 
-    @extractor(depends_on=[SessionStats])  # type: ignore
+    @extractor(deps=[SessionStats])  # type: ignore
     @inputs("user_id")
     @outputs("avg_count", "avg_length", "last_visitor_session", "avg_star")
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):
@@ -144,8 +141,7 @@ class UserSessionStats:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class SessionsHopping:
     user_id: int = field(key=True)
     window: Window = field(key=True)
@@ -175,8 +171,7 @@ class SessionsHopping:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class SessionStatsHopping:
     user_id: int = field(key=True)
     timestamp: datetime = field(timestamp=True)
@@ -244,7 +239,7 @@ class UserSessionStatsHopping:
     last_visitor_session: List[Window]
     avg_star: float
 
-    @extractor(depends_on=[SessionStatsHopping])  # type: ignore
+    @extractor(deps=[SessionStatsHopping])  # type: ignore
     @inputs("user_id")
     @outputs("avg_count", "avg_length", "last_visitor_session", "avg_star")
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):
@@ -281,7 +276,6 @@ def log_app_events_data(client):
     }
     df = pd.DataFrame(data)
     response = client.log("fennel_webhook", "AppEvent", df)
-    print(response.json())
     assert response.status_code == requests.codes.OK, response.json()
 
 

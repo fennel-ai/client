@@ -9,7 +9,7 @@ status: 'published'
 Data gets into Fennel datasets via Sources - in fact, sources are the only 
 mechanism for data to reach a Fennel dataset.
 
-Fennel ships with data connectors to all [common datastores](/api-reference/sources) 
+Fennel ships with data connectors to all [common datastores](/api-reference/connectors) 
 so that you can 'source' your Fennel datasets from your external datasets. In 
 addition to the pull based sources that read from external data sources, Fennel
 also ships with a push based source called `Webhook` for you to manually push
@@ -29,7 +29,6 @@ mirroring your postgres table `user`and will update as the underlying Postgres
 table updates.
 
 ## Schema Matching
-
 Fennel has a strong typing system and all ingested data is evaluated against
 the dataset schema. See [Fennel types](/api-reference/data-types/core-types) to 
 see the full list of types supported by Fennel. 
@@ -47,10 +46,7 @@ doesn't match with the schema of the Fennel dataset, the data is discarded and
 not admitted to the dataset. Fennel maintains logs of how often it happens and 
 it's possible to set alerts on that.
 
-
-
 ### Type Matching/Casting Rules
-
 Here is how various types are matched from the sourced data (note that type 
 matching/casting only happens during sourcing - once data has been parsed in 
 the given type, from then onwards, there is no type casting/coercion anywhere 
@@ -70,7 +66,6 @@ else in Fennel)
   safely parse datetime from all the following formats.
 
 ### Datetime Formats
-
 * Integers that describe timestamp as interval from Unix epoch e.g. `1682099757`
  Fennel is smart enough to automatically deduce if an integer is describing
  timestamp as seconds, milliseconds, microseconds or nanoseconds
@@ -82,28 +77,21 @@ else in Fennel)
 * When data is being read from arrow representations (say parquet files), `date32`
   and `date64` types are also converted to datetime (with time being UTC midnight)
 
-
 ## Configuring Sources
+There is tremendous variety and complexity just within data ingestion. Fennel aims
+to abstract much of that via a carefully chosen set of knobs that can be 
+used to configure data sources.
 
-Many sources (but not all) take some of the following arguments:
+### CDC
+Fennel natively supports change data capture (aka CDC) as well as other modes
+of ingestion (e.g. `append`). You can configure the `cdc` parameter to specify
+how should your data be interpreted and converted to valid change log data. 
 
-### Every
-The frequency with which you want Fennel to check the external data source for 
-new data. Fennel is built with continuous ingestion in mind so you could set it 
-to small values and still be fine.
-
-### Cursor
-For some (but not all) sources, Fennel uses a cursor to do incremental 
-ingestion of data. It does so by remembering the last value of the cursor 
-column (in this case `update_time`) and issuing a query of the 
-form `SELECT * FROM user WHERE update_time > {last_seen_update_time - disorder}`.
-
-Clearly, this works only when the cursor field is monotonically increasing with
-row updates - which Fennel expects you to ensure. It is also advised to have
-an index of the cursor column so that this query is efficient. 
-
-Many data sources don't need an explicit cursor and instead use other implicit 
-mechanisms to track and save ingestion progress.
+You'd typically use `append` for sourcing keyless datasets, for instance, event
+streams from Kafka that only have inserts but no deletes/updates. If you want to
+process both inserts/updates (but no deletes) for keyed datasets, `upsert` is a
+good option. Other options are `debezium` if you want Fennel to ingest existing
+CDC stream in debezium format (say from Kafka or S3).
 
 ### Disorder
 Fennel, like many other streaming systems, is designed to robustly handle out
@@ -118,18 +106,28 @@ where max out of order delay is specified. This max out of order delay of a sour
 is called `disorder` in Fennel, and once specified at source level, is respected
 automatically by each downstream pipeline. 
 
-### CDC
-Fennel natively supports change data capture (aka CDC) as well as other modes
-of ingestion (e.g. `append`). You can configure the `cdc` parameter to specify
-how should your data be interpreted and converted to valid change log data. More
-often than not, you'd choose `append` to signify that all incoming rows should
-be appended to the dataset such that there are no deletes/updates.
+### Every
+The frequency with which you want Fennel to check the external data source for 
+new data. Fennel is built with continuous ingestion in mind so you could set it 
+to small values and still be fine.
+
+### Cursor
+While using `append` CDC strategy, some (but not all) sources use a cursor to do 
+incremental ingestion of data. It does so by remembering the last value of the 
+cursor column (in this case `update_time`) and issuing a query of the 
+form `SELECT * FROM user WHERE update_time > {last_seen_update_time - disorder}`.
+
+Clearly, this works only when the cursor field is monotonically increasing with
+row updates - which Fennel expects you to ensure. It is also advised to have
+an index of the cursor column so that this query is efficient. 
+
+Many data sources don't need an explicit cursor and instead use other implicit 
+mechanisms to track and save ingestion progress.
 
 ### Preproc
 The `preproc` field in the source provides a way to ingest a column that 
 doesn't exist. Instead, it is either given a default value or to base the value 
 of that column on another column. 
-
 
 ### Since
 The `since` parameter (of type `datetime`) in the source provides a way to ingest 
@@ -157,7 +155,6 @@ The `idleness` field, when non-None, signifies that a bounded source is
 expected to be marked closed after a specified duration of idleness. 
 
 ## Load Impact of Sources
-
 Fennel sources have negligible load impact on the external data sources. 
 
 For instance, in the above example, as long as indices are put on the cursor 

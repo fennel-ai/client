@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -17,7 +18,6 @@ def test_basic(client):
         Dataset,
         Average,
         Stddev,
-        index,
     )
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
@@ -31,8 +31,7 @@ def test_basic(client):
         amt: int
         timestamp: datetime
 
-    @index
-    @dataset
+    @dataset(index=True)
     class Aggregated:
         uid: int = field(key=True)
         mean: float
@@ -44,11 +43,9 @@ def test_basic(client):
         @inputs(Transaction)
         def stddev_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
-                Average(of="amt", window="1d", default=-1.0, into_field="mean"),
+                mean=Average(of="amt", window="1d", default=-1.0),
                 # docsnip-highlight start
-                Stddev(
-                    of="amt", window="1d", default=-1.0, into_field="stddev"
-                ),
+                stddev=Stddev(of="amt", window="1d", default=-1.0),
                 # docsnip-highlight end
             )
 
@@ -124,7 +121,6 @@ def test_invalid_type(client):
             field,
             pipeline,
             Dataset,
-            Average,
             Stddev,
         )
         from fennel.lib import inputs
@@ -151,9 +147,7 @@ def test_invalid_type(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    Stddev(
-                        of="zip", window="1d", default="x", into_field="var"
-                    ),
+                    var=Stddev(of="zip", window="1d", default="x"),
                     # docsnip-highlight end
                 )
 
@@ -169,7 +163,6 @@ def test_non_matching_types(client):
             field,
             pipeline,
             Dataset,
-            Average,
             Stddev,
         )
         from fennel.lib import inputs
@@ -196,9 +189,7 @@ def test_non_matching_types(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    Stddev(
-                        of="amt", window="1d", default=1.0, into_field="ret"
-                    ),
+                    ret=Stddev(of="amt", window="1d", default=1.0),
                     # docsnip-highlight end
                 )
 

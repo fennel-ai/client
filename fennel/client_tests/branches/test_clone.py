@@ -4,19 +4,18 @@ import pandas as pd
 import pytest
 
 from fennel._vendor import requests
-from fennel.datasets import Dataset, dataset, field, pipeline, Count, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import Dataset, dataset, field, pipeline, Count
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 wh = Webhook(name="fennel_webhook")
 __owner__ = "nitin@fennel.com"
 
 
-@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -27,8 +26,7 @@ class UserInfoDataset:
     timestamp: datetime = field(timestamp=True)
 
 
-@index
-@dataset
+@dataset(index=True)
 class GenderStats:
     gender: str = field(key=True)
     count: int
@@ -42,8 +40,7 @@ class GenderStats:
         )
 
 
-@index
-@dataset
+@dataset(index=True)
 class CountryStats:
     country_code: int = field(key=True)
     count: int
@@ -68,8 +65,7 @@ class UserInfoFeatureset:
 
 
 def _get_changed_dataset(filter_condition):
-    @index
-    @dataset(version=2)
+    @dataset(index=True, version=2)
     class GenderStats:
         gender: str = field(key=True)
         count: int
@@ -88,16 +84,14 @@ def _get_changed_dataset(filter_condition):
 
 
 def _get_source_changed_datasets():
-    @source(wh.endpoint("UserInfoDataset3"), disorder="14d", cdc="append")
-    @index
-    @dataset(version=2)
+    @source(wh.endpoint("UserInfoDataset3"), disorder="14d", cdc="upsert")
+    @dataset(index=True, version=2)
     class UserInfoDataset:
         user_id: int = field(key=True)
         gender: int
         timestamp: datetime = field(timestamp=True)
 
-    @index
-    @dataset(version=2)
+    @dataset(index=True, version=2)
     class GenderStats:
         gender: int = field(key=True)
         count: int
@@ -123,7 +117,7 @@ def _get_changed_featureset():
         country_code: int
         email: str = F(UserInfoDataset.email, default="None")  # type: ignore
 
-        @extractor(depends_on=[UserInfoDataset], version=2)
+        @extractor(deps=[UserInfoDataset], version=2)
         @inputs("user_id")
         @outputs("age", "country_code")
         def my_extractor(cls, ts: pd.Series, user_id: pd.Series):

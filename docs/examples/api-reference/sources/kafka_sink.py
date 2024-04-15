@@ -23,9 +23,8 @@ def test_kafka_sink(client):
         sasl_plain_password=os.environ["KAFKA_PASSWORD"],
     )
 
-    @source(
-        kafka.topic("user", format="json"), disorder="14d", cdc="append"
-    )  # docsnip-highlight
+    # docsnip-highlight next-line
+    @source(kafka.topic("user", format="json"), disorder="14d", cdc="upsert")
     @dataset
     class SomeDataset:
         uid: int = field(key=True)

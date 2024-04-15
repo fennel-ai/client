@@ -6,11 +6,11 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import connectors
-from fennel.datasets import dataset, Dataset, pipeline, field, LastK, index
-from fennel.featuresets import featureset, feature as F, extractor
-from fennel.lib import meta, inputs, outputs
-from fennel.dtypes import struct
 from fennel.connectors import source
+from fennel.datasets import dataset, Dataset, pipeline, field, LastK
+from fennel.dtypes import struct
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 webhook = connectors.Webhook(name="fennel_webhook")
@@ -39,8 +39,7 @@ class MovieCast:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class MovieInfo:
     movie: Movie = field(key=True)
     cast_list: List[Cast]
@@ -69,14 +68,14 @@ class MovieFeatures:
     cast_list: List[Cast]
     average_cast_age: float
 
-    @extractor(depends_on=[MovieInfo])  # type: ignore
+    @extractor(deps=[MovieInfo])  # type: ignore
     @inputs("movie")
     @outputs("cast_list")
     def extract_cast(cls, ts: pd.Series, movie: pd.Series):
         res, _ = MovieInfo.lookup(ts, movie=movie)  # type: ignore
         return pd.Series(res["cast_list"])
 
-    @extractor(depends_on=[MovieInfo])  # type: ignore
+    @extractor(deps=[MovieInfo])  # type: ignore
     @inputs("movie")
     @outputs("average_cast_age")
     def extract_average_cast_age(cls, ts: pd.Series, movie: pd.Series):

@@ -5,11 +5,11 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, Dataset, field, pipeline, LastK, index
+from fennel.connectors import Webhook, source
+from fennel.datasets import dataset, Dataset, field, pipeline, LastK
 from fennel.dtypes import struct
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
-from fennel.connectors import Webhook, source
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
@@ -52,8 +52,7 @@ class MovieDS:
     timestamp: datetime = field(timestamp=True)
 
 
-@index
-@dataset
+@dataset(index=True)
 class MovieInfo:
     director_id: int = field(key=True)
     movie_id: int = field(key=True)
@@ -104,7 +103,7 @@ class MovieFeatures:
     role_list_struct: List[Role]
     movie_budget: MovieBudget
 
-    @extractor(depends_on=[MovieInfo])  # type: ignore
+    @extractor(deps=[MovieInfo])  # type: ignore
     @inputs(Request.director_id, Request.movie_id)
     @outputs("role_list_py")
     def extract_cast(
@@ -114,7 +113,7 @@ class MovieFeatures:
         res = res.rename(columns={"role_list": "role_list_py"})
         return pd.Series(res["role_list_py"].fillna("").apply(list))
 
-    @extractor(depends_on=[MovieInfo])  # type: ignore
+    @extractor(deps=[MovieInfo])  # type: ignore
     @inputs(Request.director_movie_id)
     @outputs("role_list_struct")
     def extract_cast_struct(cls, ts: pd.Series, director_movie_ids: pd.Series):
@@ -126,7 +125,7 @@ class MovieFeatures:
         res = res.rename(columns={"role_list": "role_list_struct"})
         return pd.Series(res["role_list_struct"].fillna("").apply(list))
 
-    @extractor(depends_on=[MovieInfo])  # type: ignore
+    @extractor(deps=[MovieInfo])  # type: ignore
     @inputs(Request.director_id, Request.movie_id)
     @outputs("movie_budget")
     def extract_movie_budget(

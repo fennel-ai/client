@@ -115,9 +115,9 @@ class IntegrationClient(Client):
             headers = {}
             headers["Authorization"] = "Bearer " + self.token
         headers = list(headers.items())  # type: ignore
-        x = self._http.get(self._url(path), headers=headers)
-        print(x)
-        code, content, content_type = x
+        code, content, content_type = self._http.get(
+            self._url(path), headers=headers
+        )
         if content_type == "application/json":
             content = json.loads(content)
         # HTTP sever returns code as a string
@@ -146,7 +146,6 @@ class IntegrationClient(Client):
         # If response content type is json, parse it
         if content_type == "application/json":
             content = json.loads(content)
-        print(content)
         # HTTP sever returns code as a string
         code = int(code)
         if code != 200:

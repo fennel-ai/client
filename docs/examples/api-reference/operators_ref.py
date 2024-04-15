@@ -4,10 +4,10 @@ from typing import Optional
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Sum, Count, index
-from fennel.lib import inputs
-from fennel.dtypes import Window
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field, pipeline, Dataset, Sum, Count
+from fennel.dtypes import Window
+from fennel.lib import inputs
 
 webhook = Webhook(name="fennel_webhook")
 __owner__ = "aditya@fennel.ai"
@@ -23,8 +23,7 @@ class Activity:
     timestamp: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class MerchantCategory:
     merchant: int = field(key=True)
     category: str
@@ -154,8 +153,8 @@ class FraudActivityDataset:
 
         # docsnip aggregate
         aggregated_ds = joined_ds.groupby("merchant_category").aggregate(
-            Sum(of="txn_amount", window="1h", into_field="txn_sum"),
-            Count(window="1h", into_field="txn_count"),
+            txn_sum=Sum(of="txn_amount", window="1h"),
+            txn_count=Count(window="1h"),
         )
         # /docsnip
         return aggregated_ds

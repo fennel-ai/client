@@ -1,15 +1,15 @@
+import sys
 from datetime import datetime
 from typing import Optional, List
-import sys
 
 import pandas as pd
 import pytest
 
 from fennel import meta
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import inputs, outputs
-from fennel.connectors import source, Webhook
 
 # noinspection PyUnresolvedReferences
 from fennel.testing import *
@@ -18,9 +18,8 @@ __owner__ = "data@fennel.ai"
 webhook = Webhook(name="fennel_webhook")
 
 
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -49,7 +48,7 @@ def test_featureset_as_input():
             userid: int
             home_geoid: int
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(deps=[UserInfoDataset])
             @inputs(User)
             @outputs("userid", "home_geoid")
             def get_user_info1(cls, ts: pd.Series, user: pd.Series):
@@ -74,13 +73,13 @@ def test_complex_featureset():
             age: int = F().meta(owner="aditya@fennel.ai")
             income: int
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(deps=[UserInfoDataset])
             @inputs(User.id)
             @outputs("userid", "home_geoid")
             def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
                 pass
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(deps=[UserInfoDataset])
             @inputs(User.id)
             @outputs("gender", "age")
             def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):

@@ -8,8 +8,8 @@ Operator to group rows of incoming datasets to be processed by the next operator
 
 Technically, groupby isn't a standalone operator by itself since its output isn't
 a valid dataset. Instead, it becomes a valid operator when followed by 
-[first](/api-reference/operators#first), [aggregate](/api-reference/operators#aggregate), 
-or [window](/api-reference/operators#window) operators.
+[first](/api-reference/operators/first), [aggregate](/api-reference/operators/aggregate), 
+or [window](/api-reference/operators/window) operators.
 
 #### Parameters
 

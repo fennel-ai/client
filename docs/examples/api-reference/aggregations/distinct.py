@@ -18,7 +18,6 @@ def test_basic(client):
         pipeline,
         Dataset,
         Distinct,
-        index,
     )
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
@@ -32,8 +31,7 @@ def test_basic(client):
         amount: int
         timestamp: datetime
 
-    @index
-    @dataset
+    @dataset(index=True)
     class Aggregated:
         uid: int = field(key=True)
         # docsnip-highlight next-line
@@ -45,10 +43,9 @@ def test_basic(client):
         def distinct_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
                 # docsnip-highlight start
-                Distinct(
+                amounts=Distinct(
                     of="amount",
                     window="1d",
-                    into_field="amounts",
                     unordered=True,
                 ),
                 # docsnip-highlight end
@@ -145,10 +142,9 @@ def test_invalid_type(client):
             def bad_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    Distinct(
+                    amounts=Distinct(
                         of="amount",
                         limit=10,
-                        into_field="amounts",
                         unordered=True,
                     ),
                     # docsnip-highlight end

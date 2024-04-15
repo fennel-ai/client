@@ -4,6 +4,7 @@ from typing import Optional, List, Union
 import pandas as pd
 import pytest
 
+from fennel.connectors import Webhook, source
 from fennel.datasets import (
     dataset,
     pipeline,
@@ -22,7 +23,6 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.connectors import Webhook, source
 from fennel.testing import *
 
 __owner__ = "eng@fennel.ai"
@@ -636,8 +636,7 @@ def test_dataset_incorrect_join():
             name: str
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class ABC:
             user_id: int = field(key=True)
             agent_id: int = field(key=True)
@@ -859,8 +858,7 @@ def test_join():
             v: int
             t: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class B:
             b1: int = field(key=True)
             v: int
@@ -928,7 +926,7 @@ def test_invalid_assign_schema(client):
     @source(
         webhook.endpoint("mysql_relayrides.location"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         tier="local",
     )
     @dataset
@@ -986,8 +984,7 @@ def test_non_keyed_index_dataset_raises_exception():
     with pytest.raises(Exception) as e:
 
         @meta(owner="nitin@fennel.ai")
-        @index(type="primary", online=True, offline=None)
-        @dataset
+        @dataset(online=True)
         class Users:
             user_id: str
             age: int
@@ -995,7 +992,7 @@ def test_non_keyed_index_dataset_raises_exception():
 
     assert (
         str(e.value)
-        == "Index decorator is only applicable for datasets with keyed fields. Found zero key fields."
+        == "Index is only applicable for datasets with keyed fields. Found zero key fields for dataset : `Users`."
     )
 
 
@@ -1006,12 +1003,71 @@ def test_two_indexes_dataset_raises_exception():
         @index(type="primary", online=True, offline=None)
         @index(type="primary", online=True, offline=None)
         @dataset
-        class Users:
+        class Users1:
             user_id: str = field(key=True)
             age: int
             t: datetime
 
     assert (
         str(e.value)
-        == "`index` can only be called once on a Dataset. Found more than one index decorators on Dataset `Users`."
+        == "`index` can only be called once on a Dataset. Found either more than one index decorators on Dataset "
+        "`Users1` or found 'index', 'offline' or 'online' param on @dataset with @index decorator."
+    )
+
+    with pytest.raises(Exception) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @index(type="primary", online=True, offline=None)
+        @dataset(index=True)
+        class Users2:
+            user_id: str = field(key=True)
+            age: int
+            t: datetime
+
+    assert (
+        str(e.value)
+        == "`index` can only be called once on a Dataset. Found either more than one index decorators on Dataset "
+        "`Users2` or found 'index', 'offline' or 'online' param on @dataset with @index decorator."
+    )
+
+
+@mock
+def test_source_and_pipelines_together(client):
+    @meta(owner="test@test.com")
+    @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+    @index
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True).meta(description="User ID")  # type: ignore
+        name: str = field().meta(description="User name")  # type: ignore
+        age: Optional[int]
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    @meta(owner="test@test.com")
+    @source(
+        webhook.endpoint("UserInfoDatasetDerived"), disorder="14d", cdc="upsert"
+    )
+    @index
+    @dataset
+    class UserInfoDatasetDerived:
+        user_id: int = field(key=True, erase_key=True).meta(description="User ID")  # type: ignore
+        name: str = field().meta(description="User name")  # type: ignore
+        country_name: Optional[str]
+        ts: datetime = field(timestamp=True)
+
+        @pipeline
+        @inputs(UserInfoDataset)
+        def get_info(cls, info: Dataset):
+            x = info.rename({"country": "country_name", "timestamp": "ts"})
+            return x.drop(columns=["age"])
+
+    with pytest.raises(Exception) as e:
+        client.commit(
+            message="msg",
+            datasets=[UserInfoDataset, UserInfoDatasetDerived],
+        )
+    assert (
+        str(e.value)
+        == "Dataset `UserInfoDatasetDerived` has a source and pipelines defined. Please define either a source or pipelines, not both."
     )

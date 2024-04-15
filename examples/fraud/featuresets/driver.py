@@ -20,7 +20,7 @@ class AgeFS:
     account_age: float
     age: float
 
-    @extractor(depends_on=[DriverDS])
+    @extractor(deps=[DriverDS])
     @inputs(Request.driver_id)
     @outputs("account_age", "age")
     def extract(cls, ts: pd.Series, driver_id: pd.Series):
@@ -50,7 +50,7 @@ class ReservationLevelFS:
     )
     trip_duration_hours: float
 
-    @extractor(depends_on=[RentCarCheckoutEventDS])
+    @extractor(deps=[RentCarCheckoutEventDS])
     @inputs(Request.driver_id)
     @outputs("trip_duration_hours")
     def extract(cls, ts: pd.Series, driver_id: pd.Series):

@@ -5,8 +5,8 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field, index
 from fennel.connectors import Webhook, source
+from fennel.datasets import dataset, field
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
@@ -15,13 +15,12 @@ __owner__ = "saiharsha@fennel.ai"
 
 @source(
     webhook.endpoint("ClicksDS1"),
-    cdc="append",
+    cdc="upsert",
     disorder="1d",
     bounded=True,
     idleness="4s",
 )
-@index
-@dataset
+@dataset(index=True)
 class BoundedClicksDS:
     display_id: int = field(key=True)
     ad_id: int
@@ -30,10 +29,9 @@ class BoundedClicksDS:
 
 
 @source(
-    webhook.endpoint("ClicksDS2"), cdc="append", disorder="1d", bounded=False
+    webhook.endpoint("ClicksDS2"), cdc="upsert", disorder="1d", bounded=False
 )
-@index
-@dataset
+@dataset(index=True)
 class UnBoundedClicksDS:
     display_id: int = field(key=True)
     ad_id: int
