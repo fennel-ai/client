@@ -449,17 +449,12 @@ class Executor(Visitor):
         df = input_ret.df
         try:
             df[obj.column] = obj.func(df)
-        except Exception as e:
-            raise Exception(
-                f"Error in assign node for column `{obj.column}` for pipeline "
-                f"`{self.cur_pipeline_name}`, {e}"
-            )
-        # Check the schema of the column
-        try:
             field = schema_proto.Field(
                 name=obj.column, dtype=get_datatype(obj.output_type)
             )
+            # Check the schema of the column
             validate_field_in_df(field, df, self.cur_pipeline_name)
+            df = _cast_primitive_dtype_columns(df, obj)
         except Exception as e:
             raise Exception(
                 f"Error in assign node for column `{obj.column}` for pipeline "

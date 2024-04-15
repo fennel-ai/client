@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.4] - 2024-04-10
+- Mandate cdc upsert for keyed sources
+- Allow index to be specified in the dataset decorator
+
 ## [1.2.3] - 2024-04-09
 - Fix delete method for client and mock client 
 
