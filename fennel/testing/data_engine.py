@@ -463,6 +463,7 @@ class DataEngine(object):
         keys[FENNEL_ORDER] = np.arange(len(keys))
         # Sort the keys by timestamp
         keys = keys.sort_values(timestamp_field)
+        print(timestamp_field)
         if self.datasets[cls_name].aggregated_datasets:
             data_dict = self.datasets[cls_name].aggregated_datasets
             # Gather all the columns that are needed from data_dict to create a df.

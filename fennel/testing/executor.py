@@ -186,7 +186,8 @@ class Executor(Visitor):
         if input_ret is None or input_ret.df.shape[0] == 0:
             return None
         df = copy.deepcopy(input_ret.df)
-        df = df.sort_values(input_ret.timestamp_field)
+        timestamp_field = obj.along if obj.along is not None else input_ret.timestamp_field
+        df = df.sort_values(timestamp_field)
         # For aggregates the result is not a dataframe but a dictionary
         # of fields to the dataframe that contains the aggregate values
         # for each timestamp for that field.
@@ -195,7 +196,7 @@ class Executor(Visitor):
         for aggregate in obj.aggregates:
             # Select the columns that are needed for the aggregate
             # and drop the rest
-            fields = obj.keys + [input_ret.timestamp_field]
+            fields = obj.keys + [timestamp_field]
             if not isinstance(aggregate, Count) or aggregate.unique:
                 fields.append(aggregate.of)
             filtered_df = df[fields]
@@ -203,12 +204,12 @@ class Executor(Visitor):
             result[aggregate.into_field] = get_aggregated_df(
                 filtered_df,
                 aggregate,
-                input_ret.timestamp_field,
+                timestamp_field,
                 obj.keys,
                 output_schema.values[aggregate.into_field],
             )
         return NodeRet(
-            pd.DataFrame(), input_ret.timestamp_field, obj.keys, result, True
+            pd.DataFrame(), timestamp_field, obj.keys, result, True
         )
 
     def visitJoin(self, obj) -> Optional[NodeRet]:

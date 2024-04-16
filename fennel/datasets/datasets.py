@@ -431,7 +431,7 @@ class Filter(_Node):
 
 class Aggregate(_Node):
     def __init__(
-        self, node: _Node, keys: List[str], aggregates: List[AggregateType]
+        self, node: _Node, keys: List[str], aggregates: List[AggregateType], along: Optional[str]
     ):
         super().__init__()
         if len(keys) == 0:
@@ -440,6 +440,7 @@ class Aggregate(_Node):
         self.aggregates = aggregates
         self.node = node
         self.node.out_edges.append(self)
+        self.along = along
 
     def signature(self):
         agg_signature = fhash([agg.signature() for agg in self.aggregates])
@@ -482,6 +483,8 @@ class Aggregate(_Node):
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
+
+        timestamp_field = self.along if self.along is not None else input_schema.timestamp
         return DSSchema(
             keys=keys,
             values=values,  # type: ignore
@@ -496,7 +499,7 @@ class GroupBy:
         self.node = node
         self.node.out_edges.append(self)
 
-    def aggregate(self, *args, **kwargs) -> _Node:
+    def aggregate(self, *args, along: Optional[str] = None, **kwargs) -> _Node:
         if len(args) == 0 and len(kwargs) == 0:
             raise TypeError(
                 "aggregate operator expects at least one aggregation operation"
@@ -523,7 +526,7 @@ class GroupBy:
                     "parameter or through named arguments."
                 )
 
-        return Aggregate(self.node, list(self.keys), aggregates)
+        return Aggregate(self.node, list(self.keys), aggregates, along)
 
     def first(self) -> _Node:
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
@@ -2301,6 +2304,21 @@ class SchemaValidator(Visitor):
         input_schema = self.visit(obj.node)
         keys = {f: input_schema.get_type(f) for f in obj.keys}
         values: Dict[str, Type] = {}
+        if type(obj.along) == str:
+            along_type = input_schema.values.get(obj.along)
+            if along_type == None:
+                raise ValueError(
+                    f"Along field `{obj.along}` does not exist in input schema non-key non-timestamp  values."
+                )
+            if along_type != datetime.datetime:
+                raise ValueError(
+                    f"Along field `{obj.along}` must be a `timestamp` field."
+                )
+        else:
+            if obj.along != None:
+                raise ValueError(
+                    f"Expected along field `{obj.along}` to be str field"
+                )
         for agg in obj.aggregates:
             exceptions = agg.validate()
             if exceptions is not None:
@@ -2397,10 +2415,12 @@ class SchemaValidator(Visitor):
                     )
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
+
+        timestamp_field = obj.along if obj.along is not None else input_schema.timestamp
         return DSSchema(
             keys=keys,
             values=values,  # type: ignore
-            timestamp=input_schema.timestamp,
+            timestamp=timestamp_field,
             name=f"'[Pipeline:{self.pipeline_name}]->aggregate node'",
         )
 

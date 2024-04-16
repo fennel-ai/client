@@ -227,6 +227,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 operand_id=self.visit(obj.node),
                 keys=obj.keys,
                 specs=[agg.to_proto() for agg in obj.aggregates],
+                along=obj.along,
             ),
         )
 

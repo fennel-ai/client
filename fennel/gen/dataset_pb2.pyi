@@ -271,12 +271,14 @@ class Aggregate(google.protobuf.message.Message):
     OPERAND_ID_FIELD_NUMBER: builtins.int
     KEYS_FIELD_NUMBER: builtins.int
     SPECS_FIELD_NUMBER: builtins.int
+    ALONG_FIELD_NUMBER: builtins.int
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
     @property
     def keys(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
     def specs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[spec_pb2.PreSpec]: ...
+    along: builtins.str
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -287,9 +289,12 @@ class Aggregate(google.protobuf.message.Message):
         operand_id: builtins.str = ...,
         keys: collections.abc.Iterable[builtins.str] | None = ...,
         specs: collections.abc.Iterable[spec_pb2.PreSpec] | None = ...,
+        along: builtins.str | None = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["keys", b"keys", "operand_id", b"operand_id", "operand_name", b"operand_name", "specs", b"specs"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_along", b"_along", "along", b"along"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_along", b"_along", "along", b"along", "keys", b"keys", "operand_id", b"operand_id", "operand_name", b"operand_name", "specs", b"specs"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_along", b"_along"]) -> typing_extensions.Literal["along"] | None: ...
 
 global___Aggregate = Aggregate
 
