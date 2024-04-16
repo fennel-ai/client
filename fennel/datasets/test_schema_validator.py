@@ -728,7 +728,7 @@ def test_explode_fails_on_keyed_column():
 
     assert (
         str(e.value)
-        == """Explode over keyed datasets is not defined. Found dataset with keys `{'director': typing.List[str]}` in pipeline `pipeline_exploded`"""
+        == """Explode over keyed datasets is not defined. Found dataset with keys `['director']` in pipeline `pipeline_exploded`"""
     )
 
 
@@ -1316,7 +1316,7 @@ def test_window_field_invalid_name():
             user_id: str
             page_id: str
             t: datetime
-            uuid: str = field(key=True)
+            uuid: str
             page_id: str
 
         @meta(owner="nitin@fennel.ai")
@@ -1335,7 +1335,7 @@ def test_window_field_invalid_name():
 
     assert (
         str(e.value)
-        == """Window field name `uuid` in `'[Pipeline:pipeline_window]->window node'` must be different from keyed fields in `'[Dataset:PageViewEvent]'`"""
+        == """Window field name `uuid` in `'[Pipeline:pipeline_window]->window node'` must be different from non keyed fields in `'[Dataset:PageViewEvent]'`"""
     )
 
     with pytest.raises(ValueError) as e:
@@ -1346,7 +1346,7 @@ def test_window_field_invalid_name():
             user_id: str
             page_id: str
             t: datetime
-            uuid: str = field(key=True)
+            uuid: str
             page_id: str
 
         @meta(owner="nitin@fennel.ai")

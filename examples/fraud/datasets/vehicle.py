@@ -11,17 +11,17 @@ webhook = Webhook(name="app_webhook")
 
 
 @source(
-    webhook.endpoint("LocationDS"), disorder="14d", cdc="upsert", tier="local"
+    webhook.endpoint("LocationDS"), disorder="14d", cdc="append", tier="local"
 )
 @dataset
 class LocationDS:
-    id: int = field(key=True)
+    id: int
     latitude: float
     longitude: float
     created: datetime
 
 
-@dataset
+@dataset(index=True)
 class LocationDS2:
     latitude_int: int = field(key=True)
     longitude_int: int = field(key=True)

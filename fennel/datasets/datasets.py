@@ -2290,6 +2290,11 @@ class SchemaValidator(Visitor):
         return input_schema
 
     def visitAggregate(self, obj) -> DSSchema:
+        # TODO(Aditya): Aggregations should be allowed on only
+        # 1. Keyless streams.
+        # 2. Keyed datasets, as long as `along` parameter is provided.
+        # 3. For outputs of window operators.
+
         input_schema = self.visit(obj.node)
         keys = {f: input_schema.get_type(f) for f in obj.keys}
         values: Dict[str, Type] = {}
@@ -2644,7 +2649,7 @@ class SchemaValidator(Visitor):
         # datasets, is not defined, since for a keyed dataset, there is only one value for each key.
         if len(input_schema.keys) > 0:
             raise TypeError(
-                f"Explode over keyed datasets is not defined. Found dataset with keys `{input_schema.keys}` in pipeline `{self.pipeline_name}`"
+                f"Explode over keyed datasets is not defined. Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`"
             )
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->explode node'"
         if obj.columns is None or len(obj.columns) == 0:
@@ -2678,6 +2683,14 @@ class SchemaValidator(Visitor):
 
     def visitFirst(self, obj) -> DSSchema:
         output_schema = copy.deepcopy(obj.dsschema())
+        input_schema = copy.deepcopy(self.visit(obj.node))
+        # If it is a keyed dataset throw an error.
+        # We dont allow first over keyed datasets, but only keyless streams.
+        if len(input_schema.keys) > 0:
+            raise TypeError(
+                f"First over keyed datasets is not defined. Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`"
+            )
+
         if len(output_schema.keys) == 0:
             raise ValueError(
                 f"'group_by' before 'first' in {self.pipeline_name} must specify at least one key"
@@ -2687,6 +2700,15 @@ class SchemaValidator(Visitor):
 
     def visitLatest(self, obj) -> DSSchema:
         output_schema = copy.deepcopy(obj.dsschema())
+        input_schema = copy.deepcopy(self.visit(obj.node))
+
+        # If it is a keyed dataset throw an error.
+        # We dont allow latest over keyed datasets, but only keyless streams.
+        if len(input_schema.keys) > 0:
+            raise TypeError(
+                f"Latest over keyed datasets is not defined. Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`"
+            )
+
         if len(output_schema.keys) == 0:
             raise ValueError(
                 f"'group_by' before 'latest' in {self.pipeline_name} must specify at least one key"
@@ -2696,7 +2718,12 @@ class SchemaValidator(Visitor):
 
     def visitWindow(self, obj) -> DSSchema:
         input_schema = copy.deepcopy(self.visit(obj.node))
-
+        # If it is a keyed dataset throw an error.
+        # We dont allow creating windows over keyed datasets, but only keyless streams.
+        if len(input_schema.keys) > 0:
+            raise TypeError(
+                f"Window operator over keyed datasets is not defined. Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`"
+            )
         output_schema = copy.deepcopy(obj.dsschema())
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->window node'"
 
