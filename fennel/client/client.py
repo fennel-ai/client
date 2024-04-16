@@ -707,8 +707,8 @@ class Client:
 
     def inspect(
         self, dataset: Union[str, Dataset], n: int = 10
-    ) -> List[Dict[str, Any]]:
-        """Inspect the last n rows of a dataset.
+    ) -> pd.DataFrame:
+        """Inspect the last n rows of a dataset as pandas dataframe.
 
         Parameters:
         ----------
@@ -721,9 +721,11 @@ class Client:
 
         """
         dataset_name = dataset if isinstance(dataset, str) else dataset._name
-        return self._get(
-            "{}/dataset/{}/inspect?n={}".format(V1_API, dataset_name, n)
-        ).json()
+        return pd.DataFrame(
+            self._get(
+                "{}/dataset/{}/inspect?n={}".format(V1_API, dataset_name, n)
+            ).json()
+        )
 
     # ----------------------- Private methods -----------------------
 
