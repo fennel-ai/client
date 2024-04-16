@@ -677,6 +677,7 @@ class MovieRatingCalculated:
             ]
         )
 
+
 @meta(owner="test@test.com")
 @source(webhook.endpoint("RatingActivity"), disorder="14d", cdc="append")
 @dataset
@@ -689,8 +690,7 @@ class RatingActivityAlong:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class MovieRatingCalculatedAlong:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
         key=True, erase_key=True
@@ -703,7 +703,7 @@ class MovieRatingCalculatedAlong:
     median_ratings: float
     stddev_ratings: float
     distinct_users: List[int]
-    rating_time: datetime = field(timestamp=True)
+    t: datetime = field(timestamp=True)
 
     @pipeline
     @inputs(RatingActivityAlong)
@@ -753,7 +753,7 @@ class MovieRatingCalculatedAlong:
                     unordered=True,
                 ),
             ],
-            along="rating_time"
+            along="rating_time",
         )
 
 
@@ -1368,6 +1368,7 @@ class TestBasicAggregate(unittest.TestCase):
         assert [round(x) for x in df["median_ratings"]] == [3, 4]
         assert df["distinct_users"].tolist() == [[18231], [18231]]
 
+
 class TestBasicAggregateAlong(unittest.TestCase):
     @pytest.mark.integration
     @mock
@@ -1402,6 +1403,24 @@ class TestBasicAggregateAlong(unittest.TestCase):
 
         client.sleep()
 
+        # Do some lookups back in time to verify pipeline_aggregate is working as expected
+        ts = pd.Series([four_hours_ago, three_hours_ago])
+        names = pd.Series(["Jumanji", "Titanic"])
+        df, _ = MovieRatingCalculatedAlong.lookup(
+            ts,
+            movie=names,
+        )
+        assert df.shape == (2, 10)
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+        assert df["rating"].tolist() == [pytest.approx(3.33333333), 4]
+        assert df["num_ratings"].tolist() == [3, 1]
+        assert df["sum_ratings"].tolist() == [10.0, 4.0]
+        assert df["min_ratings"].tolist() == [2, 4]
+        assert df["max_ratings"].tolist() == [5, 4]
+        assert df["stddev_ratings"].tolist() == [pytest.approx(1.247219), 0]
+        assert [round(x) for x in df["median_ratings"]] == [3, 4]
+        assert df["distinct_users"].tolist() == [[18231], [18231]]
+
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
@@ -1409,6 +1428,27 @@ class TestBasicAggregateAlong(unittest.TestCase):
             ts,
             movie=names,
         )
+        assert df.shape == (2, 10)
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+        assert df["rating"].tolist() == [3, 4]
+        assert df["num_ratings"].tolist() == [4, 5]
+        assert df["sum_ratings"].tolist() == [12, 20]
+        assert df["min_ratings"].tolist() == [2, 3]
+        assert df["max_ratings"].tolist() == [5, 5]
+        assert all(
+            [
+                abs(actual - expected) < 0.001
+                for actual, expected in zip(
+                    df["stddev_ratings"].tolist(), [sqrt(3 / 2), sqrt(4 / 5)]
+                )
+            ]
+        )
+        assert [round(x) for x in df["median_ratings"]] == [3, 4]
+        assert df["distinct_users"].tolist() == [[18231], [18231]]
+
+        # Do some lookups online to verify pipeline_aggregate is working as expected
+        keys = pd.DataFrame({"movie": ["Jumanji", "Titanic"]})
+        df, _ = client.lookup(MovieRatingCalculatedAlong, keys=keys)
         assert df.shape == (2, 10)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [3, 4]
