@@ -18,6 +18,10 @@ See [aggregations](/api-reference/aggregations) for the full list of aggregate
 functions.
 </Expandable>
 
+<Expandable title="along" type="Optional[str]">
+Keyword argument indicating the time axis to aggregate along. If `along` is `None`, Fennel will aggregate along the timestamp of the input dataset. 
+</Expandable>
+
 <pre snippet="api-reference/operators/aggregate#basic" status="success"
     message="Aggregate count & sum of transactions in rolling windows"
 >

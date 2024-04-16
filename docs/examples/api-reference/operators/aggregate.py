@@ -30,7 +30,8 @@ class TestAssignSnips(unittest.TestCase):
         class Transaction:
             uid: int
             amount: int
-            timestamp: datetime
+            timestamp: datetime = field(timestamp=True)
+            transaction_time: datetime
 
         @dataset(index=True)
         class Aggregated:
@@ -41,7 +42,7 @@ class TestAssignSnips(unittest.TestCase):
             total: int
             count_1d: int
             # docsnip-highlight end
-            timestamp: datetime
+            transaction_time: datetime = field(timestamp=True)
 
             @pipeline
             @inputs(Transaction)
@@ -50,6 +51,7 @@ class TestAssignSnips(unittest.TestCase):
                 return ds.groupby("uid").aggregate(
                     count_1d=Count(window="1d"),
                     total=Sum(of="amount", window="forever"),
+                    along="transaction_time"
                 )
                 # docsnip-highlight end
 
@@ -65,22 +67,26 @@ class TestAssignSnips(unittest.TestCase):
                     {
                         "uid": 1,
                         "amount": 10,
+                        "transaction_time": "2021-01-01T00:00:00",
                         "timestamp": "2021-01-01T00:00:00",
                     },
                     {
                         "uid": 1,
                         "amount": 20,
-                        "timestamp": "2021-01-02T00:00:00",
+                        "transaction_time": "2021-01-02T00:00:00",
+                        "timestamp": "2021-01-01T00:00:00",
                     },
                     {
                         "uid": 2,
                         "amount": 30,
-                        "timestamp": "2021-01-02T00:00:00",
+                        "transaction_time": "2021-01-02T00:00:00",
+                        "timestamp": "2021-01-01T00:00:00",
                     },
                     {
                         "uid": 2,
                         "amount": 40,
-                        "timestamp": "2021-01-03T00:00:00",
+                        "transaction_time": "2021-01-03T00:00:00",
+                        "timestamp": "2021-01-01T00:00:00",
                     },
                 ]
             ),

@@ -677,6 +677,85 @@ class MovieRatingCalculated:
             ]
         )
 
+@meta(owner="test@test.com")
+@source(webhook.endpoint("RatingActivity"), disorder="14d", cdc="append")
+@dataset
+class RatingActivityAlong:
+    userid: int
+    rating: float
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
+    t: datetime = field(timestamp=True)
+    rating_time: datetime
+
+
+@meta(owner="test@test.com")
+@index
+@dataset
+class MovieRatingCalculatedAlong:
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+        key=True, erase_key=True
+    )
+    rating: float
+    num_ratings: int
+    sum_ratings: float
+    min_ratings: float
+    max_ratings: float
+    median_ratings: float
+    stddev_ratings: float
+    distinct_users: List[int]
+    rating_time: datetime = field(timestamp=True)
+
+    @pipeline
+    @inputs(RatingActivityAlong)
+    def pipeline_aggregate(cls, activity: Dataset):
+        return activity.groupby("movie").aggregate(
+            [
+                Count(window="forever", into_field=str(cls.num_ratings)),
+                Sum(
+                    window="forever",
+                    of="rating",
+                    into_field=str(cls.sum_ratings),
+                ),
+                Average(
+                    window="forever",
+                    of="rating",
+                    into_field=str(cls.rating),
+                ),
+                Min(
+                    window="forever",
+                    of="rating",
+                    into_field=str(cls.min_ratings),
+                    default=5.0,
+                ),
+                Max(
+                    window="forever",
+                    of="rating",
+                    into_field=str(cls.max_ratings),
+                    default=0.0,
+                ),
+                Quantile(
+                    window="forever",
+                    of="rating",
+                    p=0.5,
+                    approx=True,
+                    into_field=str(cls.median_ratings),
+                    default=0.0,
+                ),
+                Stddev(
+                    window="forever",
+                    of="rating",
+                    into_field=str(cls.stddev_ratings),
+                ),
+                Distinct(
+                    window="forever",
+                    of="userid",
+                    into_field=str(cls.distinct_users),
+                    unordered=True,
+                ),
+            ],
+            along="rating_time"
+        )
+
 
 # Copy of above dataset but can be used as an input to another pipeline.
 @meta(owner="test@test.com")
@@ -1268,6 +1347,65 @@ class TestBasicAggregate(unittest.TestCase):
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
         df, _ = MovieRatingCalculated.lookup(
+            ts,
+            movie=names,
+        )
+        assert df.shape == (2, 10)
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+        assert df["rating"].tolist() == [3, 4]
+        assert df["num_ratings"].tolist() == [4, 5]
+        assert df["sum_ratings"].tolist() == [12, 20]
+        assert df["min_ratings"].tolist() == [2, 3]
+        assert df["max_ratings"].tolist() == [5, 5]
+        assert all(
+            [
+                abs(actual - expected) < 0.001
+                for actual, expected in zip(
+                    df["stddev_ratings"].tolist(), [sqrt(3 / 2), sqrt(4 / 5)]
+                )
+            ]
+        )
+        assert [round(x) for x in df["median_ratings"]] == [3, 4]
+        assert df["distinct_users"].tolist() == [[18231], [18231]]
+
+class TestBasicAggregateAlong(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_basic_aggregate_along(self, client):
+        # # Sync the dataset
+        client.commit(
+            message="msg",
+            datasets=[MovieRatingCalculatedAlong, RatingActivityAlong],
+        )
+        now = datetime.utcnow()
+        one_hour_ago = now - timedelta(hours=1)
+        two_hours_ago = now - timedelta(hours=2)
+        three_hours_ago = now - timedelta(hours=3)
+        four_hours_ago = now - timedelta(hours=4)
+        five_hours_ago = now - timedelta(hours=5)
+
+        data = [
+            [18231, 2, "Jumanji", five_hours_ago, five_hours_ago],
+            [18231, 3, "Jumanji", five_hours_ago, four_hours_ago],
+            [18231, 2, "Jumanji", five_hours_ago, three_hours_ago],
+            [18231, 5, "Jumanji", five_hours_ago, five_hours_ago],
+            [18231, 4, "Titanic", five_hours_ago, three_hours_ago],
+            [18231, 3, "Titanic", five_hours_ago, two_hours_ago],
+            [18231, 5, "Titanic", five_hours_ago, one_hour_ago],
+            [18231, 5, "Titanic", five_hours_ago, now - timedelta(minutes=1)],
+            [18231, 3, "Titanic", five_hours_ago, two_hours_ago],
+        ]
+        columns = ["userid", "rating", "movie", "t", "rating_time"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "RatingActivity", df)
+        assert response.status_code == requests.codes.OK
+
+        client.sleep()
+
+        # Do some lookups to verify pipeline_aggregate is working as expected
+        ts = pd.Series([now, now])
+        names = pd.Series(["Jumanji", "Titanic"])
+        df, _ = MovieRatingCalculatedAlong.lookup(
             ts,
             movie=names,
         )
