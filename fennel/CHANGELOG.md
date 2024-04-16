@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.2.8] - 2024-04-16
+- Added support for aggregation on different timestamp axis.
+- 
 ## [1.2.6] - 2024-04-10
 - Support stacked sources 
 

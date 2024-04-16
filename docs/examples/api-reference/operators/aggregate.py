@@ -41,8 +41,8 @@ class TestAssignSnips(unittest.TestCase):
             # new fields are added to the dataset by the aggregate operation
             total: int
             count_1d: int
+            timestamp: datetime = field(timestamp=True)
             # docsnip-highlight end
-            transaction_time: datetime = field(timestamp=True)
 
             @pipeline
             @inputs(Transaction)
@@ -51,7 +51,7 @@ class TestAssignSnips(unittest.TestCase):
                 return ds.groupby("uid").aggregate(
                     count_1d=Count(window="1d"),
                     total=Sum(of="amount", window="forever"),
-                    along="transaction_time"
+                    along="transaction_time",
                 )
                 # docsnip-highlight end
 

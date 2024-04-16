@@ -23,7 +23,7 @@ Keyword argument indicating the time axis to aggregate along. If `along` is `Non
 </Expandable>
 
 <pre snippet="api-reference/operators/aggregate#basic" status="success"
-    message="Aggregate count & sum of transactions in rolling windows"
+    message="Aggregate count & sum of transactions in rolling windows along transaction time"
 >
 </pre>
 
