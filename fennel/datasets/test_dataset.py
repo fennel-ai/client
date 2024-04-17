@@ -21,7 +21,7 @@ from fennel.datasets import (
 )
 from fennel.dtypes import Embedding, Window
 from fennel.gen.services_pb2 import SyncRequest
-from fennel.lib import includes, meta, inputs
+from fennel.lib import includes, meta, inputs, desc
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook", retention="30d")
@@ -36,7 +36,8 @@ class UserInfoDataset:
     gender: str
     # Users date of birth
     dob: str
-    age: int
+    # Users age
+    age: int = field().meta(description="Users age lol")  # type: ignore
     account_creation_date: datetime
     country: Optional[str]
     timestamp: datetime = field(timestamp=True)
@@ -46,6 +47,9 @@ def test_simple_dataset():
     assert UserInfoDataset._history == timedelta(days=730)
     view = InternalTestClient()
     view.add(UserInfoDataset)
+    assert desc(UserInfoDataset.age) == "Users age lol"
+    assert desc(UserInfoDataset.dob) == "Users date of birth"
+
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
     d = {
@@ -83,7 +87,7 @@ def test_simple_dataset():
                 "history": "63072000s",
                 "retention": "63072000s",
                 "fieldMetadata": {
-                    "age": {},
+                    "age": {"description": "Users age lol"},
                     "name": {},
                     "account_creation_date": {},
                     "country": {},

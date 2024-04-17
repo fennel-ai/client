@@ -9,7 +9,7 @@ import fennel.gen.featureset_pb2 as fs_proto
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature as F
-from fennel.lib import meta, inputs, outputs
+from fennel.lib import meta, inputs, outputs, desc
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
@@ -43,6 +43,8 @@ def test_simple_featureset():
     @featureset
     class UserInfo:
         userid: int
+        # The users home geoid
+        # This is a multiline comment
         home_geoid: int
         # The users gender among male/female/non-binary
         gender: str
@@ -55,6 +57,14 @@ def test_simple_featureset():
             cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
         ):
             return UserInfoDataset.lookup(ts, user_id=user_id)  # type: ignore
+
+    assert (
+        desc(UserInfo.gender) == "The users gender among male/female/non-binary"
+    )
+    assert (
+        desc(UserInfo.home_geoid)
+        == "The users home geoid\nThis is a multiline comment"
+    )
 
     view = InternalTestClient()
     view.add(UserInfoDataset)
@@ -101,7 +111,9 @@ def test_simple_featureset():
     f = {
         "name": "home_geoid",
         "dtype": {"int_type": {}},
-        "metadata": {},
+        "metadata": {
+            "description": "The users home geoid\nThis is a multiline comment"
+        },
         "feature_set_name": "UserInfo",
     }
     expected_feature = ParseDict(f, fs_proto.Feature())

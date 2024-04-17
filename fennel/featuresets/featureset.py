@@ -413,6 +413,9 @@ class Feature:
     def ref_tier(self, tier: Optional[Union[str, List[str]]]):
         self._ref_tier = tier
 
+    def desc(self) -> str:
+        return get_meta_attr(self, "description") or ""
+
     def fqn(self) -> str:
         return self.fqn_
 

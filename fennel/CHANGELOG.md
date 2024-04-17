@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.2.9] - 2024-04-17
+- Add ability to view descriptions for a feature or field.
+
 ## [1.2.8] - 2024-04-16
 - Added support for aggregation on different timestamp axis.
 - 

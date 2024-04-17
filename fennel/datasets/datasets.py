@@ -154,6 +154,9 @@ class Field:
     def __str__(self):
         return f"{self.name}"
 
+    def desc(self) -> str:
+        return get_meta_attr(self, "description") or ""
+
 
 def get_field(
     cls: T,

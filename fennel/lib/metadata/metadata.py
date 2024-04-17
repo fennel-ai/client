@@ -26,6 +26,10 @@ META_FIELD = "__fennel_metadata__"
 OWNER = "__owner__"
 
 
+def desc(obj):
+    return get_meta_attr(obj, "description") or ""
+
+
 class Metadata(BaseModel):
     owner: str
     tags: List[str]

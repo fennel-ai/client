@@ -1,5 +1,5 @@
 from fennel.lib.includes import includes
-from fennel.lib.metadata import meta
+from fennel.lib.metadata import meta, desc
 from fennel.lib.params import inputs, outputs
 from fennel.lib.expectations import expectations
 from fennel.lib.expectations.supported_expectations import *
