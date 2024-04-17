@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.2.6] - 2024-04-10
+- Support stacked sources 
+
 ## [1.2.4] - 2024-04-10
 - Mandate cdc upsert for keyed sources
 - Allow index to be specified in the dataset decorator

@@ -128,6 +128,85 @@ class TestDataset(unittest.TestCase):
 
     @pytest.mark.integration
     @mock
+    def test_log_stacked_source_keyed_ds(self, client):
+        @meta(owner="test@test.com")
+        @source(
+            webhook.endpoint("UserInfoDataset1"),
+            disorder="14d",
+            cdc="upsert",
+            preproc={"country": "USA"},
+        )
+        @source(
+            webhook.endpoint("UserInfoDataset2"),
+            disorder="14d",
+            cdc="upsert",
+            preproc={"country": "India"},
+        )
+        @source(
+            webhook.endpoint("UserInfoDataset3"),
+            disorder="14d",
+            cdc="upsert",
+            preproc={"country": "China"},
+        )
+        @dataset(index=True)
+        class UserInfoDataset:
+            user_id: int = field(key=True).meta(description="User ID")  # type: ignore
+            name: str = field().meta(description="User name")  # type: ignore
+            age: Optional[int]
+            country: str
+            timestamp: datetime = field(timestamp=True)
+
+        # Sync the dataset
+        client.commit(message="msg", datasets=[UserInfoDataset])
+        now = datetime.utcnow()
+        yesterday = now - pd.Timedelta(days=1)
+        data = [
+            [18232, "Ross", 32, "USA", yesterday],
+            [18234, "Monica", 24, "USA", yesterday],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "UserInfoDataset1", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+
+        sample = client.inspect("UserInfoDataset", n=1)
+        assert len(sample) == 1
+        sample = client.inspect("UserInfoDataset", n=4)
+        assert len(sample) == 2
+
+        data = [
+            [18232, "Ross", 34, "India", now],
+            [17234, "Chandler", 42, "India", now],
+        ]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "UserInfoDataset2", df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+
+        sample = client.inspect("UserInfoDataset", n=3)
+        assert len(sample) == 3
+        sample = client.inspect("UserInfoDataset", n=4)
+        assert len(sample) == 4
+
+        keys = pd.DataFrame(
+            {
+                "user_id": [
+                    18232,
+                    18234,
+                    17234,
+                ]
+            }
+        )
+        df, found = client.lookup(
+            "UserInfoDataset",
+            keys=keys,
+        )
+        assert df["country"].to_list() == ["India", "USA", "India"]
+        assert found.tolist() == [True, True, True]
+
+    @pytest.mark.integration
+    @mock
     def test_simple_select_rename(self, client):
         client.commit(
             message="msg",
@@ -523,6 +602,7 @@ class TestDataset(unittest.TestCase):
 
 @meta(owner="test@test.com")
 @source(webhook.endpoint("RatingActivity"), disorder="14d", cdc="append")
+@source(webhook.endpoint("RatingActivity2"), disorder="14d", cdc="append")
 @dataset
 class RatingActivity:
     userid: int

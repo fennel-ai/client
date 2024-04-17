@@ -133,9 +133,9 @@ def to_sync_request_proto(
             if offline_index:
                 offline_indices.append(offline_index)
 
-            source = source_proto_from_ds(obj, tier)
-            if source is not None:
-                (ext_db, s) = source
+            sources = source_proto_from_ds(obj, tier)
+            for src in sources:
+                (ext_db, s) = src
                 conn_sources.append(s)
                 # dedup external dbs by the name
                 # TODO(mohit): Also validate that if the name is the same, there should
@@ -284,14 +284,14 @@ def sync_validation_for_datasets(ds: Dataset, tier: Optional[str] = None):
         if pipeline.tier.is_entity_selected(tier):
             pipelines.append(pipeline)
 
-    src = source_from_ds(ds, tier)
-    if src is not None and len(pipelines) > 0:
+    sources = source_from_ds(ds, tier)
+    if len(sources) > 0 and len(pipelines) > 0:
         raise ValueError(
             f"Dataset `{ds._name}` has a source and pipelines defined. "
             f"Please define either a source or pipelines, not both."
         )
 
-    if src is not None:
+    for src in sources:
         # If source cdc is append and dataset has key fields, raise error
         if src.cdc == "append" and len(ds.key_fields) > 0:
             raise ValueError(
@@ -305,7 +305,7 @@ def sync_validation_for_datasets(ds: Dataset, tier: Optional[str] = None):
                 f"Please set key fields or change source cdc to `append`."
             )
 
-    if src is None and len(pipelines) == 1:
+    if len(sources) == 0 and len(pipelines) == 1:
         return
 
     tiers: Set[str] = set()
@@ -428,44 +428,39 @@ def _validate_source_pre_proc(
 
 def source_from_ds(
     ds: Dataset, tier: Optional[str] = None
-) -> Optional[connectors.DataConnector]:
+) -> List[connectors.DataConnector]:
     if not hasattr(ds, connectors.SOURCE_FIELD):
-        return None
+        return []
 
     all_sources: List[connectors.DataConnector] = getattr(
         ds, connectors.SOURCE_FIELD
     )
-    filtered_sources = [
+    return [
         source
         for source in all_sources
         if source.tiers.is_entity_selected(tier)
     ]
-    if len(filtered_sources) == 0:
-        return None
-    if len(filtered_sources) > 1:
-        raise ValueError(
-            f"Dataset {ds._name} has multiple sources ({len(filtered_sources)}) defined. "
-            f"Please define only one source per dataset, or check your tier selection."
-        )
-    return filtered_sources[0]
 
 
 def source_proto_from_ds(
     ds: Dataset, tier: Optional[str] = None
-) -> Optional[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
+) -> List[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
     """
     Returns the source proto for a dataset if it exists
 
     :param ds: The dataset to get the source proto for.
     :param source_field: The attr for the source field.
     """
-    src = source_from_ds(ds, tier)
-    if src is not None:
+    sources = source_from_ds(ds, tier)
+    ret = []
+    for src in sources:
         if src.pre_proc:
             _validate_source_pre_proc(src.pre_proc, ds)
         timestamp_field = ds.timestamp_field
-        return _conn_to_source_proto(src, ds._name, ds.version, timestamp_field)
-    return None  # type: ignore
+        ret.append(
+            _conn_to_source_proto(src, ds._name, ds.version, timestamp_field)
+        )
+    return ret  # type: ignore
 
 
 def sinks_from_ds(
