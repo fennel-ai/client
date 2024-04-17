@@ -12,4 +12,5 @@ from fennel.internal_lib.schema.schema import (
     get_datatype,
     data_schema_check,
     validate_field_in_df,
+    convert_dtype_to_arrow_type,
 )

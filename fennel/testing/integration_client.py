@@ -16,7 +16,7 @@ try:
 
     sys.path.insert(
         0,
-        "/nix/store/l2jqs4pdkwaag6wj45wqqllsz0qac7ls-python3-3.11.8-env/lib/python3.11/site-packages",
+        "/nix/store/04fxcggfsqq7ahgzcbv1sdrkzyd3q85v-python3-3.11.8-env/lib/python3.11/site-packages",
     )
     from fennel_client_lib import HttpServer  # type: ignore
     from fennel_dataset import lookup  # type: ignore
@@ -109,10 +109,8 @@ class IntegrationClient(Client):
         return path
 
     def _get(self, path: str):
-        headers = None
-
+        headers = self._add_branch_name_header({})
         if self.token:
-            headers = {}
             headers["Authorization"] = "Bearer " + self.token
         headers = list(headers.items())  # type: ignore
         code, content, content_type = self._http.get(
@@ -139,6 +137,7 @@ class IntegrationClient(Client):
             headers["Content-Encoding"] = "gzip"
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
+        headers = self._add_branch_name_header(headers)
         headers = list(headers.items())  # type: ignore
         code, content, content_type = self._http.post(
             self._url(path), headers, data

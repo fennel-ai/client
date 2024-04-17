@@ -4,6 +4,8 @@ from typing import Any, Union
 
 import pandas as pd
 
+from fennel.gen.schema_pb2 import DataType
+
 
 def _get_args(type_: Any) -> Any:
     """Get the type arguments of a type."""
@@ -82,3 +84,24 @@ def parse_datetime(value: Union[int, str, datetime]) -> datetime:
     else:
         value = value.tz_localize("UTC")  # type: ignore
     return value  # type: ignore
+
+
+def cast_col_to_pandas(series: pd.Series, dtype: DataType) -> pd.Series:
+    if dtype.HasField("optional_type"):
+        return cast_col_to_pandas(series, dtype.optional_type.of)
+    elif dtype.HasField("int_type"):
+        return series.astype(pd.Int64Dtype())
+    elif dtype.HasField("double_type"):
+        return series.astype(pd.Float64Dtype())
+    elif dtype.HasField("string_type") or dtype.HasField("regex_type"):
+        return series.astype(pd.StringDtype())
+    elif dtype.HasField("bool_type"):
+        return series.astype(pd.BooleanDtype())
+    elif dtype.HasField("timestamp_type"):
+        return pd.to_datetime(series)
+    elif dtype.HasField("one_of_type"):
+        return cast_col_to_pandas(series, dtype.one_of_type.of)
+    elif dtype.HasField("between_type"):
+        return cast_col_to_pandas(series, dtype.between_type.dtype)
+    else:
+        return series.fillna(pd.NA)

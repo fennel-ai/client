@@ -255,10 +255,10 @@ class TestMovieTicketSale(unittest.TestCase):
         two_hours_ago = now - timedelta(hours=2)
         columns = ["ticket_id", "title", "price", "at"]
         data = [
-            ["1", "Titanic", "50", one_hour_ago],
-            ["2", "Titanic", "100", one_day_ago],
-            ["3", "Jumanji", "25", one_hour_ago],
-            ["4", "The Matrix", "50", two_hours_ago],  # no match
+            ["1", "Titanic", 50, one_hour_ago],
+            ["2", "Titanic", 100, one_day_ago],
+            ["3", "Jumanji", 25, one_hour_ago],
+            ["4", "The Matrix", 50, two_hours_ago],  # no match
             ["5", "Great Gatbsy", 49, one_hour_ago],
         ]
         df = pd.DataFrame(data, columns=columns)

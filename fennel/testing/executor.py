@@ -6,15 +6,21 @@ from typing import Any, Optional, Dict, List
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 
 import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Pipeline, Visitor, Dataset, Count, Summary
 from fennel.datasets.datasets import WindowType
+from fennel.gen.schema_pb2 import Field
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype, fennel_is_optional
 from fennel.internal_lib.schema import validate_field_in_df
 from fennel.internal_lib.to_proto import Serializer, to_includes_proto
 from fennel.testing.execute_aggregation import get_aggregated_df
+from fennel.testing.test_utils import (
+    cast_df_to_arrow_dtype,
+    cast_df_to_pandas_dtype,
+)
 
 pd.set_option("display.max_columns", None)
 
@@ -24,6 +30,7 @@ class NodeRet:
     df: pd.DataFrame
     timestamp_field: str
     key_fields: List[str]
+    fields: List[Field]
     agg_result: Optional[Dict[str, Any]] = None
     is_aggregate: bool = False
 
@@ -94,7 +101,10 @@ class Executor(Visitor):
         if obj._name not in self.data:
             return None
         return NodeRet(
-            self.data[obj._name], obj.timestamp_field, obj.key_fields
+            self.data[obj._name],
+            obj.timestamp_field,
+            obj.key_fields,
+            obj.dsschema().to_fields_proto(),
         )
 
     def visitTransform(self, obj) -> Optional[NodeRet]:
@@ -108,7 +118,8 @@ class Executor(Visitor):
         exec(code, mod.__dict__)
         func = mod.__dict__[gen_pycode.entry_point]
         try:
-            t_df = func(copy.deepcopy(input_ret.df))
+            df = cast_df_to_pandas_dtype(input_ret.df, input_ret.fields)
+            t_df = func(copy.deepcopy(df))
         except Exception as e:
             raise Exception(
                 f"Error in transform function `{obj.func.__name__}` for pipeline "
@@ -150,10 +161,21 @@ class Executor(Visitor):
             )
 
         sorted_df = t_df.sort_values(input_ret.timestamp_field)
-        # Cast sorted_df to obj.schema()
-        sorted_df = _cast_primitive_dtype_columns(sorted_df, obj)
+        fields = obj.dsschema().to_fields_proto()
+
+        # Getting schema in case there's a schema change in the transform function
+        if obj.new_schema:
+            fields = [
+                schema_proto.Field(name=key, dtype=get_datatype(value))
+                for key, value in obj.new_schema.items()
+            ]
+        # Cast sorted_df to new schema
+        sorted_df = cast_df_to_arrow_dtype(sorted_df, fields)
         return NodeRet(
-            sorted_df, input_ret.timestamp_field, input_ret.key_fields
+            sorted_df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            fields,
         )
 
     def visitFilter(self, obj) -> Optional[NodeRet]:
@@ -161,6 +183,7 @@ class Executor(Visitor):
         if input_ret is None:
             return None
 
+        fields = obj.dsschema().to_fields_proto()
         filter_func_pycode = to_includes_proto(obj.func)
         mod = types.ModuleType(filter_func_pycode.entry_point)
         gen_pycode = self.serializer.wrap_function(
@@ -169,10 +192,23 @@ class Executor(Visitor):
         code = gen_pycode.imports + "\n" + gen_pycode.generated_code
         exec(code, mod.__dict__)
         func = mod.__dict__[gen_pycode.entry_point]
-        f_df = func(copy.deepcopy(input_ret.df))
-        sorted_df = f_df.sort_values(input_ret.timestamp_field)
+        try:
+            df = cast_df_to_pandas_dtype(input_ret.df, fields)
+            f_df = func(df).sort_values(input_ret.timestamp_field)
+        except Exception as e:
+            raise Exception(
+                f"Error in filter function `{obj.func.__name__}` for pipeline "
+                f"`{self.cur_pipeline_name}`, {e}"
+            )
+        sorted_df = cast_df_to_arrow_dtype(
+            f_df,
+            fields,
+        )
         return NodeRet(
-            sorted_df, input_ret.timestamp_field, input_ret.key_fields
+            sorted_df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            obj.dsschema().to_fields_proto(),
         )
 
     def _merge_df(
@@ -210,7 +246,12 @@ class Executor(Visitor):
                 output_schema.values[aggregate.into_field],
             )
         return NodeRet(
-            pd.DataFrame(), input_ret.timestamp_field, obj.keys, result, True
+            pd.DataFrame(),
+            input_ret.timestamp_field,
+            obj.keys,
+            output_schema.to_fields_proto(),
+            result,
+            True,
         )
 
     def visitJoin(self, obj) -> Optional[NodeRet]:
@@ -249,7 +290,7 @@ class Executor(Visitor):
 
         left_df[ts_query_field] = left_df.apply(
             lambda row: add_within_high(row), axis=1
-        )
+        ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
 
         # Add a column to the left dataframe to specify the lower bound of the join query - this
         # is the timestamp below which we will not consider any rows from the right dataframe for joins
@@ -263,7 +304,7 @@ class Executor(Visitor):
 
         left_df[tmp_ts_low] = left_df.apply(
             lambda row: sub_within_low(row), axis=1
-        )
+        ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
 
         # rename the left timestamp to avoid conflicts
         left_df = left_df.rename(columns={left_timestamp_field: tmp_left_ts})
@@ -337,16 +378,19 @@ class Executor(Visitor):
             # - we do so by setting all the right columns to null
             for col in right_df.columns.values:
                 if col not in left_df.columns.values:
-                    row[col] = np.nan
+                    row[col] = pd.NA
             return row
 
         original_dtypes = merged_df.dtypes
         # If any of the columns in the merged df was transformed to have NaN values (these are columns from RHS),
         # check if the dtype of the column is int, if so, convert that into float so that
         # it will accept NaN values - this is what Pandas does, emulating the same behavior here.
-        merged_df = merged_df.transform(
-            lambda row: filter_bounded_row(row), axis=1
-        )
+        # Handling with empty dataframe case because pandas automatically defines dtype of float64 to null columns
+        # and then conversion of flot64 dtype to pd.ArrowDtype(pa.timestamp("us", "UTC")) fails
+        if merged_df.shape[0] > 0:
+            merged_df = merged_df.transform(
+                lambda row: filter_bounded_row(row), axis=1
+            )
         # Try transforming to the original dtypes
         # In case of failures, ignore them, which will result in the column being converted to `object` dtype
         merged_df = merged_df.astype(original_dtypes, errors="ignore")
@@ -370,9 +414,16 @@ class Executor(Visitor):
             else:
                 return max(row[tmp_right_ts], row[tmp_left_ts])
 
-        merged_df[left_timestamp_field] = merged_df.apply(
-            lambda row: emited_ts(row), axis=1
-        )
+        # Handling with empty dataframe case because pandas automatically defines dtype of float64 to null columns
+        # and then conversion of flot64 dtype to pd.ArrowDtype(pa.timestamp("us", "UTC")) fails
+        if merged_df.shape[0] > 0:
+            merged_df[left_timestamp_field] = merged_df.apply(
+                lambda row: emited_ts(row), axis=1
+            )
+        else:
+            merged_df[left_timestamp_field] = pd.Series(
+                [], dtype=pd.ArrowDtype(pa.timestamp("us", "UTC"))
+            )
 
         # drop the temporary columns
         merged_df.drop(
@@ -381,7 +432,17 @@ class Executor(Visitor):
         )
         # sort the dataframe by the timestamp
         sorted_df = merged_df.sort_values(left_timestamp_field)
-        return NodeRet(sorted_df, left_timestamp_field, input_ret.key_fields)
+
+        # Cast the joined dataframe to arrow dtype
+        fields = obj.dsschema().to_fields_proto()
+        sorted_df = cast_df_to_arrow_dtype(sorted_df, fields)
+
+        return NodeRet(
+            sorted_df,
+            left_timestamp_field,
+            input_ret.key_fields,
+            fields,
+        )
 
     def visitUnion(self, obj):
         dfs = [self.visit(node) for node in obj.nodes]
@@ -398,7 +459,12 @@ class Executor(Visitor):
             raise Exception("Union nodes must have same key fields")
         df = pd.concat([df.df for df in dfs])
         sorted_df = df.sort_values(dfs[0].timestamp_field)
-        return NodeRet(sorted_df, dfs[0].timestamp_field, dfs[0].key_fields)
+        return NodeRet(
+            sorted_df,
+            dfs[0].timestamp_field,
+            dfs[0].key_fields,
+            obj.dsschema().to_fields_proto(),
+        )
 
     def visitRename(self, obj):
         input_ret = self.visit(obj.node)
@@ -422,7 +488,12 @@ class Executor(Visitor):
                 input_ret.key_fields.append(new_col)
             if old_col == input_ret.timestamp_field:
                 input_ret.timestamp_field = new_col
-        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+        return NodeRet(
+            df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            obj.dsschema().to_fields_proto(),
+        )
 
     def visitDrop(self, obj):
         input_ret = self.visit(obj.node)
@@ -434,7 +505,12 @@ class Executor(Visitor):
             if col in input_ret.key_fields:
                 input_ret.key_fields.remove(col)
 
-        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+        return NodeRet(
+            df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            obj.dsschema().to_fields_proto(),
+        )
 
     def visitDropNull(self, obj):
         input_ret = self.visit(obj.node)
@@ -442,27 +518,50 @@ class Executor(Visitor):
             return None
         df = input_ret.df
         df = df.dropna(subset=obj.columns)
-        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+        return NodeRet(
+            df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            obj.dsschema().to_fields_proto(),
+        )
 
     def visitAssign(self, obj):
         input_ret = self.visit(obj.node)
         if input_ret is None or input_ret.df.shape[0] == 0:
             return None
-        df = input_ret.df
+        assign_func_pycode = to_includes_proto(obj.func)
+        mod = types.ModuleType(assign_func_pycode.entry_point)
+        gen_pycode = self.serializer.wrap_function(
+            assign_func_pycode, is_assign=True, column_name=obj.column
+        )
+        code = gen_pycode.imports + "\n" + gen_pycode.generated_code
+        exec(code, mod.__dict__)
+        func = mod.__dict__[gen_pycode.entry_point]
         try:
-            df[obj.column] = obj.func(df)
+            df = cast_df_to_pandas_dtype(input_ret.df, input_ret.fields)
+            df = func(copy.deepcopy(df))
             field = schema_proto.Field(
                 name=obj.column, dtype=get_datatype(obj.output_type)
             )
+
             # Check the schema of the column
             validate_field_in_df(field, df, self.cur_pipeline_name)
-            df = _cast_primitive_dtype_columns(df, obj)
+
+            fields = obj.dsschema().to_fields_proto()
+
+            # Cast to arrow dtype
+            df = cast_df_to_arrow_dtype(df, fields)
         except Exception as e:
             raise Exception(
                 f"Error in assign node for column `{obj.column}` for pipeline "
                 f"`{self.cur_pipeline_name}`, {e}"
             )
-        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+        return NodeRet(
+            df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            fields,
+        )
 
     def visitDedup(self, obj):
         input_ret = self.visit(obj.node)
@@ -472,7 +571,12 @@ class Executor(Visitor):
         df = df.drop_duplicates(
             subset=obj.by + [input_ret.timestamp_field], keep="last"
         )
-        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+        return NodeRet(
+            df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            obj.dsschema().to_fields_proto(),
+        )
 
     def visitExplode(self, obj):
         input_ret = self.visit(obj.node)
@@ -483,8 +587,16 @@ class Executor(Visitor):
         # we should reset it. This is the behavior in our engine (where we don't have an index) and the operations
         # on the dataframe are not affected/associated by the index.
         df = df.explode(obj.columns, ignore_index=True)
-        df = _cast_primitive_dtype_columns(df, obj)
-        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+
+        # Cast exploded column to right arrow dtype
+        fields = obj.dsschema().to_fields_proto()
+        df = cast_df_to_arrow_dtype(df, fields)
+        return NodeRet(
+            df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            fields,
+        )
 
     def visitFirst(self, obj):
         input_ret = self.visit(obj.node)
@@ -493,7 +605,12 @@ class Executor(Visitor):
         df = copy.deepcopy(input_ret.df)
         df = df.sort_values(input_ret.timestamp_field)
         df = df.groupby(obj.keys).first().reset_index()
-        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+        return NodeRet(
+            df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            obj.dsschema().to_fields_proto(),
+        )
 
     def visitLatest(self, obj):
         input_ret = self.visit(obj.node)
@@ -502,7 +619,12 @@ class Executor(Visitor):
         df = copy.deepcopy(input_ret.df)
         df = df.sort_values(input_ret.timestamp_field)
         df = df.groupby(obj.keys).last().reset_index()
-        return NodeRet(df, input_ret.timestamp_field, input_ret.key_fields)
+        return NodeRet(
+            df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            obj.dsschema().to_fields_proto(),
+        )
 
     def visitWindow(self, obj):
         input_ret = self.visit(obj.node)
@@ -767,8 +889,17 @@ class Executor(Visitor):
                 .reset_index()
                 .loc[:, list_keys]
             )
+        else:
+            raise ValueError(f"Invalid window type: {obj.type}")
 
         sorted_df = window_dataframe.sort_values(input_ret.timestamp_field)
         # Cast sorted_df to obj.schema()
-        sorted_df = _cast_primitive_dtype_columns(sorted_df, obj)
-        return NodeRet(sorted_df, input_ret.timestamp_field, obj.keys)
+        sorted_df = cast_df_to_arrow_dtype(
+            sorted_df, obj.dsschema().to_fields_proto()
+        )
+        return NodeRet(
+            sorted_df,
+            input_ret.timestamp_field,
+            obj.keys,
+            obj.dsschema().to_fields_proto(),
+        )

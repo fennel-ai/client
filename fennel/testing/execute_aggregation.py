@@ -1,11 +1,13 @@
 import heapq
+import math
 from abc import ABC, abstractmethod
 from collections import Counter
 from math import sqrt
 from typing import Dict, List, Type
 
+import numpy as np
 import pandas as pd
-import math
+from sortedcontainers import SortedList
 
 from fennel.datasets import (
     AggregateType,
@@ -20,8 +22,8 @@ from fennel.datasets import (
     Quantile,
 )
 from fennel.internal_lib.duration import duration_to_timedelta
-from fennel.internal_lib.schema import get_pd_dtype
-from sortedcontainers import SortedList
+from fennel.internal_lib.schema import get_datatype
+from fennel.testing.test_utils import cast_col_to_arrow_dtype
 
 # Type of data, 1 indicates insert -1 indicates delete.
 FENNEL_ROW_TYPE = "__fennel_row_type__"
@@ -241,18 +243,19 @@ class MinState(AggState):
 
     def del_val_from_state(self, val):
         if val not in self.counter:
-            return self.min_heap.top()
+            return self.get_val()
         if self.counter[val] == 1:
             self.min_heap.remove(val)
             self.counter.pop(val)
         else:
             self.counter[val] -= 1
-        return self.min_heap.top()
+        return self.get_val()
 
     def get_val(self):
         if len(self.min_heap) == 0:
             return self.default
-        return self.min_heap.top()
+        val = self.min_heap.top()
+        return val if val else self.default
 
 
 class MaxState(AggState):
@@ -269,19 +272,19 @@ class MaxState(AggState):
 
     def del_val_from_state(self, val):
         if val not in self.counter:
-            return self.max_heap.top()
+            return self.get_val()
         if self.counter[val] == 1:
             self.max_heap.remove(val)
             self.counter.pop(val)
         else:
             self.counter[val] -= 1
-
-        return self.max_heap.top()
+        return self.get_val()
 
     def get_val(self):
         if len(self.max_heap) == 0:
             return self.default
-        return self.max_heap.top()
+        val = self.max_heap.top()
+        return val if val else self.default
 
 
 class StddevState(AggState):
@@ -374,8 +377,8 @@ def get_aggregated_df(
         window_secs = duration_to_timedelta(
             aggregate.window.start
         ).total_seconds()
-        expire_secs = pd.Timedelta(seconds=window_secs) + pd.Timedelta(
-            seconds=1
+        expire_secs = np.timedelta64(int(window_secs), "s") + np.timedelta64(
+            1, "s"
         )
         # For every row find the time it will expire and add it to the dataframe
         # as a delete row
@@ -453,12 +456,8 @@ def get_aggregated_df(
     subset = key_fields + [ts_field]
     df = df.drop_duplicates(subset=subset, keep="last")
     df = df.reset_index(drop=True)
-    pd_dtype = get_pd_dtype(output_dtype)
-    if pd_dtype in [
-        pd.Int64Dtype,
-        pd.BooleanDtype,
-        pd.Float64Dtype,
-        pd.StringDtype,
-    ]:
-        df[aggregate.into_field] = df[aggregate.into_field].astype(pd_dtype())
+    data_type = get_datatype(output_dtype)
+    df[aggregate.into_field] = cast_col_to_arrow_dtype(
+        df[aggregate.into_field], data_type
+    )
     return df

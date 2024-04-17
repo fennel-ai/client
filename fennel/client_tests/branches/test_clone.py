@@ -161,7 +161,13 @@ def test_clone_errors(client):
     assert client.list_branches() == ["main"]
     with pytest.raises(Exception) as e:
         client.clone_branch("test-branch", from_branch="random")
-    assert str(e.value) == "Branch `random` does not exist"
+    if client.is_integration_client():
+        assert (
+            str(e.value)
+            == "Server returned: 500, can not clone from branch `random`: does not exist"
+        )
+    else:
+        assert str(e.value) == "Branch `random` does not exist"
 
     # does work when the branch exists
     assert client.list_branches() == ["main"]
@@ -171,7 +177,13 @@ def test_clone_errors(client):
     # can not clone to an existing branch
     with pytest.raises(Exception) as e:
         client.clone_branch("main", from_branch="test-branch")
-    assert str(e.value) == "Branch `main` already exists"
+    if client.is_integration_client():
+        assert (
+            str(e.value)
+            == "Server returned: 500, can not create branch `main`: already exists"
+        )
+    else:
+        assert str(e.value) == "Branch `main` already exists"
 
 
 @pytest.mark.integration

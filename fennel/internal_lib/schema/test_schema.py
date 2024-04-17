@@ -19,6 +19,7 @@ from fennel.internal_lib.schema.schema import (
     regex,
     is_hashable,
     parse_json,
+    convert_dtype_to_arrow_type,
 )
 
 
@@ -678,3 +679,47 @@ def test_parse_json_complex():
     assert car2.make.country == "Second Country"
     assert car2.model == "Second Model"
     assert car2.year == 2024
+
+
+def test_convert_dtype_to_arrow_type():
+    # Testing complex data type of list[Struct]
+    data_type = proto.DataType(
+        array_type=proto.ArrayType(
+            of=proto.DataType(
+                struct_type=proto.StructType(
+                    fields=[
+                        proto.Field(
+                            name="a",
+                            dtype=proto.DataType(int_type=proto.IntType()),
+                        ),
+                        proto.Field(
+                            name="b",
+                            dtype=proto.DataType(
+                                map_type=proto.MapType(
+                                    key=proto.DataType(
+                                        string_type=proto.StringType()
+                                    ),
+                                    value=proto.DataType(
+                                        int_type=proto.IntType()
+                                    ),
+                                )
+                            ),
+                        ),
+                        proto.Field(
+                            name="c",
+                            dtype=proto.DataType(
+                                array_type=proto.ArrayType(
+                                    of=proto.DataType(int_type=proto.IntType())
+                                )
+                            ),
+                        ),
+                    ]
+                )
+            )
+        )
+    )
+    arrow_dtype = convert_dtype_to_arrow_type(data_type)
+    assert (
+        str(arrow_dtype)
+        == "list<item: struct<a: int64, b: map<string, int64>, c: list<item: int64>>>"
+    )

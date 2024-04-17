@@ -77,8 +77,8 @@ def test_idleness_for_bounded_source(client):
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 2, 4])
     df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
-    assert df["ad_id"].to_list() == [2, 3, None]
-    assert df["clicked"].to_list() == [True, False, None]
+    assert df["ad_id"].to_list() == [2, 3, pd.NA]
+    assert df["clicked"].to_list() == [True, False, pd.NA]
 
     # Sleep for 2 seconds and log 2 more rows of data
     time.sleep(2)
@@ -106,8 +106,8 @@ def test_idleness_for_bounded_source(client):
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([4, 5, 6])
     df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
-    assert df["ad_id"].to_list() == [5, 6, None]
-    assert df["clicked"].to_list() == [True, False, None]
+    assert df["ad_id"].to_list() == [5, 6, pd.NA]
+    assert df["clicked"].to_list() == [True, False, pd.NA]
 
     # Sleep for 5s so that new data which is not logged is not ingested since idleness for this source is 4s
     time.sleep(5)
@@ -136,8 +136,8 @@ def test_idleness_for_bounded_source(client):
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 6, 7])
     df, _ = BoundedClicksDS.lookup(ts, display_id=display_id_keys)
-    assert df["ad_id"].to_list() == [2, None, None]
-    assert df["clicked"].to_list() == [True, None, None]
+    assert df["ad_id"].to_list() == [2, pd.NA, pd.NA]
+    assert df["clicked"].to_list() == [True, pd.NA, pd.NA]
 
 
 @mock
@@ -177,8 +177,8 @@ def test_idleness_for_unbounded_source(client):
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([1, 2, 4])
     df, _ = UnBoundedClicksDS.lookup(ts, display_id=display_id_keys)
-    assert df["ad_id"].to_list() == [2, 3, None]
-    assert df["clicked"].to_list() == [True, False, None]
+    assert df["ad_id"].to_list() == [2, 3, pd.NA]
+    assert df["clicked"].to_list() == [True, False, pd.NA]
 
     # Sleep for 2 seconds and log 2 more rows of data
     time.sleep(2)
@@ -206,8 +206,8 @@ def test_idleness_for_unbounded_source(client):
     ts = pd.Series([now, now, now])
     display_id_keys = pd.Series([4, 5, 6])
     df, _ = UnBoundedClicksDS.lookup(ts, display_id=display_id_keys)
-    assert df["ad_id"].to_list() == [5, 6, None]
-    assert df["clicked"].to_list() == [True, False, None]
+    assert df["ad_id"].to_list() == [5, 6, pd.NA]
+    assert df["clicked"].to_list() == [True, False, pd.NA]
 
     # Sleep for 5s and this new data gets ingested since the source is unbounded
     time.sleep(5)

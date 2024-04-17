@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from functools import partial
 from typing import Dict, List, Union, Optional, Tuple
 
-import numpy as np
 import pandas as pd
 from frozendict import frozendict
 
@@ -14,10 +13,13 @@ from fennel.gen.featureset_pb2 import (
     ExtractorType as ProtoExtractorType,
 )
 from fennel.gen.schema_pb2 import Field, DSSchema, Schema
-from fennel.internal_lib.schema import data_schema_check, get_datatype
+from fennel.internal_lib.schema import data_schema_check
+from fennel.internal_lib.utils import parse_datetime
 from fennel.testing.branch import Entities
 from fennel.testing.data_engine import DataEngine
-from fennel.testing.test_utils import cast_col_to_dtype
+from fennel.testing.test_utils import (
+    cast_col_to_arrow_dtype,
+)
 
 
 class QueryEngine:
@@ -70,20 +72,14 @@ class QueryEngine:
             ),
         )
 
-        timestamps = (
-            cast_col_to_dtype(
-                pd.Series(timestamps),
-                schema_proto.DataType(
-                    timestamp_type=schema_proto.TimestampType()
-                ),
-            )
-            if timestamps is not None
-            else cast_col_to_dtype(
-                pd.Series([datetime.now(timezone.utc)] * len(keys)),
-                schema_proto.DataType(
-                    timestamp_type=schema_proto.TimestampType()
-                ),
-            )
+        ts_series = (
+            pd.Series(timestamps)
+            if isinstance(timestamps, pd.Series)
+            else pd.Series([datetime.now(timezone.utc)] * len(keys))
+        )
+        timestamps = cast_col_to_arrow_dtype(
+            ts_series,
+            schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
         )
         keys = keys.to_dict(orient="records")
 
@@ -389,27 +385,17 @@ class QueryEngine:
                 f"Field for lookup extractor {extractor.name} must have a named field"
             )
         results = results[extractor.derived_extractor_info.field.name]
-        if extractor.derived_extractor_info.default is not None:
+        default_value = extractor.derived_extractor_info.default
+        if isinstance(default_value, datetime):
+            default_value = parse_datetime(default_value)
+        if default_value is not None:
             if results.dtype != object:
-                results = results.fillna(
-                    extractor.derived_extractor_info.default
-                )
+                results = results.fillna(default_value)
             else:
                 # fillna doesn't work for list type or dict type :cols
                 for row in results.loc[results.isnull()].index:
-                    results[row] = extractor.derived_extractor_info.default
-            results = cast_col_to_dtype(
-                results,
-                get_datatype(extractor.derived_extractor_info.field.dtype),
-            )
-        else:
-            results = cast_col_to_dtype(
-                results,
-                get_datatype(
-                    Optional[extractor.derived_extractor_info.field.dtype]
-                ),
-            )
-            results.replace({np.nan: None}, inplace=True)
+                    results[row] = default_value
+
         fennel.datasets.datasets.dataset_lookup = (
             data_engine.get_dataset_lookup_impl(None, None, False)
         )

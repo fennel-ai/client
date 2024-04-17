@@ -286,14 +286,20 @@ def test_complex_struct(client):
     }
     assert len(df["MovieFeatures.role_list_py"].tolist()[3]) == 0
 
-    assert (
-        df["MovieFeatures.role_list_py"].tolist()
-        == df["MovieFeatures.role_list_assign"].tolist()
-    )
-    assert (
-        df["MovieFeatures.role_list_py"].tolist()
-        == df["MovieFeatures.role_list_struct"].tolist()
-    )
+    assert [
+        [y.as_json() for y in x]
+        for x in df["MovieFeatures.role_list_py"].tolist()
+    ] == [
+        [y.as_json() for y in x]
+        for x in df["MovieFeatures.role_list_assign"].tolist()
+    ]
+    assert [
+        [y.as_json() for y in x]
+        for x in df["MovieFeatures.role_list_py"].tolist()
+    ] == [
+        [y.as_json() for y in x]
+        for x in df["MovieFeatures.role_list_struct"].tolist()
+    ]
 
     assert len(df["MovieFeatures.movie_budget"].tolist()[0].roles) == 2
     assert df["MovieFeatures.movie_budget"].tolist()[0].roles[0].as_json() == {

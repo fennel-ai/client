@@ -976,7 +976,7 @@ def test_invalid_assign_schema(client):
         client.log("fennel_webhook", "mysql_relayrides.location", df)
     assert (
         str(e.value)
-        == "Error while executing pipeline `location_ds` in dataset `LocationDS`: Error in assign node for column `latitude_int` for pipeline `LocationDS2.location_ds`, Field `latitude_int` is of type int, but the column in the dataframe is of type `Float64`. Error found during checking schema for `LocationDS2.location_ds`."
+        == "Error while executing pipeline `location_ds` in dataset `LocationDS2`: Error in assign node for column `latitude_int` for pipeline `LocationDS2.location_ds`, Field `latitude_int` is of type int, but the column in the dataframe is of type `Float64`. Error found during checking schema for `LocationDS2.location_ds`."
     )
 
 

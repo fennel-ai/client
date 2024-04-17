@@ -1,18 +1,21 @@
 import json
-from datetime import datetime
 from math import isnan
 from typing import Any, Union, List
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+from frozendict import frozendict
 from google.protobuf.json_format import MessageToDict
 
 from fennel._vendor import jsondiff  # type: ignore
 from fennel._vendor.requests import Response  # type: ignore
+from fennel.dtypes.dtypes import FENNEL_STRUCT
 from fennel.gen.dataset_pb2 import Operator, Filter, Transform, Assign
 from fennel.gen.featureset_pb2 import Extractor
 from fennel.gen.pycode_pb2 import PyCode
-from fennel.gen.schema_pb2 import DSSchema
+from fennel.gen.schema_pb2 import DSSchema, DataType, Field
+from fennel.internal_lib.schema import convert_dtype_to_arrow_type
 from fennel.internal_lib.utils import parse_datetime
 
 
@@ -102,52 +105,149 @@ def almost_equal(a: float, b: float, epsilon: float = 1e-6) -> bool:
     return abs(a - b) < epsilon
 
 
-def cast_col_to_dtype(series: pd.Series, dtype) -> pd.Series:
+def check_dtype_has_struct_type(dtype: DataType) -> bool:
+    if dtype.HasField("struct_type"):
+        return True
+    elif dtype.HasField("optional_type"):
+        return check_dtype_has_struct_type(dtype.optional_type.of)
+    elif dtype.HasField("array_type"):
+        return check_dtype_has_struct_type(dtype.array_type.of)
+    elif dtype.HasField("map_type"):
+        return check_dtype_has_struct_type(dtype.map_type.value)
+    return False
+
+
+def parse_struct_into_dict(value: Any) -> Union[dict, list]:
+    """
+    This function assumes that there's a struct somewhere in the value that needs to be converted into json.
+    """
+    if hasattr(value, FENNEL_STRUCT):
+        try:
+            return value.as_json()
+        except Exception as e:
+            raise TypeError(
+                f"Not able parse value: {value} into json, error: {e}"
+            )
+    elif isinstance(value, list) or isinstance(value, np.ndarray):
+        return [parse_struct_into_dict(x) for x in value]
+    elif isinstance(value, dict) or isinstance(value, frozendict):
+        return {key: parse_struct_into_dict(val) for key, val in value.items()}
+    else:
+        return value
+
+
+def cast_col_to_arrow_dtype(series: pd.Series, dtype: DataType) -> pd.Series:
+    """
+    This function casts dtype of pd.Series object into pd.ArrowDtype depending on the DataType proto.
+    """
     if not dtype.HasField("optional_type"):
         if series.isnull().any():
             raise ValueError("Null values found in non-optional field.")
 
-    if dtype.HasField("int_type"):
-        if series.dtype == pd.Float64Dtype():
-            # Cast to float64 numpy. We need to do this, because pandas has a wierd bug,
-            # where series of type float64 will throw an error if the floats are not ints ( expected ).
-            # For example, series([1.2, 2.4, 3.3]) will throw an error.
-            # BUT series of type pd.Float64Dtype() will not throw an error, but get rounded off.
-            # So we cast to float64 numpy and then cast to pd.Int64Dtype()
-            series = series.astype(np.float64)
-        return pd.to_numeric(series).astype(pd.Int64Dtype())
+    # Let's convert structs into json, this is done because arrow
+    # dtype conversion fails with fennel struct
+    if check_dtype_has_struct_type(dtype):
+        series = series.apply(lambda x: parse_struct_into_dict(x))
+
+    arrow_type = convert_dtype_to_arrow_type(dtype)
+    return series.astype(pd.ArrowDtype(arrow_type))
+
+
+def cast_col_to_pandas_dtype(
+    series: pd.Series, dtype: DataType, nullable: bool = False
+) -> pd.Series:
+    """
+    This function casts dtype of pd.Series having dtype as pd.ArrowDtype into pandas dtype
+    depending on the DataType proto.
+    """
+    if dtype.HasField("optional_type"):
+        return cast_col_to_pandas_dtype(series, dtype.optional_type.of, True)
+    elif dtype.HasField("int_type"):
+        return series.astype(pd.Int64Dtype())
     elif dtype.HasField("double_type"):
-        return pd.to_numeric(series).astype(pd.Float64Dtype())
+        return series.astype(pd.Float64Dtype())
     elif dtype.HasField("string_type") or dtype.HasField("regex_type"):
-        return pd.Series([str(x) for x in series]).astype(pd.StringDtype())
+        return series.astype(pd.StringDtype())
     elif dtype.HasField("bool_type"):
         return series.astype(pd.BooleanDtype())
     elif dtype.HasField("timestamp_type"):
-        return pd.to_datetime(series.apply(lambda x: parse_datetime(x)))
-    elif dtype.HasField("optional_type"):
-        # Those fields which are not null should be casted to the right type
-        if series.notnull().any():
-            # collect the non-null values
-            tmp_series = series[series.notnull()]
-            non_null_idx = tmp_series.index
-            tmp_series = cast_col_to_dtype(
-                tmp_series,
-                dtype.optional_type.of,
-            )
-            tmp_series.index = non_null_idx
-            # set the non-null values with the casted values using the index
-            series.loc[non_null_idx] = tmp_series
-            series.replace({np.nan: None}, inplace=True)
-            if callable(tmp_series.dtype):
-                series = series.astype(tmp_series.dtype())
-            else:
-                series = series.astype(tmp_series.dtype)
-            return series
+        return pd.to_datetime(series)
     elif dtype.HasField("one_of_type"):
-        return cast_col_to_dtype(series, dtype.one_of_type.of)
+        return cast_col_to_pandas_dtype(series, dtype.one_of_type.of)
     elif dtype.HasField("between_type"):
-        return cast_col_to_dtype(series, dtype.between_type.dtype)
-    return series
+        return cast_col_to_pandas_dtype(series, dtype.between_type.dtype)
+    elif (
+        dtype.HasField("array_type")
+        or dtype.HasField("map_type")
+        or dtype.HasField("struct_type")
+        or dtype.HasField("embedding_type")
+    ):
+        return series.apply(
+            lambda x: convert_val_to_pandas_dtype(x, dtype, nullable)
+        ).astype(object)
+    else:
+        return series
+
+
+def convert_val_to_pandas_dtype(
+    value: Any, data_type: DataType, nullable: bool
+) -> Any:
+    """
+    This function casts value coming from a pd.Series having dtype as pd.ArrowDtype into pandas dtype
+    depending on the DataType proto.
+    """
+    if nullable:
+        if (
+            value is None
+            or value is pd.NA
+            or value is pd.NaT
+            or value is np.nan
+        ):
+            return pd.NA
+    if data_type.HasField("optional_type"):
+        return convert_val_to_pandas_dtype(
+            value, data_type.optional_type.of, True
+        )
+    elif data_type.HasField("int_type"):
+        return int(value)
+    elif data_type.HasField("double_type"):
+        return float(value)
+    elif data_type.HasField("string_type") or data_type.HasField("regex_type"):
+        return str(value)
+    elif data_type.HasField("bool_type"):
+        return bool(value)
+    elif data_type.HasField("timestamp_type"):
+        return pd.to_datetime(value)
+    elif data_type.HasField("between_type"):
+        return convert_val_to_pandas_dtype(
+            value, data_type.between_type.dtype, nullable
+        )
+    elif data_type.HasField("one_of_type"):
+        return convert_val_to_pandas_dtype(
+            value, data_type.one_of_type.of, nullable
+        )
+    elif data_type.HasField("map_type"):
+        return {
+            val[0]: convert_val_to_pandas_dtype(
+                val[1], data_type.map_type.value, False
+            )
+            for val in value
+        }
+    elif data_type.HasField("embedding_type"):
+        return value.tolist() if isinstance(value, np.ndarray) else list(value)
+    elif data_type.HasField("array_type"):
+        return [
+            convert_val_to_pandas_dtype(x, data_type.array_type.of, False)
+            for x in value
+        ]
+    elif data_type.HasField("struct_type"):
+        fields = data_type.struct_type.fields
+        output = {}
+        for field in fields:
+            output[field.name] = convert_val_to_pandas_dtype(
+                value[field.name], field.dtype, nullable
+            )
+        return output
 
 
 def proto_to_dtype(proto_dtype) -> str:
@@ -167,10 +267,54 @@ def proto_to_dtype(proto_dtype) -> str:
         return str(proto_dtype)
 
 
+def cast_df_to_arrow_dtype(
+    df: pd.DataFrame, fields: List[Field]
+) -> pd.DataFrame:
+    """
+    This helper function casts Pandas DatFrame columns to arrow dtype using list of Field proto.
+    This is mostly used after each operation in mock client like:
+    1. Operators
+    2. Aggregations
+    """
+    for f in fields:
+        try:
+            series = cast_col_to_arrow_dtype(df[f.name], f.dtype)
+            series.name = f.name
+            df[f.name] = series
+        except Exception as e:
+            raise ValueError(
+                f"Failed to cast column `{f.name}` of type `{proto_to_dtype(f.dtype)}` to arrow dtype. Error: {e}"
+            )
+    return df
+
+
+def cast_df_to_pandas_dtype(
+    df: pd.DataFrame, fields: List[Field]
+) -> pd.DataFrame:
+    """
+    This helper function casts Pandas DatFrame columns to pandas dtype using list of Field proto.
+    This is mostly used before passing the dataframe to user for custom py function like:
+    1. Assign, Filter, Transform
+    """
+    for f in fields:
+        try:
+            series = cast_col_to_pandas_dtype(df[f.name], f.dtype)
+            series.name = f.name
+            df[f.name] = series
+        except Exception as e:
+            raise ValueError(
+                f"Failed to cast column `{f.name}` of type `{proto_to_dtype(f.dtype)}` to pandas dtype. Error: {e}"
+            )
+    return df
+
+
 def cast_df_to_schema(
     df: pd.DataFrame,
     dsschema: DSSchema,
 ) -> pd.DataFrame:
+    """
+    This helper function is used to cast the dataframe logged by user in the mock client to pd.ArrowDtype.
+    """
     # Handle fields in keys and values
     fields = list(dsschema.keys.fields) + list(dsschema.values.fields)
     df = df.copy()
@@ -181,7 +325,7 @@ def cast_df_to_schema(
                 f"Field `{f.name}` not found in dataframe while logging to dataset"
             )
         try:
-            series = cast_col_to_dtype(df[f.name], f.dtype)
+            series = cast_col_to_arrow_dtype(df[f.name], f.dtype)
             series.name = f.name
             df[f.name] = series
         except Exception as e:
@@ -195,7 +339,7 @@ def cast_df_to_schema(
     try:
         df[dsschema.timestamp] = pd.to_datetime(
             df[dsschema.timestamp].apply(lambda x: parse_datetime(x))
-        )
+        ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
     except Exception as e:
         raise ValueError(
             f"Failed to cast data logged to timestamp column {dsschema.timestamp}: {e}"

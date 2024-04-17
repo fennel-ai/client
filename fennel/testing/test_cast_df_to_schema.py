@@ -2,12 +2,18 @@ from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
+import pyarrow as pa
 import pytest
 
 from fennel import dataset
 from fennel.dtypes import between, oneof, regex
+from fennel.gen import schema_pb2 as schema_proto
 from fennel.internal_lib.to_proto.to_proto import fields_to_dsschema
-from fennel.testing.test_utils import cast_df_to_schema
+from fennel.testing.test_utils import (
+    cast_df_to_schema,
+    cast_col_to_arrow_dtype,
+    cast_col_to_pandas_dtype,
+)
 
 
 # Example tests
@@ -126,7 +132,7 @@ def test_cast_timestamp():
             datetime(2021, 1, 1, tzinfo=timezone.utc),
             datetime(2021, 1, 2, tzinfo=timezone.utc),
         ]
-    )
+    ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
     assert all(result_df["created_ts"] == expected_timestamps)
     assert result_df["created_ts"].dtype == expected_timestamps.dtype
 
@@ -151,7 +157,7 @@ def test_cast_timestamp_with_timezone():
             datetime(2021, 1, 1, tzinfo=timezone.utc),
             datetime(2021, 1, 2, tzinfo=timezone.utc),
         ]
-    )
+    ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
     assert all(result_df["created_ts"] == expected_timestamps)
     assert result_df["created_ts"].dtype == expected_timestamps.dtype
 
@@ -176,7 +182,7 @@ def test_cast_invalid_timestamp():
         cast_df_to_schema(df, schema)
     assert (
         str(e.value)
-        == """Failed to cast data logged to timestamp column created_ts: Unknown string format: not a timestamp present at position 0"""
+        == """Failed to cast data logged to timestamp column created_ts: Unknown datetime string format, unable to parse: not a timestamp, at position 0"""
     )
 
 
@@ -220,3 +226,324 @@ def test_cast_failure_for_incorrect_type():
         str(e.value)
         == """Failed to cast data logged to column `int_field` of type `int`: Unable to parse string "not_an_int" at position 0"""
     )
+
+
+def test_cast_col_to_arrow_dtype():
+    """
+    Testing casting to arrow dtype from DataType proto
+    """
+
+    # 1. Test Casting of a struct
+    data = pd.Series(
+        [
+            {
+                "a": 1,
+                "b": 1.1,
+                "c": datetime.now(timezone.utc),
+                "d": "name1",
+                "e": True,
+            },
+            {
+                "a": 2,
+                "b": 2.1,
+                "c": datetime.now(timezone.utc),
+                "d": "name2",
+                "e": False,
+            },
+            {
+                "a": 3,
+                "b": 1.1,
+                "c": datetime.now(timezone.utc),
+                "d": "name3",
+                "e": True,
+            },
+        ],
+        name="testing",
+    )
+    fields = [
+        schema_proto.Field(
+            name="a",
+            dtype=schema_proto.DataType(int_type=schema_proto.IntType()),
+        ),
+        schema_proto.Field(
+            name="b",
+            dtype=schema_proto.DataType(double_type=schema_proto.DoubleType()),
+        ),
+        schema_proto.Field(
+            name="c",
+            dtype=schema_proto.DataType(
+                timestamp_type=schema_proto.TimestampType()
+            ),
+        ),
+        schema_proto.Field(
+            name="d",
+            dtype=schema_proto.DataType(string_type=schema_proto.StringType()),
+        ),
+        schema_proto.Field(
+            name="e",
+            dtype=schema_proto.DataType(bool_type=schema_proto.BoolType()),
+        ),
+    ]
+    data_type = schema_proto.DataType(
+        struct_type=schema_proto.StructType(
+            name="test_struct",
+            fields=fields,
+        )
+    )
+    casted_data = cast_col_to_arrow_dtype(data, data_type)
+    assert (
+        str(casted_data.dtype)
+        == "struct<a: int64, b: double, c: timestamp[us, tz=UTC], d: string, e: bool>[pyarrow]"
+    )
+
+    # 2. Casting of a map
+    data = pd.Series(
+        [
+            {
+                "a": 1,
+                "b": 2,
+            },
+            {
+                "a": 2,
+                "b": 3,
+            },
+            {
+                "a": 3,
+                "b": 4,
+            },
+        ],
+        name="testing",
+    )
+    data_type = schema_proto.DataType(
+        map_type=schema_proto.MapType(
+            key=schema_proto.DataType(string_type=schema_proto.StringType()),
+            value=schema_proto.DataType(int_type=schema_proto.IntType()),
+        )
+    )
+    casted_data = cast_col_to_arrow_dtype(data, data_type)
+    assert str(casted_data.dtype) == "map<string, int64>[pyarrow]"
+
+    # 3. Casting of an Embedding
+    data = pd.Series(
+        [
+            [1, 1, 2, 3, 4],
+            [1, 1, 2, 3, 4],
+            [1, 1, 2, 3, 4],
+        ],
+        name="testing",
+    )
+    data_type = schema_proto.DataType(
+        embedding_type=schema_proto.EmbeddingType(embedding_size=5)
+    )
+    casted_data = cast_col_to_arrow_dtype(data, data_type)
+    assert str(casted_data.dtype) == "fixed_size_list<item: double>[5][pyarrow]"
+
+    # 4. Casting of a complex object i.e List[struct]
+    data = pd.Series(
+        [
+            [
+                {
+                    "a": 1,
+                    "b": 1.1,
+                    "c": datetime.now(timezone.utc),
+                    "d": "name1",
+                    "e": True,
+                },
+                {
+                    "a": 1,
+                    "b": 1.1,
+                    "c": datetime.now(timezone.utc),
+                    "d": "name1",
+                    "e": True,
+                },
+            ],
+            [
+                {
+                    "a": 1,
+                    "b": 1.1,
+                    "c": datetime.now(timezone.utc),
+                    "d": "name1",
+                    "e": True,
+                },
+                {
+                    "a": 1,
+                    "b": 1.1,
+                    "c": datetime.now(timezone.utc),
+                    "d": "name1",
+                    "e": True,
+                },
+            ],
+        ],
+        name="testing",
+    )
+    data_type = schema_proto.DataType(
+        array_type=schema_proto.ArrayType(
+            of=schema_proto.DataType(
+                struct_type=schema_proto.StructType(fields=fields)
+            )
+        )
+    )
+    casted_data = cast_col_to_arrow_dtype(data, data_type)
+    assert (
+        str(casted_data.dtype)
+        == "list<item: struct<a: int64, b: double, c: timestamp[us, tz=UTC], d: string, e: bool>>[pyarrow]"
+    )
+
+
+def test_invalid_cast_col_to_arrow_dtype():
+    """
+    Testing invalid casting returns some error
+    """
+
+    # 1. Test Casting of a struct
+    data = pd.Series(
+        [
+            {
+                "a": 1,
+                "b": 1.1,
+                "c": "fdfd",
+            },
+            {
+                "a": 2,
+                "b": 2.1,
+                "c": datetime.now(timezone.utc),
+            },
+            {
+                "a": 3,
+                "b": 1.1,
+                "c": datetime.now(timezone.utc),
+            },
+        ],
+        name="testing",
+    )
+    fields = [
+        schema_proto.Field(
+            name="a",
+            dtype=schema_proto.DataType(int_type=schema_proto.IntType()),
+        ),
+        schema_proto.Field(
+            name="b",
+            dtype=schema_proto.DataType(double_type=schema_proto.DoubleType()),
+        ),
+        schema_proto.Field(
+            name="c",
+            dtype=schema_proto.DataType(
+                timestamp_type=schema_proto.TimestampType()
+            ),
+        ),
+    ]
+    data_type = schema_proto.DataType(
+        struct_type=schema_proto.StructType(
+            name="test_struct",
+            fields=fields,
+        )
+    )
+    with pytest.raises(Exception) as e:
+        cast_col_to_arrow_dtype(data, data_type)
+    assert (
+        str(e.value)
+        == "object of type <class 'str'> cannot be converted to int"
+    )
+
+    # 2. Casting of a map
+    data = pd.Series(
+        [
+            {
+                "a": 1,
+                "b": "2.2",
+            },
+            {
+                "a": 2,
+                "b": "3.2",
+            },
+            {
+                "a": 3,
+                "b": "4.2",
+            },
+        ],
+        name="testing",
+    )
+    data_type = schema_proto.DataType(
+        map_type=schema_proto.MapType(
+            key=schema_proto.DataType(string_type=schema_proto.StringType()),
+            value=schema_proto.DataType(int_type=schema_proto.IntType()),
+        )
+    )
+    with pytest.raises(Exception) as e:
+        cast_col_to_arrow_dtype(data, data_type)
+    assert (
+        str(e.value)
+        == "Unsupported cast from struct<a: int64, b: string> to map using function cast_map"
+    )
+
+    # 3. Casting of an Embedding
+    data = pd.Series(
+        [
+            [1, 1, 2, 3, 4, 5],
+            [1, 1, 2, 3, 4, 6],
+            [1, 1, 2, 3, 4, 8],
+        ],
+        name="testing",
+    )
+    data_type = schema_proto.DataType(
+        embedding_type=schema_proto.EmbeddingType(embedding_size=5)
+    )
+    with pytest.raises(ValueError) as e:
+        cast_col_to_arrow_dtype(data, data_type)
+    assert (
+        str(e.value)
+        == "ListType can only be casted to FixedSizeListType if the lists are all the expected size."
+    )
+
+
+def test_cast_col_to_pandas_dtype():
+    """
+    Testing casting pd.Series of arrow dtype to pandas dtype.
+    """
+    value = [{"a": 1, "b": {"a": 1, "b": 2, "c": 3}, "c": [1, 2, 3, 4]}]
+    data = pd.Series([value], name="testing")
+    data_type = schema_proto.DataType(
+        array_type=schema_proto.ArrayType(
+            of=schema_proto.DataType(
+                struct_type=schema_proto.StructType(
+                    fields=[
+                        schema_proto.Field(
+                            name="a",
+                            dtype=schema_proto.DataType(
+                                int_type=schema_proto.IntType()
+                            ),
+                        ),
+                        schema_proto.Field(
+                            name="b",
+                            dtype=schema_proto.DataType(
+                                map_type=schema_proto.MapType(
+                                    key=schema_proto.DataType(
+                                        string_type=schema_proto.StringType()
+                                    ),
+                                    value=schema_proto.DataType(
+                                        int_type=schema_proto.IntType()
+                                    ),
+                                )
+                            ),
+                        ),
+                        schema_proto.Field(
+                            name="c",
+                            dtype=schema_proto.DataType(
+                                array_type=schema_proto.ArrayType(
+                                    of=schema_proto.DataType(
+                                        int_type=schema_proto.IntType()
+                                    )
+                                )
+                            ),
+                        ),
+                    ]
+                )
+            )
+        )
+    )
+
+    arrow_dtype_data = cast_col_to_arrow_dtype(data, data_type)
+    pandas_dtype_data = cast_col_to_pandas_dtype(arrow_dtype_data, data_type)
+
+    assert pandas_dtype_data.dtype == object
+    assert pandas_dtype_data.tolist()[0] == value

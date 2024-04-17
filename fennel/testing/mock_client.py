@@ -8,11 +8,11 @@ from typing import Dict, List, Optional, Union, Any, Tuple, Set
 
 import pandas as pd
 
+import fennel.gen.schema_pb2 as schema_proto
 from fennel.client import Client
-from fennel.connectors.connectors import S3Connector, Webhook
+from fennel.connectors.connectors import S3Connector
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.featuresets import Featureset, Feature, is_valid_feature
-import fennel.gen.schema_pb2 as schema_proto
 from fennel.internal_lib.graph_algorithms import (
     get_extractor_order,
 )
@@ -28,10 +28,7 @@ from fennel.testing.data_engine import (
 )
 from fennel.testing.integration_client import IntegrationClient
 from fennel.testing.query_engine import QueryEngine
-from fennel.testing.test_utils import (
-    cast_col_to_dtype,
-    FakeResponse,
-)
+from fennel.testing.test_utils import cast_col_to_arrow_dtype, FakeResponse
 
 MAIN_BRANCH = "main"
 MOCK_CLIENT_ATTR = "__mock_client__"
@@ -220,7 +217,7 @@ class MockClient(Client):
         extractors_to_run = get_extractor_order(
             inputs, outputs, entities.extractors
         )
-        timestamps = cast_col_to_dtype(
+        timestamps = cast_col_to_arrow_dtype(
             pd.Series([datetime.now(timezone.utc)] * len(input_dataframe)),
             schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
         )
@@ -370,7 +367,7 @@ class MockClient(Client):
         if name not in self.branches_map:
             raise Exception(f"Branch name: {name} does not exist")
         if name == MAIN_BRANCH:
-            raise Exception("Cannot delete main branch")
+            raise Exception("Cannot delete the main branch.")
         cur_branch = self._branch
         del self.branches_map[name]
         if cur_branch == name:
@@ -455,7 +452,7 @@ class MockClient(Client):
             if isinstance(feature, str):
                 continue
             col_type = get_datatype(feature.dtype)  # type: ignore
-            input_dataframe[input_col] = cast_col_to_dtype(
+            input_dataframe[input_col] = cast_col_to_arrow_dtype(
                 input_dataframe[input_col], col_type
             )
         return input_dataframe

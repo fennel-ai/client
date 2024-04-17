@@ -4,17 +4,19 @@ import json
 import math
 import re
 from datetime import datetime
-from typing import Dict, Optional, Any, Set, List, Union, Tuple, Type
+from typing import Dict, Optional, Any, Set, List, Union, Tuple
 from urllib.parse import urljoin
 
+import numpy as np
 import pandas as pd
 
 import fennel._vendor.requests as requests  # type: ignore
+from fennel.connectors import S3Connector
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature, is_valid_feature
-from fennel.internal_lib.schema import parse_json
+from fennel.internal_lib.schema import parse_json, get_datatype
 from fennel.internal_lib.to_proto import to_sync_request_proto
-from fennel.connectors import S3Connector
+from fennel.internal_lib.utils import cast_col_to_pandas
 from fennel.utils import check_response, to_columnar_json
 
 V1_API = "/api/v1"
@@ -290,12 +292,9 @@ class Client:
             # Now, `actual_data` should be a dictionary
         else:
             actual_data = response.json()
-        df = pd.DataFrame(actual_data)
-        for col in df.columns:
-            if df[col].dtype == "object":
-                df[col] = df[col].apply(
-                    lambda x: parse_json(output_feature_name_to_type[col], x)
-                )
+        df = self._parse_dataframe(
+            pd.DataFrame(actual_data), output_feature_name_to_type
+        )
         return df
 
     def erase(
@@ -699,18 +698,34 @@ class Client:
             "{}/dataset/{}/lookup".format(V1_API, dataset_name),
             req,
         )
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
         resp_json = response.json()
         found = pd.Series(resp_json["found"])
         if len(fields) == 1:
             return (
-                pd.Series(name=fields[0], data=resp_json["data"][fields[0]]),
+                pd.Series(
+                    name=fields[0], data=resp_json["data"][fields[0]]
+                ).fillna(pd.NA),
                 found,
             )
-        return pd.DataFrame(resp_json["data"]), found
+        result = pd.DataFrame(resp_json["data"])
+
+        # Get the schema
+        output_dtypes = {}
+        for column in result.columns:
+            if isinstance(dataset, Dataset):
+                for field in dataset.fields:
+                    if field.name == column:
+                        output_dtypes[column] = field.dtype
+            else:
+                output_dtypes[column] = Any
+
+        return self._parse_dataframe(result, output_dtypes), found
 
     def inspect(
         self, dataset: Union[str, Dataset], n: int = 10
-    ) -> List[Dict[str, Any]]:
+    ) -> pd.DataFrame:
         """Inspect the last n rows of a dataset.
 
         Parameters:
@@ -718,15 +733,31 @@ class Client:
         dataset (str): The name of the dataset or Dataset object.
         n (int): The number of rows, default is 10.
 
-        Returns: List[Dict[str, Any]]:
+        Returns: pd.DataFrame
         ----------
-        A list of dataset rows.
+        Dataset in pd.DataFrame.
 
         """
         dataset_name = dataset if isinstance(dataset, str) else dataset._name
-        return self._get(
+        response = self._get(
             "{}/dataset/{}/inspect?n={}".format(V1_API, dataset_name, n)
-        ).json()
+        )
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+
+        result = pd.DataFrame(response.json())
+
+        # Get the schema
+        output_dtypes = {}
+        for column in result.columns:
+            if isinstance(dataset, Dataset):
+                for field in dataset.fields:
+                    if field.name == column:
+                        output_dtypes[column] = field.dtype
+            else:
+                output_dtypes[column] = Any
+
+        return self._parse_dataframe(result, output_dtypes)
 
     # ----------------------- Private methods -----------------------
 
@@ -812,6 +843,29 @@ class Client:
         )
         check_response(response)
         return response
+
+    @staticmethod
+    def _parse_dataframe(
+        df: pd.DataFrame, schema: Dict[str, Any]
+    ) -> pd.DataFrame:
+        """
+        This function parses the dataframe coming from server into correct dtype. The server returns response in
+        JSON format. The response is first converted into a dataframe then this function is called.:
+        1. Making struct from dict.
+        2. Casting columns into pandas dtype.
+        3. Converting None into pd.NA.
+        If user passes string in either query, lookup, inspect then there's no casting just converting None to pd.NA
+        """
+        for column in df.columns:
+            dtype = schema.get(column, Any)
+            if schema[column] != Any:
+                proto_dtype = get_datatype(dtype)
+                df[column] = cast_col_to_pandas(df[column], proto_dtype)
+            else:
+                df[column] = df[column].fillna(pd.NA).replace({np.nan: pd.NA})
+            if df[column].dtype == "object":
+                df[column] = df[column].apply(lambda x: parse_json(dtype, x))
+        return df
 
 
 def _s3_connector_dict(s3: S3Connector) -> Dict[str, Any]:
