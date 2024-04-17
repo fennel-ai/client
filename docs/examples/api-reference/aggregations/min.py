@@ -102,7 +102,7 @@ def test_basic(client):
     df, found = Aggregated.lookup(ts, uid=pd.Series([1, 2, 3]))
     assert found.tolist() == [True, True, True]
     assert df["uid"].tolist() == [1, 2, 3]
-    assert df["min_1d"].tolist() == [None, None, 50]
+    assert df["min_1d"].tolist() == [-1, -1, 50]
     assert df["min_1w"].tolist() == [10, 30, 50]
 
 

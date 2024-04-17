@@ -445,6 +445,9 @@ def get_aggregated_df(
                     )
             result_vals.append(state[key].add_val_to_state(val))
 
+    if hasattr(aggregate, 'default'):
+        result_vals = [x if x is not None else aggregate.default for x in result_vals]
+
     df[aggregate.into_field] = result_vals
     if aggregate.into_field != of_field:
         df.drop(of_field, inplace=True, axis=1)

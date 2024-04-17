@@ -699,7 +699,7 @@ class MovieRatingCalculated:
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
             [
-                Count(window="forever", into_field=str(cls.num_ratings)),
+                Count(window="7d", into_field=str(cls.num_ratings)),
                 Sum(
                     window="forever",
                     of="rating",
@@ -2657,13 +2657,14 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
         )
         now = datetime.now(timezone.utc)
         minute_ago = now - timedelta(minutes=1)
+        two_minute_ago = now - timedelta(minutes=2)
         data = [
             [
                 18232,
                 "report",
                 49,
                 '{"transaction_amount": 49, "merchant_id": 1322}',
-                minute_ago,
+                two_minute_ago,
             ],
             [
                 13423,
@@ -2691,7 +2692,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
                 "report",
                 49,
                 '{"transaction_amount": 49, "merchant_id": 1322}',
-                minute_ago,
+                two_minute_ago,
             ],
             [
                 18232,
@@ -2705,14 +2706,14 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
                 "report",
                 999,
                 '{"transaction_amount": 999, "merchant_id": 1322}',
-                minute_ago,
+                two_minute_ago,
             ],
             [
                 18232,
                 "report",
                 199,
                 '{"transaction_amount": 199, "merchant_id": 1322}',
-                minute_ago,
+                two_minute_ago,
             ],
         ]
         columns = ["user_id", "action_type", "amount", "metadata", "timestamp"]
@@ -2753,23 +2754,24 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
             return
 
         df = client.get_dataset_df("FraudReportAggregatedDataset")
+        print(df)
         assert df.shape == (4, 5)
         assert df["category"].tolist() == [
-            "entertainment",
             "grocery",
             "entertainment",
             "grocery",
+            "entertainment",
         ]
-        assert df["num_categ_fraudulent_transactions"].tolist() == [2, 4, 2, 4]
+        assert df["num_categ_fraudulent_transactions"].tolist() == [4, 2, 4, 2]
         assert df["num_categ_fraudulent_transactions_7d"].tolist() == [
-            2,
             4,
+            2,
             0,
             0,
         ]
         assert df["sum_categ_fraudulent_transactions_7d"].tolist() == [
-            248,
             1296,
+            248,
             0,
             0,
         ]

@@ -12,20 +12,18 @@ from fennel.datasets import Pipeline, Visitor, Dataset, Count, Summary
 from fennel.datasets.datasets import WindowType
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype, fennel_is_optional
-from fennel.internal_lib.schema import validate_field_in_df
+from fennel.internal_lib.schema import validate_field_in_df, get_pd_dtype
 from fennel.internal_lib.to_proto import Serializer, to_includes_proto
 from fennel.testing.execute_aggregation import get_aggregated_df
 
 pd.set_option("display.max_columns", None)
-
+FENNEL_KEY_HASH_ROW = "__fennel_key_hash_row__"
 
 @dataclass
 class NodeRet:
     df: pd.DataFrame
     timestamp_field: str
     key_fields: List[str]
-    agg_result: Optional[Dict[str, Any]] = None
-    is_aggregate: bool = False
 
 
 def is_subset(subset: List[str], superset: List[str]) -> bool:
@@ -175,11 +173,15 @@ class Executor(Visitor):
             sorted_df, input_ret.timestamp_field, input_ret.key_fields
         )
 
-    def _merge_df(
-        self, df1: pd.DataFrame, df2: pd.DataFrame, ts: str
+    def _key_hash(
+        self, row, keys: list[str]
     ) -> pd.DataFrame:
-        merged_df = pd.concat([df1, df2])
-        return merged_df.sort_values(ts)
+        row_key_fields = []
+        for key_field in keys:
+            row_key_fields.append(row.loc[key_field])
+        keyhash = hash(tuple(row_key_fields))
+        print(keyhash)
+        return keyhash
 
     def visitAggregate(self, obj):
         input_ret = self.visit(obj.node)
@@ -197,7 +199,8 @@ class Executor(Visitor):
         for aggregate in obj.aggregates:
             # Select the columns that are needed for the aggregate
             # and drop the rest
-            fields = obj.keys + [input_ret.timestamp_field]
+            ts_field = input_ret.timestamp_field
+            fields = obj.keys + [ts_field]
             if not isinstance(aggregate, Count) or aggregate.unique:
                 fields.append(aggregate.of)
             filtered_df = df[fields]
@@ -205,12 +208,30 @@ class Executor(Visitor):
             result[aggregate.into_field] = get_aggregated_df(
                 filtered_df,
                 aggregate,
-                input_ret.timestamp_field,
+                ts_field,
                 obj.keys,
                 output_schema.values[aggregate.into_field],
-            )
+            ).applymap(lambda x: (True, x))
+
+        agg_dfs = list(result.values())
+        total_df = agg_dfs[0]
+        for df in agg_dfs[1:]:
+            total_df = pd.merge(total_df, df, how="outer", on=obj.keys + [ts_field])
+
+        total_df[FENNEL_KEY_HASH_ROW] = total_df.apply(lambda row: self._key_hash(row, obj.keys), axis=1)
+        total_df = total_df.sort_values(by=[FENNEL_KEY_HASH_ROW, ts_field]).reset_index(drop=True)
+        for i, row in total_df.iterrows():
+            if i == 0 or row.loc[FENNEL_KEY_HASH_ROW] != total_df.iloc[i-1].loc[FENNEL_KEY_HASH_ROW]:
+                continue
+            for aggregate in obj.aggregates:
+                if pd.isna(row.loc[aggregate.into_field]):
+                    row.loc[aggregate.into_field] = total_df.iloc[i - 1][aggregate.into_field]
+            total_df.iloc[i] = row
+        total_df = total_df.sort_values(by=[ts_field]).drop(FENNEL_KEY_HASH_ROW, axis=1).applymap(lambda x: x[1])
+
+        total_df = _cast_primitive_dtype_columns(total_df, obj)
         return NodeRet(
-            pd.DataFrame(), input_ret.timestamp_field, obj.keys, result, True
+            total_df, input_ret.timestamp_field, obj.keys
         )
 
     def visitJoin(self, obj) -> Optional[NodeRet]:

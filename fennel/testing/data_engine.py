@@ -160,7 +160,6 @@ class DataEngine(object):
         # If we haven't seen any values for this dataset, return an empty df with the right schema.
         if (
             not isinstance(self.datasets[dataset_name].data, pd.DataFrame)
-            and not self.datasets[dataset_name].aggregated_datasets
         ):
             return self.datasets[dataset_name].empty_df()
 
@@ -529,6 +528,13 @@ class DataEngine(object):
         df = df.reset_index(drop=True)
         return df, found
 
+    @staticmethod
+    def _make_object_hashable(obj):
+        try:
+            return str(dict(obj))
+        except:
+            return str(obj)
+
     def _as_of_lookup(
         self,
         dataset_name: str,
@@ -690,13 +696,6 @@ class DataEngine(object):
                     f"in dataset `{dataset_name}`: {str(e)}",
                 )
             if ret is None:
-                continue
-            if ret.is_aggregate:
-                # Aggregate pipelines are not logged
-                self.datasets[pipeline.dataset_name].aggregated_datasets = (
-                    ret.agg_result
-                )
-                self._filter_erase_key(dataset_name)
                 continue
 
             # Recursively log the output of the pipeline to the datasets
