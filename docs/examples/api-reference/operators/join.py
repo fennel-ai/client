@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -114,4 +114,7 @@ class TestAssignSnips(unittest.TestCase):
         assert df["merchant"].tolist() == [4, 5, 4]
         assert df["amount"].tolist() == [10, 20, 30]
         assert df["category"].tolist() == ["grocery", "electronics", "grocery"]
-        assert df["timestamp"].tolist() == [datetime(2021, 1, 1, 0, 0, 0)] * 3
+        assert (
+            df["timestamp"].tolist()
+            == [datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)] * 3
+        )

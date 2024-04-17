@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, List
 
 import numpy as np
@@ -197,7 +197,7 @@ class TestSimpleExtractor(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -299,7 +299,7 @@ class TestDerivedExtractor(unittest.TestCase):
                 FlightRequest,
             ],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -391,7 +391,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -477,7 +477,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
             ],
         )
         client.sleep()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -608,7 +608,7 @@ class TestDocumentDataset(unittest.TestCase):
             datasets=[DocumentContentDataset],
             featuresets=[DocumentFeatures],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, np.array([1, 2, 3, 4]), np.array([1, 2, 3]), 10, now],
             [
@@ -662,7 +662,7 @@ class TestDocumentDataset(unittest.TestCase):
         if client.is_integration_client():
             return
 
-        yesterday = datetime.utcnow() - timedelta(days=1)
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
 
         feature_df = client.query_offline(
             outputs=[DocumentFeatures],

@@ -1,6 +1,6 @@
 import time
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -49,7 +49,7 @@ class TestMovieInfo103(unittest.TestCase):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
         client.commit(message="msg", datasets=[MovieInfo103], tier="dev")
-        t = datetime.utcfromtimestamp(1672858163)
+        t = datetime.fromtimestamp(1672858163, tz=timezone.utc)
         data = [
             [
                 1,
@@ -69,7 +69,7 @@ class TestMovieInfo103(unittest.TestCase):
         client.sleep()
 
         # Do some lookups
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         keys = pd.DataFrame({"movieId": [1, 2, 23, 123343]})
         df, found = client.lookup(
             "MovieInfo103",
@@ -90,7 +90,7 @@ class TestMovieInfo103(unittest.TestCase):
         ]
 
         # Do some lookups with a timestamp
-        past = datetime.utcfromtimestamp(1672858160)
+        past = datetime.fromtimestamp(1672858160, tz=timezone.utc)
         ts = pd.Series([past, past, now, past])
         df, found = client.lookup(
             "MovieInfo103",
@@ -111,7 +111,7 @@ class TestMovieInfo103(unittest.TestCase):
         time.sleep(10)
 
         # Do some lookups
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         movie_ids = pd.Series([1, 2, 23, 123343])
         ts = pd.Series([now, now, now, now])
         df, found = MovieInfo103.lookup(
@@ -133,7 +133,7 @@ class TestMovieInfo103(unittest.TestCase):
         ]
 
         # Do some lookups with a timestamp
-        past = datetime.utcfromtimestamp(1672858160)
+        past = datetime.fromtimestamp(1672858160, tz=timezone.utc)
         ts = pd.Series([past, past, now, past])
         df, found = MovieInfo103.lookup(
             ts,
@@ -159,7 +159,7 @@ class TestMovieInfo103(unittest.TestCase):
                 24,
                 "Powder (1995)",
                 "Drama|Sci-Fi",
-                datetime.utcfromtimestamp(1672858163),
+                datetime.fromtimestamp(1672858163, tz=timezone.utc),
             ],
         ]
         columns = ["movieId", "title", "genres", "timestamp"]
@@ -178,8 +178,8 @@ class TestMovieInfo103(unittest.TestCase):
             "Powder (1995)",
         ]
         assert df["timestamp"].tolist() == [
-            datetime.utcfromtimestamp(1672858163),
-            datetime.utcfromtimestamp(1672858163),
-            datetime.utcfromtimestamp(1672858163),
-            datetime.utcfromtimestamp(1672858163),
+            datetime.fromtimestamp(1672858163, tz=timezone.utc),
+            datetime.fromtimestamp(1672858163, tz=timezone.utc),
+            datetime.fromtimestamp(1672858163, tz=timezone.utc),
+            datetime.fromtimestamp(1672858163, tz=timezone.utc),
         ]

@@ -2,18 +2,18 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
 from typing import Literal
 
 from fennel._vendor.pydantic import BaseModel, Field  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
+from fennel.connectors.kinesis import at_timestamp
 from fennel.internal_lib.duration import (
     Duration,
 )
 from fennel.internal_lib.duration.duration import is_valid_duration
 from fennel.lib.includes import TierSelector
-from fennel.connectors.kinesis import at_timestamp
 
 T = TypeVar("T")
 SOURCE_FIELD = "__fennel_data_sources__"
@@ -647,7 +647,7 @@ class S3Connector(DataConnector):
                 suffix_portion = True
                 # ensure we have a valid strftime format specifier
                 try:
-                    formatted = datetime.utcnow().strftime(part)
+                    formatted = datetime.now(timezone.utc).strftime(part)
                     datetime.strptime(formatted, part)
                     suffix.append(part)
                 except ValueError:

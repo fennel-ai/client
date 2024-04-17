@@ -1,5 +1,5 @@
 # docsnip imports
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import pandas as pd
@@ -137,7 +137,7 @@ client.commit(
 
 # docsnip log_data
 # create some product data
-now = datetime.utcnow()
+now = datetime.now(timezone.utc)
 columns = ["product_id", "seller_id", "price", "desc", "last_modified"]
 data = [
     [1, 1, 10.0, "product 1", now],

@@ -3,26 +3,30 @@ from __future__ import annotations
 import copy
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Union, Any, Tuple, Set
 
 import pandas as pd
 
-from fennel._vendor.requests import Response  # type: ignore
 from fennel.client import Client
+from fennel.connectors.connectors import S3Connector
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.featuresets import Featureset, Feature, is_valid_feature
+import fennel.gen.schema_pb2 as schema_proto
 from fennel.internal_lib.graph_algorithms import (
     get_extractor_order,
 )
 from fennel.internal_lib.schema import get_datatype
 from fennel.internal_lib.to_proto import to_sync_request_proto
+from fennel.internal_lib.utils import parse_datetime
 from fennel.lib import includes  # noqa
-from fennel.connectors.connectors import S3Connector
 from fennel.testing.branch import Branch
 from fennel.testing.integration_client import IntegrationClient
 from fennel.testing.query_engine import QueryEngine
-from fennel.testing.test_utils import cast_col_to_dtype, FakeResponse
+from fennel.testing.test_utils import (
+    cast_col_to_dtype,
+    FakeResponse,
+)
 
 MAIN_BRANCH = "main"
 
@@ -192,7 +196,10 @@ class MockClient(Client):
         extractors_to_run = get_extractor_order(
             inputs, outputs, entities.extractors
         )
-        timestamps = pd.Series([datetime.utcnow()] * len(input_dataframe))
+        timestamps = cast_col_to_dtype(
+            pd.Series([datetime.now(timezone.utc)] * len(input_dataframe)),
+            schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
+        )
         return self.query_engine.run_extractors(
             extractors_to_run,
             data_engine,
@@ -232,7 +239,7 @@ class MockClient(Client):
         entities = branch_class.get_entities()
         data_engine = branch_class.get_data_engine()
         timestamps = input_dataframe[timestamp_column]
-        timestamps = pd.to_datetime(timestamps)
+        timestamps = timestamps.apply(lambda x: parse_datetime(x))
         input_feature_names = self._get_feature_name_from_inputs(inputs)
         input_dataframe = self._transform_input_dataframe_from_inputs(
             input_dataframe, inputs, input_feature_names

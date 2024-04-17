@@ -1,9 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from datetime import timedelta
 
+import pandas as pd
 import pytest
 
-import pandas as pd
 from fennel.testing import mock
 
 HOUR = timedelta(hours=1)
@@ -61,7 +61,11 @@ def test_basic(client):
             format="pandas",
             input_dataframe=pd.DataFrame(
                 {"Numbers.num": [1, 2, 3, 4]},
-                {"timestamp": [datetime.utcnow() - HOUR * i for i in range(4)]},
+                {
+                    "timestamp": [
+                        datetime.now(timezone.utc) - HOUR * i for i in range(4)
+                    ]
+                },
             ),
             timestamp_column="timestamp",
         )

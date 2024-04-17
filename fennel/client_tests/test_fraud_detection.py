@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -150,7 +150,7 @@ def test_fraud_detection_pipeline(client):
     region_to_state = region_to_state.rename(columns={0: "region"}).reset_index(
         drop=True
     )
-    region_to_state.insert(0, "created_at", datetime.utcnow())
+    region_to_state.insert(0, "created_at", datetime.now(timezone.utc))
     # Upload transaction_data dataframe to the Transactions dataset on the mock client
     transaction_data_sample = pd.read_csv(
         "fennel/client_tests/data/fraud_sample.csv"

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import pandas as pd
@@ -58,7 +58,7 @@ class TestDataset(unittest.TestCase):
             message="datasets: add RatingActivity and MovieRating",
             datasets=[MovieRating, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -225,7 +225,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],

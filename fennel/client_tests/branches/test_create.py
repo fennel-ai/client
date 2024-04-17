@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -109,7 +109,7 @@ def test_log(client):
     )
     assert resp.status_code == 200, resp.json()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,

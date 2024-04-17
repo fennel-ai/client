@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 import pandas as pd
@@ -187,15 +187,26 @@ def test_session_window_operator(client):
 
     client.sleep()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     ts = pd.Series([now])
     user_id_keys = pd.Series([1])
     window_keys = pd.Series(
         [
             {
-                "begin": pd.Timestamp(datetime(2023, 1, 16, 11, 0, 25)),
+                "begin": pd.Timestamp(
+                    datetime(2023, 1, 16, 11, 0, 25, tzinfo=timezone.utc)
+                ),
                 "end": pd.Timestamp(
-                    datetime(2023, 1, 16, 11, 0, 33, microsecond=1)
+                    datetime(
+                        2023,
+                        1,
+                        16,
+                        11,
+                        0,
+                        33,
+                        microsecond=1,
+                        tzinfo=timezone.utc,
+                    )
                 ),
             }
         ]
@@ -214,10 +225,10 @@ def test_session_window_operator(client):
     assert df_session.shape[0] == 1
     assert list(df_session["user_id"].values) == [1]
     assert df_session["window"].values[0].begin == datetime(
-        2023, 1, 16, 11, 0, 25
+        2023, 1, 16, 11, 0, 25, tzinfo=timezone.utc
     )
     assert df_session["window"].values[0].end == datetime(
-        2023, 1, 16, 11, 0, 33, microsecond=1
+        2023, 1, 16, 11, 0, 33, microsecond=1, tzinfo=timezone.utc
     )
     assert df_session["window_stats"].values[0].count == 8
     assert df_session["window_stats"].values[0].avg_star == 3.125

@@ -1,6 +1,6 @@
 # docsnip imports
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import requests
@@ -107,7 +107,7 @@ class TestUserLivestreamFeatures(unittest.TestCase):
             tier="dev",
         )
         columns = ["uid", "product_id", "seller_id", "timestamp"]
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [1, 1, 1, now - timedelta(days=8)],
             [1, 2, 1, now - timedelta(days=6)],

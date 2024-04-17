@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
@@ -83,8 +83,8 @@ class TestDebugSnips(unittest.TestCase):
         assert df["uid"].tolist()[1:] == [2, 3]
         assert df["city"].tolist()[1:] == ["San Francisco", "New York"]
         assert df["signup_time"].tolist()[1:] == [
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 1, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
         ]
         assert df["country"].tolist()[1:] == ["US", "US"]
 
@@ -136,8 +136,8 @@ class TestDebugSnips(unittest.TestCase):
         assert df["uid"].tolist() == [2, 3]
         assert df["country"].tolist() == ["US", "US"]
         assert df["signup_time"].tolist() == [
-            pd.Timestamp("2021-02-01T00:00:00"),
-            pd.Timestamp("2021-03-01T00:00:00"),
+            pd.Timestamp("2021-02-01T00:00:00", tzinfo=timezone.utc),
+            pd.Timestamp("2021-03-01T00:00:00", tzinfo=timezone.utc),
         ]
         assert df.shape == (2, 3)
 

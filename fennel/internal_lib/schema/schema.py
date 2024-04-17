@@ -453,7 +453,7 @@ def validate_field_in_df(
     elif dtype == schema_proto.DataType(
         timestamp_type=schema_proto.TimestampType()
     ):
-        if df[name].dtype != "datetime64[ns]":
+        if df[name].dtype not in ["datetime64[ns, UTC]"]:
             raise ValueError(
                 f"Field `{name}` is of type timestamp, but the "
                 f"column in the dataframe is of type "

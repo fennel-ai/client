@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from datetime import datetime, timezone
 import pandas as pd
 
 from fennel.testing import mock
@@ -81,7 +80,7 @@ def test_lookup_in_extractor(client):
         datasets=[User],
         featuresets=[UserFeatures, UserFeaturesDerived, UserFeaturesDerived2],
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = pd.DataFrame(
         {
             "uid": [1, 2, 3],

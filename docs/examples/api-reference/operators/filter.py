@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
@@ -77,8 +77,8 @@ class TestFilterSnips(unittest.TestCase):
         assert df["uid"].tolist()[1:] == [2, 3]
         assert df["city"].tolist()[1:] == ["San Francisco", "New York"]
         assert df["signup_time"].tolist()[1:] == [
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 1, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
         ]
 
     @mock

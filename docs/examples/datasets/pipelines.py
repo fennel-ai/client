@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import requests
@@ -80,7 +80,7 @@ def test_transaction_aggregation_example(client):
     client.commit(
         message="msg", datasets=[User, Transaction, UserTransactionsAbroad]
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     dob = now - timedelta(days=365 * 30)
     data = [
         [1, dob, "US", now - timedelta(days=1)],
@@ -170,7 +170,7 @@ def test_fraud(client):
     # /docsnip
     # # Sync the dataset
     client.commit(message="msg", datasets=[Activity, FraudActivity])
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     minute_ago = now - timedelta(minutes=1)
     data = [
         [
@@ -281,7 +281,7 @@ def test_multiple_pipelines(client):
     client.commit(
         message="msg", datasets=[AndroidLogins, IOSLogins, LoginStats]
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         [1, now],
         [1, now - timedelta(days=1)],

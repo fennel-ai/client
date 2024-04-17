@@ -40,7 +40,7 @@ def test_func():
 def test_restrictions(client):
     # docsnip dataset_type_restrictions
     # imports for data types
-    from datetime import datetime
+    from datetime import datetime, timezone
     from fennel.dtypes import oneof, between, regex
 
     # imports for datasets
@@ -64,7 +64,7 @@ def test_restrictions(client):
     # /docsnip
 
     client.commit(message="msg", datasets=[UserInfoDataset])
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 123,

@@ -85,7 +85,7 @@ class UserFeature:
     @outputs("age")
     def get_age(cls, ts: pd.Series, uids: pd.Series):
         dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])  # type: ignore
-        # Using ts instead of datetime.utcnow() to make extract_historical work as of for the extractor
+        # Using ts instead of datetime.now(timezone.utc) to make extract_historical work as of for the extractor
         ages = ts - dobs
         return pd.Series(ages)
 

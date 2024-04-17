@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -92,6 +92,6 @@ class TestRenameSnips(unittest.TestCase):
         assert df["weight_lb"].tolist() == [150, 140, 160]
         assert df["height_in"].tolist() == [63, 60, 58]
         assert df["timestamp"].tolist()[1:] == [
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 1, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
         ]

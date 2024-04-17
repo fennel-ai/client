@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -41,7 +41,10 @@ def test_basic(client):
     # docsnip-highlight end
     # /docsnip
     # do lookup to verify that the rows were logged
-    ts = [datetime(2021, 1, 1, 0, 0, 0), datetime(2021, 2, 1, 0, 0, 0)]
+    ts = [
+        datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+        datetime(2021, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+    ]
     df, found = Transaction.lookup(pd.Series(ts), uid=pd.Series([1, 2]))
     assert found.tolist() == [True, True]
     assert df["uid"].tolist() == [1, 2]

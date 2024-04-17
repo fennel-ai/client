@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Union
 
 import pandas as pd
@@ -965,9 +965,9 @@ def test_invalid_assign_schema(client):
             "latitude": [1.12312, 2.3423423, 2.24343],
             "longitude": [1.12312, 2.3423423, 2.24343],
             "created": [
-                datetime.utcfromtimestamp(1672858163),
-                datetime.utcfromtimestamp(1672858163),
-                datetime.utcfromtimestamp(1672858163),
+                datetime.fromtimestamp(1672858163, tz=timezone.utc),
+                datetime.fromtimestamp(1672858163, tz=timezone.utc),
+                datetime.fromtimestamp(1672858163, tz=timezone.utc),
             ],
         }
     )

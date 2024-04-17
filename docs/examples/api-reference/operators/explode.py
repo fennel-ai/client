@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from typing import List, Optional
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -82,9 +82,9 @@ class TestExplodeSnips(unittest.TestCase):
         assert df["sku"].tolist() == [1, 2, None]
         assert df["price"].tolist() == [10.1, 20.0, None]
         assert df["timestamp"].tolist() == [
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 1, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
         ]
 
     @mock
