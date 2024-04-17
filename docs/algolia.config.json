@@ -28,5 +28,10 @@
 	},
     "selectors_exclude": [
         "#sidenav"
-    ]
+    ],
+    "custom_settings": {
+        "attributesForFaceting": [
+            "version"
+        ]
+    }
 }

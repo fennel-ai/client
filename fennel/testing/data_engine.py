@@ -59,17 +59,23 @@ def _preproc_df(
 
 
 @dataclass
+class _SrcInfo:
+    webhook_endpoint: str
+    preproc: Optional[Dict[str, connectors.PreProcValue]]
+    bounded: bool
+    idleness: Optional[Duration]
+    prev_log_time: Optional[datetime] = None
+
+
+@dataclass
 class _Dataset:
     fields: List[str]
     is_source_dataset: bool
     core_dataset: CoreDataset
     dataset: Dataset
-    bounded: bool
+    srcs: List[_SrcInfo]
     data: Optional[pd.DataFrame] = None
-    pre_proc: Optional[Dict[str, connectors.PreProcValue]] = None
     aggregated_datasets: Optional[Dict[str, Any]] = None
-    idleness: Optional[Duration] = None
-    prev_log_time: Optional[datetime] = None
     erased_keys: List[Dict[str, Any]] = field(default_factory=list)
 
     def empty_df(self):
@@ -190,11 +196,9 @@ class DataEngine(object):
         for dataset in datasets:
             core_dataset = dataset_to_proto(dataset)
             if hasattr(dataset, connectors.SOURCE_FIELD):
-                pre_proc, bounded, idleness = self._process_data_connector(
-                    dataset, tier
-                )
+                srcs = self._process_data_connector(dataset, tier)
             else:
-                pre_proc, bounded, idleness = None, False, None
+                srcs = []
 
             is_source_dataset = hasattr(dataset, connectors.SOURCE_FIELD)
             fields = [f.name for f in dataset.fields]
@@ -205,10 +209,7 @@ class DataEngine(object):
                     is_source_dataset=is_source_dataset,
                     core_dataset=core_dataset,
                     dataset=dataset,
-                    bounded=bounded,
-                    pre_proc=pre_proc,
-                    idleness=idleness,
-                    prev_log_time=datetime.now(timezone.utc),
+                    srcs=srcs,
                     erased_keys=[],
                 )
 
@@ -264,13 +265,24 @@ class DataEngine(object):
         for ds in self.webhook_to_dataset_map[webhook_endpoint]:
             try:
                 schema = self.datasets[ds].core_dataset.dsschema
-                if self.datasets[ds].pre_proc is not None:
-                    pre_proc_cols = list(
-                        self.datasets[ds].pre_proc.keys()  # type: ignore
-                    )
-                else:
-                    pre_proc_cols = []
-                df = cast_df_to_schema(df, schema, pre_proc_cols)
+                preproc = [
+                    x.preproc
+                    for x in self.datasets[ds].srcs
+                    if x.webhook_endpoint == webhook_endpoint
+                ]
+
+                if len(preproc) > 0 and preproc[0] is not None:
+                    assert (
+                        len(preproc) == 1
+                    ), f"Multiple preproc found for {ds} and {webhook_endpoint}"
+                    try:
+                        df = _preproc_df(df, preproc[0])
+                    except ValueError as e:
+                        raise ValueError(
+                            f"Error using pre_proc for dataset `{ds}`: {str(e)}",
+                        )
+                df = cast_df_to_schema(df, schema)
+
             except Exception as e:
                 raise Exception(
                     f"Schema validation failed during data insertion to `{ds}`: {str(e)}",
@@ -307,36 +319,6 @@ class DataEngine(object):
         self._filter_erase_key(dataset_name)
 
         return FakeResponse(200, "OK")
-
-    # def lookup(self, dataset_name: str, ts: pd.Series, *args, **kwargs):
-    #     if dataset_name not in self.datasets:
-    #         raise KeyError(f"Dataset: {dataset_name} not found")
-    #
-    #     fennel.datasets.datasets.dataset_lookup = partial(
-    #         self._dataset_lookup_impl,
-    #         [dataset_name],
-    #         None,
-    #         True,
-    #     )
-    #
-    #     timestamps = cast_col_to_dtype(
-    #         ts,
-    #         schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
-    #     )
-    #
-    #     dataframe, found = self.datasets[dataset_name].dataset.lookup(
-    #         timestamps,
-    #         *args,
-    #         **kwargs,
-    #     )
-    #
-    #     fennel.datasets.datasets.dataset_lookup = partial(
-    #         self._dataset_lookup_impl,
-    #         None,
-    #         None,
-    #         True,
-    #     )
-    #     return dataframe, found
 
     def get_dataset_lookup_impl(
         self,
@@ -558,12 +540,24 @@ class DataEngine(object):
             # Changing dtype of Struct to str for making it hashable
             if col in right_df and right_df[col].dtype == object:
                 cols_to_replace.append(col)
-                right_df[f"{col}__internal"] = right_df[col].apply(
-                    lambda x: str(dict(x))
-                )
-                keys[f"{col}__internal"] = keys[col].apply(
-                    lambda x: str(dict(x))
-                )
+                # Python v3.9 and 3.10 have different behavior for str(dict(x))
+                # as compared to 3.11 and 3.12.
+                # So we first try to convert the column to str directly, and
+                # if that fails, we conditionally check if the column is a dict.
+                try:
+                    right_df[f"{col}__internal"] = right_df[col].apply(
+                        lambda x: str(dict(x))
+                    )
+                    keys[f"{col}__internal"] = keys[col].apply(
+                        lambda x: str(dict(x))
+                    )
+                except Exception:
+                    right_df[f"{col}__internal"] = right_df[col].apply(
+                        lambda x: str(dict(x)) if isinstance(x, dict) else x
+                    )
+                    keys[f"{col}__internal"] = keys[col].apply(
+                        lambda x: str(dict(x)) if isinstance(x, dict) else x
+                    )
 
         right_df = right_df.drop(columns=cols_to_replace)
         new_join_columns = []
@@ -606,41 +600,32 @@ class DataEngine(object):
         if dataset_name not in self.datasets:
             raise ValueError(f"Dataset `{dataset_name}` not found")
 
-        bounded = self.datasets[dataset_name].bounded
-        prev_log_time = self.datasets[dataset_name].prev_log_time
-        if bounded and prev_log_time:
-            idleness = self.datasets[dataset_name].idleness
-            if not idleness:
-                raise ValueError(
-                    "Idleness parameter should be non-empty for bounded source"
-                )
-            expected_idleness_secs = duration_to_timedelta(
-                idleness
-            ).total_seconds()
-            actual_idleness_secs = (
-                datetime.now(timezone.utc) - prev_log_time
-            ).total_seconds()
-            # Do not log the data if a bounded source is idle for more time than expected
-            if actual_idleness_secs >= expected_idleness_secs:
-                print(
-                    f"Skipping log of dataframe for webhook `{dataset_name}` since the source is closed"
-                )
-                return FakeResponse(200, "OK")
+        for src in self.datasets[dataset_name].srcs:
+            bounded = src.bounded
+            prev_log_time = src.prev_log_time
+            if bounded and prev_log_time:
+                idleness = src.idleness
+                if not idleness:
+                    raise ValueError(
+                        "Idleness parameter should be non-empty for bounded source"
+                    )
+                expected_idleness_secs = duration_to_timedelta(
+                    idleness
+                ).total_seconds()
+                actual_idleness_secs = (
+                    datetime.now(timezone.utc) - prev_log_time
+                ).total_seconds()
+                # Do not log the data if a bounded source is idle for more time than expected
+                if actual_idleness_secs >= expected_idleness_secs:
+                    print(
+                        f"Skipping log of dataframe for webhook `{dataset_name}` since the source is closed"
+                    )
+                    return FakeResponse(200, "OK")
 
         for col in df.columns:
             # If any of the columns is a dictionary, convert it to a frozen dict
             if df[col].apply(lambda x: isinstance(x, dict)).any():
                 df[col] = df[col].apply(lambda x: frozendict(x))
-
-        # If pre_proc for the dataset is set, transform the dataframe using it
-        pre_proc = self.datasets[dataset_name].pre_proc
-        if pre_proc is not None:
-            try:
-                df = _preproc_df(df, pre_proc)
-            except ValueError as e:
-                raise ValueError(
-                    f"Error using pre_proc for dataset `{dataset_name}`: {str(e)}",
-                )
 
         core_dataset = self.datasets[dataset_name].core_dataset
         timestamp_field = self.datasets[dataset_name].dataset.timestamp_field
@@ -749,13 +734,10 @@ class DataEngine(object):
                 dataset_name
             ].dataset.timestamp_field
             self.datasets[dataset_name].data = df.sort_values(timestamp_field)
-            self.datasets[dataset_name].prev_log_time = datetime.now(
-                timezone.utc
-            )
 
     def _process_data_connector(
         self, dataset: Dataset, tier: Optional[str] = None
-    ) -> Tuple[Optional[Dict[str, PreProcValue]], bool, Optional[Duration]]:
+    ) -> List[_SrcInfo]:
         is_source_dataset = hasattr(dataset, connectors.SOURCE_FIELD)
         sinks = getattr(dataset, connectors.SINK_FIELD, [])
 
@@ -767,20 +749,24 @@ class DataEngine(object):
         sources = getattr(dataset, connectors.SOURCE_FIELD)
         sources = sources if isinstance(sources, list) else [sources]
         sources = [x for x in sources if x.tiers.is_entity_selected(tier)]
-        if len(sources) > 1:
-            raise ValueError(
-                f"Dataset `{dataset._name}` has more than one source defined, found {len(sources)} sources"
-            )
+
+        webhook_sources: List[_SrcInfo] = []
         if len(sources) == 0:
-            return None, False, None
-        source = sources[0]
-        if isinstance(source, connectors.WebhookConnector):
-            src = source.data_source
-            webhook_endpoint = f"{src.name}:{source.endpoint}"
-            self.webhook_to_dataset_map[webhook_endpoint].append(dataset._name)
-            return (
-                source.pre_proc,
-                source.bounded,
-                source.idleness,
-            )
-        return None, False, None
+            return webhook_sources
+        for source in sources:
+            if isinstance(source, connectors.WebhookConnector):
+                src = source.data_source
+                webhook_endpoint = f"{src.name}:{source.endpoint}"
+                self.webhook_to_dataset_map[webhook_endpoint].append(
+                    dataset._name
+                )
+                webhook_sources.append(
+                    _SrcInfo(
+                        webhook_endpoint,
+                        source.pre_proc,
+                        source.bounded,
+                        source.idleness,
+                        datetime.now(timezone.utc),
+                    )
+                )
+        return webhook_sources

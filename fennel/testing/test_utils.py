@@ -168,7 +168,8 @@ def proto_to_dtype(proto_dtype) -> str:
 
 
 def cast_df_to_schema(
-    df: pd.DataFrame, dsschema: DSSchema, pre_proc_cols: List[str] = []
+    df: pd.DataFrame,
+    dsschema: DSSchema,
 ) -> pd.DataFrame:
     # Handle fields in keys and values
     fields = list(dsschema.keys.fields) + list(dsschema.values.fields)
@@ -176,8 +177,6 @@ def cast_df_to_schema(
     df = df.reset_index(drop=True)
     for f in fields:
         if f.name not in df.columns:
-            if f.name in pre_proc_cols:
-                continue
             raise ValueError(
                 f"Field `{f.name}` not found in dataframe while logging to dataset"
             )
@@ -190,8 +189,6 @@ def cast_df_to_schema(
                 f"Failed to cast data logged to column `{f.name}` of type `{proto_to_dtype(f.dtype)}`: {e}"
             )
     if dsschema.timestamp not in df.columns:
-        if dsschema.timestamp in pre_proc_cols:
-            return df
         raise ValueError(
             f"Timestamp column `{dsschema.timestamp}` not found in dataframe while logging to dataset"
         )
