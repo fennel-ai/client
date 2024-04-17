@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Sum, index
-from fennel.featuresets import featureset, feature as F, extractor
-from fennel.lib import meta, inputs, outputs
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field, pipeline, Dataset, Sum
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
@@ -13,7 +13,7 @@ webhook = Webhook(name="fennel_webhook")
 
 @meta(owner="henry@fennel.ai")
 @source(
-    webhook.endpoint("CreditCardTransactions"), cdc="append", disorder="14d"
+    webhook.endpoint("CreditCardTransactions"), cdc="upsert", disorder="14d"
 )
 @dataset
 class CreditCardTransactions:
@@ -53,8 +53,7 @@ class Regions:
 
 
 @meta(owner="henry@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class UserTransactionSums:
     cc_num: int = field(key=True)  # needs to be key for groubpby
     trans_date_trans_time: datetime = field(timestamp=True)
@@ -78,7 +77,7 @@ class UserTransactionSumsFeatures:
     sum_amt_7d: float
 
     # If come from different featuresets have to include full path x.y
-    @extractor(depends_on=[UserTransactionSums])  # type: ignore
+    @extractor(deps=[UserTransactionSums])  # type: ignore
     @inputs("cc_num")
     @outputs("sum_amt_1d", "sum_amt_7d")
     def my_extractor(cls, ts: pd.Series, cc_nums: pd.Series):
@@ -151,7 +150,7 @@ def test_fraud_detection_pipeline(client):
     region_to_state = region_to_state.rename(columns={0: "region"}).reset_index(
         drop=True
     )
-    region_to_state.insert(0, "created_at", datetime.utcnow())
+    region_to_state.insert(0, "created_at", datetime.now(timezone.utc))
     # Upload transaction_data dataframe to the Transactions dataset on the mock client
     transaction_data_sample = pd.read_csv(
         "fennel/client_tests/data/fraud_sample.csv"

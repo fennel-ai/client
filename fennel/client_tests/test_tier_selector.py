@@ -4,10 +4,10 @@ from typing import List
 import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
-from fennel.datasets import dataset, pipeline, field, Dataset, Sum, index
-from fennel.featuresets import featureset, extractor, feature as F
-from fennel.lib import meta, inputs, outputs
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, pipeline, field, Dataset, Sum
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
@@ -20,8 +20,7 @@ webhook = Webhook(name="fennel_webhook")
 @source(
     webhook.endpoint("MovieInfo2"), cdc="append", disorder="14d", tier="staging"
 )
-@index
-@dataset
+@dataset(index=True)
 class MovieInfo:
     title: str = field(key=True)
     actors: List[str]  # can be an empty list
@@ -47,8 +46,7 @@ class TicketSale:
 
 
 @meta(owner="abhay@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class ActorStats:
     name: str = field(key=True)
     revenue: int
@@ -108,7 +106,7 @@ class RequestFeatures:
 class ActorFeatures:
     revenue: int
 
-    @extractor(depends_on=[ActorStats], tier="prod")  # type: ignore
+    @extractor(deps=[ActorStats], tier="prod")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs("revenue")
     def extract_revenue(cls, ts: pd.Series, name: pd.Series):
@@ -116,7 +114,7 @@ class ActorFeatures:
         df = df.fillna(0)
         return df["revenue"]
 
-    @extractor(depends_on=[ActorStats], tier="staging")  # type: ignore
+    @extractor(deps=[ActorStats], tier="staging")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs("revenue")
     def extract_revenue2(cls, ts: pd.Series, name: pd.Series):

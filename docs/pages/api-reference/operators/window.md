@@ -5,7 +5,7 @@ status: published
 ---
 ### Window
 Operator to do aggregation of events into windows based on their timestamps. 
-Window operator must always be preceded by a [groupby](/api-reference/operators#groupby) operator.
+Window operator must always be preceded by a [groupby](/api-reference/operators/groupby) operator.
 
 #### Parameters
 

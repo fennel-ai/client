@@ -1,23 +1,22 @@
-import pandas as pd
-import pytest
 from datetime import datetime
-from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional
 
-from fennel.datasets import dataset, field, index
+import pandas as pd
+import pytest
+from google.protobuf.json_format import ParseDict  # type: ignore
+
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
-from fennel.connectors import source, Webhook
-
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -50,7 +49,7 @@ def test_invalid_multiple_extracts():
                 default=0,
             )
 
-            @extractor(depends_on=[UserInfoDataset])
+            @extractor(deps=[UserInfoDataset])
             @inputs(user_id)
             @outputs(age)
             def get_age(cls, ts: pd.Series, user_id: pd.Series):

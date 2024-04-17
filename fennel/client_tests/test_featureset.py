@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, List
 
 import numpy as np
@@ -7,7 +7,9 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
+from fennel.dtypes import Embedding, struct
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import (
     includes,
@@ -17,8 +19,6 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.dtypes import Embedding, struct
-from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 ################################################################################
@@ -29,9 +29,8 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -57,7 +56,7 @@ class UserInfoSingleExtractor:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")
     @outputs("age", "age_squared", "age_cubed", "is_name_common")
     def get_user_info(cls, ts: pd.Series, user_id: pd.Series):
@@ -98,7 +97,7 @@ class UserInfoMultipleExtractor:
     age_reciprocal: float
     age_doubled: int
 
-    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")
     @outputs("age", "name")
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
@@ -140,7 +139,7 @@ class UserInfoMultipleExtractor:
         # returns a dataframe with extra columns
         return pd.DataFrame([d4, d3, d2]).T
 
-    @extractor(depends_on=[UserInfoDataset], version=2)  # type: ignore
+    @extractor(deps=[UserInfoDataset], version=2)  # type: ignore
     @includes(get_country_geoid)
     @inputs("userid")
     @outputs("country_geoid")
@@ -198,7 +197,7 @@ class TestSimpleExtractor(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -246,9 +245,8 @@ class Velocity:
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("FlightDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("FlightDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class FlightDataset:
     id: int = field(key=True)
     ts: datetime = field(timestamp=True)
@@ -301,7 +299,7 @@ class TestDerivedExtractor(unittest.TestCase):
                 FlightRequest,
             ],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -393,7 +391,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -479,7 +477,7 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
             ],
         )
         client.sleep()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],
@@ -559,10 +557,9 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 
 @meta(owner="aditya@fennel.ai")
 @source(
-    webhook.endpoint("DocumentContentDataset"), disorder="14d", cdc="append"
+    webhook.endpoint("DocumentContentDataset"), disorder="14d", cdc="upsert"
 )
-@index
-@dataset
+@dataset(index=True)
 class DocumentContentDataset:
     doc_id: int = field(key=True)
     bert_embedding: Embedding[4]
@@ -579,7 +576,7 @@ class DocumentFeatures:
     fast_text_embedding: Embedding[3]
     num_words: int
 
-    @extractor(depends_on=[DocumentContentDataset])  # type: ignore
+    @extractor(deps=[DocumentContentDataset])  # type: ignore
     @inputs("doc_id")
     @outputs("num_words", "bert_embedding", "fast_text_embedding")
     def get_doc_features(cls, ts: pd.Series, doc_id: pd.Series):
@@ -611,7 +608,7 @@ class TestDocumentDataset(unittest.TestCase):
             datasets=[DocumentContentDataset],
             featuresets=[DocumentFeatures],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, np.array([1, 2, 3, 4]), np.array([1, 2, 3]), 10, now],
             [
@@ -665,7 +662,7 @@ class TestDocumentDataset(unittest.TestCase):
         if client.is_integration_client():
             return
 
-        yesterday = datetime.utcnow() - timedelta(days=1)
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
 
         feature_df = client.query_offline(
             outputs=[DocumentFeatures],

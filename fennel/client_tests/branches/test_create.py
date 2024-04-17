@@ -1,21 +1,20 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
 
 from fennel._vendor import requests
-from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, feature as F
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
+from fennel.featuresets import featureset, feature as F
 from fennel.testing import mock
 
 wh = Webhook(name="fennel_webhook")
 __owner__ = "nitin@fennel.com"
 
 
-@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -110,7 +109,7 @@ def test_log(client):
     )
     assert resp.status_code == 200, resp.json()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,

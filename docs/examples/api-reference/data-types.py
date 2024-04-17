@@ -40,7 +40,7 @@ def test_func():
 def test_restrictions(client):
     # docsnip dataset_type_restrictions
     # imports for data types
-    from datetime import datetime
+    from datetime import datetime, timezone
     from fennel.dtypes import oneof, between, regex
 
     # imports for datasets
@@ -51,7 +51,7 @@ def test_restrictions(client):
     webhook = Webhook(name="fennel_webhook")
 
     @meta(owner="test@test.com")
-    @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+    @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
@@ -64,7 +64,7 @@ def test_restrictions(client):
     # /docsnip
 
     client.commit(message="msg", datasets=[UserInfoDataset])
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 123,

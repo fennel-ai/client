@@ -1,7 +1,7 @@
 import copy
 import types
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, Dict, List
 
 import numpy as np
@@ -253,7 +253,7 @@ class Executor(Visitor):
         # is the timestamp below which we will not consider any rows from the right dataframe for joins
         def sub_within_low(row):
             if obj.within[0] == "forever":
-                return datetime.min
+                return datetime.min.replace(tzinfo=timezone.utc)
             else:
                 return row[left_timestamp_field] - duration_to_timedelta(
                     obj.within[0]
@@ -449,17 +449,12 @@ class Executor(Visitor):
         df = input_ret.df
         try:
             df[obj.column] = obj.func(df)
-        except Exception as e:
-            raise Exception(
-                f"Error in assign node for column `{obj.column}` for pipeline "
-                f"`{self.cur_pipeline_name}`, {e}"
-            )
-        # Check the schema of the column
-        try:
             field = schema_proto.Field(
                 name=obj.column, dtype=get_datatype(obj.output_type)
             )
+            # Check the schema of the column
             validate_field_in_df(field, df, self.cur_pipeline_name)
+            df = _cast_primitive_dtype_columns(df, obj)
         except Exception as e:
             raise Exception(
                 f"Error in assign node for column `{obj.column}` for pipeline "
@@ -687,9 +682,13 @@ class Executor(Visitor):
                         windows_map[end] = (
                             WindowStruct(
                                 event_start=pd.Timestamp(
-                                    end - duration, unit="s"
+                                    end - duration,
+                                    unit="s",
+                                    tzinfo=timezone.utc,
                                 ),
-                                event_end=pd.Timestamp(end, unit="s"),
+                                event_end=pd.Timestamp(
+                                    end, unit="s", tzinfo=timezone.utc
+                                ),
                             ),
                             [],
                         )

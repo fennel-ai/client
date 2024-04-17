@@ -6,12 +6,12 @@ import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.featureset_pb2 as fs_proto
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib import meta, inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
@@ -23,9 +23,8 @@ webhook = Webhook(name="fennel_webhook")
     tags=["test"],
     deprecated=True,
 )
-@index
-@dataset
-@source(webhook.endpoint("UserInfoDataset"), cdc="append", disorder="14d")
+@source(webhook.endpoint("UserInfoDataset"), cdc="upsert", disorder="14d")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -99,7 +98,7 @@ def test_simple_dataset():
 def test_complex_dataset_with_fields():
     @dataset(history="1y")
     @source(
-        webhook.endpoint("YextUserInfoDataset"), disorder="14d", cdc="append"
+        webhook.endpoint("YextUserInfoDataset"), disorder="14d", cdc="upsert"
     )
     @meta(owner="daniel@yext.com", description="test")
     class YextUserInfoDataset:
@@ -207,6 +206,7 @@ def test_complex_dataset_with_fields():
                 },
                 "dataset": "YextUserInfoDataset",
                 "dsVersion": 1,
+                "cdc": "Upsert",
                 "disorder": "1209600s",
             }
         ],
@@ -333,21 +333,21 @@ def test_featureset_with_extractors():
         age: int = F().meta(owner="aditya@fennel.ai")
         income: int
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @meta(owner="a@xyz.com", description="top_meta")
         @inputs(User.id)
         @outputs("userid", "home_geoid")
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs(User.id)
         @outputs("gender", "age")
         @meta(owner="b@xyz.com", description="middle_meta")
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs(User.id)
         @outputs("income")
         @meta(owner="c@xyz.com", description="bottom_meta")

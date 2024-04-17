@@ -1,14 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import pandas as pd
 import requests
 
 # docsnip datasets
-from fennel.datasets import dataset, field, pipeline, Dataset, index
-from fennel.datasets import Count, Sum, Average
-from fennel.lib import includes, meta, inputs, outputs
 from fennel.connectors import source, Webhook
+from fennel.datasets import Count, Sum, Average
+from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.lib import includes, meta, inputs, outputs
 
 __owner__ = "test@test.com"
 webhook = Webhook(name="fennel_webhook")
@@ -23,8 +23,7 @@ class RatingActivity:
     t: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class MovieRating:
     movie: str = field(key=True)
     rating: float
@@ -36,9 +35,9 @@ class MovieRating:
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
-            Count(window="7d", into_field="num_ratings"),
-            Sum(window="28d", of="rating", into_field="sum_ratings"),
-            Average(window="12h", of="rating", into_field="rating"),
+            num_ratings=Count(window="7d"),
+            sum_ratings=Sum(window="28d", of="rating"),
+            rating=Average(window="12h", of="rating"),
         )
 
 
@@ -59,7 +58,7 @@ class TestDataset(unittest.TestCase):
             message="datasets: add RatingActivity and MovieRating",
             datasets=[MovieRating, RatingActivity],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -163,9 +162,8 @@ def get_country_geoid(country: str) -> int:
 
 # docsnip featuresets_testing_with_dataset
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -186,7 +184,7 @@ class UserInfoMultipleExtractor:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(deps=[UserInfoDataset])
     @inputs("userid")
     @outputs("age", "name")
     def get_user_age_and_name(cls, ts: pd.Series, user_id: pd.Series):
@@ -208,7 +206,7 @@ class UserInfoMultipleExtractor:
         ]
         return df
 
-    @extractor(depends_on=[UserInfoDataset])
+    @extractor(deps=[UserInfoDataset])
     @includes(get_country_geoid)
     @inputs("userid")
     @outputs("country_geoid")
@@ -227,7 +225,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
             datasets=[UserInfoDataset],
             featuresets=[UserInfoMultipleExtractor],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [18232, "John", 32, "USA", now],
             [18234, "Monica", 24, "Chile", now],

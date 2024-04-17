@@ -1,4 +1,5 @@
 import dataclasses
+from datetime import datetime
 from typing import Any, Union
 
 import pandas as pd
@@ -61,3 +62,23 @@ def as_json(self):
         value = getattr(self, field.name)
         result[field.name] = to_dict(value)
     return result
+
+
+def parse_datetime(value: Union[int, str, datetime]) -> datetime:
+    if isinstance(value, int):
+        try:
+            value = pd.to_datetime(value, unit="s")
+        except ValueError:
+            try:
+                value = pd.to_datetime(value, unit="ms")
+            except ValueError:
+                value = pd.to_datetime(value, unit="us")
+    else:
+        value = pd.to_datetime(value)
+
+    if value.tzinfo is not None:  # type: ignore
+        if str(value.tzinfo) != "UTC":  # type: ignore
+            value = value.tz_convert("UTC")  # type: ignore
+    else:
+        value = value.tz_localize("UTC")  # type: ignore
+    return value  # type: ignore

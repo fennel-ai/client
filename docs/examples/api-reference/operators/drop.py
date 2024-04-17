@@ -1,8 +1,9 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -12,13 +13,13 @@ class TestFilterSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, index
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)
@@ -31,8 +32,7 @@ class TestFilterSnips(unittest.TestCase):
             gender: str
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Dropped:
             uid: int = field(key=True)
             gender: str
@@ -100,8 +100,8 @@ class TestFilterSnips(unittest.TestCase):
         assert df["uid"].tolist() == [1, 2, 3]
         assert df["gender"].tolist() == ["M", "F", "M"]
         assert df["timestamp"].tolist()[1:] == [
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 1, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
         ]
 
     @mock

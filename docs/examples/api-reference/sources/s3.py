@@ -22,13 +22,14 @@ def test_s3_source_prefix(client):
     )
     # docsnip-highlight end
 
-    # docsnip-highlight next-line
+    # docsnip-highlight start
     @source(
         s3.bucket("datalake", prefix="user"),
         every="1h",
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
     )
+    # docsnip-highlight end
     @dataset
     class User:
         uid: int = field(key=True)
@@ -53,13 +54,14 @@ def test_s3_delta(client):
         aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
     )
 
-    # docsnip-highlight next-line
+    # docsnip-highlight start
     @source(
         s3.bucket("data", prefix="user", format="delta"),
         every="1h",
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
     )
+    # docsnip-highlight end
     @dataset
     class User:
         uid: int = field(key=True)
@@ -84,13 +86,14 @@ def test_s3_hudi(client):
         aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
     )
 
-    # docsnip-highlight next-line
+    # docsnip-highlight start
     @source(
         s3.bucket("data", prefix="user", format="hudi"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1h",
     )
+    # docsnip-highlight end
     @dataset
     class User:
         uid: int = field(key=True)
@@ -122,7 +125,7 @@ def test_s3_source_path(client):
     # docsnip-highlight end
 
     # docsnip-highlight next-line
-    @source(bucket, disorder="14d", cdc="append", every="1h")
+    @source(bucket, disorder="14d", cdc="upsert", every="1h")
     @dataset
     class User:
         uid: int = field(key=True)

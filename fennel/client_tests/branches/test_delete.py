@@ -1,21 +1,20 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
 
 from fennel._vendor import requests
-from fennel.datasets import dataset, field, index
-from fennel.featuresets import featureset, feature as F
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
+from fennel.featuresets import featureset, feature as F
 from fennel.testing import mock
 
 wh = Webhook(name="fennel_webhook")
 __owner__ = "nitin@fennel.com"
 
 
-@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -33,12 +32,12 @@ class Request:
 
 @featureset
 class UserInfoFeatureset:
-    user_id: int = F(Request.user_id)  # type: ignore
-    name: str = F(UserInfoDataset.name, default="None")  # type: ignore
-    age: int = F(UserInfoDataset.age, default=0)  # type: ignore
-    gender: str = F(UserInfoDataset.gender, default="None")  # type: ignore
-    country_code: int = F(UserInfoDataset.country_code, default=0)  # type: ignore
-    email: str = F(UserInfoDataset.email, default="None")  # type: ignore
+    user_id: int = F(Request.user_id)
+    name: str = F(UserInfoDataset.name, default="None")
+    age: int = F(UserInfoDataset.age, default=0)
+    gender: str = F(UserInfoDataset.gender, default="None")
+    country_code: int = F(UserInfoDataset.country_code, default=0)
+    email: str = F(UserInfoDataset.email, default="None")
 
 
 @pytest.mark.integration
@@ -78,7 +77,7 @@ def test_complex_delete(client):
     )
     client.clone_branch(name="test-branch", from_branch="main")
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,

@@ -1,11 +1,9 @@
-import pytest
 import unittest
+from datetime import datetime, timezone
 from typing import Optional
-from datetime import datetime
 
 import pandas as pd
 
-from fennel.datasets import index
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -21,15 +19,14 @@ class TestDebugSnips(unittest.TestCase):
         webhook = Webhook(name="webhook")
 
         # docsnip basic
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)
             city: str
             signup_time: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Processed:
             uid: int = field(key=True)
             city: str
@@ -86,8 +83,8 @@ class TestDebugSnips(unittest.TestCase):
         assert df["uid"].tolist()[1:] == [2, 3]
         assert df["city"].tolist()[1:] == ["San Francisco", "New York"]
         assert df["signup_time"].tolist()[1:] == [
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 1, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
         ]
         assert df["country"].tolist()[1:] == ["US", "US"]
 
@@ -101,7 +98,7 @@ class TestDebugSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)
@@ -139,21 +136,20 @@ class TestDebugSnips(unittest.TestCase):
         assert df["uid"].tolist() == [2, 3]
         assert df["country"].tolist() == ["US", "US"]
         assert df["signup_time"].tolist() == [
-            pd.Timestamp("2021-02-01T00:00:00"),
-            pd.Timestamp("2021-03-01T00:00:00"),
+            pd.Timestamp("2021-02-01T00:00:00", tzinfo=timezone.utc),
+            pd.Timestamp("2021-03-01T00:00:00", tzinfo=timezone.utc),
         ]
         assert df.shape == (2, 3)
 
     @mock
     def test_astype(self, client):
-        from fennel.datasets import dataset, field, pipeline, Dataset
-        from fennel.lib.schema import inputs
+        from fennel.datasets import dataset, field
         from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
         # docsnip astype
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)

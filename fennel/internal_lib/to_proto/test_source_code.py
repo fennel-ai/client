@@ -3,15 +3,15 @@ from typing import Optional, List
 
 import pandas as pd
 
-from fennel.datasets import dataset, field, Dataset, pipeline, Sum, index
-from fennel.featuresets import featureset, feature as F, extractor
-from fennel.lib import includes, meta, inputs, outputs
+from fennel.datasets import dataset, field, Dataset, pipeline, Sum
+from fennel.featuresets import featureset, extractor
 from fennel.internal_lib.to_proto.source_code import (
     get_featureset_core_code,
     get_dataset_core_code,
     lambda_to_python_regular_func,
     remove_source_decorator,
 )
+from fennel.lib import includes, meta, inputs, outputs
 
 
 @meta(owner="me@fennel.ai")
@@ -65,8 +65,7 @@ class UserAgeAggregated:
         )
 
 
-@index
-@dataset
+@dataset(index=True)
 class User:
     uid: int = field(key=True)
     dob: datetime
@@ -86,11 +85,11 @@ class UserFeature:
     @outputs("age")
     def get_age(cls, ts: pd.Series, uids: pd.Series):
         dobs = User.lookup(ts=ts, uid=uids, fields=["dob"])  # type: ignore
-        # Using ts instead of datetime.utcnow() to make extract_historical work as of for the extractor
+        # Using ts instead of datetime.now(timezone.utc) to make extract_historical work as of for the extractor
         ages = ts - dobs
         return pd.Series(ages)
 
-    @extractor(depends_on=[User])  # type: ignore
+    @extractor(deps=[User])  # type: ignore
     @inputs("uid")
     @outputs("country")
     def get_country(cls, ts: pd.Series, uids: pd.Series):
@@ -101,8 +100,7 @@ class UserFeature:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -132,7 +130,7 @@ class UserInfoExtractor:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @extractor(deps=[UserInfoDataset])  # type: ignore
     @includes(power_4, cube)
     @inputs("userid")
     @outputs("age", "age_power_four", "age_cubed", "is_name_common")
@@ -324,7 +322,7 @@ class DocumentsMeta:
 
     example_2 = """
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True)

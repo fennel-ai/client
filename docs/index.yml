@@ -13,9 +13,9 @@ sidebar:
     pages:
       - "concepts/introduction"
       - "concepts/source"
-      - "concepts/sink"
       - "concepts/dataset"
       - "concepts/pipeline"
+      - "concepts/sink"
       - "concepts/featureset"
       - "concepts/branch"
 
@@ -65,6 +65,7 @@ sidebar:
       - "observability/grafana"
       - "observability/newrelic"
       - "observability/alerting"
+      - "observability/lineage"
 
   - slug: "useful-tips"
     title: "Useful Tips"

@@ -1,8 +1,8 @@
-import pytest
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
+import pytest
 
 from fennel.testing import mock
 
@@ -13,13 +13,13 @@ class TestSelectSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, index
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("User"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
         @dataset
         class User:
             uid: int = field(key=True)
@@ -30,8 +30,7 @@ class TestSelectSnips(unittest.TestCase):
             gender: str
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Selected:
             uid: int = field(key=True)
             weight: float
@@ -98,8 +97,8 @@ class TestSelectSnips(unittest.TestCase):
         assert df["weight"].tolist() == [150, 140, 160]
         assert df["height"].tolist() == [63, 60, 58]
         assert df["timestamp"].tolist()[1:] == [
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 1, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
         ]
 
     @mock

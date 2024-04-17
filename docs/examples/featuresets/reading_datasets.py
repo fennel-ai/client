@@ -1,12 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import pandas as pd
+
 from fennel.testing import mock
 
 __owner__ = "ml-team@fennel.ai"
 
 
 # docsnip featuresets_reading_datasets
-from fennel.datasets import dataset, field, index
+from fennel.datasets import dataset, field
 from fennel.connectors import source, Webhook
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import inputs, outputs
@@ -14,10 +15,9 @@ from fennel.lib import inputs, outputs
 webhook = Webhook(name="fennel_webhook")
 
 
-@source(webhook.endpoint("User"), disorder="14d", cdc="append")
+@source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
 # docsnip-highlight start
-@index
-@dataset
+@dataset(index=True)
 # docsnip-highlight end
 class User:  # docsnip-highlight
     uid: int = field(key=True)
@@ -30,7 +30,7 @@ class UserFeatures:
     uid: int
     name: str
 
-    @extractor(depends_on=[User])  # docsnip-highlight
+    @extractor(deps=[User])  # docsnip-highlight
     @inputs("uid")
     @outputs("name")
     def func(cls, ts: pd.Series, uids: pd.Series):
@@ -80,7 +80,7 @@ def test_lookup_in_extractor(client):
         datasets=[User],
         featuresets=[UserFeatures, UserFeaturesDerived, UserFeaturesDerived2],
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = pd.DataFrame(
         {
             "uid": [1, 2, 3],

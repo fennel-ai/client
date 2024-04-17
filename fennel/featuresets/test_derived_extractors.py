@@ -1,25 +1,24 @@
 import json
-import pandas as pd
 from datetime import datetime
-from google.protobuf.json_format import ParseDict  # type: ignore
 from typing import Optional
 
+import pandas as pd
+from google.protobuf.json_format import ParseDict  # type: ignore
+
 import fennel.gen.featureset_pb2 as fs_proto
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
+from fennel.dtypes import struct
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
-from fennel.dtypes import struct
-from fennel.connectors import source, Webhook
-
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -72,7 +71,7 @@ def test_valid_derived_extractors():
         # optional lookup derived feature
         optional_nickname: Optional[str] = F(UserInfoDataset.nickname)
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs("age_years")
         @outputs("age_group")
         def get_age_group(cls, ts: pd.Series, age: pd.Series):

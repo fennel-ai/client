@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 from fennel.testing import mock
@@ -74,8 +74,8 @@ class TestDedupSnips(unittest.TestCase):
         assert df["uid"].tolist() == [1, 2]
         assert df["amount"].tolist() == [10, 20]
         assert df["timestamp"].tolist() == [
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 2, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
         ]
 
     @mock
@@ -144,6 +144,6 @@ class TestDedupSnips(unittest.TestCase):
         assert df["uid"].tolist() == [1, 2]
         assert df["amount"].tolist() == [10, 20]
         assert df["timestamp"].tolist() == [
-            datetime(2021, 1, 1, 0, 0, 0),
-            datetime(2021, 1, 2, 0, 0, 0),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
         ]

@@ -1,23 +1,22 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 import pandas as pd
 import pytest
-
 import fennel._vendor.requests as requests
 from fennel import LastK
-from fennel.datasets import dataset, field, Dataset, pipeline, Count, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field, Dataset, pipeline, Count
+from fennel.dtypes import regex, oneof
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import meta, inputs, outputs
-from fennel.dtypes import regex, oneof
-from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="data-eng@myspace.com")
-@source(webhook.endpoint("UserInfo"), cdc="append", disorder="14d")
+@source(webhook.endpoint("UserInfo"), cdc="upsert", disorder="14d")
 @dataset
 class UserInfo:
     user_id: str = field(key=True)
@@ -30,9 +29,8 @@ class UserInfo:
     timestamp: datetime
 
 
-@source(webhook.endpoint("PostInfo"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("PostInfo"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 @meta(owner="data-eng@myspace.com")
 class PostInfo:
     title: str
@@ -51,8 +49,7 @@ class ViewData:
 
 
 @meta(owner="ml-eng@myspace.com")
-@index
-@dataset
+@dataset(index=True)
 class CityInfo:
     city: str = field(key=True)
     gender: oneof(str, ["Female", "Male"]) = field(key=True)  # type: ignore
@@ -67,9 +64,8 @@ class CityInfo:
         )
 
 
-@index
 @meta(owner="ml-eng@myspace.com")
-@dataset
+@dataset(index=True)
 class UserViewsDataset:
     user_id: str = field(key=True)
     num_views: int
@@ -83,9 +79,8 @@ class UserViewsDataset:
         )
 
 
-@index
 @meta(owner="ml-eng@myspace.com")
-@dataset
+@dataset(index=True)
 class UserCategoryDataset:
     user_id: str = field(key=True)
     category: str = field(key=True)
@@ -103,9 +98,8 @@ class UserCategoryDataset:
         )
 
 
-@index
 @meta(owner="ml-eng@myspace.com")
-@dataset
+@dataset(index=True)
 class LastViewedPost:
     user_id: str = field(key=True)
     post_id: int
@@ -117,9 +111,8 @@ class LastViewedPost:
         return view_data.groupby("user_id").latest()
 
 
-@index
 @meta(owner="ml-eng@myspace.com")
-@dataset
+@dataset(index=True)
 class LastViewedPostByAgg:
     user_id: str = field(key=True)
     post_id: List[int]
@@ -161,7 +154,7 @@ class UserFeatures:
         LastViewedPostByAgg.post_id, default=[-1]  # type: ignore
     )
 
-    @extractor(depends_on=[UserViewsDataset])  # type: ignore
+    @extractor(deps=[UserViewsDataset])  # type: ignore
     @inputs(Request.user_id)
     @outputs("num_views")
     def extract_user_views(cls, ts: pd.Series, user_ids: pd.Series):
@@ -170,7 +163,7 @@ class UserFeatures:
 
         return views["num_views"]
 
-    @extractor(depends_on=[UserCategoryDataset, UserViewsDataset])  # type: ignore
+    @extractor(deps=[UserCategoryDataset, UserViewsDataset])  # type: ignore
     @inputs(Request.user_id, Request.category)
     @outputs("category_view_ratio", "num_category_views")
     def extractor_category_view(
@@ -195,6 +188,7 @@ class UserFeatures:
         )
 
 
+@pytest.mark.integration
 @mock
 def test_social_network(client):
     client.commit(
@@ -220,6 +214,17 @@ def test_social_network(client):
     view_data_df["time_stamp"] = view_data_df["time_stamp"].apply(
         lambda x: datetime.strptime(x, "%m/%d/%Y %H:%M %p")
     )
+    # # Advance all timestamps by 6 years
+    user_data_df["timestamp"] = pd.to_datetime(
+        user_data_df["timestamp"]
+    ) + pd.DateOffset(years=4)
+    post_data_df["timestamp"] = pd.to_datetime(
+        post_data_df["timestamp"]
+    ) + pd.DateOffset(years=4)
+    view_data_df["time_stamp"] = view_data_df["time_stamp"] + pd.DateOffset(
+        years=4
+    )
+
     res = client.log("fennel_webhook", "UserInfo", user_data_df)
     assert res.status_code == requests.codes.OK, res.json()
 
@@ -227,14 +232,20 @@ def test_social_network(client):
     assert res.status_code == requests.codes.OK, res.json()
     res = client.log("fennel_webhook", "ViewData", view_data_df)
     assert res.status_code == requests.codes.OK, res.json()
-    now = datetime.utcnow()
-    ts = pd.Series([now, now, now])
+
     if client.is_integration_client():
         client.sleep(120)
-    df, found = CityInfo.lookup(
-        ts=ts,
-        city=pd.Series(["Wufeng", "Coyaima", "San Angelo"]),
-        gender=pd.Series(["Male", "Male", "Female"]),
+
+    keys = pd.DataFrame(
+        {
+            "city": ["Wufeng", "Coyaima", "San Angelo"],
+            "gender": ["Male", "Male", "Female"],
+        }
+    )
+
+    df, found = client.lookup(
+        "CityInfo",
+        keys=keys,
     )
     assert found.to_list() == [True, True, True]
 
@@ -257,9 +268,6 @@ def test_social_network(client):
         feature_df["UserFeatures.category_view_ratio"].to_list(),
     ) == ([2, 4], [0, 1], [0.0, 0.25])
 
-    if client.is_integration_client():
-        return
-
     # Assert that both the last_viewed_post and last_viewed_post2 features are extracted correctly
     last_post_viewed = feature_df["UserFeatures.last_viewed_post"].to_list()
     last_post_viewed2 = [
@@ -267,5 +275,8 @@ def test_social_network(client):
     ]
     assert last_post_viewed == [936609766, 735291550]
     assert last_post_viewed2 == last_post_viewed
+
+    if client.is_integration_client():
+        return
     df = client.get_dataset_df("UserCategoryDataset")
     assert df.shape == (1998, 4)

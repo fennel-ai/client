@@ -44,7 +44,7 @@ def test_simple_source():
             cursor="added_on",
         ),
         every="1h",
-        cdc="append",
+        cdc="upsert",
         disorder="20h",
     )
     @meta(owner="test@test.com")
@@ -153,6 +153,7 @@ def test_simple_source():
         "dataset": "UserInfoDataset",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "72000s",
         "cursor": "added_on",
         "timestamp_field": "timestamp",
@@ -189,7 +190,7 @@ def test_simple_source_with_pre_proc():
         ),
         every="1h",
         disorder="20h",
-        cdc="append",
+        cdc="upsert",
         preproc={
             "age": 10,
             "gender": "male",
@@ -303,6 +304,7 @@ def test_simple_source_with_pre_proc():
         "dataset": "UserInfoDataset",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "72000s",
         "cursor": "added_on",
         "timestamp_field": "timestamp",
@@ -420,32 +422,32 @@ def test_tier_selector_on_connector():
     @source(
         mongo.collection("test_table", cursor="added_on"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1h",
         tier=["dev-3"],
     )
     @source(
         redshift.table("test_schema", "test_table", cursor="added_on"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1h",
         tier=["dev-3"],
     )
     @source(
-        kafka.topic("test_topic"), disorder="14d", cdc="append", tier=["dev-2"]
+        kafka.topic("test_topic"), disorder="14d", cdc="upsert", tier=["dev-2"]
     )
     @source(
         mysql.table("users_mysql", cursor="added_on"),
         every="1h",
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         tier=["prod"],
     )
     @source(
         snowflake.table("users_Sf", cursor="added_on"),
         every="1h",
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         tier=["staging"],
     )
     @source(
@@ -455,7 +457,7 @@ def test_tier_selector_on_connector():
         ),
         every="1h",
         disorder="2d",
-        cdc="append",
+        cdc="upsert",
         tier=["dev"],
     )
     @dataset
@@ -533,6 +535,7 @@ def test_tier_selector_on_connector():
         "dsVersion": 1,
         "every": "3600s",
         "cursor": "added_on",
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "timestampField": "timestamp",
     }
@@ -595,6 +598,7 @@ def test_tier_selector_on_connector():
         "dsVersion": 1,
         "every": "3600s",
         "cursor": "added_on",
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "timestampField": "timestamp",
     }
@@ -634,7 +638,7 @@ def test_tier_selector_on_connector():
 def test_kafka_sink_and_source_doesnt_create_extra_extdbs():
     @meta(owner="test@test.com")
     @source(
-        kafka.topic("test_topic"), disorder="14d", cdc="append", tier=["prod"]
+        kafka.topic("test_topic"), disorder="14d", cdc="upsert", tier=["prod"]
     )
     @dataset
     class UserInfoDataset:
@@ -692,7 +696,7 @@ def test_multiple_sinks():
         ),
         every="1h",
         disorder="2d",
-        cdc="append",
+        cdc="upsert",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
         until=datetime.strptime("2022-02-28T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
@@ -793,7 +797,7 @@ def test_multiple_sources():
         ),
         every="1h",
         disorder="2d",
-        cdc="append",
+        cdc="upsert",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
         until=datetime.strptime("2022-02-28T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
@@ -839,6 +843,8 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetS3",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
+        "cdc": "Upsert",
         "disorder": "172800s",
         "startingFrom": "2021-08-10T00:00:00Z",
         "until": "2022-02-28T00:00:00Z",
@@ -865,7 +871,7 @@ def test_multiple_sources():
     @source(
         snowflake.table("users_Sf", cursor="added_on"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1h",
     )
     @dataset
@@ -906,6 +912,7 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetSnowFlake",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
@@ -937,7 +944,7 @@ def test_multiple_sources():
         snowflake.table("users_Sf", cursor="added_on"),
         every="1h",
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         until=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -978,6 +985,7 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetSnowFlakeStartingFrom",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
@@ -1010,7 +1018,7 @@ def test_multiple_sources():
         bigquery.table("users_bq", cursor="added_on"),
         every="1h",
         disorder="2h",
-        cdc="append",
+        cdc="upsert",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -1047,6 +1055,7 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetBigQuery",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "7200s",
         "cursor": "added_on",
         "timestampField": "timestamp",
@@ -1075,7 +1084,7 @@ def test_multiple_sources():
         mysql.table("users_mysql", cursor="added_on"),
         every="1h",
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -1114,6 +1123,7 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetMySql",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
@@ -1143,7 +1153,7 @@ def test_multiple_sources():
     @source(
         kafka.topic("test_topic"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -1183,6 +1193,7 @@ def test_multiple_sources():
         },
         "dataset": "UserInfoDatasetKafka",
         "dsVersion": 1,
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "startingFrom": "2021-08-10T00:00:00Z",
     }
@@ -1265,7 +1276,7 @@ def test_multiple_sources():
     @source(
         kinesis.stream("test_stream", init_position="latest", format="json"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
@@ -1300,6 +1311,7 @@ def test_multiple_sources():
         },
         "dataset": "UserInfoDatasetKinesis",
         "dsVersion": 1,
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "startingFrom": "2021-08-10T00:00:00Z",
     }
@@ -1316,7 +1328,7 @@ def test_multiple_sources():
             format="json",
         ),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         since=datetime(2023, 5, 31),
     )
     @dataset
@@ -1334,7 +1346,7 @@ def test_multiple_sources():
             format="json",
         ),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
     )
     @dataset
     class UserInfoDatasetKinesis2:
@@ -1377,6 +1389,7 @@ def test_multiple_sources():
         },
         "dataset": "UserInfoDatasetKinesis",
         "dsVersion": 1,
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "startingFrom": "2023-05-31T00:00:00Z",
     }
@@ -1403,6 +1416,7 @@ def test_multiple_sources():
         },
         "dataset": "UserInfoDatasetKinesis2",
         "dsVersion": 1,
+        "cdc": "Upsert",
         "disorder": "1209600s",
     }
     expected_source = ParseDict(e, connector_proto.Source())
@@ -1414,7 +1428,7 @@ def test_multiple_sources():
     @source(
         redshift.table("test_schema", "test_table", cursor="added_on"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1h",
     )
     @dataset
@@ -1453,6 +1467,7 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetRedshift",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
@@ -1480,7 +1495,7 @@ def test_multiple_sources():
     @source(
         mongo.collection("test_table", cursor="added_on"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1h",
     )
     @dataset
@@ -1519,6 +1534,7 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetMongo",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
@@ -1550,7 +1566,7 @@ def test_console_source():
             prefix="prod/apac/",
         ),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1h",
     )
     @meta(owner="test@test.com", tags=["test", "yolo"])
@@ -1582,6 +1598,7 @@ def test_console_source():
         "dataset": "UserInfoDataset",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "timestampField": "timestamp",
     }
@@ -1604,7 +1621,7 @@ def test_s3_source_with_path():
             path="prod/data_type=events/*/date=%Y%m%d/hour=%H/*/*.csv",
         ),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1h",
     )
     @meta(owner="test@test.com", tags=["test", "yolo"])
@@ -1636,6 +1653,7 @@ def test_s3_source_with_path():
         "dataset": "UserInfoDataset",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "timestampField": "timestamp",
         "bounded": False,
@@ -1660,7 +1678,7 @@ def test_s3_source_with_path():
             spread="6h",
         ),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
         every="1h",
     )
     @meta(owner="test@test.com", tags=["test", "yolo"])
@@ -1693,6 +1711,7 @@ def test_s3_source_with_path():
         "dataset": "UserInfoDataset",
         "dsVersion": 1,
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "1209600s",
         "timestampField": "timestamp",
     }
@@ -1765,7 +1784,7 @@ def test_bounded_source_with_idleness():
         disorder="20h",
         bounded=True,
         idleness="1h",
-        cdc="append",
+        cdc="upsert",
     )
     @meta(owner="test@test.com")
     @dataset
@@ -1872,6 +1891,7 @@ def test_bounded_source_with_idleness():
         },
         "dataset": "UserInfoDataset",
         "every": "3600s",
+        "cdc": "Upsert",
         "disorder": "72000s",
         "bounded": True,
         "idleness": "3600s",

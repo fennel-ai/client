@@ -3,25 +3,30 @@ from __future__ import annotations
 import copy
 import logging
 import os
-from datetime import datetime
-from typing import Dict, List, Optional, Union, Any, Tuple
+from datetime import datetime, timezone
+from typing import Dict, List, Optional, Union, Any, Tuple, Set
 
 import pandas as pd
 
-from fennel._vendor.requests import Response  # type: ignore
 from fennel.client import Client
+from fennel.connectors.connectors import S3Connector
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.featuresets import Featureset, Feature, is_valid_feature
+import fennel.gen.schema_pb2 as schema_proto
 from fennel.internal_lib.graph_algorithms import (
     get_extractor_order,
 )
 from fennel.internal_lib.schema import get_datatype
+from fennel.internal_lib.to_proto import to_sync_request_proto
+from fennel.internal_lib.utils import parse_datetime
 from fennel.lib import includes  # noqa
-from fennel.connectors.connectors import S3Connector
 from fennel.testing.branch import Branch
 from fennel.testing.integration_client import IntegrationClient
 from fennel.testing.query_engine import QueryEngine
-from fennel.testing.test_utils import cast_col_to_dtype, FakeResponse
+from fennel.testing.test_utils import (
+    cast_col_to_dtype,
+    FakeResponse,
+)
 
 MAIN_BRANCH = "main"
 
@@ -36,6 +41,8 @@ class MockClient(Client):
         self._branch: str = branch
         self.branches_map: Dict[str, Branch] = {}
         self.query_engine: QueryEngine = QueryEngine()
+        self.to_register: Set[str] = set()
+        self.to_register_objects: List[Union[Dataset, Featureset]] = []
 
         # Adding branch
         self.branches_map[branch] = Branch(branch)
@@ -99,11 +106,72 @@ class MockClient(Client):
         tier: Optional[str] = None,
         incremental: bool = False,
     ):
-        if incremental:
-            raise ValueError(
-                "Incremental mode is not supported for mock client."
+        def is_superset_featureset(featureset_new, featureset_old):
+            features_new = set(
+                [feature._name for feature in featureset_new._features]
             )
-        return self._get_branch().commit(datasets, featuresets, preview, tier)
+            features_old = set(
+                [feature._name for feature in featureset_old._features]
+            )
+            return features_new.issuperset(features_old)
+
+        if incremental:
+            cur_datasets = self.get_datasets()
+            cur_featuresets = self.get_featuresets()
+            # Union of current and new datasets
+            if datasets is None:
+                datasets = cur_datasets
+            else:
+                datasets = list(set(datasets + cur_datasets))
+            # Union of current and new featuresets
+            if featuresets is None:
+                featuresets = cur_featuresets
+            else:
+                # Union both the featuresets from current and new and for those
+                # which are common, ensure the new featureset is a superset of the
+                # existing featureset
+                for featureset in cur_featuresets:
+                    for new_featureset in featuresets:
+                        if featureset._name == new_featureset._name:
+                            if not is_superset_featureset(
+                                new_featureset, featureset
+                            ):
+                                raise Exception(
+                                    f"Featureset {new_featureset._name} is not a superset of the existing featureset"
+                                )
+                featuresets_collection = set(featuresets)
+                featureset_names = set(
+                    [featureset._name for featureset in featuresets]
+                )
+                for featureset in cur_featuresets:
+                    if featureset._name not in featureset_names:
+                        featuresets_collection.add(featureset)
+                featuresets = list(featuresets_collection)
+
+        self.to_register_objects = []
+        self.to_register = set()
+
+        if datasets is not None:
+            for dataset in datasets:
+                if not isinstance(dataset, Dataset):
+                    raise TypeError(
+                        f"Expected a list of datasets, got `{dataset.__name__}`"
+                        f" of type `{type(dataset)}` instead."
+                    )
+                self.add(dataset)
+        if featuresets is not None:
+            for featureset in featuresets:
+                if not isinstance(featureset, Featureset):
+                    raise TypeError(
+                        f"Expected a list of featuresets, got `{featureset.__name__}`"
+                        f" of type `{type(featureset)}` instead."
+                    )
+                self.add(featureset)
+        # Run all validation for converting them to protos
+        _ = to_sync_request_proto(self.to_register_objects, message, tier)
+        return self._get_branch().commit(
+            datasets, featuresets, preview, incremental, tier
+        )
 
     def query(
         self,
@@ -128,7 +196,10 @@ class MockClient(Client):
         extractors_to_run = get_extractor_order(
             inputs, outputs, entities.extractors
         )
-        timestamps = pd.Series([datetime.utcnow()] * len(input_dataframe))
+        timestamps = cast_col_to_dtype(
+            pd.Series([datetime.now(timezone.utc)] * len(input_dataframe)),
+            schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
+        )
         return self.query_engine.run_extractors(
             extractors_to_run,
             data_engine,
@@ -168,7 +239,7 @@ class MockClient(Client):
         entities = branch_class.get_entities()
         data_engine = branch_class.get_data_engine()
         timestamps = input_dataframe[timestamp_column]
-        timestamps = pd.to_datetime(timestamps)
+        timestamps = timestamps.apply(lambda x: parse_datetime(x))
         input_feature_names = self._get_feature_name_from_inputs(inputs)
         input_dataframe = self._transform_input_dataframe_from_inputs(
             input_dataframe, inputs, input_feature_names

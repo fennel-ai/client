@@ -1,6 +1,6 @@
 import unittest
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
 import numpy as np
@@ -9,11 +9,11 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import connectors
-from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum, index
+from fennel.connectors import source
+from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum
+from fennel.dtypes import Embedding, oneof
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import includes, meta, inputs, outputs
-from fennel.dtypes import Embedding, oneof
-from fennel.connectors import source
 from fennel.testing import mock
 
 biq_query = connectors.BigQuery(
@@ -131,8 +131,7 @@ class Document:
         return df
 
 
-@index
-@dataset
+@dataset(index=True)
 class DocumentIndexed:
     doc_id: int = field(key=True)
     body: str
@@ -217,8 +216,7 @@ class DocumentContentDataset:
         )
 
 
-@index
-@dataset
+@dataset(index=True)
 class DocumentContentDatasetIndexed:
     doc_id: int = field(key=True)
     bert_embedding: Embedding[128]
@@ -234,8 +232,7 @@ class DocumentContentDatasetIndexed:
         return ds.groupby("doc_id").first()
 
 
-@index
-@dataset
+@dataset(index=True)
 class TopWordsCount:
     word: str = field(key=True)
     count: int
@@ -279,8 +276,7 @@ class UserActivity:
     timestamp: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class UserEngagementDataset:
     user_id: int = field(key=True)
     num_views: int
@@ -329,8 +325,7 @@ class UserEngagementDataset:
         )
 
 
-@index
-@dataset
+@dataset(index=True)
 class DocumentEngagementDataset:
     doc_id: int = field(key=True)
     num_views: int
@@ -378,7 +373,7 @@ class UserBehaviorFeatures:
     num_short_views_7d: int
     num_long_views: int
 
-    @extractor(depends_on=[UserEngagementDataset])  # type: ignore
+    @extractor(deps=[UserEngagementDataset])  # type: ignore
     @inputs(Query.user_id)
     def get_user_features(cls, ts: pd.Series, user_id: pd.Series):
         df, _found = UserEngagementDataset.lookup(  # type: ignore
@@ -395,7 +390,7 @@ class DocumentFeatures:
     total_timespent_minutes: float
     num_views_28d: int
 
-    @extractor(depends_on=[DocumentEngagementDataset])  # type: ignore
+    @extractor(deps=[DocumentEngagementDataset])  # type: ignore
     @inputs(Query.doc_id)
     def get_doc_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentEngagementDataset.lookup(  # type: ignore
@@ -415,7 +410,7 @@ class DocumentContentFeatures:
     num_stop_words: int
     top_10_unique_words: List[str]
 
-    @extractor(depends_on=[DocumentContentDatasetIndexed])  # type: ignore
+    @extractor(deps=[DocumentContentDatasetIndexed])  # type: ignore
     @inputs(Query.doc_id)
     def get_features(cls, ts: pd.Series, doc_id: pd.Series):
         df, found = DocumentContentDatasetIndexed.lookup(  # type: ignore
@@ -430,7 +425,7 @@ class TopWordsFeatures:
     word: str
     count: int
 
-    @extractor(depends_on=[TopWordsCount])  # type: ignore
+    @extractor(deps=[TopWordsCount])  # type: ignore
     @inputs("word")
     @outputs("count")
     def get_counts(cls, ts: pd.Series, word: pd.Series):
@@ -442,7 +437,7 @@ class TopWordsFeatures:
 
 class TestSearchExample(unittest.TestCase):
     def log_document_data(self, client):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [141234, "This is a random document", "Random Title", "Sagar", now],
             [
@@ -511,7 +506,7 @@ class TestSearchExample(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
     def log_engagement_data(self, client):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             [123, 31234, "view", 5, now],
             [123, 143354, "view", 1, now],
@@ -543,7 +538,7 @@ class TestSearchExample(unittest.TestCase):
         )
         self.log_document_data(client)
         client.sleep()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         yesterday = now - pd.Timedelta(days=1)
 
         doc_ids = pd.DataFrame({"doc_id": [141234, 143354, 33234, 11111]})
@@ -577,7 +572,7 @@ class TestSearchExample(unittest.TestCase):
 
         self.log_engagement_data(client)
         client.sleep(20)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         ts = pd.Series([now, now])
         user_ids = pd.Series([123, 342])
         df, found = UserEngagementDataset.lookup(ts, user_id=user_ids)

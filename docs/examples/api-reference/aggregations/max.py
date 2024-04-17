@@ -11,7 +11,7 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.datasets import dataset, field, Dataset, index, pipeline, Max
+    from fennel.datasets import dataset, field, Dataset, pipeline, Max
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
 
@@ -24,8 +24,7 @@ def test_basic(client):
         amt: float
         timestamp: datetime
 
-    @index
-    @dataset
+    @dataset(index=True)
     class Aggregated:
         uid: int = field(key=True)
         # docsnip-highlight start
@@ -39,8 +38,8 @@ def test_basic(client):
         def def_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
                 # docsnip-highlight start
-                Max(of="amt", window="1d", default=-1.0, into_field="max_1d"),
-                Max(of="amt", window="1w", default=-1.0, into_field="max_1w"),
+                max_1d=Max(of="amt", window="1d", default=-1.0),
+                max_1w=Max(of="amt", window="1w", default=-1.0),
                 # docsnip-highlight end
             )
 
@@ -136,7 +135,7 @@ def test_invalid_type(client):
             def def_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight next-line
-                    Max(of="zip", window="1d", default="max", into_field="max"),
+                    max=Max(of="zip", window="1d", default="max"),
                 )
 
         # /docsnip
@@ -172,7 +171,7 @@ def test_non_matching_types(client):
             def def_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight next-line
-                    Max(of="amt", window="1d", default=1, into_field="max_1d"),
+                    max_1d=Max(of="amt", window="1d", default=1),
                 )
 
         # /docsnip

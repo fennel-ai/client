@@ -1,14 +1,14 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field
-from fennel.lib import meta
-from fennel.dtypes import oneof, regex, between
 from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
+from fennel.dtypes import oneof, regex, between
+from fennel.lib import meta
 from fennel.testing import mock
 
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+"
@@ -17,7 +17,7 @@ wh = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(wh.endpoint("UserInfoDataset"), cdc="append", disorder="14d")
+@source(wh.endpoint("UserInfoDataset"), cdc="upsert", disorder="14d")
 @dataset
 class UserInfoDataset:
     user_id: int = field(key=True).meta(description="User ID")  # type: ignore
@@ -36,7 +36,7 @@ class TestDataset(unittest.TestCase):
     def test_log_with_additional_schema(self, client):
         # Log correct data
         client.commit(message="msg", datasets=[UserInfoDataset])
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             {
                 "user_id": 1,
@@ -53,7 +53,7 @@ class TestDataset(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
         # Log incorrect data
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             {
                 "user_id": 1,
@@ -83,7 +83,7 @@ class TestDataset(unittest.TestCase):
                 "between, but the value `123` is out of bounds. Error found during checking schema for `UserInfoDataset`.')]"
             )
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             {
                 "user_id": 1,
@@ -111,7 +111,7 @@ class TestDataset(unittest.TestCase):
                 == str(e.value)
             )
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         data = [
             {
                 "user_id": 1,

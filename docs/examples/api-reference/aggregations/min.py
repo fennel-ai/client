@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytest
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -10,7 +11,7 @@ __owner__ = "aditya@fennel.ai"
 @mock
 def test_basic(client):
     # docsnip basic
-    from fennel.datasets import dataset, field, pipeline, Dataset, Min, index
+    from fennel.datasets import dataset, field, pipeline, Dataset, Min
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
 
@@ -23,8 +24,7 @@ def test_basic(client):
         amt: float
         timestamp: datetime
 
-    @index
-    @dataset
+    @dataset(index=True)
     class Aggregated:
         uid: int = field(key=True)
         # docsnip-highlight start
@@ -38,8 +38,8 @@ def test_basic(client):
         def min_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
                 # docsnip-highlight start
-                Min(of="amt", window="1d", default=-1.0, into_field="min_1d"),
-                Min(of="amt", window="1w", default=-1.0, into_field="min_1w"),
+                min_1d=Min(of="amt", window="1d", default=-1.0),
+                min_1w=Min(of="amt", window="1w", default=-1.0),
                 # docsnip-highlight end
             )
 
@@ -135,7 +135,7 @@ def test_invalid_type(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    Min(of="zip", window="1d", default="min", into_field="min"),
+                    min=Min(of="zip", window="1d", default="min"),
                     # docsnip-highlight end
                 )
 
@@ -172,7 +172,7 @@ def test_non_matching_types(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    Min(of="amt", window="1d", default=1, into_field="min_1d"),
+                    min_1d=Min(of="amt", window="1d", default=1),
                     # docsnip-highlight end
                 )
 

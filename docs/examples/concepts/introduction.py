@@ -1,10 +1,10 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
-from fennel.datasets import dataset, field
 from fennel.connectors import Webhook
+from fennel.datasets import dataset, field
 from fennel.testing import mock
 
 __owner__ = "owner@example.com"
@@ -28,7 +28,6 @@ def test_overview(client):
     # since docs requires not compilable credentials.
 
     from fennel.connectors import source, Kafka, Postgres
-    from fennel.datasets import index
 
     postgres = Postgres.get(name="postgres")
     kafka = Kafka.get(name="kafka")
@@ -38,9 +37,8 @@ def test_overview(client):
     user_table = postgres.table("user", cursor="signup_at")
 
     # docsnip-highlight next-line
-    @source(user_table, every="1m", disorder="7d", cdc="append", tier="prod")
-    @index
-    @dataset
+    @source(user_table, every="1m", disorder="7d", cdc="upsert", tier="prod")
+    @dataset(index=True)
     class User:
         uid: int = field(key=True)
         dob: datetime
@@ -59,12 +57,11 @@ def test_overview(client):
 
     # /docsnip
 
-    from fennel.datasets import pipeline, Dataset, Count, Sum, index
+    from fennel.datasets import pipeline, Dataset, Count, Sum
     from fennel.lib import inputs
 
     # docsnip pipeline
-    @index
-    @dataset
+    @dataset(index=True)
     class UserTransactionsAbroad:
         uid: int = field(key=True)
         count: int
@@ -81,9 +78,9 @@ def test_overview(client):
                 lambda df: df["country"] != df["payment_country"]
             )
             return abroad.groupby("uid").aggregate(
-                Count(window="forever", into_field="count"),
-                Sum(of="amount", window="1d", into_field="amount_1d"),
-                Sum(of="amount", window="1w", into_field="amount_1w"),
+                count=Count(window="forever"),
+                amount_1d=Sum(of="amount", window="1d"),
+                amount_1w=Sum(of="amount", window="1w"),
             )
 
         # docsnip-highlight end
@@ -104,7 +101,7 @@ def test_overview(client):
         dob: datetime
 
         # docsnip-highlight start
-        @extractor(depends_on=[User])
+        @extractor(deps=[User])
         @inputs("uid")
         @outputs("age")
         def get_age(cls, ts: pd.Series, uids: pd.Series):
@@ -115,7 +112,7 @@ def test_overview(client):
 
         # docsnip-highlight end
 
-        @extractor(depends_on=[User])
+        @extractor(deps=[User])
         @inputs("uid")
         @outputs("country")
         def get_country(cls, ts: pd.Series, uids: pd.Series):
@@ -126,7 +123,7 @@ def test_overview(client):
     # /docsnip
 
     User = source(
-        webhook.endpoint("User"), disorder="14d", cdc="append", tier="local"
+        webhook.endpoint("User"), disorder="14d", cdc="upsert", tier="local"
     )(User)
     Transaction = source(
         webhook.endpoint("Transaction"),
@@ -151,7 +148,7 @@ def test_overview(client):
         tier="local",
     )
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     dob = now - timedelta(days=365 * 30)
     data = [
         [1, dob, "US", now - timedelta(days=1)],
@@ -228,8 +225,8 @@ def test_overview(client):
             {
                 "UserFeature.uid": [1, 3],
                 "timestamp": [
-                    datetime.utcnow(),
-                    datetime.utcnow() - timedelta(days=1),
+                    datetime.now(timezone.utc),
+                    datetime.now(timezone.utc) - timedelta(days=1),
                 ],
             }
         ),
@@ -288,7 +285,6 @@ def test_sink_snip():
     from fennel.connectors import source, Postgres
     from fennel.datasets import dataset
 
-    # docsnip-highlight start
     postgres = Postgres(
         name="my-postgres",
         host=os.environ["POSTGRES_HOST"],
@@ -297,12 +293,9 @@ def test_sink_snip():
         username=os.environ["POSTGRES_USERNAME"],
         password=os.environ["POSTGRES_PASSWORD"],
     )
-    # docsnip-highlight end
 
-    # docsnip-highlight next-line
     table = postgres.table("user", cursor="update_time")
 
-    # docsnip-highlight next-line
     @source(table, disorder="14d", cdc="append", every="1m")
     @dataset
     class UserLocation:
@@ -311,11 +304,11 @@ def test_sink_snip():
         country: str
         update_time: datetime
 
+    # docsnip sink_main
     from fennel.connectors import sink, Kafka
     from fennel.datasets import dataset, pipeline, Dataset
     from fennel.lib.params import inputs
 
-    # docsnip-highlight start
     kafka = Kafka(
         name="kafka_src",
         bootstrap_servers=os.environ["KAFKA_HOST"],
@@ -324,9 +317,7 @@ def test_sink_snip():
         sasl_plain_username=os.environ["KAFKA_USERNAME"],
         sasl_plain_password=os.environ["KAFKA_PASSWORD"],
     )
-    # docsnip-highlight end
 
-    # docsnip sink
     # docsnip-highlight next-line
     @sink(kafka.topic("user_location"), cdc="debezium")
     @dataset
@@ -428,15 +419,14 @@ def dummy_function():
 
 @mock
 def test_branches(client):
-    from fennel.datasets import dataset, field, index
+    from fennel.datasets import dataset, field
     from fennel.featuresets import feature as F, featureset
     from fennel.connectors import Webhook, source
 
     webhook = Webhook(name="some_webhook")
 
-    @source(webhook.endpoint("endpoint1"), disorder="14d", cdc="append")
-    @index
-    @dataset
+    @source(webhook.endpoint("endpoint1"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
     class SomeDataset:
         uid: int = field(key=True)
         dob: datetime

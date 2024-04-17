@@ -390,7 +390,6 @@ class Client:
         self.checkout(name)
         response = self._post_json(f"{V1_API}/delete", {})
         if name == cur_branch:
-            print("Deleting current branch, checking out to main branch")
             self.checkout(_MAIN_BRANCH)
         else:
             self.checkout(cur_branch)

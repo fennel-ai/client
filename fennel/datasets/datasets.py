@@ -24,7 +24,6 @@ from typing import (
     Set,
 )
 
-import google.protobuf.duration_pb2 as duration_proto
 import numpy as np
 import pandas as pd
 from typing_extensions import Literal
@@ -66,6 +65,7 @@ from fennel.internal_lib.schema import (
 from fennel.internal_lib.utils import (
     dtype_to_string,
     get_origin,
+    parse_datetime,
 )
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.includes import TierSelector
@@ -93,6 +93,7 @@ ON_DEMAND_ATTR = "__fennel_on_demand__"
 DEFAULT_RETENTION = Duration("2y")
 DEFAULT_EXPIRATION = Duration("30d")
 DEFAULT_VERSION = 1
+DEFAULT_INDEX = False
 RESERVED_FIELD_NAMES = [
     "cls",
     "self",
@@ -495,10 +496,10 @@ class GroupBy:
         self.node = node
         self.node.out_edges.append(self)
 
-    def aggregate(self, *args) -> _Node:
-        if len(args) == 0:
+    def aggregate(self, *args, **kwargs) -> _Node:
+        if len(args) == 0 and len(kwargs) == 0:
             raise TypeError(
-                "aggregate operator expects atleast one aggregation operation"
+                "aggregate operator expects at least one aggregation operation"
             )
         if len(args) == 1 and isinstance(args[0], list):
             aggregates = args[0]
@@ -506,6 +507,22 @@ class GroupBy:
             aggregates = list(args)
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
+
+        # Adding aggregate to aggregates list from kwargs
+        for key, value in kwargs.items():
+            if not isinstance(value, AggregateType):
+                raise ValueError(f"Invalid aggregate type for field: {key}")
+            value.into_field = key
+            aggregates.append(value)
+
+        # Check if any aggregate has into_field as ""
+        for aggregate in aggregates:
+            if aggregate.into_field == "":
+                raise ValueError(
+                    "Specify the output field name for the aggregate using 'into_field' "
+                    "parameter or through named arguments."
+                )
+
         return Aggregate(self.node, list(self.keys), aggregates)
 
     def first(self) -> _Node:
@@ -1005,6 +1022,9 @@ def dataset(  # noqa: E704
     *,
     version: Optional[int] = DEFAULT_VERSION,
     history: Optional[Duration] = DEFAULT_RETENTION,
+    index: Optional[bool] = DEFAULT_INDEX,
+    offline: Optional[bool] = None,
+    online: Optional[bool] = None,
 ) -> Callable[[Type[T]], Dataset]: ...
 
 
@@ -1016,6 +1036,9 @@ def dataset(
     cls: Optional[Type[T]] = None,
     version: Optional[int] = DEFAULT_VERSION,
     history: Optional[Duration] = DEFAULT_RETENTION,
+    index: Optional[bool] = DEFAULT_INDEX,
+    offline: Optional[bool] = None,
+    online: Optional[bool] = None,
 ) -> Union[Callable[[Type[T]], Dataset], Dataset]:
     """
     dataset is a decorator that creates a Dataset class.
@@ -1028,8 +1051,12 @@ def dataset(
         Version of the dataset
     history : Duration ( Optional )
         The amount of time to keep data in the dataset.
-    max_staleness : Duration ( Optional )
-        The maximum amount of time that data in the dataset can be stale.
+    index : bool ( Optional )
+        Whether we want to server the dataset for both online and offline.
+    offline : bool ( Optional )
+        If we want to turn off or turn on offline index for serving query_offline.
+    online : bool ( Optional )
+        If we want to turn off or turn on online index for serving query_offline.
     """
 
     try:
@@ -1039,6 +1066,47 @@ def dataset(
             file_name = ""
     except Exception:
         file_name = ""
+
+    # Getting specs for index
+    index_obj = None
+    if index:
+        if offline or online:
+            raise ValueError(
+                "When 'index' is set as True then 'offline' or 'online' params can only be set as False."
+            )
+        elif not offline and not online:
+            index_obj = Index(
+                type=IndexType.primary,
+                online=True,
+                offline=IndexDuration.forever,
+            )
+        elif not offline:
+            index_obj = Index(
+                type=IndexType.primary, online=True, offline=IndexDuration.none
+            )
+        else:
+            index_obj = Index(
+                type=IndexType.primary,
+                online=False,
+                offline=IndexDuration.forever,
+            )
+    elif not index:
+        if offline and online:
+            raise ValueError(
+                "When 'index' is set as False then only either one of 'offline' or 'online' can be set as True."
+            )
+        elif offline:
+            index_obj = Index(
+                type=IndexType.primary,
+                online=False,
+                offline=IndexDuration.forever,
+            )
+        elif online:
+            index_obj = Index(
+                type=IndexType.primary,
+                online=True,
+                offline=IndexDuration.none,
+            )
 
     def _create_lookup_function(
         cls_name: str, key_fields: List[str], struct_types: Dict[str, Any]
@@ -1073,10 +1141,12 @@ def dataset(
                 raise ValueError(
                     f"Lookup for dataset `{cls_name}` expects a series of timestamps, found {type(ts)}"
                 )
-            if not np.issubdtype(ts.dtype, np.datetime64):
+            if not pd.api.types.is_datetime64_any_dtype(ts.dtype):
                 raise ValueError(
                     f"Lookup for dataset `{cls_name}` expects a series of timestamps, found {ts.dtype}"
                 )
+            # Parse the timestamp
+            ts = ts.apply(lambda x: parse_datetime(x))
             # extract keys and fields from kwargs
             arr = []
             for key in key_fields:
@@ -1139,6 +1209,7 @@ def dataset(
         dataset_cls: Type[T],
         version: int,
         history: Duration,
+        index: Optional[Index],
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
         fields = [
@@ -1154,6 +1225,15 @@ def dataset(
         setattr(dataset_cls, FENNEL_VIRTUAL_FILE, file_name)
 
         key_fields = [f.name for f in fields if f.key]
+
+        if isinstance(index, Index):
+            if len(key_fields) < 1:
+                raise ValueError(
+                    f"Index is only applicable for datasets with keyed fields. "
+                    f"Found zero key fields for dataset : `{dataset_cls.__name__}`."
+                )
+            else:
+                setattr(dataset_cls, INDEX_FIELD, index)
 
         struct_types = {}
         struct_code = ""
@@ -1198,7 +1278,7 @@ def dataset(
         )
 
     def wrap(c: Type[T]) -> Dataset:
-        return _create_dataset(c, version, cast(Duration, history))  # type: ignore
+        return _create_dataset(c, version, cast(Duration, history), index_obj)  # type: ignore
 
     if cls is None:
         # We're being called as @dataset(arguments)
@@ -1726,41 +1806,6 @@ class Dataset(_Node[T]):
         return self._version
 
 
-def sync_validation_for_pipelines(pipelines: List[Pipeline], ds_name: str):
-    """
-    This validation function contains the checks that are run just before the sync call.
-    It should only contain checks that are not possible to run during the registration phase/compilation phase.
-    """
-    if len(pipelines) <= 1:
-        return
-
-    tiers: Set[str] = set()
-    for pipeline in pipelines:
-        tier = pipeline.tier.tiers
-        if tier is None:
-            raise ValueError(
-                f"Pipeline : `{pipeline.name}` has no tier. If there are more than one Pipelines for a dataset, "
-                f"please specify tier for each of them as there can only be one Pipeline for each tier."
-            )
-        if isinstance(tier, list):
-            for tier_item in tier:
-                if tier_item in tiers:
-                    raise ValueError(
-                        f"Pipeline : `{pipeline.name}` mapped to Tier : {tier_item} which has more than one "
-                        f"pipeline. Please specify only one."
-                    )
-                else:
-                    tiers.add(tier_item)
-        elif isinstance(tier, str):
-            if tier in tiers:
-                raise ValueError(
-                    f"Pipeline : `{pipeline.name}` mapped to Tier : {tier} which has more than one pipeline. "
-                    f"Please specify only one."
-                )
-            else:
-                tiers.add(tier)
-
-
 # ---------------------------------------------------------------------
 # Index
 # ---------------------------------------------------------------------
@@ -1839,8 +1884,8 @@ def index(
 
         if hasattr(obj, INDEX_FIELD):
             raise ValueError(
-                "`index` can only be called once on a Dataset. Found more than one index decorators on "
-                f"Dataset `{obj._name}`."
+                "`index` can only be called once on a Dataset. Found either more than one index decorators on "
+                f"Dataset `{obj._name}` or found 'index', 'offline' or 'online' param on @dataset with @index decorator."
             )
 
         if type == IndexType.primary and len(obj.key_fields) < 1:
@@ -2248,6 +2293,11 @@ class SchemaValidator(Visitor):
         return input_schema
 
     def visitAggregate(self, obj) -> DSSchema:
+        # TODO(Aditya): Aggregations should be allowed on only
+        # 1. Keyless streams.
+        # 2. Keyed datasets, as long as `along` parameter is provided.
+        # 3. For outputs of window operators.
+
         input_schema = self.visit(obj.node)
         keys = {f: input_schema.get_type(f) for f in obj.keys}
         values: Dict[str, Type] = {}
@@ -2602,7 +2652,7 @@ class SchemaValidator(Visitor):
         # datasets, is not defined, since for a keyed dataset, there is only one value for each key.
         if len(input_schema.keys) > 0:
             raise TypeError(
-                f"Explode over keyed datasets is not defined. Found dataset with keys `{input_schema.keys}` in pipeline `{self.pipeline_name}`"
+                f"Explode over keyed datasets is not defined. Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`"
             )
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->explode node'"
         if obj.columns is None or len(obj.columns) == 0:
@@ -2636,6 +2686,14 @@ class SchemaValidator(Visitor):
 
     def visitFirst(self, obj) -> DSSchema:
         output_schema = copy.deepcopy(obj.dsschema())
+        input_schema = copy.deepcopy(self.visit(obj.node))
+        # If it is a keyed dataset throw an error.
+        # We dont allow first over keyed datasets, but only keyless streams.
+        if len(input_schema.keys) > 0:
+            raise TypeError(
+                f"First over keyed datasets is not defined. Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`"
+            )
+
         if len(output_schema.keys) == 0:
             raise ValueError(
                 f"'group_by' before 'first' in {self.pipeline_name} must specify at least one key"
@@ -2645,6 +2703,15 @@ class SchemaValidator(Visitor):
 
     def visitLatest(self, obj) -> DSSchema:
         output_schema = copy.deepcopy(obj.dsschema())
+        input_schema = copy.deepcopy(self.visit(obj.node))
+
+        # If it is a keyed dataset throw an error.
+        # We dont allow latest over keyed datasets, but only keyless streams.
+        if len(input_schema.keys) > 0:
+            raise TypeError(
+                f"Latest over keyed datasets is not defined. Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`"
+            )
+
         if len(output_schema.keys) == 0:
             raise ValueError(
                 f"'group_by' before 'latest' in {self.pipeline_name} must specify at least one key"
@@ -2654,7 +2721,12 @@ class SchemaValidator(Visitor):
 
     def visitWindow(self, obj) -> DSSchema:
         input_schema = copy.deepcopy(self.visit(obj.node))
-
+        # If it is a keyed dataset throw an error.
+        # We dont allow creating windows over keyed datasets, but only keyless streams.
+        if len(input_schema.keys) > 0:
+            raise TypeError(
+                f"Window operator over keyed datasets is not defined. Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`"
+            )
         output_schema = copy.deepcopy(obj.dsschema())
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->window node'"
 

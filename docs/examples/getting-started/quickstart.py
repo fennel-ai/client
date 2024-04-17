@@ -1,18 +1,10 @@
 # docsnip imports
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import pandas as pd
 import requests
 
-from fennel.datasets import dataset, pipeline, field, Dataset, Count, index
-from fennel.featuresets import feature as F, featureset, extractor
-from fennel.lib import (
-    inputs,
-    outputs,
-    expectations,
-    expect_column_values_to_be_between,
-)
 from fennel.connectors import (
     source,
     Mongo,
@@ -21,6 +13,14 @@ from fennel.connectors import (
     Kafka,
     Webhook,
     Redshift,
+)
+from fennel.datasets import dataset, pipeline, field, Dataset, Count
+from fennel.featuresets import featureset, extractor
+from fennel.lib import (
+    inputs,
+    outputs,
+    expectations,
+    expect_column_values_to_be_between,
 )
 from fennel.testing import MockClient
 
@@ -43,10 +43,9 @@ mongo = Mongo.get(name="my_mongo")
 table = postgres.table("product", cursor="last_modified")
 
 
-@source(table, disorder="1d", cdc="append", every="1m", tier="prod")
-@source(webhook.endpoint("Product"), disorder="1d", cdc="append", tier="dev")
-@index
-@dataset
+@source(table, disorder="1d", cdc="upsert", every="1m", tier="prod")
+@source(webhook.endpoint("Product"), disorder="1d", cdc="upsert", tier="dev")
+@dataset(index=True)
 class Product:
     product_id: int = field(key=True)
     seller_id: int
@@ -78,8 +77,7 @@ class Order:
 
 
 # docsnip pipelines
-@index
-@dataset
+@dataset(index=True)
 class UserSellerOrders:
     uid: int = field(key=True)
     seller_id: int = field(key=True)
@@ -95,8 +93,8 @@ class UserSellerOrders:
         orders = orders.drop("product_id", "desc", "price")
         orders = orders.dropnull()
         return orders.groupby("uid", "seller_id").aggregate(
-            Count(window="1d", into_field="num_orders_1d"),
-            Count(window="1w", into_field="num_orders_1w"),
+            num_orders_1d=Count(window="1d"),
+            num_orders_1w=Count(window="1w"),
         )
 
 
@@ -111,7 +109,7 @@ class UserSellerFeatures:
     num_orders_1d: int
     num_orders_1w: int
 
-    @extractor(depends_on=[UserSellerOrders])
+    @extractor(deps=[UserSellerOrders])
     @inputs("uid", "seller_id")
     @outputs("num_orders_1d", "num_orders_1w")
     def myextractor(cls, ts: pd.Series, uids: pd.Series, sellers: pd.Series):
@@ -139,7 +137,7 @@ client.commit(
 
 # docsnip log_data
 # create some product data
-now = datetime.utcnow()
+now = datetime.now(timezone.utc)
 columns = ["product_id", "seller_id", "price", "desc", "last_modified"]
 data = [
     [1, 1, 10.0, "product 1", now],

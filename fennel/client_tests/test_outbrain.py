@@ -1,13 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, pipeline, Dataset, Count, index
-from fennel.featuresets import featureset, extractor, feature as F
-from fennel.lib import meta, inputs, outputs
 from fennel.connectors import S3, Webhook
 from fennel.connectors import source
+from fennel.datasets import dataset, field, pipeline, Dataset, Count
+from fennel.featuresets import featureset, extractor
+from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 
 s3 = S3(
@@ -39,8 +39,7 @@ class PageViews:
 
 
 @meta(owner="xiao@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class PageViewsByUser:
     uuid: str = field(key=True)
     page_views: int
@@ -81,7 +80,7 @@ class UserPageViewFeatures:
     page_views_3d: int
     page_views_9d: int
 
-    @extractor(depends_on=[PageViewsByUser], version=2)  # type: ignore
+    @extractor(deps=[PageViewsByUser], version=2)  # type: ignore
     @inputs(Request.uuid)
     @outputs("page_views", "page_views_1d", "page_views_3d", "page_views_9d")
     def extract(cls, ts: pd.Series, uuids: pd.Series):
@@ -118,7 +117,7 @@ def test_outbrain(client):
         "fennel/client_tests/data/page_views_sample.csv"
     ).sort_values(by=["timestamp"])
     # Current time in ms
-    cur_time_ms = datetime.utcnow().timestamp() * 1000
+    cur_time_ms = datetime.now(timezone.utc).timestamp() * 1000
     max_ts = max(df["timestamp"].tolist())
     # Shift all the data such that the most recent data point has timestamp = cur_time_ms
     df["timestamp"] = df["timestamp"] + cur_time_ms - max_ts
@@ -127,7 +126,7 @@ def test_outbrain(client):
     twelve_days = 12 * 24 * 60 * 60 * 1000
     df = df[df["timestamp"] > cur_time_ms - twelve_days]
     df["timestamp"] = df["timestamp"].apply(
-        lambda x: datetime.fromtimestamp(x / 1000)
+        lambda x: datetime.fromtimestamp(x / 1000, tz=timezone.utc)
     )
 
     client.log("outbrain_webhook", "PageViews", df)

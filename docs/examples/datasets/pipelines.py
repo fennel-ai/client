@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import requests
@@ -12,14 +12,13 @@ __owner__ = "data-eng@fennel.ai"
 
 def test_datasets_basic():
     # docsnip datasets
-    from fennel.datasets import dataset, field, index
+    from fennel.datasets import dataset, field
     from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
 
-    @source(webhook.endpoint("User"), disorder="14d", cdc="append")
-    @index
-    @dataset
+    @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
     class User:
         uid: int = field(key=True)
         dob: datetime
@@ -42,11 +41,10 @@ def test_datasets_basic():
 def test_pipeline_basic():
     User, Transaction = test_datasets_basic()
     # docsnip pipeline
-    from fennel.datasets import pipeline, Dataset, dataset, field, index
+    from fennel.datasets import pipeline, Dataset, dataset, field
     from fennel.datasets import Count, Sum
 
-    @index
-    @dataset
+    @dataset(index=True)
     class UserTransactionsAbroad:
         uid: int = field(key=True)
         count: int
@@ -63,9 +61,9 @@ def test_pipeline_basic():
                 lambda df: df["country"] != df["payment_country"]
             )
             return abroad.groupby("uid").aggregate(
-                Count(window="forever", into_field="count"),
-                Sum(of="amount", window="1d", into_field="amount_1d"),
-                Sum(of="amount", window="1w", into_field="amount_1w"),
+                count=Count(window="forever"),
+                amount_1d=Sum(of="amount", window="1d"),
+                amount_1w=Sum(of="amount", window="1w"),
             )
 
         # docsnip-highlight end
@@ -82,7 +80,7 @@ def test_transaction_aggregation_example(client):
     client.commit(
         message="msg", datasets=[User, Transaction, UserTransactionsAbroad]
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     dob = now - timedelta(days=365 * 30)
     data = [
         [1, dob, "US", now - timedelta(days=1)],
@@ -172,7 +170,7 @@ def test_fraud(client):
     # /docsnip
     # # Sync the dataset
     client.commit(message="msg", datasets=[Activity, FraudActivity])
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     minute_ago = now - timedelta(minutes=1)
     data = [
         [
@@ -223,7 +221,7 @@ def test_fraud(client):
 @mock
 def test_multiple_pipelines(client):
     # docsnip multiple_pipelines
-    from fennel.datasets import dataset, field, Count, index
+    from fennel.datasets import dataset, field, Count
     from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
@@ -247,8 +245,7 @@ def test_multiple_pipelines(client):
         return df
 
     @meta(owner="me@fennel.ai")
-    @index
-    @dataset
+    @dataset(index=True)
     class LoginStats:
         uid: int = field(key=True)
         platform: str = field(key=True)
@@ -277,14 +274,14 @@ def test_multiple_pipelines(client):
             )
             union = with_ios_platform + with_android_platform
             return union.groupby(["uid", "platform"]).aggregate(
-                Count(window="1d", into_field="num_logins_1d"),
+                num_logins_1d=Count(window="1d"),
             )
 
     # /docsnip
     client.commit(
         message="msg", datasets=[AndroidLogins, IOSLogins, LoginStats]
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         [1, now],
         [1, now - timedelta(days=1)],

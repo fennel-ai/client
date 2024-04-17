@@ -1,9 +1,8 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 
-from fennel.datasets import index
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -28,10 +27,9 @@ class TestAssignSnips(unittest.TestCase):
             timestamp: datetime
 
         @source(
-            webhook.endpoint("MerchantCategory"), disorder="14d", cdc="append"
+            webhook.endpoint("MerchantCategory"), disorder="14d", cdc="upsert"
         )
-        @index
-        @dataset
+        @dataset(index=True)
         class MerchantCategory:
             # docsnip-highlight start
             # right side of the join can only be on key fields
@@ -116,4 +114,7 @@ class TestAssignSnips(unittest.TestCase):
         assert df["merchant"].tolist() == [4, 5, 4]
         assert df["amount"].tolist() == [10, 20, 30]
         assert df["category"].tolist() == ["grocery", "electronics", "grocery"]
-        assert df["timestamp"].tolist() == [datetime(2021, 1, 1, 0, 0, 0)] * 3
+        assert (
+            df["timestamp"].tolist()
+            == [datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)] * 3
+        )

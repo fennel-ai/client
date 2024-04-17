@@ -1,11 +1,14 @@
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
+import pytest
 
 import pandas as pd
 import requests
 
-from fennel import featureset, extractor, feature as F
+from fennel import featureset, extractor
+from fennel.connectors import Webhook
+from fennel.connectors import source
 from fennel.datasets import (
     dataset,
     field,
@@ -14,11 +17,8 @@ from fennel.datasets import (
     Sum,
     LastK,
     Distinct,
-    index,
 )
 from fennel.lib import meta, inputs, outputs
-from fennel.connectors import Webhook
-from fennel.connectors import source
 from fennel.testing import mock, MockClient
 
 client = MockClient()
@@ -27,9 +27,8 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="abhay@fennel.ai")
-@source(webhook.endpoint("MovieInfo"), cdc="append", disorder="14d")
-@index
-@dataset
+@source(webhook.endpoint("MovieInfo"), cdc="upsert", disorder="14d")
+@dataset(index=True)
 class MovieInfo:
     title: str = field(key=True)
     actors: List[Optional[str]]  # can be an empty list
@@ -47,8 +46,7 @@ class TicketSale:
 
 
 @meta(owner="abhay@fennel.ai")
-@index
-@dataset
+@dataset(index=True)
 class ActorStats:
     name: str = field(key=True)
     revenue: int  # type: ignore
@@ -153,7 +151,7 @@ class RequestFeatures:
 class ActorFeatures:
     revenue: int
 
-    @extractor(depends_on=[ActorStats], tier="prod")  # type: ignore
+    @extractor(deps=[ActorStats], tier="prod")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs("revenue")
     def extract_revenue(cls, ts: pd.Series, name: pd.Series):
@@ -161,13 +159,58 @@ class ActorFeatures:
         df = df.fillna(0)
         return df["revenue"]
 
-    @extractor(depends_on=[ActorStats], tier="staging")  # type: ignore
+    @extractor(deps=[ActorStats], tier="staging")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs("revenue")
     def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
         df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
         df = df.fillna(0)
         return df["revenue"] * 2
+
+
+def _get_changed_featureset_valid():
+    @meta(owner="abhay@fennel.ai")
+    @featureset
+    class ActorFeatures:
+        revenue: int
+        twice_revenue: int
+
+        @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+        @inputs(RequestFeatures.name)
+        @outputs("revenue")
+        def extract_revenue(cls, ts: pd.Series, name: pd.Series):
+            df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
+            df = df.fillna(0)
+            return df["revenue"]
+
+        @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+        @inputs(RequestFeatures.name)
+        @outputs("twice_revenue")
+        def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
+            df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
+            df = df.fillna(0)
+            df["twice_revenue"] = df["revenue"] * 2
+            return df["twice_revenue"]
+
+    return ActorFeatures
+
+
+def _get_changed_featureset_invalid():
+    @meta(owner="abhay@fennel.ai")
+    @featureset
+    class ActorFeatures:
+        twice_revenue: int
+
+        @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+        @inputs(RequestFeatures.name)
+        @outputs("twice_revenue")
+        def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
+            df, _ = ActorStats.lookup(ts, name=name)  # type: ignore
+            df = df.fillna(0)
+            df["twice_revenue"] = df["revenue"] * 2
+            return df["twice_revenue"]
+
+    return ActorFeatures
 
 
 class TestMovieTicketSale(unittest.TestCase):
@@ -206,7 +249,7 @@ class TestMovieTicketSale(unittest.TestCase):
             response.status_code == requests.codes.OK
         ), response.json()  # noqa
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         one_day_ago = now - timedelta(days=1)
         two_hours_ago = now - timedelta(hours=2)
@@ -241,3 +284,40 @@ class TestMovieTicketSale(unittest.TestCase):
         assert features.shape == (2, 1)
         assert features["ActorFeatures.revenue"][0] == 50
         assert features["ActorFeatures.revenue"][1] == 398
+
+        client.commit(
+            message="new featureset",
+            featuresets=[_get_changed_featureset_valid()],
+            incremental=True,
+            tier="prod",
+        )  # type: ignore
+
+        features = client.query(
+            inputs=[RequestFeatures.name],  # type: ignore
+            outputs=[_get_changed_featureset_valid()],  # type: ignore
+            input_dataframe=pd.DataFrame(
+                {
+                    "RequestFeatures.name": [
+                        "Robin Williams",
+                        "Leonardo DiCaprio",
+                    ],
+                }
+            ),
+        )
+        assert features.shape == (2, 2)
+        assert features["ActorFeatures.revenue"][0] == 50
+        assert features["ActorFeatures.revenue"][1] == 398
+        assert features["ActorFeatures.twice_revenue"][0] == 100
+        assert features["ActorFeatures.twice_revenue"][1] == 796
+
+        with pytest.raises(Exception) as e:
+            client.commit(
+                message="new featureset",
+                featuresets=[_get_changed_featureset_invalid()],
+                incremental=True,
+                tier="prod",
+            )  # type: ignore
+        assert (
+            str(e.value)
+            == "Featureset ActorFeatures is not a superset of the existing featureset"
+        )

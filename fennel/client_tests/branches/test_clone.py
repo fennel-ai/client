@@ -1,22 +1,21 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
 
 from fennel._vendor import requests
-from fennel.datasets import Dataset, dataset, field, pipeline, Count, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import Dataset, dataset, field, pipeline, Count
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 wh = Webhook(name="fennel_webhook")
 __owner__ = "nitin@fennel.com"
 
 
-@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(wh.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -27,8 +26,7 @@ class UserInfoDataset:
     timestamp: datetime = field(timestamp=True)
 
 
-@index
-@dataset
+@dataset(index=True)
 class GenderStats:
     gender: str = field(key=True)
     count: int
@@ -42,8 +40,7 @@ class GenderStats:
         )
 
 
-@index
-@dataset
+@dataset(index=True)
 class CountryStats:
     country_code: int = field(key=True)
     count: int
@@ -68,8 +65,7 @@ class UserInfoFeatureset:
 
 
 def _get_changed_dataset(filter_condition):
-    @index
-    @dataset(version=2)
+    @dataset(index=True, version=2)
     class GenderStats:
         gender: str = field(key=True)
         count: int
@@ -88,16 +84,14 @@ def _get_changed_dataset(filter_condition):
 
 
 def _get_source_changed_datasets():
-    @source(wh.endpoint("UserInfoDataset3"), disorder="14d", cdc="append")
-    @index
-    @dataset(version=2)
+    @source(wh.endpoint("UserInfoDataset3"), disorder="14d", cdc="upsert")
+    @dataset(index=True, version=2)
     class UserInfoDataset:
         user_id: int = field(key=True)
         gender: int
         timestamp: datetime = field(timestamp=True)
 
-    @index
-    @dataset(version=2)
+    @dataset(index=True, version=2)
     class GenderStats:
         gender: int = field(key=True)
         count: int
@@ -123,7 +117,7 @@ def _get_changed_featureset():
         country_code: int
         email: str = F(UserInfoDataset.email, default="None")  # type: ignore
 
-        @extractor(depends_on=[UserInfoDataset], version=2)
+        @extractor(deps=[UserInfoDataset], version=2)
         @inputs("user_id")
         @outputs("age", "country_code")
         def my_extractor(cls, ts: pd.Series, user_id: pd.Series):
@@ -192,7 +186,7 @@ def test_clone_after_log(client):
         featuresets=[UserInfoFeatureset],
     )
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -238,7 +232,7 @@ def test_webhook_log_to_both_clone_parent(client):
     resp = client.clone_branch("test-branch", from_branch="main")
     assert resp.status_code == requests.codes.OK, resp.json()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -300,7 +294,7 @@ def test_add_dataset_clone_branch(client):
     )
     assert resp.status_code == requests.codes.OK, resp.json()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -360,7 +354,7 @@ def test_change_dataset_clone_branch(client):
     Clone a branch A → B. Verify A & B both give the same answers.
     Then modify A. Ensure B keeps giving the same answers.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -440,7 +434,7 @@ def test_multiple_clone_branch(client):
     Clone A → B and then again B → C — they are all the same.
     Now modify B and C in different ways - so all three of A, B, C have different graphs/data etc.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -547,7 +541,7 @@ def test_change_source_dataset_clone_branch(client):
         datasets=_get_source_changed_datasets(),
     )
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -573,7 +567,7 @@ def test_change_source_dataset_clone_branch(client):
     assert response.status_code == requests.codes.OK, response.json()
     client.sleep()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,
@@ -628,7 +622,7 @@ def test_change_extractor_clone_branch(client):
         featuresets=[_get_changed_featureset()],
     )
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         {
             "user_id": 1,

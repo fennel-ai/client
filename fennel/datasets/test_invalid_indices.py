@@ -1,10 +1,10 @@
 import pandas as pd
 import pytest
 
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import mock
 
 __owner__ = "nitin@fennel.ai"
@@ -22,7 +22,6 @@ def test_invalid_dataset_lookup():
         ts: int = field(timestamp=True)
         age: int
 
-    @index(online=False, offline=None)
     @dataset
     class Dataset2:
         user_id: int = field(key=True)
@@ -62,7 +61,7 @@ def test_invalid_dataset_lookup():
 
             @inputs("user_id")
             @outputs("age")
-            @extractor(depends_on=[Dataset1])
+            @extractor(deps=[Dataset1])
             def extract(cls, ts: pd.Series, user_ids: pd.Series):
                 data, _ = Dataset1.lookup(ts, user_id=user_ids)  # type: ignore
                 return data["age"].fillna(10)
@@ -81,7 +80,7 @@ def test_invalid_dataset_lookup():
 
             @inputs("user_id")
             @outputs("age")
-            @extractor(depends_on=[Dataset2])
+            @extractor(deps=[Dataset2])
             def extract(cls, ts: pd.Series, user_ids: pd.Series):
                 data, _ = Dataset2.lookup(ts, user_id=user_ids)  # type: ignore
                 return data["age"].fillna(10)
@@ -98,9 +97,8 @@ def test_invalid_dataset_online_lookup(client):
     This tests that a dataset doing online lookup without online index is not allowed.
     """
 
-    @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="append")
-    @index(online=False, offline="forever")
-    @dataset
+    @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="upsert")
+    @dataset(offline=True)
     class Dataset1:
         user_id: int = field(key=True)
         ts: int = field(timestamp=True)
@@ -116,7 +114,7 @@ def test_invalid_dataset_online_lookup(client):
         user_id: int
         age: int
 
-        @extractor(depends_on=[Dataset1])
+        @extractor(deps=[Dataset1])
         @inputs("user_id")
         @outputs("age")
         def extract(cls, ts: pd.Series, user_ids: pd.Series):
@@ -155,9 +153,8 @@ def test_invalid_dataset_offline_lookup(client):
     This tests that a dataset doing offline lookup without offline index is not allowed.
     """
 
-    @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="append")
-    @index(online=True, offline=None)
-    @dataset
+    @source(webhook.endpoint("Dataset1"), disorder="14d", cdc="upsert")
+    @dataset(online=True)
     class Dataset1:
         user_id: int = field(key=True)
         ts: int = field(timestamp=True)
@@ -173,7 +170,7 @@ def test_invalid_dataset_offline_lookup(client):
         user_id: int
         age: int
 
-        @extractor(depends_on=[Dataset1])
+        @extractor(deps=[Dataset1])
         @inputs("user_id")
         @outputs("age")
         def extract(cls, ts: pd.Series, user_ids: pd.Series):

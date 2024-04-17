@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import List
 
-from fennel.datasets import dataset, field, pipeline, Dataset, LastK, Min, index
-from fennel.lib import inputs
 from fennel.connectors import Webhook, source
+from fennel.datasets import dataset, field, pipeline, Dataset, LastK, Min
+from fennel.lib import inputs
 
 __owner__ = "eng@app.com"
 
@@ -15,13 +15,13 @@ webhook = Webhook(name="app_webhook")
 )
 @dataset
 class LocationDS:
-    id: int = field(key=True)
+    id: int
     latitude: float
     longitude: float
     created: datetime
 
 
-@dataset
+@dataset(index=True)
 class LocationDS2:
     latitude_int: int = field(key=True)
     longitude_int: int = field(key=True)
@@ -62,8 +62,7 @@ class LocationToNewMarketArea:
     created: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class IdToMarketAreaDS:
     id: int = field(key=True)
     market_area_id: int
@@ -112,8 +111,7 @@ class VehicleSummary:
     created: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 class MarketAreaDS:
     vehicle_id: int = field(key=True)
     vehicle_state: List[str]

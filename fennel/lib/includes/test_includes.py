@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
@@ -6,19 +6,18 @@ import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel._vendor.requests as requests
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import includes, meta, inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -54,7 +53,7 @@ class UserInfoSingleExtractor:
     age_cubed: int
     is_name_common: bool
 
-    @extractor(depends_on=[UserInfoDataset])  # type: ignore
+    @extractor(deps=[UserInfoDataset])  # type: ignore
     @includes(power_4, cube)
     @inputs("userid")
     @outputs(age, "age_power_four", "age_cubed", "is_name_common")
@@ -106,7 +105,7 @@ def test_simple_extractor(client):
         datasets=[UserInfoDataset],
         featuresets=[UserInfoSingleExtractor],
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     data = [
         [18232, "John", 32, "USA", now],
         [18234, "Monica", 24, "Chile", now],

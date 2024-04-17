@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
@@ -6,10 +6,10 @@ import pytest
 from dateutil.relativedelta import relativedelta  # type: ignore
 
 from fennel import meta, Count, featureset, feature as F, extractor
-from fennel.datasets import dataset, field, pipeline, Dataset, index
-from fennel.lib import inputs, outputs
 from fennel.connectors import Webhook
 from fennel.connectors import source
+from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.lib import inputs, outputs
 from fennel.testing import mock
 
 webhook = Webhook(name="fennel_webhook")
@@ -17,10 +17,9 @@ webhook = Webhook(name="fennel_webhook")
 __owner__ = "uber-data@eng.com"
 
 
-@index
-@dataset
+@dataset(index=True)
 @source(
-    webhook.endpoint("RiderDataset"), cdc="append", disorder="14d", tier="local"
+    webhook.endpoint("RiderDataset"), cdc="upsert", disorder="14d", tier="local"
 )
 class RiderDataset:
     rider_id: int = field(key=True)
@@ -28,12 +27,11 @@ class RiderDataset:
     birthdate: datetime
 
 
-@index
-@dataset
+@dataset(index=True)
 @source(
     webhook.endpoint("RiderCreditScoreDataset"),
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="local",
 )
 class RiderCreditScoreDataset:
@@ -42,12 +40,11 @@ class RiderCreditScoreDataset:
     score: float
 
 
-@index
-@dataset
+@dataset(index=True)
 @source(
     webhook.endpoint("CountryLicenseDataset"),
     disorder="14d",
-    cdc="append",
+    cdc="upsert",
     tier="local",
 )
 @meta(owner="data@eng.com")
@@ -71,14 +68,7 @@ class ReservationsDataset:
     created: datetime
 
 
-@index
-@dataset
-@source(
-    webhook.endpoint("NumCompletedTripsDataset"),
-    disorder="14d",
-    cdc="append",
-    tier="local",
-)
+@dataset(index=True)
 class NumCompletedTripsDataset:
     rider_id: int = field(key=True)
     count_num_completed_trips: int
@@ -180,9 +170,7 @@ class RiderFeatures:
     def extract_age_years(
         cls, ts: pd.Series, birthdate: pd.Series
     ) -> pd.DataFrame:
-        age_years = (datetime.utcnow() - birthdate).dt.total_seconds() / (
-            60 * 60 * 24 * 365
-        )
+        age_years = (ts - birthdate).dt.total_seconds() / (60 * 60 * 24 * 365)
         age_years = age_years.astype(int)
         return pd.DataFrame({"age_years": age_years})
 
@@ -303,8 +291,8 @@ def test_complex_auto_gen_extractors(client):
     rider_df = pd.DataFrame(
         {
             "rider_id": [1],
-            "created": [datetime.utcnow()],
-            "birthdate": [datetime.utcnow() - relativedelta(years=30)],
+            "created": [datetime.now(timezone.utc)],
+            "birthdate": [datetime.now(timezone.utc) - relativedelta(years=30)],
             "country_code": ["US"],
         }
     )
@@ -319,7 +307,7 @@ def test_complex_auto_gen_extractors(client):
             "rider_id": [1],
             "vehicle_id": [1],
             "is_completed_trip": [1],
-            "created": [datetime.utcnow()],
+            "created": [datetime.now(timezone.utc)],
         }
     )
     log_response = client.log(
@@ -332,7 +320,7 @@ def test_complex_auto_gen_extractors(client):
     country_license_df = pd.DataFrame(
         {
             "rider_id": [1],
-            "created": [datetime.utcnow()],
+            "created": [datetime.now(timezone.utc)],
             "country_code": ["US"],
         }
     )
@@ -356,7 +344,7 @@ def test_complex_auto_gen_extractors(client):
     assert extracted_df["RiderFeatures.dl_state"].to_list() == ["US", "Unknown"]
     assert extracted_df["RiderFeatures.is_us_dl"].to_list() == [True, False]
 
-    age_years = datetime.utcnow().year - 2000
+    age_years = datetime.now(timezone.utc).year - 2000
     assert extracted_df["RiderFeatures.age_years"].to_list() == [30, age_years]
     assert extracted_df["RiderFeatures.dl_state_population"].to_list() == [
         328200000,

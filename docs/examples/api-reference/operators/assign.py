@@ -1,8 +1,9 @@
-import pytest
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
+import pytest
+
 from fennel.testing import mock
 
 __owner__ = "aditya@fennel.ai"
@@ -12,21 +13,20 @@ class TestAssignSnips(unittest.TestCase):
     @mock
     def test_basic(self, client):
         # docsnip basic
-        from fennel.datasets import dataset, field, pipeline, Dataset, index
+        from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="upsert")
         @dataset
         class Transaction:
             uid: int = field(key=True)
             amount: int
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class WithSquare:
             uid: int = field(key=True)
             amount: int
@@ -56,7 +56,9 @@ class TestAssignSnips(unittest.TestCase):
         assert df["uid"].tolist() == [1]
         assert df["amount"].tolist() == [10]
         assert df["amount_sq"].tolist() == [100]
-        assert df["timestamp"].tolist() == [datetime(2021, 1, 1, 0, 0, 0)]
+        assert df["timestamp"].tolist() == [
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        ]
         assert found.tolist() == [True]
 
     @mock
@@ -68,7 +70,7 @@ class TestAssignSnips(unittest.TestCase):
 
         webhook = Webhook(name="webhook")
 
-        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
+        @source(webhook.endpoint("Transaction"), disorder="14d", cdc="upsert")
         @dataset
         class Transaction:
             uid: int = field(key=True)

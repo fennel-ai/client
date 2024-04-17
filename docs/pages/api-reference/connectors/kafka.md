@@ -22,7 +22,6 @@ single server (e.g. `localhost:9092`) or a comma separated list of several
 servers (e.g. `localhost:9092,another.host:9092`).
 </Expandable>
 
-
 <Expandable title="security_protocol" type='"PLAINTEXT" | "SASL_PLAINTEXT" | "SASL_SSL"'>
 Protocol used to communicate with the brokers. 
 </Expandable>
@@ -47,15 +46,15 @@ The name of the kafka topic that needs to be sourced into the dataset.
 
 <Expandable title="format" type='"json" | Avro' defaultVal="json">
 The format of the data in Kafka topic. Both `"json"` and 
-[Avro](/api-reference/sources/avro) supported.
+[Avro](/api-reference/connectors/avro) supported.
 </Expandable>
 
 <pre snippet="api-reference/sources/kafka#basic"
     status="success" message="Sourcing json data from kafka to a dataset"
 ></pre>
 
-<pre snippet="api-reference/sinks/kafka#basic"
-    status="success" message="Capturing change from a dataset to a Kafka Sink"
+<pre snippet="api-reference/sources/kafka_sink#basic"
+    status="success" message="Capturing change from a dataset to a Kafka sink"
 ></pre>
 
 #### Errors

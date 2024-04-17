@@ -3,4 +3,5 @@ from fennel.internal_lib.utils.utils import (
     get_origin,
     is_user_defined_class,
     as_json,
+    parse_datetime,
 )

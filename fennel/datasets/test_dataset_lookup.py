@@ -1,13 +1,13 @@
-from datetime import datetime
-
-import pandas as pd
+from datetime import datetime, timezone
 from typing import List, no_type_check
 
+import pandas as pd
+
 import fennel.datasets.datasets
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
@@ -15,9 +15,8 @@ webhook = Webhook(name="fennel_webhook")
 __owner__ = "test@test.com"
 
 
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str = field(key=True)
@@ -31,7 +30,7 @@ class UserInfoDataset:
 def fake_func(
     cls_name: str, ts: pd.Series, fields: List[str], df: pd.DataFrame
 ):
-    now = datetime.utcfromtimestamp(1668368655)
+    now = datetime.fromtimestamp(1668368655, tz=timezone.utc)
     if len(fields) > 0:
         assert ts.equals(pd.Series([now, now, now]))
         assert fields == ["age", "gender"]
@@ -62,7 +61,7 @@ def test_dataset_lookup():
         age_cube: int = F().meta(owner="mohit@fennel.ai")
         gender: str
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs("userid", "name")
         @outputs("age_sq", "gender")
         @no_type_check
@@ -79,7 +78,7 @@ def test_dataset_lookup():
             df["age_sq"] = df["age"] * df["age"]
             return df[["age_sq", "gender"]]
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs("userid", "name")
         @outputs("age_cube")
         @no_type_check
@@ -107,7 +106,7 @@ def test_dataset_lookup():
     assert user_sq_extractor.name == "user_age_sq"
 
     user_sq_extractor_func = get_extractor_func(sync_request.extractors[1])
-    now = datetime.utcfromtimestamp(1668368655)
+    now = datetime.fromtimestamp(1668368655, tz=timezone.utc)
     ts = pd.Series([now, now, now])
     user_id = pd.Series([1, 2, 3])
     names = pd.Series(["a", "b", "c"])

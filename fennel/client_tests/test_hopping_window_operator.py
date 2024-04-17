@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 import pandas as pd
@@ -6,12 +6,12 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel import connectors
-from fennel.datasets import dataset, Dataset, pipeline, field, index
-from fennel.featuresets import featureset, feature as F, extractor
+from fennel.connectors import source
+from fennel.datasets import dataset, Dataset, pipeline, field
+from fennel.featuresets import featureset, extractor
 from fennel.lib.aggregate import Average, LastK
 from fennel.lib.metadata import meta
 from fennel.lib.schema import inputs, outputs, Window, struct
-from fennel.connectors import source
 from fennel.testing import mock
 
 webhook = connectors.Webhook(name="fennel_webhook")
@@ -33,8 +33,7 @@ class WindowStats:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class Sessions:
     user_id: int = field(key=True)
     window: Window = field(key=True)
@@ -61,8 +60,7 @@ class Sessions:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class SessionStats:
     user_id: int = field(key=True)
     timestamp: datetime = field(timestamp=True)
@@ -130,7 +128,7 @@ class UserSessionStats:
     last_visitor_session: List[Window]
     avg_star: float
 
-    @extractor(depends_on=[SessionStats])  # type: ignore
+    @extractor(deps=[SessionStats])  # type: ignore
     @inputs("user_id")
     @outputs("avg_count", "avg_length", "last_visitor_session", "avg_star")
     def extract_cast(cls, ts: pd.Series, user_ids: pd.Series):
@@ -167,7 +165,6 @@ def log_app_events_data(client):
     }
     df = pd.DataFrame(data)
     response = client.log("fennel_webhook", "AppEvent", df)
-    print(response.json())
     assert response.status_code == requests.codes.OK, response.json()
 
 
@@ -186,14 +183,18 @@ def test_hopping_window_operator(client):
 
     client.sleep()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     ts = pd.Series([now])
     user_id_keys = pd.Series([1])
     window_keys = pd.Series(
         [
             {
-                "begin": pd.Timestamp(datetime(2023, 1, 16, 11, 0, 0)),
-                "end": pd.Timestamp(datetime(2023, 1, 16, 11, 0, 10)),
+                "begin": pd.Timestamp(
+                    datetime(2023, 1, 16, 11, 0, 0, tzinfo=timezone.utc)
+                ),
+                "end": pd.Timestamp(
+                    datetime(2023, 1, 16, 11, 0, 10, tzinfo=timezone.utc)
+                ),
             }
         ]
     )
@@ -212,10 +213,10 @@ def test_hopping_window_operator(client):
     assert df_session.shape[0] == 1
     assert df_session["user_id"].values == [1]
     assert df_session["window"].values[0].begin == datetime(
-        2023, 1, 16, 11, 0, 0
+        2023, 1, 16, 11, 0, 0, tzinfo=timezone.utc
     )
     assert df_session["window"].values[0].end == datetime(
-        2023, 1, 16, 11, 0, 10
+        2023, 1, 16, 11, 0, 10, tzinfo=timezone.utc
     )
     assert df_session["window_stats"].values[0].count == 6
     assert df_session["window_stats"].values[0].avg_star == pytest.approx(

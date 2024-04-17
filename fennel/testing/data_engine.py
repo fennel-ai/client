@@ -2,8 +2,9 @@ import copy
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
+from dataclasses import field
+from datetime import datetime, timezone
 from functools import partial
-from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Callable, Any
 
 import numpy as np
@@ -11,9 +12,9 @@ import pandas as pd
 from frozendict import frozendict
 
 import fennel.datasets.datasets
+from fennel.connectors import connectors, PreProcValue
 from fennel.datasets import Dataset, Pipeline
 from fennel.datasets.datasets import (
-    sync_validation_for_pipelines,
     get_index,
     IndexDuration,
 )
@@ -21,13 +22,12 @@ from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.internal_lib.duration import Duration, duration_to_timedelta
 from fennel.internal_lib.schema import data_schema_check
 from fennel.internal_lib.to_proto import dataset_to_proto
-from fennel.connectors import connectors, PreProcValue
+from fennel.internal_lib.utils import parse_datetime
 from fennel.testing.executor import Executor
 from fennel.testing.test_utils import (
     FakeResponse,
     cast_df_to_schema,
 )
-from dataclasses import field
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
@@ -51,7 +51,10 @@ def _preproc_df(
                 )
             new_df[col] = df[col_name]
         else:
-            new_df[col] = pre_proc_value
+            if isinstance(pre_proc_value, datetime):
+                new_df[col] = parse_datetime(pre_proc_value)
+            else:
+                new_df[col] = pre_proc_value
     return new_df
 
 
@@ -172,6 +175,7 @@ class DataEngine(object):
     def add_datasets(
         self,
         datasets: List[Dataset],
+        incremental=False,
         tier: Optional[str] = None,
     ):
         """
@@ -184,11 +188,6 @@ class DataEngine(object):
         """
         input_datasets_for_pipelines = defaultdict(list)
         for dataset in datasets:
-            if not isinstance(dataset, Dataset):
-                raise TypeError(
-                    f"Expected a list of datasets, got `{dataset.__name__}`"
-                    f" of type `{type(dataset)}` instead."
-                )
             core_dataset = dataset_to_proto(dataset)
             if hasattr(dataset, connectors.SOURCE_FIELD):
                 pre_proc, bounded, idleness = self._process_data_connector(
@@ -200,17 +199,18 @@ class DataEngine(object):
             is_source_dataset = hasattr(dataset, connectors.SOURCE_FIELD)
             fields = [f.name for f in dataset.fields]
 
-            self.datasets[dataset._name] = _Dataset(
-                fields=fields,
-                is_source_dataset=is_source_dataset,
-                core_dataset=core_dataset,
-                dataset=dataset,
-                bounded=bounded,
-                pre_proc=pre_proc,
-                idleness=idleness,
-                prev_log_time=datetime.utcnow(),
-                erased_keys=[],
-            )
+            if dataset._name not in self.datasets:
+                self.datasets[dataset._name] = _Dataset(
+                    fields=fields,
+                    is_source_dataset=is_source_dataset,
+                    core_dataset=core_dataset,
+                    dataset=dataset,
+                    bounded=bounded,
+                    pre_proc=pre_proc,
+                    idleness=idleness,
+                    prev_log_time=datetime.now(timezone.utc),
+                    erased_keys=[],
+                )
 
             if (
                 not core_dataset.is_source_dataset
@@ -222,7 +222,6 @@ class DataEngine(object):
             selected_pipelines = [
                 x for x in dataset._pipelines if x.tier.is_entity_selected(tier)
             ]
-            sync_validation_for_pipelines(selected_pipelines, dataset._name)
 
             for pipeline in selected_pipelines:
                 for input in pipeline.inputs:
@@ -619,7 +618,7 @@ class DataEngine(object):
                 idleness
             ).total_seconds()
             actual_idleness_secs = (
-                datetime.utcnow() - prev_log_time
+                datetime.now(timezone.utc) - prev_log_time
             ).total_seconds()
             # Do not log the data if a bounded source is idle for more time than expected
             if actual_idleness_secs >= expected_idleness_secs:
@@ -653,11 +652,11 @@ class DataEngine(object):
 
         # Check if the dataframe has the same schema as the dataset
         schema = core_dataset.dsschema
-        if str(df[timestamp_field].dtype) != "datetime64[ns]":
+        if str(df[timestamp_field].dtype) != "datetime64[ns, UTC]":
             raise ValueError(
                 400,
                 f"Timestamp field {timestamp_field} is not of type "
-                f"datetime64[ns] but found {df[timestamp_field].dtype} in "
+                f"datetime64[ns, UTC] but found {df[timestamp_field].dtype} in "
                 f"dataset {dataset_name}",
             )
         exceptions = data_schema_check(schema, df, dataset_name)
@@ -750,7 +749,9 @@ class DataEngine(object):
                 dataset_name
             ].dataset.timestamp_field
             self.datasets[dataset_name].data = df.sort_values(timestamp_field)
-            self.datasets[dataset_name].prev_log_time = datetime.utcnow()
+            self.datasets[dataset_name].prev_log_time = datetime.now(
+                timezone.utc
+            )
 
     def _process_data_connector(
         self, dataset: Dataset, tier: Optional[str] = None

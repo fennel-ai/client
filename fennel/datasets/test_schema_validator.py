@@ -13,7 +13,6 @@ from fennel.datasets import (
     Sum,
     Min,
     Max,
-    index,
 )
 from fennel.dtypes import Window
 from fennel.lib import meta, inputs
@@ -28,8 +27,7 @@ class MovieRating:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class MovieRevenue:
     movie: str = field(key=True)
     revenue: int
@@ -238,8 +236,7 @@ class Activity:
 
 
 @meta(owner="me@fennel.ai")
-@index
-@dataset(history="4m")
+@dataset(index=True, history="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
     category: str
@@ -528,8 +525,7 @@ def test_transform():
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class B:
     b1: str = field(key=True)
     b2: int
@@ -561,8 +557,7 @@ def test_join_schema_validation_value():
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class C:
     b1: int = field(key=True)
     b2: Optional[int]
@@ -571,8 +566,7 @@ class C:
 
 
 @meta(owner="test@test.com")
-@index
-@dataset
+@dataset(index=True)
 class E:
     a1: int = field(key=True)
     b2: Optional[int]
@@ -734,7 +728,7 @@ def test_explode_fails_on_keyed_column():
 
     assert (
         str(e.value)
-        == """Explode over keyed datasets is not defined. Found dataset with keys `{'director': typing.List[str]}` in pipeline `pipeline_exploded`"""
+        == """Explode over keyed datasets is not defined. Found dataset with keys `['director']` in pipeline `pipeline_exploded`"""
     )
 
 
@@ -1322,7 +1316,7 @@ def test_window_field_invalid_name():
             user_id: str
             page_id: str
             t: datetime
-            uuid: str = field(key=True)
+            uuid: str
             page_id: str
 
         @meta(owner="nitin@fennel.ai")
@@ -1341,7 +1335,7 @@ def test_window_field_invalid_name():
 
     assert (
         str(e.value)
-        == """Window field name `uuid` in `'[Pipeline:pipeline_window]->window node'` must be different from keyed fields in `'[Dataset:PageViewEvent]'`"""
+        == """Window field name `uuid` in `'[Pipeline:pipeline_window]->window node'` must be different from non keyed fields in `'[Dataset:PageViewEvent]'`"""
     )
 
     with pytest.raises(ValueError) as e:
@@ -1352,7 +1346,7 @@ def test_window_field_invalid_name():
             user_id: str
             page_id: str
             t: datetime
-            uuid: str = field(key=True)
+            uuid: str
             page_id: str
 
         @meta(owner="nitin@fennel.ai")
@@ -1642,8 +1636,7 @@ def test_join_with_wrong_right_index():
     with pytest.raises(ValueError) as e:
 
         @meta(owner="nitin@fennel.ai")
-        @index(offline=None)
-        @dataset
+        @dataset(online=True)
         class Users:
             user_id: str = field(key=True)
             age: int

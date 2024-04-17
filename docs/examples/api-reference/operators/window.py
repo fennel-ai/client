@@ -1,11 +1,10 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
-
-from fennel.datasets import index
-from fennel.testing import mock
 import pytest
+
+from fennel.testing import mock
 
 __owner__ = "hoang@fennel.ai"
 
@@ -28,8 +27,7 @@ class TestAssignSnips(unittest.TestCase):
             amount: int
             timestamp: datetime = field(timestamp=True)
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Session:
             # docsnip-highlight start
             # groupby field becomes the key field
@@ -92,15 +90,37 @@ class TestAssignSnips(unittest.TestCase):
             window=pd.Series(
                 [
                     {
-                        "begin": pd.Timestamp(datetime(2021, 1, 1, 0, 0, 0)),
+                        "begin": pd.Timestamp(
+                            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+                        ),
                         "end": pd.Timestamp(
-                            datetime(2021, 1, 1, 0, 10, 0, microsecond=1)
+                            datetime(
+                                2021,
+                                1,
+                                1,
+                                0,
+                                10,
+                                0,
+                                microsecond=1,
+                                tzinfo=timezone.utc,
+                            )
                         ),
                     },
                     {
-                        "begin": pd.Timestamp(datetime(2021, 1, 2, 0, 10, 0)),
+                        "begin": pd.Timestamp(
+                            datetime(2021, 1, 2, 0, 10, 0, tzinfo=timezone.utc)
+                        ),
                         "end": pd.Timestamp(
-                            datetime(2021, 1, 2, 0, 15, 0, microsecond=1)
+                            datetime(
+                                2021,
+                                1,
+                                2,
+                                0,
+                                15,
+                                0,
+                                microsecond=1,
+                                tzinfo=timezone.utc,
+                            )
                         ),
                     },
                 ]

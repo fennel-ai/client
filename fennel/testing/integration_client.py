@@ -16,7 +16,7 @@ try:
 
     sys.path.insert(
         0,
-        "/nix/store/c5h0h9xmlhhjsv616647fhf3aj1vd5pq-python3-3.11.8-env/lib/python3.11/site-packages",
+        "/nix/store/l2jqs4pdkwaag6wj45wqqllsz0qac7ls-python3-3.11.8-env/lib/python3.11/site-packages",
     )
     from fennel_client_lib import HttpServer  # type: ignore
     from fennel_dataset import lookup  # type: ignore
@@ -115,9 +115,9 @@ class IntegrationClient(Client):
             headers = {}
             headers["Authorization"] = "Bearer " + self.token
         headers = list(headers.items())  # type: ignore
-        x = self._http.get(self._url(path), headers=headers)
-        print(x)
-        code, content, content_type = x
+        code, content, content_type = self._http.get(
+            self._url(path), headers=headers
+        )
         if content_type == "application/json":
             content = json.loads(content)
         # HTTP sever returns code as a string
@@ -146,16 +146,11 @@ class IntegrationClient(Client):
         # If response content type is json, parse it
         if content_type == "application/json":
             content = json.loads(content)
-        print(content)
         # HTTP sever returns code as a string
         code = int(code)
         if code != 200:
             raise Exception(f"Server returned: {code}, {content}")
         return FakeResponse(code, content)
-
-    def __del__(self):
-        self._http.close()
-        time.sleep(8)
 
 
 class FakeResponse(Response):

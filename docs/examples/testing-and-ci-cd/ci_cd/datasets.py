@@ -1,7 +1,4 @@
 from datetime import datetime
-from typing import List
-
-from fennel.datasets import index
 
 
 def test_dataset_deleted():
@@ -14,10 +11,9 @@ def test_dataset_deleted():
     @source(
         Webhook(name="example").endpoint("ticket_sale"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
     )
-    @index
-    @dataset
+    @dataset(index=True)
     class Ticket:
         ticket_id: str = field(key=True)
         price: int
@@ -36,10 +32,9 @@ def test_gh_actions_dataset():
     @source(
         Webhook(name="example").endpoint("ticket_sale"),
         disorder="14d",
-        cdc="append",
+        cdc="upsert",
     )
-    @index
-    @dataset
+    @dataset(index=True)
     class Ticket:
         ticket_id: str = field(key=True)
         price: int

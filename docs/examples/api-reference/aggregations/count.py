@@ -18,7 +18,6 @@ class TestCountSnips(unittest.TestCase):
             pipeline,
             Dataset,
             Count,
-            index,
         )
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
@@ -33,8 +32,7 @@ class TestCountSnips(unittest.TestCase):
             amount: int
             timestamp: datetime
 
-        @index
-        @dataset
+        @dataset(index=True)
         class Aggregated:
             uid: int = field(key=True)
             # docsnip-highlight start
@@ -48,13 +46,12 @@ class TestCountSnips(unittest.TestCase):
             def count_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    Count(window="forever", into_field="num_transactions"),
-                    Count(
+                    num_transactions=Count(window="forever"),
+                    unique_vendors_1w=Count(
                         of="vendor",
                         unique=True,
                         approx=True,
                         window="1w",
-                        into_field="unique_vendors_1w",
                     ),
                     # docsnip-highlight end
                 )

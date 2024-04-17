@@ -1,24 +1,23 @@
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 import pytest
 from google.protobuf.json_format import ParseDict  # type: ignore
-from typing import Optional
 
 import fennel.gen.featureset_pb2 as fs_proto
-from fennel.datasets import dataset, field, index
+from fennel.connectors import source, Webhook
+from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
-from fennel.connectors import source, Webhook
 from fennel.testing import *
 
 webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
-@index
-@dataset
+@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
+@dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
     name: str
@@ -50,7 +49,7 @@ def test_simple_featureset():
         age: int = F().meta(owner="aditya@fennel.ai")
         income: int = F().meta(deprecated=True)
 
-        @extractor(depends_on=[UserInfoDataset], version=2)
+        @extractor(deps=[UserInfoDataset], version=2)
         @inputs(User.id, User.age)
         def get_user_info(
             cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
@@ -185,13 +184,13 @@ def test_complex_featureset():
         age: int = F().meta(owner="aditya@fennel.ai")
         income: int
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs(User.id)
         @outputs("userid", "home_geoid")
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset])
+        @extractor(deps=[UserInfoDataset])
         @inputs(User.id)
         @outputs("gender", "age")
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
@@ -358,19 +357,19 @@ def test_extractor_tier_selector():
             tier=["~prod"],
         )
 
-        @extractor(depends_on=[UserInfoDataset], tier=["~prod", "~dev"])
+        @extractor(deps=[UserInfoDataset], tier=["~prod", "~dev"])
         @inputs(User.id)
         @outputs(user_id, "home_geoid")
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset], tier=["prod"])
+        @extractor(deps=[UserInfoDataset], tier=["prod"])
         @inputs(User.id)
         @outputs(user_id, "home_geoid")
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(depends_on=[UserInfoDataset], tier=["prod"])
+        @extractor(deps=[UserInfoDataset], tier=["prod"])
         @inputs(User.id)
         @outputs(income)
         def get_user_income(cls, ts: pd.Series, user_id: pd.Series):
