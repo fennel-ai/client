@@ -216,6 +216,7 @@ def get_all_imports() -> str:
         "import random",
         "import math",
         "import re",
+        "from enum import Enum",
         "from typing import *",
         "from collections import defaultdict",
     ]
