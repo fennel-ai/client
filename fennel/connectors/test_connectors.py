@@ -417,38 +417,38 @@ mongo = Mongo(
 )
 
 
-def test_tier_selector_on_connector():
+def test_env_selector_on_connector():
     @meta(owner="test@test.com")
     @source(
         mongo.collection("test_table", cursor="added_on"),
         disorder="14d",
         cdc="upsert",
         every="1h",
-        tier=["dev-3"],
+        env=["dev-3"],
     )
     @source(
         redshift.table("test_schema", "test_table", cursor="added_on"),
         disorder="14d",
         cdc="upsert",
         every="1h",
-        tier=["dev-3"],
+        env=["dev-3"],
     )
     @source(
-        kafka.topic("test_topic"), disorder="14d", cdc="upsert", tier=["dev-2"]
+        kafka.topic("test_topic"), disorder="14d", cdc="upsert", env=["dev-2"]
     )
     @source(
         mysql.table("users_mysql", cursor="added_on"),
         every="1h",
         disorder="14d",
         cdc="upsert",
-        tier=["prod"],
+        env=["prod"],
     )
     @source(
         snowflake.table("users_Sf", cursor="added_on"),
         every="1h",
         disorder="14d",
         cdc="upsert",
-        tier=["staging"],
+        env=["staging"],
     )
     @source(
         s3.bucket(
@@ -458,7 +458,7 @@ def test_tier_selector_on_connector():
         every="1h",
         disorder="2d",
         cdc="upsert",
-        tier=["dev"],
+        env=["dev"],
     )
     @dataset
     class UserInfoDataset:
@@ -476,12 +476,12 @@ def test_tier_selector_on_connector():
     @sink(
         kafka.topic("test_topic1"),
         cdc="debezium",
-        tier=["prod"],
+        env=["prod"],
     )
     @sink(
         kafka.topic("test_topic2"),
         cdc="debezium",
-        tier=["staging"],
+        env=["staging"],
     )
     @dataset
     class UserInfoDatasetDerived:
@@ -503,7 +503,7 @@ def test_tier_selector_on_connector():
     view = InternalTestClient()
     view.add(UserInfoDataset)
     view.add(UserInfoDatasetDerived)
-    sync_request = view._get_sync_request_proto(tier="prod")
+    sync_request = view._get_sync_request_proto(env="prod")
     assert len(sync_request.datasets) == 2
     assert len(sync_request.sources) == 1
     assert len(sync_request.sinks) == 1
@@ -564,7 +564,7 @@ def test_tier_selector_on_connector():
     assert sink_request == expected_sink_request, error_message(
         sink_request, expected_sink_request
     )
-    sync_request = view._get_sync_request_proto(tier="staging")
+    sync_request = view._get_sync_request_proto(env="staging")
     assert len(sync_request.datasets) == 2
     assert len(sync_request.sources) == 1
     assert len(sync_request.sinks) == 1
@@ -632,7 +632,7 @@ def test_tier_selector_on_connector():
 def test_kafka_sink_and_source_doesnt_create_extra_extdbs():
     @meta(owner="test@test.com")
     @source(
-        kafka.topic("test_topic"), disorder="14d", cdc="upsert", tier=["prod"]
+        kafka.topic("test_topic"), disorder="14d", cdc="upsert", env=["prod"]
     )
     @dataset
     class UserInfoDataset:
@@ -650,7 +650,7 @@ def test_kafka_sink_and_source_doesnt_create_extra_extdbs():
     @sink(
         kafka.topic("test_topic1"),
         cdc="debezium",
-        tier=["prod"],
+        env=["prod"],
     )
     @dataset
     class UserInfoDatasetDerived:
@@ -672,7 +672,7 @@ def test_kafka_sink_and_source_doesnt_create_extra_extdbs():
     view = InternalTestClient()
     view.add(UserInfoDataset)
     view.add(UserInfoDatasetDerived)
-    sync_request = view._get_sync_request_proto(tier="prod")
+    sync_request = view._get_sync_request_proto(env="prod")
     assert len(sync_request.datasets) == 2
     assert len(sync_request.sources) == 1
     assert len(sync_request.sinks) == 1

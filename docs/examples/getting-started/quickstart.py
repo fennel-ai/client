@@ -22,7 +22,7 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.testing import MockClient
+from fennel.testing import MockClient, log
 
 __owner__ = "nikhil@fennel.ai"
 
@@ -43,8 +43,7 @@ mongo = Mongo.get(name="my_mongo")
 table = postgres.table("product", cursor="last_modified")
 
 
-@source(table, disorder="1d", cdc="upsert", every="1m", tier="prod")
-@source(webhook.endpoint("Product"), disorder="1d", cdc="upsert", tier="dev")
+@source(table, disorder="1d", cdc="upsert", every="1m")
 @dataset(index=True)
 class Product:
     product_id: int = field(key=True)
@@ -64,8 +63,7 @@ class Product:
 
 
 # ingesting realtime data from Kafka works exactly the same way
-@source(kafka.topic("orders"), disorder="1h", cdc="append", tier="prod")
-@source(webhook.endpoint("Order"), disorder="14d", cdc="append", tier="dev")
+@source(kafka.topic("orders"), disorder="1h", cdc="append")
 @dataset
 class Order:
     uid: int
@@ -130,7 +128,6 @@ client.commit(
     message="initial commit",
     datasets=[Order, Product, UserSellerOrders],
     featuresets=[UserSellerFeatures],
-    tier="dev",
 )
 
 # /docsnip
@@ -145,14 +142,13 @@ data = [
     [3, 1, 30.0, "product 3", now],
 ]
 df = pd.DataFrame(data, columns=columns)
-response = client.log("fennel_webhook", "Product", df)
-assert response.status_code == requests.codes.OK, response.json()
+log(Product, df)
 
 columns = ["uid", "product_id", "timestamp"]
 data = [[1, 1, now], [1, 2, now], [1, 3, now]]
 df = pd.DataFrame(data, columns=columns)
-response = client.log("fennel_webhook", "Order", df)
-assert response.status_code == requests.codes.OK, response.json()
+log(Order, df)
+
 # /docsnip
 
 # docsnip query

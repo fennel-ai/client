@@ -349,7 +349,7 @@ def test_complex_featureset():
     )
 
 
-def test_extractor_tier_selector():
+def test_extractor_env_selector():
     @meta(owner="aditya@fennel.ai")
     @featureset
     class Request:
@@ -358,7 +358,7 @@ def test_extractor_tier_selector():
     @meta(owner="aditya@fennel.ai")
     @featureset
     class UserInfo:
-        user_id: int = F(Request.user_id, tier=["~staging", "~prod"])
+        user_id: int = F(Request.user_id, env=["~staging", "~prod"])
         home_geoid: int
         # The users gender among male/female/non-binary
         gender: str
@@ -366,22 +366,22 @@ def test_extractor_tier_selector():
         income: int = F(
             UserInfoDataset.avg_income,
             default=1,
-            tier=["~prod"],
+            env=["~prod"],
         )
 
-        @extractor(deps=[UserInfoDataset], tier=["~prod", "~dev"])
+        @extractor(deps=[UserInfoDataset], env=["~prod", "~dev"])
         @inputs(User.id)
         @outputs(user_id, "home_geoid")
         def get_user_info1(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(deps=[UserInfoDataset], tier=["prod"])
+        @extractor(deps=[UserInfoDataset], env=["prod"])
         @inputs(User.id)
         @outputs(user_id, "home_geoid")
         def get_user_info2(cls, ts: pd.Series, user_id: pd.Series):
             pass
 
-        @extractor(deps=[UserInfoDataset], tier=["prod"])
+        @extractor(deps=[UserInfoDataset], env=["prod"])
         @inputs(User.id)
         @outputs(income)
         def get_user_income(cls, ts: pd.Series, user_id: pd.Series):
@@ -399,7 +399,7 @@ def test_extractor_tier_selector():
         == "Feature `income` is extracted by multiple extractors including `get_user_income` in featureset `UserInfo`."
     )
 
-    sync_request = view._get_sync_request_proto(tier="prod")
+    sync_request = view._get_sync_request_proto(env="prod")
     assert len(sync_request.feature_sets) == 3
     assert len(sync_request.extractors) == 2
     assert len(sync_request.features) == 8
@@ -407,7 +407,7 @@ def test_extractor_tier_selector():
     extractor_req = sync_request.extractors[1]
     assert extractor_req.name == "get_user_info2"
 
-    sync_request = view._get_sync_request_proto(tier="dev")
+    sync_request = view._get_sync_request_proto(env="dev")
     assert len(sync_request.feature_sets) == 3
     assert len(sync_request.extractors) == 2
     assert len(sync_request.features) == 8

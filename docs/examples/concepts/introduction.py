@@ -37,7 +37,7 @@ def test_overview(client):
     user_table = postgres.table("user", cursor="signup_at")
 
     # docsnip-highlight next-line
-    @source(user_table, every="1m", disorder="7d", cdc="upsert", tier="prod")
+    @source(user_table, every="1m", disorder="7d", cdc="upsert", env="prod")
     @dataset(index=True)
     class User:
         uid: int = field(key=True)
@@ -46,7 +46,7 @@ def test_overview(client):
         signup_at: datetime = field(timestamp=True)
 
     # docsnip-highlight next-line
-    @source(kafka.topic("txn"), disorder="1d", cdc="append", tier="prod")
+    @source(kafka.topic("txn"), disorder="1d", cdc="append", env="prod")
     @dataset
     class Transaction:
         uid: int
@@ -123,13 +123,13 @@ def test_overview(client):
     # /docsnip
 
     User = source(
-        webhook.endpoint("User"), disorder="14d", cdc="upsert", tier="local"
+        webhook.endpoint("User"), disorder="14d", cdc="upsert", env="local"
     )(User)
     Transaction = source(
         webhook.endpoint("Transaction"),
         disorder="14d",
         cdc="append",
-        tier="local",
+        env="local",
     )(Transaction)
 
     def _unused():
@@ -145,7 +145,7 @@ def test_overview(client):
         message="user: add transaction datasets; first few features",
         datasets=[User, Transaction, UserTransactionsAbroad],
         featuresets=[UserFeature],
-        tier="local",
+        env="local",
     )
 
     now = datetime.now(timezone.utc)

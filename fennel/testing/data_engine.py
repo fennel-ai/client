@@ -12,7 +12,13 @@ import pandas as pd
 from frozendict import frozendict
 
 import fennel.datasets.datasets
-from fennel.connectors import connectors, PreProcValue
+from fennel.connectors import (
+    connectors,
+    PreProcValue,
+    Webhook,
+    DataConnector,
+    DataSource,
+)
 from fennel.datasets import Dataset, Pipeline
 from fennel.datasets.datasets import (
     get_index,
@@ -23,6 +29,7 @@ from fennel.internal_lib.duration import Duration, duration_to_timedelta
 from fennel.internal_lib.schema import data_schema_check
 from fennel.internal_lib.to_proto import dataset_to_proto
 from fennel.internal_lib.utils import parse_datetime
+from fennel.lib.includes import EnvSelector
 from fennel.testing.executor import Executor
 from fennel.testing.test_utils import (
     FakeResponse,
@@ -36,6 +43,27 @@ FENNEL_ORDER = "__fennel_order__"
 FENNEL_TIMESTAMP = "__fennel_timestamp__"
 
 logger = logging.getLogger(__name__)
+internal_webhook = Webhook(name="_internal_fennel_webhook")
+internal_env = "testing"
+
+
+def gen_dataset_webhook_endpoint(ds_name: str) -> str:
+    return f"_internal_{ds_name}_endpoint"
+
+
+def ds_from_endpoint(endpoint: str) -> str:
+    return endpoint.split("_internal_")[1].split("_endpoint")[0]
+
+
+def internal_webhook_endpoint(dataset: Dataset):
+    src = internal_webhook.endpoint(gen_dataset_webhook_endpoint(dataset._name))
+    src.envs = EnvSelector(internal_env)
+    if len(dataset.key_fields) > 0:
+        src.cdc = "upsert"
+    else:
+        src.cdc = "append"
+    src.disorder = "14d"
+    return src
 
 
 def _preproc_df(
@@ -182,21 +210,21 @@ class DataEngine(object):
         self,
         datasets: List[Dataset],
         incremental=False,
-        tier: Optional[str] = None,
+        env: Optional[str] = None,
     ):
         """
         This method is used during sync to add datasets to the data engine.
         Args:
             datasets: List[Datasets] - List of datasets to add to the data engine
-            tier: Optional[str] - Tier against which datasets will be added.
+            env: Optional[str] - Tier against which datasets will be added.
         Returns:
             None
         """
         input_datasets_for_pipelines = defaultdict(list)
         for dataset in datasets:
             core_dataset = dataset_to_proto(dataset)
-            if hasattr(dataset, connectors.SOURCE_FIELD):
-                srcs = self._process_data_connector(dataset, tier)
+            if len(dataset._pipelines) == 0:
+                srcs = self._process_data_connector(dataset, env)
             else:
                 srcs = []
 
@@ -213,15 +241,8 @@ class DataEngine(object):
                     erased_keys=[],
                 )
 
-            if (
-                not core_dataset.is_source_dataset
-                and len(dataset._pipelines) == 0
-            ):
-                raise ValueError(
-                    f"Dataset {dataset._name} has no pipelines and is not a source dataset"
-                )
             selected_pipelines = [
-                x for x in dataset._pipelines if x.tier.is_entity_selected(tier)
+                x for x in dataset._pipelines if x.env.is_entity_selected(env)
             ]
 
             for pipeline in selected_pipelines:
@@ -736,19 +757,38 @@ class DataEngine(object):
             self.datasets[dataset_name].data = df.sort_values(timestamp_field)
 
     def _process_data_connector(
-        self, dataset: Dataset, tier: Optional[str] = None
+        self, dataset: Dataset, env: Optional[str] = None
     ) -> List[_SrcInfo]:
-        is_source_dataset = hasattr(dataset, connectors.SOURCE_FIELD)
-        sinks = getattr(dataset, connectors.SINK_FIELD, [])
+        def internal_webhook_present(
+            srcs: List[DataSource], internal_webhook
+        ) -> bool:
+            for src in srcs:
+                if isinstance(src, connectors.WebhookConnector):
+                    if src.endpoint == internal_webhook.endpoint:
+                        return True
+            return False
 
-        if len(sinks) > 0 and is_source_dataset:
+        # Every source dataset also has a webhook source
+        # with the same name as the '{dataset_name}__internal_webhook'
+        internal_webhook = internal_webhook_endpoint(dataset)
+        if hasattr(dataset, connectors.SOURCE_FIELD):
+            srcs = getattr(dataset, connectors.SOURCE_FIELD)
+        else:
+            srcs = []
+
+        if not internal_webhook_present(srcs, internal_webhook):
+            srcs.append(internal_webhook)
+        setattr(dataset, connectors.SOURCE_FIELD, srcs)
+
+        sinks = getattr(dataset, connectors.SINK_FIELD, [])
+        if len(sinks) > 0:
             raise ValueError(
                 f"Dataset `{dataset._name}` error: Cannot define sinks on a source dataset"
             )
 
         sources = getattr(dataset, connectors.SOURCE_FIELD)
         sources = sources if isinstance(sources, list) else [sources]
-        sources = [x for x in sources if x.tiers.is_entity_selected(tier)]
+        sources = [x for x in sources if x.envs.is_entity_selected(env)]
 
         webhook_sources: List[_SrcInfo] = []
         if len(sources) == 0:

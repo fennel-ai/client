@@ -29,6 +29,11 @@ class TestDataset(unittest.TestCase):
         # commit the dataset
         client.commit(datasets=[User])
         # ... some other stuff
+        
+        # Log data to the dataset directly (ONLY for testing)
+        log(User, pd.Dataframe(...))
+        #       OR
+        # Log data to the dataset via a webhook
         client.log("fennel_webhook", 'User', pd.Dataframe(...))
         # ... some other stuff
         found = client.query(...)
@@ -41,8 +46,8 @@ argument called `client` to the test. Once the `client` object reaches the
 body of the test, you can do all operations that are typically done on a real 
 client - you can commit datasets/featuresets, log data, extract features etc.
 
-Since external data integration doesn't work in mock server, the only way to 
-bring data to a dataset in the mock server is by explicitly logging data to a
+You can bring data to a dataset in the mock server, by using the log
+function from our testing library or by explicitly logging data to a
 [webhook](/api-reference/connectors/webhook).
 
 
@@ -50,7 +55,8 @@ bring data to a dataset in the mock server is by explicitly logging data to a
 ## Testing Datasets
 
 For testing Datasets, you can use the [log](/api-reference/client/log) method 
-of the client to add some local data to a dataset and then query this or other 
+of the client to add some local data to a dataset or use the log method
+from our testing library and then query this or other 
 downstream datasets using the [lookup](/api-reference/client/lookup) method.
 Here is an end to end example. Suppose our regular non-test code looks like this:
 

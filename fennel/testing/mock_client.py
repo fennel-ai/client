@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Union, Any, Tuple, Set
 import pandas as pd
 
 from fennel.client import Client
-from fennel.connectors.connectors import S3Connector
+from fennel.connectors.connectors import S3Connector, Webhook
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
 from fennel.featuresets import Featureset, Feature, is_valid_feature
 import fennel.gen.schema_pb2 as schema_proto
@@ -21,6 +21,11 @@ from fennel.internal_lib.to_proto import to_sync_request_proto
 from fennel.internal_lib.utils import parse_datetime
 from fennel.lib import includes  # noqa
 from fennel.testing.branch import Branch
+from fennel.testing.data_engine import (
+    internal_webhook,
+    gen_dataset_webhook_endpoint,
+    ds_from_endpoint,
+)
 from fennel.testing.integration_client import IntegrationClient
 from fennel.testing.query_engine import QueryEngine
 from fennel.testing.test_utils import (
@@ -29,8 +34,20 @@ from fennel.testing.test_utils import (
 )
 
 MAIN_BRANCH = "main"
+MOCK_CLIENT_ATTR = "__mock_client__"
 
 logger = logging.getLogger(__name__)
+
+
+def log(dataset: Dataset, df: pd.DataFrame):
+    if not hasattr(dataset, MOCK_CLIENT_ATTR):
+        raise Exception(
+            f"Dataset {dataset.__name__} is not registered with the client"
+        )
+
+    client = getattr(dataset, MOCK_CLIENT_ATTR)
+    endpoint = gen_dataset_webhook_endpoint(dataset._name)
+    return client.log(internal_webhook.name, endpoint, df)
 
 
 class MockClient(Client):
@@ -93,6 +110,11 @@ class MockClient(Client):
         if at_least_one_ok:
             return FakeResponse(200, "OK")
         else:
+            if webhook == internal_webhook.name:
+                dataset_name = ds_from_endpoint(endpoint)
+                raise Exception(
+                    f"Dataset `{dataset_name}` not found. Ensure the dataset is registered."
+                )
             raise Exception(
                 f"Webhook endpoint {webhook}_{endpoint} not found in any branch"
             )
@@ -103,7 +125,7 @@ class MockClient(Client):
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
-        tier: Optional[str] = None,
+        env: Optional[str] = None,
         incremental: bool = False,
     ):
         def is_superset_featureset(featureset_new, featureset_old):
@@ -158,6 +180,7 @@ class MockClient(Client):
                         f"Expected a list of datasets, got `{dataset.__name__}`"
                         f" of type `{type(dataset)}` instead."
                     )
+                setattr(dataset, MOCK_CLIENT_ATTR, self)
                 self.add(dataset)
         if featuresets is not None:
             for featureset in featuresets:
@@ -166,11 +189,12 @@ class MockClient(Client):
                         f"Expected a list of featuresets, got `{featureset.__name__}`"
                         f" of type `{type(featureset)}` instead."
                     )
+                setattr(featureset, MOCK_CLIENT_ATTR, self)
                 self.add(featureset)
         # Run all validation for converting them to protos
-        _ = to_sync_request_proto(self.to_register_objects, message, tier)
+        _ = to_sync_request_proto(self.to_register_objects, message, env)
         return self._get_branch().commit(
-            datasets, featuresets, preview, incremental, tier
+            datasets, featuresets, preview, incremental, env
         )
 
     def query(

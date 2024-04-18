@@ -96,7 +96,7 @@ def test_all_features(client):
             ReservationLevelFS,
             VehicleFS,
         ],
-        tier="local",
+        env="local",
     )
     log_payment_identifier_datasets(client)
 

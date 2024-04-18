@@ -18,7 +18,7 @@ webhook = Webhook(name="app_webhook")
     webhook.endpoint("PaymentAccountSrcDS"),
     disorder="14d",
     cdc="upsert",
-    tier="local",
+    env="local",
 )
 class PaymentAccountSrcDS:
     customer_id: str = field(key=True)
@@ -31,7 +31,7 @@ class PaymentAccountSrcDS:
     webhook.endpoint("PaymentAccountAssociationSrcDS"),
     disorder="14d",
     cdc="upsert",
-    tier="local",
+    env="local",
 )
 class PaymentAccountAssociationSrcDS:
     payment_account_id: int = field(key=True)
@@ -41,7 +41,7 @@ class PaymentAccountAssociationSrcDS:
 
 @dataset(index=True)
 @source(
-    webhook.endpoint("AccountSrcDS"), disorder="14d", cdc="upsert", tier="local"
+    webhook.endpoint("AccountSrcDS"), disorder="14d", cdc="upsert", env="local"
 )
 class AccountSrcDS:
     primary_driver_id: int

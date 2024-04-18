@@ -10,7 +10,7 @@ from fennel.datasets import dataset, field, Dataset, pipeline, Count
 from fennel.dtypes import regex, oneof
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import meta, inputs, outputs
-from fennel.testing import mock
+from fennel.testing import mock, log
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -227,7 +227,6 @@ def test_social_network(client):
 
     res = client.log("fennel_webhook", "UserInfo", user_data_df)
     assert res.status_code == requests.codes.OK, res.json()
-
     res = client.log("fennel_webhook", "PostInfo", post_data_df)
     assert res.status_code == requests.codes.OK, res.json()
     res = client.log("fennel_webhook", "ViewData", view_data_df)
@@ -278,5 +277,89 @@ def test_social_network(client):
 
     if client.is_integration_client():
         return
+    df = client.get_dataset_df("UserCategoryDataset")
+    assert df.shape == (1998, 4)
+
+
+@mock
+def test_social_network_with_mock_log(client):
+    client.commit(
+        message="social network",
+        datasets=[
+            UserInfo,
+            PostInfo,
+            ViewData,
+            CityInfo,
+            UserViewsDataset,
+            UserCategoryDataset,
+            LastViewedPost,
+            LastViewedPostByAgg,
+        ],
+        featuresets=[Request, UserFeatures],
+    )
+    user_data_df = pd.read_csv("fennel/client_tests/data/user_data.csv")
+    post_data_df = pd.read_csv("fennel/client_tests/data/post_data.csv")
+    view_data_df = pd.read_csv("fennel/client_tests/data/view_data_sampled.csv")
+    ts = "2018-01-01 00:00:00"
+    user_data_df["timestamp"] = ts
+    post_data_df["timestamp"] = ts
+    view_data_df["time_stamp"] = view_data_df["time_stamp"].apply(
+        lambda x: datetime.strptime(x, "%m/%d/%Y %H:%M %p")
+    )
+    # # Advance all timestamps by 6 years
+    user_data_df["timestamp"] = pd.to_datetime(
+        user_data_df["timestamp"]
+    ) + pd.DateOffset(years=4)
+    post_data_df["timestamp"] = pd.to_datetime(
+        post_data_df["timestamp"]
+    ) + pd.DateOffset(years=4)
+    view_data_df["time_stamp"] = view_data_df["time_stamp"] + pd.DateOffset(
+        years=4
+    )
+
+    log(UserInfo, user_data_df)
+    log(PostInfo, post_data_df)
+    log(ViewData, view_data_df)
+
+    keys = pd.DataFrame(
+        {
+            "city": ["Wufeng", "Coyaima", "San Angelo"],
+            "gender": ["Male", "Male", "Female"],
+        }
+    )
+
+    df, found = client.lookup(
+        "CityInfo",
+        keys=keys,
+    )
+    assert found.to_list() == [True, True, True]
+
+    feature_df = client.query(
+        outputs=[UserFeatures],
+        inputs=[Request.user_id, Request.category],
+        input_dataframe=pd.DataFrame(
+            {
+                "Request.user_id": [
+                    "5eece14efc13ae6609000000",
+                    "5eece14efc13ae660900003c",
+                ],
+                "Request.category": ["banking", "programming"],
+            }
+        ),
+    )
+    assert (
+        feature_df["UserFeatures.num_views"].to_list(),
+        feature_df["UserFeatures.num_category_views"].to_list(),
+        feature_df["UserFeatures.category_view_ratio"].to_list(),
+    ) == ([2, 4], [0, 1], [0.0, 0.25])
+
+    # Assert that both the last_viewed_post and last_viewed_post2 features are extracted correctly
+    last_post_viewed = feature_df["UserFeatures.last_viewed_post"].to_list()
+    last_post_viewed2 = [
+        x[0] for x in feature_df["UserFeatures.last_viewed_post2"].to_list()
+    ]
+    assert last_post_viewed == [936609766, 735291550]
+    assert last_post_viewed2 == last_post_viewed
+
     df = client.get_dataset_df("UserCategoryDataset")
     assert df.shape == (1998, 4)

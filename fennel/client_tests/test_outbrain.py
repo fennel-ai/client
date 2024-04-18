@@ -24,9 +24,9 @@ webhook = Webhook(name="outbrain_webhook")
     every="1d",
     cdc="append",
     disorder="14d",
-    tier="prod",
+    env="prod",
 )
-@source(webhook.endpoint("PageViews"), disorder="14d", cdc="append", tier="dev")
+@source(webhook.endpoint("PageViews"), disorder="14d", cdc="append", env="dev")
 @meta(owner="xiao@fennel.ai")
 @dataset
 class PageViews:
@@ -111,7 +111,7 @@ def test_outbrain(client):
             Request,
             UserPageViewFeatures,
         ],
-        tier="dev",
+        env="dev",
     )
     df = pd.read_csv(
         "fennel/client_tests/data/page_views_sample.csv"

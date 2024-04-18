@@ -77,9 +77,9 @@ that expose raw schemaless data, namely, [s3](/api-reference/connectors/s3),
 and [webhook](/api-reference/connectors/webhook).
 </Expandable>
 
-<Expandable title="tier" type="None | str | List[str]" defaultVal="None">
+<Expandable title="env" type="None | str | List[str]" defaultVal="None">
 When present, marks this source to be selected during `commit` only when `commit`
-operation itself is made for a `tier` that matches this tier. Primary use case is to
+operation itself is made for a `env` that matches this env. Primary use case is to
 decorate a single dataset with many `@source` decorators and choose only one of 
 them to commit depending on the environment.
 </Expandable>

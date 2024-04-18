@@ -26,7 +26,7 @@ def test_vehicle_features(client):
             MarketAreaDS,
         ],
         featuresets=[VehicleFS, Request],
-        tier="local",
+        env="local",
     )
     assert sync_response.status_code == 200, sync_response.json()
 

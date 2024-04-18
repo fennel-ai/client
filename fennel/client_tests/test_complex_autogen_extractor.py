@@ -19,7 +19,7 @@ __owner__ = "uber-data@eng.com"
 
 @dataset(index=True)
 @source(
-    webhook.endpoint("RiderDataset"), cdc="upsert", disorder="14d", tier="local"
+    webhook.endpoint("RiderDataset"), cdc="upsert", disorder="14d", env="local"
 )
 class RiderDataset:
     rider_id: int = field(key=True)
@@ -32,7 +32,7 @@ class RiderDataset:
     webhook.endpoint("RiderCreditScoreDataset"),
     disorder="14d",
     cdc="upsert",
-    tier="local",
+    env="local",
 )
 class RiderCreditScoreDataset:
     rider_id: int = field(key=True)
@@ -45,7 +45,7 @@ class RiderCreditScoreDataset:
     webhook.endpoint("CountryLicenseDataset"),
     disorder="14d",
     cdc="upsert",
-    tier="local",
+    env="local",
 )
 @meta(owner="data@eng.com")
 class CountryLicenseDataset:
@@ -59,7 +59,7 @@ class CountryLicenseDataset:
     webhook.endpoint("ReservationsDataset"),
     disorder="14d",
     cdc="append",
-    tier="local",
+    env="local",
 )
 class ReservationsDataset:
     rider_id: int

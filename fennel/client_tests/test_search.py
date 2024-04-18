@@ -41,15 +41,13 @@ __owner__ = "data-eng@fennel.ai"
 
 
 @meta(owner="e1@company.com")
-@source(
-    webhook.endpoint("NotionDocs"), disorder="14d", cdc="append", tier="dev"
-)
+@source(webhook.endpoint("NotionDocs"), disorder="14d", cdc="append", env="dev")
 @source(
     s3.bucket("engagement", prefix="notion"),
     disorder="14d",
     cdc="append",
     every="2m",
-    tier="prod",
+    env="prod",
 )
 @dataset
 class NotionDocs:
@@ -60,12 +58,12 @@ class NotionDocs:
     creation_timestamp: datetime
 
 
-@source(webhook.endpoint("CodaDocs"), disorder="14d", cdc="append", tier="dev")
+@source(webhook.endpoint("CodaDocs"), disorder="14d", cdc="append", env="dev")
 @source(
     s3.bucket("engagement", prefix="coda"),
     disorder="14d",
     cdc="append",
-    tier="prod",
+    env="prod",
 )
 @dataset
 class CodaDocs:
@@ -76,14 +74,12 @@ class CodaDocs:
     creation_timestamp: datetime
 
 
-@source(
-    webhook.endpoint("GoogleDocs"), disorder="14d", cdc="append", tier="dev"
-)
+@source(webhook.endpoint("GoogleDocs"), disorder="14d", cdc="append", env="dev")
 @source(
     s3.bucket("engagement", prefix="google"),
     disorder="14d",
     cdc="append",
-    tier="prod",
+    env="prod",
 )
 @dataset
 class GoogleDocs:
@@ -258,14 +254,14 @@ class TopWordsCount:
 
 
 @source(
-    webhook.endpoint("UserActivity"), disorder="14d", cdc="append", tier="dev"
+    webhook.endpoint("UserActivity"), disorder="14d", cdc="append", env="dev"
 )
 @source(
     biq_query.table("user_activity", cursor="timestamp"),
     every="1h",
     disorder="14d",
     cdc="append",
-    tier="prod",
+    env="prod",
 )
 @dataset
 class UserActivity:
@@ -534,7 +530,7 @@ class TestSearchExample(unittest.TestCase):
                 Document,
                 DocumentIndexed,
             ],
-            tier="dev",
+            env="dev",
         )
         self.log_document_data(client)
         client.sleep()
@@ -567,7 +563,7 @@ class TestSearchExample(unittest.TestCase):
                 UserEngagementDataset,
                 DocumentEngagementDataset,
             ],
-            tier="dev",
+            env="dev",
         )
 
         self.log_engagement_data(client)
@@ -609,7 +605,7 @@ class TestSearchExample(unittest.TestCase):
                 DocumentContentFeatures,
                 TopWordsFeatures,
             ],
-            tier="dev",
+            env="dev",
         )
 
         self.log_document_data(client)

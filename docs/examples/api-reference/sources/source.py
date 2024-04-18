@@ -33,7 +33,7 @@ def test_source_decorator(client):
             "uid": ref("user_id"),  # 'uid' comes from column 'user_id'
             "country": "USA",  # country for every row should become 'USA'
         },
-        tier="prod",
+        env="prod",
         bounded=True,
         idleness="1h",
     )

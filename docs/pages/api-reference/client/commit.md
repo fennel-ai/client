@@ -41,12 +41,12 @@ previously existing datasets/featuresets that are not included in the `commit`
 operation are left unchanged.
 </Expandable>
 
-<Expandable title="tier" type="Optional[str]" defaultVal="None">
+<Expandable title="env" type="Optional[str]" defaultVal="None">
 Selector to optionally commit only a subset of sources, pipelines and extractors -
 those with matching values. Rules of selection:
-- If `tier` is None, all objects are selected
-- If `tier` is not None, an object is selected if its own selector is either None
-  or same as `tier` or is `~x` for some other x
+- If `env` is None, all objects are selected
+- If `env` is not None, an object is selected if its own selector is either None
+  or same as `env` or is `~x` for some other x
 </Expandable>
 
 <pre snippet="api-reference/client/commit#basic" status="success"

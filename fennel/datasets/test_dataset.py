@@ -2858,7 +2858,7 @@ def test_auto_schema_generation():
             return x
 
 
-def test_pipeline_with_tier_selector():
+def test_pipeline_with_env_selector():
     kafka = Kafka.get(name="my_kafka")
 
     @meta(owner="test@test.com")
@@ -2881,17 +2881,17 @@ def test_pipeline_with_tier_selector():
         a1: int = field(key=True)
         t: datetime
 
-        @pipeline(tier="prod")
+        @pipeline(env="prod")
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
             return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
 
-        @pipeline(tier="staging")
+        @pipeline(env="staging")
         @inputs(A, B)
         def pipeline2(cls, a: Dataset, b: Dataset):
             return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
 
-        @pipeline(tier="staging")
+        @pipeline(env="staging")
         @inputs(A, B)
         def pipeline3(cls, a: Dataset, b: Dataset):
             return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
@@ -2908,9 +2908,9 @@ def test_pipeline_with_tier_selector():
     )
 
     with pytest.raises(ValueError) as e:
-        _ = view._get_sync_request_proto(tier=["prod"])
-    assert str(e.value) == "Expected tier to be a string, got ['prod']"
-    sync_request = view._get_sync_request_proto(tier="prod")
+        _ = view._get_sync_request_proto(env=["prod"])
+    assert str(e.value) == "Expected env to be a string, got ['prod']"
+    sync_request = view._get_sync_request_proto(env="prod")
     pipelines = sync_request.pipelines
     assert len(pipelines) == 1
 

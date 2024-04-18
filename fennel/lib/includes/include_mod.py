@@ -5,7 +5,7 @@ from typing import Callable, Any, List, Optional, Union
 from fennel._vendor.pydantic import BaseModel, validator, ValidationError  # type: ignore
 
 FENNEL_INCLUDED_MOD = "__fennel_included_module__"
-FENNEL_TIER_SELECTOR = "__fennel_tier_selector__"
+FENNEL_ENV_SELECTOR = "__fennel_env_selector__"
 
 
 def includes(*args: Any):
@@ -24,17 +24,17 @@ def includes(*args: Any):
     return decorator
 
 
-class TierSelector(BaseModel):
+class EnvSelector(BaseModel):
     """
-    TierSelector is a feature that can be added to entities to specify the tiers an entity supports.
+    EnvSelector is a feature that can be added to entities to specify the envs an entity supports.
     """
 
-    tiers: Optional[Union[str, List[str]]] = None
+    environments: Optional[Union[str, List[str]]] = None
 
-    def __init__(self, tiers):
-        super().__init__(tiers=tiers)
+    def __init__(self, envs):
+        super().__init__(environments=envs)
 
-    @validator("tiers", pre=True, each_item=True, allow_reuse=True)
+    @validator("environments", pre=True, each_item=True, allow_reuse=True)
     def check_string(cls, v):
         if v is None:
             return v
@@ -49,40 +49,38 @@ class TierSelector(BaseModel):
                 raise ValidationError("Tier string must not be ~, found", v)
         return v
 
-    @validator("tiers", allow_reuse=True)
-    def validate_tiers(cls, v):
+    @validator("environments", allow_reuse=True)
+    def validate_environments(cls, v):
         if isinstance(v, str) or v is None:
             return v
-        # Cannot contain tiers with ~ and without ~, should be one or the other
+        # Cannot contain envs with ~ and without ~, should be one or the other
         if (
             v
-            and any(tier.startswith("~") for tier in v)
-            and any(not tier.startswith("~") for tier in v)
+            and any(env.startswith("~") for env in v)
+            and any(not env.startswith("~") for env in v)
         ):
             raise ValidationError(
-                "Cannot contain tiers with ~ and without ~, should be one or the other, found",
+                "Cannot contain envs with ~ and without ~, should be one or the other, found",
                 v,
             )
         return v
 
-    def is_entity_selected(self, tier: Optional[str] = None) -> bool:
-        if self.tiers is None or tier is None:
+    def is_entity_selected(self, env: Optional[str] = None) -> bool:
+        if self.environments is None or env is None:
             return True
-        if tier[0] == "~":
-            raise ValueError(
-                "Tier selector cannot start with ~, found", tier[0]
-            )
+        if env[0] == "~":
+            raise ValueError("Tier selector cannot start with ~, found", env[0])
 
-        if isinstance(self.tiers, str):
-            if self.tiers[0] == "~":
-                return self.tiers[1:] != tier
-            return self.tiers == tier
+        if isinstance(self.environments, str):
+            if self.environments[0] == "~":
+                return self.environments[1:] != env
+            return self.environments == env
 
-        if any(t.startswith("~") for t in self.tiers):
-            if any(t[1:] == tier for t in self.tiers):
+        if any(t.startswith("~") for t in self.environments):
+            if any(t[1:] == env for t in self.environments):
                 return False
             return True
-        return tier in self.tiers
+        return env in self.environments
 
     class Config:
         arbitrary_types_allowed = True

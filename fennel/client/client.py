@@ -81,7 +81,7 @@ class Client:
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
-        tier: Optional[str] = None,
+        env: Optional[str] = None,
         incremental: bool = False,
     ):
         """Commit the changes to the branch pointed to by the client.
@@ -96,8 +96,11 @@ class Client:
             the server.
         featuresets (Optional[List[Featureset]]):  List of featuresets to
             register with the server.
+        preview (bool): If True, the commit will be a preview and no changes will be applied.
+        env (Optional[str]): The environment to register the datasets and featuresets in.
         incremental (bool):  If the commit is only used for adding datasets and featuresets and not changing
             anything existing.
+
         Returns:
         ----------
         None
@@ -123,7 +126,7 @@ class Client:
                         f" of type `{type(featureset)}` instead."
                     )
                 self.add(featureset)
-        sync_request = self._get_sync_request_proto(message, tier)
+        sync_request = self._get_sync_request_proto(message, env)
         response = self._post_bytes(
             f"{V1_API}/commit?preview={str(preview).lower()}&incremental={str(incremental).lower()}",
             sync_request.SerializeToString(),
@@ -746,11 +749,11 @@ class Client:
         return http
 
     def _get_sync_request_proto(
-        self, message: str = "", tier: Optional[str] = None
+        self, message: str = "", env: Optional[str] = None
     ):
-        if tier is not None and not isinstance(tier, str):
-            raise ValueError(f"Expected tier to be a string, got {tier}")
-        return to_sync_request_proto(self.to_register_objects, message, tier)
+        if env is not None and not isinstance(env, str):
+            raise ValueError(f"Expected env to be a string, got {env}")
+        return to_sync_request_proto(self.to_register_objects, message, env)
 
     def _get(self, path: str):
         headers = {}

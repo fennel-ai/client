@@ -14,11 +14,9 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="abhay@fennel.ai")
+@source(webhook.endpoint("MovieInfo"), cdc="append", disorder="14d", env="prod")
 @source(
-    webhook.endpoint("MovieInfo"), cdc="append", disorder="14d", tier="prod"
-)
-@source(
-    webhook.endpoint("MovieInfo2"), cdc="append", disorder="14d", tier="staging"
+    webhook.endpoint("MovieInfo2"), cdc="append", disorder="14d", env="staging"
 )
 @dataset(index=True)
 class MovieInfo:
@@ -29,13 +27,13 @@ class MovieInfo:
 
 @meta(owner="abhay@fennel.ai")
 @source(
-    webhook.endpoint("TicketSale"), disorder="14d", cdc="append", tier="prod"
+    webhook.endpoint("TicketSale"), disorder="14d", cdc="append", env="prod"
 )
 @source(
     webhook.endpoint("TicketSale2"),
     disorder="14d",
     cdc="append",
-    tier="staging",
+    env="staging",
 )
 @dataset
 class TicketSale:
@@ -52,7 +50,7 @@ class ActorStats:
     revenue: int
     at: datetime
 
-    @pipeline(tier="prod")
+    @pipeline(env="prod")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join(cls, info: Dataset, sale: Dataset):
         c = (
@@ -71,7 +69,7 @@ class ActorStats:
             ]
         )
 
-    @pipeline(tier="staging")
+    @pipeline(env="staging")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join_v2(cls, info: Dataset, sale: Dataset):
         def foo(df):
@@ -106,7 +104,7 @@ class RequestFeatures:
 class ActorFeatures:
     revenue: int
 
-    @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+    @extractor(deps=[ActorStats], env="prod")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs("revenue")
     def extract_revenue(cls, ts: pd.Series, name: pd.Series):
@@ -114,7 +112,7 @@ class ActorFeatures:
         df = df.fillna(0)
         return df["revenue"]
 
-    @extractor(deps=[ActorStats], tier="staging")  # type: ignore
+    @extractor(deps=[ActorStats], env="staging")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs("revenue")
     def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
@@ -123,7 +121,7 @@ class ActorFeatures:
         return df["revenue"] * 2
 
 
-def test_tier_selector():
+def test_env_selector():
     view = InternalTestClient()
     view.add(MovieInfo)
     view.add(TicketSale)
@@ -131,7 +129,7 @@ def test_tier_selector():
     view.add(RequestFeatures)
     view.add(ActorFeatures)
 
-    sync_request = view._get_sync_request_proto(tier="dev")
+    sync_request = view._get_sync_request_proto(env="dev")
     assert len(sync_request.feature_sets) == 2
     assert len(sync_request.features) == 2
     assert len(sync_request.datasets) == 3
