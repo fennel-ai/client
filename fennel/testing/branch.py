@@ -112,7 +112,7 @@ class Branch:
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
         incremental=False,
-        tier: Optional[str] = None,
+        env: Optional[str] = None,
     ):
         if not incremental:
             self._reset()
@@ -121,7 +121,7 @@ class Branch:
         if featuresets is None:
             featuresets = []
 
-        self.data_engine.add_datasets(datasets, incremental, tier)
+        self.data_engine.add_datasets(datasets, incremental, env)
 
         for featureset in featuresets:
             self.entities.features_for_fs[featureset._name] = features_from_fs(
@@ -133,7 +133,7 @@ class Branch:
             self.entities.featureset_map[featureset._name] = featureset
             # Check if the dataset used by the extractor is registered
             for extractor in featureset.extractors:
-                if not extractor.tiers.is_entity_selected(tier):
+                if not extractor.envs.is_entity_selected(env):
                     continue
                 datasets = [
                     x._name for x in extractor.get_dataset_dependencies()
@@ -146,7 +146,7 @@ class Branch:
             self.entities.extractors.extend(
                 list(
                     filter(
-                        lambda x: x.tiers.is_entity_selected(tier),
+                        lambda x: x.envs.is_entity_selected(env),
                         featureset.extractors,
                     )
                 )
@@ -156,7 +156,7 @@ class Branch:
         }
 
         for featureset in featuresets:
-            proto_extractors = extractors_from_fs(featureset, fs_obj_map, tier)
+            proto_extractors = extractors_from_fs(featureset, fs_obj_map, env)
             for extractor in proto_extractors:
                 if extractor.extractor_type != ProtoExtractorType.PY_FUNC:
                     continue

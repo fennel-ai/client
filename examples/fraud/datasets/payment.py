@@ -27,7 +27,7 @@ webhook = Webhook(name="app_webhook")
 
 
 @source(
-    webhook.endpoint("ChargesDS"), disorder="14d", cdc="upsert", tier="local"
+    webhook.endpoint("ChargesDS"), disorder="14d", cdc="upsert", env="local"
 )
 @dataset
 class ChargesDS:
@@ -79,7 +79,7 @@ class TransactionsDS:
     webhook.endpoint("PaymentEventDS"),
     disorder="14d",
     cdc="append",
-    tier="local",
+    env="local",
 )
 class PaymentEventDS:
     customer_id: str

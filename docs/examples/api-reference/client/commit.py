@@ -20,13 +20,13 @@ def test_basic(client):
         webhook.endpoint("endpoint1"),
         disorder="14d",
         cdc="upsert",
-        tier="bronze",
+        env="bronze",
     )
     @source(
         webhook.endpoint("endpoint2"),
         disorder="14d",
         cdc="upsert",
-        tier="silver",
+        env="silver",
     )
     @dataset(index=True)
     class Transaction:
@@ -40,7 +40,7 @@ def test_basic(client):
         amount: int = F(Transaction.amount, default=0)
         amount_is_high: bool
 
-        @extractor(tier="bronze")
+        @extractor(env="bronze")
         def some_fn(cls, ts, amount: pd.Series):
             return amount.apply(lambda x: x > 100)
 
@@ -50,7 +50,7 @@ def test_basic(client):
         datasets=[Transaction],
         featuresets=[TransactionFeatures],
         preview=False,  # default is False, so didn't need to include this
-        tier="silver",
+        env="silver",
     )
     # docsnip-highlight end
     # /docsnip
@@ -86,7 +86,7 @@ def test_incremental(client):
         amount: int = feature(Transaction.amount, default=0)
         amount_is_high: bool
 
-        @extractor(tier="bronze")
+        @extractor(env="bronze")
         @inputs("amount")
         @outputs("amount_is_high")
         def some_fn(cls, ts, amount: pd.Series):

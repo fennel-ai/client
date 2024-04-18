@@ -5,6 +5,7 @@ except ImportError:
     pass
 from fennel.testing.mock_client import (
     mock,
+    log,
     MockClient,
 )
 from fennel.testing.branch import get_extractor_func

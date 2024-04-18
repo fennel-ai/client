@@ -1,50 +1,50 @@
 import pytest
 from fennel._vendor.pydantic import ValidationError  # type: ignore
 
-from fennel.lib.includes import TierSelector
+from fennel.lib.includes import EnvSelector
 
 
-def test_tier_selector():
+def test_env_selector():
     with pytest.raises(ValidationError):
-        TierSelector(tiers="")
-
-    with pytest.raises(ValidationError):
-        TierSelector(tiers="a b")
+        EnvSelector(envs="")
 
     with pytest.raises(ValidationError):
-        TierSelector(tiers=["~gold", "silver"])
+        EnvSelector(envs="a b")
+
+    with pytest.raises(ValidationError):
+        EnvSelector(envs=["~gold", "silver"])
 
     try:
-        TierSelector(tiers=["~gold", "~silver"])
+        EnvSelector(envs=["~gold", "~silver"])
     except ValidationError:
         pytest.fail("ValidationError should not be raised")
 
     try:
-        TierSelector(tiers=["gold", "silver"])
+        EnvSelector(envs=["gold", "silver"])
     except ValidationError:
         pytest.fail("ValidationError should not be raised")
 
     try:
-        TierSelector(tiers=None)
+        EnvSelector(envs=None)
     except ValidationError:
         pytest.fail("ValidationError should not be raised")
 
 
 def test_is_entity_selected():
-    selector = TierSelector(tiers=None)
+    selector = EnvSelector(envs=None)
     assert selector.is_entity_selected("gold") is True
 
-    selector = TierSelector(tiers="~gold")
+    selector = EnvSelector(envs="~gold")
     assert selector.is_entity_selected("silver") is True
     with pytest.raises(ValueError):
         selector.is_entity_selected("~silver")
 
-    selector = TierSelector(tiers="gold")
+    selector = EnvSelector(envs="gold")
     assert selector.is_entity_selected("silver") is False
 
-    selector = TierSelector(tiers=["gold", "silver"])
+    selector = EnvSelector(envs=["gold", "silver"])
     assert selector.is_entity_selected("gold") is True
 
-    selector = TierSelector(tiers=["~gold", "~silver"])
+    selector = EnvSelector(envs=["~gold", "~silver"])
     assert selector.is_entity_selected("gold") is False
     assert selector.is_entity_selected("bronze") is True

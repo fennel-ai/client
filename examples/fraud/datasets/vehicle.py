@@ -11,7 +11,7 @@ webhook = Webhook(name="app_webhook")
 
 
 @source(
-    webhook.endpoint("LocationDS"), disorder="14d", cdc="append", tier="local"
+    webhook.endpoint("LocationDS"), disorder="14d", cdc="append", env="local"
 )
 @dataset
 class LocationDS:
@@ -52,7 +52,7 @@ class LocationDS2:
     webhook.endpoint("LocationToNewMarketArea"),
     disorder="14d",
     cdc="append",
-    tier="local",
+    env="local",
 )
 @dataset
 class LocationToNewMarketArea:
@@ -99,7 +99,7 @@ class IdToMarketAreaDS:
     webhook.endpoint("VehicleSummary"),
     disorder="14d",
     cdc="append",
-    tier="local",
+    env="local",
 )
 @dataset
 class VehicleSummary:

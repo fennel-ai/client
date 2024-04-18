@@ -32,13 +32,13 @@ postgres = Postgres(
     every="1m",
     disorder="1d",
     cdc="append",
-    tier="prod",
+    env="prod",
 )
 @source(
     Webhook(name="fennel_webhook").endpoint("Order"),
     disorder="14d",
     cdc="append",
-    tier="dev",
+    env="dev",
 )
 @meta(owner="data-eng-oncall@fennel.ai")
 @dataset
@@ -104,7 +104,7 @@ class TestUserLivestreamFeatures(unittest.TestCase):
             message="some commit message",
             datasets=[Order, UserSellerOrders],
             featuresets=[UserSeller],
-            tier="dev",
+            env="dev",
         )
         columns = ["uid", "product_id", "seller_id", "timestamp"]
         now = datetime.now(timezone.utc)

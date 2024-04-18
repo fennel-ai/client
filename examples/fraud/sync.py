@@ -58,7 +58,7 @@ if __name__ == "__main__":
     # URL parameter (string)
     parser.add_argument("url", type=str, help="URL to sync with")
     # Tier selector
-    parser.add_argument("tier", type=str, help="Tier to sync with")
+    parser.add_argument("env", type=str, help="Env to sync with")
     # Token - optional because for local runs, we don't need it
     parser.add_argument(
         "--token", type=str, help="Token to use", required=False
@@ -115,5 +115,5 @@ if __name__ == "__main__":
             VehicleFS,
         ],
         preview=args.preview,
-        tier=args.tier,
+        env=args.env,
     )

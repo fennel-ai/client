@@ -927,7 +927,7 @@ def test_invalid_assign_schema(client):
         webhook.endpoint("mysql_relayrides.location"),
         disorder="14d",
         cdc="append",
-        tier="local",
+        env="local",
     )
     @dataset
     class LocationDS:

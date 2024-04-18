@@ -68,7 +68,7 @@ from fennel.internal_lib.utils import (
     parse_datetime,
 )
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
-from fennel.lib.includes import TierSelector
+from fennel.lib.includes import EnvSelector
 from fennel.lib.metadata import (
     meta,
     OWNER,
@@ -1332,7 +1332,7 @@ def f_get_type_hints(obj):
 @overload
 def pipeline(  # noqa: E704
     *,
-    tier: Optional[Union[str, List[str]]] = None,
+    env: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
 
 
@@ -1344,11 +1344,11 @@ def pipeline(  # noqa: E704
 
 def pipeline(
     pipeline_func: Callable = None,
-    tier: Optional[Union[str, List[str]]] = None,
+    env: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     def _create_pipeline(
         pipeline_func: Callable,
-        tier: Optional[Union[str, List[str]]] = None,
+        env: Optional[Union[str, List[str]]] = None,
     ) -> Callable:
         if not callable(pipeline_func):
             raise TypeError("pipeline functions must be callable.")
@@ -1398,13 +1398,13 @@ def pipeline(
             Pipeline(
                 inputs=list(params),
                 func=pipeline_func,
-                tier=tier,
+                env=env,
             ),
         )
         return pipeline_func
 
     def wrap(pipeline_func: Callable) -> Callable:
-        return _create_pipeline(pipeline_func, tier)  # type: ignore
+        return _create_pipeline(pipeline_func, env)  # type: ignore
 
     if pipeline_func is None:
         # We're being called as @pipeline(arguments)
@@ -1463,18 +1463,18 @@ class Pipeline:
     name: str
     version: int
     active: bool
-    tier: TierSelector
+    env: EnvSelector
 
     def __init__(
         self,
         inputs: List[Dataset],
         func: Callable,
-        tier: Optional[Union[str, List[str]]] = None,
+        env: Optional[Union[str, List[str]]] = None,
     ):
         self.inputs = inputs
         self.func = func  # type: ignore
         self.name = func.__name__
-        self.tier = TierSelector(tier)
+        self.env = EnvSelector(env)
 
     # Validate the schema of all intermediate nodes
     # and return the schema of the terminal node.

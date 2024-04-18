@@ -52,7 +52,7 @@ class ActorStats:
     revenue: int  # type: ignore
     at: datetime
 
-    @pipeline(tier="staging")
+    @pipeline(env="staging")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join(cls, info: Dataset, sale: Dataset):
         c = (
@@ -74,7 +74,7 @@ class ActorStats:
             ]
         )
 
-    @pipeline(tier="prod")
+    @pipeline(env="prod")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join_v2(cls, info: Dataset, sale: Dataset):
         def foo(df):
@@ -109,7 +109,7 @@ class ActorStatsList:
     revenue_distinct: List[int]  # type: ignore
     at: datetime
 
-    @pipeline(tier="prod")
+    @pipeline(env="prod")
     @inputs(MovieInfo, TicketSale)
     def pipeline_join(cls, info: Dataset, sale: Dataset):
         c = (
@@ -151,7 +151,7 @@ class RequestFeatures:
 class ActorFeatures:
     revenue: int
 
-    @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+    @extractor(deps=[ActorStats], env="prod")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs("revenue")
     def extract_revenue(cls, ts: pd.Series, name: pd.Series):
@@ -159,7 +159,7 @@ class ActorFeatures:
         df = df.fillna(0)
         return df["revenue"]
 
-    @extractor(deps=[ActorStats], tier="staging")  # type: ignore
+    @extractor(deps=[ActorStats], env="staging")  # type: ignore
     @inputs(RequestFeatures.name)
     @outputs("revenue")
     def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
@@ -175,7 +175,7 @@ def _get_changed_featureset_valid():
         revenue: int
         twice_revenue: int
 
-        @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+        @extractor(deps=[ActorStats], env="prod")  # type: ignore
         @inputs(RequestFeatures.name)
         @outputs("revenue")
         def extract_revenue(cls, ts: pd.Series, name: pd.Series):
@@ -183,7 +183,7 @@ def _get_changed_featureset_valid():
             df = df.fillna(0)
             return df["revenue"]
 
-        @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+        @extractor(deps=[ActorStats], env="prod")  # type: ignore
         @inputs(RequestFeatures.name)
         @outputs("twice_revenue")
         def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
@@ -201,7 +201,7 @@ def _get_changed_featureset_invalid():
     class ActorFeatures:
         twice_revenue: int
 
-        @extractor(deps=[ActorStats], tier="prod")  # type: ignore
+        @extractor(deps=[ActorStats], env="prod")  # type: ignore
         @inputs(RequestFeatures.name)
         @outputs("twice_revenue")
         def extract_revenue2(cls, ts: pd.Series, name: pd.Series):
@@ -222,7 +222,7 @@ class TestMovieTicketSale(unittest.TestCase):
             message="initial commit",
             datasets=datasets,
             featuresets=featuresets,
-            tier="prod",
+            env="prod",
         )  # type: ignore
         client.sleep()
         data = [
@@ -289,7 +289,7 @@ class TestMovieTicketSale(unittest.TestCase):
             message="new featureset",
             featuresets=[_get_changed_featureset_valid()],
             incremental=True,
-            tier="prod",
+            env="prod",
         )  # type: ignore
 
         features = client.query(
@@ -315,7 +315,7 @@ class TestMovieTicketSale(unittest.TestCase):
                 message="new featureset",
                 featuresets=[_get_changed_featureset_invalid()],
                 incremental=True,
-                tier="prod",
+                env="prod",
             )  # type: ignore
         assert (
             str(e.value)

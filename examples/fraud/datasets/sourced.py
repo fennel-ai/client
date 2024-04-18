@@ -23,7 +23,7 @@ s3 = S3(
     webhook.endpoint("EventTrackerDS"),
     disorder="14d",
     cdc="append",
-    tier="local",
+    env="local",
 )
 @source(
     s3.bucket(
@@ -33,7 +33,7 @@ s3 = S3(
     every="1d",
     disorder="14d",
     cdc="append",
-    tier="prod",
+    env="prod",
 )
 @dataset
 class EventTrackerDS:
@@ -53,7 +53,7 @@ class EventTrackerDS:
     webhook.endpoint("DriverLicenseCountryDS"),
     disorder="14d",
     cdc="append",
-    tier="local",
+    env="local",
 )
 @source(
     s3.bucket(
@@ -63,7 +63,7 @@ class EventTrackerDS:
     every="1d",
     disorder="14d",
     cdc="upsert",
-    tier="prod",
+    env="prod",
 )
 @dataset
 class DriverLicenseCountryDS:
@@ -76,7 +76,7 @@ class DriverLicenseCountryDS:
     webhook.endpoint("VehicleSummaryDS"),
     disorder="14d",
     cdc="upsert",
-    tier="local",
+    env="local",
 )
 @source(
     s3.bucket(
@@ -86,7 +86,7 @@ class DriverLicenseCountryDS:
     every="2h",
     disorder="14d",
     cdc="upsert",
-    tier="prod",
+    env="prod",
 )
 @dataset
 class VehicleSummaryDS:
@@ -103,7 +103,7 @@ class VehicleSummaryDS:
     webhook.endpoint("RentCarCheckoutEventDS"),
     disorder="14d",
     cdc="upsert",
-    tier="local",
+    env="local",
 )
 @source(
     s3.bucket(
@@ -113,7 +113,7 @@ class VehicleSummaryDS:
     every="2h",
     disorder="14d",
     cdc="upsert",
-    tier="prod",
+    env="prod",
 )
 @dataset(index=True)
 class RentCarCheckoutEventDS:
@@ -128,9 +128,7 @@ class RentCarCheckoutEventDS:
     created: datetime = field(timestamp=True)
 
 
-@source(
-    webhook.endpoint("DriverDS"), disorder="14d", cdc="upsert", tier="local"
-)
+@source(webhook.endpoint("DriverDS"), disorder="14d", cdc="upsert", env="local")
 @dataset(index=True)
 class DriverDS:
     id: int = field(key=True)
@@ -142,7 +140,7 @@ class DriverDS:
     webhook.endpoint("DriverCreditScoreDS"),
     disorder="14d",
     cdc="upsert",
-    tier="local",
+    env="local",
 )
 @dataset(index=True)
 class DriverCreditScoreDS:

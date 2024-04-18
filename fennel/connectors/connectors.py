@@ -13,7 +13,7 @@ from fennel.internal_lib.duration import (
     Duration,
 )
 from fennel.internal_lib.duration.duration import is_valid_duration
-from fennel.lib.includes import TierSelector
+from fennel.lib.includes import EnvSelector
 
 T = TypeVar("T")
 SOURCE_FIELD = "__fennel_data_sources__"
@@ -45,7 +45,7 @@ def source(
     every: Optional[Duration] = None,
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
-    tier: Optional[Union[str, List[str]]] = None,
+    env: Optional[Union[str, List[str]]] = None,
     preproc: Optional[Dict[str, PreProcValue]] = None,
     bounded: bool = False,
     idleness: Optional[Duration] = None,
@@ -61,7 +61,7 @@ def source(
     :param every: The frequency at which to fetch data from the source ( Applicable for batch sources only ).
     :param since: The start time from which to fetch data.
     :param until: The end time until which to fetch data.
-    :param tier: Tier selector to use for the source, for eg "dev", "staging", "prod" etc.
+    :param env: Tier selector to use for the source, for eg "dev", "staging", "prod" etc.
     :param preproc: Preprocessing steps to apply to the data before it is used in the dataset.
     :return:
     """
@@ -100,7 +100,7 @@ def source(
         conn.until = until
         conn.disorder = disorder
         conn.cdc = cdc
-        conn.tiers = TierSelector(tier)
+        conn.envs = EnvSelector(env)
         conn.pre_proc = preproc
         conn.bounded = bounded
         conn.idleness = idleness
@@ -115,7 +115,7 @@ def source(
 def sink(
     conn: DataConnector,
     cdc: str,
-    tier: Optional[Union[str, List[str]]] = None,
+    env: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
@@ -140,7 +140,7 @@ def sink(
 
     def decorator(dataset_cls: T):
         conn.cdc = cdc
-        conn.tiers = TierSelector(tier)
+        conn.envs = EnvSelector(env)
         connectors = getattr(dataset_cls, SINK_FIELD, [])
         connectors.append(conn)
         setattr(dataset_cls, SINK_FIELD, connectors)
@@ -496,7 +496,7 @@ class DataConnector:
     disorder: Optional[Duration] = None
     since: Optional[datetime] = None
     until: Optional[datetime] = None
-    tiers: TierSelector
+    envs: EnvSelector
     pre_proc: Optional[Dict[str, PreProcValue]] = None
     bounded: bool = False
     idleness: Optional[Duration] = None

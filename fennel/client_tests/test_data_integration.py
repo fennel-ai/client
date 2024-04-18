@@ -21,7 +21,7 @@ webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="xiao@fennel.ai")
-@source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="upsert", tier="dev")
+@source(webhook.endpoint("MovieInfo"), disorder="14d", cdc="upsert", env="dev")
 @source(
     s3.bucket(
         bucket_name="fennel-demo-data",
@@ -30,7 +30,7 @@ webhook = Webhook(name="fennel_webhook")
     every="1h",
     disorder="14d",
     cdc="upsert",
-    tier="prod",
+    env="prod",
 )
 @dataset(index=True)
 class MovieInfo103:
@@ -48,7 +48,7 @@ class TestMovieInfo103(unittest.TestCase):
     def test_log_to_MovieInfo103(self, client):
         """Log some data to the dataset and check if it is logged correctly."""
         # Sync the dataset
-        client.commit(message="msg", datasets=[MovieInfo103], tier="dev")
+        client.commit(message="msg", datasets=[MovieInfo103], env="dev")
         t = datetime.fromtimestamp(1672858163, tz=timezone.utc)
         data = [
             [
@@ -104,7 +104,7 @@ class TestMovieInfo103(unittest.TestCase):
     def test_s3_data_integration_source(self, client):
         """Same test as test_log_to_MovieInfo103 but with an S3 source."""
         # Sync the dataset
-        client.commit(message="msg", datasets=[MovieInfo103], tier="dev")
+        client.commit(message="msg", datasets=[MovieInfo103], env="dev")
         client.sleep()
 
         # Time for data_integration to do its magic
@@ -145,7 +145,7 @@ class TestMovieInfo103(unittest.TestCase):
     def test_epoch_log_to_MovieInfo103(self, client):
         """Log some data to the dataset with epoch time and check if it is logged correctly."""
         # Sync the dataset
-        client.commit(message="msg", datasets=[MovieInfo103], tier="dev")
+        client.commit(message="msg", datasets=[MovieInfo103], env="dev")
         data = [
             [
                 1,

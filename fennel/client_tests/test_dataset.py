@@ -27,7 +27,7 @@ from fennel.datasets import (
 )
 from fennel.dtypes import between, oneof, struct
 from fennel.lib import includes, meta, inputs
-from fennel.testing import almost_equal, mock, InternalTestClient
+from fennel.testing import almost_equal, mock, InternalTestClient, log
 
 ################################################################################
 #                           Dataset Unit Tests
@@ -120,6 +120,25 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
+
+        sample = client.inspect("UserInfoDataset", n=1)
+        assert len(sample) == 1
+        sample = client.inspect("UserInfoDataset")
+        assert len(sample) == 2
+
+    @mock
+    def test_simple_log_mock_log(self, client):
+        # Sync the dataset
+        client.commit(message="msg", datasets=[UserInfoDataset])
+        now = datetime.now(timezone.utc)
+        yesterday = now - pd.Timedelta(days=1)
+        data = [
+            [18232, "Ross", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", yesterday],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+        log(UserInfoDataset, df)
 
         sample = client.inspect("UserInfoDataset", n=1)
         assert len(sample) == 1
@@ -230,6 +249,54 @@ class TestDataset(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("fennel_webhook", "UserInfoDataset", df)
         assert response.status_code == requests.codes.OK, response.json()
+
+        # Do lookup on UserInfoDataset
+        client.sleep()
+        ts = pd.Series([now, now])
+        user_id_keys = pd.Series([18232, 18234])
+        df, found = UserInfoDataset.lookup(ts, user_id=user_id_keys)
+        assert df.shape == (2, 5)
+        assert df["user_id"].tolist() == [18232, 18234]
+        assert df["name"].tolist() == ["Ross", "Monica"]
+        assert df["age"].tolist() == [32, 24]
+        assert df["country"].tolist() == ["USA", "Chile"]
+
+        # Do lookup on UserInfoDatasetDerived
+        df, found = UserInfoDatasetDerivedSelect.lookup(
+            ts, user_id=user_id_keys
+        )
+        assert df.shape == (2, 4)
+        assert df["user_id"].tolist() == [18232, 18234]
+        assert df["name"].tolist() == ["Ross", "Monica"]
+        assert df["country_name"].tolist() == ["USA", "Chile"]
+        # Check if column ts exists
+        assert "ts" in df.columns
+        assert all(x in df.columns for x in ["user_id", "name", "country_name"])
+        assert "age" not in df.columns
+
+    @mock
+    def test_simple_select_rename_mock_log(self, client):
+        client.commit(
+            message="msg",
+            datasets=[UserInfoDataset, UserInfoDatasetDerivedSelect],
+        )
+        client.commit(
+            message="add derived dataset",
+            datasets=[UserInfoDatasetDerivedSelect],
+            incremental=True,
+        )
+        now = datetime.now(timezone.utc)
+        yesterday = now - pd.Timedelta(days=1)
+        data = [
+            [18232, "Ross", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", yesterday],
+            [18235, "Jessica", 24, None, yesterday],
+            [18236, "Jane", 24, None, yesterday],
+            [18237, "Chandler", 24, None, yesterday],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        df = pd.DataFrame(data, columns=columns)
+        log(UserInfoDataset, df)
 
         # Do lookup on UserInfoDataset
         client.sleep()
@@ -855,6 +922,7 @@ class TestBasicTransform(unittest.TestCase):
         df = pd.DataFrame(data, columns=columns)
         response = client.log("fennel_webhook", "MovieRating", df)
         assert response.status_code == requests.codes.OK, response.json()
+
         client.sleep()
         # Do some lookups to verify pipeline_transform is working as expected
         an_hour_ago = now - timedelta(hours=1)
@@ -1398,6 +1466,7 @@ class TestBasicAggregateAlong(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t", "rating_time"]
         df = pd.DataFrame(data, columns=columns)
+        log(RatingActivity, df)
         response = client.log("fennel_webhook", "RatingActivity", df)
         assert response.status_code == requests.codes.OK
 
@@ -3518,7 +3587,7 @@ def test_inner_join_column_name_collision(client):
         webhook.endpoint("PaymentEventDataset"),
         disorder="14d",
         cdc="upsert",
-        tier="local",
+        env="local",
     )
     class PaymentEventDataset:
         customer: int = field(key=True)
@@ -3530,7 +3599,7 @@ def test_inner_join_column_name_collision(client):
         webhook.endpoint("PaymentAccountDataset"),
         disorder="14d",
         cdc="upsert",
-        tier="local",
+        env="local",
     )
     class PaymentAccountDataset:
         id: int
@@ -3542,7 +3611,7 @@ def test_inner_join_column_name_collision(client):
         webhook.endpoint("PaymentAccountAssociationDataset"),
         disorder="14d",
         cdc="upsert",
-        tier="local",
+        env="local",
     )
     class PaymentAccountAssociationDataset:
         id: int = field(key=True)
@@ -3554,7 +3623,7 @@ def test_inner_join_column_name_collision(client):
         webhook.endpoint("AccountDataset"),
         disorder="14d",
         cdc="upsert",
-        tier="local",
+        env="local",
     )
     class AccountDataset:
         id: int = field(key=True)

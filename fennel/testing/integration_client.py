@@ -73,11 +73,11 @@ class IntegrationClient(Client):
         datasets: Optional[List[Dataset]] = None,
         featuresets: Optional[List[Featureset]] = None,
         preview=False,
-        tier: Optional[str] = None,
+        env: Optional[str] = None,
         incremental: bool = False,
     ):
         resp = super().commit(
-            message, datasets, featuresets, preview, tier, incremental
+            message, datasets, featuresets, preview, env, incremental
         )
         # It takes a while to setup the server
         time.sleep(10)

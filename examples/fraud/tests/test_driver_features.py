@@ -17,7 +17,7 @@ class TestAgeFS:
                 DriverDS,
             ],
             featuresets=[Request, AgeFS],
-            tier="local",
+            env="local",
         )
 
         assert sync_response.status_code == 200
@@ -70,7 +70,7 @@ class TestCreditScore:
                 DriverCreditScoreDS,
             ],
             featuresets=[Request, CreditScoreFS],
-            tier="local",
+            env="local",
         )
 
         assert sync_response.status_code == 200

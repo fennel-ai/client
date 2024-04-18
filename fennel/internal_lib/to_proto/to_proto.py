@@ -91,7 +91,7 @@ def _expectations_to_proto(
 def to_sync_request_proto(
     registered_objs: List[Any],
     message: str,
-    tier: Optional[str] = None,
+    env: Optional[str] = None,
 ) -> services_proto.SyncRequest:
     datasets = []
     pipelines = []
@@ -114,15 +114,8 @@ def to_sync_request_proto(
     for obj in registered_objs:
         if isinstance(obj, Dataset):
             is_source_dataset = hasattr(obj, connectors.SOURCE_FIELD)
-            if len(obj._pipelines) == 0 and not is_source_dataset:
-                raise ValueError(
-                    f"Dataset {obj._name} has no pipelines defined. "
-                    f"Please define at least one pipeline or mark it as a source "
-                    f"data set by defining a @source decorator."
-                )
-
             datasets.append(dataset_to_proto(obj))
-            pipelines.extend(pipelines_from_ds(obj, tier))
+            pipelines.extend(pipelines_from_ds(obj, env))
             operators.extend(operators_from_ds(obj))
             expectations.extend(expectations_from_ds(obj))
 
@@ -133,7 +126,7 @@ def to_sync_request_proto(
             if offline_index:
                 offline_indices.append(offline_index)
 
-            sources = source_proto_from_ds(obj, tier)
+            sources = source_proto_from_ds(obj, env)
             for src in sources:
                 (ext_db, s) = src
                 conn_sources.append(s)
@@ -144,7 +137,7 @@ def to_sync_request_proto(
                     external_dbs_by_name[ext_db.name] = ext_db
                     external_dbs.append(ext_db)
 
-            db_with_sinks = sinks_from_ds(obj, is_source_dataset, tier)
+            db_with_sinks = sinks_from_ds(obj, is_source_dataset, env)
 
             for ext_db, sinks in db_with_sinks:
                 conn_sinks.append(sinks)
@@ -158,7 +151,7 @@ def to_sync_request_proto(
         elif isinstance(obj, Featureset):
             featuresets.append(featureset_to_proto(obj))
             features.extend(features_from_fs(obj))
-            extractors.extend(extractors_from_fs(obj, featureset_obj_map, tier))
+            extractors.extend(extractors_from_fs(obj, featureset_obj_map, env))
         else:
             raise ValueError(f"Unknown object type {type(obj)}")
     return services_proto.SyncRequest(
@@ -274,17 +267,17 @@ def _field_to_proto(field: Field) -> schema_proto.Field:
     )
 
 
-def sync_validation_for_datasets(ds: Dataset, tier: Optional[str] = None):
+def sync_validation_for_datasets(ds: Dataset, env: Optional[str] = None):
     """
     This validation function contains the checks that are run just before the sync call.
     It should only contain checks that are not possible to run during the registration phase/compilation phase.
     """
     pipelines = []
     for pipeline in ds._pipelines:
-        if pipeline.tier.is_entity_selected(tier):
+        if pipeline.env.is_entity_selected(env):
             pipelines.append(pipeline)
 
-    sources = source_from_ds(ds, tier)
+    sources = source_from_ds(ds, env)
     if len(sources) > 0 and len(pipelines) > 0:
         raise ValueError(
             f"Dataset `{ds._name}` has a source and pipelines defined. "
@@ -308,41 +301,41 @@ def sync_validation_for_datasets(ds: Dataset, tier: Optional[str] = None):
     if len(sources) == 0 and len(pipelines) == 1:
         return
 
-    tiers: Set[str] = set()
+    envs: Set[str] = set()
     for pipeline in pipelines:
-        tier = pipeline.tier.tiers  # type: ignore
-        if tier is None:
+        env = pipeline.env.environments  # type: ignore
+        if env is None:
             raise ValueError(
-                f"Pipeline : `{pipeline.name}` has no tier. If there are more than one Pipelines for a dataset, "
-                f"please specify tier for each of them as there can only be one Pipeline for each tier."
+                f"Pipeline : `{pipeline.name}` has no env. If there are more than one Pipelines for a dataset, "
+                f"please specify env for each of them as there can only be one Pipeline for each env."
             )
-        if isinstance(tier, list):
-            for tier_item in tier:
-                if tier_item in tiers:
+        if isinstance(env, list):
+            for e in env:
+                if e in envs:
                     raise ValueError(
-                        f"Pipeline : `{pipeline.name}` mapped to Tier : {tier_item} which has more than one "
+                        f"Pipeline : `{pipeline.name}` mapped to Env : {e} which has more than one "
                         f"pipeline. Please specify only one."
                     )
                 else:
-                    tiers.add(tier_item)
-        elif isinstance(tier, str):
-            if tier in tiers:
+                    envs.add(e)
+        elif isinstance(env, str):
+            if env in envs:
                 raise ValueError(
-                    f"Pipeline : `{pipeline.name}` mapped to Tier : {tier} which has more than one pipeline. "
+                    f"Pipeline : `{pipeline.name}` mapped to Tier : {env} which has more than one pipeline. "
                     f"Please specify only one."
                 )
             else:
-                tiers.add(tier)
+                envs.add(env)
 
 
 def pipelines_from_ds(
-    ds: Dataset, tier: Optional[str] = None
+    ds: Dataset, env: Optional[str] = None
 ) -> List[ds_proto.Pipeline]:
     pipelines = []
     for pipeline in ds._pipelines:
-        if pipeline.tier.is_entity_selected(tier):
+        if pipeline.env.is_entity_selected(env):
             pipelines.append(pipeline)
-    sync_validation_for_datasets(ds, tier)
+    sync_validation_for_datasets(ds, env)
     if len(pipelines) == 1:
         pipelines[0].active = True
     pipeline_protos = []
@@ -427,7 +420,7 @@ def _validate_source_pre_proc(
 
 
 def source_from_ds(
-    ds: Dataset, tier: Optional[str] = None
+    ds: Dataset, env: Optional[str] = None
 ) -> List[connectors.DataConnector]:
     if not hasattr(ds, connectors.SOURCE_FIELD):
         return []
@@ -436,14 +429,12 @@ def source_from_ds(
         ds, connectors.SOURCE_FIELD
     )
     return [
-        source
-        for source in all_sources
-        if source.tiers.is_entity_selected(tier)
+        source for source in all_sources if source.envs.is_entity_selected(env)
     ]
 
 
 def source_proto_from_ds(
-    ds: Dataset, tier: Optional[str] = None
+    ds: Dataset, env: Optional[str] = None
 ) -> List[Tuple[connector_proto.ExtDatabase, connector_proto.Source]]:
     """
     Returns the source proto for a dataset if it exists
@@ -451,7 +442,7 @@ def source_proto_from_ds(
     :param ds: The dataset to get the source proto for.
     :param source_field: The attr for the source field.
     """
-    sources = source_from_ds(ds, tier)
+    sources = source_from_ds(ds, env)
     ret = []
     for src in sources:
         if src.pre_proc:
@@ -464,7 +455,7 @@ def source_proto_from_ds(
 
 
 def sinks_from_ds(
-    ds: Dataset, is_source_dataset: bool = False, tier: Optional[str] = None
+    ds: Dataset, is_source_dataset: bool = False, env: Optional[str] = None
 ) -> List[Tuple[connector_proto.ExtDatabase, connector_proto.Sink]]:
     """
     Returns the source proto for a dataset if it exists
@@ -479,7 +470,7 @@ def sinks_from_ds(
             ds, connectors.SINK_FIELD
         )
         filtered_sinks = [
-            sink for sink in all_sinks if sink.tiers.is_entity_selected(tier)
+            sink for sink in all_sinks if sink.envs.is_entity_selected(env)
         ]
 
         if len(filtered_sinks) > 0 and is_source_dataset:
@@ -568,12 +559,12 @@ def sync_validation_for_extractors(extractors: List[Extractor]):
 def extractors_from_fs(
     fs: Featureset,
     fs_obj_map: Dict[str, Featureset],
-    tier: Optional[str] = None,
+    env: Optional[str] = None,
 ) -> List[fs_proto.Extractor]:
     extractors = []
     extractor_protos = []
     for extractor in fs._extractors:
-        if extractor.tiers.is_entity_selected(tier):
+        if extractor.envs.is_entity_selected(env):
             extractors.append(extractor)
             extractor_protos.append(
                 _extractor_to_proto(extractor, fs, fs_obj_map)

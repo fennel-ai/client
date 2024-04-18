@@ -46,7 +46,7 @@ class MovieRating:
 
 # docsnip datasets_testing
 import unittest
-from fennel.testing import mock  # docsnip-highlight
+from fennel.testing import mock, log  # docsnip-highlight
 
 
 class TestDataset(unittest.TestCase):
@@ -78,8 +78,7 @@ class TestDataset(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "RatingActivity", df)
-        assert response.status_code == requests.codes.OK
+        log(RatingActivity, df)
 
         # Do some lookups to verify pipeline_aggregate
         # is working as expected
@@ -162,7 +161,6 @@ def get_country_geoid(country: str) -> int:
 
 # docsnip featuresets_testing_with_dataset
 @meta(owner="test@test.com")
-@source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
 @dataset(index=True)
 class UserInfoDataset:
     user_id: int = field(key=True)
@@ -232,8 +230,8 @@ class TestExtractorDAGResolution(unittest.TestCase):
         ]
         columns = ["user_id", "name", "age", "country", "timestamp"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "UserInfoDataset", df)
-        assert response.status_code == requests.codes.OK, response.json()
+        # For testing only.
+        log(UserInfoDataset, df)
 
         feature_df = client.query(
             outputs=[UserInfoMultipleExtractor],

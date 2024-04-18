@@ -16,7 +16,7 @@ webhook = Webhook(name="app_webhook")
 
 @source(
     webhook.endpoint("ReservationDS"),
-    tier="local",
+    env="local",
     disorder="14d",
     cdc="append",
 )
@@ -83,7 +83,7 @@ class CancelledTripsDS:
     webhook.endpoint("LoginEventsDS"),
     disorder="14d",
     cdc="append",
-    tier="local",
+    env="local",
 )
 @dataset
 class LoginEventsDS:
@@ -118,7 +118,7 @@ class LoginsLastDayDS:
     webhook.endpoint("BookingFlowCheckoutPageDS"),
     disorder="14d",
     cdc="append",
-    tier="local",
+    env="local",
 )
 class BookingFlowCheckoutPageDS:
     id: str
@@ -155,7 +155,7 @@ class CheckoutPagesLastDayDS:
     webhook.endpoint("ReservationSummaryDS"),
     disorder="14d",
     cdc="upsert",
-    tier="local",
+    env="local",
 )
 @dataset
 class ReservationSummaryDS:
