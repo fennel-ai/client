@@ -268,10 +268,24 @@ global___Operator = Operator
 class Aggregate(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    class _Emission:
+        ValueType = typing.NewType("ValueType", builtins.int)
+        V: typing_extensions.TypeAlias = ValueType
+
+    class _EmissionEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Aggregate._Emission.ValueType], builtins.type):
+        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+        Final: Aggregate._Emission.ValueType  # 0
+        Eager: Aggregate._Emission.ValueType  # 1
+
+    class Emission(_Emission, metaclass=_EmissionEnumTypeWrapper): ...
+    Final: Aggregate.Emission.ValueType  # 0
+    Eager: Aggregate.Emission.ValueType  # 1
+
     OPERAND_ID_FIELD_NUMBER: builtins.int
     KEYS_FIELD_NUMBER: builtins.int
     SPECS_FIELD_NUMBER: builtins.int
     ALONG_FIELD_NUMBER: builtins.int
+    EMIT_STRATEGY_FIELD_NUMBER: builtins.int
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
     @property
@@ -279,6 +293,7 @@ class Aggregate(google.protobuf.message.Message):
     @property
     def specs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[spec_pb2.PreSpec]: ...
     along: builtins.str
+    emit_strategy: global___Aggregate.Emission.ValueType
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -290,10 +305,11 @@ class Aggregate(google.protobuf.message.Message):
         keys: collections.abc.Iterable[builtins.str] | None = ...,
         specs: collections.abc.Iterable[spec_pb2.PreSpec] | None = ...,
         along: builtins.str | None = ...,
+        emit_strategy: global___Aggregate.Emission.ValueType = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_along", b"_along", "along", b"along"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_along", b"_along", "along", b"along", "keys", b"keys", "operand_id", b"operand_id", "operand_name", b"operand_name", "specs", b"specs"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_along", b"_along", "along", b"along", "emit_strategy", b"emit_strategy", "keys", b"keys", "operand_id", b"operand_id", "operand_name", b"operand_name", "specs", b"specs"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_along", b"_along"]) -> typing_extensions.Literal["along"] | None: ...
 
 global___Aggregate = Aggregate

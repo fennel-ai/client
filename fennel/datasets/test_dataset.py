@@ -1454,7 +1454,8 @@ def test_dataset_with_complex_pipe():
                         into_field=str(cls.median_transaction_amount),
                         approx=True,
                     ),
-                ]
+                ],
+                emit="final",
             )
 
     view = InternalTestClient()
@@ -1662,6 +1663,7 @@ def test_dataset_with_complex_pipe():
                     }
                 },
             ],
+            "emitStrategy": "Final",
         },
         "ds_version": 1,
     }

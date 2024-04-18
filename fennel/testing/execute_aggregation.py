@@ -237,7 +237,8 @@ class MinState(AggState):
         if val not in self.counter:
             self.min_heap.push(val)
         self.counter[val] += 1
-        return self.min_heap.top()
+
+        return self.get_val()
 
     def del_val_from_state(self, val):
         if val not in self.counter:
@@ -247,12 +248,15 @@ class MinState(AggState):
             self.counter.pop(val)
         else:
             self.counter[val] -= 1
-        return self.min_heap.top()
+
+        return self.get_val()
 
     def get_val(self):
         if len(self.min_heap) == 0:
             return self.default
-        return self.min_heap.top()
+
+        result = self.min_heap.top()
+        return result if result is not None else self.default
 
 
 class MaxState(AggState):
@@ -265,7 +269,8 @@ class MaxState(AggState):
         if val not in self.counter:
             self.max_heap.push(val)
         self.counter[val] += 1
-        return self.max_heap.top()
+
+        return self.get_val()
 
     def del_val_from_state(self, val):
         if val not in self.counter:
@@ -276,12 +281,14 @@ class MaxState(AggState):
         else:
             self.counter[val] -= 1
 
-        return self.max_heap.top()
+        return self.get_val()
 
     def get_val(self):
         if len(self.max_heap) == 0:
             return self.default
-        return self.max_heap.top()
+
+        result = self.max_heap.top()
+        return result if result is not None else self.default
 
 
 class StddevState(AggState):
@@ -365,11 +372,12 @@ def get_aggregated_df(
     input_df: pd.DataFrame,
     aggregate: AggregateType,
     ts_field: str,
-    key_fields: List[str],
+    input_key_fields: List[str],
+    output_key_fields: List[str],
     output_dtype: Type,
 ) -> pd.DataFrame:
     df = input_df.copy()
-    df[FENNEL_ROW_TYPE] = 1
+    df[FENNEL_ROW_TYPE] = df.index + 1
     if aggregate.window.start != "forever":
         window_secs = duration_to_timedelta(
             aggregate.window.start
@@ -381,7 +389,7 @@ def get_aggregated_df(
         # as a delete row
         del_df = df.copy()
         del_df[ts_field] = del_df[ts_field] + expire_secs
-        del_df[FENNEL_ROW_TYPE] = -1
+        del_df[FENNEL_ROW_TYPE] = -df[FENNEL_ROW_TYPE]
         df = pd.concat([df, del_df], ignore_index=True)
         df = df.sort_values(
             [ts_field, FENNEL_ROW_TYPE], ascending=[True, False]
@@ -398,64 +406,91 @@ def get_aggregated_df(
 
     state: Dict[int, AggState] = {}
     result_vals = []
+
+    # To find out which value to replace and remove
+    input_key_last_value = dict()
+    # List of rows that still active in state (e.g not been upsert)
+    active_rows = dict()
+
     for i, row in df.iterrows():
+
         val = row.loc[of_field]
         row_key_fields = []
-        for key_field in key_fields:
+        for key_field in output_key_fields:
             row_key_fields.append(row.loc[key_field])
-        key = hash(tuple(row_key_fields))
-        # If the row is a delete row, delete from state.
-        if row[FENNEL_ROW_TYPE] == -1:
-            if key not in state:
-                raise Exception("Delete row without insert row")
-            result_vals.append(state[key].del_val_from_state(val))
-        else:
-            # Add val to state
-            if key not in state:
-                if isinstance(aggregate, Sum):
-                    state[key] = SumState()
-                elif isinstance(aggregate, Count):
-                    if aggregate.unique:
-                        state[key] = CountUniqueState()
-                    else:
-                        state[key] = CountState()
-                elif isinstance(aggregate, Average):
-                    state[key] = AvgState(aggregate.default)
-                elif isinstance(aggregate, LastK):
-                    state[key] = LastKState(aggregate.limit, aggregate.dedup)
-                elif isinstance(aggregate, Min):
-                    if aggregate.window.start == "forever":
-                        state[key] = MinForeverState(aggregate.default)
-                    else:
-                        state[key] = MinState(aggregate.default)
-                elif isinstance(aggregate, Max):
-                    if aggregate.window.start == "forever":
-                        state[key] = MaxForeverState(aggregate.default)
-                    else:
-                        state[key] = MaxState(aggregate.default)
-                elif isinstance(aggregate, Stddev):
-                    state[key] = StddevState(aggregate.default)
-                elif isinstance(aggregate, Distinct):
-                    state[key] = DistinctState()
-                elif isinstance(aggregate, Quantile):
-                    state[key] = QuantileState(aggregate.default, aggregate.p)
-                else:
-                    raise Exception(
-                        f"Unsupported aggregate function {aggregate}"
-                    )
-            result_vals.append(state[key].add_val_to_state(val))
+        output_key = hash(tuple(row_key_fields))
 
-    if hasattr(aggregate, 'default'):
-        result_vals = [x if x is not None else aggregate.default for x in result_vals]
+        row_id = abs(row[FENNEL_ROW_TYPE])
+
+        if len(input_key_fields) > 0:
+            row_key_fields = []
+            for key_field in input_key_fields:
+                row_key_fields.append(row.loc[key_field])
+            input_key = hash(tuple(row_key_fields))
+        else:
+            # If input key does not have any key, this is a stream
+            # every row should be its own record
+            input_key = row_id
+
+        # Add val to state
+        if output_key not in state:
+            if isinstance(aggregate, Sum):
+                state[output_key] = SumState()
+            elif isinstance(aggregate, Count):
+                if aggregate.unique:
+                    state[output_key] = CountUniqueState()
+                else:
+                    state[output_key] = CountState()
+            elif isinstance(aggregate, Average):
+                state[output_key] = AvgState(aggregate.default)
+            elif isinstance(aggregate, LastK):
+                state[output_key] = LastKState(aggregate.limit, aggregate.dedup)
+            elif isinstance(aggregate, Min):
+                state[output_key] = MinState(aggregate.default)
+            elif isinstance(aggregate, Max):
+                state[output_key] = MaxState(aggregate.default)
+            elif isinstance(aggregate, Stddev):
+                state[output_key] = StddevState(aggregate.default)
+            elif isinstance(aggregate, Distinct):
+                state[output_key] = DistinctState()
+            elif isinstance(aggregate, Quantile):
+                state[output_key] = QuantileState(
+                    aggregate.default, aggregate.p
+                )
+            else:
+                raise Exception(f"Unsupported aggregate function {aggregate}")
+
+        if (row[FENNEL_ROW_TYPE] > 0) and (input_key in input_key_last_value):
+            # This means this input key was upsert
+            state[output_key].del_val_from_state(
+                input_key_last_value[input_key]
+            )
+            input_key_last_value[input_key] = val
+            active_rows[input_key] = row_id
+            result_vals.append(state[output_key].add_val_to_state(val))
+            continue
+
+        # If the row is a delete row, delete from state.
+        if row[FENNEL_ROW_TYPE] < 0:
+            if output_key not in state:
+                raise Exception("Delete row without insert row")
+            if input_key not in active_rows or row_id != active_rows[input_key]:
+                # This row have been upsert no change was made
+                result_vals.append(result_vals[-1])
+                continue
+            result_vals.append(state[output_key].del_val_from_state(val))
+            input_key_last_value.pop(input_key)
+            active_rows.pop(input_key)
+        else:
+            input_key_last_value[input_key] = val
+            active_rows[input_key] = row_id
+            result_vals.append(state[output_key].add_val_to_state(val))
 
     df[aggregate.into_field] = result_vals
     if aggregate.into_field != of_field:
         df.drop(of_field, inplace=True, axis=1)
     # Drop the fennel_row_type column
     df.drop(FENNEL_ROW_TYPE, inplace=True, axis=1)
-    subset = key_fields + [ts_field]
-    df = df.drop_duplicates(subset=subset, keep="last")
-    df = df.reset_index(drop=True)
     pd_dtype = get_pd_dtype(output_dtype)
     if pd_dtype in [
         pd.Int64Dtype,
@@ -464,4 +499,8 @@ def get_aggregated_df(
         pd.StringDtype,
     ]:
         df[aggregate.into_field] = df[aggregate.into_field].astype(pd_dtype())
+
+    subset = output_key_fields + [ts_field, aggregate.into_field]
+    df = df[subset]
+    df[ts_field] = pd.to_datetime(df[ts_field])
     return df

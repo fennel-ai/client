@@ -482,39 +482,6 @@ def test_aggregation_along():
         str(e.value)
         == """error with along kwarg of aggregate operator: `transaction_time` is not of type datetime"""
     )
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nikhil@fennel.ai")
-        @dataset
-        class A4:
-            a: str = field(key=True)
-            b: int
-            t: datetime = field(timestamp=True)
-            transaction_time: int
-
-        @meta(owner="nikhil@fennel.ai")
-        @dataset
-        class B4:
-            a: str = field(key=True)
-            b_max: int
-            t: datetime
-
-            @pipeline
-            @inputs(A2)
-            def pipeline(cls, a: Dataset):
-                return a.groupby("a").aggregate(
-                    emit=Max(
-                        of="b",
-                        into_field="b_max",
-                        window="1d",
-                        default=1.91,
-                    ),
-                )
-
-    assert (
-        str(e.value)
-        == """`emit` is a reserved kwarg for aggregate operator and can not be used for an aggregation column"""
-    )
 
     with pytest.raises(ValueError) as e:
 
@@ -554,6 +521,80 @@ def test_aggregation_along():
     assert (
         """`along` kwarg in the aggregate operator must be string or None"""
         in str(e.value)
+    )
+
+
+def test_aggregation_emit():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nikhil@fennel.ai")
+        @dataset
+        class A1:
+            a: str = field(key=True)
+            b: int
+            t: datetime
+
+        @meta(owner="nikhil@fennel.ai")
+        @dataset
+        class B1:
+            a: str = field(key=True)
+            b_min: int
+            t: datetime
+
+            @pipeline
+            @inputs(A1)
+            def pipeline(cls, a: Dataset):
+                return a.groupby("a").aggregate(
+                    [
+                        Min(
+                            of="b",
+                            into_field="b_min",
+                            window="1d",
+                            default=0.91,
+                        ),
+                    ],
+                    emit="finall",
+                )
+
+    assert (
+        str(e.value)
+        == """`finall` is not a valid 'emit_strategy' in 'aggregate' operator. 'emit' in aggregation operator must be one of ['final', 'eager']"""
+    )
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nikhil@fennel.ai")
+        @dataset
+        class A2:
+            a: str = field(key=True)
+            b: int
+            t: datetime = field(timestamp=True)
+            transaction_time: int
+
+        @meta(owner="nikhil@fennel.ai")
+        @dataset
+        class B2:
+            a: str = field(key=True)
+            b_max: int
+            t: datetime
+
+            @pipeline
+            @inputs(A2)
+            def pipeline(cls, a: Dataset):
+                return a.groupby("a").aggregate(
+                    [
+                        Max(
+                            of="b",
+                            into_field="b_max",
+                            window="1d",
+                            default=1.91,
+                        ),
+                    ],
+                    emit=1,
+                )
+
+    assert (
+        str(e.value)
+        == """`1` is not a valid 'emit_strategy' in 'aggregate' operator. 'emit' in aggregation operator must be one of ['final', 'eager']"""
     )
 
 

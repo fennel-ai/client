@@ -158,9 +158,7 @@ class DataEngine(object):
             raise ValueError(f"Dataset `{dataset_name}` not found")
 
         # If we haven't seen any values for this dataset, return an empty df with the right schema.
-        if (
-            not isinstance(self.datasets[dataset_name].data, pd.DataFrame)
-        ):
+        if not isinstance(self.datasets[dataset_name].data, pd.DataFrame):
             return self.datasets[dataset_name].empty_df()
 
         if isinstance(self.datasets[dataset_name].data, pd.DataFrame):
@@ -527,13 +525,6 @@ class DataEngine(object):
             df = df[fields]
         df = df.reset_index(drop=True)
         return df, found
-
-    @staticmethod
-    def _make_object_hashable(obj):
-        try:
-            return str(dict(obj))
-        except:
-            return str(obj)
 
     def _as_of_lookup(
         self,

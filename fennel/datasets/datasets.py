@@ -432,6 +432,19 @@ class Filter(_Node):
         return self.node.dsschema()
 
 
+class EmitStrategy(str, Enum):
+    Final = "final"
+    Eager = "eager"
+
+    @classmethod
+    def _missing_(cls, value):
+        valid_types = [m.value for m in cls]
+        raise ValueError(
+            f"`{value}` is not a valid 'emit_strategy' in 'aggregate' operator. "
+            f"'emit' in aggregation operator must be one of {valid_types}"
+        )
+
+
 class Aggregate(_Node):
     def __init__(
         self,
@@ -439,6 +452,7 @@ class Aggregate(_Node):
         keys: List[str],
         aggregates: List[AggregateType],
         along: Optional[str],
+        emit_strategy: EmitStrategy,
     ):
         super().__init__()
         if len(keys) == 0:
@@ -448,6 +462,7 @@ class Aggregate(_Node):
         self.node = node
         self.node.out_edges.append(self)
         self.along = along
+        self.emit_strategy = emit_strategy
 
     def signature(self):
         agg_signature = fhash([agg.signature() for agg in self.aggregates])
@@ -507,7 +522,13 @@ class GroupBy:
         self.node = node
         self.node.out_edges.append(self)
 
-    def aggregate(self, *args, along: Optional[str] = None, **kwargs) -> _Node:
+    def aggregate(
+        self,
+        *args,
+        along: Optional[str] = None,
+        emit: str = "eager",
+        **kwargs,
+    ) -> _Node:
         if len(args) == 0 and len(kwargs) == 0:
             raise TypeError(
                 "aggregate operator expects at least one aggregation operation"
@@ -543,7 +564,13 @@ class GroupBy:
                     "parameter or through named arguments."
                 )
 
-        return Aggregate(self.node, list(self.keys), aggregates, along)
+        return Aggregate(
+            self.node,
+            list(self.keys),
+            aggregates,
+            along,
+            EmitStrategy(emit),
+        )
 
     def first(self) -> _Node:
         if len(self.keys) == 1 and isinstance(self.keys[0], list):

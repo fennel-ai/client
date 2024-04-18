@@ -101,7 +101,7 @@ def test_min_state():
     assert state.get_val() == 3
     assert state.del_val_from_state(3) == 3
     assert state.get_val() == 3
-    assert state.del_val_from_state(3) is None
+    assert state.del_val_from_state(3) is 3.0
 
 
 def test_max_state():
@@ -116,7 +116,7 @@ def test_max_state():
     assert state.get_val() == 3
     assert state.del_val_from_state(3) == 3
     assert state.get_val() == 3
-    assert state.del_val_from_state(3) is None
+    assert state.del_val_from_state(3) == 3.0
 
 
 def test_min_forever_state():
