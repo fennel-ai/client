@@ -1,5 +1,6 @@
 from fennel.lib.metadata.metadata import (
     meta,
+    desc,
     Metadata,
     OWNER,
     get_meta_attr,
