@@ -112,6 +112,7 @@ def test_simple_dataset():
                             },
                         },
                         "endpoint": "UserInfoDataset",
+                        "duration": "2592000s",
                     }
                 },
                 "dataset": "UserInfoDataset",
@@ -136,6 +137,104 @@ def test_simple_dataset():
         "onlineIndices": [
             {
                 "dsName": "UserInfoDataset",
+                "dsVersion": 1,
+                "duration": {"forever": "forever"},
+            }
+        ],
+    }
+    # Ignoring schema validation since they are bytes and not human readable
+    expected_sync_request = ParseDict(d, SyncRequest())
+    sync_request.datasets[0].pycode.Clear()
+    assert sync_request == expected_sync_request, error_message(
+        sync_request, expected_sync_request
+    )
+
+
+def test_dataset_with_webhook_retention():
+    webhook_retention = Webhook(name="webhook_retention", retention="5d")
+
+    @source(webhook_retention.endpoint("Test"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class Test:
+        user_id: int = field(key=True)
+        name: str
+        timestamp: datetime = field(timestamp=True)
+
+    assert Test._history == timedelta(days=730)
+    view = InternalTestClient()
+    view.add(Test)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    d = {
+        "datasets": [
+            {
+                "name": "Test",
+                "metadata": {"owner": "ml-eng@fennel.ai"},
+                "version": 1,
+                "dsschema": {
+                    "keys": {
+                        "fields": [
+                            {"name": "user_id", "dtype": {"intType": {}}}
+                        ]
+                    },
+                    "values": {
+                        "fields": [
+                            {"name": "name", "dtype": {"stringType": {}}},
+                        ]
+                    },
+                    "timestamp": "timestamp",
+                },
+                "history": "63072000s",
+                "retention": "63072000s",
+                "fieldMetadata": {
+                    "name": {},
+                    "user_id": {},
+                    "timestamp": {},
+                },
+                "pycode": {},
+                "isSourceDataset": True,
+            }
+        ],
+        "sources": [
+            {
+                "table": {
+                    "endpoint": {
+                        "db": {
+                            "name": "webhook_retention",
+                            "webhook": {
+                                "name": "webhook_retention",
+                                "retention": "432000s",
+                            },
+                        },
+                        "endpoint": "Test",
+                        "duration": "432000s",
+                    }
+                },
+                "dataset": "Test",
+                "dsVersion": 1,
+                "cdc": "Upsert",
+                "disorder": "1209600s",
+            }
+        ],
+        "extdbs": [
+            {
+                "name": "webhook_retention",
+                "webhook": {
+                    "name": "webhook_retention",
+                    "retention": "432000s",
+                },
+            }
+        ],
+        "offlineIndices": [
+            {
+                "dsName": "Test",
+                "dsVersion": 1,
+                "duration": {"forever": "forever"},
+            }
+        ],
+        "onlineIndices": [
+            {
+                "dsName": "Test",
                 "dsVersion": 1,
                 "duration": {"forever": "forever"},
             }
@@ -286,6 +385,7 @@ def test_dataset_with_retention():
                             },
                         },
                         "endpoint": "Activity",
+                        "duration": "2592000s",
                     }
                 },
                 "dataset": "Activity",
@@ -437,6 +537,7 @@ def test_nested_dataset():
                             },
                         },
                         "endpoint": "DealerDataset",
+                        "duration": "2592000s",
                     }
                 },
                 "dataset": "Dealer",
