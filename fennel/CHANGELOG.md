@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.2.11] - 2024-04-18
+- Added import for Enum in PyCode proto.
+
 ## [1.2.9] - 2024-04-17
 - Add ability to view descriptions for a feature or field.
 
