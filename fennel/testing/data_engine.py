@@ -9,14 +9,13 @@ from typing import Dict, List, Optional, Tuple, Callable, Any
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 from frozendict import frozendict
 
 import fennel.datasets.datasets
 from fennel.connectors import (
     connectors,
-    PreProcValue,
     Webhook,
-    DataConnector,
     DataSource,
 )
 from fennel.datasets import Dataset, Pipeline
@@ -24,6 +23,7 @@ from fennel.datasets.datasets import (
     get_index,
     IndexDuration,
 )
+from fennel.gen import schema_pb2 as schema_proto
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.internal_lib.duration import Duration, duration_to_timedelta
 from fennel.internal_lib.schema import data_schema_check
@@ -34,6 +34,8 @@ from fennel.testing.executor import Executor
 from fennel.testing.test_utils import (
     FakeResponse,
     cast_df_to_schema,
+    cast_df_to_arrow_dtype,
+    cast_df_to_pandas_dtype,
 )
 
 TEST_PORT = 50051
@@ -185,6 +187,17 @@ class DataEngine(object):
             key_dfs.drop_duplicates(inplace=True)
         # Sort key_dfs by timestamp
         key_dfs.sort_values(ts_field, inplace=True)
+
+        # Convert key_dfs to arrow dtype
+        required_fields_proto = []
+        total_fields = (
+            self.datasets[dataset_name].dataset.dsschema().to_fields_proto()
+        )
+        for field_proto in total_fields:
+            if field_proto.name in required_fields:
+                required_fields_proto.append(field_proto)
+        key_dfs = cast_df_to_arrow_dtype(key_dfs, required_fields_proto)
+
         # Find the values for all columns as of the timestamp in key_dfs
         extrapolated_dfs = []
         for col, data in column_wise_df.items():  # type: ignore
@@ -463,7 +476,10 @@ class DataEngine(object):
             empty_df = pd.DataFrame(
                 columns=val_cols, data=[[None] * len(val_cols)] * len(keys)
             )
-            return empty_df, pd.Series(np.array([False] * len(keys)))
+            empty_df = empty_df
+            return self._cast_after_lookup(cls_name, empty_df), pd.Series(
+                np.array([False] * len(keys))
+            )
 
         timestamp_field = self.datasets[cls_name].dataset.timestamp_field
         timestamp_length = len(ts)
@@ -527,7 +543,7 @@ class DataEngine(object):
         if len(fields) > 0:
             df = df[fields]
         df = df.reset_index(drop=True)
-        return df, found
+        return self._cast_after_lookup(cls_name, df), found
 
     def _as_of_lookup(
         self,
@@ -559,7 +575,11 @@ class DataEngine(object):
                 keys[col] = keys[col].astype(right_df[col].dtype)
 
             # Changing dtype of Struct to str for making it hashable
-            if col in right_df and right_df[col].dtype == object:
+            if col in right_df and (
+                right_df[col].dtype == object
+                or "map" in str(right_df[col].dtype)
+                or "struct" in str(right_df[col].dtype)
+            ):
                 cols_to_replace.append(col)
                 # Python v3.9 and 3.10 have different behavior for str(dict(x))
                 # as compared to 3.11 and 3.12.
@@ -658,7 +678,9 @@ class DataEngine(object):
 
         # Check if the dataframe has the same schema as the dataset
         schema = core_dataset.dsschema
-        if str(df[timestamp_field].dtype) != "datetime64[ns, UTC]":
+        if df[timestamp_field].dtype != pd.ArrowDtype(
+            pa.timestamp("us", "UTC")
+        ):
             raise ValueError(
                 400,
                 f"Timestamp field {timestamp_field} is not of type "
@@ -687,7 +709,7 @@ class DataEngine(object):
             except Exception as e:
                 raise Exception(
                     f"Error while executing pipeline `{pipeline.name}` "
-                    f"in dataset `{dataset_name}`: {str(e)}",
+                    f"in dataset `{self.datasets[pipeline._dataset_name].dataset._name}`: {str(e)}",
                 )
             if ret is None:
                 continue
@@ -810,3 +832,42 @@ class DataEngine(object):
                     )
                 )
         return webhook_sources
+
+    def _cast_after_lookup(
+        self, dataset_name: str, dataframe: pd.DataFrame
+    ) -> pd.DataFrame:
+        """
+        This helper function casts the dataframe coming from data engine having pyarrow dtype to pandas dtypes.
+        Also this function would change the dtype to optional of value fields, as after lookup data_engine can
+        return values or not
+        """
+        proto_fields = (
+            self.datasets[dataset_name].dataset.dsschema().to_fields_proto()
+        )
+        new_proto_fields = []
+        key_fields = self.datasets[dataset_name].dataset.key_fields
+        for proto_field in proto_fields:
+            if proto_field.name not in dataframe.columns:
+                continue
+            if (
+                proto_field.name not in [key_fields]
+                and proto_field.name
+                != self.datasets[dataset_name].dataset.timestamp_field
+            ):
+                dtype = proto_field.dtype
+                if not dtype.HasField("optional_type"):
+                    new_proto_fields.append(
+                        schema_proto.Field(
+                            name=proto_field.name,
+                            dtype=schema_proto.DataType(
+                                optional_type=schema_proto.OptionalType(
+                                    of=dtype
+                                ),
+                            ),
+                        )
+                    )
+                else:
+                    new_proto_fields.append(proto_field)
+            else:
+                new_proto_fields.append(proto_field)
+        return cast_df_to_pandas_dtype(dataframe, new_proto_fields)

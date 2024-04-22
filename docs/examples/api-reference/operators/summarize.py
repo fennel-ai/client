@@ -1,8 +1,9 @@
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pandas as pd
 import pytest
+import pytz
 
 from fennel.testing import mock
 
@@ -97,37 +98,31 @@ class TestSummarizeSnips(unittest.TestCase):
             window=pd.Series(
                 [
                     {
-                        "begin": pd.Timestamp(
-                            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
-                        ),
-                        "end": pd.Timestamp(
-                            datetime(
-                                2021,
-                                1,
-                                1,
-                                0,
-                                10,
-                                0,
-                                microsecond=1,
-                                tzinfo=timezone.utc,
-                            )
+                        "begin": datetime(2021, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
+                        "end": datetime(
+                            2021,
+                            1,
+                            1,
+                            0,
+                            10,
+                            0,
+                            microsecond=1,
+                            tzinfo=pytz.UTC,
                         ),
                     },
                     {
-                        "begin": pd.Timestamp(
-                            datetime(2021, 1, 2, 0, 10, 0, tzinfo=timezone.utc)
+                        "begin": datetime(
+                            2021, 1, 2, 0, 10, 0, tzinfo=pytz.UTC
                         ),
-                        "end": pd.Timestamp(
-                            datetime(
-                                2021,
-                                1,
-                                2,
-                                0,
-                                15,
-                                0,
-                                microsecond=1,
-                                tzinfo=timezone.utc,
-                            )
+                        "end": datetime(
+                            2021,
+                            1,
+                            2,
+                            0,
+                            15,
+                            0,
+                            microsecond=1,
+                            tzinfo=pytz.UTC,
                         ),
                     },
                 ]

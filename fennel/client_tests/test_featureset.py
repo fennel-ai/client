@@ -377,7 +377,7 @@ class TestDerivedExtractor(unittest.TestCase):
         )
         self.assertEqual(
             list(feature_df["GeneratedFeatures.base_region"]),
-            ["East", None, "CA"],
+            ["East", pd.NA, "CA"],
         )
 
 
@@ -583,10 +583,10 @@ class DocumentFeatures:
         df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_id)  # type: ignore
 
         df["bert_embedding"] = df["bert_embedding"].apply(
-            lambda x: x if x is not None else [0, 0, 0, 0]
+            lambda x: x if isinstance(x, (list, np.ndarray)) else [0, 0, 0, 0]
         )
         df["fast_text_embedding"] = df["fast_text_embedding"].apply(
-            lambda x: x if x is not None else [0, 0, 0]
+            lambda x: x if isinstance(x, (list, np.ndarray)) else [0, 0, 0]
         )
         df["num_words"].fillna(0, inplace=True)
         return df[

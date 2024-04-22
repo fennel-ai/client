@@ -80,13 +80,13 @@ class TestMovieInfo103(unittest.TestCase):
             "Toy Story (1995)",
             "Jumanji (1995)",
             "Assassins (1995)",
-            None,
+            pd.NA,
         ]
         assert df["genres"].tolist() == [
             "Adventure|Animation|Children|Comedy|Fantasy",
             "Adventure|Children|Fantasy",
             "Action|Crime|Thriller",
-            None,
+            pd.NA,
         ]
 
         # Do some lookups with a timestamp

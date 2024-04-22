@@ -54,4 +54,4 @@ def test_basic(client):
     assert found.tolist() == [True, True, False]
     # Response is columnar
     assert response["uid"].tolist() == [1, 2, 3]
-    assert response["amount"].tolist() == [10, 20, None]
+    assert response["amount"].tolist() == [10, 20, pd.NA]

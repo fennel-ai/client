@@ -194,8 +194,8 @@ def test_overview(client):
     # /docsnip
 
     assert data["uid"].tolist() == [1, 2, 3, 4]
-    assert data["count"].tolist() == [2, 2, 3, None]
-    assert data["amount_1d"].tolist() == [500, 400, 600, None]
+    assert data["count"].tolist() == [2, 2, 3, pd.NA]
+    assert data["amount_1d"].tolist() == [500, 400, 600, pd.NA]
     assert found.to_list() == [True, True, True, False]
 
     # docsnip query

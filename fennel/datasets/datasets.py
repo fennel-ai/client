@@ -46,6 +46,7 @@ from fennel.dtypes.dtypes import (
     get_fennel_struct,
     Window,
 )
+from fennel.gen import schema_pb2 as schema_proto
 from fennel.internal_lib.duration import (
     Duration,
     duration_to_timedelta,
@@ -61,6 +62,7 @@ from fennel.internal_lib.schema import (
     get_python_type_from_pd,
     FENNEL_STRUCT_SRC_CODE,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
+    get_datatype,
 )
 from fennel.internal_lib.utils import (
     dtype_to_string,
@@ -1203,7 +1205,7 @@ def dataset(
                 res[col] = res[col].apply(
                     lambda x: parse_json(type_annotation, x)
                 )
-            return res.replace({np.nan: None}), found
+            return res, found
 
         args = {k: pd.Series for k in key_fields}
         args["fields"] = List[str]
@@ -2252,6 +2254,30 @@ class DSSchema:
         )
         exceptions = [x for x in exceptions if x is not None]
         return exceptions
+
+    def to_fields_proto(self) -> List[schema_proto.Field]:
+        """
+        Converts all the fields in the DSSchema includes keys, values and timestamps into list Field Proto
+        """
+        fields = [
+            schema_proto.Field(
+                name=self.timestamp,
+                dtype=schema_proto.DataType(
+                    timestamp_type=schema_proto.TimestampType()
+                ),
+            )
+        ]
+        for key in self.keys:
+            fields.append(
+                schema_proto.Field(name=key, dtype=get_datatype(self.keys[key]))
+            )
+        for value in self.values:
+            fields.append(
+                schema_proto.Field(
+                    name=value, dtype=get_datatype(self.values[value])
+                )
+            )
+        return fields
 
 
 class SchemaValidator(Visitor):

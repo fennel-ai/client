@@ -322,12 +322,22 @@ def test_tumbling_window_operator(client):
     )
     assert df_session.shape[0] == 1
     assert df_session["user_id"].values == [1]
-    assert df_session["window"].values[0].begin == datetime(
-        2023, 1, 16, 11, 0, 0, tzinfo=timezone.utc
-    )
-    assert df_session["window"].values[0].end == datetime(
-        2023, 1, 16, 11, 0, 10, tzinfo=timezone.utc
-    )
+    if client.is_integration_client():
+        assert df_session["window"].values[0].begin == datetime(
+            2023, 1, 16, 11, 0, 0
+        )
+    else:
+        assert df_session["window"].values[0].begin == datetime(
+            2023, 1, 16, 11, 0, 0, tzinfo=timezone.utc
+        )
+    if client.is_integration_client():
+        assert df_session["window"].values[0].end == datetime(
+            2023, 1, 16, 11, 0, 10
+        )
+    else:
+        assert df_session["window"].values[0].end == datetime(
+            2023, 1, 16, 11, 0, 10, tzinfo=timezone.utc
+        )
     assert df_session["window_stats"].values[0].count == 6
     assert df_session["window_stats"].values[0].avg_star == pytest.approx(
         2.8333333333

@@ -1,9 +1,10 @@
 # Unit Tests for client.py
 
+import pytest
+
 from fennel.client.client import _s3_connector_dict, _validate_branch_name
 from fennel.connectors.connectors import S3
 from fennel.testing import mock
-import pytest
 
 
 def test_s3_connector_dict():
@@ -134,7 +135,7 @@ def test_delete_branch(client):
 
     with pytest.raises(Exception) as e:
         client.delete_branch("main")
-    assert str(e.value) == "Cannot delete main branch"
+    assert str(e.value) == "Cannot delete the main branch."
     client.delete_branch("BranchA")
     assert client.list_branches() == ["main", "BranchB"]
     client.delete_branch("BranchB")

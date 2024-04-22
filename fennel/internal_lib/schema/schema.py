@@ -12,10 +12,12 @@ from typing import (
     get_args,
     Type,
     Optional,
+    Tuple,
 )
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 from frozendict import frozendict
 
 import fennel.gen.schema_pb2 as schema_proto
@@ -224,6 +226,45 @@ def get_python_type_from_pd(type):
     return type
 
 
+def convert_dtype_to_arrow_type(dtype: schema_proto.DataType) -> pa.DataType:
+    if dtype.HasField("optional_type"):
+        return convert_dtype_to_arrow_type(dtype.optional_type.of)
+    elif dtype.HasField("int_type"):
+        return pa.int64()
+    elif dtype.HasField("double_type"):
+        return pa.float64()
+    elif dtype.HasField("string_type") or dtype.HasField("regex_type"):
+        return pa.string()
+    elif dtype.HasField("bool_type"):
+        return pa.bool_()
+    elif dtype.HasField("timestamp_type"):
+        return pa.timestamp("us", "UTC")
+    elif dtype.HasField("array_type"):
+        return pa.list_(
+            value_type=convert_dtype_to_arrow_type(dtype.array_type.of)
+        )
+    elif dtype.HasField("map_type"):
+        key_pa_type = convert_dtype_to_arrow_type(dtype.map_type.key)
+        value_pa_type = convert_dtype_to_arrow_type(dtype.map_type.value)
+        return pa.map_(key_pa_type, value_pa_type, False)
+    elif dtype.HasField("embedding_type"):
+        embedding_size = dtype.embedding_type.embedding_size
+        return pa.list_(pa.float64(), embedding_size)
+    elif dtype.HasField("one_of_type"):
+        return convert_dtype_to_arrow_type(dtype.one_of_type.of)
+    elif dtype.HasField("between_type"):
+        return convert_dtype_to_arrow_type(dtype.between_type.dtype)
+    elif dtype.HasField("struct_type"):
+        fields: List[Tuple[str, pa.DataType]] = []
+        for field in dtype.struct_type.fields:
+            fields.append(
+                (field.name, convert_dtype_to_arrow_type(field.dtype))
+            )
+        return pa.struct(fields)
+    else:
+        raise TypeError(f"Invalid dtype: {dtype}.")
+
+
 def validate_val_with_dtype(dtype: Type, val):
     proto_dtype = get_datatype(dtype)
     validate_val_with_proto_dtype(proto_dtype, val)
@@ -240,12 +281,12 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
     if dtype.optional_type != schema_proto.OptionalType():
         return validate_val_with_proto_dtype(dtype.optional_type.of, val)
     if dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
-        if type(val) is not int:
+        if type(val) is not int and type(val) is not np.int64:
             raise ValueError(
                 f"Expected type int, got {type(val)} for value {val}"
             )
     elif dtype == schema_proto.DataType(double_type=schema_proto.DoubleType()):
-        if type(val) is not float:
+        if type(val) is not float and type(val) is not np.float64:
             raise ValueError(
                 f"Expected type float, got {type(val)} for value {val}"
             )
@@ -378,6 +419,7 @@ def validate_field_in_df(
 ):
     name = field.name
     dtype = field.dtype
+    arrow_type = convert_dtype_to_arrow_type(dtype)
     if df.shape[0] == 0:
         return
     if name not in df.columns:
@@ -410,6 +452,7 @@ def validate_field_in_df(
                 and df[name].dtype != pd.Int64Dtype()
                 and df[name].dtype != np.float64
                 and df[name].dtype != pd.Float64Dtype()
+                and df[name].dtype != pd.ArrowDtype(arrow_type)
             ):
                 raise ValueError(
                     f"Field `{name}` is of type int, but the "
@@ -418,7 +461,11 @@ def validate_field_in_df(
                     f"checking schema for `{entity_name}`."
                 )
         else:
-            if df[name].dtype != np.int64 and df[name].dtype != pd.Int64Dtype():
+            if (
+                df[name].dtype != np.int64
+                and df[name].dtype != pd.Int64Dtype()
+                and df[name].dtype != pd.ArrowDtype(arrow_type)
+            ):
                 raise ValueError(
                     f"Field `{name}` is of type int, but the "
                     f"column in the dataframe is of type "
@@ -431,6 +478,7 @@ def validate_field_in_df(
             and df[name].dtype != np.int64
             and df[name].dtype != pd.Int64Dtype()
             and df[name].dtype != pd.Float64Dtype()
+            and df[name].dtype != pd.ArrowDtype(arrow_type)
         ):
             raise ValueError(
                 f"Field `{name}` is of type float, but the "
@@ -443,6 +491,7 @@ def validate_field_in_df(
             df[name].dtype != object
             and df[name].dtype != np.str_
             and df[name].dtype != pd.StringDtype()
+            and df[name].dtype != pd.ArrowDtype(pa.string())
         ):
             raise ValueError(
                 f"Field `{name}` is of type str, but the "
@@ -453,7 +502,9 @@ def validate_field_in_df(
     elif dtype == schema_proto.DataType(
         timestamp_type=schema_proto.TimestampType()
     ):
-        if df[name].dtype not in ["datetime64[ns, UTC]"]:
+        if str(df[name].dtype) != "datetime64[ns, UTC]" and df[
+            name
+        ].dtype != pd.ArrowDtype(arrow_type):
             raise ValueError(
                 f"Field `{name}` is of type timestamp, but the "
                 f"column in the dataframe is of type "
@@ -461,7 +512,11 @@ def validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
     elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
-        if df[name].dtype != np.bool_ and df[name].dtype != pd.BooleanDtype():
+        if (
+            df[name].dtype != np.bool_
+            and df[name].dtype != pd.BooleanDtype()
+            and df[name].dtype != pd.ArrowDtype(arrow_type)
+        ):
             raise ValueError(
                 f"Field `{name}` is of type bool, but the "
                 f"column in the dataframe is of type "
@@ -469,7 +524,9 @@ def validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
     elif dtype.embedding_type.embedding_size > 0:
-        if df[name].dtype != object:
+        if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
+            arrow_type
+        ):
             raise ValueError(
                 f"Field `{name}` is of type embedding, but the "
                 f"column in the dataframe is of type "
@@ -493,7 +550,9 @@ def validate_field_in_df(
                     f"checking schema for `{entity_name}`."
                 )
     elif dtype.array_type.of != schema_proto.DataType():
-        if df[name].dtype != object:
+        if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
+            arrow_type
+        ):
             raise ValueError(
                 f"Field `{name}` is of type array, but the "
                 f"column in the dataframe is of type "
@@ -509,7 +568,9 @@ def validate_field_in_df(
                 )
             validate_val_with_proto_dtype(dtype, row)
     elif dtype.map_type.key != schema_proto.DataType():
-        if df[name].dtype != object:
+        if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
+            arrow_type
+        ):
             raise ValueError(
                 f"Field `{name}` is of type map, but the "
                 f"column in the dataframe is of type "
@@ -517,9 +578,15 @@ def validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
-            # isinstance(<frozendict instance>, dict) does not return true in
-            # python3.8
-            if not (isinstance(row, dict) or isinstance(row, frozendict)):
+            if isinstance(row, list):
+                for val in row:
+                    if not isinstance(val, tuple):
+                        raise ValueError(
+                            f"Field `{name}` is of type map, but the "
+                            f"column in the dataframe is not a dict. (type = {type(row)}). "
+                            f"Error found during checking schema for `{entity_name}`."
+                        )
+            elif not isinstance(row, dict) and not isinstance(row, frozendict):
                 raise ValueError(
                     f"Field `{name}` is of type map, but the "
                     f"column in the dataframe is not a dict. (type = {type(row)}). "
@@ -531,7 +598,11 @@ def validate_field_in_df(
         if bw_type.dtype == schema_proto.DataType(
             int_type=schema_proto.IntType()
         ):
-            if df[name].dtype != np.int64 and df[name].dtype != pd.Int64Dtype():
+            if (
+                df[name].dtype != np.int64
+                and df[name].dtype != pd.Int64Dtype()
+                and df[name].dtype != pd.ArrowDtype(arrow_type)
+            ):
                 raise ValueError(
                     f"Field `{name}` is of type int, but the "
                     f"column in the dataframe is of type "
@@ -548,6 +619,7 @@ def validate_field_in_df(
                 and df[name].dtype != np.int64
                 and df[name].dtype != pd.Int64Dtype()
                 and df[name].dtype != pd.Float64Dtype()
+                and df[name].dtype != pd.ArrowDtype(arrow_type)
             ):
                 raise ValueError(
                     f"Field `{name}` is of type float, but the "
@@ -574,7 +646,11 @@ def validate_field_in_df(
     elif dtype.one_of_type != schema_proto.OneOf():
         of_type = dtype.one_of_type
         if of_type.of == schema_proto.DataType(int_type=schema_proto.IntType()):
-            if df[name].dtype != np.int64 and df[name].dtype != pd.Int64Dtype():
+            if (
+                df[name].dtype != np.int64
+                and df[name].dtype != pd.Int64Dtype()
+                and df[name].dtype != pd.ArrowDtype(arrow_type)
+            ):
                 raise ValueError(
                     f"Field `{name}` is of type int, but the "
                     f"column in the dataframe is of type "
@@ -589,6 +665,7 @@ def validate_field_in_df(
                 df[name].dtype != object
                 and df[name].dtype != np.str_
                 and df[name].dtype != pd.StringDtype()
+                and df[name].dtype != pd.ArrowDtype(arrow_type)
             ):
                 raise ValueError(
                     f"Field `{name}` is of type str, but the "
@@ -616,6 +693,7 @@ def validate_field_in_df(
             df[name].dtype != object
             and df[name].dtype != np.str_
             and df[name].dtype != pd.StringDtype()
+            and df[name].dtype != pd.ArrowDtype(pa.string())
         ):
             raise ValueError(
                 f"Field `{name}` is of type str, but the "
@@ -634,7 +712,9 @@ def validate_field_in_df(
                     f"checking schema for `{entity_name}`."
                 )
     elif dtype.struct_type.name != "":
-        if df[name].dtype != object:
+        if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
+            arrow_type
+        ):
             raise ValueError(
                 f"Field `{name}` is of type struct, but the "
                 f"column in the dataframe is not a dict. Error found during "

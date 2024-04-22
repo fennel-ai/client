@@ -224,12 +224,22 @@ def test_session_window_operator(client):
     )
     assert df_session.shape[0] == 1
     assert list(df_session["user_id"].values) == [1]
-    assert df_session["window"].values[0].begin == datetime(
-        2023, 1, 16, 11, 0, 25, tzinfo=timezone.utc
-    )
-    assert df_session["window"].values[0].end == datetime(
-        2023, 1, 16, 11, 0, 33, microsecond=1, tzinfo=timezone.utc
-    )
+    if client.is_integration_client():
+        assert df_session["window"].values[0].begin == datetime(
+            2023, 1, 16, 11, 0, 25
+        )
+    else:
+        assert df_session["window"].values[0].begin == datetime(
+            2023, 1, 16, 11, 0, 25, tzinfo=timezone.utc
+        )
+    if client.is_integration_client():
+        assert df_session["window"].values[0].end == datetime(
+            2023, 1, 16, 11, 0, 33, microsecond=1
+        )
+    else:
+        assert df_session["window"].values[0].end == datetime(
+            2023, 1, 16, 11, 0, 33, microsecond=1, tzinfo=timezone.utc
+        )
     assert df_session["window_stats"].values[0].count == 8
     assert df_session["window_stats"].values[0].avg_star == 3.125
 

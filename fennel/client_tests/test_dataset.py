@@ -229,7 +229,7 @@ class TestDataset(unittest.TestCase):
     def test_simple_select_rename(self, client):
         client.commit(
             message="msg",
-            datasets=[UserInfoDataset, UserInfoDatasetDerivedSelect],
+            datasets=[UserInfoDataset],
         )
         client.commit(
             message="add derived dataset",
@@ -354,7 +354,11 @@ class TestDataset(unittest.TestCase):
             [18232, 18234, 18235, 18236, 18237, 18238], dtype="Int64"
         )
 
-        df, found = UserInfoDataset.lookup(ts, user_id=user_id_keys)
+        df, found = client.lookup(
+            "UserInfoDataset",
+            timestamps=ts,
+            keys=pd.DataFrame({"user_id": user_id_keys}),
+        )
         assert df.shape == (6, 5)
         assert df["user_id"].tolist() == [
             18232,
@@ -372,26 +376,41 @@ class TestDataset(unittest.TestCase):
             "Chandler",
             "Mike",
         ]
-        assert df["age"].tolist() == [32, None, 24, 24, 24, 32]
+        assert df["age"].tolist() == [32, pd.NA, 24, 24, 24, 32]
         assert df["country"].tolist() == [
             "USA",
             "Chile",
-            None,
-            None,
-            None,
+            pd.NA,
+            pd.NA,
+            pd.NA,
             "UK",
         ]
 
         # Do lookup on UserInfoDatasetDerived
-        df, found = UserInfoDatasetDerivedDropnull.lookup(
-            ts, user_id=user_id_keys
+        df, found = client.lookup(
+            "UserInfoDatasetDerivedDropnull",
+            timestamps=ts,
+            keys=pd.DataFrame({"user_id": user_id_keys}),
         )
 
-        # TODO (thaqib)
         assert df.shape == (6, 5)
         assert df["user_id"].tolist() == user_id_keys.tolist()
-        assert df["name"].tolist() == ["Ross", None, None, None, None, "Mike"]
-        assert df["country"].tolist() == ["USA", None, None, None, None, "UK"]
+        assert df["name"].tolist() == [
+            "Ross",
+            pd.NA,
+            pd.NA,
+            pd.NA,
+            pd.NA,
+            "Mike",
+        ]
+        assert df["country"].tolist() == [
+            "USA",
+            pd.NA,
+            pd.NA,
+            pd.NA,
+            pd.NA,
+            "UK",
+        ]
 
     @pytest.mark.integration
     @mock
@@ -467,7 +486,7 @@ class TestDataset(unittest.TestCase):
                 response = client.log("fennel_webhook", "UserInfoDataset", df)
             assert (
                 str(e.value)
-                == """Schema validation failed during data insertion to `UserInfoDataset`: Failed to cast data logged to column `age` of type `optional(int)`: Unable to parse string "32yrs" at position 0"""
+                == """Schema validation failed during data insertion to `UserInfoDataset`: Failed to cast data logged to column `age` of type `optional(int)`: Expected bytes, got a 'int' object"""
             )
         client.sleep(10)
         # Do some lookups
@@ -479,15 +498,11 @@ class TestDataset(unittest.TestCase):
             user_id=user_ids,
         )
         assert found.tolist() == [True, True, False]
-        assert df["name"].tolist() == ["Ross", "Monica", None]
-        assert df["age"].tolist() == [32, 24, None]
-        assert df["country"].tolist() == ["USA", "Chile", None]
+        assert df["name"].tolist() == ["Ross", "Monica", pd.NA]
+        assert df["age"].tolist() == [32, 24, pd.NA]
+        assert df["country"].tolist() == ["USA", "Chile", pd.NA]
         if not client.is_integration_client():
-            assert df["timestamp"].tolist() == [
-                now,
-                yesterday,
-                None,
-            ]
+            assert df["timestamp"].tolist() == [now, yesterday, pd.NaT]
         else:
             df["timestamp"] = df["timestamp"].apply(
                 lambda x: x.replace(second=0, microsecond=0)
@@ -506,9 +521,9 @@ class TestDataset(unittest.TestCase):
             ts, user_id=user_ids, fields=["name", "age", "country"]
         )
         assert found.tolist() == [False, True]
-        assert df["name"].tolist() == [None, "Monica"]
-        assert df["age"].tolist() == [None, 24]
-        assert df["country"].tolist() == [None, "Chile"]
+        assert df["name"].tolist() == [pd.NA, "Monica"]
+        assert df["age"].tolist() == [pd.NA, 24]
+        assert df["country"].tolist() == [pd.NA, "Chile"]
         tomorrow = now + pd.Timedelta(days=1)
         three_days_from_now = now + pd.Timedelta(days=3)
         data = [
@@ -746,7 +761,7 @@ class MovieRatingCalculated:
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("RatingActivity"), disorder="14d", cdc="append")
+@source(webhook.endpoint("RatingActivityAlong"), disorder="14d", cdc="append")
 @dataset
 class RatingActivityAlong:
     userid: int
@@ -1310,7 +1325,7 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             # backend returns default value for the aggregate dataset
             assert df["revenue"].tolist() == [199, 25, 0]
         else:
-            assert df["revenue"].tolist() == [199, 25, None]
+            assert df["revenue"].tolist() == [199, 25, pd.NA]
 
         # Now, send the movie info for The Matrix
         columns = ["title", "actors", "release"]
@@ -1372,8 +1387,8 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
         else:
             assert df["revenue"].tolist() == [
                 75,
-                None,
-                None,
+                pd.NA,
+                pd.NA,
             ]
 
 
@@ -1446,7 +1461,7 @@ class TestBasicAggregateAlong(unittest.TestCase):
             message="msg",
             datasets=[MovieRatingCalculatedAlong, RatingActivityAlong],
         )
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
         two_hours_ago = now - timedelta(hours=2)
         three_hours_ago = now - timedelta(hours=3)
@@ -1466,8 +1481,7 @@ class TestBasicAggregateAlong(unittest.TestCase):
         ]
         columns = ["userid", "rating", "movie", "t", "rating_time"]
         df = pd.DataFrame(data, columns=columns)
-        log(RatingActivity, df)
-        response = client.log("fennel_webhook", "RatingActivity", df)
+        response = client.log("fennel_webhook", "RatingActivityAlong", df)
         assert response.status_code == requests.codes.OK
 
         client.sleep()
@@ -1475,13 +1489,17 @@ class TestBasicAggregateAlong(unittest.TestCase):
         # Do some lookups back in time to verify pipeline_aggregate is working as expected
         ts = pd.Series([four_hours_ago, three_hours_ago])
         names = pd.Series(["Jumanji", "Titanic"])
-        df, _ = MovieRatingCalculatedAlong.lookup(
-            ts,
-            movie=names,
+        df, _ = client.lookup(
+            MovieRatingCalculatedAlong,
+            timestamps=ts,
+            keys=pd.DataFrame({"movie": names}),
         )
         assert df.shape == (2, 10)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
-        assert df["rating"].tolist() == [pytest.approx(3.33333333), 4]
+        if client.is_integration_client():
+            assert df["rating"].tolist() == [3, 4]
+        else:
+            assert df["rating"].tolist() == [pytest.approx(3.33333333), 4]
         assert df["num_ratings"].tolist() == [3, 1]
         assert df["sum_ratings"].tolist() == [10.0, 4.0]
         assert df["min_ratings"].tolist() == [2, 4]
@@ -1493,9 +1511,10 @@ class TestBasicAggregateAlong(unittest.TestCase):
         # Do some lookups to verify pipeline_aggregate is working as expected
         ts = pd.Series([now, now])
         names = pd.Series(["Jumanji", "Titanic"])
-        df, _ = MovieRatingCalculatedAlong.lookup(
-            ts,
-            movie=names,
+        df, _ = client.lookup(
+            MovieRatingCalculatedAlong,
+            timestamps=ts,
+            keys=pd.DataFrame({"movie": names}),
         )
         assert df.shape == (2, 10)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
@@ -1856,7 +1875,7 @@ class TestBasicFilter(unittest.TestCase):
             # backend returns default values for aggregate dataset
             assert df["cnt_rating"].tolist() == [2, 3, 0]
         else:
-            assert df["cnt_rating"].tolist() == [2, 3, None]
+            assert df["cnt_rating"].tolist() == [2, 3, pd.NA]
 
         ts = pd.Series([two_hours_ago, two_hours_ago, two_hours_ago])
         df, _ = client.lookup(
@@ -1870,7 +1889,7 @@ class TestBasicFilter(unittest.TestCase):
             # backend returns default values for aggregate dataset
             assert df["cnt_rating"].tolist() == [2, 1, 0]
         else:
-            assert df["cnt_rating"].tolist() == [2, 1, None]
+            assert df["cnt_rating"].tolist() == [2, 1, pd.NA]
 
 
 @meta(owner="test@test.com")
@@ -1970,8 +1989,8 @@ class TestBasicCountUnique(unittest.TestCase):
             assert df["unique_movies"].tolist() == [2, 1, 0]
             assert df["unique_movies_2h"].tolist() == [2, 1, 0]
         else:
-            assert df["unique_movies"].tolist() == [2, 1, None]
-            assert df["unique_movies_2h"].tolist() == [2, 1, None]
+            assert df["unique_movies"].tolist() == [2, 1, pd.NA]
+            assert df["unique_movies_2h"].tolist() == [2, 1, pd.NA]
 
 
 @meta(owner="test@test.com")
@@ -2180,7 +2199,7 @@ class TestLastOp(unittest.TestCase):
             # while client recomputes from scratch and doesnt see Jumanji as the last movie
             assert df["count"].tolist() == [0, 2, 2]
         else:
-            assert df["count"].tolist() == [None, 2, 2]
+            assert df["count"].tolist() == [pd.NA, 2, 2]
 
 
 @meta(owner="abhay@fennel.ai")
@@ -2340,13 +2359,14 @@ class TestWaterMark(unittest.TestCase):
         client.sleep()
         # Do some lookups to verify pipeline_first_movie_seen is working as expected
         ts = pd.Series([now])
-        df, _ = FirstMovieSeenWithFilter.lookup(
-            ts,
-            userid=pd.Series([18231]),
+        df, _ = client.lookup(
+            FirstMovieSeenWithFilter,
+            timestamps=ts,
+            keys=pd.DataFrame({"userid": [18231]}),
         )
         assert df.shape == (1, 4)
-        assert df["movie"].tolist() == [None]
-        assert df["rating"].tolist() == [None]
+        assert df["movie"].tolist() == [pd.NA]
+        assert df["rating"].tolist() == [pd.NA]
 
         # Now log several data points from sixteen days ago
         sixteen_days_ago = now - timedelta(days=16)
@@ -3041,7 +3061,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         assert df["club"].tolist() == [
             "Manchester United",
             "Manchester United",
-            None,
+            pd.NA,
             "Manchester United",
             "Manchester United",
         ]
@@ -3053,7 +3073,7 @@ class TestE2eIntegrationTestMUInfo(unittest.TestCase):
         assert df["wag"].tolist() == [
             "Lucia",
             "Fern",
-            None,
+            pd.NA,
             "Georgina",
             "Rosilene",
         ]
@@ -3132,32 +3152,37 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
                 couple_minutes_ahead,
             ]
         )
-        names = pd.Series(
-            [
-                "Rashford",
-                "Maguire",
-                "Messi",
-                "Christiano Ronaldo",
-                "Antony",
-            ]
-        )
         if client.is_integration_client():
             time.sleep(30)
-        df, _ = ManchesterUnitedPlayerInfoBounded.lookup(ts, name=names)
+        df, _ = client.lookup(
+            ManchesterUnitedPlayerInfoBounded,
+            keys=pd.DataFrame(
+                {
+                    "name": [
+                        "Rashford",
+                        "Maguire",
+                        "Messi",
+                        "Christiano Ronaldo",
+                        "Antony",
+                    ]
+                }
+            ),
+            timestamps=ts,
+        )
         assert df.shape == (5, 8)
         assert df["club"].tolist() == [
             "Manchester United",
             "Manchester United",
-            None,
+            pd.NA,
             "Manchester United",
             "Manchester United",
         ]
         assert df["salary"].tolist() == [
             1000000,
             1000000,
-            None,
+            pd.NA,
             1000000,
-            None,
+            pd.NA,
         ]
 
 
@@ -3834,7 +3859,7 @@ def test_lookup_as_of_time(client):
     client.sleep()
 
     data, found = client.lookup(
-        "UserInfoDataset",
+        UserInfoDataset,
         keys=pd.DataFrame({"user_id": [18232, 18233]}),
         fields=["name"],
         timestamps=pd.Series(["2020-11-09 01:22:23", "2022-11-16 01:33:13"]),
@@ -3842,7 +3867,7 @@ def test_lookup_as_of_time(client):
     assert len(found.tolist()) == 2
     assert found.tolist() == [False, True]
     assert data.shape[0] == 2
-    assert data.tolist() == [None, "Monica"]
+    assert data.tolist() == [pd.NA, "Monica"]
 
 
 @pytest.mark.integration

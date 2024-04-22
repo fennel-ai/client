@@ -50,7 +50,7 @@ def test_delete_branch(client):
     assert client.list_branches() == ["main"]
     with pytest.raises(Exception) as e:
         client.delete_branch("main")
-    assert str(e.value) == "Cannot delete main branch"
+    assert str(e.value) == "Cannot delete the main branch."
 
     resp = client.clone_branch("test-branch", "main")
     assert resp.status_code == requests.codes.OK
