@@ -1,4 +1,6 @@
 # Changelog
+## [1.3.0] - 2024-04-22
+- Moved to Pandas 2.2.2.
 
 ## [1.2.11] - 2024-04-18
 - Added import for Enum in PyCode proto.
