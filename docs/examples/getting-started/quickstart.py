@@ -13,6 +13,7 @@ from fennel.connectors import (
     Kafka,
     Webhook,
     Redshift,
+    PubSub,
 )
 from fennel.datasets import dataset, pipeline, field, Dataset, Count
 from fennel.featuresets import featureset, extractor
@@ -35,6 +36,7 @@ kafka = Kafka.get(name="my_kafka")
 webhook = Webhook(name="fennel_webhook")
 redshift = Redshift.get(name="my_redshift")
 mongo = Mongo.get(name="my_mongo")
+pubsub = PubSub.get(name="my_pubsub")
 
 # /docsnip
 

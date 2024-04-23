@@ -174,7 +174,6 @@ class DataSource(BaseModel):
 
 
 class Webhook(DataSource):
-
     retention: Duration = DEFAULT_WEBHOOK_RETENTION
 
     @validator("retention")
@@ -474,6 +473,29 @@ class Mongo(DataSource):
         return f"[Mongo: {self.name}]"
 
 
+class PubSub(DataSource):
+    project_id: str
+    credentials_json: dict[str, str]
+
+    def required_fields(self) -> List[str]:
+        return ["topic_id"]
+
+    def topic(self, topic_id: str) -> PubSubConnector:
+        return PubSubConnector(self, topic_id)
+
+    @staticmethod
+    def get(name: str) -> PubSub:
+        return PubSub(
+            name=name,
+            _get=True,
+            project_id="",
+            credentials_json={},
+        )
+
+    def identifier(self) -> str:
+        return f"[PubSub: {self.name}]"
+
+
 # ------------------------------------------------------------------------------
 # DataConnector
 # ------------------------------------------------------------------------------
@@ -706,3 +728,9 @@ class KinesisConnector(DataConnector):
     stream_arn: str
     init_position: str | at_timestamp
     format: str
+
+
+class PubSubConnector(DataConnector):
+    def __init__(self, data_source: DataSource, topic_id: str):
+        self.data_source = data_source
+        self.topic_id = topic_id

@@ -1,4 +1,8 @@
 # Changelog
+
+## [1.3.2] - 2024-04-23
+- Support `pubsub` source
+
 ## [1.3.1] - 2024-04-24
 - Changes to Redshift connector params
 
