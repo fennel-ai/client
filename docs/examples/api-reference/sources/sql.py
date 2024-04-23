@@ -219,3 +219,40 @@ def test_mongo_basic(client):
 
     # /docsnip
     client.commit(message="some commit msg", datasets=[UserClick])
+
+
+@mock
+def test_pubsub_basic(client):
+    os.environ["DB_NAME"] = "some-db-name"
+    # docsnip pubsub_source
+    from fennel.connectors import source, PubSub
+    from fennel.datasets import dataset
+
+    # docsnip-highlight start
+    pubsub = PubSub(
+        name="pubsub_src",
+        project_id="test_project",
+        credentials_json={
+            "type": "service_account",
+            "project_id": "fake-project-356105",
+            "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",
+            "client_id": "103688493243243272951",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        },
+    )
+    # docsnip-highlight end
+
+    # docsnip-highlight next-line
+    collection = pubsub.topic("test_topic")
+
+    @source(collection, disorder="2d", cdc="upsert")  # docsnip-highlight
+    @dataset
+    class UserClick:
+        uid: int
+        ad_id: int
+        timestamp: datetime
+
+    # /docsnip
+    client.commit(message="some commit msg", datasets=[UserClick])

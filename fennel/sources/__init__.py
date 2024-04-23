@@ -21,6 +21,7 @@ from fennel.connectors.connectors import (
     WebhookConnector,
     Kinesis,
     KinesisConnector,
+    PubSubConnector,
     Avro,
     Ref,
     ref,

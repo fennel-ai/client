@@ -8,6 +8,8 @@ from fennel.connectors.connectors import (
     Webhook,
     Mongo,
     Redshift,
+    PubSub,
+    PubSubConnector,
     source,
     sink,
     SOURCE_FIELD,

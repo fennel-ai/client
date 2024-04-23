@@ -61,6 +61,7 @@ sidebar:
       - "api-reference/connectors/hudi"
       - "api-reference/connectors/kafka"
       - "api-reference/connectors/kinesis"
+      - "api-reference/connectors/pubsub"
       - "api-reference/connectors/mongo"
       - "api-reference/connectors/mysql"
       - "api-reference/connectors/postgres"

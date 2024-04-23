@@ -23,6 +23,7 @@ from fennel.connectors import (
     Avro,
     ref,
     S3Connector,
+    PubSub,
 )
 
 # noinspection PyUnresolvedReferences
@@ -417,9 +418,29 @@ mongo = Mongo(
     password="password",
 )
 
+pubsub = PubSub(
+    name="pubsub_src",
+    project_id="test_project",
+    credentials_json={
+        "type": "service_account",
+        "project_id": "fake-project-356105",
+        "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",
+        "client_id": "103688493243243272951",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    },
+)
+
 
 def test_env_selector_on_connector():
     @meta(owner="test@test.com")
+    @source(
+        pubsub.topic("test_topic"),
+        disorder="2d",
+        cdc="append",
+        env=["dev-3"],
+    )
     @source(
         mongo.collection("test_table", cursor="added_on"),
         disorder="14d",
@@ -1557,6 +1578,78 @@ def test_multiple_sources():
             "database": "mongo",
             "user": "username",
             "password": "password",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        pubsub.topic("test_topic"),
+        disorder="14d",
+        cdc="upsert",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetPubSub:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mongo source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetPubSub)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+
+    s = {
+        "table": {
+            "pubsubTopic": {
+                "db": {
+                    "pubsub": {
+                        "projectId": "test_project",
+                        "credentialsJson": '{"type": "service_account", "project_id": "fake-project-356105", '
+                        '"client_email": '
+                        '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
+                        '"103688493243243272951", "auth_uri": '
+                        '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
+                        '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
+                        '"https://www.googleapis.com/oauth2/v1/certs"}',
+                    },
+                    "name": "pubsub_src",
+                },
+                "topicId": "test_topic",
+            }
+        },
+        "dataset": "UserInfoDatasetPubSub",
+        "dsVersion": 1,
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "pubsub_src",
+        "pubsub": {
+            "projectId": "test_project",
+            "credentialsJson": '{"type": "service_account", "project_id": "fake-project-356105", '
+            '"client_email": '
+            '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
+            '"103688493243243272951", "auth_uri": '
+            '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
+            '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
+            '"https://www.googleapis.com/oauth2/v1/certs"}',
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())

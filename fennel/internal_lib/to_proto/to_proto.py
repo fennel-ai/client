@@ -750,6 +750,12 @@ def _conn_to_source_proto(
         return _kinesis_conn_to_source_proto(
             connector, dataset_name, ds_version
         )
+    elif isinstance(connector, connectors.PubSubConnector):
+        return _pubsub_conn_to_source_proto(
+            connector,
+            dataset_name,
+            ds_version,
+        )
     else:
         raise ValueError(f"Unknown connector type: {type(connector)}")
 
@@ -1234,6 +1240,44 @@ def _mongo_to_ext_table_proto(
         mongo_collection=connector_proto.MongoCollection(
             db=db,
             collection_name=table_name,
+        ),
+    )
+
+
+def _pubsub_conn_to_source_proto(
+    connector: connectors.PubSubConnector,
+    dataset_name: str,
+    ds_version: int,
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    data_source = connector.data_source
+    ext_db = connector_proto.ExtDatabase(
+        name=data_source.name,
+        pubsub=connector_proto.PubSub(
+            project_id=data_source.project_id,
+            # Convert credentials_json to str defined in proto
+            credentials_json=json.dumps(data_source.credentials_json),
+        ),
+    )
+    return (
+        ext_db,
+        connector_proto.Source(
+            table=connector_proto.ExtTable(
+                pubsub_topic=connector_proto.PubSubTopic(
+                    db=ext_db,
+                    topic_id=connector.topic_id,
+                ),
+            ),
+            disorder=to_duration_proto(connector.disorder),
+            dataset=dataset_name,
+            ds_version=ds_version,
+            cdc=to_cdc_proto(connector.cdc),
+            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            bounded=connector.bounded,
+            idleness=(
+                to_duration_proto(connector.idleness)
+                if connector.idleness
+                else None
+            ),
         ),
     )
 
