@@ -318,19 +318,19 @@ class Bigquery(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     DATASET_ID_FIELD_NUMBER: builtins.int
-    CREDENTIALS_JSON_FIELD_NUMBER: builtins.int
+    SERVICE_ACCOUNT_KEY_FIELD_NUMBER: builtins.int
     PROJECT_ID_FIELD_NUMBER: builtins.int
     dataset_id: builtins.str
-    credentials_json: builtins.str
+    service_account_key: builtins.str
     project_id: builtins.str
     def __init__(
         self,
         *,
         dataset_id: builtins.str = ...,
-        credentials_json: builtins.str = ...,
+        service_account_key: builtins.str = ...,
         project_id: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["credentials_json", b"credentials_json", "dataset_id", b"dataset_id", "project_id", b"project_id"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset_id", b"dataset_id", "project_id", b"project_id", "service_account_key", b"service_account_key"]) -> None: ...
 
 global___Bigquery = Bigquery
 

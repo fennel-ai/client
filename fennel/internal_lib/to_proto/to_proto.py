@@ -1033,7 +1033,8 @@ def _bigquery_conn_to_source_proto(
         data_source.name,
         data_source.project_id,
         data_source.dataset_id,
-        data_source.credentials_json,
+        # Convert service_account_key to str defined in proto
+        json.dumps(data_source.service_account_key),
     )
     ext_table = _bigquery_to_ext_table_proto(
         ext_db,
@@ -1067,14 +1068,14 @@ def _bigquery_to_ext_db_proto(
     name: str,
     project_id: str,
     dataset_id: str,
-    credentials_json: str,
+    service_account_key: str,
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
         bigquery=connector_proto.Bigquery(
             project_id=project_id,
             dataset_id=dataset_id,
-            credentials_json=credentials_json,
+            service_account_key=service_account_key,
         ),
     )
 

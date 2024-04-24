@@ -361,15 +361,15 @@ bigquery = BigQuery(
     name="bq_movie_tags",
     project_id="gold-cocoa-356105",
     dataset_id="movie_tags",
-    credentials_json="""{
+    service_account_key={
         "type": "service_account",
         "project_id": "fake-project-356105",
         "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",
         "client_id": "103688493243243272951",
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
-    }""",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    },
 )
 
 snowflake = Snowflake(

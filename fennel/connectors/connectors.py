@@ -256,15 +256,7 @@ class S3(DataSource):
 class BigQuery(DataSource):
     project_id: str
     dataset_id: str
-    credentials_json: str
-
-    @validator("credentials_json")
-    def validate_json(cls, v: str) -> str:
-        try:
-            json.loads(v)
-        except Exception:
-            raise ValueError("can't deserialize json")
-        return v
+    service_account_key: dict[str, str]
 
     def table(self, table_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name, cursor)
@@ -279,7 +271,7 @@ class BigQuery(DataSource):
             _get=True,
             project_id="",
             dataset_id="",
-            credentials_json="",
+            service_account_key={},
         )
 
     def identifier(self) -> str:
