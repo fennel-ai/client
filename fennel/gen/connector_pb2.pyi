@@ -477,16 +477,16 @@ class PubSub(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     PROJECT_ID_FIELD_NUMBER: builtins.int
-    CREDENTIALS_JSON_FIELD_NUMBER: builtins.int
+    SERVICE_ACCOUNT_KEY_FIELD_NUMBER: builtins.int
     project_id: builtins.str
-    credentials_json: builtins.str
+    service_account_key: builtins.str
     def __init__(
         self,
         *,
         project_id: builtins.str = ...,
-        credentials_json: builtins.str = ...,
+        service_account_key: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["credentials_json", b"credentials_json", "project_id", b"project_id"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["project_id", b"project_id", "service_account_key", b"service_account_key"]) -> None: ...
 
 global___PubSub = PubSub
 

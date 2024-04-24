@@ -475,7 +475,7 @@ class Mongo(DataSource):
 
 class PubSub(DataSource):
     project_id: str
-    credentials_json: dict[str, str]
+    service_account_key: dict[str, str]
 
     def required_fields(self) -> List[str]:
         return ["topic_id"]
@@ -489,7 +489,7 @@ class PubSub(DataSource):
             name=name,
             _get=True,
             project_id="",
-            credentials_json={},
+            service_account_key={},
         )
 
     def identifier(self) -> str:

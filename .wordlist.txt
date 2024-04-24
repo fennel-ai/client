@@ -270,6 +270,7 @@ prometheus
 protobuf
 protobufs
 publicSubnets
+pubsub
 py
 quantile
 quantiles

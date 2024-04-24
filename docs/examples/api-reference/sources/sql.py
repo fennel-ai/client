@@ -232,7 +232,7 @@ def test_pubsub_basic(client):
     pubsub = PubSub(
         name="pubsub_src",
         project_id="test_project",
-        credentials_json={
+        service_account_key={
             "type": "service_account",
             "project_id": "fake-project-356105",
             "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",

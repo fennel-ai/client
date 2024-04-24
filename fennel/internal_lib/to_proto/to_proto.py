@@ -1254,8 +1254,8 @@ def _pubsub_conn_to_source_proto(
         name=data_source.name,
         pubsub=connector_proto.PubSub(
             project_id=data_source.project_id,
-            # Convert credentials_json to str defined in proto
-            credentials_json=json.dumps(data_source.credentials_json),
+            # Convert service_account_key to str defined in proto
+            service_account_key=json.dumps(data_source.service_account_key),
         ),
     )
     return (
