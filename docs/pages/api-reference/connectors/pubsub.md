@@ -15,7 +15,7 @@ A name to identify the source. The name should be unique across all Fennel sourc
 The project ID of the Google Cloud project containing the Pub/Sub topic
 </Expandable>
 
-<Expandable title="credentials_json" type="str">
+<Expandable title="service_account_key" type="str">
 The JSON string containing the credentials for the Service Account to use to access
 Pub/Sub topic. See below for instructions on how to obtain this.
 </Expandable>
