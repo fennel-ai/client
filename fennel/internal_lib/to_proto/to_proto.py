@@ -1103,15 +1103,11 @@ def _redshift_conn_to_source_proto(
         host=data_source.host,
         port=data_source.port,
         database=data_source.db_name,
+        schema=data_source.src_schema,
     )
 
-    if not connector.schema_name:
-        raise AttributeError(
-            "schema_name should always be set for Redshift source"
-        )
     ext_table = _redshift_to_ext_table_proto(
         db=ext_db,
-        schema_name=connector.schema_name,
         table_name=connector.table_name,
     )
     return (
@@ -1144,6 +1140,7 @@ def _redshift_to_ext_db_proto(
     host: str,
     port: int,
     database: str,
+    schema: str,
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -1152,17 +1149,17 @@ def _redshift_to_ext_db_proto(
             host=host,
             port=port,
             database=database,
+            schema=schema,
         ),
     )
 
 
 def _redshift_to_ext_table_proto(
-    db: connector_proto.ExtDatabase, schema_name: str, table_name: str
+    db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         redshift_table=connector_proto.RedshiftTable(
             db=db,
-            schema_name=schema_name,
             table_name=table_name,
         ),
     )

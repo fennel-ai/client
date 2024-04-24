@@ -78,6 +78,7 @@ redshift = Redshift(
     s3_access_role_arn="arn:aws:iam::123:role/Redshift",
     db_name="test",
     host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+    schema="public",
 )
 
 mongo = Mongo(

@@ -31,11 +31,11 @@ The hostname of the database.
 The port to connect to.
 </Expandable>
 
-#### Table Parameters
 <Expandable title="schema" type="str">
-The name of the schema where the required data table resides.
+The name of the schema where the required data table(s) resides.
 </Expandable>
 
+#### Table Parameters
 <Expandable title="table" type="str">
 The name of the table within the database that should be ingested.
 </Expandable>
