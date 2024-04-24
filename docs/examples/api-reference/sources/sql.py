@@ -226,7 +226,7 @@ def test_pubsub_basic(client):
     os.environ["DB_NAME"] = "some-db-name"
     # docsnip pubsub_source
     from fennel.connectors import source, PubSub
-    from fennel.datasets import dataset
+    from fennel.datasets import dataset, field
 
     # docsnip-highlight start
     pubsub = PubSub(
@@ -250,7 +250,7 @@ def test_pubsub_basic(client):
     @source(collection, disorder="2d", cdc="upsert")  # docsnip-highlight
     @dataset
     class UserClick:
-        uid: int
+        uid: int = field(key=True)
         ad_id: int
         timestamp: datetime
 
