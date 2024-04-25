@@ -361,15 +361,15 @@ bigquery = BigQuery(
     name="bq_movie_tags",
     project_id="gold-cocoa-356105",
     dataset_id="movie_tags",
-    credentials_json="""{
+    service_account_key={
         "type": "service_account",
         "project_id": "fake-project-356105",
         "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",
         "client_id": "103688493243243272951",
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
-    }""",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    },
 )
 
 snowflake = Snowflake(
@@ -406,6 +406,7 @@ redshift = Redshift(
     s3_access_role_arn="arn:aws:iam::123:role/Redshift",
     db_name="test",
     host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+    schema="public",
 )
 
 mongo = Mongo(
@@ -427,7 +428,7 @@ def test_env_selector_on_connector():
         env=["dev-3"],
     )
     @source(
-        redshift.table("test_schema", "test_table", cursor="added_on"),
+        redshift.table("test_table", cursor="added_on"),
         disorder="14d",
         cdc="upsert",
         every="1h",
@@ -1039,7 +1040,13 @@ def test_multiple_sources():
                     "name": "bq_movie_tags",
                     "bigquery": {
                         "datasetId": "movie_tags",
-                        "credentialsJson": '{\n        "type": "service_account",\n        "project_id": "fake-project-356105",\n        "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",\n        "client_id": "103688493243243272951",\n        "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n        "token_uri": "https://oauth2.googleapis.com/token",\n        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"\n    }',
+                        "serviceAccountKey": '{"type": "service_account", "project_id": "fake-project-356105", '
+                        '"client_email": '
+                        '"randomstring@fake-project-356105.iam.gserviceaccount.com", '
+                        '"client_id": "103688493243243272951", "auth_uri": '
+                        '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
+                        '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
+                        '"https://www.googleapis.com/oauth2/v1/certs"}',
                         "projectId": "gold-cocoa-356105",
                     },
                 },
@@ -1064,7 +1071,11 @@ def test_multiple_sources():
         "name": "bq_movie_tags",
         "bigquery": {
             "datasetId": "movie_tags",
-            "credentialsJson": '{\n        "type": "service_account",\n        "project_id": "fake-project-356105",\n        "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",\n        "client_id": "103688493243243272951",\n        "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n        "token_uri": "https://oauth2.googleapis.com/token",\n        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"\n    }',
+            "serviceAccountKey": '{"type": "service_account", "project_id": "fake-project-356105", "client_email": '
+            '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
+            '"103688493243243272951", "auth_uri": "https://accounts.google.com/o/oauth2/auth", '
+            '"token_uri": "https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
+            '"https://www.googleapis.com/oauth2/v1/certs"}',
             "projectId": "gold-cocoa-356105",
         },
     }
@@ -1420,7 +1431,7 @@ def test_multiple_sources():
 
     @meta(owner="test@test.com")
     @source(
-        redshift.table("test_schema", "test_table", cursor="added_on"),
+        redshift.table("test_table", cursor="added_on"),
         disorder="14d",
         cdc="upsert",
         every="1h",
@@ -1451,10 +1462,10 @@ def test_multiple_sources():
                         "database": "test",
                         "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
                         "port": 5439,
+                        "schema": "public",
                     },
                     "name": "redshift_src",
                 },
-                "schemaName": "test_schema",
                 "tableName": "test_table",
             }
         },
@@ -1478,6 +1489,7 @@ def test_multiple_sources():
             "database": "test",
             "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
             "port": 5439,
+            "schema": "public",
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())

@@ -318,19 +318,19 @@ class Bigquery(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     DATASET_ID_FIELD_NUMBER: builtins.int
-    CREDENTIALS_JSON_FIELD_NUMBER: builtins.int
+    SERVICE_ACCOUNT_KEY_FIELD_NUMBER: builtins.int
     PROJECT_ID_FIELD_NUMBER: builtins.int
     dataset_id: builtins.str
-    credentials_json: builtins.str
+    service_account_key: builtins.str
     project_id: builtins.str
     def __init__(
         self,
         *,
         dataset_id: builtins.str = ...,
-        credentials_json: builtins.str = ...,
+        service_account_key: builtins.str = ...,
         project_id: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["credentials_json", b"credentials_json", "dataset_id", b"dataset_id", "project_id", b"project_id"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset_id", b"dataset_id", "project_id", b"project_id", "service_account_key", b"service_account_key"]) -> None: ...
 
 global___Bigquery = Bigquery
 
@@ -423,10 +423,12 @@ class Redshift(google.protobuf.message.Message):
     DATABASE_FIELD_NUMBER: builtins.int
     HOST_FIELD_NUMBER: builtins.int
     PORT_FIELD_NUMBER: builtins.int
+    SCHEMA_FIELD_NUMBER: builtins.int
     s3_access_role_arn: builtins.str
     database: builtins.str
     host: builtins.str
     port: builtins.int
+    schema: builtins.str
     def __init__(
         self,
         *,
@@ -434,8 +436,9 @@ class Redshift(google.protobuf.message.Message):
         database: builtins.str = ...,
         host: builtins.str = ...,
         port: builtins.int = ...,
+        schema: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "port", b"port", "s3_access_role_arn", b"s3_access_role_arn"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "port", b"port", "s3_access_role_arn", b"s3_access_role_arn", "schema", b"schema"]) -> None: ...
 
 global___Redshift = Redshift
 
@@ -725,21 +728,18 @@ class RedshiftTable(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     DB_FIELD_NUMBER: builtins.int
-    SCHEMA_NAME_FIELD_NUMBER: builtins.int
     TABLE_NAME_FIELD_NUMBER: builtins.int
     @property
     def db(self) -> global___ExtDatabase: ...
-    schema_name: builtins.str
     table_name: builtins.str
     def __init__(
         self,
         *,
         db: global___ExtDatabase | None = ...,
-        schema_name: builtins.str = ...,
         table_name: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "schema_name", b"schema_name", "table_name", b"table_name"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "table_name", b"table_name"]) -> None: ...
 
 global___RedshiftTable = RedshiftTable
 

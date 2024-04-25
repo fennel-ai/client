@@ -1033,7 +1033,8 @@ def _bigquery_conn_to_source_proto(
         data_source.name,
         data_source.project_id,
         data_source.dataset_id,
-        data_source.credentials_json,
+        # Convert service_account_key to str defined in proto
+        json.dumps(data_source.service_account_key),
     )
     ext_table = _bigquery_to_ext_table_proto(
         ext_db,
@@ -1067,14 +1068,14 @@ def _bigquery_to_ext_db_proto(
     name: str,
     project_id: str,
     dataset_id: str,
-    credentials_json: str,
+    service_account_key: str,
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
         bigquery=connector_proto.Bigquery(
             project_id=project_id,
             dataset_id=dataset_id,
-            credentials_json=credentials_json,
+            service_account_key=service_account_key,
         ),
     )
 
@@ -1103,15 +1104,11 @@ def _redshift_conn_to_source_proto(
         host=data_source.host,
         port=data_source.port,
         database=data_source.db_name,
+        schema=data_source.src_schema,
     )
 
-    if not connector.schema_name:
-        raise AttributeError(
-            "schema_name should always be set for Redshift source"
-        )
     ext_table = _redshift_to_ext_table_proto(
         db=ext_db,
-        schema_name=connector.schema_name,
         table_name=connector.table_name,
     )
     return (
@@ -1144,6 +1141,7 @@ def _redshift_to_ext_db_proto(
     host: str,
     port: int,
     database: str,
+    schema: str,
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -1152,17 +1150,17 @@ def _redshift_to_ext_db_proto(
             host=host,
             port=port,
             database=database,
+            schema=schema,
         ),
     )
 
 
 def _redshift_to_ext_table_proto(
-    db: connector_proto.ExtDatabase, schema_name: str, table_name: str
+    db: connector_proto.ExtDatabase, table_name: str
 ) -> connector_proto.ExtTable:
     return connector_proto.ExtTable(
         redshift_table=connector_proto.RedshiftTable(
             db=db,
-            schema_name=schema_name,
             table_name=table_name,
         ),
     )

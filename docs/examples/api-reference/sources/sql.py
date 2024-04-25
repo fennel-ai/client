@@ -130,15 +130,15 @@ def test_bigquery_basic(client):
         name="my_bigquery",
         project_id="my_project",
         dataset_id="my_dataset",
-        credentials_json="""{
-        "type": "service_account",
-        "project_id": "fake-project-356105",
-        "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",
-        "client_id": "103688493243243272951",
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
-        }""",
+        service_account_key={
+            "type": "service_account",
+            "project_id": "fake-project-356105",
+            "client_email": "randomstring@fake-project-356105.iam.gserviceaccount.com",
+            "client_id": "103688493243243272951",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        },
     )
     # docsnip-highlight end
 
@@ -171,11 +171,12 @@ def test_redshift_basic(client):
         db_name=os.environ["DB_NAME"],
         host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
         port=5439,  # could be omitted, defaults to 5439
+        schema="public",
     )
     # docsnip-highlight end
 
     # docsnip-highlight next-line
-    table = redshift.table("schema", "user", cursor="timestamp")
+    table = redshift.table("user", cursor="timestamp")
 
     # docsnip-highlight next-line
     @source(table, disorder="14d", cdc="append")

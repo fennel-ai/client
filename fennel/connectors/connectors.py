@@ -256,15 +256,7 @@ class S3(DataSource):
 class BigQuery(DataSource):
     project_id: str
     dataset_id: str
-    credentials_json: str
-
-    @validator("credentials_json")
-    def validate_json(cls, v: str) -> str:
-        try:
-            json.loads(v)
-        except Exception:
-            raise ValueError("can't deserialize json")
-        return v
+    service_account_key: dict[str, str]
 
     def table(self, table_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name, cursor)
@@ -279,7 +271,7 @@ class BigQuery(DataSource):
             _get=True,
             project_id="",
             dataset_id="",
-            credentials_json="",
+            service_account_key={},
         )
 
     def identifier(self) -> str:
@@ -432,14 +424,13 @@ class Redshift(DataSource):
     db_name: str
     host: str
     port: int = 5439
+    src_schema: str = Field(alias="schema")
 
-    def table(
-        self, schema_name: str, table_name: str, cursor: str
-    ) -> TableConnector:
-        return TableConnector(self, table_name, cursor, schema_name)
+    def table(self, table_name: str, cursor: str) -> TableConnector:
+        return TableConnector(self, table_name, cursor)
 
     def required_fields(self) -> List[str]:
-        return ["schema", "table", "cursor"]
+        return ["table", "cursor"]
 
     @staticmethod
     def get(name: str) -> Redshift:
@@ -449,6 +440,7 @@ class Redshift(DataSource):
             s3_access_role_arn="",
             db_name="",
             host="",
+            schema="",
         )
 
     def identifier(self) -> str:
@@ -526,15 +518,13 @@ class TableConnector(DataConnector):
     """DataConnectors which only need a table name and a cursor to be
     specified. Includes BigQuery, MySQL, Postgres, Snowflake and Redshift."""
 
-    schema_name: Optional[str]
     table_name: str
     cursor: str
 
-    def __init__(self, source, table_name, cursor, schema_name=None):
+    def __init__(self, source, table_name, cursor):
         self.data_source = source
         self.table_name = table_name
         self.cursor = cursor
-        self.schema_name = schema_name
 
     def identifier(self) -> str:
         return f"{self.data_source.identifier()}(table={self.table_name})"
