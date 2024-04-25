@@ -6,7 +6,7 @@ on:
       - main
 jobs:
   update-docsearch:
-    runs-on: ubuntu-20.04
+    runs-on: depot-ubuntu-22.04
     steps:
       # Check out latest code
       - name: Checkout
