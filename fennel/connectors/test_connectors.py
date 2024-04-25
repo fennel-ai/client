@@ -436,7 +436,7 @@ pubsub = PubSub(
 def test_env_selector_on_connector():
     @meta(owner="test@test.com")
     @source(
-        pubsub.topic("test_topic"),
+        pubsub.topic("test_topic", format="json"),
         disorder="2d",
         cdc="append",
         env=["dev-3"],
@@ -1587,7 +1587,7 @@ def test_multiple_sources():
 
     @meta(owner="test@test.com")
     @source(
-        pubsub.topic("test_topic"),
+        pubsub.topic("test_topic", format="json"),
         disorder="14d",
         cdc="upsert",
         every="1h",
@@ -1627,6 +1627,9 @@ def test_multiple_sources():
                     "name": "pubsub_src",
                 },
                 "topicId": "test_topic",
+                "format": {
+                    "json": {},
+                },
             }
         },
         "dataset": "UserInfoDatasetPubSub",

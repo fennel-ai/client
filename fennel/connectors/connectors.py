@@ -478,10 +478,10 @@ class PubSub(DataSource):
     service_account_key: dict[str, str]
 
     def required_fields(self) -> List[str]:
-        return ["topic_id"]
+        return ["topic_id", "format"]
 
-    def topic(self, topic_id: str) -> PubSubConnector:
-        return PubSubConnector(self, topic_id)
+    def topic(self, topic_id: str, format: str) -> PubSubConnector:
+        return PubSubConnector(self, topic_id, format)
 
     @staticmethod
     def get(name: str) -> PubSub:
@@ -731,6 +731,16 @@ class KinesisConnector(DataConnector):
 
 
 class PubSubConnector(DataConnector):
-    def __init__(self, data_source: DataSource, topic_id: str):
+    topic_id: str
+    format: str
+
+    def __init__(self, data_source: DataSource, topic_id: str, format: str):
         self.data_source = data_source
         self.topic_id = topic_id
+        self.format = format
+
+        if self.format not in ["json"]:
+            raise ValueError("format must be json")
+
+    def identifier(self) -> str:
+        return f"{self.data_source.identifier()}(topic={self.topic_id}, format={self.format})"

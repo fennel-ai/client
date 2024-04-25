@@ -127,6 +127,24 @@ class ExtDatabase(google.protobuf.message.Message):
 global___ExtDatabase = ExtDatabase
 
 @typing_extensions.final
+class PubSubFormat(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    JSON_FIELD_NUMBER: builtins.int
+    @property
+    def json(self) -> global___JsonFormat: ...
+    def __init__(
+        self,
+        *,
+        json: global___JsonFormat | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["json", b"json", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["json", b"json", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["json"] | None: ...
+
+global___PubSubFormat = PubSubFormat
+
+@typing_extensions.final
 class KafkaFormat(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -777,17 +795,21 @@ class PubSubTopic(google.protobuf.message.Message):
 
     DB_FIELD_NUMBER: builtins.int
     TOPIC_ID_FIELD_NUMBER: builtins.int
+    FORMAT_FIELD_NUMBER: builtins.int
     @property
     def db(self) -> global___ExtDatabase: ...
     topic_id: builtins.str
+    @property
+    def format(self) -> global___PubSubFormat: ...
     def __init__(
         self,
         *,
         db: global___ExtDatabase | None = ...,
         topic_id: builtins.str = ...,
+        format: global___PubSubFormat | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "topic_id", b"topic_id"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["db", b"db", "format", b"format"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "format", b"format", "topic_id", b"topic_id"]) -> None: ...
 
 global___PubSubTopic = PubSubTopic
 

@@ -15,20 +15,24 @@ A name to identify the source. The name should be unique across all Fennel sourc
 The project ID of the Google Cloud project containing the Pub/Sub topic
 </Expandable>
 
-<Expandable title="service_account_key" type="str">
-The JSON string containing the credentials for the Service Account to use to access
-Pub/Sub topic. See below for instructions on how to obtain this.
+<Expandable title="service_account_key" type="Dict[str, str]">
+A dictionary containing the credentials for the Service Account to use to access
+Pub/Sub. See below for instructions on how to obtain this.
 </Expandable>
-
-:::info
-Fennel supports only Upsert mode CDC with data in JSON format. If you require support
-for schema or CDC data format, please reach out to Fennel support.
-:::
 
 #### Topic Parameters
 <Expandable title="topic_id" type="str">
 The name of the topic from which the data should be ingested.
 </Expandable>
+
+<Expandable title="format" type='"json"'>
+The format of the data in Pub/Sub topic. Only `"json"` is supported
+</Expandable>
+
+:::info
+Fennel supports only Append and Upsert mode CDC with data in JSON format. If you require support
+for schema or CDC data format, please reach out to Fennel support.
+:::
 
 #### Errors
 <Expandable title="Connectivity Issues">
@@ -62,8 +66,7 @@ created.
 
 At this point, you should have a service account with the "Pub/Sub Subscriber" project-level permission.
 
-For Service Account Key JSON, enter the Google
-Cloud [Service Account Key in JSON format](https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+To obtain a Service Account Key, follow the instructions on [Creating a Service Account Key](https://cloud.google.com/iam/docs/keys-create-delete#creating).
 
 </Expandable>
 
