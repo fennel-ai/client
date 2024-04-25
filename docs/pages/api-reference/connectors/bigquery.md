@@ -56,10 +56,11 @@ do this validation at commit time.
 
 <Expandable title="How to obtain credentials?">
 Interfacing with BigQuery requires credentials for
-a [Service Account](https://cloud.google.com/iam/docs/service-accounts) with the "BigQuery User" and "BigQuery Data
-Editor" roles, which grants permissions to run BigQuery jobs, write to BigQuery Datasets, and read table metadata. It is
-highly recommended that this Service Account is exclusive to Fennel for ease of permissions and auditing. However, you
-can also use a preexisting Service Account if you already have one with the correct permissions.
+a [Service Account](https://cloud.google.com/iam/docs/service-accounts) with the "BigQuery User" role at Project level
+and "BigQuery Data Editor" role at Dataset level. "BigQuery User" role grants permissions to run BigQuery jobs and 
+"BigQuery Data Editor" role grants permissions to read and update table data and its metadata. It is highly recommended 
+that this Service Account is exclusive to Fennel for ease of permissions and auditing. However, you can also use a 
+preexisting Service Account if you already have one with the correct permissions.
 
 The easiest way to create a Service Account is to follow GCP's guide
 for [Creating a Service Account](https://cloud.google.com/iam/docs/creating-managing-service-accounts). Once you've
@@ -74,8 +75,12 @@ created.
 
 At this point, you should have a service account with the "BigQuery User" project-level permission.
 
-For Service Account Key JSON, enter the Google
-Cloud [Service Account Key in JSON format](https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+Similarly, provide the "BigQuery Data Editor" permission to the service account by following 
+[Granting Access to Dataset](https://cloud.google.com/bigquery/docs/control-access-to-resources-iam#grant_access_to_a_dataset)
+in the Google documentation.
+
+To obtain a Service Account Key, follow the instructions on
+[Creating a Service Account Key](https://cloud.google.com/iam/docs/keys-create-delete#creating).
 
 </Expandable>
 
