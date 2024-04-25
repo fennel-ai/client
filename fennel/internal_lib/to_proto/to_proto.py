@@ -1265,6 +1265,7 @@ def _pubsub_conn_to_source_proto(
                 pubsub_topic=connector_proto.PubSubTopic(
                     db=ext_db,
                     topic_id=connector.topic_id,
+                    format=to_pubsub_format_proto(connector.format),
                 ),
             ),
             disorder=to_duration_proto(connector.disorder),
@@ -1656,6 +1657,12 @@ def to_cdc_proto(cdc: str) -> connector_proto.CDCStrategy.ValueType:
 # ------------------------------------------------------------------------------
 # Format
 # ------------------------------------------------------------------------------
+
+
+def to_pubsub_format_proto(format: str) -> connector_proto.PubSubFormat:
+    if format == "json":
+        return connector_proto.PubSubFormat(json=connector_proto.JsonFormat())
+    raise ValueError(f"Unknown PubSub format: {format}")
 
 
 def to_kafka_format_proto(

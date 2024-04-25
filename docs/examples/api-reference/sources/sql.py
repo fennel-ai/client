@@ -244,10 +244,9 @@ def test_pubsub_basic(client):
     )
     # docsnip-highlight end
 
-    # docsnip-highlight next-line
-    collection = pubsub.topic("test_topic")
-
-    @source(collection, disorder="2d", cdc="upsert")  # docsnip-highlight
+    @source(
+        pubsub.topic("test_topic", format="json"), disorder="2d", cdc="upsert"
+    )  # docsnip-highlight
     @dataset
     class UserClick:
         uid: int = field(key=True)
