@@ -375,7 +375,7 @@ bigquery = BigQuery(
     name="bq_movie_tags",
     project_id="gold-cocoa-356105",
     dataset_id="movie_tags",
-    service_account_key="{}",
+    service_account_key={},
 )
 
 

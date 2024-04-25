@@ -20,7 +20,7 @@ biq_query = connectors.BigQuery(
     name="bg_source",
     project_id="my-project-356105",
     dataset_id="query_data",
-    service_account_key="{}",
+    service_account_key={},
 )
 
 s3 = connectors.S3(
