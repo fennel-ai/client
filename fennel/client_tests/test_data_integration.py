@@ -104,7 +104,7 @@ class TestMovieInfo103(unittest.TestCase):
     def test_s3_data_integration_source(self, client):
         """Same test as test_log_to_MovieInfo103 but with an S3 source."""
         # Sync the dataset
-        client.commit(message="msg", datasets=[MovieInfo103], env="dev")
+        client.commit(message="msg", datasets=[MovieInfo103], env="prod")
         client.sleep()
 
         # Time for data_integration to do its magic
