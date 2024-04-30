@@ -150,6 +150,20 @@ class MockClient(Client):
             )
             return features_new.issuperset(features_old)
 
+        def is_new_dataset_eligible(dataset_new, dataset_old):
+            """
+            This function check if dataset of same name comes in the increment mode,
+            is the new dataset eligible or not. Eligible if:
+            1. If version same and old == new then eligible.
+            2. new != old then version should be higher.
+            """
+            if dataset_new.version > dataset_old.version:
+                return True
+            elif dataset_new.version < dataset_old.version:
+                return False
+            else:
+                return dataset_old.signature() == dataset_new.signature()
+
         if incremental:
             cur_datasets = self.get_datasets()
             cur_featuresets = self.get_featuresets()
@@ -157,7 +171,24 @@ class MockClient(Client):
             if datasets is None:
                 datasets = cur_datasets
             else:
-                datasets = list(set(datasets + cur_datasets))
+                # Union both the datasets from current and new and for those
+                # which are common, ensure the new dataset has a higher version
+                for dataset in cur_datasets:
+                    for new_dataset in datasets:
+                        if dataset._name == new_dataset._name:
+                            if not is_new_dataset_eligible(
+                                new_dataset, dataset
+                            ):
+                                raise ValueError(
+                                    f"Please update version of dataset: `{new_dataset._name}`"
+                                )
+                dataset_collection = set(datasets)
+                dataset_names = set([dataset._name for dataset in datasets])
+                for dataset in cur_datasets:
+                    if dataset._name not in dataset_names:
+                        dataset_collection.add(dataset)
+                datasets = list(dataset_collection)
+
             # Union of current and new featuresets
             if featuresets is None:
                 featuresets = cur_featuresets
