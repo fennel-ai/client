@@ -5,4 +5,5 @@ from fennel.dtypes.dtypes import (
     between,
     struct,
     Window,
+    Decimal,
 )

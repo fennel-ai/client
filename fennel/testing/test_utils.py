@@ -218,6 +218,8 @@ def convert_val_to_pandas_dtype(
         return bool(value)
     elif data_type.HasField("timestamp_type"):
         return pd.to_datetime(value)
+    elif data_type.HasField("decimal_type"):
+        return value
     elif data_type.HasField("between_type"):
         return convert_val_to_pandas_dtype(
             value, data_type.between_type.dtype, nullable

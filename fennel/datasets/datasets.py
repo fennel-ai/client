@@ -21,7 +21,6 @@ from typing import (
     Union,
     overload,
     get_args,
-    Set,
 )
 
 import numpy as np
@@ -45,6 +44,8 @@ from fennel.datasets.aggregate import (
 from fennel.dtypes.dtypes import (
     get_fennel_struct,
     Window,
+    Decimal,
+    _Decimal,
 )
 from fennel.gen import schema_pb2 as schema_proto
 from fennel.internal_lib.duration import (
@@ -111,7 +112,7 @@ DEFAULT_INDEX_TYPE = "primary"
 DEFAULT_INDEX_OFFLINE = "forever"
 DEFAULT_INDEX_ONLINE = True
 
-primitive_numeric_types = [int, float, pd.Int64Dtype, pd.Float64Dtype]
+primitive_numeric_types = [int, float, pd.Int64Dtype, pd.Float64Dtype, Decimal]
 
 # ---------------------------------------------------------------------
 # Field
@@ -463,19 +464,25 @@ class Aggregate(_Node):
         values = {}
         for agg in self.aggregates:
             if isinstance(agg, Count):
-                values[agg.into_field] = pd.Int64Dtype
+                values[agg.into_field] = pd.Int64Dtype  # type: ignore
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
-                dtype = get_primitive_dtype(dtype)
-                if dtype not in primitive_numeric_types:
+                primitive_dtype = get_primitive_dtype(dtype)
+                if primitive_dtype not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
                     )
-                values[agg.into_field] = dtype
+                if primitive_dtype == Decimal:
+                    values[agg.into_field] = dtype  # type: ignore
+                else:
+                    values[agg.into_field] = primitive_dtype  # type: ignore
             elif isinstance(agg, Min) or isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
-                dtype = get_primitive_dtype(dtype)
-                values[agg.into_field] = dtype
+                primitive_dtype = get_primitive_dtype(dtype)
+                if primitive_dtype == Decimal:
+                    values[agg.into_field] = dtype  # type: ignore
+                else:
+                    values[agg.into_field] = primitive_dtype  # type: ignore
             elif isinstance(agg, Distinct):
                 dtype = input_schema.get_type(agg.of)
                 list_type = get_python_type_from_pd(dtype)
@@ -2447,7 +2454,11 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, Quantile):
                 dtype = input_schema.get_type(agg.of)
-                if dtype is pd.Float64Dtype or dtype is pd.Int64Dtype:
+                if (
+                    dtype is pd.Float64Dtype
+                    or dtype is pd.Int64Dtype
+                    or isinstance(dtype, _Decimal)
+                ):
                     if agg.default is not None:
                         values[agg.into_field] = pd.Float64Dtype  # type: ignore
                     else:

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal as PythonDecimal
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -10,6 +11,7 @@ from fennel.dtypes.dtypes import (
     struct,
     FENNEL_STRUCT_SRC_CODE,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
+    Decimal,
 )
 from fennel.internal_lib.schema.schema import (
     get_datatype,
@@ -20,6 +22,7 @@ from fennel.internal_lib.schema.schema import (
     is_hashable,
     parse_json,
     convert_dtype_to_arrow_type,
+    validate_val_with_dtype,
 )
 
 
@@ -92,6 +95,12 @@ def test_get_data_type():
                 )
             )
         )
+    )
+    assert get_datatype(Decimal[28]) == proto.DataType(
+        decimal_type=proto.DecimalType(scale=28)
+    )
+    assert get_datatype(Decimal[2]) == proto.DataType(
+        decimal_type=proto.DecimalType(scale=2)
     )
 
 
@@ -173,6 +182,35 @@ def test_additional_dtypes_invalid():
         get_datatype(regex(1))
     assert str(e.value) == "'regex' type only accepts str types"
 
+    with pytest.raises(TypeError) as e:
+        get_datatype(Decimal[29])
+    assert (
+        str(e.value)
+        == "Scale defined in the decimal type cannot be greater than 28."
+    )
+
+    with pytest.raises(TypeError) as e:
+        get_datatype(Decimal[0])
+    assert (
+        str(e.value)
+        == "Scale defined in the decimal type cannot be 0. If you want to use decimal with zero scale then use int type instead."
+    )
+
+
+def test_validate_val_with_dtype():
+    value = PythonDecimal("29.00")
+    dtype = Decimal[2]
+    validate_val_with_dtype(dtype, value)
+
+    value = "29.00"
+    dtype = Decimal[3]
+    with pytest.raises(ValueError) as e:
+        validate_val_with_dtype(dtype, value)
+    assert (
+        str(e.value)
+        == "Expected type python Decimal or float or int, got `str` for value `29.00`"
+    )
+
 
 def test_valid_schema():
     # Replacing tzinfo because the data schema checks expects dtype to be datetime[ns] and not datetime[ns, UTC]
@@ -180,10 +218,26 @@ def test_valid_schema():
     yesterday = now - timedelta(days=1)
 
     data = [
-        [18232, "Ross", 32, "USA", True, now],
-        [18234, "Monica", 64, "Chile", False, yesterday],
+        [18232, "Ross", 32, "USA", True, PythonDecimal("1000.20"), now],
+        [
+            18234,
+            "Monica",
+            64,
+            "Chile",
+            False,
+            PythonDecimal("1000.20"),
+            yesterday,
+        ],
     ]
-    columns = ["user_id", "name", "age", "country", "Truth", "timestamp"]
+    columns = [
+        "user_id",
+        "name",
+        "age",
+        "country",
+        "Truth",
+        "net_worth",
+        "timestamp",
+    ]
     df = pd.DataFrame(data, columns=columns)
     dsschema = proto.DSSchema(
         keys=proto.Schema(
@@ -216,6 +270,12 @@ def test_valid_schema():
                     name="Truth",
                     dtype=proto.DataType(bool_type=proto.BoolType()),
                 ),
+                proto.Field(
+                    name="net_worth",
+                    dtype=proto.DataType(
+                        decimal_type=proto.DecimalType(scale=2)
+                    ),
+                ),
             ]
         ),
         timestamp="timestamp",
@@ -223,7 +283,17 @@ def test_valid_schema():
     exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 0
 
-    data.append([18234, "Monica", None, "Chile", True, yesterday])
+    data.append(
+        [
+            18234,
+            "Monica",
+            None,
+            "Chile",
+            True,
+            PythonDecimal("1000.30"),
+            yesterday,
+        ]
+    )
     df = pd.DataFrame(data, columns=columns)
     exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 0
@@ -312,10 +382,10 @@ def test_invalid_schema():
     yesterday = now - timedelta(days=1)
 
     data = [
-        [18232, "Ross", "32", "USA", now],
-        [18234, "Monica", 64, "Chile", yesterday],
+        [18232, "Ross", "32", "USA", PythonDecimal(100.122), now],
+        [18234, "Monica", 64, "Chile", PythonDecimal(100.122), yesterday],
     ]
-    columns = ["user_id", "name", "age", "country", "timestamp"]
+    columns = ["user_id", "name", "age", "country", "net_worth", "timestamp"]
     df = pd.DataFrame(data, columns=columns)
     dsschema = proto.DSSchema(
         keys=proto.Schema(
@@ -339,6 +409,12 @@ def test_invalid_schema():
                 proto.Field(
                     name="country",
                     dtype=proto.DataType(string_type=proto.StringType()),
+                ),
+                proto.Field(
+                    name="net_worth",
+                    dtype=proto.DataType(
+                        decimal_type=proto.DecimalType(scale=3)
+                    ),
                 ),
             ]
         ),

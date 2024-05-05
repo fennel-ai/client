@@ -4,6 +4,7 @@ import dataclasses
 import re
 import typing
 from datetime import datetime
+from decimal import Decimal as PythonDecimal
 from typing import (
     Union,
     Any,
@@ -25,7 +26,9 @@ from fennel.dtypes.dtypes import (
     between,
     oneof,
     regex,
+    Decimal,
     _Embedding,
+    _Decimal,
 )
 from fennel.internal_lib.utils.utils import get_origin, is_user_defined_class
 
@@ -45,6 +48,8 @@ def get_primitive_dtype(dtype):
         return dtype.dtype
     if isinstance(dtype, regex):
         return pd.StringDtype
+    if isinstance(dtype, _Decimal):
+        return Decimal
     return dtype
 
 
@@ -65,7 +70,7 @@ def parse_json(annotation, json) -> Any:
                     f"Union must be of the form `Union[type, None]`, "
                     f"got `{annotation}`"
                 )
-            if json is None:
+            if json is None or pd.isna(json):
                 return None
             return parse_json(args[0], json)
         if origin is list:
@@ -105,6 +110,18 @@ def parse_json(annotation, json) -> Any:
             else:
                 raise TypeError(
                     f"Expected datetime or str, got `{type(json).__name__}`"
+                )
+        if isinstance(annotation, _Decimal):
+            scale = annotation.scale
+            if (
+                isinstance(json, PythonDecimal)
+                or isinstance(annotation, float)
+                or isinstance(annotation, int)
+            ):
+                return PythonDecimal("%0.{}f".format(scale) % json)
+            else:
+                raise TypeError(
+                    f"Expected decimal or float, got `{type(json).__name__}`"
                 )
         if annotation is np.ndarray:
             return np.array(json)
@@ -173,6 +190,10 @@ def get_datatype(type_: Any) -> schema_proto.DataType:
         or isinstance(type_, regex)
     ):
         return type_.to_proto()
+    elif isinstance(type_, _Decimal):
+        return schema_proto.DataType(
+            decimal_type=schema_proto.DecimalType(scale=type_.scale)
+        )
     elif is_user_defined_class(type_):
         # Iterate through all the fields in the class and get the schema for
         # each field
@@ -239,6 +260,8 @@ def convert_dtype_to_arrow_type(dtype: schema_proto.DataType) -> pa.DataType:
         return pa.bool_()
     elif dtype.HasField("timestamp_type"):
         return pa.timestamp("us", "UTC")
+    elif dtype.HasField("decimal_type"):
+        return pa.decimal128(28, dtype.decimal_type.scale)
     elif dtype.HasField("array_type"):
         return pa.list_(
             value_type=convert_dtype_to_arrow_type(dtype.array_type.of)
@@ -407,6 +430,15 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
                     f"Field {field.name} not found in struct {dtype}"
                 )
             validate_val_with_proto_dtype(field.dtype, val[field.name])
+    elif dtype.decimal_type != schema_proto.DecimalType():
+        if (
+            not isinstance(val, PythonDecimal)
+            and not isinstance(val, float)
+            and not isinstance(val, int)
+        ):
+            raise ValueError(
+                f"Expected type python Decimal or float or int, got `{type(val).__name__}` for value `{val}`"
+            )
     else:
         raise ValueError(f"Unsupported dtype {dtype}")
 
@@ -725,6 +757,20 @@ def validate_field_in_df(
             if type(row) is dict:
                 validate_val_with_proto_dtype(field.dtype, row)
             # TODO(Aditya) : Fix the non dict case
+    elif dtype.decimal_type.scale != 0:
+        if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
+            arrow_type
+        ):
+            raise ValueError(
+                f"Field `{name}` is of type decimal, but the "
+                f"column in the dataframe is not a decimal. Error found during "
+                f"checking schema for `{entity_name}`."
+            )
+        # Recursively check the type of each element in the column
+        for i, row in df[name].items():
+            if is_nullable and pd.isna(row):
+                continue
+            validate_val_with_proto_dtype(field.dtype, row)
     else:
         raise ValueError(f"Field `{name}` has unknown data type `{dtype}`.")
 
@@ -744,6 +790,7 @@ def is_hashable(dtype: Any) -> bool:
         pd.Int64Dtype,
         pd.StringDtype,
         pd.BooleanDtype,
+        Decimal,
     ]:
         return True
     elif get_origin(primitive_type) is list:
