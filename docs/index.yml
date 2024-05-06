@@ -67,6 +67,12 @@ sidebar:
       - "observability/alerting"
       - "observability/lineage"
 
+  - slug: "security-compliance"
+    title: "Security Compliance"
+    pages:
+      - "security-compliance/sso"
+      - "security-compliance/scim"
+
   - slug: "useful-tips"
     title: "Useful Tips"
     pages:
