@@ -25,10 +25,10 @@ from fennel.testing import mock
 #                           Feature Single Extractor Unit Tests
 ################################################################################
 
+__owner__ = "test@test.com"
 webhook = Webhook(name="fennel_webhook")
 
 
-@meta(owner="test@test.com")
 @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="upsert")
 @dataset(index=True)
 class UserInfoDataset:
@@ -47,7 +47,6 @@ class UserInfoDataset:
         ]
 
 
-@meta(owner="test@test.com")
 @featureset
 class UserInfoSingleExtractor:
     userid: int
@@ -84,7 +83,6 @@ def get_country_geoid(country: str) -> int:
         return 5
 
 
-@meta(owner="test@test.com")
 @featureset
 class UserInfoMultipleExtractor:
     userid: int
@@ -244,7 +242,6 @@ class Velocity:
     direction: int
 
 
-@meta(owner="test@test.com")
 @source(webhook.endpoint("FlightDataset"), disorder="14d", cdc="upsert")
 @dataset(index=True)
 class FlightDataset:
@@ -256,13 +253,11 @@ class FlightDataset:
     region: str
 
 
-@meta(owner="test@test.com")
 @featureset
 class FlightRequest:
     id: int
 
 
-@meta(owner="test@test.com")
 @featureset
 class GeneratedFeatures:
     user_id: int = F(UserInfoSingleExtractor.userid)  # type: ignore
@@ -432,7 +427,6 @@ class TestExtractorDAGResolution(unittest.TestCase):
         )
 
 
-@meta(owner="test@test.com")
 @featureset
 class UserInfoTransformedFeatures:
     age_power_four: int
@@ -555,7 +549,6 @@ class TestExtractorDAGResolutionComplex(unittest.TestCase):
 # Embedding tests
 
 
-@meta(owner="aditya@fennel.ai")
 @source(
     webhook.endpoint("DocumentContentDataset"), disorder="14d", cdc="upsert"
 )
@@ -568,7 +561,6 @@ class DocumentContentDataset:
     timestamp: datetime = field(timestamp=True)
 
 
-@meta(owner="aditya@fennel.ai")
 @featureset
 class DocumentFeatures:
     doc_id: int
@@ -688,3 +680,105 @@ class TestDocumentDataset(unittest.TestCase):
             18234,
         ]
         assert feature_df["DocumentFeatures.num_words"].tolist() == [0, 0]
+
+
+class TestOptionalTypes(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_optional_float_featureset(self, client):
+
+        @source(webhook.endpoint("FloatDataset"), disorder="14d", cdc="upsert")
+        @dataset(index=True)
+        class FloatDataset:
+            user_id: int = field(key=True)
+            timestamp: datetime = field(timestamp=True)
+            income: float
+
+        @featureset
+        class FloatFeatureSet:
+            user_id: int
+            income: Optional[float] = F(FloatDataset.income)
+
+        client.commit(
+            message="some commit msg",
+            datasets=[FloatDataset],
+            featuresets=[FloatFeatureSet],
+        )
+
+        now = datetime.utcnow()
+        df = pd.DataFrame(
+            {
+                "user_id": [1, 2, 3, 4, 5],
+                "timestamp": [now, now, now, now, now],
+                "income": [10000.1, 20000.0, 30000.6, 40000.0, 50000.2],
+            }
+        )
+        client.log("fennel_webhook", "FloatDataset", df)
+
+        client.sleep()
+        feature_df = client.query(
+            outputs=[FloatFeatureSet.income],
+            inputs=[FloatFeatureSet.user_id],
+            input_dataframe=pd.DataFrame(
+                {"FloatFeatureSet.user_id": [1, 2, 3, 4, 5, 6]}
+            ),
+        )
+        assert feature_df.shape == (6, 1)
+        assert feature_df["FloatFeatureSet.income"].tolist() == [
+            10000.1,
+            20000.0,
+            30000.6,
+            40000.0,
+            50000.2,
+            pd.NA,
+        ]
+
+    @pytest.mark.integration
+    @mock
+    def test_optional_int_featureset(self, client):
+
+        @source(webhook.endpoint("FloatDataset"), disorder="14d", cdc="upsert")
+        @dataset(index=True)
+        class IntDataset:
+            user_id: int = field(key=True)
+            timestamp: datetime = field(timestamp=True)
+            age: int
+
+        @featureset
+        class IntFeatureSet:
+            user_id: int
+            age: Optional[int] = F(IntDataset.age)
+
+        client.commit(
+            message="some commit msg",
+            datasets=[IntDataset],
+            featuresets=[IntFeatureSet],
+        )
+
+        now = datetime.utcnow()
+        df = pd.DataFrame(
+            {
+                "user_id": [1, 2, 3, 4, 5],
+                "timestamp": [now, now, now, now, now],
+                "age": [10, 11, 12, 13, 14],
+            }
+        )
+        client.log("fennel_webhook", "FloatDataset", df)
+
+        client.sleep()
+        feature_df = client.query(
+            outputs=[IntFeatureSet.age],
+            inputs=[IntFeatureSet.user_id],
+            input_dataframe=pd.DataFrame(
+                {"IntFeatureSet.user_id": [1, 2, 3, 4, 5, 6]}
+            ),
+        )
+        assert feature_df.shape == (6, 1)
+        assert feature_df["IntFeatureSet.age"].tolist() == [
+            10,
+            11,
+            12,
+            13,
+            14,
+            pd.NA,
+        ]
