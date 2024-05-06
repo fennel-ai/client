@@ -14,7 +14,7 @@ Fennel's SCIM integration automates adding/removing Users from your Organization
 - Setup [Fennel SAML app integration on Okta]("/security-compliance/sso")
 - Enable SCIM Provisioning on your Fennel Console by toggling the "Enable SCIM" button under your SSO configuration in the Settings Page. You will see the following generated:
     - SCIM endpoint : Will be used as the connector base URL
-    - SCIM authentication token : This token is highly sensitive, and it's crucial to safeguard it from any potential leaks. It will be utilized for configuring Okta's SCIM authentication.
+    - SCIM authentication token : This token is highly sensitive, and it's crucial to safeguard it from any potential leaks. It will be utilized for configuring SCIM authentication in Okta.
     
     ![Diagram](/assets/scim_console.png)
 - Enable SCIM Provisioning on your Okta app with the following settings:
