@@ -1,9 +1,12 @@
 # Changelog
 
-## [1.3.2] - 2024-04-23
+## [1.3.3] - 2024-04-26
+- Added Decimal Type.
+
+## [1.3.2] - 2024-04-24
 - Support `pubsub` source
 
-## [1.3.1] - 2024-04-24
+## [1.3.1] - 2024-04-23
 - Changes to Redshift connector params
 
 ## [1.3.0] - 2024-04-22

@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime, timezone
+from decimal import Decimal
 from functools import partial
 from typing import Dict, List, Union, Optional, Tuple
 
@@ -13,7 +14,7 @@ from fennel.gen.featureset_pb2 import (
     ExtractorType as ProtoExtractorType,
 )
 from fennel.gen.schema_pb2 import Field, DSSchema, Schema
-from fennel.internal_lib.schema import data_schema_check
+from fennel.internal_lib.schema import data_schema_check, get_datatype
 from fennel.internal_lib.utils import parse_datetime
 from fennel.testing.branch import Entities
 from fennel.testing.data_engine import DataEngine
@@ -386,6 +387,17 @@ class QueryEngine:
             )
         results = results[extractor.derived_extractor_info.field.name]
         default_value = extractor.derived_extractor_info.default
+        proto_dtype = get_datatype(extractor.derived_extractor_info.field.dtype)
+
+        # Custom operations on default value for datetime and decimal type
+        if proto_dtype.HasField("decimal_type"):
+            if pd.notna(default_value) and not isinstance(
+                default_value, Decimal
+            ):
+                default_value = Decimal(
+                    "%0.{}f".format(proto_dtype.decimal_type.scale)
+                    % float(default_value)  # type: ignore
+                )
         if isinstance(default_value, datetime):
             default_value = parse_datetime(default_value)
         if default_value is not None:
