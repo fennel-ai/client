@@ -1,3 +1,4 @@
+ACS
 AES
 APIs
 ARNs
@@ -35,6 +36,7 @@ Grafana
 Graviton
 Groupby
 HDFS
+IdP
 IOPS
 IPs
 InfoSec
@@ -56,6 +58,7 @@ MSK
 MockClient
 Nones
 OAuth
+Okta
 OOM
 OWASP
 OpenSSL's
@@ -83,6 +86,7 @@ RocksDB
 Rowset
 Rowsets
 SASL
+SAML
 SCIM
 SDK
 SHA
@@ -106,6 +110,7 @@ Tokio
 Tokio's
 UDFs
 UI
+URI
 UserCreator
 UserCreditScore
 UserFeature
@@ -200,6 +205,7 @@ env
 featureset
 featuresets
 fintech
+firstName
 forgotten
 frontend
 func
@@ -234,6 +240,7 @@ keyless
 kinesis
 kwarg
 kwargs
+lastName
 latencies
 lifecycle
 lookup
@@ -296,6 +303,7 @@ signups
 snapshotted
 snowflakecomputing
 src
+sso
 stateful
 str
 strftime

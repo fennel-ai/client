@@ -10,7 +10,7 @@ Fennel, by default, allows using SSO authentication through Google. For SAML bas
 
 This document will walk through setting up SAML based authentication between Fennel (SP) and Okta (IdP).
 
-Okta documentation for configuing the SAML integration is available at https://help.okta.com/en-us/content/topics/apps/apps_app_integration_wizard_saml.htm
+Okta documentation for configuring the SAML integration is available at https://help.okta.com/en-us/content/topics/apps/apps_app_integration_wizard_saml.htm
 
 
 ## Okta Setup
