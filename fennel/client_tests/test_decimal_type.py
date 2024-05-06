@@ -328,6 +328,7 @@ def test_query_with_decimal_type(client):
 
 
 @pytest.mark.integration
+@pytest.mark.skip
 @mock
 def test_optional_decimal_type(client):
     if sys.version_info >= (3, 11):

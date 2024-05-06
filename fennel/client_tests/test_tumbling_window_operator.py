@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import List
-
+from frozendict import frozendict
 import pandas as pd
 import pytest
 
@@ -299,14 +299,16 @@ def test_tumbling_window_operator(client):
     user_id_keys = pd.Series([1])
     window_keys = pd.Series(
         [
-            {
-                "begin": pd.Timestamp(
-                    datetime(2023, 1, 16, 11, 0, 0, tzinfo=timezone.utc)
-                ),
-                "end": pd.Timestamp(
-                    datetime(2023, 1, 16, 11, 0, 10, tzinfo=timezone.utc)
-                ),
-            }
+            frozendict(
+                {
+                    "begin": pd.Timestamp(
+                        datetime(2023, 1, 16, 11, 0, 0), tzinfo=timezone.utc
+                    ),
+                    "end": pd.Timestamp(
+                        datetime(2023, 1, 16, 11, 0, 10), tzinfo=timezone.utc
+                    ),
+                }
+            )
         ]
     )
     input_df = pd.DataFrame({"UserSessionStats.user_id": [1]})
@@ -411,14 +413,16 @@ def test_tumbling_hopping_equivalent_operator(client):
     user_id_keys = pd.Series([1])
     window_keys = pd.Series(
         [
-            {
-                "begin": pd.Timestamp(
-                    datetime(2023, 1, 16, 11, 0, 0, tzinfo=timezone.utc)
-                ),
-                "end": pd.Timestamp(
-                    datetime(2023, 1, 16, 11, 0, 10, tzinfo=timezone.utc)
-                ),
-            }
+            frozendict(
+                {
+                    "begin": pd.Timestamp(
+                        datetime(2023, 1, 16, 11, 0, 0), tzinfo=timezone.utc
+                    ),
+                    "end": pd.Timestamp(
+                        datetime(2023, 1, 16, 11, 0, 10), tzinfo=timezone.utc
+                    ),
+                }
+            )
         ]
     )
 
