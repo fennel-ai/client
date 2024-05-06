@@ -1,7 +1,7 @@
 ---
 title: 'SAML SSO'
 order: 0
-status: 'draft'
+status: 'published'
 ---
 
 # SSO With SAML
