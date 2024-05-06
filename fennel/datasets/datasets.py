@@ -1637,6 +1637,11 @@ class Dataset(_Node[T]):
                         f"Multiple timestamp fields are not supported in "
                         f"dataset `{self._name}`. Please set one of the datetime fields to be the timestamp field."
                     )
+                if field.dtype != datetime.datetime:
+                    raise ValueError(
+                        f"Only 'datetime' type fields can be marked as timestamp field. Found field : "
+                        f"`{field.name}` type :  `{field.dtype}` in dataset `{self._name}`"
+                    )
                 timestamp_field_set = True
 
         if timestamp_field_set:

@@ -106,6 +106,8 @@ def cast_col_to_pandas(
         return series.astype(pd.BooleanDtype())
     elif dtype.HasField("timestamp_type"):
         return pd.to_datetime(series)
+    elif dtype.HasField("date_type"):
+        return pd.to_datetime(series).dt.date
     elif dtype.HasField("one_of_type"):
         return cast_col_to_pandas(series, dtype.one_of_type.of)
     elif dtype.HasField("between_type"):

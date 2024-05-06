@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from typing import Optional, List, Union
 
 import pandas as pd
@@ -1153,4 +1153,23 @@ def test_invalid_operators_over_keyed_datasets():
     assert (
         str(e.value)
         == "Window operator over keyed datasets is not defined. Found dataset with keys `['event_id']` in pipeline `pipeline1`"
+    )
+
+
+@mock
+def test_invalid_timestamp_field(client):
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class A:
+            a1: int = field(key=True)
+            a2: int
+            t: date = field(timestamp=True)
+
+        client.commit(datasets=[A], message="first_commit")
+
+    assert (
+        str(e.value)
+        == "Only 'datetime' type fields can be marked as timestamp field. Found field : `t` type :  "
+        "`<class 'datetime.date'>` in dataset `A`"
     )

@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.3.7] - 2024-04-26
+- Added Date Type.
+
 ## [1.3.6] - 2024-05-08
 - Added support for changing datasets through incremental mode.
 

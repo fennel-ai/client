@@ -211,7 +211,7 @@ def get_all_imports() -> str:
         "import json",
         "import os",
         "import sys",
-        "from datetime import datetime",
+        "from datetime import datetime, date",
         "import time",
         "import random",
         "import math",
