@@ -14,7 +14,11 @@ import fennel._vendor.requests as requests  # type: ignore
 from fennel.connectors import S3Connector
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature, is_valid_feature
-from fennel.internal_lib.schema import parse_json, get_datatype
+from fennel.internal_lib.schema import (
+    parse_json,
+    get_datatype,
+    fennel_is_optional,
+)
 from fennel.internal_lib.to_proto import to_sync_request_proto
 from fennel.internal_lib.utils import cast_col_to_pandas
 from fennel.utils import check_response, to_columnar_json
@@ -717,7 +721,11 @@ class Client:
             if isinstance(dataset, Dataset):
                 for field in dataset.fields:
                     if field.name == column:
-                        output_dtypes[column] = field.dtype
+                        dtype = field.dtype
+                        if fennel_is_optional(dtype):
+                            output_dtypes[column] = dtype
+                        else:
+                            output_dtypes[column] = Optional[dtype]
             else:
                 output_dtypes[column] = Any
 
@@ -758,6 +766,44 @@ class Client:
                 output_dtypes[column] = Any
 
         return self._parse_dataframe(result, output_dtypes)
+
+    # ----------------------- Secret API's -----------------------------------
+
+    def get_secret(self, secret_name: str) -> Optional[str]:
+        response = self._get("{}/secret/{}".format(V1_API, secret_name))
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+        return response.json().get("value")
+
+    def add_secret(self, secret_name: str, secret_value: str):
+        data = {"value": secret_value}
+        response = self._post_json(
+            "{}/secret/{}".format(V1_API, secret_name),
+            data,
+        )
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+        return response
+
+    def update_secret(self, secret_name: str, secret_value: str):
+        data = {"value": secret_value}
+        response = self._patch_json(
+            "{}/secret/{}".format(V1_API, secret_name),
+            data,
+        )
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+        return response
+
+    def delete_secret(self, secret_name: str):
+        data: Dict[str, Any] = dict()
+        response = self._delete_json(
+            "{}/secret/{}".format(V1_API, secret_name),
+            data,
+        )
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+        return response
 
     # ----------------------- Private methods -----------------------
 
@@ -800,6 +846,30 @@ class Client:
         check_response(response)
         return response
 
+    def _patch_json(
+        self, path: str, req: Dict[str, Any], compress: bool = False
+    ):
+        """
+        Internal function for making PATCH calls to an endpoint with assumption that payload is json.
+        """
+        payload = json.dumps(req).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+        }
+        return self._patch(path, payload, headers, compress)
+
+    def _delete_json(
+        self, path: str, req: Dict[str, Any], compress: bool = False
+    ):
+        """
+        Internal function for making PATCH calls to an endpoint with assumption that payload is json.
+        """
+        payload = json.dumps(req).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+        }
+        return self._delete(path, payload, headers, compress)
+
     def _post_json(
         self, path: str, req: Dict[str, Any], compress: bool = False
     ):
@@ -836,6 +906,58 @@ class Client:
             headers["Authorization"] = "Bearer " + self.token
         response = self.http.request(
             "POST",
+            self._url(path),
+            data=data,
+            headers=self._add_branch_name_header(headers),
+            timeout=timeout,
+        )
+        check_response(response)
+        return response
+
+    def _patch(
+        self,
+        path: str,
+        data: Any,
+        headers: Dict[str, str],
+        compress: bool = False,
+        timeout: float = _DEFAULT_TIMEOUT,
+    ):
+        """
+        Internal function for making PATCH calls to an endpoint.
+        """
+        if compress:
+            data = gzip.compress(data)
+            headers["Content-Encoding"] = "gzip"
+        if self.token:
+            headers["Authorization"] = "Bearer " + self.token
+        response = self.http.request(
+            "PATCH",
+            self._url(path),
+            data=data,
+            headers=self._add_branch_name_header(headers),
+            timeout=timeout,
+        )
+        check_response(response)
+        return response
+
+    def _delete(
+        self,
+        path: str,
+        data: Any,
+        headers: Dict[str, str],
+        compress: bool = False,
+        timeout: float = _DEFAULT_TIMEOUT,
+    ):
+        """
+        Internal function for making PATCH calls to an endpoint.
+        """
+        if compress:
+            data = gzip.compress(data)
+            headers["Content-Encoding"] = "gzip"
+        if self.token:
+            headers["Authorization"] = "Bearer " + self.token
+        response = self.http.request(
+            "DELETE",
             self._url(path),
             data=data,
             headers=self._add_branch_name_header(headers),

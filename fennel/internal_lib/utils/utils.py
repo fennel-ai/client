@@ -88,12 +88,14 @@ def parse_datetime(value: Union[int, str, datetime]) -> datetime:
     return value  # type: ignore
 
 
-def cast_col_to_pandas(series: pd.Series, dtype: DataType) -> pd.Series:
-    if not dtype.HasField("optional_type"):
+def cast_col_to_pandas(
+    series: pd.Series, dtype: DataType, nullable: bool = False
+) -> pd.Series:
+    if not dtype.HasField("optional_type") and not nullable:
         if series.isnull().any():
             raise ValueError("Null values found in non-optional field.")
     if dtype.HasField("optional_type"):
-        return cast_col_to_pandas(series, dtype.optional_type.of)
+        return cast_col_to_pandas(series, dtype.optional_type.of, True)
     elif dtype.HasField("int_type"):
         return series.astype(pd.Int64Dtype())
     elif dtype.HasField("double_type"):

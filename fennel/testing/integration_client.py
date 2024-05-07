@@ -19,7 +19,7 @@ try:
         "/nix/store/04fxcggfsqq7ahgzcbv1sdrkzyd3q85v-python3-3.11.8-env/lib/python3.11/site-packages",
     )
     from fennel_client_lib import HttpServer  # type: ignore
-    from fennel_dataset import lookup  # type: ignore
+    from fennel_dataset import lookup, get_secret  # type: ignore
 except ImportError:
     pass
 
@@ -43,7 +43,9 @@ def lookup_wrapper(
     )
 
     # convert back to pandas
-    return ret_pa.to_pandas(), found_pa.to_pandas()
+    return ret_pa.to_pandas(types_mapper=pd.ArrowDtype), found_pa.to_pandas(
+        types_mapper=pd.ArrowDtype
+    )
 
 
 class IntegrationClient(Client):
@@ -60,6 +62,7 @@ class IntegrationClient(Client):
         super().__init__(url, token, branch)
         self._http = HttpServer()
         fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, branch, use_as_of)  # type: ignore
+        fennel.lib.secrets.get = get_secret  # type: ignore
 
     def is_integration_client(self):
         return True
@@ -140,6 +143,60 @@ class IntegrationClient(Client):
         headers = self._add_branch_name_header(headers)
         headers = list(headers.items())  # type: ignore
         code, content, content_type = self._http.post(
+            self._url(path), headers, data
+        )
+        # If response content type is json, parse it
+        if content_type == "application/json":
+            content = json.loads(content)
+        # HTTP sever returns code as a string
+        code = int(code)
+        if code != 200:
+            raise Exception(f"Server returned: {code}, {content}")
+        return FakeResponse(code, content)
+
+    def _patch(
+        self,
+        path: str,
+        data: Any,
+        headers: Dict[str, str],
+        compress: bool = False,
+        timeout: float = 30,
+    ):
+        if compress:
+            data = gzip.compress(data)
+            headers["Content-Encoding"] = "gzip"
+        if self.token:
+            headers["Authorization"] = "Bearer " + self.token
+        headers = self._add_branch_name_header(headers)
+        headers = list(headers.items())  # type: ignore
+        code, content, content_type = self._http.patch(
+            self._url(path), headers, data
+        )
+        # If response content type is json, parse it
+        if content_type == "application/json":
+            content = json.loads(content)
+        # HTTP sever returns code as a string
+        code = int(code)
+        if code != 200:
+            raise Exception(f"Server returned: {code}, {content}")
+        return FakeResponse(code, content)
+
+    def _delete(
+        self,
+        path: str,
+        data: Any,
+        headers: Dict[str, str],
+        compress: bool = False,
+        timeout: float = 30,
+    ):
+        if compress:
+            data = gzip.compress(data)
+            headers["Content-Encoding"] = "gzip"
+        if self.token:
+            headers["Authorization"] = "Bearer " + self.token
+        headers = self._add_branch_name_header(headers)
+        headers = list(headers.items())  # type: ignore
+        code, content, content_type = self._http.delete(
             self._url(path), headers, data
         )
         # If response content type is json, parse it
