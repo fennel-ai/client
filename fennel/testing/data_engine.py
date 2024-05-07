@@ -569,10 +569,6 @@ class DataEngine(object):
         right_df[FENNEL_LOOKUP] = True
         right_df[FENNEL_TIMESTAMP] = right_df[timestamp_field]
         cols_to_replace = []
-        print("Going to lookup")
-        print(right_df)
-        print(keys)
-        print("done lookup")
         for col in keys:
             # Cast the column in keys to the same dtype as the column in right_df
             if col in right_df and keys[col].dtype != right_df[col].dtype:
@@ -701,7 +697,7 @@ class DataEngine(object):
         for pipeline in self.dataset_listeners[dataset_name]:
             executor = Executor(
                 {
-                    name: self.datasets[name].data
+                    name: copy.deepcopy(self.datasets[name].data)
                     for name in self.datasets
                     if isinstance(self.datasets[name].data, pd.DataFrame)
                 }

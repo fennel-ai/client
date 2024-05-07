@@ -148,7 +148,6 @@ def cast_col_to_arrow_dtype(series: pd.Series, dtype: DataType) -> pd.Series:
     # dtype conversion fails with fennel struct
     if check_dtype_has_struct_type(dtype):
         series = series.apply(lambda x: parse_struct_into_dict(x))
-
     arrow_type = convert_dtype_to_arrow_type(dtype)
     return series.astype(pd.ArrowDtype(arrow_type))
 
