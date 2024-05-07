@@ -539,7 +539,7 @@ class Executor(Visitor):
         func = mod.__dict__[gen_pycode.entry_point]
         try:
             df = cast_df_to_pandas_dtype(input_ret.df, input_ret.fields)
-            df = func(copy.deepcopy(df))
+            df = func(df)
             field = schema_proto.Field(
                 name=obj.column, dtype=get_datatype(obj.output_type)
             )
@@ -829,7 +829,6 @@ class Executor(Visitor):
             df = pd.DataFrame(
                 {field: window_list, timestamp_col: timestamp_list}
             )
-
             if summary is not None:
                 try:
                     df[summary.field] = summary_value

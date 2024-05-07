@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from typing import List
-
 import pandas as pd
 import pytest
 
@@ -297,18 +296,6 @@ def test_tumbling_window_operator(client):
     now = datetime.now(timezone.utc)
     ts = pd.Series([now])
     user_id_keys = pd.Series([1])
-    window_keys = pd.Series(
-        [
-            {
-                "begin": pd.Timestamp(
-                    datetime(2023, 1, 16, 11, 0, 0, tzinfo=timezone.utc)
-                ),
-                "end": pd.Timestamp(
-                    datetime(2023, 1, 16, 11, 0, 10, tzinfo=timezone.utc)
-                ),
-            }
-        ]
-    )
     input_df = pd.DataFrame({"UserSessionStats.user_id": [1]})
     input_extract_historical_df = pd.DataFrame(
         {
@@ -317,8 +304,19 @@ def test_tumbling_window_operator(client):
         }
     )
 
-    df_session, _ = Sessions.lookup(
-        ts, user_id=user_id_keys, window=window_keys
+    df_session, _ = client.lookup(
+        "Sessions",
+        keys=pd.DataFrame(
+            {
+                "user_id": [1],
+                "window": [
+                    {
+                        "begin": datetime(2023, 1, 16, 11, 0, 0),
+                        "end": datetime(2023, 1, 16, 11, 0, 10),
+                    }
+                ],
+            }
+        ),
     )
     assert df_session.shape[0] == 1
     assert df_session["user_id"].values == [1]
@@ -406,29 +404,24 @@ def test_tumbling_hopping_equivalent_operator(client):
 
     client.sleep()
 
-    now = datetime.now(timezone.utc)
-    ts = pd.Series([now])
-    user_id_keys = pd.Series([1])
-    window_keys = pd.Series(
-        [
-            {
-                "begin": pd.Timestamp(
-                    datetime(2023, 1, 16, 11, 0, 0, tzinfo=timezone.utc)
-                ),
-                "end": pd.Timestamp(
-                    datetime(2023, 1, 16, 11, 0, 10, tzinfo=timezone.utc)
-                ),
-            }
-        ]
+    key_df = pd.DataFrame(
+        {
+            "user_id": [1],
+            "window": [
+                {
+                    "begin": datetime(
+                        2023, 1, 16, 11, 0, 0, tzinfo=timezone.utc
+                    ),
+                    "end": datetime(
+                        2023, 1, 16, 11, 0, 10, tzinfo=timezone.utc
+                    ),
+                }
+            ],
+        }
     )
 
-    df_session_tumbling, _ = Sessions.lookup(
-        ts, user_id=user_id_keys, window=window_keys
-    )
-    df_session_hopping, _ = SessionsHopping.lookup(
-        ts, user_id=user_id_keys, window=window_keys
-    )
-
+    df_session_tumbling, _ = client.lookup("Sessions", keys=key_df)
+    df_session_hopping, _ = client.lookup("SessionsHopping", keys=key_df)
     assert df_session_tumbling.shape[0] == df_session_hopping.shape[0]
     assert (
         df_session_tumbling["window"].values[0].begin

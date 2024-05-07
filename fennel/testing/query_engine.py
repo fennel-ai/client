@@ -20,6 +20,7 @@ from fennel.testing.branch import Entities
 from fennel.testing.data_engine import DataEngine
 from fennel.testing.test_utils import (
     cast_col_to_arrow_dtype,
+    cast_df_to_arrow_dtype,
 )
 
 
@@ -82,6 +83,10 @@ class QueryEngine:
             ts_series,
             schema_proto.DataType(timestamp_type=schema_proto.TimestampType()),
         )
+        # From the dataset find the schema of the keys and cast the keys to the correct type
+        df_fields = dataset.dsschema().to_fields_proto()
+        key_fields = [f for f in df_fields if f.name in keys.columns]
+        keys = cast_df_to_arrow_dtype(keys, key_fields)
         keys = keys.to_dict(orient="records")
 
         keys_dict = defaultdict(list)

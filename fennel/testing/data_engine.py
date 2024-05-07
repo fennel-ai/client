@@ -697,7 +697,7 @@ class DataEngine(object):
         for pipeline in self.dataset_listeners[dataset_name]:
             executor = Executor(
                 {
-                    name: self.datasets[name].data
+                    name: copy.deepcopy(self.datasets[name].data)
                     for name in self.datasets
                     if isinstance(self.datasets[name].data, pd.DataFrame)
                 }
