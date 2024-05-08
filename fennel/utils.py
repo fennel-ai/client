@@ -148,6 +148,9 @@ def _json_default(item: Any):
     if isinstance(item, datetime.datetime):
         return item.isoformat(timespec="microseconds")
 
+    if isinstance(item, datetime.date):
+        return item.isoformat()
+
     if hasattr(item, FHASH_ATTR):
         return getattr(item, FHASH_ATTR)(item)
 
