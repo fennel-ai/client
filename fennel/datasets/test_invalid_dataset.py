@@ -1170,6 +1170,6 @@ def test_invalid_timestamp_field(client):
 
     assert (
         str(e.value)
-        == "Only 'datetime' type fields can be marked as timestamp field. Found field : `t` type :  "
-        "`<class 'datetime.date'>` in dataset `A`"
+        == "'date' dtype fields cannot be marked as timestamp field. Found field : `t` "
+        "of dtype :  `<class 'datetime.date'>` in dataset `A`"
     )
