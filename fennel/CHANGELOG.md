@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.3.6] - 2024-05-08
+- Added support for changing datasets through incremental mode.
+
 ## [1.3.5] - 2024-05-07
 - Adding support for secrets.
 

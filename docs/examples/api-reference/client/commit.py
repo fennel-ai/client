@@ -59,7 +59,7 @@ def test_basic(client):
 @mock
 def test_incremental(client):
     # docsnip incremental
-    from fennel.datasets import dataset, field, index
+    from fennel.datasets import dataset, field
     from fennel.connectors import source, Webhook
     from fennel.featuresets import featureset, feature, extractor
     from fennel.lib import inputs, outputs
@@ -67,8 +67,7 @@ def test_incremental(client):
     webhook = Webhook(name="some_webhook")
 
     @source(webhook.endpoint("endpoint"), disorder="14d", cdc="upsert")
-    @index
-    @dataset
+    @dataset(index=True)
     class Transaction:
         txid: int = field(key=True)
         amount: int
