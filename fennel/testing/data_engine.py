@@ -222,13 +222,14 @@ class DataEngine(object):
     def add_datasets(
         self,
         datasets: List[Dataset],
-        incremental=False,
+        incremental: bool = False,
         env: Optional[str] = None,
     ):
         """
         This method is used during sync to add datasets to the data engine.
         Args:
-            datasets: List[Datasets] - List of datasets to add to the data engine
+            incremental: bool - whether to incrementally add the dataset or not.
+            datasets: List[Datasets] - List of datasets to add to the data engine.
             env: Optional[str] - Tier against which datasets will be added.
         Returns:
             None
@@ -237,7 +238,7 @@ class DataEngine(object):
         for dataset in datasets:
             core_dataset = dataset_to_proto(dataset)
             if len(dataset._pipelines) == 0:
-                srcs = self._process_data_connector(dataset, env)
+                srcs = self._process_data_connector(dataset, incremental, env)
             else:
                 srcs = []
 
@@ -253,6 +254,19 @@ class DataEngine(object):
                     srcs=srcs,
                     erased_keys=[],
                 )
+            else:
+                older_core_dataset = self.datasets[dataset._name].core_dataset
+                if core_dataset.version > older_core_dataset.version:
+                    # Reset the things related to the dataset because the version increased,
+                    # could be only possible via incremental.
+                    self.datasets[dataset._name] = _Dataset(
+                        fields=fields,
+                        is_source_dataset=is_source_dataset,
+                        core_dataset=core_dataset,
+                        dataset=dataset,
+                        srcs=srcs,
+                        erased_keys=[],
+                    )
 
             selected_pipelines = [
                 x for x in dataset._pipelines if x.env.is_entity_selected(env)
@@ -263,7 +277,8 @@ class DataEngine(object):
                     input_datasets_for_pipelines[input._name].append(
                         f"{pipeline._dataset_name}.{pipeline.name}"
                     )
-                    self.dataset_listeners[input._name].append(pipeline)
+                    if pipeline not in self.dataset_listeners[input._name]:
+                        self.dataset_listeners[input._name].append(pipeline)
 
         # Check that input_datasets_for_pipelines is a subset of self.datasets.
         for ds, pipelines in input_datasets_for_pipelines.items():
@@ -697,7 +712,7 @@ class DataEngine(object):
         for pipeline in self.dataset_listeners[dataset_name]:
             executor = Executor(
                 {
-                    name: self.datasets[name].data
+                    name: copy.deepcopy(self.datasets[name].data)
                     for name in self.datasets
                     if isinstance(self.datasets[name].data, pd.DataFrame)
                 }
@@ -779,7 +794,10 @@ class DataEngine(object):
             self.datasets[dataset_name].data = df.sort_values(timestamp_field)
 
     def _process_data_connector(
-        self, dataset: Dataset, env: Optional[str] = None
+        self,
+        dataset: Dataset,
+        incremental: bool = False,
+        env: Optional[str] = None,
     ) -> List[_SrcInfo]:
         def internal_webhook_present(
             srcs: List[DataSource], internal_webhook
@@ -819,9 +837,14 @@ class DataEngine(object):
             if isinstance(source, connectors.WebhookConnector):
                 src = source.data_source
                 webhook_endpoint = f"{src.name}:{source.endpoint}"
-                self.webhook_to_dataset_map[webhook_endpoint].append(
-                    dataset._name
-                )
+                if (
+                    webhook_endpoint not in self.webhook_to_dataset_map
+                    or dataset._name
+                    not in self.webhook_to_dataset_map[webhook_endpoint]
+                ):
+                    self.webhook_to_dataset_map[webhook_endpoint].append(
+                        dataset._name
+                    )
                 webhook_sources.append(
                     _SrcInfo(
                         webhook_endpoint,

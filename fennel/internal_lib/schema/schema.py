@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import re
 import typing
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal as PythonDecimal
 from typing import (
     Union,
@@ -163,6 +163,8 @@ def get_datatype(type_: Any) -> schema_proto.DataType:
         return schema_proto.DataType(
             timestamp_type=schema_proto.TimestampType()
         )
+    elif type_ is date:
+        return schema_proto.DataType(date_type=schema_proto.DateType())
     elif type_ is bool or type_ == pd.BooleanDtype:
         return schema_proto.DataType(bool_type=schema_proto.BoolType())
     elif get_origin(type_) is list:
@@ -260,6 +262,8 @@ def convert_dtype_to_arrow_type(dtype: schema_proto.DataType) -> pa.DataType:
         return pa.bool_()
     elif dtype.HasField("timestamp_type"):
         return pa.timestamp("us", "UTC")
+    elif dtype.HasField("date_type"):
+        return pa.date32()
     elif dtype.HasField("decimal_type"):
         return pa.decimal128(28, dtype.decimal_type.scale)
     elif dtype.HasField("array_type"):
@@ -324,6 +328,11 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
         if type(val) is not datetime:
             raise ValueError(
                 f"Expected type datetime, got {type(val)} for value {val}"
+            )
+    elif dtype == schema_proto.DataType(date_type=schema_proto.DateType()):
+        if type(val) is not date:
+            raise ValueError(
+                f"Expected type date, got {type(val)} for value {val}"
             )
     elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
         if type(val) is not bool:
@@ -543,6 +552,18 @@ def validate_field_in_df(
                 f"`{df[name].dtype}`. Error found during "
                 f"checking schema for `{entity_name}`."
             )
+    elif dtype == schema_proto.DataType(date_type=schema_proto.DateType()):
+        if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
+            arrow_type
+        ):
+            raise ValueError(
+                f"Field `{name}` is of type date, but the "
+                f"column in the dataframe is of type "
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
+            )
+        for i, row in df[name].items():
+            validate_val_with_proto_dtype(dtype, row)
     elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
         if (
             df[name].dtype != np.bool_

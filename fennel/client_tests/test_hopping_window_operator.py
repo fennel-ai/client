@@ -205,9 +205,14 @@ def test_hopping_window_operator(client):
             "timestamp": [datetime(2023, 1, 16, 11, 0, 11)],
         }
     )
-
-    df_session, found = Sessions.lookup(
-        ts, user_id=user_id_keys, window=window_keys
+    df_session, found = client.lookup(
+        "Sessions",
+        keys=pd.DataFrame(
+            {
+                "user_id": user_id_keys,
+                "window": window_keys,
+            }
+        ),
     )
     assert list(found) == [True]
     assert df_session.shape[0] == 1

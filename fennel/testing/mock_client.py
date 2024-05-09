@@ -4,11 +4,20 @@ import copy
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Union, Any, Tuple, Set
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Union,
+    Any,
+    Tuple,
+    Set,
+)
 
 import pandas as pd
 
 import fennel.gen.schema_pb2 as schema_proto
+import fennel.lib.secrets
 from fennel.client import Client
 from fennel.connectors.connectors import S3Connector
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
@@ -48,10 +57,14 @@ def log(dataset: Dataset, df: pd.DataFrame):
 
 
 class MockClient(Client):
-    def __init__(self, branch: Optional[str] = None):
+    def __init__(
+        self,
+        branch: Optional[str] = None,
+    ):
         if branch is None:
             branch = MAIN_BRANCH
 
+        self.secrets: Dict[str, str] = dict()
         self._branch: str = branch
         self.branches_map: Dict[str, Branch] = {}
         self.query_engine: QueryEngine = QueryEngine()
@@ -63,6 +76,9 @@ class MockClient(Client):
         if branch != MAIN_BRANCH:
             # We should always have a main branch
             self.branches_map[MAIN_BRANCH] = Branch(MAIN_BRANCH)
+
+        # Monkey Patching the secrets
+        fennel.lib.secrets.get = self._get_secret
 
     # ----------------- Debug methods -----------------------------------------
 
@@ -134,6 +150,20 @@ class MockClient(Client):
             )
             return features_new.issuperset(features_old)
 
+        def is_new_dataset_eligible(dataset_new, dataset_old):
+            """
+            This function check if dataset of same name comes in the increment mode,
+            is the new dataset eligible or not. Eligible if:
+            1. If version same and old == new then eligible.
+            2. new != old then version should be higher.
+            """
+            if dataset_new.version > dataset_old.version:
+                return True
+            elif dataset_new.version < dataset_old.version:
+                return False
+            else:
+                return dataset_old.signature() == dataset_new.signature()
+
         if incremental:
             cur_datasets = self.get_datasets()
             cur_featuresets = self.get_featuresets()
@@ -141,7 +171,24 @@ class MockClient(Client):
             if datasets is None:
                 datasets = cur_datasets
             else:
-                datasets = list(set(datasets + cur_datasets))
+                # Union both the datasets from current and new and for those
+                # which are common, ensure the new dataset has a higher version
+                for dataset in cur_datasets:
+                    for new_dataset in datasets:
+                        if dataset._name == new_dataset._name:
+                            if not is_new_dataset_eligible(
+                                new_dataset, dataset
+                            ):
+                                raise ValueError(
+                                    f"Please update version of dataset: `{new_dataset._name}`"
+                                )
+                dataset_collection = set(datasets)
+                dataset_names = set([dataset._name for dataset in datasets])
+                for dataset in cur_datasets:
+                    if dataset._name not in dataset_names:
+                        dataset_collection.add(dataset)
+                datasets = list(dataset_collection)
+
             # Union of current and new featuresets
             if featuresets is None:
                 featuresets = cur_featuresets
@@ -383,6 +430,26 @@ class MockClient(Client):
     def checkout(self, name: str):
         self._branch = name
 
+    # ----------------------- Secret API's -----------------------------------
+
+    def get_secret(self, secret_name: str) -> Optional[str]:
+        return self._get_secret(secret_name)
+
+    def add_secret(self, secret_name: str, secret_value: str):
+        self.secrets[secret_name] = secret_value
+        return FakeResponse(200, "Ok")
+
+    def update_secret(self, secret_name: str, secret_value: str) -> str:
+        self.secrets[secret_name] = secret_value
+        return FakeResponse(200, "Ok")
+
+    def delete_secret(self, secret_name: str) -> str:
+        try:
+            del self.secrets[secret_name]
+            return FakeResponse(200, "Ok")
+        except KeyError:
+            raise KeyError(f"Secret : `{secret_name}` does not exist.")
+
     # --------------- Public MockClient Specific methods -------------------
 
     def sleep(self, seconds: float = 0):
@@ -395,18 +462,6 @@ class MockClient(Client):
         return False
 
     # ----------------- Private methods --------------------------------------
-    def _parse_datetime(self, value: Union[int, str, datetime]) -> datetime:
-        if isinstance(value, int):
-            try:
-                return pd.to_datetime(value, unit="s")
-            except ValueError:
-                try:
-                    return pd.to_datetime(value, unit="ms")
-                except ValueError:
-                    return pd.to_datetime(value, unit="us")
-        if isinstance(value, str):
-            return pd.to_datetime(value)
-        return value
 
     def _get_branch(self) -> Branch:
         try:
@@ -457,8 +512,11 @@ class MockClient(Client):
             )
         return input_dataframe
 
-    def _reset(self):
-        self.branches_map: Dict[str, Branch] = {}
+    def _get_secret(self, secret_name: str) -> Optional[str]:
+        try:
+            return self.secrets[secret_name]
+        except KeyError:
+            raise KeyError(f"Secret : `{secret_name}` does not exist.")
 
 
 def mock(test_func):

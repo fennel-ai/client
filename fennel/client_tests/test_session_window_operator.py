@@ -193,20 +193,16 @@ def test_session_window_operator(client):
     window_keys = pd.Series(
         [
             {
-                "begin": pd.Timestamp(
-                    datetime(2023, 1, 16, 11, 0, 25, tzinfo=timezone.utc)
-                ),
-                "end": pd.Timestamp(
-                    datetime(
-                        2023,
-                        1,
-                        16,
-                        11,
-                        0,
-                        33,
-                        microsecond=1,
-                        tzinfo=timezone.utc,
-                    )
+                "begin": datetime(2023, 1, 16, 11, 0, 25, tzinfo=timezone.utc),
+                "end": datetime(
+                    2023,
+                    1,
+                    16,
+                    11,
+                    0,
+                    33,
+                    microsecond=1,
+                    tzinfo=timezone.utc,
                 ),
             }
         ]
@@ -218,9 +214,14 @@ def test_session_window_operator(client):
             "timestamp": [datetime(2023, 1, 16, 11, 0, 11)],
         }
     )
-
-    df_session, _ = Sessions.lookup(
-        ts, user_id=user_id_keys, window=window_keys
+    df_session, _ = client.lookup(
+        "Sessions",
+        keys=pd.DataFrame(
+            {
+                "user_id": user_id_keys,
+                "window": window_keys,
+            }
+        ),
     )
     assert df_session.shape[0] == 1
     assert list(df_session["user_id"].values) == [1]

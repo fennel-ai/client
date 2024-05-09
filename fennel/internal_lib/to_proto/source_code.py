@@ -211,7 +211,7 @@ def get_all_imports() -> str:
         "import json",
         "import os",
         "import sys",
-        "from datetime import datetime",
+        "from datetime import datetime, date",
         "import time",
         "import random",
         "import math",
@@ -234,6 +234,7 @@ def get_all_imports() -> str:
         "from fennel.datasets.aggregate import *",
         "from fennel.lib.includes import includes",
         "from fennel.lib.metadata import meta",
+        "from fennel.lib import secrets",
         "from fennel.datasets.datasets import dataset_lookup",
     ]
 
