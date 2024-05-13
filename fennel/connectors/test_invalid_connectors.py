@@ -465,12 +465,6 @@ def test_invalid_s3_format():
         s3.bucket(bucket_name="bucket", prefix="prefix", format="py")
     assert "format must be either" in str(e.value)
 
-    with pytest.raises(Exception) as e:
-        s3.bucket(
-            bucket_name="bucket", prefix="prefix", format="csv", delimiter="  "
-        )
-    assert "delimiter must be one of" in str(e.value)
-
 
 def test_invalid_s3_path():
     # Exactly one of path and prefix are allowed

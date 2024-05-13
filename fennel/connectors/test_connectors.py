@@ -6,6 +6,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
+from fennel.connectors.connectors import CSV
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.lib import meta
 from fennel.lib.params import inputs
@@ -844,7 +845,6 @@ def test_multiple_sources():
                 "bucket": "all_ratings",
                 "pathPrefix": "prod/apac/",
                 "pathSuffix": "",
-                "delimiter": ",",
                 "format": "delta",
                 "preSorted": True,
                 "db": {
@@ -859,7 +859,6 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetS3",
         "dsVersion": 1,
         "every": "3600s",
-        "cdc": "Upsert",
         "cdc": "Upsert",
         "disorder": "172800s",
         "startingFrom": "2021-08-10T00:00:00Z",
@@ -1666,6 +1665,7 @@ def test_console_source():
         s3_console.bucket(
             bucket_name="all_ratings",
             prefix="prod/apac/",
+            format=CSV(delimiter=""),
         ),
         disorder="14d",
         cdc="upsert",
@@ -1692,8 +1692,8 @@ def test_console_source():
                 "bucket": "all_ratings",
                 "pathPrefix": "prod/apac/",
                 "pathSuffix": "",
-                "delimiter": ",",
                 "format": "csv",
+                "delimiter": "\x01",
                 "db": {"s3": {}, "name": "s3_test"},
             }
         },
@@ -1721,6 +1721,7 @@ def test_s3_source_with_path():
         s3_console.bucket(
             bucket_name="all_ratings",
             path="prod/data_type=events/*/date=%Y%m%d/hour=%H/*/*.csv",
+            format=CSV(delimiter="\x01"),
         ),
         disorder="14d",
         cdc="upsert",
@@ -1747,7 +1748,7 @@ def test_s3_source_with_path():
                 "bucket": "all_ratings",
                 "pathPrefix": "prod/data_type=events/",
                 "pathSuffix": "*/date=%Y%m%d/hour=%H/*/*.csv",
-                "delimiter": ",",
+                "delimiter": "",
                 "format": "csv",
                 "db": {"s3": {}, "name": "s3_test"},
             }
@@ -1778,6 +1779,10 @@ def test_s3_source_with_path():
             bucket_name="all_ratings",
             path="prod/data_type=events/*/date=%Y%m%d/hour=%H/*/*.csv",
             spread="6h",
+            format=CSV(
+                delimiter="\x01",
+                headers=["user_id", "timestamp", "a", "b", "c"],
+            ),
         ),
         disorder="14d",
         cdc="upsert",
@@ -1804,7 +1809,8 @@ def test_s3_source_with_path():
                 "bucket": "all_ratings",
                 "pathPrefix": "prod/data_type=events/",
                 "pathSuffix": "*/date=%Y%m%d/hour=%H/*/*.csv",
-                "delimiter": ",",
+                "delimiter": "\x01",
+                "headers": ["user_id", "timestamp", "a", "b", "c"],
                 "format": "csv",
                 "spread": "21600s",
                 "db": {"s3": {}, "name": "s3_test"},

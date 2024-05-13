@@ -201,7 +201,7 @@ class Reference(google.protobuf.message.Message):
         ValueType = typing.NewType("ValueType", builtins.int)
         V: typing_extensions.TypeAlias = ValueType
 
-    class _ExtDBTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Reference._ExtDBType.ValueType], builtins.type):
+    class _ExtDBTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Reference._ExtDBType.ValueType], builtins.type):  # noqa: F821
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
         MYSQL: Reference._ExtDBType.ValueType  # 0
         POSTGRES: Reference._ExtDBType.ValueType  # 1
@@ -597,17 +597,21 @@ class PostgresTable(google.protobuf.message.Message):
 
     DB_FIELD_NUMBER: builtins.int
     TABLE_NAME_FIELD_NUMBER: builtins.int
+    SLOT_NAME_FIELD_NUMBER: builtins.int
     @property
     def db(self) -> global___ExtDatabase: ...
     table_name: builtins.str
+    slot_name: builtins.str
     def __init__(
         self,
         *,
         db: global___ExtDatabase | None = ...,
         table_name: builtins.str = ...,
+        slot_name: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "table_name", b"table_name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_slot_name", b"_slot_name", "db", b"db", "slot_name", b"slot_name"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_slot_name", b"_slot_name", "db", b"db", "slot_name", b"slot_name", "table_name", b"table_name"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_slot_name", b"_slot_name"]) -> typing_extensions.Literal["slot_name"] | None: ...
 
 global___PostgresTable = PostgresTable
 
@@ -623,6 +627,7 @@ class S3Table(google.protobuf.message.Message):
     PRE_SORTED_FIELD_NUMBER: builtins.int
     PATH_SUFFIX_FIELD_NUMBER: builtins.int
     SPREAD_FIELD_NUMBER: builtins.int
+    HEADERS_FIELD_NUMBER: builtins.int
     bucket: builtins.str
     path_prefix: builtins.str
     delimiter: builtins.str
@@ -633,6 +638,8 @@ class S3Table(google.protobuf.message.Message):
     path_suffix: builtins.str
     @property
     def spread(self) -> google.protobuf.duration_pb2.Duration: ...
+    @property
+    def headers(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
@@ -644,9 +651,10 @@ class S3Table(google.protobuf.message.Message):
         pre_sorted: builtins.bool = ...,
         path_suffix: builtins.str = ...,
         spread: google.protobuf.duration_pb2.Duration | None = ...,
+        headers: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_spread", b"_spread", "db", b"db", "spread", b"spread"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_spread", b"_spread", "bucket", b"bucket", "db", b"db", "delimiter", b"delimiter", "format", b"format", "path_prefix", b"path_prefix", "path_suffix", b"path_suffix", "pre_sorted", b"pre_sorted", "spread", b"spread"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_spread", b"_spread", "bucket", b"bucket", "db", b"db", "delimiter", b"delimiter", "format", b"format", "headers", b"headers", "path_prefix", b"path_prefix", "path_suffix", b"path_suffix", "pre_sorted", b"pre_sorted", "spread", b"spread"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_spread", b"_spread"]) -> typing_extensions.Literal["spread"] | None: ...
 
 global___S3Table = S3Table

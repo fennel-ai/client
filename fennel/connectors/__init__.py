@@ -23,6 +23,7 @@ from fennel.connectors.connectors import (
     Kinesis,
     KinesisConnector,
     Avro,
+    CSV,
     Ref,
     ref,
     PreProcValue,

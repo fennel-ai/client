@@ -22,6 +22,7 @@ import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.services_pb2 as services_proto
 import fennel.connectors as connectors
+from fennel.connectors.connectors import CSV
 from fennel.datasets import Dataset, Pipeline, Field
 from fennel.datasets.datasets import (
     indices_from_ds,
@@ -921,7 +922,6 @@ def _s3_conn_to_source_proto(
         bucket=connector.bucket_name,
         path_prefix=connector.path_prefix,
         path_suffix=connector.path_suffix,
-        delimiter=connector.delimiter,
         format=connector.format,
         presorted=connector.presorted,
         spread=connector.spread,
@@ -967,8 +967,7 @@ def _s3_to_ext_table_proto(
     bucket: Optional[str],
     path_prefix: Optional[str],
     path_suffix: Optional[str],
-    delimiter: str,
-    format: str,
+    format: str | CSV,
     presorted: bool,
     spread: Optional[Duration],
 ) -> connector_proto.ExtTable:
@@ -978,6 +977,16 @@ def _s3_to_ext_table_proto(
         raise ValueError("prefix or path must be specified")
     if not path_suffix:
         path_suffix = ""
+
+    delimiter = None
+    headers = None
+
+    if isinstance(format, str):
+        format = format.lower()
+    elif isinstance(format, CSV):
+        delimiter = format.delimiter
+        headers = format.headers
+        format = "csv"
 
     return connector_proto.ExtTable(
         s3_table=connector_proto.S3Table(
@@ -989,6 +998,7 @@ def _s3_to_ext_table_proto(
             pre_sorted=presorted,
             path_suffix=path_suffix,
             spread=to_duration_proto(spread),
+            headers=headers,
         )
     )
 
