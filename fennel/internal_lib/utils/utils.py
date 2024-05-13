@@ -80,11 +80,12 @@ def parse_datetime(value: Union[int, str, datetime]) -> datetime:
     else:
         value = pd.to_datetime(value)
 
-    if value.tzinfo is not None:  # type: ignore
-        if str(value.tzinfo) != "UTC":  # type: ignore
-            value = value.tz_convert("UTC")  # type: ignore
-    else:
-        value = value.tz_localize("UTC")  # type: ignore
+    if value is not None and value is not pd.NA and value is not pd.NaT:
+        if value.tzinfo is not None:  # type: ignore
+            if str(value.tzinfo) != "UTC":  # type: ignore
+                value = value.tz_convert("UTC")  # type: ignore
+        else:
+            value = value.tz_localize("UTC")  # type: ignore
     return value  # type: ignore
 
 

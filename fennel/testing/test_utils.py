@@ -170,7 +170,7 @@ def cast_col_to_pandas_dtype(
     elif dtype.HasField("bool_type"):
         return series.astype(pd.BooleanDtype())
     elif dtype.HasField("timestamp_type"):
-        return pd.to_datetime(series)
+        return pd.to_datetime(series.apply(parse_datetime), utc=True)
     elif dtype.HasField("one_of_type"):
         return cast_col_to_pandas_dtype(series, dtype.one_of_type.of)
     elif dtype.HasField("between_type"):
@@ -339,7 +339,7 @@ def cast_df_to_schema(
         )
     try:
         df[dsschema.timestamp] = pd.to_datetime(
-            df[dsschema.timestamp].apply(lambda x: parse_datetime(x))
+            df[dsschema.timestamp].apply(lambda x: parse_datetime(x)), utc=True
         ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
     except Exception as e:
         raise ValueError(
