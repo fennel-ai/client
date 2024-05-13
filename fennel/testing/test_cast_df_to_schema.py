@@ -5,15 +5,19 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 
-from fennel import dataset
+from fennel.datasets import dataset, field
 from fennel.dtypes import between, oneof, regex
+from fennel.featuresets import featureset, feature
 from fennel.gen import schema_pb2 as schema_proto
 from fennel.internal_lib.to_proto.to_proto import fields_to_dsschema
+from fennel.testing import mock
 from fennel.testing.test_utils import (
     cast_df_to_schema,
     cast_col_to_arrow_dtype,
     cast_col_to_pandas_dtype,
 )
+
+__owner__ = "nitin@fennel.ai"
 
 
 # Example tests
@@ -547,3 +551,32 @@ def test_cast_col_to_pandas_dtype():
 
     assert pandas_dtype_data.dtype == object
     assert pandas_dtype_data.tolist()[0] == value
+
+
+@mock
+def test_casting_empty_dataframe(client):
+    @dataset(index=True)
+    class UserPhone:
+        user_id: int = field(key=True)
+        phone_number: int
+        created_at: datetime = field(timestamp=True)
+        updated_at: datetime
+
+    @featureset
+    class UserFeatures:
+        user_id: int
+        latest_phone_update: Optional[datetime] = feature(UserPhone.updated_at)
+
+    client.commit(
+        datasets=[UserPhone], featuresets=[UserFeatures], message="first-commit"
+    )
+
+    feature_df = client.query(
+        outputs=[UserFeatures.latest_phone_update],
+        inputs=[UserFeatures.user_id],
+        input_dataframe=pd.DataFrame({"UserFeatures.user_id": [1, 2]}),
+    )
+    assert feature_df["UserFeatures.latest_phone_update"].tolist() == [
+        pd.NaT,
+        pd.NaT,
+    ]
