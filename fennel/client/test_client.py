@@ -3,7 +3,7 @@
 import pytest
 
 from fennel.client.client import _s3_connector_dict, _validate_branch_name
-from fennel.connectors.connectors import S3
+from fennel.connectors.connectors import S3, CSV
 from fennel.testing import mock
 
 
@@ -31,7 +31,7 @@ def test_s3_connector_dict():
     # Test with creds
     s3_src.aws_access_key_id = "access_key"
     s3_src.aws_secret_access_key = "secret_key"
-    s3_conn = s3_src.bucket("bucket", "prefix", delimiter="\t")
+    s3_conn = s3_src.bucket("bucket", "prefix", format=CSV(delimiter="\t"))
     res = _s3_connector_dict(s3_conn)
     expected = {
         "bucket": "bucket",

@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.3.9] - 2024-05-13
+- Add support for head less csv and arbitrary delimiter.
+
 ## [1.3.8] - 2024-05-10
 - Fix datetime casting issue for empty dataframe.
 

@@ -5,6 +5,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
 from typing import Literal
+from dataclasses import dataclass
 
 from fennel._vendor.pydantic import BaseModel, Field  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
@@ -211,6 +212,12 @@ class SQLSource(DataSource):
         return ["table", "cursor"]
 
 
+@dataclass
+class CSV:
+    delimiter: str = ","
+    headers: Optional[List[str]] = None
+
+
 class S3(DataSource):
     aws_access_key_id: Optional[str]
     aws_secret_access_key: Optional[str]
@@ -220,8 +227,7 @@ class S3(DataSource):
         bucket_name: str,
         prefix: Optional[str] = None,
         path: Optional[str] = None,
-        delimiter: str = ",",
-        format: str = "csv",
+        format: str | CSV = CSV(delimiter=",", headers=None),
         presorted: bool = False,
         spread: Optional[Duration] = None,
     ) -> S3Connector:
@@ -230,7 +236,6 @@ class S3(DataSource):
             bucket_name,
             prefix,
             path,
-            delimiter,
             format,
             presorted,
             spread,
@@ -573,7 +578,7 @@ class S3Connector(DataConnector):
     path_prefix: str
     path_suffix: Optional[str] = None
     delimiter: str = ","
-    format: str = "csv"
+    format: str | CSV = CSV(delimiter=",", headers=None)
     presorted: bool = False
     spread: Optional[Duration] = None
 
@@ -583,31 +588,26 @@ class S3Connector(DataConnector):
         bucket_name,
         path_prefix,
         path,
-        delimiter,
         format,
         presorted,
         spread,
     ):
         self.data_source = data_source
         self.bucket_name = bucket_name
-        self.delimiter = delimiter
-        self.format = format.lower()
+        self.format = format
         self.presorted = presorted
 
         if self.format not in [
-            "csv",
             "json",
             "parquet",
             "hudi",
             "delta",
-        ]:
+        ] and not isinstance(self.format, CSV):
             raise (
                 ValueError(
                     "format must be either csv, json, parquet, hudi, delta"
                 )
             )
-        if self.format == "csv" and self.delimiter not in [",", "\t", "|"]:
-            raise (ValueError("delimiter must be one of [',', '\t', '|']"))
 
         # Only one of a prefix or path pattern can be specified. If a path is specified,
         # the prefix and suffix are parsed and validated from it

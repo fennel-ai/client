@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 import fennel._vendor.requests as requests  # type: ignore
-from fennel.connectors import S3Connector
+from fennel.connectors import S3Connector, CSV
 from fennel.datasets import Dataset
 from fennel.featuresets import Featureset, Feature, is_valid_feature
 from fennel.internal_lib.schema import (
@@ -1007,8 +1007,10 @@ def _s3_connector_dict(s3: S3Connector) -> Dict[str, Any]:
     s3_table["bucket"] = s3.bucket_name
     s3_table["path_prefix"] = s3.path_prefix
     s3_table["pre_sorted"] = s3.presorted
-    if s3.format == "csv":
-        s3_table["format"] = {"csv": {"delimiter": ord(s3.delimiter)}}
+    if isinstance(s3.format, CSV):
+        s3_table["format"] = {"csv": {"delimiter": ord(s3.format.delimiter)}}
+        if s3.format.headers is not None:
+            s3_table["format"]["csv"]["headers"] = s3.format.headers
     else:
         s3_table["format"] = s3.format.lower()
     s3_table["db"] = {
