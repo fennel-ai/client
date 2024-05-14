@@ -66,8 +66,6 @@ class DailyStats:
             user_dataset.assign(
                 "activity_date", date, lambda x: x["timestamp"].dt.date
             )
-            .groupby("user_id", "activity_date")
-            .latest()
             .assign(
                 "window",
                 Window,
@@ -77,6 +75,8 @@ class DailyStats:
             )
             .join(daily_session, on=["user_id", "window"], how="left")
             .rename({"count": "count_app_events"})
+            .groupby("user_id", "activity_date")
+            .latest()
         )
 
 
@@ -116,20 +116,19 @@ def test_window_join(client):
     )
     response = client.log("fennel_webhook", "AppEvent", app_event)
     assert response.status_code == requests.codes.OK, response.json()
-    client.sleep()
 
     user_dataset = pd.DataFrame(
         {
             "user_id": [1] * 10,
             "timestamp": [
-                now,
-                now,
+                now_2d,
+                now_2d,
                 now_2d,
                 now_2d,
                 now_1d,
-                now_2d,
-                now_2d,
                 now_1d,
+                now,
+                now,
                 now,
                 now,
             ],
@@ -137,7 +136,7 @@ def test_window_join(client):
     )
     response = client.log("fennel_webhook", "UserDataset", user_dataset)
     assert response.status_code == requests.codes.OK, response.json()
-    client.sleep(200)
+    client.sleep(30)
 
     df, _ = client.lookup(
         AppEventDailySession,
