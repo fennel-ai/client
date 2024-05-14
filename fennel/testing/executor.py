@@ -7,6 +7,7 @@ from typing import Any, Optional, Dict, List
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+from frozendict import frozendict
 
 import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Pipeline, Visitor, Dataset, Count, Summary
@@ -347,6 +348,12 @@ class Executor(Visitor):
 
         left_df = left_df.sort_values(by=ts_query_field)
         right_df = right_df.sort_values(by=ts_query_field)
+
+        for col in left_by:
+            # If any of the columns is a dictionary, convert it to a frozen dict
+            if left_df[col].apply(lambda x: isinstance(x, dict)).any():
+                left_df[col] = left_df[col].apply(lambda x: frozendict(x))
+
         try:
             merged_df = pd.merge_asof(
                 left=left_df,

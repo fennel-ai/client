@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Union, List, get_args, ForwardRef, Any
 import pandas as pd
 
 import fennel.gen.schema_pb2 as schema_proto
+from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.utils.utils import (
     get_origin,
     is_user_defined_class,
@@ -298,3 +299,21 @@ class Window:
 
     begin: datetime
     end: datetime
+
+
+@dataclass
+class Tumbling:
+    duration: str
+
+    def __post_init__(self):
+        duration_to_timedelta(self.duration)
+
+
+@dataclass
+class Sliding:
+    duration: str
+    stride: str
+
+    def __post_init__(self):
+        duration_to_timedelta(self.duration)
+        duration_to_timedelta(self.stride)

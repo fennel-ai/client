@@ -6,4 +6,6 @@ from fennel.dtypes.dtypes import (
     struct,
     Window,
     Decimal,
+    Sliding,
+    Tumbling,
 )

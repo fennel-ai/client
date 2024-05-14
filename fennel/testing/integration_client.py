@@ -16,7 +16,7 @@ try:
 
     sys.path.insert(
         0,
-        "/nix/store/04fxcggfsqq7ahgzcbv1sdrkzyd3q85v-python3-3.11.8-env/lib/python3.11/site-packages",
+        "/nix/store/39900ybniz4fb8y3wn6vfh7vj8p8d0bv-python3-3.11.5-env/lib/python3.11/site-packages",
     )
     from fennel_client_lib import HttpServer  # type: ignore
     from fennel_dataset import lookup, get_secret  # type: ignore

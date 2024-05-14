@@ -17,7 +17,7 @@ def _get_features(feature: Union[Feature, Featureset, str]) -> set:
         return {f.fqn() for f in feature}
     else:
         raise ValueError(
-            f"Unknown type for feature/featureset {feature} of"
+            f"Unknown type for feature/featureset {feature} of "
             f"type {type(feature)}"
         )
 
