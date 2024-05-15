@@ -14,18 +14,18 @@ You can also checkout end-to-end example projects [here](https://github.com/fenn
 
 ## Module Organization
 The simplest of the projects may have only four separate modules - one each for 
-datasets, featuresets, sync script, and tests.
+datasets, featuresets, commit script, and tests.
 ```bash
 fennel-project/
     | datasets.py
     | featuresets.py
-    | sync.py
+    | commit.py
     | test.py
 ```
 With this structure, as the names imply, all source & dataset definitions go 
 in `datasets.py`, all featureset definitions go in `featuresets.py`, tests go in 
-`test.py` and the script to instantiate Fennel client and make the sync request 
-goes under the `if __name__ == 'main'` block in `sync.py`.
+`test.py` and the script to instantiate Fennel client and make the commit request 
+goes under the `if __name__ == 'main'` block in `commit.py`.
 
 As the complexity grows, these modules may need to be factorized. One natural 
 approach is to convert `datasets` and `featuresets` modules to be directories 
@@ -50,7 +50,7 @@ fennel-project/
         | user.py
         | click_history.py
         | ...
-    | sync.py
+    | commit.py
     | tests / 
         | test_user.py
         | ...
@@ -81,7 +81,7 @@ fennel-project/
         | ...
     | featuresets/
         | ...
-    | sync.py
+    | commit.py
     | tests/ 
         | ...
 

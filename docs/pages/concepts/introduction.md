@@ -6,12 +6,13 @@ status: 'published'
 
 # Introduction
 
-Fennel has two core concepts -- datasets and featuresets. Let's look at both one by one
+Fennel has two core concepts - datasets and featuresets. Let's look at both one 
+by one.
 
 ## Dataset
 
-Dataset refers to a "table" of data with typed columns. Here is how a dataset is defined.&#x20;
-
+Dataset refers to a "table" of data with typed columns. Here is how a dataset is 
+defined.
 
 <pre snippet="concepts/introduction#user_dataset"></pre>
 
@@ -19,10 +20,9 @@ This dataset has four columns -- `uid` (of type int), `dob` (of type datetime),
 `country` (of type string), and `signup_time` (of type datetime). For now, 
 ignore the `field(...)` descriptors - they'd be explained soon.
 
-### Sources
-How to get data into a dataset? It's possible to hydrate datasets from external 
-data sources. First we define the external sources by providing the required 
-credentials:
+### Source
+Fennel datasets can be hydrated from external data sources. To do that, first 
+we define the external sources by providing the required credentials:
 
 ```python
 from fennel.connectors import source, Postgres, Kafka
@@ -34,7 +34,6 @@ kafka = Kafka(... < credentials >..)
 Then we define the datasets that will hydrate themselves from these sources:
 
 <pre snippet="concepts/introduction#external_data_sources"></pre>
-
 The first dataset will poll postgres table for new updates every minute and 
 hydrate itself with new data. The second dataset hydrates itself from a kafka 
 topic. There are few more kwargs set here like `disorder` and `cdc` - ignore 
@@ -42,16 +41,27 @@ them for now - though if you are interested, you can read about them and sources
 in general [here](/concepts/source). 
 
 Besides Postgres and Kafka, Fennel supports connectors with many other sources. 
-See [full list](/api-reference/connectors).
+See the [full list](/api-reference/connectors).
+
+
+### Pipeline
+Once you have one or more "sourced" datasets, you can derive new datasets from 
+existing datasets by writing simple declarative Python code - it's 
+unimaginatively called a pipeline. Let's look at one such pipeline:
+
+<pre snippet="concepts/introduction#pipeline" highlight="3"></pre>
 
 ### Index
-It's possible to do low latency lookups on these datasets using dataset keys. 
-Earlier you were asked to ignore the field descriptors -- it's time to revisit 
+It's also possible to do low latency lookups on Fennel datasets using dataset 
+keys. Earlier you were asked to ignore the field descriptors. It's time to revisit 
 those. If you look carefully, line with `field(key=True)` above defines `uid` 
-to be a key (dataset can have multi-column keys too). Keyed datasets can be
-indexed by applying `@index` decorator - this tells Fennel to build some auxiliary
-data structure to look up the value of a row with a given uid (or more generally
-the value of all the key fields).
+to be a key - similar to primary keys in databases. Note that Fennel datasets 
+can have multi-column keys too. 
+
+Keyed datasets can be "indexed" by setting `index=True` in the `dataset` 
+decorator - this tells Fennel to build some auxiliary data structure to look up 
+the value of a row with a given uid (or more generally the value of all the key 
+fields).
 
 <pre snippet="concepts/introduction#dataset_lookup"></pre>
 
@@ -64,19 +74,11 @@ of data is tagged with whatever field is tagged with `field(timestamp=True)`. In
 fact, this ability to track time evolution enables Fennel to use the same code 
 to generate both online and offline features.
 
-### Pipeline
-Once you have one or more "sourced" datasets, you can derive new datasets from 
-existing datasets by writing simple declarative Python code - it's 
-unimaginatively called a pipeline. Let's look at one such pipeline:
-
-<pre snippet="concepts/introduction#pipeline" highlight="3"></pre>
-
+## Featureset
 So we can define datasets, source them from external datasets, derive them 
 via pipelines, and do temporal primary key lookups on them via indices. What has 
 all this to do with features? How to write a feature in Fennel? Well, this is 
 where we have to talk about the second main concept - featureset.
-
-## Featureset
 
 A featureset, as the name implies, is just a collection of features. Features in 
 Fennel, however, are different from features in many other systems - they don't 
@@ -84,7 +86,7 @@ represent stored data but instead are backed by a stateless Python function that
 knows how to extract it - called an _extractor_. Let's define a feature that 
 computes user's age using the datasets we defined above.
 
-Here is how a really simple featureset looks:
+Here is how a simple featureset looks:
 
 <pre snippet="concepts/introduction#featureset" highlight="8-15"></pre>
 
@@ -124,7 +126,6 @@ And once you have a client object, you'd issue a `commit` request to commit your
 dataset/featureset definitions with the server:
 
 <pre snippet="concepts/introduction#commit"></pre>
-
 
 This makes a POST request to Fennel and commits the dataset on the server. Fennel 
 may reject this commit request if there is any error with any dataset or 

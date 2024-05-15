@@ -34,10 +34,9 @@ def test_basic_dataset():
 def test_dataset_index_basic():
     def _basic():
         # docsnip dataset_index_basic
-        from fennel.datasets import dataset, field, index
+        from fennel.datasets import dataset, field
 
-        @index  # docsnip-highlight
-        @dataset
+        @dataset(index=True)  # docsnip-highlight
         class User:
             uid: int = field(key=True)  # docsnip-highlight
             dob: datetime
@@ -48,10 +47,9 @@ def test_dataset_index_basic():
 
     def _advanced():
         # docsnip dataset_index_advanced
-        from fennel.datasets import dataset, field, index
+        from fennel.datasets import dataset, field
 
-        @index(online=True, offline=None)  # docsnip-highlight
-        @dataset
+        @dataset(index=True, offline=None)  # docsnip-highlight
         class User:
             uid: int = field(key=True)
             dob: datetime
@@ -67,10 +65,9 @@ def test_dataset_index_basic():
 def test_invalid_index():
     with pytest.raises(Exception):
         # docsnip invalid_index
-        from fennel.datasets import dataset, index
+        from fennel.datasets import dataset
 
-        @index  # docsnip-highlight
-        @dataset
+        @dataset(index=True)  # docsnip-highlight
         class UserValidDataset:
             uid: int
             country: str

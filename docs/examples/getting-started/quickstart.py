@@ -1,29 +1,16 @@
 # docsnip imports
 from datetime import datetime, timedelta, timezone
+import pandas as pd
 from typing import Optional
 
-import pandas as pd
-import requests
 
-from fennel.connectors import (
-    source,
-    Mongo,
-    Postgres,
-    Snowflake,
-    Kafka,
-    Webhook,
-    Redshift,
-    PubSub,
-)
+from fennel.connectors import source, Postgres, Kafka, Webhook
 from fennel.datasets import dataset, pipeline, field, Dataset, Count
 from fennel.featuresets import featureset, extractor
-from fennel.lib import (
-    inputs,
-    outputs,
-    expectations,
-    expect_column_values_to_be_between,
-)
+from fennel.lib import inputs, outputs
+from fennel.lib import expectations, expect_column_values_to_be_between
 from fennel.testing import MockClient, log
+
 
 __owner__ = "nikhil@fennel.ai"
 
@@ -31,12 +18,8 @@ __owner__ = "nikhil@fennel.ai"
 
 # docsnip connectors
 postgres = Postgres.get(name="my_rdbms")
-warehouse = Snowflake.get(name="my_warehouse")
 kafka = Kafka.get(name="my_kafka")
 webhook = Webhook(name="fennel_webhook")
-redshift = Redshift.get(name="my_redshift")
-mongo = Mongo.get(name="my_mongo")
-pubsub = PubSub.get(name="my_pubsub")
 
 # /docsnip
 
@@ -77,7 +60,7 @@ class Order:
 
 
 # docsnip pipelines
-@dataset(index=True)
+@dataset(index=True, version=1)
 class UserSellerOrders:
     uid: int = field(key=True)
     seller_id: int = field(key=True)
