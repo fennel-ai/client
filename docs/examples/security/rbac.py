@@ -7,8 +7,8 @@ __owner__ = "nikhil@fennel.ai"
 @mock
 def test_tag_propagation(client):
 
-    from fennel.datasets import dataset, field, index, Dataset, pipeline, Sum
-    from fennel.featuresets import featureset, extractor, feature as F
+    from fennel.datasets import dataset, field, Dataset, pipeline, Sum
+    from fennel.featuresets import featureset, feature as F
     from fennel.lib import inputs, meta
     from fennel.connectors import source, Webhook
 
@@ -16,9 +16,8 @@ def test_tag_propagation(client):
 
     # docsnip tag_propagation
     @source(webhook.endpoint("movie"), disorder="1d", cdc="upsert")
-    @index
     @meta(tags=["PII"])  # docsnip-highlight
-    @dataset
+    @dataset(index=True)
     class User:
         uid: int = field(key=True)
         city: str
@@ -33,8 +32,7 @@ def test_tag_propagation(client):
         at: datetime
 
     @meta(tags=["~PII"])  # docsnip-highlight
-    @index
-    @dataset
+    @dataset(index=True)
     class TxnByCity:
         city: str = field(key=True)
         total: float
