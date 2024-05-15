@@ -7,25 +7,45 @@ status: 'published'
 
 # SCIM Provisioning
 
-Fennel's SCIM integration automates adding/removing Users from your Organization and granting access to Fennel Roles by leveraging Okta groups. Each group configured in Okta and assigned to the Fennel App, will create a new role and that you can manage with the Console Interface.
+Fennel supports SCIM to allow external identity providers (like Okta) to
+automatically provision/deprovision user accounts in Fennel. Fennel's SCIM 
+integration can also be used to assign provisioned users specific Fennel roles.
 
-## SCIM Setup
+This is typically used to trigger automatic account & role provisioning (or deprovisioning)
+when people join (or leave) your organization and/or appropriate teams.
 
-- Setup [Fennel SAML app integration on Okta]("/security-compliance/sso")
-- Enable SCIM Provisioning on your Fennel Console by toggling the "Enable SCIM" button under your SSO configuration in the Settings Page. You will see the following generated:
-    - SCIM endpoint : Will be used as the connector base URL
-    - SCIM authentication token : This token is highly sensitive, and it's crucial to safeguard it from any potential leaks. It will be utilized for configuring SCIM authentication in Okta.
-    
+## Okta SCIM Setup
+
+Fennel leverages Okta groups to manage user provisioning and role assignment.
+Each group configured in Okta and assigned to the Fennel App will create a new 
+role. Here are the steps for configuring SCIM on Okta:
+
+
+1. Setup [Fennel SAML app integration on Okta](/security-compliance/sso)
+2. Open your Fennel console, visit Settings -> SSO and enable SCIM Provisioning 
+   by toggling the "Enable SCIM" button. Keep the following generated fields
+   handy for further steps:
+    - SCIM endpoint : used as the connector base URL, typically looks like
+        `https://your.cluster.fennel.ai/scim`
+    - SCIM authentication token : used to configuring SCIM authentication in Okta. 
+      Note that this token is highly sensitive, and it's crucial to safeguard it 
+      from any potential leaks. 
     ![Diagram](/assets/scim_console.png)
-- Enable SCIM Provisioning on your Okta app with the following settings:
-    - SCIM Connector base URL: SCIM URL generated in the above step (Example: `https://test.aws.fennel.ai/scim/`)
+
+3. Enable SCIM Provisioning on your Okta app with the following settings:
+    - SCIM Connector base URL: use SCIM endpoint from the above step
     - Unique identifier field for users: `email`
     - Supported provisioning actions:
         - Push New Users
         - Push Profile Updates
         - Push Groups
-    - Select the "HTTP Header" Authentication Mode and copy the token from Fennel Console into the Authorization Bearer field.
+    - Select the "HTTP Header" Authentication Mode and copy the SCIM 
+      authenetication token from step 2 above into the "Authorization Bearer" field.
 
     ![Diagram](/assets/scim_okta.png)
 
-For any specific role/user management requests, contact the Fennel support team.
+And that's it!
+
+Note that once any Fennel role is created by Okta, its specific access levels
+can be configured in Fennel Console. And you can always contact Fennel support for 
+any issues related to role/user management.
