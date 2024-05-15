@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from fennel.connectors import Webhook
 from fennel.datasets import dataset, field
 from fennel.testing import mock
 
@@ -31,13 +30,12 @@ def test_overview(client):
 
     postgres = Postgres.get(name="postgres")
     kafka = Kafka.get(name="kafka")
-    webhook = Webhook(name="fennel_webhook")
 
     # docsnip external_data_sources
     user_table = postgres.table("user", cursor="signup_at")
 
     # docsnip-highlight next-line
-    @source(user_table, every="1m", disorder="7d", cdc="upsert", env="prod")
+    @source(user_table, every="1m", disorder="7d", cdc="upsert")
     @dataset(index=True)
     class User:
         uid: int = field(key=True)
@@ -46,7 +44,7 @@ def test_overview(client):
         signup_at: datetime = field(timestamp=True)
 
     # docsnip-highlight next-line
-    @source(kafka.topic("txn"), disorder="1d", cdc="append", env="prod")
+    @source(kafka.topic("txn"), disorder="1d", cdc="append")
     @dataset
     class Transaction:
         uid: int
@@ -98,7 +96,6 @@ def test_overview(client):
         uid: int
         country: str
         age: float
-        dob: datetime
 
         # docsnip-highlight start
         @extractor(deps=[User])
@@ -122,31 +119,13 @@ def test_overview(client):
 
     # /docsnip
 
-    User = source(
-        webhook.endpoint("User"), disorder="14d", cdc="upsert", env="local"
-    )(User)
-    Transaction = source(
-        webhook.endpoint("Transaction"),
-        disorder="14d",
-        cdc="append",
-        env="local",
-    )(Transaction)
-
-    def _unused():
-        # docsnip commit
-        client.commit(
-            message="user: add transaction datasets; first few features",
-            datasets=[User, Transaction, UserTransactionsAbroad],
-            featuresets=[UserFeature],
-        )
-        # /docsnip
-
+    # docsnip commit
     client.commit(
         message="user: add transaction datasets; first few features",
         datasets=[User, Transaction, UserTransactionsAbroad],
         featuresets=[UserFeature],
-        env="local",
     )
+    # /docsnip
 
     now = datetime.now(timezone.utc)
     dob = now - timedelta(days=365 * 30)
@@ -157,9 +136,9 @@ def test_overview(client):
     ]
 
     df = pd.DataFrame(data, columns=["uid", "dob", "country", "signup_at"])
+    from fennel.testing import log
 
-    response = client.log("fennel_webhook", "User", df)
-    assert response.status_code == 200, response.json()
+    log(User, df)
 
     data = [
         [1, 100, "US", 1, now],
@@ -182,8 +161,7 @@ def test_overview(client):
             "timestamp",
         ],
     )
-    res = client.log("fennel_webhook", "Transaction", df)
-    assert res.status_code == 200, res.json()
+    log(Transaction, df)
 
     # Do a lookup on UserTransactionsAbroad
     # docsnip dataset_lookup

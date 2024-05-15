@@ -36,7 +36,7 @@ see the full list of types supported by Fennel.
 ### Schema As Subset of Source
 All the fields defined in Fennel dataset must be present in your source dataset
 though it's okay if your external data source has additional fields - they are 
-imply ignored.  In this example, it is expected that the `user` table in 
+simply ignored.  In this example, it is expected that the `user` table in 
 Postgres will have at least four columns -`uid`, `city`, `country`, and 
 `update_time` with appropriate types. 
 
@@ -45,6 +45,12 @@ convertible into right types via some parsing/casting). If ingested data
 doesn't match with the schema of the Fennel dataset, the data is discarded and 
 not admitted to the dataset. Fennel maintains logs of how often it happens and 
 it's possible to set alerts on that.
+
+Due to this, often no changes are needed to Fennel when the schema of your 
+external data changes. For instance, if you add new fields to your Postgres, those
+new fields are simply ignored by Fennel. And if you remove fields that aren't 
+referenced by Fennel datasets, nothing needs to change either.
+
 
 ### Type Matching/Casting Rules
 Here is how various types are matched from the sourced data (note that type 
@@ -77,10 +83,48 @@ else in Fennel)
 * When data is being read from arrow representations (say parquet files), `date32`
   and `date64` types are also converted to datetime (with time being UTC midnight)
 
+## Stacking Multiple Sources
+Stacking two (or more) sources on top of a dataset simply leads to the dataset
+getting hydrated from all of them. A rather common scenario where this is useful
+is when realtime data is say in Kafka but with a short retention and the archive
+is stored, say in S3. Here is one (but not the only) way of doing this:
+
+<pre snippet="concepts/source#stacked" status="success" 
+  message="Using s3 for dev and Kafka for prod"
+></pre>
+
+## Managing Different Dev / Prod Sources
+Fennel supports stacking multiple sources but selectively choosing only a subset
+to be used in a given environment. With this, you can have the same logical dataset
+get hydrated from different physical external stores in production and dev 
+envrionments.
+
+<pre snippet="concepts/source#selector"></pre>
+
+In above example, sources are given an `env` kwarg and during the [commit](/api-reference/client/commit)
+operation, env is specified to be 'prod' to select only the 'prod' sources.
+The effect of above is same as having a single prod Kafka source. If 
+with the same definition, the commit operation was modified to select for "dev"
+env, the other source would have been selected instead. 
+
+This way, sources in all environments can be defined inline with the dataset 
+definition while still selectively specifying different sources in different 
+environments.
+
+## Load Impact of Sources
+Fennel sources have negligible load impact on the external data sources. 
+
+For instance, in the above example, as long as indices are put on the cursor 
+field, Fennel will make a single SELECT query on Postgres every minute. And 
+once data reaches Fennel datasets, all subsequent operations are done using 
+the copy of the data stored on Fennel servers, not the underlying data sources. 
+This ensures that external data sources don't need to be over-provisioned 
+(or changed in any way) just for Fennel to be able to read the data.
+
 ## Configuring Sources
 There is tremendous variety and complexity just within data ingestion. Fennel aims
-to abstract much of that via a carefully chosen set of knobs that can be 
-used to configure data sources.
+to abstract much of that via the following carefully chosen set of knobs that can be 
+used to configure data sources:
 
 ### CDC
 Fennel natively supports change data capture (aka CDC) as well as other modes
@@ -91,7 +135,8 @@ You'd typically use `append` for sourcing keyless datasets, for instance, event
 streams from Kafka that only have inserts but no deletes/updates. If you want to
 process both inserts/updates (but no deletes) for keyed datasets, `upsert` is a
 good option. Other options are `debezium` if you want Fennel to ingest existing
-CDC stream in debezium format (say from Kafka or S3).
+CDC stream in debezium format (say from Kafka or S3) or `native` for data stores
+that offer a native CDC export.
 
 ### Disorder
 Fennel, like many other streaming systems, is designed to robustly handle out
@@ -153,13 +198,3 @@ thereby saving costs and improving performance.
 ### Idleness
 The `idleness` field, when non-None, signifies that a bounded source is 
 expected to be marked closed after a specified duration of idleness. 
-
-## Load Impact of Sources
-Fennel sources have negligible load impact on the external data sources. 
-
-For instance, in the above example, as long as indices are put on the cursor 
-field, Fennel will make a single SELECT query on Postgres every minute. And 
-once data reaches Fennel datasets, all subsequent operations are done using 
-the copy of the data stored on Fennel servers, not the underlying data sources. 
-This ensures that external data sources don't need to be over-provisioned 
-(or changed in any way) just for Fennel to be able to read the data.

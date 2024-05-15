@@ -83,8 +83,9 @@ Here are some examples of valid and invalid datasets:
 
 ### Index
 
-Keyed datasets can be indexed by applying the `@index` decorator and indexed
-datasets can be looked up via the `lookup` method on datasets.
+Keyed datasets can be indexed by setting `index` to be `True` in the `dataset` 
+decorator and indexed datasets can be looked up via the `lookup` method on 
+datasets.
 
 <pre snippet="datasets/datasets#dataset_index_basic" status="success" 
     message="Creates online & offline indices on key field 'uid'">
@@ -94,14 +95,16 @@ datasets can be looked up via the `lookup` method on datasets.
     message="Can not index datasets without keys">
 </pre>
 
-By default, `@index` builds both the online and full historical offline indices.
-That can be configured by setting `online` and `offline` kwargs on the 
-decorator (the default configuration is `online` set to True and `offline` set
-to `forever`).
+By default, setting `index=True` builds both the online and full historical 
+offline indices.  That can be configured by setting `online` and `offline` 
+kwargs on the decorator (the default configuration is `online` set to True and 
+`offline` set to `forever`).
 
-<pre snippet="datasets/datasets#dataset_index_advanced"></pre>
+<pre snippet="datasets/datasets#dataset_index_advanced" status="success"
+    message="Only building online index but not the offline/historical index"
+></pre>
 
-Selectively turning only one of these on can be a good way to save storage & 
+Selectively turning only one of these on can be a good way to save storage and
 compute costs. A dataset needs to be indexed with `offline` set to `forever` for 
 it to be joinable as the RHS dataset.
 

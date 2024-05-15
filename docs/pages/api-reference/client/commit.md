@@ -30,7 +30,7 @@ to be done but doesn't change the state at all.
 
 :::info
 Since preview's main goal is to check the validity of old & new definitions, 
-it only works with real client/server and mock client/server ignore it.
+it only works with the real client/server. Mock client/server simply ignores it.
 :::
 </Expandable>
 

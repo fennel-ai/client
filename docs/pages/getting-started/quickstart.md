@@ -21,7 +21,6 @@ rest of the tutorial:
 
 
 ### 1. Data Connectors
-
 Fennel ships with data connectors that know how to talk to all common data
 sources. The connectors can be defined in code or in Fennel console (not shown
 here).
