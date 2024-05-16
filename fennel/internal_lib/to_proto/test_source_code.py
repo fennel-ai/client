@@ -9,7 +9,7 @@ from fennel.internal_lib.to_proto.source_code import (
     get_featureset_core_code,
     get_dataset_core_code,
     lambda_to_python_regular_func,
-    remove_source_decorator,
+    remove_source_and_sink_decorator,
 )
 from fennel.lib import includes, meta, inputs, outputs
 
@@ -318,7 +318,10 @@ class DocumentsMeta:
     timestamp: datetime
 """
 
-    assert expected_1.rstrip() == remove_source_decorator(example_1).rstrip()
+    assert (
+        expected_1.rstrip()
+        == remove_source_and_sink_decorator(example_1).rstrip()
+    )
 
     example_2 = """
 @meta(owner="test@test.com")
@@ -344,4 +347,35 @@ class UserInfoDataset:
     timestamp: datetime
 """
 
-    assert expected_2.strip() == remove_source_decorator(example_2).strip()
+    assert (
+        expected_2.strip()
+        == remove_source_and_sink_decorator(example_2).strip()
+    )
+
+    sink_example = """
+@meta(owner="test@test.com")
+@sink(kafka_sink.topic("stitchfix_demo"), env="prod", cdc="debezium")
+@dataset
+class UserInfoDataset:
+    user_id: int = field(key=True)
+    name: str
+    age: between(int, 0, 100)
+    gender: oneof(str, ["male", "female", "non-binary"])
+    timestamp: datetime
+"""
+
+    expected_sink = """
+@meta(owner="test@test.com")
+
+@dataset
+class UserInfoDataset:
+    user_id: int = field(key=True)
+    name: str
+    age: between(int, 0, 100)
+    gender: oneof(str, ["male", "female", "non-binary"])
+    timestamp: datetime
+"""
+    assert (
+        expected_sink.strip()
+        == remove_source_and_sink_decorator(sink_example).strip()
+    )
