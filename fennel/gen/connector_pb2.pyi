@@ -325,15 +325,20 @@ class S3(google.protobuf.message.Message):
 
     AWS_SECRET_ACCESS_KEY_FIELD_NUMBER: builtins.int
     AWS_ACCESS_KEY_ID_FIELD_NUMBER: builtins.int
+    ROLE_ARN_FIELD_NUMBER: builtins.int
     aws_secret_access_key: builtins.str
     aws_access_key_id: builtins.str
+    role_arn: builtins.str
     def __init__(
         self,
         *,
         aws_secret_access_key: builtins.str = ...,
         aws_access_key_id: builtins.str = ...,
+        role_arn: builtins.str | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aws_access_key_id", b"aws_access_key_id", "aws_secret_access_key", b"aws_secret_access_key"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_role_arn", b"_role_arn", "role_arn", b"role_arn"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_role_arn", b"_role_arn", "aws_access_key_id", b"aws_access_key_id", "aws_secret_access_key", b"aws_secret_access_key", "role_arn", b"role_arn"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_role_arn", b"_role_arn"]) -> typing_extensions.Literal["role_arn"] | None: ...
 
 global___S3 = S3
 
