@@ -887,8 +887,8 @@ def _kafka_to_ext_db_proto(
     bootstrap_servers: str,
     security_protocol: str,
     sasl_mechanism: str,
-    sasl_plain_username: str,
-    sasl_plain_password: str,
+    sasl_plain_username: Optional[str],
+    sasl_plain_password: Optional[str],
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
