@@ -92,11 +92,14 @@ def get_featureset_gen_code(
     return _remove_empty_lines(source_code)
 
 
-def remove_source_decorator(text):
+def remove_source_and_sink_decorator(text):
     # Define the regular expression pattern for the @source decorator block
     pattern = r"^\s*@source\((?:.|\n)*?\)\s*$"
     # Remove @source decorator using the regex pattern with re.MULTILINE and re.DOTALL flags
     result = re.sub(pattern, "", text, flags=re.MULTILINE | re.DOTALL)
+    pattern = r"^\s*@sink\((?:.|\n)*?\)\s*$"
+    # Remove @source decorator using the regex pattern with re.MULTILINE and re.DOTALL flags
+    result = re.sub(pattern, "", result, flags=re.MULTILINE | re.DOTALL)
     return result.strip()
 
 
@@ -107,8 +110,8 @@ def get_dataset_core_code(dataset: Dataset) -> str:
         pipeline_code = indent(dedent(pipeline_code), " " * 4)
         # Delete pipeline code from source_code
         source_code = source_code.replace(pipeline_code, "")
-    # Delete decorator @source() from source_code using regex
-    source_code = remove_source_decorator(source_code)
+    # Delete decorator @source() and @sink from source_code using regex
+    source_code = remove_source_and_sink_decorator(source_code)
 
     # If python version 3.8 or below add @dataset decorator
     if sys.version_info < (3, 9):
