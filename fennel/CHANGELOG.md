@@ -1,5 +1,5 @@
 # Changelog
-## [1.3.10] - 2024-05-16
+## [1.3.11] - 2024-05-16
 - Make sasl plain username and sasl plain password optional for kafka
 
 ## [1.3.10] - 2024-05-16
