@@ -1,4 +1,6 @@
 # Changelog
+## [1.3.15] - 2024-05-17
+- Added support for specifying type of window during aggregation.
 
 ## [1.3.14] - 2024-05-17
 - Support ns precision for timestamp in mock client. 
@@ -6,7 +8,7 @@
 ## [1.3.13] - 2024-05-17
 - Support aggregation on aggregation/key fields. 
 
-## [1.3.12] - 2024-05-14
+## [1.3.12] - 2024-05-17
 - Added support for window join.
 
 ## [1.3.11] - 2024-05-16

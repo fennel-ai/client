@@ -19,7 +19,7 @@ from fennel.datasets import (
     Sum,
     Quantile,
 )
-from fennel.dtypes import Embedding, Window
+from fennel.dtypes import Embedding, Window, Continuous
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib import includes, meta, inputs, desc
 from fennel.testing import *
@@ -264,17 +264,17 @@ def test_dataset_with_aggregates():
             return user_info.groupby("gender").aggregate(
                 [
                     Count(
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field=str(cls.count),
                     ),
                     Average(
                         of="age",
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field=str(cls.avg_age),
                     ),
                     Stddev(
                         of="age",
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field=str(cls.stddev_age),
                     ),
                 ]
@@ -1435,13 +1435,13 @@ def test_dataset_with_complex_pipe():
             return ds_deduped.groupby("merchant_id").aggregate(
                 [
                     Count(
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field=str(
                             cls.num_merchant_fraudulent_transactions
                         ),
                     ),
                     Count(
-                        window="1w",
+                        window=Continuous("1w"),
                         into_field=str(
                             cls.num_merchant_fraudulent_transactions_7d
                         ),
@@ -1450,7 +1450,7 @@ def test_dataset_with_complex_pipe():
                         of="transaction_amount",
                         default=0.0,
                         p=0.5,
-                        window="1w",
+                        window=Continuous("1w"),
                         into_field=str(cls.median_transaction_amount),
                         approx=True,
                     ),
@@ -1631,7 +1631,7 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[6]
     o = {
-        "id": "2522d12fd1a18fd5e5e02ceea6eb9a51",
+        "id": "0b381d6b2444c390000402aaa4485a26",
         "isRoot": True,
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
@@ -2929,13 +2929,17 @@ def test_dataset_with_str_window_aggregate():
         @inputs(UserInfoDataset)
         def create_aggregated_dataset(cls, user_info: Dataset):
             return user_info.groupby("gender").aggregate(
-                Count(window="forever", into_field="count"),
+                Count(window=Continuous("forever"), into_field="count"),
                 Sum(
                     of="age",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="sum_age",
                 ),
-                Stddev(of="age", window="forever", into_field="stddev_age"),
+                Stddev(
+                    of="age",
+                    window=Continuous("forever"),
+                    into_field="stddev_age",
+                ),
             )
 
     view = InternalTestClient()
@@ -3294,7 +3298,7 @@ def test_window_operator_with_aggregation():
                 .aggregate(
                     Average(
                         of="duration_secs",
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field="avg_session_secs",
                     )
                 )
@@ -3447,7 +3451,7 @@ def test_erase_key():
                 .aggregate(
                     Average(
                         of="duration_secs",
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field="avg_session_secs",
                     )
                 )

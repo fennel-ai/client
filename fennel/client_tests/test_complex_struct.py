@@ -7,7 +7,7 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel.connectors import Webhook, source
 from fennel.datasets import dataset, Dataset, field, pipeline, LastK
-from fennel.dtypes import struct
+from fennel.dtypes import struct, Continuous
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
 from fennel.testing import mock
@@ -79,7 +79,7 @@ class MovieInfo:
                 LastK(
                     into_field="role_list",
                     of="role",
-                    window="forever",
+                    window=Continuous("forever"),
                     limit=3,
                     dedup=False,
                 ),

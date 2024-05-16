@@ -5,6 +5,7 @@ import pytest
 
 from fennel.connectors import Webhook, source
 from fennel.datasets import Count, Dataset, dataset, field, pipeline
+from fennel.dtypes import Continuous
 from fennel.featuresets import featureset, extractor
 from fennel.lib import inputs, outputs
 from fennel.testing import mock
@@ -40,7 +41,7 @@ def first_commit(client):
         @inputs(UserInfo)
         def pipeline(cls, event: Dataset):
             return event.groupby("age").aggregate(
-                count=Count(of="user_id", window="forever")
+                count=Count(of="user_id", window=Continuous("forever"))
             )
 
     @featureset
@@ -88,7 +89,9 @@ def second_commit(client):
             return (
                 event.transform(transform_age)
                 .groupby("age")
-                .aggregate(count=Count(of="user_id", window="forever"))
+                .aggregate(
+                    count=Count(of="user_id", window=Continuous("forever"))
+                )
             )
 
     @featureset

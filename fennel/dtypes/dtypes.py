@@ -6,9 +6,11 @@ from datetime import datetime
 from textwrap import dedent
 from typing import TYPE_CHECKING, Union, List, get_args, ForwardRef, Any
 
+import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 import pandas as pd
 
 import fennel.gen.schema_pb2 as schema_proto
+import fennel.gen.window_pb2 as window_proto
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.utils.utils import (
     get_origin,
@@ -302,11 +304,51 @@ class Window:
 
 
 @dataclass
+class Continuous:
+    duration: str
+
+    def __post_init__(self):
+        """
+        Run validation on duration.
+        """
+        if self.duration == "forever":
+            pass
+        else:
+            duration_to_timedelta(self.duration)
+
+    def to_proto(self) -> window_proto.Window:
+        if self.duration == "forever":
+            return window_proto.Window(forever=window_proto.Forever())
+
+        duration = duration_proto.Duration()
+        duration.FromTimedelta(duration_to_timedelta(self.duration))
+        return window_proto.Window(
+            sliding=window_proto.Sliding(duration=duration)
+        )
+
+    def signature(self) -> str:
+        return f"sliding-{self.duration}"
+
+
+@dataclass
 class Tumbling:
     duration: str
 
     def __post_init__(self):
+        """
+        Run validation on duration.
+        """
         duration_to_timedelta(self.duration)
+
+    def to_proto(self) -> window_proto.Window:
+        duration = duration_proto.Duration()
+        duration.FromTimedelta(duration_to_timedelta(self.duration))
+        return window_proto.Window(
+            tumbling=window_proto.Tumbling(duration=duration)
+        )
+
+    def signature(self) -> str:
+        return f"tumbling-{self.duration}"
 
 
 @dataclass
@@ -315,5 +357,24 @@ class Hopping:
     stride: str
 
     def __post_init__(self):
-        duration_to_timedelta(self.duration)
+        """
+        Run validation on duration and stride.
+        """
+        if self.duration == "forever":
+            raise ValueError("Forever hopping window is not yet supported.")
+        else:
+            duration_to_timedelta(self.duration)
         duration_to_timedelta(self.stride)
+
+    def to_proto(self) -> window_proto.Window:
+        duration = duration_proto.Duration()
+        duration.FromTimedelta(duration_to_timedelta(self.duration))
+
+        stride = duration_proto.Duration()
+        stride.FromTimedelta(duration_to_timedelta(self.stride))
+        return window_proto.Window(
+            hopping=window_proto.Hopping(duration=duration, stride=stride)
+        )
+
+    def signature(self) -> str:
+        return f"hopping-{self.duration}-{self.stride}"

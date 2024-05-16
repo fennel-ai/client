@@ -7,6 +7,7 @@ from typing import Optional
 
 from fennel.connectors import Webhook, source
 from fennel.datasets import dataset, field, pipeline, Dataset, Count
+from fennel.dtypes import Continuous
 from fennel.lib import inputs
 
 __owner__ = "eng@app.com"
@@ -48,7 +49,7 @@ class NumCompletedTripsDS:
                     of="reservation_id",
                     unique=True,
                     approx=True,
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="num_past_completed_trips",
                 ),
             )
@@ -72,7 +73,7 @@ class CancelledTripsDS:
                     of="reservation_id",
                     unique=True,
                     approx=True,
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="num_past_cancelled_trips",
                 ),
             )
@@ -107,7 +108,7 @@ class LoginsLastDayDS:
                 of="id",
                 unique=True,
                 approx=True,
-                window="1d",
+                window=Continuous("1d"),
                 into_field="num_logins_last_day",
             ),
         )
@@ -144,7 +145,7 @@ class CheckoutPagesLastDayDS:
                     of="id",
                     unique=True,
                     approx=True,
-                    window="1d",
+                    window=Continuous("1d"),
                     into_field="num_checkout_pages_last_day",
                 ),
             )
@@ -184,7 +185,7 @@ class PastApprovedDS:
                     of="reservation_id",
                     unique=True,
                     approx=True,
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="num_past_approved_trips",
                 ),
             )

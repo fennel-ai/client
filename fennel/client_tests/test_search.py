@@ -11,7 +11,7 @@ import fennel._vendor.requests as requests
 from fennel import connectors
 from fennel.connectors import source
 from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum
-from fennel.dtypes import Embedding, oneof
+from fennel.dtypes import Embedding, oneof, Continuous
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.testing import mock
@@ -248,7 +248,7 @@ class TopWordsCount:
         ds = ds.transform(lambda df: df, schema)  # type: ignore
         return ds.groupby(["word"]).aggregate(
             [
-                Count(window="forever", into_field="count"),
+                Count(window=Continuous("forever"), into_field="count"),
             ]
         )  # type: ignore
 
@@ -306,14 +306,16 @@ class UserEngagementDataset:
         )
         return click_type.groupby("user_id").aggregate(
             [
-                Count(window="forever", into_field=str(cls.num_views)),
+                Count(
+                    window=Continuous("forever"), into_field=str(cls.num_views)
+                ),
                 Sum(
-                    window="7d",
+                    window=Continuous("7d"),
                     of="is_short_click",
                     into_field=str(cls.num_short_views_7d),
                 ),
                 Sum(
-                    window="forever",
+                    window=Continuous("forever"),
                     of="is_long_click",
                     into_field=str(cls.num_long_views),
                 ),
@@ -338,11 +340,20 @@ class DocumentEngagementDataset:
             .groupby("doc_id")
             .aggregate(
                 [
-                    Count(window="forever", into_field=str(cls.num_views)),
-                    Count(window="7d", into_field=str(cls.num_views_7d)),
-                    Count(window="28d", into_field=str(cls.num_views_28d)),
+                    Count(
+                        window=Continuous("forever"),
+                        into_field=str(cls.num_views),
+                    ),
+                    Count(
+                        window=Continuous("7d"),
+                        into_field=str(cls.num_views_7d),
+                    ),
+                    Count(
+                        window=Continuous("28d"),
+                        into_field=str(cls.num_views_28d),
+                    ),
                     Sum(
-                        window="forever",
+                        window=Continuous("forever"),
                         of="view_time",
                         into_field=str(cls.total_timespent),
                     ),

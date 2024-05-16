@@ -6,7 +6,7 @@ import pandas as pd
 
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field, pipeline, Dataset, Sum, Count
-from fennel.dtypes import Window
+from fennel.dtypes import Continuous, Window
 from fennel.lib import inputs
 
 webhook = Webhook(name="fennel_webhook")
@@ -153,8 +153,8 @@ class FraudActivityDataset:
 
         # docsnip aggregate
         aggregated_ds = joined_ds.groupby("merchant_category").aggregate(
-            txn_sum=Sum(of="txn_amount", window="1h"),
-            txn_count=Count(window="1h"),
+            txn_sum=Sum(of="txn_amount", window=Continuous("1h")),
+            txn_count=Count(window=Continuous("1h")),
         )
         # /docsnip
         return aggregated_ds

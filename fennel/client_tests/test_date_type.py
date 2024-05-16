@@ -19,7 +19,7 @@ from fennel.datasets import (
     Stddev,
     Quantile,
 )
-from fennel.dtypes import Decimal
+from fennel.dtypes import Decimal, Continuous
 from fennel.featuresets import featureset, feature as F
 from fennel.lib import inputs
 from fennel.testing import mock
@@ -58,25 +58,35 @@ class DebitDataset:
             .assign("txn_date", date, lambda x: x["timestamp"].dt.date)
             .groupby("user_id", "txn_date")
             .aggregate(
-                Count(into_field="count", window="forever"),
-                Average(of="amount", into_field="avg", window="forever"),
-                Sum(of="amount", into_field="sum", window="forever"),
+                Count(into_field="count", window=Continuous("forever")),
+                Average(
+                    of="amount", into_field="avg", window=Continuous("forever")
+                ),
+                Sum(
+                    of="amount", into_field="sum", window=Continuous("forever")
+                ),
                 Min(
-                    of="amount", into_field="min", window="forever", default=0.0
+                    of="amount",
+                    into_field="min",
+                    window=Continuous("forever"),
+                    default=0.0,
                 ),
                 Max(
-                    of="amount", into_field="max", window="forever", default=0.0
+                    of="amount",
+                    into_field="max",
+                    window=Continuous("forever"),
+                    default=0.0,
                 ),
                 Stddev(
                     of="amount",
                     into_field="stddev",
-                    window="forever",
+                    window=Continuous("forever"),
                     default=0.0,
                 ),
                 Quantile(
                     of="amount",
                     into_field="median",
-                    window="forever",
+                    window=Continuous("forever"),
                     approx=True,
                     default=0.0,
                     p=0.5,

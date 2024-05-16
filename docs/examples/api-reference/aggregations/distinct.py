@@ -19,6 +19,7 @@ def test_basic(client):
         Dataset,
         Distinct,
     )
+    from fennel.dtypes import Continuous
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
 
@@ -45,7 +46,7 @@ def test_basic(client):
                 # docsnip-highlight start
                 amounts=Distinct(
                     of="amount",
-                    window="1d",
+                    window=Continuous("1d"),
                     unordered=True,
                 ),
                 # docsnip-highlight end

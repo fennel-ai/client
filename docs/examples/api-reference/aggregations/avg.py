@@ -18,6 +18,7 @@ def test_basic(client):
         Dataset,
         Average,
     )
+    from fennel.dtypes import Continuous
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
 
@@ -44,8 +45,8 @@ def test_basic(client):
         def avg_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
                 # docsnip-highlight start
-                avg_1d=Average(of="amt", window="1d", default=-1.0),
-                avg_1w=Average(of="amt", window="1w", default=-1.0),
+                avg_1d=Average(of="amt", window=Continuous("1d"), default=-1.0),
+                avg_1w=Average(of="amt", window=Continuous("1w"), default=-1.0),
                 # docsnip-highlight end
             )
 
@@ -117,6 +118,7 @@ def test_invalid_type(client):
     with pytest.raises(Exception):
         # docsnip incorrect_type
         from fennel.datasets import dataset, field, pipeline, Dataset, Average
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -141,7 +143,9 @@ def test_invalid_type(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    avg_1d=Average(of="zip", window="1d", default="avg"),
+                    avg_1d=Average(
+                        of="zip", window=Continuous("1d"), default="avg"
+                    ),
                     # docsnip-highlight end
                 )
 
@@ -153,6 +157,7 @@ def test_non_matching_types(client):
     with pytest.raises(Exception):
         # docsnip non_matching_types
         from fennel.datasets import dataset, field, pipeline, Dataset, Average
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -179,7 +184,7 @@ def test_non_matching_types(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    ret=Average(of="amt", window="1d", default=1.0),
+                    ret=Average(of="amt", window=Continuous("1d"), default=1.0),
                     # docsnip-highlight end
                 )
 

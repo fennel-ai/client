@@ -8,6 +8,7 @@ import fennel._vendor.requests as requests
 from fennel import connectors
 from fennel.connectors import source
 from fennel.datasets import dataset, Dataset, pipeline, field
+from fennel.dtypes import Continuous
 from fennel.featuresets import featureset, extractor
 from fennel.lib.aggregate import Average, LastK
 from fennel.lib.metadata import meta
@@ -94,24 +95,24 @@ class SessionStats:
             .aggregate(
                 Average(
                     of="length",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="avg_length",
                 ),
                 Average(
                     of="count",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="avg_count",
                 ),
                 LastK(
                     of="window",
-                    window="forever",
+                    window=Continuous("forever"),
                     limit=1,
                     dedup=False,
                     into_field="last_visitor_session",
                 ),
                 Average(
                     of="avg_star",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="avg_star",
                 ),
             )

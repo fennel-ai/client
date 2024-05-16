@@ -19,6 +19,7 @@ class TestCountSnips(unittest.TestCase):
             Dataset,
             Count,
         )
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -46,12 +47,12 @@ class TestCountSnips(unittest.TestCase):
             def count_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    num_transactions=Count(window="forever"),
+                    num_transactions=Count(window=Continuous("forever")),
                     unique_vendors_1w=Count(
                         of="vendor",
                         unique=True,
                         approx=True,
-                        window="1w",
+                        window=Continuous("1w"),
                     ),
                     # docsnip-highlight end
                 )

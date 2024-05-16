@@ -9,6 +9,7 @@ from fennel import meta, Count, featureset, feature as F, extractor
 from fennel.connectors import Webhook
 from fennel.connectors import source
 from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.dtypes import Continuous
 from fennel.lib import inputs, outputs
 from fennel.testing import mock
 
@@ -83,7 +84,7 @@ class NumCompletedTripsDataset:
                 of="vehicle_id",
                 unique=True,
                 approx=True,
-                window="forever",
+                window=Continuous("forever"),
                 into_field="count_num_completed_trips",
             ),
         )

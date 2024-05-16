@@ -1,16 +1,16 @@
 # docsnip imports
 from datetime import datetime, timedelta, timezone
-import pandas as pd
 from typing import Optional
 
+import pandas as pd
 
 from fennel.connectors import source, Postgres, Kafka, Webhook
 from fennel.datasets import dataset, pipeline, field, Dataset, Count
+from fennel.dtypes import Continuous
 from fennel.featuresets import featureset, extractor
-from fennel.lib import inputs, outputs
 from fennel.lib import expectations, expect_column_values_to_be_between
+from fennel.lib import inputs, outputs
 from fennel.testing import MockClient, log
-
 
 __owner__ = "nikhil@fennel.ai"
 
@@ -76,8 +76,8 @@ class UserSellerOrders:
         orders = orders.drop("product_id", "desc", "price")
         orders = orders.dropnull()
         return orders.groupby("uid", "seller_id").aggregate(
-            num_orders_1d=Count(window="1d"),
-            num_orders_1w=Count(window="1w"),
+            num_orders_1d=Count(window=Continuous("1d")),
+            num_orders_1w=Count(window=Continuous("1w")),
         )
 
 

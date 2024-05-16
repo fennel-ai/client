@@ -56,6 +56,7 @@ def test_overview(client):
     # /docsnip
 
     from fennel.datasets import pipeline, Dataset, Count, Sum
+    from fennel.dtypes import Continuous
     from fennel.lib import inputs
 
     # docsnip pipeline
@@ -76,9 +77,9 @@ def test_overview(client):
                 lambda df: df["country"] != df["payment_country"]
             )
             return abroad.groupby("uid").aggregate(
-                count=Count(window="forever"),
-                amount_1d=Sum(of="amount", window="1d"),
-                amount_1w=Sum(of="amount", window="1w"),
+                count=Count(window=Continuous("forever")),
+                amount_1d=Sum(of="amount", window=Continuous("1d")),
+                amount_1w=Sum(of="amount", window=Continuous("1w")),
             )
 
         # docsnip-highlight end

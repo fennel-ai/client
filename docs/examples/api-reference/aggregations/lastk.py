@@ -13,6 +13,7 @@ __owner__ = "aditya@fennel.ai"
 def test_basic(client):
     # docsnip basic
     from fennel.datasets import dataset, field, pipeline, Dataset, LastK
+    from fennel.dtypes import Continuous
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
 
@@ -40,7 +41,7 @@ def test_basic(client):
                     of="amount",
                     limit=10,
                     dedup=False,
-                    window="1d",
+                    window=Continuous("1d"),
                 ),
                 # docsnip-highlight end
             )
@@ -112,6 +113,7 @@ def test_invalid_type(client):
     with pytest.raises(Exception):
         # docsnip incorrect_type
         from fennel.datasets import dataset, field, pipeline, Dataset, LastK
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -140,7 +142,7 @@ def test_invalid_type(client):
                         of="amount",
                         limit=10,
                         dedup=False,
-                        window="1d",
+                        window=Continuous("1d"),
                     ),
                     # docsnip-highlight end
                 )

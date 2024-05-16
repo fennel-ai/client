@@ -2,12 +2,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import pandas as pd
-import requests
 
 # docsnip datasets
 from fennel.connectors import source, Webhook
 from fennel.datasets import Count, Sum, Average
 from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.dtypes import Continuous
 from fennel.lib import includes, meta, inputs, outputs
 
 __owner__ = "test@test.com"
@@ -35,9 +35,9 @@ class MovieRating:
     @inputs(RatingActivity)
     def pipeline_aggregate(cls, activity: Dataset):
         return activity.groupby("movie").aggregate(
-            num_ratings=Count(window="7d"),
-            sum_ratings=Sum(window="28d", of="rating"),
-            rating=Average(window="12h", of="rating"),
+            num_ratings=Count(window=Continuous("7d")),
+            sum_ratings=Sum(window=Continuous("28d"), of="rating"),
+            rating=Average(window=Continuous("12h"), of="rating"),
         )
 
 

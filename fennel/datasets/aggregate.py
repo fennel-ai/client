@@ -2,21 +2,26 @@ from typing import List, Union, Optional
 
 import fennel.gen.spec_pb2 as spec_proto
 from fennel._vendor.pydantic import BaseModel, Extra, validator  # type: ignore
-from fennel.internal_lib.last import Last
+from fennel.dtypes import Continuous, Tumbling, Hopping
 
 ItemType = Union[str, List[str]]
 
 
 class AggregateType(BaseModel):
-    window: Last
+    window: Union[Continuous, Hopping, Tumbling]
     # Name of the field the aggregate will  be assigned to
     into_field: str = ""
 
     @validator("window", pre=True)
-    # Converting the window into Last object
     def validate_window(cls, value):
-        if isinstance(value, str):
-            return Last(value)
+        if not isinstance(value, (Continuous, Hopping, Tumbling)):
+            raise ValueError(
+                "Aggregation window must be of type Continuous, Hopping or Tumbling"
+            )
+        if isinstance(value, (Hopping, Tumbling)):
+            raise ValueError(
+                "Hopping and Tumbling windows for aggregation are not yet supported."
+            )
         else:
             return value
 

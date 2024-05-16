@@ -15,7 +15,7 @@ from fennel.datasets import (
     Average,
     LastK,
 )
-from fennel.dtypes import Window, struct
+from fennel.dtypes import Window, struct, Continuous
 from fennel.featuresets import featureset, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
@@ -98,24 +98,24 @@ class SessionStats:
             .aggregate(
                 Average(
                     of="length",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="avg_length",
                 ),
                 Average(
                     of="count",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="avg_count",
                 ),
                 LastK(
                     of="window",
-                    window="forever",
+                    window=Continuous("forever"),
                     limit=1,
                     dedup=False,
                     into_field="last_visitor_session",
                 ),
                 Average(
                     of="avg_star",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="avg_star",
                 ),
             )

@@ -14,7 +14,7 @@ from fennel.datasets import (
     Min,
     Max,
 )
-from fennel.dtypes import Window
+from fennel.dtypes import Window, Continuous
 from fennel.lib import meta, inputs
 
 
@@ -289,15 +289,13 @@ def test_aggregation_sum():
                 new_schema["category"] = str
                 ds = ds.transform(fillna, schema=new_schema)
                 return ds.groupby("category").aggregate(
-                    [
-                        Sum(
-                            window="1w",
-                            of="transaction_amount",
-                            into_field=str(
-                                cls.sum_categ_fraudulent_transactions_7d
-                            ),
+                    Sum(
+                        window=Continuous("1w"),
+                        of="transaction_amount",
+                        into_field=str(
+                            cls.sum_categ_fraudulent_transactions_7d
                         ),
-                    ]
+                    ),
                 )
 
     assert (
@@ -327,14 +325,12 @@ def test_aggregation_min_max():
             @inputs(A1)
             def pipeline(cls, a: Dataset):
                 return a.groupby("a").aggregate(
-                    [
-                        Min(
-                            of="b",
-                            into_field="b_min",
-                            window="1d",
-                            default=0.91,
-                        ),
-                    ]
+                    Min(
+                        of="b",
+                        into_field="b_min",
+                        window=Continuous("1d"),
+                        default=0.91,
+                    ),
                 )
 
     assert (
@@ -361,14 +357,12 @@ def test_aggregation_min_max():
             @inputs(A2)
             def pipeline(cls, a: Dataset):
                 return a.groupby("a").aggregate(
-                    [
-                        Max(
-                            of="b",
-                            into_field="b_max",
-                            window="1d",
-                            default=1.91,
-                        ),
-                    ]
+                    Max(
+                        of="b",
+                        into_field="b_max",
+                        window=Continuous("1d"),
+                        default=1.91,
+                    ),
                 )
 
     assert (
@@ -395,14 +389,12 @@ def test_aggregation_min_max():
             @inputs(A3)
             def pipeline(cls, a: Dataset):
                 return a.groupby("a").aggregate(
-                    [
-                        Max(
-                            of="b",
-                            into_field="b_max",
-                            window="1d",
-                            default=2.91,
-                        ),
-                    ]
+                    Max(
+                        of="b",
+                        into_field="b_max",
+                        window=Continuous("1d"),
+                        default=2.91,
+                    ),
                 )
 
     assert (
@@ -431,14 +423,12 @@ def test_aggregation_along():
             @inputs(A1)
             def pipeline(cls, a: Dataset):
                 return a.groupby("a").aggregate(
-                    [
-                        Min(
-                            of="b",
-                            into_field="b_min",
-                            window="1d",
-                            default=0.91,
-                        ),
-                    ],
+                    Min(
+                        of="b",
+                        into_field="b_min",
+                        window=Continuous("1d"),
+                        default=0.91,
+                    ),
                     along="transaction_time",
                 )
 
@@ -467,14 +457,12 @@ def test_aggregation_along():
             @inputs(A2)
             def pipeline(cls, a: Dataset):
                 return a.groupby("a").aggregate(
-                    [
-                        Max(
-                            of="b",
-                            into_field="b_max",
-                            window="1d",
-                            default=1.91,
-                        ),
-                    ],
+                    Max(
+                        of="b",
+                        into_field="b_max",
+                        window=Continuous("1d"),
+                        default=1.91,
+                    ),
                     along="transaction_time",
                 )
 
@@ -506,7 +494,7 @@ def test_aggregation_along():
                     emit=Max(
                         of="b",
                         into_field="b_max",
-                        window="1d",
+                        window=Continuous("1d"),
                         default=1.91,
                     ),
                 )
@@ -540,13 +528,13 @@ def test_aggregation_along():
                     b_max=Max(
                         of="b",
                         into_field="b_max",
-                        window="1d",
+                        window=Continuous("1d"),
                         default=1.91,
                     ),
                     along=Max(
                         of="b",
                         into_field="b_max",
-                        window="1d",
+                        window=Continuous("1d"),
                         default=1.91,
                     ),
                 )

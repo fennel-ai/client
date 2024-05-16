@@ -19,6 +19,7 @@ def test_basic(client):
         Average,
         Stddev,
     )
+    from fennel.dtypes import Continuous
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
 
@@ -43,9 +44,9 @@ def test_basic(client):
         @inputs(Transaction)
         def stddev_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
-                mean=Average(of="amt", window="1d", default=-1.0),
+                mean=Average(of="amt", window=Continuous("1d"), default=-1.0),
                 # docsnip-highlight start
-                stddev=Stddev(of="amt", window="1d", default=-1.0),
+                stddev=Stddev(of="amt", window=Continuous("1d"), default=-1.0),
                 # docsnip-highlight end
             )
 
@@ -123,6 +124,7 @@ def test_invalid_type(client):
             Dataset,
             Stddev,
         )
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -147,7 +149,7 @@ def test_invalid_type(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    var=Stddev(of="zip", window="1d", default="x"),
+                    var=Stddev(of="zip", window=Continuous("1d"), default="x"),
                     # docsnip-highlight end
                 )
 
@@ -165,6 +167,7 @@ def test_non_matching_types(client):
             Dataset,
             Stddev,
         )
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -189,7 +192,7 @@ def test_non_matching_types(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    ret=Stddev(of="amt", window="1d", default=1.0),
+                    ret=Stddev(of="amt", window=Continuous("1d"), default=1.0),
                     # docsnip-highlight end
                 )
 

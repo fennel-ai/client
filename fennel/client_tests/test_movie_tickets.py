@@ -1,9 +1,9 @@
 import unittest
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
-import pytest
 
 import pandas as pd
+import pytest
 import requests
 
 from fennel import featureset, extractor
@@ -18,6 +18,7 @@ from fennel.datasets import (
     LastK,
     Distinct,
 )
+from fennel.dtypes import Continuous
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock, MockClient
 
@@ -67,7 +68,7 @@ class ActorStats:
         return c.groupby("name").aggregate(
             [
                 Sum(
-                    window="forever",
+                    window=Continuous("forever"),
                     of="price",
                     into_field="revenue",
                 ),
@@ -93,7 +94,7 @@ class ActorStats:
         return c.groupby("name").aggregate(
             [
                 Sum(
-                    window="forever",
+                    window=Continuous("forever"),
                     of="price",
                     into_field="revenue",
                 ),
@@ -124,14 +125,14 @@ class ActorStatsList:
         return c.groupby("name").aggregate(
             [
                 LastK(
-                    window="forever",
+                    window=Continuous("forever"),
                     of="price",
                     into_field="revenue",
                     limit=10,
                     dedup=False,
                 ),
                 Distinct(
-                    window="forever",
+                    window=Continuous("forever"),
                     of="price",
                     into_field="revenue_distinct",
                     unordered=True,

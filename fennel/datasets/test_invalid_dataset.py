@@ -16,7 +16,7 @@ from fennel.datasets import (
     Distinct,
     index,
 )
-from fennel.dtypes import struct, Window
+from fennel.dtypes import struct, Window, Continuous
 from fennel.lib import (
     meta,
     inputs,
@@ -240,11 +240,11 @@ def test_incorrect_aggregate():
                 return filter2.groupby("movie").aggregate(
                     [
                         Count(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.cnt_rating),
                         ),
                         Count(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.unique_ratings),
                             of="rating",
                             unique=True,
@@ -254,7 +254,7 @@ def test_incorrect_aggregate():
 
     assert (
         str(e.value)
-        == "Invalid aggregate `window=Last(start='forever', end='0s') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported, please set approx=True"
+        == "Invalid aggregate `window=Continuous(duration='forever') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported, please set approx=True"
     )
 
     with pytest.raises(TypeError) as e:
@@ -277,11 +277,11 @@ def test_incorrect_aggregate():
                 return filter2.groupby("movie").aggregate(
                     [
                         Count(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.cnt_rating),
                         ),
                         Distinct(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.unique_ratings),
                             of="rating",
                             unordered=True,
@@ -314,11 +314,11 @@ def test_incorrect_aggregate():
                 return filter2.groupby("movie").aggregate(
                     [
                         Count(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.cnt_rating),
                         ),
                         Distinct(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.unique_users),
                             of="userid",
                             unordered=False,
@@ -328,7 +328,7 @@ def test_incorrect_aggregate():
 
     assert (
         str(e.value)
-        == "Invalid aggregate `window=Last(start='forever', end='0s') into_field='unique_users' of='userid' unordered=False`: Distinct requires unordered=True"
+        == "Invalid aggregate `window=Continuous(duration='forever') into_field='unique_users' of='userid' unordered=False`: Distinct requires unordered=True"
     )
 
     with pytest.raises(TypeError) as e:
@@ -348,17 +348,17 @@ def test_incorrect_aggregate():
                 return rating.groupby("movie").aggregate(
                     [
                         Count(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.cnt_rating),
                         ),
                         Average(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.avg_rating),
                             of="rating",
                             default=0,
                         ),
                         Stddev(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.stddev),
                             of="movie",  # invalid type for ratings
                         ),
