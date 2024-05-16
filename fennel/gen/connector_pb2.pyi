@@ -416,11 +416,16 @@ class Kafka(google.protobuf.message.Message):
         security_protocol: builtins.str = ...,
         sasl_mechanism: builtins.str = ...,
         sasl_jaas_config: builtins.str = ...,
-        sasl_plain_username: builtins.str = ...,
-        sasl_plain_password: builtins.str = ...,
+        sasl_plain_username: builtins.str | None = ...,
+        sasl_plain_password: builtins.str | None = ...,
         group_id: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bootstrap_servers", b"bootstrap_servers", "group_id", b"group_id", "sasl_jaas_config", b"sasl_jaas_config", "sasl_mechanism", b"sasl_mechanism", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username", "security_protocol", b"security_protocol"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_sasl_plain_password", b"_sasl_plain_password", "_sasl_plain_username", b"_sasl_plain_username", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_sasl_plain_password", b"_sasl_plain_password", "_sasl_plain_username", b"_sasl_plain_username", "bootstrap_servers", b"bootstrap_servers", "group_id", b"group_id", "sasl_jaas_config", b"sasl_jaas_config", "sasl_mechanism", b"sasl_mechanism", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username", "security_protocol", b"security_protocol"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sasl_plain_password", b"_sasl_plain_password"]) -> typing_extensions.Literal["sasl_plain_password"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sasl_plain_username", b"_sasl_plain_username"]) -> typing_extensions.Literal["sasl_plain_username"] | None: ...
 
 global___Kafka = Kafka
 

@@ -26,15 +26,15 @@ servers (e.g. `localhost:9092,another.host:9092`).
 Protocol used to communicate with the brokers. 
 </Expandable>
 
-<Expandable title="sasl_mechanism" type='"PLAIN" | "SCRAM-SHA-256" | "SCRAM-SHA-512"'>
+<Expandable title="sasl_mechanism" type='"PLAIN" | "SCRAM-SHA-256" | "SCRAM-SHA-512" | "GSSAPI"'>
 SASL mechanism to use for authentication. 
 </Expandable>
 
-<Expandable title="sasl_plain_username" type="str">
+<Expandable title="sasl_plain_username" type="Optional[str]">
 SASL username.
 </Expandable>
 
-<Expandable title="sasl_plain_password" type="str">
+<Expandable title="sasl_plain_password" type="Optional[str]">
 SASL password.
 </Expandable>
 

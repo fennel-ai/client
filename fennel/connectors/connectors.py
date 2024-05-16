@@ -293,9 +293,9 @@ class Avro(BaseModel):
 class Kafka(DataSource):
     bootstrap_servers: str
     security_protocol: Literal["PLAINTEXT", "SASL_PLAINTEXT", "SASL_SSL"]
-    sasl_mechanism: Literal["PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512"]
-    sasl_plain_username: str
-    sasl_plain_password: str
+    sasl_mechanism: Literal["PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512", "GSSAPI"]
+    sasl_plain_username: Optional[str]
+    sasl_plain_password: Optional[str]
 
     def required_fields(self) -> List[str]:
         return ["topic"]
@@ -313,8 +313,8 @@ class Kafka(DataSource):
             bootstrap_servers="",
             security_protocol="PLAINTEXT",
             sasl_mechanism="PLAIN",
-            sasl_plain_username="",
-            sasl_plain_password="",
+            sasl_plain_username=None,
+            sasl_plain_password=None,
         )
 
     def identifier(self) -> str:
