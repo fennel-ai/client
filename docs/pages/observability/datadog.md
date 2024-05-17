@@ -7,7 +7,7 @@ status: 'published'
 # Integrating Fennel With Datadog
 
 Fennel metrics can be exported to Datadog simply by pointing it to scrape from
-the Fennel's OpenMetric compatible metric endpoint. Here is how to do that:
+the Fennel's OpenMetrics compatible metric endpoint. Here is how to do that:
 
 
 

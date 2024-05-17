@@ -36,9 +36,9 @@ Grafana
 Graviton
 Groupby
 HDFS
-IdP
 IOPS
 IPs
+IdP
 InfoSec
 Instacart
 Integrations
@@ -58,9 +58,12 @@ MSK
 MockClient
 Nones
 OAuth
-Okta
 OOM
 OWASP
+Okta
+Okta
+Okta's
+OpenMetrics
 OpenSSL's
 PII
 PLAINTEXT
@@ -85,8 +88,8 @@ RegisterStreamConsumer
 RocksDB
 Rowset
 Rowsets
-SASL
 SAML
+SASL
 SCIM
 SDK
 SHA
@@ -183,6 +186,8 @@ datastore
 datastores
 datetime
 dateutil
+deprovision
+deprovisioning
 deanonymized
 debezium
 declaratively
@@ -251,6 +256,7 @@ msgs
 multicolumn
 mybranch
 mysql
+namespace
 nan
 nat
 natively
@@ -262,6 +268,8 @@ observability
 onboarding
 oneof
 onwards
+openai
+openmetrics
 os
 params
 parseable
@@ -271,6 +279,7 @@ postgres
 pre
 precompute
 precomputed
+prepend
 preproc
 privateSubnets
 prometheus

@@ -97,7 +97,7 @@ is stored, say in S3. Here is one (but not the only) way of doing this:
 Fennel supports stacking multiple sources but selectively choosing only a subset
 to be used in a given environment. With this, you can have the same logical dataset
 get hydrated from different physical external stores in production and dev 
-envrionments.
+environments.
 
 <pre snippet="concepts/source#selector"></pre>
 
