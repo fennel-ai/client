@@ -89,7 +89,7 @@ def test_payment_identifier(client):
     log_payment_identifier_datasets(client)
 
     df = client.get_dataset_df("PaymentIdentifierDS")
-    assert df.shape == (10, 5)
+    assert df.shape == (10, 6)
     # Assert that the first 5 rows are correct
     df = df[:5]
     assert df["driver_id"].to_list() == [
@@ -153,7 +153,7 @@ def test_min_max_radar_score(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = client.get_dataset_df("TransactionsDS")
-    assert df.shape[0] == 3
+    assert df.shape[0] == 327
 
 
 @mock
@@ -194,7 +194,7 @@ def test_last_payment(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = client.get_dataset_df("LastPaymentDS")
-    assert df.shape == (8, 8)
+    assert df.shape == (8, 9)
 
 
 @mock

@@ -23,7 +23,11 @@ from fennel.datasets import (
 )
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype
-from fennel.testing.test_utils import cast_col_to_arrow_dtype
+from fennel.testing.test_utils import (
+    cast_col_to_arrow_dtype,
+    FENNEL_DELETE_TIMESTAMP,
+    add_deletes,
+)
 
 # Type of data, 1 indicates insert -1 indicates delete.
 FENNEL_ROW_TYPE = "__fennel_row_type__"
@@ -154,48 +158,6 @@ class LastKState(AggState):
 
     def get_val(self):
         return list(reversed(self.vals[-self.k :]))
-
-
-class MinForeverState(AggState):
-    def __init__(self, default: float):
-        self.min = None
-        self.default = default
-
-    def add_val_to_state(self, val):
-        if self.min is None:
-            self.min = val
-        else:
-            self.min = min(self.min, val)
-        return self.min
-
-    def del_val_from_state(self, val):
-        raise Exception("MinForeverState cannot be deleted from")
-
-    def get_val(self):
-        if self.min is None:
-            return self.default
-        return self.min
-
-
-class MaxForeverState(AggState):
-    def __init__(self, default: float):
-        self.max = None
-        self.default = default
-
-    def add_val_to_state(self, val):
-        if self.max is None:
-            self.max = val
-        else:
-            self.max = max(self.max, val)
-        return self.max
-
-    def del_val_from_state(self, val):
-        raise Exception("MaxForeverState cannot be deleted from")
-
-    def get_val(self):
-        if self.max is None:
-            return self.default
-        return self.max
 
 
 class Heap:
@@ -385,10 +347,27 @@ def get_aggregated_df(
         del_df = df.copy()
         del_df[ts_field] = del_df[ts_field] + expire_secs
         del_df[FENNEL_ROW_TYPE] = -1
+        # If the input dataframe has a delete timestamp field, pick the minimum
+        # of the two timestamps
+        if FENNEL_DELETE_TIMESTAMP in df.columns:
+            del_df[ts_field] = del_df[ts_field].combine_first(
+                del_df[FENNEL_DELETE_TIMESTAMP]
+            )
         df = pd.concat([df, del_df], ignore_index=True)
         df = df.sort_values(
             [ts_field, FENNEL_ROW_TYPE], ascending=[True, False]
         )
+    elif FENNEL_DELETE_TIMESTAMP in df.columns:
+        # forever aggregates on keyed datasets
+
+        del_df = df[df[FENNEL_DELETE_TIMESTAMP].notna()]
+        del_df[FENNEL_ROW_TYPE] = -1
+        del_df[ts_field] = del_df[FENNEL_DELETE_TIMESTAMP]
+        df = pd.concat([df, del_df], ignore_index=True)
+        df = df.sort_values(
+            [ts_field, FENNEL_ROW_TYPE], ascending=[True, False]
+        )
+
     # Reset the index
     df = df.reset_index(drop=True)
     if isinstance(aggregate, Count) and not aggregate.unique:
@@ -427,15 +406,9 @@ def get_aggregated_df(
                 elif isinstance(aggregate, LastK):
                     state[key] = LastKState(aggregate.limit, aggregate.dedup)
                 elif isinstance(aggregate, Min):
-                    if aggregate.window.start == "forever":
-                        state[key] = MinForeverState(aggregate.default)
-                    else:
-                        state[key] = MinState(aggregate.default)
+                    state[key] = MinState(aggregate.default)
                 elif isinstance(aggregate, Max):
-                    if aggregate.window.start == "forever":
-                        state[key] = MaxForeverState(aggregate.default)
-                    else:
-                        state[key] = MaxState(aggregate.default)
+                    state[key] = MaxState(aggregate.default)
                 elif isinstance(aggregate, Stddev):
                     state[key] = StddevState(aggregate.default)
                 elif isinstance(aggregate, Distinct):
@@ -460,4 +433,5 @@ def get_aggregated_df(
     df[aggregate.into_field] = cast_col_to_arrow_dtype(
         df[aggregate.into_field], data_type
     )
+    df = add_deletes(df, key_fields, ts_field)
     return df

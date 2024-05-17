@@ -17,10 +17,14 @@ from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype, fennel_is_optional
 from fennel.internal_lib.schema import validate_field_in_df
 from fennel.internal_lib.to_proto import Serializer, to_includes_proto
-from fennel.testing.execute_aggregation import get_aggregated_df
+from fennel.testing.execute_aggregation import (
+    get_aggregated_df,
+    FENNEL_DELETE_TIMESTAMP,
+)
 from fennel.testing.test_utils import (
     cast_df_to_arrow_dtype,
     cast_df_to_pandas_dtype,
+    add_deletes,
 )
 
 pd.set_option("display.max_columns", None)
@@ -134,6 +138,13 @@ class Executor(Visitor):
         # Check if input_ret.df and t_df have the exactly same columns.
         input_column_names = input_ret.df.columns.values.tolist()
         output_column_names = t_df.columns.values.tolist()
+        # Skip hidden columns
+        input_column_names = [
+            col for col in input_column_names if not col.startswith("__fennel")
+        ]
+        output_column_names = [
+            col for col in output_column_names if not col.startswith("__fennel")
+        ]
         if not set_match(input_column_names, output_column_names):
             if obj.new_schema is None:
                 raise ValueError(
@@ -237,7 +248,10 @@ class Executor(Visitor):
             fields = obj.keys + [input_ret.timestamp_field]
             if not isinstance(aggregate, Count) or aggregate.unique:
                 fields.append(aggregate.of)
-            filtered_df = df[fields]
+            if FENNEL_DELETE_TIMESTAMP in df.columns:
+                filtered_df = df[fields + [FENNEL_DELETE_TIMESTAMP]]
+            else:
+                filtered_df = df[fields]
 
             result[aggregate.into_field] = get_aggregated_df(
                 filtered_df,
@@ -355,6 +369,8 @@ class Executor(Visitor):
                 left_df[col] = left_df[col].apply(lambda x: frozendict(x))
 
         try:
+            # TODO(Nitin): Use FENNEL_DELETE_TIMESTAMP to filter out deleted rows appropriately
+            right_df = right_df.drop(columns=[FENNEL_DELETE_TIMESTAMP])
             merged_df = pd.merge_asof(
                 left=left_df,
                 right=right_df,
@@ -625,7 +641,7 @@ class Executor(Visitor):
             return None
         df = copy.deepcopy(input_ret.df)
         df = df.sort_values(input_ret.timestamp_field)
-        df = df.groupby(obj.keys).last().reset_index()
+        df = add_deletes(df, obj.keys, input_ret.timestamp_field)
         return NodeRet(
             df,
             input_ret.timestamp_field,

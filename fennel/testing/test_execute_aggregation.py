@@ -8,8 +8,6 @@ from fennel.testing.execute_aggregation import (
     LastKState,
     MinState,
     MaxState,
-    MinForeverState,
-    MaxForeverState,
     StddevState,
     DistinctState,
 )
@@ -117,25 +115,6 @@ def test_max_state():
     assert state.del_val_from_state(3) == 3
     assert state.get_val() == 3
     assert state.del_val_from_state(3) == 3.0
-
-
-def test_min_forever_state():
-    state = MinForeverState(default=3.0)
-    assert state.get_val() == 3.0
-    assert state.add_val_to_state(4) == 4
-    assert state.add_val_to_state(1) == 1
-    assert state.add_val_to_state(2) == 1
-    assert state.add_val_to_state(3) == 1
-
-
-def test_max_forever_state():
-    state = MaxForeverState(default=3.0)
-    assert state.get_val() == 3.0
-    assert state.add_val_to_state(4) == 4
-    assert state.add_val_to_state(1) == 4
-    assert state.add_val_to_state(2) == 4
-    assert state.add_val_to_state(3) == 4
-    assert state.add_val_to_state(7) == 7
 
 
 def test_stddev_state():

@@ -30,12 +30,14 @@ from fennel.internal_lib.schema import data_schema_check
 from fennel.internal_lib.to_proto import dataset_to_proto
 from fennel.internal_lib.utils import parse_datetime
 from fennel.lib.includes import EnvSelector
+from fennel.testing.execute_aggregation import FENNEL_DELETE_TIMESTAMP
 from fennel.testing.executor import Executor
 from fennel.testing.test_utils import (
     FakeResponse,
     cast_df_to_schema,
     cast_df_to_arrow_dtype,
     cast_df_to_pandas_dtype,
+    add_deletes,
 )
 
 TEST_PORT = 50051
@@ -558,6 +560,8 @@ class DataEngine(object):
         if len(fields) > 0:
             df = df[fields]
         df = df.reset_index(drop=True)
+        # Drop all hidden columns
+        df = df.loc[:, ~df.columns.str.startswith("__fennel")]
         return self._cast_after_lookup(cls_name, df), found
 
     def _as_of_lookup(
@@ -622,6 +626,9 @@ class DataEngine(object):
                 new_join_columns.append(f"{col}__internal")
             else:
                 new_join_columns.append(col)
+
+        # Sort the right_df by timestamp
+        right_df = right_df.sort_values(timestamp_field)
         try:
             df = pd.merge_asof(
                 left=keys,
@@ -708,6 +715,12 @@ class DataEngine(object):
                 f"Schema validation failed during data insertion to `{dataset_name}`"
                 f" {str(exceptions)}",
             )
+
+        dataset = self.get_dataset(dataset_name)
+        if len(dataset.key_fields) > 0:
+            # It is an upsert dataset, so insert appropriate deletes
+            df = self._add_deletes(df, dataset)
+
         self._merge_df(df, dataset_name)
         for pipeline in self.dataset_listeners[dataset_name]:
             executor = Executor(
@@ -744,6 +757,17 @@ class DataEngine(object):
         self._filter_erase_key(dataset_name)
         return FakeResponse(200, "OK")
 
+    def _add_deletes(self, df: pd.DataFrame, dataset: Dataset) -> pd.DataFrame:
+        if len(dataset.key_fields) == 0:
+            raise ValueError(
+                "Cannot add deletes to a dataset with no key fields"
+            )
+
+        if FENNEL_DELETE_TIMESTAMP in df.columns:
+            return df
+
+        return add_deletes(df, dataset.key_fields, dataset.timestamp_field)
+
     def _merge_df(self, df: pd.DataFrame, dataset_name: str):
         if not self.datasets[dataset_name].is_source_dataset:
             # If it's a derived dataset, just replace the data, since we
@@ -762,27 +786,11 @@ class DataEngine(object):
                     f"Dataset columns {columns} are not a subset of "
                     f"Input columns {input_columns}"
                 )
-            df = df[columns]
-
-            if len(self.datasets[dataset_name].dataset.key_fields) > 0:
-                df = df.sort_values(
-                    self.datasets[dataset_name].dataset.timestamp_field
-                )
-                try:
-                    df = df.groupby(
-                        self.datasets[dataset_name].dataset.key_fields,
-                        as_index=False,
-                    ).last()
-                except Exception:
-                    # This happens when struct fields are present in the key fields
-                    # Convert key fields to string, group by and then drop the key
-                    # column
-                    df["__fennel__key__"] = df[
-                        self.datasets[dataset_name].dataset.key_fields
-                    ].apply(lambda x: str(dict(x)), axis=1)
-                    df = df.groupby("__fennel__key__", as_index=False).last()
-                    df = df.drop(columns="__fennel__key__")
-                df = df.reset_index(drop=True)
+            # Include all hidden columns
+            hidden_columns = [
+                col for col in df.columns if col.startswith("__fennel")
+            ]
+            df = df[columns + hidden_columns]
 
             if isinstance(self.datasets[dataset_name].data, pd.DataFrame):
                 df = pd.concat([self.datasets[dataset_name].data, df])
