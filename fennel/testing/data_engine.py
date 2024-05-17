@@ -701,7 +701,7 @@ class DataEngine(object):
         # Check if the dataframe has the same schema as the dataset
         schema = core_dataset.dsschema
         if df[timestamp_field].dtype != pd.ArrowDtype(
-            pa.timestamp("us", "UTC")
+            pa.timestamp("ns", "UTC")
         ):
             raise ValueError(
                 400,

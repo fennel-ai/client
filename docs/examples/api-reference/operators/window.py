@@ -80,45 +80,50 @@ class TestAssignSnips(unittest.TestCase):
             ),
         )
         # do lookup on the window dataset
-        df, found = Session.lookup(
-            pd.Series(
+        df, found = client.lookup(
+            "Session",
+            timestamps=pd.Series(
                 [
                     datetime(2021, 1, 1, 0, 10, 0, microsecond=1),
                     datetime(2021, 1, 2, 0, 15, 0, microsecond=1),
                 ]
             ),
-            uid=pd.Series([1, 2]),
-            window=pd.Series(
-                [
-                    {
-                        "begin": datetime(2021, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
-                        "end": datetime(
-                            2021,
-                            1,
-                            1,
-                            0,
-                            10,
-                            0,
-                            microsecond=1,
-                            tzinfo=pytz.UTC,
-                        ),
-                    },
-                    {
-                        "begin": datetime(
-                            2021, 1, 2, 0, 10, 0, tzinfo=pytz.UTC
-                        ),
-                        "end": datetime(
-                            2021,
-                            1,
-                            2,
-                            0,
-                            15,
-                            0,
-                            microsecond=1,
-                            tzinfo=pytz.UTC,
-                        ),
-                    },
-                ]
+            keys=pd.DataFrame(
+                {
+                    "uid": [1, 2],
+                    "window": [
+                        {
+                            "begin": datetime(
+                                2021, 1, 1, 0, 0, 0, tzinfo=pytz.UTC
+                            ),
+                            "end": datetime(
+                                2021,
+                                1,
+                                1,
+                                0,
+                                10,
+                                0,
+                                microsecond=1,
+                                tzinfo=pytz.UTC,
+                            ),
+                        },
+                        {
+                            "begin": datetime(
+                                2021, 1, 2, 0, 10, 0, tzinfo=pytz.UTC
+                            ),
+                            "end": datetime(
+                                2021,
+                                1,
+                                2,
+                                0,
+                                15,
+                                0,
+                                microsecond=1,
+                                tzinfo=pytz.UTC,
+                            ),
+                        },
+                    ],
+                }
             ),
         )
         assert found.tolist() == [True, True]
