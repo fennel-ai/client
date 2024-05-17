@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.3.14] - 2024-05-17
+- Support ns precision for timestamp in mock client. 
+
 ## [1.3.13] - 2024-05-17
 - Support aggregation on aggregation/key fields. 
 
@@ -120,6 +123,7 @@
 - Add support for branches in Fennel.
 - Change/Rename all client methods.
 - Introduce versioning for datasets.
+
 ## [0.20.20] - 2024-02-14
 - Make `cdc` and `disorder` non-optional fields on a data source with reasonable default values.
 - remove `with_source` on the `@sources` decorator. This has been deprecated in favor using `tier=` on the data source

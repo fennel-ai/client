@@ -305,13 +305,15 @@ class Executor(Visitor):
 
         left_df[ts_query_field] = left_df.apply(
             lambda row: add_within_high(row), axis=1
-        ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
+        ).astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
 
         # Add a column to the left dataframe to specify the lower bound of the join query - this
         # is the timestamp below which we will not consider any rows from the right dataframe for joins
         def sub_within_low(row):
             if obj.within[0] == "forever":
-                return datetime.min.replace(tzinfo=timezone.utc)
+                # datetime.min cannot be casted to nano seconds therefore using
+                # 1701-01-01 00:00:00.000000+00:0 as minimum datetime
+                return datetime(1700, 1, 1, tzinfo=timezone.utc)
             else:
                 return row[left_timestamp_field] - duration_to_timedelta(
                     obj.within[0]
@@ -319,7 +321,7 @@ class Executor(Visitor):
 
         left_df[tmp_ts_low] = left_df.apply(
             lambda row: sub_within_low(row), axis=1
-        ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
+        ).astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
 
         # rename the left timestamp to avoid conflicts
         left_df = left_df.rename(columns={left_timestamp_field: tmp_left_ts})
@@ -445,7 +447,7 @@ class Executor(Visitor):
             )
         else:
             merged_df[left_timestamp_field] = pd.Series(
-                [], dtype=pd.ArrowDtype(pa.timestamp("us", "UTC"))
+                [], dtype=pd.ArrowDtype(pa.timestamp("ns", "UTC"))
             )
 
         # drop the temporary columns

@@ -1,4 +1,3 @@
-from collections import defaultdict
 from datetime import datetime, timezone
 from decimal import Decimal
 from functools import partial
@@ -87,16 +86,10 @@ class QueryEngine:
         df_fields = dataset.dsschema().to_fields_proto()
         key_fields = [f for f in df_fields if f.name in keys.columns]
         keys = cast_df_to_arrow_dtype(keys, key_fields)
-        keys = keys.to_dict(orient="records")
-
-        keys_dict = defaultdict(list)
-        for key in keys:
-            for key_name in key.keys():
-                keys_dict[key_name].append(key[key_name])
 
         data, found = dataset.lookup(
             timestamps,
-            **{name: pd.Series(value) for name, value in keys_dict.items()},
+            **{name: keys[name] for name in keys.columns},
         )
 
         fennel.datasets.datasets.dataset_lookup = partial(

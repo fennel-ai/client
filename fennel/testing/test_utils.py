@@ -218,7 +218,7 @@ def convert_val_to_pandas_dtype(
     elif data_type.HasField("bool_type"):
         return bool(value)
     elif data_type.HasField("timestamp_type"):
-        return pd.to_datetime(value)
+        return parse_datetime(value)
     elif data_type.HasField("decimal_type"):
         return value
     elif data_type.HasField("between_type"):
@@ -342,7 +342,7 @@ def cast_df_to_schema(
     try:
         df[dsschema.timestamp] = pd.to_datetime(
             df[dsschema.timestamp].apply(lambda x: parse_datetime(x)), utc=True
-        ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
+        ).astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
     except Exception as e:
         raise ValueError(
             f"Failed to cast data logged to timestamp column {dsschema.timestamp}: {e}"
@@ -394,5 +394,5 @@ def add_deletes(
     # Cast the timestamp column to arrow timestamp type
     sorted_df[FENNEL_DELETE_TIMESTAMP] = sorted_df[
         FENNEL_DELETE_TIMESTAMP
-    ].astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
+    ].astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
     return sorted_df

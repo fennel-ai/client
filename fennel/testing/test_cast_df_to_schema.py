@@ -136,7 +136,7 @@ def test_cast_timestamp():
             datetime(2021, 1, 1, tzinfo=timezone.utc),
             datetime(2021, 1, 2, tzinfo=timezone.utc),
         ]
-    ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
+    ).astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
     assert all(result_df["created_ts"] == expected_timestamps)
     assert result_df["created_ts"].dtype == expected_timestamps.dtype
 
@@ -161,7 +161,7 @@ def test_cast_timestamp_with_timezone():
             datetime(2021, 1, 1, tzinfo=timezone.utc),
             datetime(2021, 1, 2, tzinfo=timezone.utc),
         ]
-    ).astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
+    ).astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
     assert all(result_df["created_ts"] == expected_timestamps)
     assert result_df["created_ts"].dtype == expected_timestamps.dtype
 
@@ -297,7 +297,7 @@ def test_cast_col_to_arrow_dtype():
     casted_data = cast_col_to_arrow_dtype(data, data_type)
     assert (
         str(casted_data.dtype)
-        == "struct<a: int64, b: double, c: timestamp[us, tz=UTC], d: string, e: bool>[pyarrow]"
+        == "struct<a: int64, b: double, c: timestamp[ns, tz=UTC], d: string, e: bool>[pyarrow]"
     )
 
     # 2. Casting of a map
@@ -390,7 +390,7 @@ def test_cast_col_to_arrow_dtype():
     casted_data = cast_col_to_arrow_dtype(data, data_type)
     assert (
         str(casted_data.dtype)
-        == "list<item: struct<a: int64, b: double, c: timestamp[us, tz=UTC], d: string, e: bool>>[pyarrow]"
+        == "list<item: struct<a: int64, b: double, c: timestamp[ns, tz=UTC], d: string, e: bool>>[pyarrow]"
     )
 
 

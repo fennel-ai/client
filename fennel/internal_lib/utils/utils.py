@@ -71,21 +71,17 @@ def as_json(self):
 def parse_datetime(value: Union[int, str, datetime]) -> datetime:
     if isinstance(value, int):
         try:
-            value = pd.to_datetime(value, unit="s")
+            value = pd.to_datetime(value, unit="s", utc=True)
         except ValueError:
             try:
-                value = pd.to_datetime(value, unit="ms")
+                value = pd.to_datetime(value, unit="ms", utc=True)
             except ValueError:
-                value = pd.to_datetime(value, unit="us")
+                try:
+                    value = pd.to_datetime(value, unit="us", utc=True)
+                except ValueError:
+                    value = pd.to_datetime(value, unit="ns", utc=True)
     else:
-        value = pd.to_datetime(value)
-
-    if value is not None and value is not pd.NA and value is not pd.NaT:
-        if value.tzinfo is not None:  # type: ignore
-            if str(value.tzinfo) != "UTC":  # type: ignore
-                value = value.tz_convert("UTC")  # type: ignore
-        else:
-            value = value.tz_localize("UTC")  # type: ignore
+        value = pd.to_datetime(value, utc=True)
     return value  # type: ignore
 
 

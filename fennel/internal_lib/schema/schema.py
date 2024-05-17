@@ -261,7 +261,7 @@ def convert_dtype_to_arrow_type(dtype: schema_proto.DataType) -> pa.DataType:
     elif dtype.HasField("bool_type"):
         return pa.bool_()
     elif dtype.HasField("timestamp_type"):
-        return pa.timestamp("us", "UTC")
+        return pa.timestamp("ns", "UTC")
     elif dtype.HasField("date_type"):
         return pa.date32()
     elif dtype.HasField("decimal_type"):
