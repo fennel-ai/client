@@ -2094,6 +2094,22 @@ class LastMovieSeen:
 
 @meta(owner="abhay@fennel.ai")
 @dataset(index=True)
+class NumLastMovieSeenByUser:
+    userid: int = field(key=True)
+    # Count should always be 1
+    cnt: int
+    t: datetime
+
+    @pipeline
+    @inputs(LastMovieSeen)
+    def pipeline_last_movie_seen(cls, rating: Dataset):
+        return rating.groupby("userid").aggregate(
+            cnt=Count(window="forever"),
+        )
+
+
+@meta(owner="abhay@fennel.ai")
+@dataset(index=True)
 class NumTimesLastMovie:
     """
     Given a movie, count the number of times it was the last movie seen by a user
@@ -2125,7 +2141,12 @@ class TestLastOp(unittest.TestCase):
         # # Sync the dataset
         client.commit(
             message="msg",
-            datasets=[LastMovieSeen, RatingActivity, NumTimesLastMovie],
+            datasets=[
+                LastMovieSeen,
+                RatingActivity,
+                NumTimesLastMovie,
+                NumLastMovieSeenByUser,
+            ],
         )
         now = datetime.now(timezone.utc)
         five_hours_ago = now - timedelta(hours=5)
@@ -2194,12 +2215,15 @@ class TestLastOp(unittest.TestCase):
             movie=pd.Series(["Jumanji", "Titanic", "RaOne"]),
         )
         assert df.shape == (3, 3)
-        if client.is_integration_client():
-            # Our backends return 0 instead of None, since we correct things
-            # while client recomputes from scratch and doesnt see Jumanji as the last movie
-            assert df["count"].tolist() == [0, 2, 2]
-        else:
-            assert df["count"].tolist() == [pd.NA, 2, 2]
+        assert df["count"].tolist() == [0, 2, 2]
+
+        ts = pd.Series([now, now, now])
+        df, _ = NumLastMovieSeenByUser.lookup(
+            ts,
+            userid=pd.Series([18231, 18232, 18233]),
+        )
+        assert df.shape == (3, 3)
+        assert df["cnt"].tolist() == [1, 1, 1]
 
 
 @meta(owner="abhay@fennel.ai")
@@ -2424,7 +2448,7 @@ class TestWaterMark(unittest.TestCase):
         # Ensure that the data is ONLY from sixteen days ago since watermark
         # wont allow data from 40 days ago to be processed
         df, _ = FirstMovieSeenWithFilter.lookup(ts, userid=pd.Series([18231]))
-        assert df.shape == (1, 4)
+        assert df.shape == (1, 5)
         assert df["movie"].tolist() == [
             "Jumanji",
         ]
@@ -2773,7 +2797,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
             return
 
         df = client.get_dataset_df("FraudReportAggregatedDataset")
-        assert df.shape == (4, 5)
+        assert df.shape == (4, 6)
         assert df["category"].tolist() == [
             "entertainment",
             "grocery",
@@ -3189,7 +3213,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
 @mock
 def test_join(client):
     def test_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-        assert df.shape == (3, 4), "Shape is not correct {}".format(df.shape)
+        assert df.shape == (3, 5), "Shape is not correct {}".format(df.shape)
         assert (
             "b1" not in df.columns
         ), "b1 column should not be present, " "{}".format(df.columns)
@@ -3963,3 +3987,105 @@ def test_erase_key(client):
     )
     assert len(found.tolist()) == 1
     assert found.tolist() == [False]
+
+
+@dataset
+class UserInfo:
+    user_id: int
+    city: Optional[str]
+    ts: datetime
+
+
+@dataset(index=True)
+class LastCityVisted:
+    user_id: int = field(key=True)
+    city: Optional[str]
+    ts: datetime
+
+    @pipeline
+    @inputs(UserInfo)
+    def last_city_visited(cls, user_info: Dataset):
+        return user_info.groupby("user_id").latest()
+
+
+@dataset(index=True)
+class CityCount:
+    city: str = field(key=True)
+    cnt: int
+    ts: datetime
+
+    @pipeline
+    @inputs(LastCityVisted)
+    def city_count(cls, last_city_visted: Dataset):
+        return (
+            last_city_visted.dropnull()
+            .groupby("city")
+            .aggregate(cnt=Count(window="forever"))
+        )
+
+
+@mock
+def test_latest_operator_query_offline(client):
+    client.commit(
+        datasets=[UserInfo, LastCityVisted, CityCount], message="test"
+    )
+
+    df = pd.DataFrame(
+        {
+            "user_id": [1, 1, 1, 1, 2, 2, 1],
+            "city": ["A", "B", "C", None, "A", "B", "B"],
+            "ts": [
+                datetime(2022, 1, 2),
+                datetime(2022, 1, 4),
+                datetime(2022, 1, 6),
+                datetime(2022, 1, 7),
+                datetime(2022, 1, 8),
+                datetime(2022, 1, 10),
+                datetime(2022, 1, 13),
+            ],
+        }
+    )
+    log(UserInfo, df)
+    results, found = client.lookup(
+        "LastCityVisted",
+        keys=pd.DataFrame({"user_id": [1, 1, 1, 1, 2, 2, 2]}),
+        timestamps=pd.Series(
+            [
+                datetime(2022, 1, 1),
+                datetime(2022, 1, 3),  # (1, A, 1), ( 1, B, 3)
+                datetime(2022, 1, 4),
+                datetime(2022, 1, 8),
+                datetime(2022, 1, 7),
+                datetime(2022, 1, 9),
+                datetime(2022, 1, 12),
+            ]
+        ),
+    )
+    assert found.tolist() == [False, True, True, True, False, True, True]
+    assert results.shape == (7, 3)
+    assert results["city"].tolist() == [pd.NA, "A", "B", pd.NA, pd.NA, "A", "B"]
+
+    results, found = client.lookup(
+        "CityCount",
+        keys=pd.DataFrame({"city": ["A", "A", "A", "A", "B", "B", "B", "B"]}),
+        timestamps=pd.Series(
+            [
+                datetime(2022, 1, 1),
+                datetime(2022, 1, 3),
+                datetime(2022, 1, 4),
+                datetime(2022, 1, 8),
+                datetime(2022, 1, 7),
+                datetime(2022, 1, 9),
+                datetime(2022, 1, 12),
+                datetime(2022, 1, 14),
+            ]
+        ),
+    )
+    assert found.tolist() == [False, True, True, True, True, True, True, True]
+    assert results.shape == (8, 3)
+    # First row is not present because its before any logging
+    # Then user visits A at t=2
+    # But then he moves to B, hence count of A is 0 at t=3, then A gets visited at t=8
+    # B has a cnt =1 at t=3, but then user 1 goes to C and None so he doesnt contribute
+    # Finally user contrinbutes only from t=10 onwards, later user 1 joins him
+    assert results["cnt"].tolist() == [pd.NA, 1, 0, 1, 0, 0, 1, 2]

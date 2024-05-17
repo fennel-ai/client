@@ -18,6 +18,8 @@ from fennel.gen.schema_pb2 import DSSchema, DataType, Field
 from fennel.internal_lib.schema import convert_dtype_to_arrow_type
 from fennel.internal_lib.utils import parse_datetime
 
+FENNEL_DELETE_TIMESTAMP = "__fennel_delete_timestamp__"
+
 
 class FakeResponse(Response):
     def __init__(self, status_code: int, content: str):
@@ -346,3 +348,51 @@ def cast_df_to_schema(
             f"Failed to cast data logged to timestamp column {dsschema.timestamp}: {e}"
         )
     return df
+
+
+def add_deletes(
+    df: pd.DataFrame, key_fields: List[str], ts_col: str
+) -> pd.DataFrame:
+    """
+    This function adds delete rows to the dataframe based on the keys provided.
+    """
+    if len(key_fields) == 0:
+        raise ValueError("Cannot add deletes to a dataset with no key fields")
+
+    if FENNEL_DELETE_TIMESTAMP in df.columns:
+        return df
+
+    # Sort the dataframe by timestamp
+    sorted_df = df.sort_values(ts_col)
+    # Iterate over the dataframe and add deletes for each row, with the timestamp
+    # set to the timestamp of the next row for the same key
+
+    # Stores the previous index for each key
+    last_index_for_key = {}
+    # Initialize the delete timestamps list with length of the dataframe
+    delete_timestamps = [None] * len(sorted_df)
+
+    for i in range(len(sorted_df)):
+        row = sorted_df.iloc[i]
+        row_key_fields = []
+        for key_field in key_fields:
+            row_key_fields.append(row.loc[key_field])
+        key = hash(tuple(row_key_fields))
+        if key not in last_index_for_key:
+            last_index_for_key[key] = i
+        else:
+            last_index = last_index_for_key[key]
+            # Add the timestamp of the current row as the delete timestamp for the last row
+            # Subtract 1 microsecond to ensure that the delete timestamp is strictly less than the
+            # timestamp of the next row
+            del_ts = row[ts_col] - pd.Timedelta("1us")
+            delete_timestamps[last_index] = del_ts
+            last_index_for_key[key] = i
+
+    # Add the delete timestamp as a hidden column to the dataframe
+    sorted_df[FENNEL_DELETE_TIMESTAMP] = delete_timestamps
+    # Cast the timestamp column to arrow timestamp type
+    sorted_df[FENNEL_DELETE_TIMESTAMP] = sorted_df[
+        FENNEL_DELETE_TIMESTAMP
+    ].astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
+    return sorted_df

@@ -1,4 +1,8 @@
 # Changelog
+
+## [1.3.13] - 2024-05-17
+- Support aggregation on aggregation/key fields. 
+
 ## [1.3.12] - 2024-05-14
 - Added support for window join.
 
@@ -6,7 +10,7 @@
 - Make sasl plain username and sasl plain password optional for kafka
 
 ## [1.3.10] - 2024-05-16
-- Strip sinks from the dataset decorator while code generation.
+- Strip sinks from the dataset decorator while code generation. 
 
 ## [1.3.9] - 2024-05-13
 - Add support for head less csv and arbitrary delimiter.
