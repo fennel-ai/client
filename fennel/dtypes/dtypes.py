@@ -310,7 +310,7 @@ class Tumbling:
 
 
 @dataclass
-class Sliding:
+class Hopping:
     duration: str
     stride: str
 
