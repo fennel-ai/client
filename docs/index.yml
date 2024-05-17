@@ -60,6 +60,7 @@ sidebar:
       - "observability/newrelic"
       - "observability/alerting"
       - "observability/lineage"
+      - "observability/inspection"
 
   - slug: "security-compliance"
     title: "Security & Compliance"
