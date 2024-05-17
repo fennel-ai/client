@@ -394,5 +394,5 @@ def add_deletes(
     # Cast the timestamp column to arrow timestamp type
     sorted_df[FENNEL_DELETE_TIMESTAMP] = sorted_df[
         FENNEL_DELETE_TIMESTAMP
-    ].astype(pd.ArrowDtype(pa.timestamp("us", "UTC")))
+    ].astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
     return sorted_df
