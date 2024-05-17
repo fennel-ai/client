@@ -40,7 +40,7 @@ role. Here are the steps for configuring SCIM on Okta:
         - Push Profile Updates
         - Push Groups
     - Select the "HTTP Header" Authentication Mode and copy the SCIM 
-      authenetication token from step 2 above into the "Authorization Bearer" field.
+      authentication token from step 2 above into the "Authorization Bearer" field.
 
     ![Diagram](/assets/scim_okta.png)
 
