@@ -6,7 +6,7 @@ import pandas as pd
 
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field, pipeline, Dataset, Sum, Count
-from fennel.dtypes import Continuous, Window
+from fennel.dtypes import Continuous, Window, Session
 from fennel.lib import inputs
 
 webhook = Webhook(name="fennel_webhook")
@@ -170,8 +170,8 @@ class ActivitySession:
     @inputs(Activity)
     def create_sessions_dataset(cls, activity: Dataset):
         # docsnip window
-        sessions = activity.groupby("user_id").window(
-            type="session", gap="60m", into_field="window"
-        )
+        sessions = activity.groupby(
+            "user_id", window=Session("60m")
+        ).aggregate()
         # /docsnip
         return sessions

@@ -45,12 +45,14 @@ from fennel.dtypes.dtypes import (
     Window,
     Decimal,
     _Decimal,
+    Hopping,
+    Session,
+    Tumbling,
 )
 from fennel.gen import schema_pb2 as schema_proto
 from fennel.internal_lib.duration import (
     Duration,
     duration_to_timedelta,
-    timedelta_to_micros,
 )
 from fennel.internal_lib.schema import (
     get_primitive_dtype,
@@ -243,8 +245,10 @@ class _Node(Generic[T]):
     def assign(self, name: str, dtype: Type, func: Callable) -> _Node:
         return Assign(self, name, dtype, func)
 
-    def groupby(self, *args) -> GroupBy:
-        return GroupBy(self, *args)
+    def groupby(
+        self, *args, window: Optional[Union[Hopping, Session, Tumbling]] = None
+    ) -> GroupBy:
+        return GroupBy(self, *args, window=window)
 
     def join(
         self,
@@ -509,14 +513,20 @@ AGGREGATE_RESERVED_FIELDS = ["emit", "along", "using", "config"]
 
 
 class GroupBy:
-    def __init__(self, node: _Node, *args):
+    def __init__(
+        self,
+        node: _Node,
+        *args,
+        window: Optional[Union[Hopping, Session, Tumbling]],
+    ):
         super().__init__()
         self.keys = args
         self.node = node
         self.node.out_edges.append(self)
+        self.window_field = window
 
     def aggregate(self, *args, along: Optional[str] = None, **kwargs) -> _Node:
-        if len(args) == 0 and len(kwargs) == 0:
+        if self.window_field is None and len(args) == 0 and len(kwargs) == 0:
             raise TypeError(
                 "aggregate operator expects at least one aggregation operation"
             )
@@ -530,6 +540,27 @@ class GroupBy:
         if along is not None and not isinstance(along, str):
             raise ValueError(
                 f"`along` kwarg in the aggregate operator must be string or None, found: {along}"
+            )
+
+        # Handle window
+        if self.window_field is not None:
+            if len(args) != 0 or len(kwargs) != 0:
+                raise ValueError(
+                    "Aggregations on Tumbling/Hopping/Session window are not yet implemented."
+                )
+            if along is not None:
+                raise ValueError(
+                    "Along parameter is not supported with Tumbling/Hopping/Session window."
+                )
+            if len(self.keys) == 0:
+                raise ValueError(
+                    "There should be at least one key in 'groupby' to use 'window'"
+                )
+            return WindowOperator(
+                self.node,
+                keys=list(self.keys),
+                window=self.window_field,
+                into_field="window",
             )
 
         # Adding aggregate to aggregates list from kwargs
@@ -556,32 +587,20 @@ class GroupBy:
     def first(self) -> _Node:
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
+        if self.window_field is not None:
+            raise ValueError(
+                "Only empty 'aggregate' method is allowed after 'groupby' when you have defined a window."
+            )
         return First(self.node, list(self.keys))  # type: ignore
 
     def latest(self) -> _Node:
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
             self.keys = self.keys[0]  # type: ignore
+        if self.window_field is not None:
+            raise ValueError(
+                "Only empty 'aggregate' method is allowed after 'groupby' when you have defined a window."
+            )
         return Latest(self.node, list(self.keys))  # type: ignore
-
-    def window(
-        self,
-        type: str,
-        into_field: str,
-        gap: Optional[str] = None,
-        duration: Optional[str] = None,
-        stride: Optional[str] = None,
-    ) -> WindowOperator:
-        if len(self.keys) == 1 and isinstance(self.keys[0], list):
-            self.keys = self.keys[0]  # type: ignore
-        return WindowOperator(
-            self.node,
-            keys=list(self.keys),
-            type=WindowType(type),
-            field=into_field,
-            gap=gap,
-            duration=duration,
-            stride=stride,
-        )
 
     def dsschema(self):
         raise NotImplementedError
@@ -908,106 +927,24 @@ class WindowOperator(_Node):
         self,
         node: _Node,
         keys: List[str],
-        type: WindowType,
-        field: str,
-        gap: Optional[Duration],
-        duration: Optional[Duration],
-        stride: Optional[Duration],
+        window: Union[Hopping, Session, Tumbling],
+        into_field: str,
     ):
         super().__init__()
-        if len(keys) == 0:
-            raise ValueError(
-                "'group_by' before 'window' must specify at least one key"
-            )
-        if type == WindowType.Hopping:
-            if stride is None:
-                raise ValueError("'hopping window' must specify stride")
-
-            if duration is None:
-                raise ValueError("'hopping window' must specify duration")
-
-            if gap is not None:
-                raise ValueError("'hopping window' doesn't allow gap parameter")
-
-        if type == WindowType.Sessionize:
-            if gap is None:
-                raise ValueError("'sessionize window' must specify gap")
-
-            if duration is not None:
-                raise ValueError(
-                    "'sessionize window' doesn't allow duration parameter"
-                )
-
-            if stride is not None:
-                raise ValueError(
-                    "'sessionize window' doesn't allow stride parameter"
-                )
-
-        if type == WindowType.Tumbling:
-            if duration is None:
-                raise ValueError("'tumbling window' must specify duration")
-
-            if gap is not None:
-                raise ValueError(
-                    "'tumbling window' doesn't allow gap parameter"
-                )
-
-            if stride is not None:
-                raise ValueError(
-                    "'tumbling window' doesn't allow stride parameter"
-                )
 
         self.input_keys = keys.copy()
-        self.by = keys.copy()
-        keys.append(field)
+        keys.append(into_field)
         self.keys = keys
-        self.type = type
-        if duration == "forever" or gap == "forever" or stride == "forever":
-            raise ValueError("'forever' is not a valid duration value.")
-
-        try:
-            self.gap_timedelta = (
-                gap if gap is None else duration_to_timedelta(gap)
-            )
-        except ValueError:
-            raise ValueError(
-                "Failed when parsing gap, duration is not parsable."
-            )
-        try:
-            self.duration_timedelta = (
-                duration
-                if duration is None
-                else duration_to_timedelta(duration)
-            )
-        except ValueError:
-            raise ValueError(
-                "Failed when parsing duration, duration is not parsable."
-            )
-        try:
-            self.stride_timedelta = (
-                stride if stride is None else duration_to_timedelta(stride)
-            )
-        except ValueError:
-            raise ValueError(
-                "Failed when parsing stride, duration is not parsable."
-            )
-
-        if type == WindowType.Hopping:
-            if timedelta_to_micros(self.duration_timedelta) < timedelta_to_micros(self.stride_timedelta):  # type: ignore
-                raise ValueError(
-                    "stride parameters is larger than duration parameters which is not supported in 'hopping window'"
-                )
-        self.field = field
+        self.field = into_field
+        self.window = window
         self.node = node
         self.node.out_edges.append(self)
-        self.summary: Optional[Summary] = None
 
     def signature(self):
         return fhash(
             self.node.signature(),
             self.keys,
-            self.type,
-            self.gap_timedelta,
+            self.window,
             self.field,
         )
 
@@ -1017,27 +954,11 @@ class WindowOperator(_Node):
             f: input_schema.get_type(f) for f in self.keys if f != self.field
         }
         keys[self.field] = Window
-        if self.summary is not None:
-            values = {self.summary.field: get_pd_dtype(self.summary.dtype)}
-        else:
-            values = {}
         return DSSchema(
             keys=keys,
-            values=values,  # type: ignore
+            values={},  # type: ignore
             timestamp=input_schema.timestamp,
         )
-
-    def summarize(self, field: str, dtype: Type, func: Callable):
-        if self.summary is not None:
-            raise ValueError(
-                f"'window' operator already have a summary field with name {self.summary.field}. window operator can only have 1 summary"
-            )
-
-        new_window_op = copy.deepcopy(self)
-        new_window_op.summary = Summary(
-            field=field, dtype=dtype, summarize_func=func
-        )
-        return new_window_op
 
 
 # ---------------------------------------------------------------------

@@ -2100,7 +2100,7 @@ class NumLastMovieSeenByUser:
     @inputs(LastMovieSeen)
     def pipeline_last_movie_seen(cls, rating: Dataset):
         return rating.groupby("userid").aggregate(
-            cnt=Count(window="forever"),
+            cnt=Count(window=Continuous("forever")),
         )
 
 
@@ -4016,7 +4016,7 @@ class CityCount:
         return (
             last_city_visted.dropnull()
             .groupby("city")
-            .aggregate(cnt=Count(window="forever"))
+            .aggregate(cnt=Count(window=Continuous("forever")))
         )
 
 

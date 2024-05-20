@@ -6,21 +6,19 @@ from textwrap import dedent, indent
 from typing import Dict, Any, List, Optional
 
 import google.protobuf.duration_pb2 as duration_proto
+
+import fennel.gen.dataset_pb2 as proto
+import fennel.gen.pycode_pb2 as pycode_proto
+from fennel.datasets import Dataset, Pipeline, Visitor
+from fennel.internal_lib.duration import (
+    duration_to_timedelta,
+)
+from fennel.internal_lib.schema import get_datatype
 from fennel.internal_lib.to_proto.source_code import (
     to_includes_proto,
     get_dataset_core_code,
 )
-
-import fennel.gen.dataset_pb2 as proto
-import fennel.gen.pycode_pb2 as pycode_proto
-import fennel.gen.window_pb2 as window_proto
-from fennel.datasets import Dataset, Pipeline, Visitor
-from fennel.datasets.datasets import WindowType
-from fennel.internal_lib.duration import (
-    duration_to_timedelta,
-)
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
-from fennel.internal_lib.schema import get_datatype
 
 
 def _del_spaces_tabs_and_newlines(s):
@@ -375,37 +373,6 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
         )
 
     def visitWindow(self, obj):
-        window_type = None
-        if obj.type == WindowType.Sessionize:
-            gap = duration_proto.Duration()
-            gap.FromTimedelta(obj.gap_timedelta)
-            window_type = window_proto.Window(
-                session=window_proto.Session(gap=gap)
-            )
-        elif obj.type == WindowType.Tumbling:
-            duration = duration_proto.Duration()
-            duration.FromTimedelta(obj.duration_timedelta)
-            window_type = window_proto.Window(
-                tumbling=window_proto.Tumbling(duration=duration)
-            )
-        elif obj.type == WindowType.Hopping:
-            duration = duration_proto.Duration()
-            duration.FromTimedelta(obj.duration_timedelta)
-            stride = duration_proto.Duration()
-            stride.FromTimedelta(obj.stride_timedelta)
-            window_type = window_proto.Window(
-                hopping=window_proto.Hopping(duration=duration, stride=stride)
-            )
-        if obj.summary is not None:
-            window_func_pycode = to_includes_proto(obj.summary.summarize_func)
-            gen_pycode = self.wrap_function(window_func_pycode, is_summary=True)
-            summary = window_proto.Summary(
-                column_name=obj.summary.field,
-                pycode=gen_pycode,
-                output_type=get_datatype(obj.summary.dtype),
-            )
-        else:
-            summary = None
         return proto.Operator(
             id=obj.signature(),
             is_root=obj == self.terminal_node,
@@ -414,9 +381,9 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             ds_version=self.dataset_version,
             window=proto.WindowOperatorKind(
                 operand_id=self.visit(obj.node),
-                window_type=window_type,
+                window_type=obj.window.to_proto(),
                 field=obj.field,
-                by=obj.by,
-                summary=summary,
+                by=obj.input_keys,
+                summary=None,
             ),
         )

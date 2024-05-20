@@ -338,7 +338,14 @@ class Tumbling:
         """
         Run validation on duration.
         """
-        duration_to_timedelta(self.duration)
+        if self.duration == "forever":
+            raise ValueError(
+                "'forever' is not a valid duration value for Tumbling window."
+            )
+        try:
+            duration_to_timedelta(self.duration)
+        except Exception as e:
+            raise ValueError(f"Failed when parsing duration : {e}.")
 
     def to_proto(self) -> window_proto.Window:
         duration = duration_proto.Duration()
@@ -350,6 +357,12 @@ class Tumbling:
     def signature(self) -> str:
         return f"tumbling-{self.duration}"
 
+    def duration_total_seconds(self) -> int:
+        return int(duration_to_timedelta(self.duration).total_seconds())
+
+    def stride_total_seconds(self) -> int:
+        return int(duration_to_timedelta(self.duration).total_seconds())
+
 
 @dataclass
 class Hopping:
@@ -360,11 +373,21 @@ class Hopping:
         """
         Run validation on duration and stride.
         """
+        try:
+            stride_timedelta = duration_to_timedelta(self.stride)
+        except Exception as e:
+            raise ValueError(f"Failed when parsing stride : {e}.")
         if self.duration == "forever":
             raise ValueError("Forever hopping window is not yet supported.")
         else:
-            duration_to_timedelta(self.duration)
-        duration_to_timedelta(self.stride)
+            try:
+                duration_timedelta = duration_to_timedelta(self.duration)
+            except Exception as e:
+                raise ValueError(f"Failed when parsing duration : {e}.")
+            if stride_timedelta > duration_timedelta:
+                raise ValueError(
+                    "stride parameters is larger than duration parameters which is not supported in 'Hopping'"
+                )
 
     def to_proto(self) -> window_proto.Window:
         duration = duration_proto.Duration()
@@ -378,3 +401,34 @@ class Hopping:
 
     def signature(self) -> str:
         return f"hopping-{self.duration}-{self.stride}"
+
+    def duration_total_seconds(self) -> int:
+        return int(duration_to_timedelta(self.duration).total_seconds())
+
+    def stride_total_seconds(self) -> int:
+        return int(duration_to_timedelta(self.stride).total_seconds())
+
+
+@dataclass
+class Session:
+    gap: str
+
+    def __post_init__(self):
+        """
+        Run validation on gap.
+        """
+        try:
+            duration_to_timedelta(self.gap)
+        except Exception as e:
+            raise ValueError(f"Failed when parsing gap : {e}.")
+
+    def to_proto(self) -> window_proto.Window:
+        gap = duration_proto.Duration()
+        gap.FromTimedelta(duration_to_timedelta(self.gap))
+        return window_proto.Window(session=window_proto.Session(gap=gap))
+
+    def signature(self) -> str:
+        return f"session-{self.gap}"
+
+    def gap_total_seconds(self) -> int:
+        return int(duration_to_timedelta(self.gap).total_seconds())

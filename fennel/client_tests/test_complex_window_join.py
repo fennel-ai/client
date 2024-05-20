@@ -1,5 +1,4 @@
 from datetime import datetime, date, timezone, timedelta
-from typing import Optional
 
 import pandas as pd
 import pytest
@@ -28,20 +27,11 @@ class AppEventDailySession:
     user_id: int = field(key=True)
     window: Window = field(key=True)
     timestamp: datetime = field(timestamp=True)
-    count: int
 
     @pipeline
     @inputs(AppEvent)
     def pipeline(cls, app_event: Dataset):
-        return (
-            app_event.groupby("user_id")
-            .window(type="tumbling", into_field="window", duration="1d")
-            .summarize(
-                field="count",
-                dtype=int,
-                func=lambda df: len(df),
-            )
-        )
+        return app_event.groupby("user_id", window=Tumbling("1d")).aggregate()
 
 
 @source(webhook.endpoint("UserDataset"), disorder="14d", cdc="append")
@@ -56,7 +46,6 @@ class DailyStats:
     user_id: int = field(key=True)
     activity_date: date = field(key=True)
     timestamp: datetime = field(timestamp=True)
-    count_app_events: Optional[int]
     window: Window
 
     @pipeline
@@ -73,8 +62,7 @@ class DailyStats:
                     lambda y: bucketize(y, window=Tumbling("1d"))
                 ),
             )
-            .join(daily_session, on=["user_id", "window"], how="left")
-            .rename({"count": "count_app_events"})
+            .join(daily_session, on=["user_id", "window"], how="inner")
             .groupby("user_id", "activity_date")
             .latest()
         )
@@ -172,7 +160,6 @@ def test_window_join(client):
             }
         ),
     )
-    assert df["count"].tolist() == [2, 4, 4]
     assert df["timestamp"].tolist() == [
         now.replace(hour=0, minute=0, second=0, microsecond=0),
         now_1d.replace(hour=0, minute=0, second=0, microsecond=0),
@@ -209,4 +196,3 @@ def test_window_join(client):
             "end": now_2d.replace(hour=0, minute=0, second=0, microsecond=0),
         },
     ]
-    assert df["count_app_events"].tolist() == [2, 4, 4]

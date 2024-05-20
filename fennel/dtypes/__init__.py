@@ -9,4 +9,5 @@ from fennel.dtypes.dtypes import (
     Continuous,
     Hopping,
     Tumbling,
+    Session,
 )

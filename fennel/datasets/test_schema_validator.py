@@ -14,7 +14,7 @@ from fennel.datasets import (
     Min,
     Max,
 )
-from fennel.dtypes import Window, Continuous
+from fennel.dtypes import Window, Continuous, Session
 from fennel.lib import meta, inputs
 
 
@@ -1224,13 +1224,11 @@ def test_window_without_key_fails():
             @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby().window(
-                    type="session", gap="10m", into_field="window"
-                )
+                return app_event.groupby(window=Session("10m")).aggregate()
 
     assert (
         str(e.value)
-        == """'group_by' before 'window' must specify at least one key"""
+        == "There should be at least one key in 'groupby' to use 'window'"
     )
 
 
@@ -1254,9 +1252,9 @@ def test_window_incorrect_schema_optional_key():
             @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="session", gap="10m", into_field="window"
-                )
+                return app_event.groupby(
+                    "user_id", window=Session("10m")
+                ).aggregate()
 
     assert (
         str(e.value)
@@ -1284,9 +1282,9 @@ def test_window_incorrect_schema_nokey():
             @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="session", gap="10m", into_field="window"
-                )
+                return app_event.groupby(
+                    "user_id", window=Session("10m")
+                ).aggregate()
 
     assert (
         str(e.value)
@@ -1313,13 +1311,13 @@ def test_window_incorrect_schema_missing_field():
             @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="session", gap="10m", into_field="window_struct"
-                )
+                return app_event.groupby(
+                    "user_id", window=Session("10m")
+                ).aggregate()
 
     assert (
         str(e.value)
-        == """[TypeError('Field `window_struct` is present in `pipeline pipeline_window output` `key` schema but not present in `Sessions key` schema.')]"""
+        == """[TypeError('Field `window` is present in `pipeline pipeline_window output` `key` schema but not present in `Sessions key` schema.')]"""
     )
 
 
@@ -1337,19 +1335,19 @@ def test_window_incorrect_schema_dtype_field():
         @dataset
         class Sessions:
             user_id: str = field(key=True)
-            window_struct: str = field(key=True)
+            window: str = field(key=True)
             t: datetime
 
             @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="session", gap="10m", into_field="window_struct"
-                )
+                return app_event.groupby(
+                    "user_id", window=Session("10m")
+                ).aggregate()
 
     assert (
         str(e.value)
-        == """[TypeError('Field `window_struct` has type `Window` in `pipeline pipeline_window output key` schema but type `str` in `Sessions key` schema.')]"""
+        == """[TypeError('Field `window` has type `Window` in `pipeline pipeline_window output key` schema but type `str` in `Sessions key` schema.')]"""
     )
 
 
@@ -1373,43 +1371,13 @@ def test_window_wrong_field():
             @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("u_id").window(
-                    type="session", gap="10m", into_field="window"
-                )
+                return app_event.groupby(
+                    "u_id", window=Session("10m")
+                ).aggregate()
 
     assert (
         str(e.value)
         == """field `u_id` not found in schema of `'[Dataset:PageViewEvent]'`"""
-    )
-
-
-def test_window_wrong_type():
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="tumblegg", gap="10m", into_field="window"
-                )
-
-    assert (
-        str(e.value)
-        == """`tumblegg` is not a valid 'type' in 'window' operator. 'type' in window operator must be one of ['session', 'tumbling', 'hopping']"""
     )
 
 
@@ -1433,337 +1401,13 @@ def test_window_invalid_gap():
             @pipeline
             @inputs(PageViewEvent)
             def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="session", gap="10m 5yy", into_field="window"
-                )
-
-    assert (
-        str(e.value) == """Failed when parsing gap, duration is not parsable."""
-    )
-
-
-def test_window_field_invalid_name():
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-            uuid: str
-            page_id: str
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions1:
-            user_id: str = field(key=True)
-            uuid: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="session", gap="10m", into_field="uuid"
-                )
+                return app_event.groupby(
+                    "user_id", window=Session("10m 5yy")
+                ).aggregate()
 
     assert (
         str(e.value)
-        == """Window field name `uuid` in `'[Pipeline:pipeline_window]->window node'` must be different from non keyed fields in `'[Dataset:PageViewEvent]'`"""
-    )
-
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-            uuid: str
-            page_id: str
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions2:
-            user_id: str = field(key=True)
-            page_id: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="session", gap="10m", into_field="page_id"
-                )
-
-    assert (
-        str(e.value)
-        == """Window field name `page_id` in `'[Pipeline:pipeline_window]->window node'` must be different from non keyed fields in `'[Dataset:PageViewEvent]'`"""
-    )
-
-
-def test_window_field_without_valid_parameters():
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions1:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="session", duration="2s", into_field="window"
-                )
-
-    assert str(e.value) == """'sessionize window' must specify gap"""
-
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions2:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="tumbling", into_field="window", gap="5s"
-                )
-
-    assert str(e.value) == """'tumbling window' must specify duration"""
-
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions3:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="hopping", into_field="window", stride="5s"
-                )
-
-    assert str(e.value) == """'hopping window' must specify duration"""
-
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions4:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="hopping", into_field="window", duration="5s"
-                )
-
-    assert str(e.value) == """'hopping window' must specify stride"""
-
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions5:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="hopping",
-                    into_field="window",
-                    duration="5s",
-                    stride="5s",
-                    gap="1s",
-                )
-
-    assert str(e.value) == """'hopping window' doesn't allow gap parameter"""
-
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions6:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="session", into_field="window", gap="5s", duration="5s"
-                )
-
-    assert (
-        str(e.value)
-        == """'sessionize window' doesn't allow duration parameter"""
-    )
-
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions7:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="tumbling",
-                    into_field="window",
-                    gap="5s",
-                    duration="5s",
-                )
-
-    assert str(e.value) == """'tumbling window' doesn't allow gap parameter"""
-
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions8:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return app_event.groupby("user_id").window(
-                    type="hopping",
-                    into_field="window",
-                    stride="6s",
-                    duration="5s",
-                )
-
-    assert (
-        str(e.value)
-        == """stride parameters is larger than duration parameters which is not supported in 'hopping window'"""
-    )
-
-
-def test_double_summary():
-    with pytest.raises(ValueError) as e:
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class PageViewEvent:
-            user_id: str
-            page_id: str
-            t: datetime
-
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Sessions1:
-            user_id: str = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-
-            @pipeline
-            @inputs(PageViewEvent)
-            def pipeline_window(cls, app_event: Dataset):
-                return (
-                    app_event.groupby("user_id")
-                    .window(type="session", gap="2s", into_field="window")
-                    .summarize(
-                        field="concat_page_id",
-                        dtype=str,
-                        func=lambda df: ",".join(
-                            [str(x) for x in df["page_id"]]
-                        ),
-                    )
-                    .summarize(
-                        field="concat_page_idd",
-                        dtype=str,
-                        func=lambda df: ",".join(
-                            [str(x) for x in df["page_id"]]
-                        ),
-                    )
-                )
-
-    assert (
-        str(e.value)
-        == """'window' operator already have a summary field with name concat_page_id. window operator can only have 1 summary"""
+        == "Failed when parsing gap : Invalid character `y` in duration `10m 5yy`."
     )
 
 

@@ -10,8 +10,8 @@ import pyarrow as pa
 from frozendict import frozendict
 
 import fennel.gen.schema_pb2 as schema_proto
-from fennel.datasets import Pipeline, Visitor, Dataset, Count, Summary
-from fennel.datasets.datasets import WindowType
+from fennel.datasets import Pipeline, Visitor, Dataset, Count
+from fennel.dtypes import Session, Hopping, Tumbling
 from fennel.gen.schema_pb2 import Field
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype, fennel_is_optional
@@ -691,7 +691,6 @@ class Executor(Visitor):
             timestamp_col: str,
             gap: int,
             field: str,
-            summary: Optional[Summary],
         ) -> pd.DataFrame:
             """Group record in dataframe by session based on
             timestamp column and the maximum gap between records
@@ -701,7 +700,6 @@ class Executor(Visitor):
                 timestamp_col: Column indicating timestamp of the record
                 gap: Maximum gap between records to be included in session
                 field: Output field to generate the sessions
-                summary: Optional summary to generate for the sessions
 
                 Returns:
                 Dataframe: The result dataframe contain the session
@@ -714,7 +712,6 @@ class Executor(Visitor):
             timestamp_list: List[datetime] = []
             current_window: Optional[WindowStruct] = None
             rows: List = []
-            summary_value = []
 
             # Iterate through the rows of the DataFrame
             for _, row in df.iterrows():
@@ -734,9 +731,6 @@ class Executor(Visitor):
                         # Save window information and reset for a new window
                         window_list.append(current_window.to_dict())
                         timestamp_list.append(current_window.end_time)
-                        if summary is not None:
-                            value = summary.summarize_func(pd.DataFrame(rows))
-                            summary_value.append(value)
                         current_window = WindowStruct(row[timestamp_col])
                         rows = [row]
 
@@ -744,35 +738,11 @@ class Executor(Visitor):
             # Save the window information
             window_list.append(current_window.to_dict())  # type: ignore
             timestamp_list.append(current_window.end_time)  # type: ignore
-            if summary is not None:
-                value = summary.summarize_func(pd.DataFrame(rows))
-                summary_value.append(value)
 
             # Create a new DataFrame with session information
             df = pd.DataFrame(
                 {field: window_list, timestamp_col: timestamp_list}
             )
-            if summary is not None:
-                try:
-                    df[summary.field] = summary_value
-                except Exception as e:
-                    raise Exception(
-                        f"Error in window node for column `{summary.field}` for pipeline "
-                        f"`{self.cur_pipeline_name}`, {e}"
-                    )
-                # Check the schema of the column
-                try:
-                    field = schema_proto.Field(
-                        name=summary.field,
-                        dtype=get_datatype(summary.dtype),
-                    )
-                    validate_field_in_df(field, df, self.cur_pipeline_name)
-                except Exception as e:
-                    raise Exception(
-                        f"Error in window node for column `{summary.field}` for pipeline "
-                        f"`{self.cur_pipeline_name}`, {e}"
-                    )
-
             return df
 
         def generate_hopping_window_overlapped(
@@ -796,7 +766,6 @@ class Executor(Visitor):
             duration: int,
             stride: int,
             field: str,
-            summary: Optional[Summary],
         ):
             """Group record in window of fixed duration
 
@@ -806,7 +775,6 @@ class Executor(Visitor):
             duration: Duration of the window
             stride: The gap between start time of consecutive windows
             field: Output field to generate the sessions
-            summary: Optional summary to generate for the sessions
 
             Returns:
             Dataframe: The result dataframe contain the session
@@ -818,7 +786,6 @@ class Executor(Visitor):
             windows_map: dict = dict()
             window_list: List[dict] = []
             timestamp_list: List[datetime] = []
-            summary_value: List = []
 
             # Iterate through the rows of the DataFrame
             for index, row in df.iterrows():
@@ -846,69 +813,36 @@ class Executor(Visitor):
             for window, rows in windows_map.values():
                 timestamp_list.append(window.end_time)  # type: ignore
                 window_list.append(window.to_dict())  # type: ignore
-                if summary is not None:
-                    value = summary.summarize_func(pd.DataFrame(rows))
-                    summary_value.append(value)
 
             # Create a new DataFrame with session information
             df = pd.DataFrame(
                 {field: window_list, timestamp_col: timestamp_list}
             )
-            if summary is not None:
-                try:
-                    df[summary.field] = summary_value
-                except Exception as e:
-                    raise Exception(
-                        f"Error in assign node for column `{summary.field}` for pipeline "
-                        f"`{self.cur_pipeline_name}`, {e}"
-                    )
-                # Check the schema of the column
-                try:
-                    field = schema_proto.Field(
-                        name=summary.field,
-                        dtype=get_datatype(summary.dtype),
-                    )
-                    validate_field_in_df(field, df, self.cur_pipeline_name)
-                except Exception as e:
-                    raise Exception(
-                        f"Error in assign node for column `{summary.field}` for pipeline "
-                        f"`{self.cur_pipeline_name}`, {e}"
-                    )
             return df
 
         list_keys = obj.keys + [input_ret.timestamp_field]
-        if obj.summary is not None:
-            list_keys.append(obj.summary.field)
 
-        if obj.type == WindowType.Sessionize:
+        if isinstance(obj.window, Session):
             window_dataframe = (
                 input_df.groupby(obj.input_keys)
                 .apply(
                     generate_sessions_for_df,
                     timestamp_col=input_ret.timestamp_field,
-                    gap=obj.gap_timedelta.total_seconds(),
+                    gap=obj.window.gap_total_seconds(),
                     field=obj.field,
-                    summary=obj.summary,
                 )
                 .reset_index()
                 .loc[:, list_keys]
             )
-        elif obj.type == WindowType.Hopping or obj.type == WindowType.Tumbling:
-            duration = obj.duration_timedelta
-            if obj.type == WindowType.Hopping:
-                stride = obj.stride_timedelta
-            else:
-                stride = duration
-
+        elif isinstance(obj.window, (Hopping, Tumbling)):
             window_dataframe = (
                 input_df.groupby(obj.input_keys)
                 .apply(
                     generate_hopping_windows_for_df,
                     timestamp_col=input_ret.timestamp_field,
-                    duration=duration.total_seconds(),
-                    stride=stride.total_seconds(),
+                    duration=obj.window.duration_total_seconds(),
+                    stride=obj.window.stride_total_seconds(),
                     field=obj.field,
-                    summary=obj.summary,
                 )
                 .reset_index()
                 .loc[:, list_keys]
