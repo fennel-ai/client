@@ -3345,3 +3345,140 @@ def test_erase_key():
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
     )
+
+
+def test_emit_strategy():
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class A1:
+        user_id: str
+        page_id: str
+        event_id: str
+        t: datetime
+
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class A2:
+        user_id: str = field(key=True)
+        page_id: str = field(key=True)
+        count: int
+        t: datetime
+
+        @pipeline
+        @inputs(A1)
+        def pipeline_window(cls, event: Dataset):
+            return event.groupby("user_id", "page_id").aggregate(
+                count=Count(window=Continuous("1h")), emit="final"
+            )
+
+    view = InternalTestClient()
+    view.add(A1)  # type: ignore
+    view.add(A2)  # type: ignore
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 2
+    d = {
+        "name": "A2",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "user_id",
+                        "dtype": {"stringType": {}},
+                    },
+                    {
+                        "name": "page_id",
+                        "dtype": {"stringType": {}},
+                    },
+                ]
+            },
+            "values": {
+                "fields": [{"name": "count", "dtype": {"int_type": {}}}]
+            },
+            "timestamp": "t",
+            "erase_keys": [],
+        },
+        "version": 1,
+        "metadata": {"owner": "nitin@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "user_id": {},
+            "page_id": {},
+            "count": {},
+            "t": {},
+        },
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[1]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )
+
+
+def test_aggregation_emit_final():
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class A1:
+        user_id: str
+        page_id: str
+        event_id: str
+        t: datetime
+
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class A2:
+        user_id: str = field(key=True)
+        count: int
+        t: datetime
+
+        @pipeline
+        @inputs(A1)
+        def pipeline_window(cls, event: Dataset):
+            return (
+                event.groupby("user_id", "page_id")
+                .aggregate(count=Count(window=Continuous("1h")), emit="final")
+                .groupby("user_id")
+                .aggregate(count=Count(window=Continuous("1h")))
+            )
+
+    view = InternalTestClient()
+    view.add(A1)  # type: ignore
+    view.add(A2)  # type: ignore
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 2
+    d = {
+        "name": "A2",
+        "dsschema": {
+            "keys": {
+                "fields": [
+                    {
+                        "name": "user_id",
+                        "dtype": {"stringType": {}},
+                    },
+                ]
+            },
+            "values": {
+                "fields": [{"name": "count", "dtype": {"int_type": {}}}]
+            },
+            "timestamp": "t",
+            "erase_keys": [],
+        },
+        "version": 1,
+        "metadata": {"owner": "nitin@fennel.ai"},
+        "history": "63072000s",
+        "retention": "63072000s",
+        "field_metadata": {
+            "user_id": {},
+            "count": {},
+            "t": {},
+        },
+        "pycode": {},
+    }
+    dataset_req = sync_request.datasets[1]
+    dataset_req.pycode.Clear()
+    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
+    assert dataset_req == expected_dataset_request, error_message(
+        dataset_req, expected_dataset_request
+    )

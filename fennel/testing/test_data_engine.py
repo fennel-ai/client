@@ -2,8 +2,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from fennel.testing import mock, log
 from fennel.datasets import dataset, field
+from fennel.testing import mock, log
 
 __owner__ = "aditya@fennel.ai"
 
@@ -50,7 +50,11 @@ def test_add_delete_timestamps(client):
     client.commit(datasets=[KeyedTestDataset], message="Add data")
     log(KeyedTestDataset, df)
 
-    internal_df = client.get_dataset_df("KeyedTestDataset")
+    internal_df = (
+        client.branches_map["main"]
+        .data_engine.datasets["KeyedTestDataset"]
+        .data
+    )
     # There should be 3 deleted rows
     deleted_rows = internal_df[internal_df[FENNEL_DELETE_TIMESTAMP].notna()]
     assert deleted_rows.shape[0] == 3

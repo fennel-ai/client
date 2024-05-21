@@ -2789,7 +2789,7 @@ class TestFraudReportAggregatedDataset(unittest.TestCase):
             return
 
         df = client.get_dataset_df("FraudReportAggregatedDataset")
-        assert df.shape == (4, 6)
+        assert df.shape == (4, 5)
         assert df["category"].tolist() == [
             "entertainment",
             "grocery",

@@ -325,6 +325,9 @@ class _Node(Generic[T]):
     def isignature(self):
         raise NotImplementedError
 
+    def signature(self):
+        raise NotImplementedError
+
     def schema(self):
         return copy.deepcopy(self.dsschema().schema())
 
@@ -438,6 +441,19 @@ class Filter(_Node):
         return self.node.dsschema()
 
 
+class EmitStrategy(str, Enum):
+    Final = "final"
+    Eager = "eager"
+
+    @classmethod
+    def _missing_(cls, value):
+        valid_types = [m.value for m in cls]
+        raise ValueError(
+            f"`{value}` is not a valid 'emit_strategy' in 'aggregate' operator. "
+            f"'emit' in aggregation operator must be one of {valid_types}"
+        )
+
+
 class Aggregate(_Node):
     def __init__(
         self,
@@ -445,6 +461,7 @@ class Aggregate(_Node):
         keys: List[str],
         aggregates: List[AggregateType],
         along: Optional[str],
+        emit_strategy: EmitStrategy,
     ):
         super().__init__()
         if len(keys) == 0:
@@ -454,6 +471,7 @@ class Aggregate(_Node):
         self.node = node
         self.node.out_edges.append(self)
         self.along = along
+        self.emit_strategy = emit_strategy
 
     def signature(self):
         agg_signature = fhash([agg.signature() for agg in self.aggregates])
@@ -523,9 +541,27 @@ class GroupBy:
         self.keys = args
         self.node = node
         self.node.out_edges.append(self)
+        if window is not None and not isinstance(
+            window, (Hopping, Session, Tumbling)
+        ):
+            raise TypeError(
+                "Type of 'window' param can only be either Hopping, Session or Tumbling."
+            )
         self.window_field = window
 
-    def aggregate(self, *args, along: Optional[str] = None, **kwargs) -> _Node:
+    def aggregate(
+        self, *args, along: Optional[str] = None, emit: str = "eager", **kwargs
+    ) -> _Node:
+        if isinstance(emit, AggregateType):
+            raise ValueError(
+                "`emit` is a reserved kwarg for aggregate operator and can not be used "
+                "for an aggregation column"
+            )
+        if along is not None and isinstance(along, AggregateType):
+            raise ValueError(
+                "`along` is a reserved kwarg for aggregate operator and can not be used "
+                "for an aggregation column"
+            )
         if self.window_field is None and len(args) == 0 and len(kwargs) == 0:
             raise TypeError(
                 "aggregate operator expects at least one aggregation operation"
@@ -567,10 +603,6 @@ class GroupBy:
         for key, value in kwargs.items():
             if not isinstance(value, AggregateType):
                 raise ValueError(f"Invalid aggregate type for field: {key}")
-            if key in AGGREGATE_RESERVED_FIELDS:
-                raise ValueError(
-                    f"`{key}` is a reserved kwarg for aggregate operator and can not be used for an aggregation column"
-                )
             value.into_field = key
             aggregates.append(value)
 
@@ -582,7 +614,9 @@ class GroupBy:
                     "parameter or through named arguments."
                 )
 
-        return Aggregate(self.node, list(self.keys), aggregates, along)
+        return Aggregate(
+            self.node, list(self.keys), aggregates, along, EmitStrategy(emit)
+        )
 
     def first(self) -> _Node:
         if len(self.keys) == 1 and isinstance(self.keys[0], list):
@@ -1404,10 +1438,12 @@ class Pipeline:
         self.func = func  # type: ignore
         self.name = func.__name__
         self.env = EnvSelector(env)
+        self.terminal_node: _Node
 
     # Validate the schema of all intermediate nodes
-    # and return the schema of the terminal node.
-    def get_terminal_schema(self) -> DSSchema:
+    # and return the schema of the terminal node and whether
+    # the pipeline is terminal or not.
+    def get_terminal_schema(self) -> Tuple[DSSchema, bool]:
         schema_validator = SchemaValidator()
         return schema_validator.validate(self)
 
@@ -1418,7 +1454,10 @@ class Pipeline:
         if node is None:
             raise Exception(f"Pipeline {self.name} cannot return None.")
         self.terminal_node = node
-        return isinstance(node, Aggregate)
+        return (
+            isinstance(node, Aggregate)
+            and node.emit_strategy == EmitStrategy.Eager
+        )
 
     def set_dataset_name(self, ds_name: str):
         self._dataset_name = ds_name
@@ -1699,7 +1738,7 @@ class Dataset(_Node[T]):
         ds_schema = self.dsschema()
 
         for pipeline in pipelines:
-            pipeline_schema = pipeline.get_terminal_schema()
+            pipeline_schema, is_terminal = pipeline.get_terminal_schema()
             err = pipeline_schema.matches(
                 ds_schema, f"pipeline {pipeline.name} output", self._name
             )
@@ -2217,21 +2256,24 @@ class SchemaValidator(Visitor):
         super(SchemaValidator, self).__init__()
         self.pipeline_name = ""
 
-    def validate(self, pipe: Pipeline) -> DSSchema:
+    def validate(self, pipe: Pipeline) -> Tuple[DSSchema, bool]:
         self.pipeline_name = pipe.name
         return self.visit(pipe.terminal_node)
 
-    def visit(self, obj) -> DSSchema:
-        vis = super(SchemaValidator, self).visit(obj)
-        return vis
+    def visit(self, obj) -> Tuple[DSSchema, bool]:
+        return super(SchemaValidator, self).visit(obj)
 
-    def visitDataset(self, obj) -> DSSchema:
-        return obj.dsschema()
+    def visitDataset(self, obj) -> Tuple[DSSchema, bool]:
+        return obj.dsschema(), False
 
-    def visitTransform(self, obj) -> DSSchema:
-        input_schema = self.visit(obj.node)
+    def visitTransform(self, obj) -> Tuple[DSSchema, bool]:
+        input_schema, input_is_terminal = self.visit(obj.node)
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Transform' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         if obj.new_schema is None:
-            return input_schema
+            return input_schema, False
         else:
             node_name = f"'[Pipeline:{self.pipeline_name}]->transform node'"
             if input_schema.timestamp not in obj.new_schema:
@@ -2254,29 +2296,41 @@ class SchemaValidator(Visitor):
                         f"schema of {node_name}."
                     )
             inp_keys = input_schema.keys
-            return DSSchema(
-                keys=inp_keys,
-                values={
-                    f: get_pd_dtype(dtype)
-                    for f, dtype in obj.new_schema.items()
-                    if f not in inp_keys.keys() and f != input_schema.timestamp
-                },
-                timestamp=input_schema.timestamp,
-                name=node_name,
+            return (
+                DSSchema(
+                    keys=inp_keys,
+                    values={
+                        f: get_pd_dtype(dtype)
+                        for f, dtype in obj.new_schema.items()
+                        if f not in inp_keys.keys()
+                        and f != input_schema.timestamp
+                    },
+                    timestamp=input_schema.timestamp,
+                    name=node_name,
+                ),
+                False,
             )
 
-    def visitFilter(self, obj) -> DSSchema:
-        input_schema = copy.deepcopy(self.visit(obj.node))
+    def visitFilter(self, obj) -> Tuple[DSSchema, bool]:
+        input_schema, input_is_terminal = copy.deepcopy(self.visit(obj.node))
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Filter' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         input_schema.name = f"'[Pipeline:{self.pipeline_name}]->filter node'"
-        return input_schema
+        return input_schema, False
 
-    def visitAggregate(self, obj) -> DSSchema:
+    def visitAggregate(self, obj) -> Tuple[DSSchema, bool]:
         # TODO(Aditya): Aggregations should be allowed on only
         # 1. Keyless streams.
         # 2. Keyed datasets, as long as `along` parameter is provided.
         # 3. For outputs of window operators.
 
-        input_schema = self.visit(obj.node)
+        input_schema, input_is_terminal = self.visit(obj.node)
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Aggregate' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         keys = {f: input_schema.get_type(f) for f in obj.keys}
         values: Dict[str, Type] = {}
         if isinstance(obj.along, str):
@@ -2400,11 +2454,15 @@ class SchemaValidator(Visitor):
             values=values,  # type: ignore
             timestamp=input_schema.timestamp,
             name=f"'[Pipeline:{self.pipeline_name}]->aggregate node'",
-        )
+        ), (True if obj.emit_strategy == EmitStrategy.Eager else False)
 
-    def visitJoin(self, obj) -> DSSchema:
-        left_schema = self.visit(obj.node)
-        right_schema = self.visit(obj.dataset)
+    def visitJoin(self, obj) -> Tuple[DSSchema, bool]:
+        left_schema, left_is_terminal = self.visit(obj.node)
+        if left_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Join' as left dataset in terminal in pipeline : `{self.pipeline_name}`."
+            )
+        right_schema, right_is_terminal = self.visit(obj.dataset)
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->join node'"
 
         def validate_join_bounds(within: Tuple[Duration, Duration]):
@@ -2505,12 +2563,17 @@ class SchemaValidator(Visitor):
 
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
-        return output_schema
+        return output_schema, False
 
-    def visitUnion(self, obj) -> DSSchema:
+    def visitUnion(self, obj) -> Tuple[DSSchema, bool]:
         if len(obj.nodes) == 0:
             raise ValueError("Union must have at least one node.")
-        schema = self.visit(obj.nodes[0])
+        schema, is_terminal = self.visit(obj.nodes[0])
+        if is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Union' as one of the datasets in pipeline : `{self.pipeline_name}` is terminal."
+            )
+
         # If it is a keyed dataset throw an error. Union over keyed
         # datasets, is not currently supported.
         if len(schema.keys) > 0:
@@ -2521,7 +2584,11 @@ class SchemaValidator(Visitor):
         index = 1
         exceptions = []
         for node in obj.nodes[1:]:
-            node_schema = self.visit(node)
+            node_schema, is_terminal = self.visit(node)
+            if is_terminal:
+                raise ValueError(
+                    f"Cannot add node 'Union' as one of the datasets in pipeline : `{self.pipeline_name}` is terminal."
+                )
             err = node_schema.matches(
                 schema,
                 "Union node index 0",
@@ -2532,10 +2599,14 @@ class SchemaValidator(Visitor):
         if len(exceptions) > 0:
             raise ValueError(f"Union node schemas do not match: {exceptions}")
         schema.name = f"'[Pipeline:{self.pipeline_name}]->union node'"
-        return schema
+        return schema, False
 
-    def visitRename(self, obj) -> DSSchema:
-        input_schema = copy.deepcopy(self.visit(obj.node))
+    def visitRename(self, obj) -> Tuple[DSSchema, bool]:
+        input_schema, input_is_terminal = copy.deepcopy(self.visit(obj.node))
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Rename' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         input_schema.name = f"'[Pipeline:{self.pipeline_name}]->rename node'"
         if obj.column_mapping is None or len(obj.column_mapping) == 0:
             raise ValueError(
@@ -2553,10 +2624,14 @@ class SchemaValidator(Visitor):
                     f"rename node {input_schema.name}."
                 )
             input_schema.rename_column(old, new)
-        return input_schema
+        return input_schema, False
 
-    def visitAssign(self, obj) -> DSSchema:
-        input_schema: DSSchema = copy.deepcopy(self.visit(obj.node))
+    def visitAssign(self, obj) -> Tuple[DSSchema, bool]:
+        input_schema, input_is_terminal = copy.deepcopy(self.visit(obj.node))
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Assign' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->assign node'"
         if obj.column is None or len(obj.column) == 0:
             raise ValueError(
@@ -2573,10 +2648,14 @@ class SchemaValidator(Visitor):
             )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
-        return output_schema
+        return output_schema, False
 
-    def visitDrop(self, obj) -> DSSchema:
-        input_schema = copy.deepcopy(self.visit(obj.node))
+    def visitDrop(self, obj) -> Tuple[DSSchema, bool]:
+        input_schema, input_is_terminal = copy.deepcopy(self.visit(obj.node))
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Drop' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->drop node'"
         if obj.columns is None or len(obj.columns) == 0:
             raise ValueError(
@@ -2591,10 +2670,14 @@ class SchemaValidator(Visitor):
                 )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
-        return output_schema
+        return output_schema, False
 
-    def visitDropNull(self, obj):
-        input_schema = copy.deepcopy(self.visit(obj.node))
+    def visitDropNull(self, obj) -> Tuple[DSSchema, bool]:
+        input_schema, input_is_terminal = copy.deepcopy(self.visit(obj.node))
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'DropNull' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->dropnull node'"
         if obj.columns is None or len(obj.columns) == 0:
             raise ValueError(
@@ -2614,10 +2697,14 @@ class SchemaValidator(Visitor):
                 )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
-        return output_schema
+        return output_schema, False
 
-    def visitDedup(self, obj) -> DSSchema:
-        input_schema = self.visit(obj.node)
+    def visitDedup(self, obj) -> Tuple[DSSchema, bool]:
+        input_schema, input_is_terminal = self.visit(obj.node)
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Dedup' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         output_schema_name = (
             f"'[Pipeline:{self.pipeline_name}]->drop_duplicates node'"
         )
@@ -2642,10 +2729,14 @@ class SchemaValidator(Visitor):
 
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
-        return output_schema
+        return output_schema, False
 
-    def visitExplode(self, obj) -> DSSchema:
-        input_schema = copy.deepcopy(self.visit(obj.node))
+    def visitExplode(self, obj) -> Tuple[DSSchema, bool]:
+        input_schema, input_is_terminal = copy.deepcopy(self.visit(obj.node))
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Explode' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         # If it is a keyed dataset throw an error. Explode over keyed
         # datasets, is not defined, since for a keyed dataset, there is only one value for each key.
         if len(input_schema.keys) > 0:
@@ -2680,11 +2771,15 @@ class SchemaValidator(Visitor):
                 )
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
-        return output_schema
+        return output_schema, False
 
-    def visitFirst(self, obj) -> DSSchema:
+    def visitFirst(self, obj) -> Tuple[DSSchema, bool]:
         output_schema = copy.deepcopy(obj.dsschema())
-        input_schema = copy.deepcopy(self.visit(obj.node))
+        input_schema, input_is_terminal = copy.deepcopy(self.visit(obj.node))
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'First' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         # If it is a keyed dataset throw an error.
         # We dont allow first over keyed datasets, but only keyless streams.
         if len(input_schema.keys) > 0:
@@ -2697,11 +2792,15 @@ class SchemaValidator(Visitor):
                 f"'group_by' before 'first' in {self.pipeline_name} must specify at least one key"
             )
         output_schema.name = f"'[Pipeline:{self.pipeline_name}]->first node'"
-        return output_schema
+        return output_schema, False
 
-    def visitLatest(self, obj) -> DSSchema:
+    def visitLatest(self, obj) -> Tuple[DSSchema, bool]:
         output_schema = copy.deepcopy(obj.dsschema())
-        input_schema = copy.deepcopy(self.visit(obj.node))
+        input_schema, input_is_terminal = copy.deepcopy(self.visit(obj.node))
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Latest' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
 
         # If it is a keyed dataset throw an error.
         # We dont allow latest over keyed datasets, but only keyless streams.
@@ -2715,10 +2814,14 @@ class SchemaValidator(Visitor):
                 f"'group_by' before 'latest' in {self.pipeline_name} must specify at least one key"
             )
         output_schema.name = f"'[Pipeline:{self.pipeline_name}]->lastest node'"
-        return output_schema
+        return output_schema, False
 
-    def visitWindow(self, obj) -> DSSchema:
-        input_schema = copy.deepcopy(self.visit(obj.node))
+    def visitWindow(self, obj) -> Tuple[DSSchema, bool]:
+        input_schema, input_is_terminal = copy.deepcopy(self.visit(obj.node))
+        if input_is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Window' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
         # If it is a keyed dataset throw an error.
         # We dont allow creating windows over keyed datasets, but only keyless streams.
         if len(input_schema.keys) > 0:
@@ -2743,4 +2846,4 @@ class SchemaValidator(Visitor):
                 f"'group_by' before 'window' in `{self.pipeline_name}` must specify at least one key"
             )
         output_schema.name = output_schema_name
-        return output_schema
+        return output_schema, False

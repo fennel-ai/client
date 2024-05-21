@@ -19,6 +19,9 @@ from fennel.internal_lib.schema import convert_dtype_to_arrow_type
 from fennel.internal_lib.utils import parse_datetime
 
 FENNEL_DELETE_TIMESTAMP = "__fennel_delete_timestamp__"
+FENNEL_LOOKUP = "__fennel_lookup_exists__"
+FENNEL_ORDER = "__fennel_order__"
+FENNEL_TIMESTAMP = "__fennel_timestamp__"
 
 
 class FakeResponse(Response):
