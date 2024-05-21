@@ -1,6 +1,9 @@
 # Changelog
+## [1.3.17] - 2024-05-21
+- Add support for emit param in aggregation and allow aggregation over aggregation.
+
 ## [1.3.16] - 2024-05-21
-- Add support for indirect role based access for S3 connector
+- Add support for indirect role based access for S3 connector.
 
 ## [1.3.15] - 2024-05-17
 - Added support for specifying type of window during aggregation.
