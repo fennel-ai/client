@@ -350,8 +350,8 @@ def get_aggregated_df(
         # If the input dataframe has a delete timestamp field, pick the minimum
         # of the two timestamps
         if FENNEL_DELETE_TIMESTAMP in df.columns:
-            del_df[ts_field] = del_df[ts_field].combine_first(
-                del_df[FENNEL_DELETE_TIMESTAMP]
+            del_df[ts_field] = del_df[[ts_field, FENNEL_DELETE_TIMESTAMP]].min(
+                axis=1
             )
         df = pd.concat([df, del_df], ignore_index=True)
         df = df.sort_values(
