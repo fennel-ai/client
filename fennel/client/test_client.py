@@ -23,7 +23,7 @@ def test_s3_connector_dict():
         "pre_sorted": False,
         "db": {
             "name": "extract_historical_s3_input",
-            "db": {"S3": {"creds": None}},
+            "db": {"S3": {"creds": None, "role_arn": None}},
         },
     }
     assert res == expected
@@ -48,7 +48,8 @@ def test_s3_connector_dict():
                     "creds": {
                         "access_key": "access_key",
                         "secret_key": "secret_key",
-                    }
+                    },
+                    "role_arn": None,
                 }
             },
         },
@@ -70,12 +71,49 @@ def test_s3_connector_dict():
                     "creds": {
                         "access_key": "access_key",
                         "secret_key": "secret_key",
-                    }
+                    },
+                    "role_arn": None,
                 }
             },
         },
     }
     assert res == expected
+
+    # Test with role_arn
+    s3_src.aws_access_key_id = None
+    s3_src.aws_secret_access_key = None
+    s3_src.role_arn = "arn:aws:iam::765237557123:role/admin"
+    s3_conn = s3_src.bucket("bucket", "prefix", format=CSV(delimiter="\t"))
+    res = _s3_connector_dict(s3_conn)
+    expected = {
+        "bucket": "bucket",
+        "path_prefix": "prefix",
+        "format": {
+            # 16 the ascii value for tab
+            "csv": {"delimiter": 9}
+        },
+        "pre_sorted": False,
+        "db": {
+            "name": "extract_historical_s3_input",
+            "db": {
+                "S3": {
+                    "creds": None,
+                    "role_arn": "arn:aws:iam::765237557123:role/admin",
+                }
+            },
+        },
+    }
+    assert res == expected
+
+    # Test with invalid role_arn
+    with pytest.raises(Exception) as e:
+        s3_src.role_arn = "arn:aws:iam::765237557123:role/admin"
+        s3_src.aws_access_key_id = "access_key"
+        s3_src.aws_secret_access_key = "secret_key"
+        res = _s3_connector_dict(s3_conn)
+    assert "Both access key credentials and role arn should not be set" in str(
+        e
+    )
 
     # Test with invalid creds
     with pytest.raises(Exception) as e:

@@ -916,6 +916,7 @@ def _s3_conn_to_source_proto(
         data_source.name,
         data_source.aws_access_key_id,
         data_source.aws_secret_access_key,
+        data_source.role_arn,
     )
     ext_table = _s3_to_ext_table_proto(
         ext_db,
@@ -952,12 +953,14 @@ def _s3_to_ext_db_proto(
     name: str,
     aws_access_key_id: Optional[str],
     aws_secret_access_key: Optional[str],
+    role_arn: Optional[str],
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
         s3=connector_proto.S3(
             aws_access_key_id=aws_access_key_id or "",
             aws_secret_access_key=aws_secret_access_key or "",
+            role_arn=role_arn,
         ),
     )
 

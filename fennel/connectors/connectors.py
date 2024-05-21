@@ -221,6 +221,7 @@ class CSV:
 class S3(DataSource):
     aws_access_key_id: Optional[str]
     aws_secret_access_key: Optional[str]
+    role_arn: Optional[str]
 
     def bucket(
         self,
@@ -251,6 +252,7 @@ class S3(DataSource):
             _get=True,
             aws_access_key_id="",
             aws_secret_access_key="",
+            role_arn=None,
         )
 
     def identifier(self) -> str:
@@ -639,6 +641,9 @@ class S3Connector(DataConnector):
             self.data_source.aws_access_key_id,
             self.data_source.aws_secret_access_key,
         )
+
+    def role_arn(self) -> Optional[str]:
+        return self.data_source.role_arn
 
     @staticmethod
     def parse_path(path: str) -> Tuple[str, str]:

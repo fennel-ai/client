@@ -1003,6 +1003,12 @@ def _s3_connector_dict(s3: S3Connector) -> Dict[str, Any]:
     elif secret_access_key is not None and len(secret_access_key) > 0:
         raise Exception("Secret key specified but access key id not found.")
 
+    role_arn = s3.role_arn()
+    if access_key_id and secret_access_key and role_arn:
+        raise Exception(
+            "Both access key credentials and role arn should not be set"
+        )
+
     s3_table: Dict[str, Any] = {}
     s3_table["bucket"] = s3.bucket_name
     s3_table["path_prefix"] = s3.path_prefix
@@ -1015,7 +1021,7 @@ def _s3_connector_dict(s3: S3Connector) -> Dict[str, Any]:
         s3_table["format"] = s3.format.lower()
     s3_table["db"] = {
         "name": "extract_historical_s3_input",
-        "db": {"S3": {"creds": creds_json}},
+        "db": {"S3": {"creds": creds_json, "role_arn": s3.role_arn()}},
     }
     return s3_table
 
