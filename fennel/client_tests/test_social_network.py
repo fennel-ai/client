@@ -279,7 +279,7 @@ def test_social_network(client):
     if client.is_integration_client():
         return
     df = client.get_dataset_df("UserCategoryDataset")
-    assert df.shape == (1998, 5)
+    assert df.shape == (1998, 4)
 
 
 @mock
@@ -363,4 +363,4 @@ def test_social_network_with_mock_log(client):
     assert last_post_viewed2 == last_post_viewed
 
     df = client.get_dataset_df("UserCategoryDataset")
-    assert df.shape == (1998, 5)
+    assert df.shape == (1998, 4)

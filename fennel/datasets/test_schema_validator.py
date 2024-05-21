@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from fennel.datasets import (
+    Count,
     dataset,
     field,
     pipeline,
@@ -485,6 +486,7 @@ def test_aggregation_along():
         class B4:
             a: str = field(key=True)
             b_max: int
+            count: int
             t: datetime
 
             @pipeline
@@ -540,8 +542,8 @@ def test_aggregation_along():
                 )
 
     assert (
-        """`along` kwarg in the aggregate operator must be string or None"""
-        in str(e.value)
+        str(e.value)
+        == "`along` is a reserved kwarg for aggregate operator and can not be used for an aggregation column"
     )
 
 
@@ -1469,3 +1471,41 @@ def test_conflicting_key_field_error():
             t: datetime = field(erase_key=True, timestamp=True)
 
     assert str(e.value) == """Non key field cannot be an erase key field."""
+
+
+def test_aggregation_after_eager_emit_not_allowed():
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class A1:
+        user_id: str
+        page_id: str
+        event_id: str
+        t: datetime
+
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="nitin@fennel.ai")
+        @dataset
+        class A2:
+            user_id: str = field(key=True)
+            count: int
+            t: datetime
+
+            @pipeline
+            @inputs(A1)
+            def pipeline_window(cls, event: Dataset):
+                return (
+                    event.groupby("user_id", "page_id")
+                    .aggregate(
+                        count=Count(window=Continuous("1h")), emit="final"
+                    )
+                    .groupby("user_id")
+                    .aggregate(count=Count(window=Continuous("1h")))
+                    .groupby("user_id")
+                    .aggregate(count=Count(window=Continuous("1h")))
+                )
+
+    assert (
+        str(e.value)
+        == "Cannot add node 'Aggregate' after a terminal node in pipeline : `pipeline_window`."
+    )

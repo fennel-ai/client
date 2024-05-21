@@ -139,7 +139,7 @@ class TestDebugSnips(unittest.TestCase):
             pd.Timestamp("2021-02-01T00:00:00", tzinfo=timezone.utc),
             pd.Timestamp("2021-03-01T00:00:00", tzinfo=timezone.utc),
         ]
-        assert df.shape == (2, 4)
+        assert df.shape == (2, 3)
 
     @mock
     def test_astype(self, client):

@@ -38,13 +38,14 @@ from fennel.testing.test_utils import (
     cast_df_to_arrow_dtype,
     cast_df_to_pandas_dtype,
     add_deletes,
+    FENNEL_LOOKUP,
+    FENNEL_TIMESTAMP,
+    FENNEL_ORDER,
 )
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
-FENNEL_LOOKUP = "__fennel_lookup_exists__"
-FENNEL_ORDER = "__fennel_order__"
-FENNEL_TIMESTAMP = "__fennel_timestamp__"
+
 
 logger = logging.getLogger(__name__)
 internal_webhook = Webhook(name="_internal_fennel_webhook")
@@ -162,64 +163,18 @@ class DataEngine(object):
             raise ValueError(f"Dataset `{dataset_name}` not found")
 
         # If we haven't seen any values for this dataset, return an empty df with the right schema.
-        if (
-            not isinstance(self.datasets[dataset_name].data, pd.DataFrame)
-            and not self.datasets[dataset_name].aggregated_datasets
-        ):
+        if not isinstance(self.datasets[dataset_name].data, pd.DataFrame):
             return self.datasets[dataset_name].empty_df()
 
-        if isinstance(self.datasets[dataset_name].data, pd.DataFrame):
+        else:
             df = copy.deepcopy(self.datasets[dataset_name].data)
             if FENNEL_LOOKUP in df.columns:  # type: ignore
                 df.drop(columns=[FENNEL_LOOKUP], inplace=True)  # type: ignore
             if FENNEL_TIMESTAMP in df.columns:  # type: ignore
                 df.drop(columns=[FENNEL_TIMESTAMP], inplace=True)  # type: ignore
+            if FENNEL_DELETE_TIMESTAMP in df.columns:  # type: ignore
+                df.drop(columns=[FENNEL_DELETE_TIMESTAMP], inplace=True)  # type: ignore
             return df
-
-        # This must be an aggregated dataset
-        key_fields = self.datasets[dataset_name].dataset.key_fields
-        ts_field = self.datasets[dataset_name].dataset.timestamp_field
-        required_fields = key_fields + [ts_field]
-        column_wise_df = self.datasets[dataset_name].aggregated_datasets
-        key_dfs = pd.DataFrame()
-        # Collect all timestamps across all columns
-        for data in column_wise_df.values():  # type: ignore
-            subset_df = data[required_fields]
-            key_dfs = pd.concat([key_dfs, subset_df], ignore_index=True)
-            key_dfs.drop_duplicates(inplace=True)
-        # Sort key_dfs by timestamp
-        key_dfs.sort_values(ts_field, inplace=True)
-
-        # Convert key_dfs to arrow dtype
-        required_fields_proto = []
-        total_fields = (
-            self.datasets[dataset_name].dataset.dsschema().to_fields_proto()
-        )
-        for field_proto in total_fields:
-            if field_proto.name in required_fields:
-                required_fields_proto.append(field_proto)
-        key_dfs = cast_df_to_arrow_dtype(key_dfs, required_fields_proto)
-
-        # Find the values for all columns as of the timestamp in key_dfs
-        extrapolated_dfs = []
-        for col, data in column_wise_df.items():  # type: ignore
-            df = pd.merge_asof(
-                left=key_dfs,
-                right=data,
-                on=ts_field,
-                by=key_fields,
-                direction="backward",
-                suffixes=("", "_right"),
-            )
-            extrapolated_dfs.append(df)
-        # Merge all the extrapolated dfs, column wise and drop duplicate columns
-        df = pd.concat(extrapolated_dfs, axis=1)
-        df = df.loc[:, ~df.columns.duplicated()]
-        if FENNEL_LOOKUP in df.columns:
-            df.drop(columns=[FENNEL_LOOKUP], inplace=True)
-        if FENNEL_TIMESTAMP in df.columns:
-            df.drop(columns=[FENNEL_TIMESTAMP], inplace=True)
-        return df
 
     def add_datasets(
         self,
@@ -740,13 +695,6 @@ class DataEngine(object):
                     f"in dataset `{self.datasets[pipeline._dataset_name].dataset._name}`: {str(e)}",
                 )
             if ret is None:
-                continue
-            if ret.is_aggregate:
-                # Aggregate pipelines are not logged
-                self.datasets[pipeline.dataset_name].aggregated_datasets = (
-                    ret.agg_result
-                )
-                self._filter_erase_key(dataset_name)
                 continue
 
             # Recursively log the output of the pipeline to the datasets

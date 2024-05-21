@@ -11,6 +11,7 @@ from frozendict import frozendict
 
 import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Pipeline, Visitor, Dataset, Count
+from fennel.datasets.datasets import DSSchema
 from fennel.dtypes import Session, Hopping, Tumbling
 from fennel.gen.schema_pb2 import Field
 from fennel.internal_lib.duration import duration_to_timedelta
@@ -36,8 +37,6 @@ class NodeRet:
     timestamp_field: str
     key_fields: List[str]
     fields: List[Field]
-    agg_result: Optional[Dict[str, Any]] = None
-    is_aggregate: bool = False
 
 
 def is_subset(subset: List[str], superset: List[str]) -> bool:
@@ -87,6 +86,9 @@ def _cast_primitive_dtype_columns(
 class Executor(Visitor):
     def __init__(self, data):
         super(Executor, self).__init__()
+        self.serializer = None
+        self.cur_pipeline_name = None
+        self.cur_ds_name = None
         self.dependencies = []
         self.lib_generated_code = ""
         self.data = data
@@ -194,7 +196,6 @@ class Executor(Visitor):
         input_ret = self.visit(obj.node)
         if input_ret is None:
             return None
-
         fields = obj.dsschema().to_fields_proto()
         filter_func_pycode = to_includes_proto(obj.func)
         mod = types.ModuleType(filter_func_pycode.entry_point)
@@ -230,6 +231,59 @@ class Executor(Visitor):
         return merged_df.sort_values(ts)
 
     def visitAggregate(self, obj):
+        def join_aggregated_dataset(
+            schema: DSSchema, column_wise_df: Dict[str, pd.DataFrame]
+        ) -> pd.DataFrame:
+            """
+            Internal function to join aggregated datasets, where each aggregated
+            dataset holds data for each aggregation.
+            """
+            key_fields = list(schema.keys.keys())
+            ts_field = schema.timestamp
+            required_fields = key_fields + [ts_field]
+            key_dfs = pd.DataFrame()
+            # Collect all timestamps across all columns
+            for data in column_wise_df.values():  # type: ignore
+                subset_df = data[required_fields]
+                key_dfs = pd.concat([key_dfs, subset_df], ignore_index=True)
+                key_dfs.drop_duplicates(inplace=True)
+            # Sort key_dfs by timestamp
+            key_dfs.sort_values(ts_field, inplace=True)
+
+            # Convert key_dfs to arrow dtype
+            required_fields_proto = []
+            total_fields = schema.to_fields_proto()
+            for field_proto in total_fields:
+                if field_proto.name in required_fields:
+                    required_fields_proto.append(field_proto)
+            key_dfs = cast_df_to_arrow_dtype(key_dfs, required_fields_proto)
+
+            for col in key_dfs.columns:
+                # If any of the columns is a dictionary, convert it to a frozen dict
+                if key_dfs[col].apply(lambda x: isinstance(x, dict)).any():
+                    key_dfs[col] = key_dfs[col].apply(lambda x: frozendict(x))
+
+            # Find the values for all columns as of the timestamp in key_dfs
+            extrapolated_dfs = []
+            for col, data in column_wise_df.items():  # type: ignore
+                merged_df = pd.merge_asof(
+                    left=key_dfs,
+                    right=data,
+                    on=ts_field,
+                    by=key_fields,
+                    direction="backward",
+                    suffixes=("", "_right"),
+                )
+                extrapolated_dfs.append(merged_df)
+            # Merge all the extrapolated dfs, column wise and drop duplicate columns
+            final_df = pd.concat(extrapolated_dfs, axis=1)
+            final_df = final_df.loc[:, ~final_df.columns.duplicated()]
+
+            # Delete FENNEL_TIMESTAMP column as this should be generated again
+            if FENNEL_DELETE_TIMESTAMP in df.columns:  # type: ignore
+                final_df.drop(columns=[FENNEL_DELETE_TIMESTAMP], inplace=True)  # type: ignore
+            return final_df
+
         input_ret = self.visit(obj.node)
         if input_ret is None or input_ret.df.shape[0] == 0:
             return None
@@ -260,19 +314,17 @@ class Executor(Visitor):
                 obj.keys,
                 output_schema.values[aggregate.into_field],
             )
+        joined_df = join_aggregated_dataset(output_schema, result)
         return NodeRet(
-            pd.DataFrame(),
+            joined_df,
             input_ret.timestamp_field,
             obj.keys,
             output_schema.to_fields_proto(),
-            result,
-            True,
         )
 
     def visitJoin(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)
         right_ret = self.visit(obj.dataset)
-
         if input_ret is None or right_ret is None:
             return None
 

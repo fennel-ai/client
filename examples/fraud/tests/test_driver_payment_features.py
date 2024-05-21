@@ -89,7 +89,7 @@ def test_payment_identifier(client):
     log_payment_identifier_datasets(client)
 
     df = client.get_dataset_df("PaymentIdentifierDS")
-    assert df.shape == (10, 6)
+    assert df.shape == (10, 5)
     # Assert that the first 5 rows are correct
     df = df[:5]
     assert df["driver_id"].to_list() == [
@@ -194,7 +194,7 @@ def test_last_payment(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = client.get_dataset_df("LastPaymentDS")
-    assert df.shape == (8, 9)
+    assert df.shape == (8, 8)
 
 
 @mock
