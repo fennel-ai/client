@@ -1,13 +1,14 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List
 
 import pandas as pd
 import pytest
+
 import fennel._vendor.requests as requests
 from fennel import LastK
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field, Dataset, pipeline, Count
-from fennel.dtypes import regex, oneof
+from fennel.dtypes import regex, oneof, Continuous
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock, log
@@ -60,7 +61,7 @@ class CityInfo:
     @inputs(UserInfo)
     def count_city_gender(cls, user_info: Dataset):
         return user_info.groupby(["city", "gender"]).aggregate(
-            [Count(window="6y 8s", into_field="count")]
+            [Count(window=Continuous("6y 8s"), into_field="count")]
         )
 
 
@@ -75,7 +76,7 @@ class UserViewsDataset:
     @inputs(ViewData)
     def count_user_views(cls, view_data: Dataset):
         return view_data.groupby("user_id").aggregate(
-            [Count(window="6y 8s", into_field="num_views")]
+            [Count(window=Continuous("6y 8s"), into_field="num_views")]
         )
 
 
@@ -94,7 +95,7 @@ class UserCategoryDataset:
             post_info, how="inner", on=["post_id"]
         )
         return post_info_enriched.groupby("user_id", "category").aggregate(
-            [Count(window="6y 8s", into_field="num_views")]
+            [Count(window=Continuous("6y 8s"), into_field="num_views")]
         )
 
 
@@ -125,7 +126,7 @@ class LastViewedPostByAgg:
             LastK(
                 into_field="post_id",
                 of="post_id",
-                window="forever",
+                window=Continuous("forever"),
                 limit=1,
                 dedup=False,
             )

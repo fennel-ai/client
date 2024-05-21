@@ -4,6 +4,7 @@ from typing import Optional, List
 import pandas as pd
 
 from fennel.datasets import dataset, field, Dataset, pipeline, Sum
+from fennel.dtypes import Continuous
 from fennel.featuresets import featureset, extractor
 from fennel.internal_lib.to_proto.source_code import (
     get_featureset_core_code,
@@ -44,7 +45,7 @@ class UserAgeAggregated:
         return user_age.groupby("city").aggregate(
             [
                 Sum(
-                    window="1w",
+                    window=Continuous("1w"),
                     of="age",
                     into_field="sum_age",
                 )
@@ -57,7 +58,7 @@ class UserAgeAggregated:
         return user_age.groupby("city").aggregate(
             [
                 Sum(
-                    window="1w",
+                    window=Continuous("1w"),
                     of="age",
                     into_field="sum_age",
                 )

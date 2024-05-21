@@ -20,6 +20,7 @@ class TestSumSnips(unittest.TestCase):
             Dataset,
             Sum,
         )
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -47,8 +48,8 @@ class TestSumSnips(unittest.TestCase):
             def sum_pipeline(cls, ds: Dataset):
                 # docsnip-highlight start
                 return ds.groupby("uid").aggregate(
-                    amount_1w=Sum(of="amount", window="1w"),
-                    total=Sum(of="amount", window="forever"),
+                    amount_1w=Sum(of="amount", window=Continuous("1w")),
+                    total=Sum(of="amount", window=Continuous("forever")),
                 )
                 # docsnip-highlight end
 
@@ -119,6 +120,7 @@ class TestSumSnips(unittest.TestCase):
         with pytest.raises(Exception):
             # docsnip incorrect_type
             from fennel.datasets import dataset, field, pipeline, Dataset, Sum
+            from fennel.dtypes import Continuous
             from fennel.lib import inputs
             from fennel.connectors import source, Webhook
 
@@ -146,7 +148,7 @@ class TestSumSnips(unittest.TestCase):
                 def bad_pipeline(cls, ds: Dataset):
                     return ds.groupby("uid").aggregate(
                         # docsnip-highlight next-line
-                        total=Sum(of="vendor", window="forever"),
+                        total=Sum(of="vendor", window=Continuous("forever")),
                     )
 
             # /docsnip

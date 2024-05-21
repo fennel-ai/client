@@ -3,6 +3,7 @@ from typing import List
 
 from fennel.connectors import Webhook, source
 from fennel.datasets import dataset, field, pipeline, Dataset, LastK, Min
+from fennel.dtypes import Continuous
 from fennel.lib import inputs
 
 __owner__ = "eng@app.com"
@@ -136,13 +137,13 @@ class MarketAreaDS:
             .aggregate(
                 Min(
                     of="market_area_id",
-                    window="forever",
+                    window=Continuous("forever"),
                     default=0,
                     into_field="market_area_id",
                 ),
                 LastK(
                     of="vehicle_state",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="vehicle_state",
                     limit=1,
                     dedup=True,

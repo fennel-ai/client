@@ -6,6 +6,7 @@ import pytest
 from fennel.connectors import S3, Webhook
 from fennel.connectors import source
 from fennel.datasets import dataset, field, pipeline, Dataset, Count
+from fennel.dtypes import Continuous
 from fennel.featuresets import featureset, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
@@ -56,10 +57,10 @@ class PageViewsByUser:
             .groupby("uuid")
             .aggregate(
                 [
-                    Count(window="28d", into_field="page_views"),
-                    Count(window="1d", into_field="page_views_1d"),
-                    Count(window="3d", into_field="page_views_3d"),
-                    Count(window="9d", into_field="page_views_9d"),
+                    Count(window=Continuous("28d"), into_field="page_views"),
+                    Count(window=Continuous("1d"), into_field="page_views_1d"),
+                    Count(window=Continuous("3d"), into_field="page_views_3d"),
+                    Count(window=Continuous("9d"), into_field="page_views_9d"),
                 ]
             )
         )

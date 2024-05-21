@@ -6,6 +6,7 @@ import pytest
 from fennel._vendor import requests
 from fennel.connectors import source, Webhook
 from fennel.datasets import Dataset, dataset, field, pipeline, Count
+from fennel.dtypes import Continuous
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
 from fennel.testing import mock
@@ -36,7 +37,7 @@ class GenderStats:
     @inputs(UserInfoDataset)
     def my_pipeline(cls, user_info: Dataset):
         return user_info.groupby("gender").aggregate(
-            Count(window="forever", into_field="count")
+            Count(window=Continuous("forever"), into_field="count")
         )
 
 
@@ -50,7 +51,7 @@ class CountryStats:
     @inputs(UserInfoDataset)
     def my_pipeline(cls, user_info: Dataset):
         return user_info.groupby("country_code").aggregate(
-            Count(window="forever", into_field="count")
+            Count(window=Continuous("forever"), into_field="count")
         )
 
 
@@ -77,7 +78,9 @@ def _get_changed_dataset(filter_condition):
             return (
                 user_info.filter(filter_condition)
                 .groupby("gender")
-                .aggregate(Count(window="forever", into_field="count"))
+                .aggregate(
+                    Count(window=Continuous("forever"), into_field="count")
+                )
             )
 
     return GenderStats
@@ -101,7 +104,7 @@ def _get_source_changed_datasets():
         @inputs(UserInfoDataset)
         def my_pipeline(cls, user_info: Dataset):
             return user_info.groupby("gender").aggregate(
-                Count(window="forever", into_field="count")
+                Count(window=Continuous("forever"), into_field="count")
             )
 
     return UserInfoDataset, GenderStats

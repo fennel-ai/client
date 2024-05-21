@@ -43,6 +43,7 @@ def test_pipeline_basic():
     # docsnip pipeline
     from fennel.datasets import pipeline, Dataset, dataset, field
     from fennel.datasets import Count, Sum
+    from fennel.dtypes import Continuous
 
     @dataset(index=True)
     class UserTransactionsAbroad:
@@ -61,9 +62,9 @@ def test_pipeline_basic():
                 lambda df: df["country"] != df["payment_country"]
             )
             return abroad.groupby("uid").aggregate(
-                count=Count(window="forever"),
-                amount_1d=Sum(of="amount", window="1d"),
-                amount_1w=Sum(of="amount", window="1w"),
+                count=Count(window=Continuous("forever")),
+                amount_1d=Sum(of="amount", window=Continuous("1d")),
+                amount_1w=Sum(of="amount", window=Continuous("1w")),
             )
 
         # docsnip-highlight end
@@ -222,6 +223,7 @@ def test_fraud(client):
 def test_multiple_pipelines(client):
     # docsnip multiple_pipelines
     from fennel.datasets import dataset, field, Count
+    from fennel.dtypes import Continuous
     from fennel.connectors import source, Webhook
 
     webhook = Webhook(name="fennel_webhook")
@@ -274,7 +276,7 @@ def test_multiple_pipelines(client):
             )
             union = with_ios_platform + with_android_platform
             return union.groupby(["uid", "platform"]).aggregate(
-                num_logins_1d=Count(window="1d"),
+                num_logins_1d=Count(window=Continuous("1d")),
             )
 
     # /docsnip

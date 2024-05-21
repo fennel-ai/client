@@ -19,7 +19,7 @@ from fennel.datasets import (
     Sum,
     Quantile,
 )
-from fennel.dtypes import Embedding, Window
+from fennel.dtypes import Embedding, Window, Continuous, Session
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib import includes, meta, inputs, desc
 from fennel.testing import *
@@ -264,17 +264,17 @@ def test_dataset_with_aggregates():
             return user_info.groupby("gender").aggregate(
                 [
                     Count(
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field=str(cls.count),
                     ),
                     Average(
                         of="age",
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field=str(cls.avg_age),
                     ),
                     Stddev(
                         of="age",
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field=str(cls.stddev_age),
                     ),
                 ]
@@ -1435,13 +1435,13 @@ def test_dataset_with_complex_pipe():
             return ds_deduped.groupby("merchant_id").aggregate(
                 [
                     Count(
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field=str(
                             cls.num_merchant_fraudulent_transactions
                         ),
                     ),
                     Count(
-                        window="1w",
+                        window=Continuous("1w"),
                         into_field=str(
                             cls.num_merchant_fraudulent_transactions_7d
                         ),
@@ -1450,7 +1450,7 @@ def test_dataset_with_complex_pipe():
                         of="transaction_amount",
                         default=0.0,
                         p=0.5,
-                        window="1w",
+                        window=Continuous("1w"),
                         into_field=str(cls.median_transaction_amount),
                         approx=True,
                     ),
@@ -1631,7 +1631,7 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[6]
     o = {
-        "id": "2522d12fd1a18fd5e5e02ceea6eb9a51",
+        "id": "0b381d6b2444c390000402aaa4485a26",
         "isRoot": True,
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
@@ -2929,13 +2929,17 @@ def test_dataset_with_str_window_aggregate():
         @inputs(UserInfoDataset)
         def create_aggregated_dataset(cls, user_info: Dataset):
             return user_info.groupby("gender").aggregate(
-                Count(window="forever", into_field="count"),
+                Count(window=Continuous("forever"), into_field="count"),
                 Sum(
                     of="age",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="sum_age",
                 ),
-                Stddev(of="age", window="forever", into_field="stddev_age"),
+                Stddev(
+                    of="age",
+                    window=Continuous("forever"),
+                    into_field="stddev_age",
+                ),
             )
 
     view = InternalTestClient()
@@ -2997,9 +3001,9 @@ def test_window_operator():
         @pipeline
         @inputs(PageViewEvent)
         def pipeline_window(cls, app_event: Dataset):
-            return app_event.groupby("user_id").window(
-                type="session", gap="10m", into_field="window"
-            )
+            return app_event.groupby(
+                "user_id", window=Session("10m")
+            ).aggregate()
 
     view = InternalTestClient()
     view.add(Sessions)  # type: ignore
@@ -3093,7 +3097,7 @@ def test_window_operator():
 
     operator_req = sync_request.operators[1]
     o = {
-        "id": "323a0ba6a3d62cd0b96b987323fb17a9",
+        "id": "a4f0c87fb58dbccaaa2a115386ea5762",
         "is_root": True,
         "pipelineName": "pipeline_window",
         "datasetName": "Sessions",
@@ -3106,159 +3110,6 @@ def test_window_operator():
         "ds_version": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
-
-
-def test_window_with_summary():
-    @meta(owner="nitin@fennel.ai")
-    @dataset
-    class PageViewEvent:
-        user_id: str
-        page_id: str
-        t: datetime
-
-    @meta(owner="nitin@fennel.ai")
-    @dataset
-    class Sessions:
-        user_id: str = field(key=True)
-        window: Window = field(key=True)
-        page_id_concat: str
-        t: datetime
-
-        @pipeline
-        @inputs(PageViewEvent)
-        def pipeline_window(cls, app_event: Dataset):
-            return (
-                app_event.groupby("user_id")
-                .window(type="tumbling", duration="10m", into_field="window")
-                .summarize(
-                    "page_id_concat",
-                    str,
-                    lambda df: ",".join(list(df["page_id"])),
-                )
-            )
-
-    view = InternalTestClient()
-    view.add(Sessions)  # type: ignore
-    sync_request = view._get_sync_request_proto()
-    assert len(sync_request.datasets) == 1
-    d = {
-        "name": "Sessions",
-        "dsschema": {
-            "keys": {
-                "fields": [
-                    {
-                        "name": "user_id",
-                        "dtype": {"stringType": {}},
-                    },
-                    {
-                        "name": "window",
-                        "dtype": {
-                            "structType": {
-                                "name": "Window",
-                                "fields": [
-                                    {
-                                        "name": "begin",
-                                        "dtype": {"timestampType": {}},
-                                    },
-                                    {
-                                        "name": "end",
-                                        "dtype": {"timestampType": {}},
-                                    },
-                                ],
-                            }
-                        },
-                    },
-                ]
-            },
-            "values": {
-                "fields": [
-                    {
-                        "name": "page_id_concat",
-                        "dtype": {"stringType": {}},
-                    }
-                ]
-            },
-            "timestamp": "t",
-        },
-        "version": 1,
-        "metadata": {"owner": "nitin@fennel.ai"},
-        "history": "63072000s",
-        "retention": "63072000s",
-        "field_metadata": {
-            "user_id": {},
-            "window": {},
-            "t": {},
-            "page_id_concat": {},
-        },
-        "pycode": {},
-    }
-    dataset_req = sync_request.datasets[0]
-    dataset_req.pycode.Clear()
-    expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
-    assert dataset_req == expected_dataset_request, error_message(
-        dataset_req, expected_dataset_request
-    )
-
-    # Only one pipeline
-    assert len(sync_request.pipelines) == 1
-    pipeline_req = sync_request.pipelines[0]
-    pipeline_req.pycode.Clear()
-    p = {
-        "name": "pipeline_window",
-        "dataset_name": "Sessions",
-        "signature": "pipeline_window",
-        "metadata": {},
-        "input_dataset_names": ["PageViewEvent"],
-        "pycode": {},
-        "ds_version": 1,
-    }
-    expected_pipeline_request = ParseDict(p, ds_proto.Pipeline())
-    assert pipeline_req == expected_pipeline_request, error_message(
-        pipeline_req, expected_pipeline_request
-    )
-
-    # 1 operators
-    assert len(sync_request.operators) == 2
-    operator_req = sync_request.operators[0]
-    o = {
-        "id": "PageViewEvent",
-        "is_root": False,
-        "pipeline_name": "pipeline_window",
-        "dataset_name": "Sessions",
-        "dataset_ref": {
-            "referring_dataset_name": "PageViewEvent",
-        },
-        "ds_version": 1,
-    }
-    expected_operator_request = ParseDict(o, ds_proto.Operator())
-    assert operator_req == expected_operator_request, error_message(
-        operator_req, expected_operator_request
-    )
-
-    operator_req = sync_request.operators[1]
-    o = {
-        "id": "c5d7d05a573171caddfbf8189a23a2d3",
-        "is_root": True,
-        "pipelineName": "pipeline_window",
-        "datasetName": "Sessions",
-        "window": {
-            "field": "window",
-            "windowType": {"tumbling": {"duration": "600s"}},
-            "operandId": "PageViewEvent",
-            "by": ["user_id"],
-            "summary": {
-                "pycode": {},
-                "column_name": "page_id_concat",
-                "output_type": {"stringType": {}},
-            },
-        },
-        "ds_version": 1,
-    }
-    expected_operator_request = ParseDict(o, ds_proto.Operator())
-    operator_req.window.summary.pycode.Clear()
     assert operator_req == expected_operator_request, error_message(
         operator_req, expected_operator_request
     )
@@ -3283,8 +3134,8 @@ def test_window_operator_with_aggregation():
         @inputs(PageViewEvent)
         def pipeline_window(cls, app_event: Dataset):
             sessions = (
-                app_event.groupby("user_id")
-                .window(type="session", gap="10m", into_field="window")
+                app_event.groupby("user_id", window=Session("10m"))
+                .aggregate()
                 .assign(
                     "duration_secs",
                     int,
@@ -3294,7 +3145,7 @@ def test_window_operator_with_aggregation():
                 .aggregate(
                     Average(
                         of="duration_secs",
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field="avg_session_secs",
                     )
                 )
@@ -3379,7 +3230,7 @@ def test_window_operator_with_aggregation():
 
     operator_req = sync_request.operators[1]
     o = {
-        "id": "323a0ba6a3d62cd0b96b987323fb17a9",
+        "id": "a4f0c87fb58dbccaaa2a115386ea5762",
         "is_root": False,
         "pipelineName": "pipeline_window",
         "datasetName": "Sessions",
@@ -3398,13 +3249,13 @@ def test_window_operator_with_aggregation():
 
     operator_req = sync_request.operators[2]
     o = {
-        "id": "a53debe41f58ca502f184eddcb2f2a92",
+        "id": "9a3812227a7dbdee819d143c82e23c05",
         "is_root": False,
         "pipelineName": "pipeline_window",
         "datasetName": "Sessions",
         "assign": {
             "columnName": "duration_secs",
-            "operandId": "323a0ba6a3d62cd0b96b987323fb17a9",
+            "operandId": "a4f0c87fb58dbccaaa2a115386ea5762",
             "outputType": {"intType": {}},
             "pycode": {},
         },
@@ -3436,8 +3287,8 @@ def test_erase_key():
         @inputs(PageViewEvent)
         def pipeline_window(cls, app_event: Dataset):
             sessions = (
-                app_event.groupby("user_id")
-                .window(type="session", gap="10m", into_field="window")
+                app_event.groupby("user_id", window=Session("10m"))
+                .aggregate()
                 .assign(
                     "duration_secs",
                     int,
@@ -3447,7 +3298,7 @@ def test_erase_key():
                 .aggregate(
                     Average(
                         of="duration_secs",
-                        window="forever",
+                        window=Continuous("forever"),
                         into_field="avg_session_secs",
                     )
                 )

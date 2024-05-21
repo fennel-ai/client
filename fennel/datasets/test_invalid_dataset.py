@@ -16,7 +16,7 @@ from fennel.datasets import (
     Distinct,
     index,
 )
-from fennel.dtypes import struct, Window
+from fennel.dtypes import struct, Window, Continuous, Session
 from fennel.lib import (
     meta,
     inputs,
@@ -240,11 +240,11 @@ def test_incorrect_aggregate():
                 return filter2.groupby("movie").aggregate(
                     [
                         Count(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.cnt_rating),
                         ),
                         Count(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.unique_ratings),
                             of="rating",
                             unique=True,
@@ -254,7 +254,7 @@ def test_incorrect_aggregate():
 
     assert (
         str(e.value)
-        == "Invalid aggregate `window=Last(start='forever', end='0s') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported, please set approx=True"
+        == "Invalid aggregate `window=Continuous(duration='forever') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported, please set approx=True"
     )
 
     with pytest.raises(TypeError) as e:
@@ -277,11 +277,11 @@ def test_incorrect_aggregate():
                 return filter2.groupby("movie").aggregate(
                     [
                         Count(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.cnt_rating),
                         ),
                         Distinct(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.unique_ratings),
                             of="rating",
                             unordered=True,
@@ -314,11 +314,11 @@ def test_incorrect_aggregate():
                 return filter2.groupby("movie").aggregate(
                     [
                         Count(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.cnt_rating),
                         ),
                         Distinct(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.unique_users),
                             of="userid",
                             unordered=False,
@@ -328,7 +328,7 @@ def test_incorrect_aggregate():
 
     assert (
         str(e.value)
-        == "Invalid aggregate `window=Last(start='forever', end='0s') into_field='unique_users' of='userid' unordered=False`: Distinct requires unordered=True"
+        == "Invalid aggregate `window=Continuous(duration='forever') into_field='unique_users' of='userid' unordered=False`: Distinct requires unordered=True"
     )
 
     with pytest.raises(TypeError) as e:
@@ -348,17 +348,17 @@ def test_incorrect_aggregate():
                 return rating.groupby("movie").aggregate(
                     [
                         Count(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.cnt_rating),
                         ),
                         Average(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.avg_rating),
                             of="rating",
                             default=0,
                         ),
                         Stddev(
-                            window="forever",
+                            window=Continuous("forever"),
                             into_field=str(cls.stddev),
                             of="movie",  # invalid type for ratings
                         ),
@@ -1146,9 +1146,7 @@ def test_invalid_operators_over_keyed_datasets():
             @pipeline
             @inputs(Events)
             def pipeline1(cls, a: Dataset):
-                return a.groupby("user_id").window(
-                    type="session", gap="60m", into_field="window"
-                )
+                return a.groupby("user_id", window=Session("60m")).aggregate()
 
     assert (
         str(e.value)
@@ -1173,3 +1171,84 @@ def test_invalid_timestamp_field(client):
         == "'date' dtype fields cannot be marked as timestamp field. Found field : `t` "
         "of dtype :  `<class 'datetime.date'>` in dataset `A`"
     )
+
+
+def test_invalid_window_aggregation():
+    @dataset
+    class Events:
+        event_id: int
+        user_id: int
+        page_id: int
+        t: datetime
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class Sessions1:
+            user_id: int = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+            count: int
+
+            @pipeline
+            @inputs(Events)
+            def pipeline1(cls, a: Dataset):
+                return a.groupby("user_id", window=Session("60m")).aggregate(
+                    count=Count(window=Continuous("forever"))
+                )
+
+    assert (
+        str(e.value)
+        == "Aggregations on Tumbling/Hopping/Session window are not yet implemented."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class Sessions2:
+            user_id: int = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+            count: int
+
+            @pipeline
+            @inputs(Events)
+            def pipeline1(cls, a: Dataset):
+                return a.groupby("user_id", window=Session("60m")).first()
+
+    assert (
+        str(e.value)
+        == "Only empty 'aggregate' method is allowed after 'groupby' when you have defined a window."
+    )
+
+    with pytest.raises(AttributeError) as e:
+
+        @dataset
+        class Sessions3:
+            user_id: int = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+            count: int
+
+            @pipeline
+            @inputs(Events)
+            def pipeline1(cls, a: Dataset):
+                return a.groupby("user_id").window(window="fdfd")  # type: ignore
+
+    assert str(e.value) == "'GroupBy' object has no attribute 'window'"
+
+    with pytest.raises(AttributeError) as e:
+
+        @dataset
+        class Sessions4:
+            user_id: int = field(key=True)
+            window: Window = field(key=True)
+            t: datetime
+            count: int
+
+            @pipeline
+            @inputs(Events)
+            def pipeline1(cls, a: Dataset):
+                return a.groupby("user_id", window=Session("19m")).summarize()  # type: ignore
+
+    assert str(e.value) == "'GroupBy' object has no attribute 'summarize'"

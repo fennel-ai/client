@@ -6,6 +6,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, pipeline, field, Dataset, Sum
+from fennel.dtypes import Continuous
 from fennel.featuresets import featureset, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import *
@@ -62,7 +63,7 @@ class ActorStats:
         return c.groupby("name").aggregate(
             [
                 Sum(
-                    window="forever",
+                    window=Continuous("forever"),
                     of="price",
                     into_field="revenue",
                 ),
@@ -85,7 +86,7 @@ class ActorStats:
         return c.groupby("name").aggregate(
             [
                 Sum(
-                    window="forever",
+                    window=Continuous("forever"),
                     of="price",
                     into_field="revenue",
                 ),

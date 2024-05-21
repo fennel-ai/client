@@ -20,6 +20,7 @@ class TestAssignSnips(unittest.TestCase):
             Count,
             Sum,
         )
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -49,8 +50,8 @@ class TestAssignSnips(unittest.TestCase):
             def aggregate_pipeline(cls, ds: Dataset):
                 # docsnip-highlight start
                 return ds.groupby("uid").aggregate(
-                    count_1d=Count(window="1d"),
-                    total=Sum(of="amount", window="forever"),
+                    count_1d=Count(window=Continuous("forever")),
+                    total=Sum(of="amount", window=Continuous("forever")),
                     along="transaction_time",
                 )
                 # docsnip-highlight end

@@ -19,6 +19,7 @@ from fennel.datasets import (
     pipeline,
     Dataset,
 )
+from fennel.dtypes import Continuous
 from fennel.lib import inputs
 
 __owner__ = "eng@app.com"
@@ -60,13 +61,13 @@ class TransactionsDS:
             .aggregate(
                 Min(
                     of="risk_score",
-                    window="forever",
+                    window=Continuous("forever"),
                     default=0.0,
                     into_field="min_radar_score",
                 ),
                 Max(
                     of="risk_score",
-                    window="forever",
+                    window=Continuous("forever"),
                     default=0.0,
                     into_field="max_radar_score",
                 ),
@@ -151,14 +152,14 @@ class PaymentDS:
             .aggregate(
                 Count(
                     of="postal_code",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="num_postal_codes",
                     unique=True,
                     approx=True,
                 ),
                 Sum(
                     of="result_val",
-                    window="forever",
+                    window=Continuous("forever"),
                     into_field="num_failed_payment_verification_attempts",
                 ),
             )

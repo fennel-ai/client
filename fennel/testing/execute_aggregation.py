@@ -335,9 +335,9 @@ def get_aggregated_df(
 ) -> pd.DataFrame:
     df = input_df.copy()
     df[FENNEL_ROW_TYPE] = 1
-    if aggregate.window.start != "forever":
+    if aggregate.window.duration != "forever":
         window_secs = duration_to_timedelta(
-            aggregate.window.start
+            aggregate.window.duration
         ).total_seconds()
         expire_secs = np.timedelta64(int(window_secs), "s") + np.timedelta64(
             1, "s"

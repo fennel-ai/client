@@ -7,6 +7,7 @@ import requests
 
 from fennel.connectors import Postgres, source, Webhook
 from fennel.datasets import dataset, pipeline, field, Dataset, Count
+from fennel.dtypes import Continuous
 from fennel.featuresets import featureset, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
@@ -62,8 +63,8 @@ class UserSellerOrders:
     @inputs(Order)
     def my_pipeline(cls, orders: Dataset):
         return orders.groupby("uid", "seller_id").aggregate(
-            num_orders_1d=Count(window="1d"),
-            num_orders_1w=Count(window="1w"),
+            num_orders_1d=Count(window=Continuous("1d")),
+            num_orders_1w=Count(window=Continuous("1w")),
         )
 
 

@@ -20,7 +20,7 @@ from fennel.datasets import (
     Stddev,
     Quantile,
 )
-from fennel.dtypes import Decimal
+from fennel.dtypes import Decimal, Continuous
 from fennel.featuresets import featureset, feature as F
 from fennel.lib import inputs
 from fennel.testing import mock
@@ -56,17 +56,32 @@ class CountryIncomeDataset:
     @inputs(UserInfoDataset)
     def avg_income_pipeline(cls, event: Dataset):
         return event.groupby("country").aggregate(
-            Average(of="income", into_field="avg", window="forever"),
-            Sum(of="income", into_field="sum", window="forever"),
-            Min(of="income", into_field="min", window="forever", default=0.0),
-            Max(of="income", into_field="max", window="forever", default=0.0),
+            Average(
+                of="income", into_field="avg", window=Continuous("forever")
+            ),
+            Sum(of="income", into_field="sum", window=Continuous("forever")),
+            Min(
+                of="income",
+                into_field="min",
+                window=Continuous("forever"),
+                default=0.0,
+            ),
+            Max(
+                of="income",
+                into_field="max",
+                window=Continuous("forever"),
+                default=0.0,
+            ),
             Stddev(
-                of="income", into_field="stddev", window="forever", default=0.0
+                of="income",
+                into_field="stddev",
+                window=Continuous("forever"),
+                default=0.0,
             ),
             Quantile(
                 of="income",
                 into_field="median",
-                window="forever",
+                window=Continuous("forever"),
                 approx=True,
                 default=0.0,
                 p=0.5,

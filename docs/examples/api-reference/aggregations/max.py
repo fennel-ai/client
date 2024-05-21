@@ -12,6 +12,7 @@ __owner__ = "aditya@fennel.ai"
 def test_basic(client):
     # docsnip basic
     from fennel.datasets import dataset, field, Dataset, pipeline, Max
+    from fennel.dtypes import Continuous
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
 
@@ -38,8 +39,8 @@ def test_basic(client):
         def def_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
                 # docsnip-highlight start
-                max_1d=Max(of="amt", window="1d", default=-1.0),
-                max_1w=Max(of="amt", window="1w", default=-1.0),
+                max_1d=Max(of="amt", window=Continuous("1d"), default=-1.0),
+                max_1w=Max(of="amt", window=Continuous("1w"), default=-1.0),
                 # docsnip-highlight end
             )
 
@@ -111,6 +112,7 @@ def test_invalid_type(client):
     with pytest.raises(Exception):
         # docsnip incorrect_type
         from fennel.datasets import dataset, field, Dataset, pipeline, Max
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -135,7 +137,7 @@ def test_invalid_type(client):
             def def_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight next-line
-                    max=Max(of="zip", window="1d", default="max"),
+                    max=Max(of="zip", window=Continuous("1d"), default="max"),
                 )
 
         # /docsnip
@@ -146,6 +148,7 @@ def test_non_matching_types(client):
     with pytest.raises(Exception):
         # docsnip non_matching_types
         from fennel.datasets import dataset, field, Dataset, Max, pipeline
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -171,7 +174,7 @@ def test_non_matching_types(client):
             def def_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight next-line
-                    max_1d=Max(of="amt", window="1d", default=1),
+                    max_1d=Max(of="amt", window=Continuous("1d"), default=1),
                 )
 
         # /docsnip

@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from fennel.testing import mock
 
 __owner__ = "nikhil@fennel.ai"
@@ -8,6 +9,7 @@ __owner__ = "nikhil@fennel.ai"
 def test_tag_propagation(client):
 
     from fennel.datasets import dataset, field, Dataset, pipeline, Sum
+    from fennel.dtypes import Continuous
     from fennel.featuresets import featureset, feature as F
     from fennel.lib import inputs, meta
     from fennel.connectors import source, Webhook
@@ -43,7 +45,7 @@ def test_tag_propagation(client):
         def fn(cls, txn: Dataset, user: Dataset) -> Dataset:
             joined = txn.join(user, how="inner", on=["uid"])
             return joined.groupby("city").aggregate(
-                total=Sum(of="amount", window="forever"),
+                total=Sum(of="amount", window=Continuous("forever")),
             )
 
     @featureset

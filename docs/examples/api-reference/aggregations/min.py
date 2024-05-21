@@ -12,6 +12,7 @@ __owner__ = "aditya@fennel.ai"
 def test_basic(client):
     # docsnip basic
     from fennel.datasets import dataset, field, pipeline, Dataset, Min
+    from fennel.dtypes import Continuous
     from fennel.lib import inputs
     from fennel.connectors import source, Webhook
 
@@ -38,8 +39,8 @@ def test_basic(client):
         def min_pipeline(cls, ds: Dataset):
             return ds.groupby("uid").aggregate(
                 # docsnip-highlight start
-                min_1d=Min(of="amt", window="1d", default=-1.0),
-                min_1w=Min(of="amt", window="1w", default=-1.0),
+                min_1d=Min(of="amt", window=Continuous("1d"), default=-1.0),
+                min_1w=Min(of="amt", window=Continuous("1w"), default=-1.0),
                 # docsnip-highlight end
             )
 
@@ -111,6 +112,7 @@ def test_invalid_type(client):
     with pytest.raises(Exception):
         # docsnip incorrect_type
         from fennel.datasets import dataset, field, pipeline, Dataset, Min
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -135,7 +137,7 @@ def test_invalid_type(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    min=Min(of="zip", window="1d", default="min"),
+                    min=Min(of="zip", window=Continuous("1d"), default="min"),
                     # docsnip-highlight end
                 )
 
@@ -147,6 +149,7 @@ def test_non_matching_types(client):
     with pytest.raises(Exception):
         # docsnip non_matching_types
         from fennel.datasets import dataset, field, pipeline, Dataset, Min
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -172,7 +175,7 @@ def test_non_matching_types(client):
             def invalid_pipeline(cls, ds: Dataset):
                 return ds.groupby("uid").aggregate(
                     # docsnip-highlight start
-                    min_1d=Min(of="amt", window="1d", default=1),
+                    min_1d=Min(of="amt", window=Continuous("1d"), default=1),
                     # docsnip-highlight end
                 )
 

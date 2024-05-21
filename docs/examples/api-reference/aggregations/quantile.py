@@ -21,6 +21,7 @@ class TestQuantileSnips(unittest.TestCase):
             Dataset,
             Quantile,
         )
+        from fennel.dtypes import Continuous
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
 
@@ -49,7 +50,7 @@ class TestQuantileSnips(unittest.TestCase):
                 return ds.groupby("uid").aggregate(
                     median_amount_1w=Quantile(
                         of="amount",
-                        window="1w",
+                        window=Continuous("1w"),
                         p=0.5,
                         approx=True,
                         default=0.0,
@@ -126,6 +127,7 @@ class TestQuantileSnips(unittest.TestCase):
             # docsnip incorrect_type
             from fennel.datasets import dataset, field, pipeline
             from fennel.datasets import Dataset, Quantile
+            from fennel.dtypes import Continuous
             from fennel.lib import inputs
             from fennel.connectors import source, Webhook
 
@@ -151,7 +153,7 @@ class TestQuantileSnips(unittest.TestCase):
                     return ds.groupby("uid").aggregate(
                         median_amount_1w=Quantile(
                             of="amount",
-                            window="1w",
+                            window=Continuous("1w"),
                             p=0.5,
                             approx=True,
                             default=0.0,
@@ -167,6 +169,7 @@ class TestQuantileSnips(unittest.TestCase):
             # docsnip invalid_default
             from fennel.datasets import dataset, field, pipeline
             from fennel.datasets import Dataset, Quantile
+            from fennel.dtypes import Continuous
             from fennel.lib import inputs
             from fennel.connectors import source, Webhook
 
@@ -193,7 +196,7 @@ class TestQuantileSnips(unittest.TestCase):
                     return ds.groupby("uid").aggregate(
                         median_amount_1w=Quantile(
                             of="amount",
-                            window="1w",
+                            window=Continuous("1w"),
                             p=0.5,
                             approx=True,
                         ),
@@ -210,6 +213,7 @@ class TestQuantileSnips(unittest.TestCase):
             # docsnip incorrect_p
             from fennel.datasets import dataset, field, pipeline
             from fennel.datasets import Dataset, Quantile
+            from fennel.dtypes import Continuous
             from fennel.lib import inputs
             from fennel.connectors import source, Webhook
 
@@ -235,7 +239,7 @@ class TestQuantileSnips(unittest.TestCase):
                     return ds.groupby("uid").aggregate(
                         median_amount_1w=Quantile(
                             of="amount",
-                            window="1w",
+                            window=Continuous("1w"),
                             # docsnip-highlight next-line
                             p=10.0,
                             approx=True,
