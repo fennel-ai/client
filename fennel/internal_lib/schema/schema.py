@@ -305,9 +305,17 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
     :param val:
     :return:
     """
-    if dtype.optional_type != schema_proto.OptionalType():
-        return validate_val_with_proto_dtype(dtype.optional_type.of, val)
-    if dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
+    if dtype.HasField("optional_type"):
+        if (
+            val is not None
+            and val is not pd.NA
+            and val is not pd.NaT
+            and val is not np.nan
+        ):
+            return validate_val_with_proto_dtype(dtype.optional_type.of, val)
+        else:
+            return
+    elif dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
         if type(val) is not int and type(val) is not np.int64:
             raise ValueError(
                 f"Expected type int, got {type(val)} for value {val}"
