@@ -1,4 +1,7 @@
 # Changelog
+## [1.3.18] - 2024-05-23
+- Updated schema validator to be more robust in mock client. 
+
 ## [1.3.17] - 2024-05-21
 - Add support for emit param in aggregation and allow aggregation over aggregation.
 
