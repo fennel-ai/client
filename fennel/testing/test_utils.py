@@ -177,9 +177,11 @@ def cast_col_to_pandas_dtype(
     elif dtype.HasField("timestamp_type"):
         return pd.to_datetime(series.apply(parse_datetime), utc=True)
     elif dtype.HasField("one_of_type"):
-        return cast_col_to_pandas_dtype(series, dtype.one_of_type.of)
+        return cast_col_to_pandas_dtype(series, dtype.one_of_type.of, nullable)
     elif dtype.HasField("between_type"):
-        return cast_col_to_pandas_dtype(series, dtype.between_type.dtype)
+        return cast_col_to_pandas_dtype(
+            series, dtype.between_type.dtype, nullable
+        )
     elif (
         dtype.HasField("array_type")
         or dtype.HasField("map_type")
@@ -201,13 +203,13 @@ def convert_val_to_pandas_dtype(
     depending on the DataType proto.
     """
     if nullable:
-        if (
-            value is None
-            or value is pd.NA
-            or value is pd.NaT
-            or value is np.nan
-        ):
-            return pd.NA
+        try:
+            if pd.isnull(value):
+                return pd.NA
+        # ValueError error occurs when you do something like pd.isnull([1, 2, None])
+        except ValueError:
+            pass
+
     if data_type.HasField("optional_type"):
         return convert_val_to_pandas_dtype(
             value, data_type.optional_type.of, True
