@@ -4139,72 +4139,70 @@ def test_optional_list_type(client):
 @mock
 def test_last_k_on_struct_type(client):
 
-    if sys.version_info >= (3, 10):
+    @struct
+    class Value:
+        value: int
+        ts2: datetime
 
-        @struct
-        class Value:
-            value: int
-            ts2: datetime
+    @includes(Value)
+    def get_value_struct(points) -> Value:
+        value, ts2 = points
+        return Value(value=value, ts2=ts2)  # type: ignore
 
-        @includes(Value)
-        def get_value_struct(points) -> Value:
-            value, ts2 = points
-            return Value(value=value, ts2=ts2)  # type: ignore
+    def get_value_map(points) -> Dict[str, str]:
+        value, ts2 = points
+        return {"value": str(value), "ts2": str(ts2)}
 
-        def get_value_map(points) -> Dict[str, str]:
-            value, ts2 = points
-            return {"value": str(value), "ts2": str(ts2)}
+    @dataset
+    @source(webhook.endpoint("A"), disorder="14d", cdc="append")
+    class A:
+        user_id: int
+        value: int
+        ts1: datetime = field(timestamp=True)
+        ts2: datetime
 
-        @dataset
-        @source(webhook.endpoint("A"), disorder="14d", cdc="append")
-        class A:
-            user_id: int
-            value: int
-            ts1: datetime = field(timestamp=True)
-            ts2: datetime
+    @dataset(index=True)
+    class B:
+        user_id: int = field(key=True)
+        values_struct: List[Value]
+        values_map: List[Dict[str, str]]
+        ts1: datetime = field(timestamp=True)
 
-        @dataset(index=True)
-        class B:
-            user_id: int = field(key=True)
-            values_struct: List[Value]
-            values_map: List[Dict[str, str]]
-            ts1: datetime = field(timestamp=True)
-
-            @pipeline
-            @includes(Value, get_value_struct, get_value_map)
-            @inputs(A)
-            def pipeline(cls, event: Dataset):
-                return (
-                    event.assign(
-                        "values_struct",
-                        Value,
-                        lambda x: x[["value", "ts2"]].apply(
-                            get_value_struct, axis=1
-                        ),
-                    )
-                    .assign(
-                        "values_map",
-                        Dict[str, str],
-                        lambda x: x[["value", "ts2"]].apply(
-                            get_value_map, axis=1
-                        ),
-                    )
-                    .groupby("user_id")
-                    .aggregate(
-                        values_struct=LastK(
-                            of="values_struct",
-                            window=Continuous("forever"),
-                            dedup=True,
-                            limit=100,
-                        ),
-                        values_map=LastK(
-                            of="values_map",
-                            window=Continuous("forever"),
-                            dedup=True,
-                            limit=100,
-                        ),
-                    )
+        @pipeline
+        @includes(Value, get_value_struct, get_value_map)
+        @inputs(A)
+        def pipeline(cls, event: Dataset):
+            return (
+                event.assign(
+                    "values_struct",
+                    Value,
+                    lambda x: x[["value", "ts2"]].apply(
+                        get_value_struct, axis=1
+                    ),
                 )
+                .assign(
+                    "values_map",
+                    Dict[str, str],
+                    lambda x: x[["value", "ts2"]].apply(get_value_map, axis=1),
+                )
+                .groupby("user_id")
+                .aggregate(
+                    values_struct=LastK(
+                        of="values_struct",
+                        window=Continuous("forever"),
+                        dedup=True,
+                        limit=100,
+                    ),
+                    values_map=LastK(
+                        of="values_map",
+                        window=Continuous("forever"),
+                        dedup=True,
+                        limit=100,
+                    ),
+                )
+            )
+
+    if sys.version_info >= (3, 10):
 
         client.commit(datasets=[A, B], message="test")
 
