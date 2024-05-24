@@ -336,7 +336,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
     elif dtype == schema_proto.DataType(
         timestamp_type=schema_proto.TimestampType()
     ):
-        if type(val) is not datetime:
+        if type(val) not in [datetime, pd.Timestamp, np.datetime64]:
             raise ValueError(
                 f"Expected type datetime, got {type(val)} for value {val}"
             )
@@ -351,7 +351,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
                 f"Expected type bool, got {type(val)} for value {val}"
             )
     elif dtype.embedding_type.embedding_size > 0:
-        if type(val) is not np.ndarray:
+        if type(val) not in [np.ndarray, list]:
             raise ValueError(
                 f"Expected type np.ndarray, got {type(val)} for value {val}"
             )
@@ -360,7 +360,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
                 f"Expected embedding of size {dtype.embedding_type.embedding_size}, got {len(val)} for value {val}"
             )
     elif dtype.array_type.of != schema_proto.DataType():
-        if type(val) is not list and not isinstance(val, np.ndarray):
+        if type(val) not in [np.ndarray, list]:
             raise ValueError(
                 f"Expected type list, got {type(val)} for value {val}"
             )
@@ -368,19 +368,27 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
         for v in val:
             validate_val_with_proto_dtype(dtype.array_type.of, v)
     elif dtype.map_type.key != schema_proto.DataType():
-        if type(val) is not dict:
+        if type(val) not in [dict, np.ndarray, list]:
             raise ValueError(
-                f"Expected type dict, got {type(val)} for value {val}"
+                f"Expected type dict/list[tuple], got {type(val)} for value {val}"
             )
         # Recursively check the type of each element in the dict
         # Check that all keys are strings
-        for k in val.keys():
-            if type(k) is not str:
-                raise ValueError(
-                    f"Expected type str, got {type(k)} for key {k}"
-                )
-        for v in val.values():
-            validate_val_with_proto_dtype(dtype.map_type.value, v)
+        if type(val) is dict:
+            for k in val.keys():
+                if type(k) is not str:
+                    raise ValueError(
+                        f"Expected type str, got {type(k)} for key {k}"
+                    )
+            for v in val.values():
+                validate_val_with_proto_dtype(dtype.map_type.value, v)
+        else:
+            for key, value in val:
+                if type(key) is not str:
+                    raise ValueError(
+                        f"Expected type str, got {type(key)} for key {key}"
+                    )
+                validate_val_with_proto_dtype(dtype.map_type.value, value)
     elif dtype.between_type != schema_proto.Between():
         bw_type = dtype.between_type
         min_bound = None

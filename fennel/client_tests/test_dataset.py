@@ -4133,3 +4133,100 @@ def test_optional_list_type(client):
         keys=pd.DataFrame({"user_id": [1, 2, 3]}),
     )
     assert results["value"].tolist() == [[pd.NA], [1], [2]]
+
+
+@mock
+def test_last_k_on_struct_type(client):
+
+    @struct
+    class Value:
+        value: int
+        ts2: datetime
+
+    @includes(Value)
+    def get_value_struct(points) -> Value:
+        value, ts2 = points
+        return Value(value=value, ts2=ts2)  # type: ignore
+
+    def get_value_map(points) -> Dict[str, str]:
+        value, ts2 = points
+        return {"value": str(value), "ts2": str(ts2)}
+
+    @dataset
+    @source(webhook.endpoint("A"), disorder="14d", cdc="append")
+    class A:
+        user_id: int
+        value: int
+        ts1: datetime = field(timestamp=True)
+        ts2: datetime
+
+    @dataset(index=True)
+    class B:
+        user_id: int = field(key=True)
+        values_struct: List[Value]
+        values_map: List[Dict[str, str]]
+        ts1: datetime = field(timestamp=True)
+
+        @pipeline
+        @includes(Value, get_value_struct, get_value_map)
+        @inputs(A)
+        def pipeline(cls, event: Dataset):
+            return (
+                event.assign(
+                    "values_struct",
+                    Value,
+                    lambda x: x[["value", "ts2"]].apply(
+                        get_value_struct, axis=1
+                    ),
+                )
+                .assign(
+                    "values_map",
+                    Dict[str, str],
+                    lambda x: x[["value", "ts2"]].apply(get_value_map, axis=1),
+                )
+                .groupby("user_id")
+                .aggregate(
+                    values_struct=LastK(
+                        of="values_struct",
+                        window=Continuous("forever"),
+                        dedup=True,
+                        limit=100,
+                    ),
+                    values_map=LastK(
+                        of="values_map",
+                        window=Continuous("forever"),
+                        dedup=True,
+                        limit=100,
+                    ),
+                )
+            )
+
+    client.commit(datasets=[A, B], message="test")
+
+    now = datetime.now(timezone.utc)
+    df = pd.DataFrame(
+        {
+            "user_id": [1, 1, 2, 2, 3],
+            "value": [1, 2, 3, 4, 5],
+            "ts1": [now, now, now, now, now],
+            "ts2": [now, now, now, now, now],
+        }
+    )
+    client.log("fennel_webhook", "A", df)
+
+    results, _ = client.lookup(
+        B,
+        keys=pd.DataFrame({"user_id": [1, 2, 3]}),
+    )
+    assert [
+        [y.as_json() for y in x] for x in results["values_struct"].tolist()
+    ] == [
+        [{"value": 2, "ts2": now}, {"value": 1, "ts2": now}],
+        [{"value": 4, "ts2": now}, {"value": 3, "ts2": now}],
+        [{"value": 5, "ts2": now}],
+    ]
+    assert results["values_map"].tolist() == [
+        [{"value": "2", "ts2": str(now)}, {"value": "1", "ts2": str(now)}],
+        [{"value": "4", "ts2": str(now)}, {"value": "3", "ts2": str(now)}],
+        [{"value": "5", "ts2": str(now)}],
+    ]
