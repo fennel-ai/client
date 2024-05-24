@@ -4233,3 +4233,68 @@ def test_last_k_on_struct_type(client):
             [{"value": "4", "ts2": str(now)}, {"value": "3", "ts2": str(now)}],
             [{"value": "5", "ts2": str(now)}],
         ]
+
+
+@mock
+def test_unkey_operator(client):
+    @dataset
+    class JobOpening:
+        creater_id: int
+        job_id: int
+        creation_ts: datetime
+
+    @dataset(index=True)
+    class JobRank:
+        creater_id: int = field(key=True)
+        rank: int = field(key=True)
+        creation_ts: datetime
+
+        @pipeline
+        @inputs(JobOpening)
+        def rank_job(cls, job_opening: Dataset):
+            return (
+                job_opening.groupby("creater_id")
+                .aggregate(
+                    rank=Count(window=Continuous("forever")), emit="final"
+                )
+                .changelog("del")
+                .filter(lambda df: ~df["del"] & (df["rank"] < 4))
+                .drop("del")
+                .groupby("creater_id", "rank")
+                .latest()
+            )
+
+    client.commit(datasets=[JobOpening, JobRank], message="test")
+    # Creation ts is 1 every 2 hours
+    creation_ts = [
+        datetime(2022, 1, 1, 2, 0, 0),
+        datetime(2022, 1, 1, 4, 0, 0),
+        datetime(2022, 1, 1, 6, 0, 0),
+        datetime(2022, 1, 1, 8, 0, 0),
+        datetime(2022, 1, 1, 10, 0, 0),
+        datetime(2022, 1, 1, 12, 0, 0),
+    ]
+    openings = pd.DataFrame(
+        {
+            "creater_id": [1, 2, 1, 1, 1, 1],
+            "job_id": [1, 2, 3, 4, 5, 6],
+            "creation_ts": creation_ts,
+        }
+    )
+    log(JobOpening, openings)
+    results, found = client.lookup(
+        "JobRank",
+        keys=pd.DataFrame(
+            {"creater_id": [1, 1, 1, 1, 2], "rank": [4, 3, 2, 1, 1]}
+        ),
+    )
+    assert found.tolist() == [False, True, True, True, True]
+    assert results.shape == (5, 3)
+    assert results["rank"].tolist() == [4, 3, 2, 1, 1]
+    assert results["creation_ts"].tolist() == [
+        pd.NaT,
+        pd.Timestamp("2022-01-01 08:00:00", tz="UTC"),
+        pd.Timestamp("2022-01-01 06:00:00", tz="UTC"),
+        pd.Timestamp("2022-01-01 02:00:00", tz="UTC"),
+        pd.Timestamp("2022-01-01 04:00:00", tz="UTC"),
+    ]

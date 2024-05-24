@@ -322,6 +322,9 @@ class _Node(Generic[T]):
         columns = _Node.__get_drop_args(*args, columns=columns, name="explode")
         return Explode(self, columns)
 
+    def changelog(self, delete_column: str) -> _Node:
+        return Changelog(self, delete_column)
+
     def isignature(self):
         raise NotImplementedError
 
@@ -439,6 +442,30 @@ class Filter(_Node):
 
     def dsschema(self):
         return self.node.dsschema()
+
+
+class Changelog(_Node):
+    def __init__(self, node: _Node, delete_column: str):
+        super().__init__()
+        self.node = node
+        self.delete_column = delete_column
+        self.node.out_edges.append(self)
+
+    def signature(self):
+        return fhash(self.node.signature(), self.delete_column)
+
+    def dsschema(self):
+        input_schema = self.node.dsschema()
+        # Remove all keys from the schema and make then values
+        val_fields = copy.deepcopy(input_schema.keys)
+        values = input_schema.values
+        val_fields.update(values)
+        val_fields.update({self.delete_column: pd.BooleanDtype})
+        return DSSchema(
+            keys={},
+            values=val_fields,
+            timestamp=input_schema.timestamp,
+        )
 
 
 class EmitStrategy(str, Enum):
@@ -2008,6 +2035,8 @@ class Visitor:
             return self.visitAssign(obj)
         elif isinstance(obj, WindowOperator):
             return self.visitWindow(obj)
+        elif isinstance(obj, Changelog):
+            return self.visitChangelog(obj)
         else:
             raise Exception("invalid node type: %s" % obj)
 
@@ -2057,6 +2086,9 @@ class Visitor:
         raise NotImplementedError()
 
     def visitWindow(self, obj):
+        raise NotImplementedError()
+
+    def visitChangelog(self, obj):
         raise NotImplementedError()
 
 
@@ -2845,4 +2877,17 @@ class SchemaValidator(Visitor):
                 f"'group_by' before 'window' in `{self.pipeline_name}` must specify at least one key"
             )
         output_schema.name = output_schema_name
+        return output_schema
+
+    def visitChangelog(self, obj) -> DSSchema:
+        input_schema = copy.deepcopy(self.visit(obj.node))
+        # Unkey operation is allowed on keyed datasets only.
+        if len(input_schema.keys) == 0:
+            raise TypeError(
+                f"UnKey operation is allowed only on keyed datasets. Found dataset without keys in pipeline `{self.pipeline_name}`"
+            )
+        output_schema = copy.deepcopy(obj.dsschema())
+        output_schema.name = (
+            f"'[Pipeline:{self.pipeline_name}]->Changelog node'"
+        )
         return output_schema

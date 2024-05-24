@@ -1,4 +1,8 @@
 # Changelog
+
+## [1.3.21] - 2024-05-24
+- Add changelog operator to the client. 
+
 ## [1.3.20] - 2024-05-23
 - Updated schema validator to check special pyarrow dtypes.
 
