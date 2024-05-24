@@ -403,6 +403,10 @@ class Hopping:
         return f"hopping-{self.duration}-{self.stride}"
 
     def duration_total_seconds(self) -> int:
+        if self.duration == "forever":
+            raise ValueError(
+                "For forever hopping window 'duration_total_seconds' method is not supported."
+            )
         return int(duration_to_timedelta(self.duration).total_seconds())
 
     def stride_total_seconds(self) -> int:

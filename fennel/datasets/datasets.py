@@ -306,7 +306,7 @@ class _Node(Generic[T]):
         if len(args) == 0 and by is None:
             collist = list(self.dsschema().values.keys())
         elif len(args) > 0 and by is None:
-            collist = args  # type: ignore
+            collist = list(args)  # type: ignore
         elif len(args) == 0 and by is not None and isinstance(by, list):
             collist = by
         elif len(args) == 0 and by is not None and isinstance(by, str):

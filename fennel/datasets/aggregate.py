@@ -2,25 +2,21 @@ from typing import List, Union, Optional
 
 import fennel.gen.spec_pb2 as spec_proto
 from fennel._vendor.pydantic import BaseModel, Extra, validator  # type: ignore
-from fennel.dtypes import Continuous, Tumbling, Hopping
+from fennel.dtypes import Continuous, Tumbling, Hopping, Session
 
 ItemType = Union[str, List[str]]
 
 
 class AggregateType(BaseModel):
-    window: Union[Continuous, Hopping, Tumbling]
+    window: Union[Continuous, Hopping, Session, Tumbling]
     # Name of the field the aggregate will  be assigned to
     into_field: str = ""
 
     @validator("window", pre=True)
     def validate_window(cls, value):
-        if not isinstance(value, (Continuous, Hopping, Tumbling)):
+        if not isinstance(value, (Continuous, Hopping, Session, Tumbling)):
             raise ValueError(
-                "Aggregation window must be of type Continuous, Hopping or Tumbling"
-            )
-        if isinstance(value, (Hopping, Tumbling)):
-            raise ValueError(
-                "Hopping and Tumbling windows for aggregation are not yet supported."
+                "Aggregation window must be of type Continuous, Hopping, Session or Tumbling"
             )
         else:
             return value
