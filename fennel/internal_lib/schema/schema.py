@@ -307,15 +307,17 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
     """
     if dtype.HasField("optional_type"):
         try:
-            if pd.notna(val):
+            if not isinstance(
+                val, (list, tuple, dict, set, np.ndarray)
+            ) and pd.isna(val):
+                return
+            else:
                 return validate_val_with_proto_dtype(
                     dtype.optional_type.of, val
                 )
-            else:
-                return
         # ValueError error occurs when you do something like pd.notna([1, 2, None])
         except ValueError:
-            return
+            return validate_val_with_proto_dtype(dtype.optional_type.of, val)
     elif dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
         if type(val) is not int and type(val) is not np.int64:
             raise ValueError(

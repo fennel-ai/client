@@ -204,7 +204,9 @@ def convert_val_to_pandas_dtype(
     """
     if nullable:
         try:
-            if pd.isnull(value):
+            if not isinstance(
+                value, (list, tuple, dict, set, np.ndarray)
+            ) and pd.isna(value):
                 return pd.NA
         # ValueError error occurs when you do something like pd.isnull([1, 2, None])
         except ValueError:
