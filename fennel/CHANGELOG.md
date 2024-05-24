@@ -1,4 +1,7 @@
 # Changelog
+## [1.3.19] - 2024-05-23
+- Fix null check in pandas dtype conversion.
+
 ## [1.3.18] - 2024-05-23
 - Updated schema validator to be more robust in mock client. 
 

@@ -16,6 +16,7 @@ from fennel.datasets import (
     field,
     pipeline,
     Dataset,
+    LastK,
     Min,
     Max,
     Sum,
@@ -4085,3 +4086,50 @@ def test_latest_operator_query_offline(client):
     # B has a cnt =1 at t=3, but then user 1 goes to C and None so he doesnt contribute
     # Finally user contrinbutes only from t=10 onwards, later user 1 joins him
     assert results["cnt"].tolist() == [pd.NA, 1, 0, 1, 0, 0, 1, 2]
+
+
+@mock
+def test_optional_list_type(client):
+
+    @dataset
+    @source(webhook.endpoint("A"), disorder="14d", cdc="append")
+    class A:
+        user_id: int
+        value: Optional[int]
+        ts: datetime
+
+    @dataset(index=True)
+    class B:
+        user_id: int = field(key=True)
+        value: List[Optional[int]]
+        ts: datetime
+
+        @pipeline
+        @inputs(A)
+        def pipeline(cls, event: Dataset):
+            return event.groupby("user_id").aggregate(
+                value=LastK(
+                    of="value",
+                    window=Continuous("forever"),
+                    dedup=True,
+                    limit=1,
+                )
+            )
+
+    client.commit(datasets=[A, B], message="test")
+
+    now = datetime.now(timezone.utc)
+    df = pd.DataFrame(
+        {
+            "user_id": [1, 2, 3],
+            "value": [None, 1, 2],
+            "ts": [now, now, now],
+        }
+    )
+    client.log("fennel_webhook", "A", df)
+
+    results, _ = client.lookup(
+        B,
+        keys=pd.DataFrame({"user_id": [1, 2, 3]}),
+    )
+    assert results["value"].tolist() == [[pd.NA], [1], [2]]
