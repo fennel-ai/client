@@ -1,4 +1,7 @@
 # Changelog
+## [1.3.20] - 2024-05-23
+- Updated schema validator to check special pyarrow dtypes.
+
 ## [1.3.19] - 2024-05-23
 - Fix null check in pandas dtype conversion.
 
