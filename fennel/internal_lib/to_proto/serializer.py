@@ -387,3 +387,16 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 summary=None,
             ),
         )
+
+    def visitChangelog(self, obj):
+        return proto.Operator(
+            id=obj.signature(),
+            is_root=obj == self.terminal_node,
+            pipeline_name=self.pipeline_name,
+            dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
+            changelog=proto.Changelog(
+                operand_id=self.visit(obj.node),
+                delete_column=obj.delete_column,
+            ),
+        )

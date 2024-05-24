@@ -217,6 +217,7 @@ class Executor(Visitor):
             f_df,
             fields,
         )
+
         return NodeRet(
             sorted_df,
             input_ret.timestamp_field,
@@ -700,6 +701,32 @@ class Executor(Visitor):
             df,
             input_ret.timestamp_field,
             input_ret.key_fields,
+            obj.dsschema().to_fields_proto(),
+        )
+
+    def visitChangelog(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None:
+            return None
+        if FENNEL_DELETE_TIMESTAMP not in input_ret.df.columns:
+            raise Exception(
+                "Changelog node can only be applied to a keyed dataset"
+            )
+        df = input_ret.df
+        delete_df = df[df[FENNEL_DELETE_TIMESTAMP].notnull()]
+        delete_df[input_ret.timestamp_field] = delete_df[
+            FENNEL_DELETE_TIMESTAMP
+        ]
+        df[obj.delete_column] = False
+        delete_df[obj.delete_column] = True
+        df = pd.concat([df, delete_df])
+        df = df.drop(columns=[FENNEL_DELETE_TIMESTAMP])
+        # Sort the dataframe by timestamp
+        df = df.sort_values(input_ret.timestamp_field)
+        return NodeRet(
+            df,
+            input_ret.timestamp_field,
+            [],
             obj.dsschema().to_fields_proto(),
         )
 
