@@ -4185,7 +4185,9 @@ def test_last_k_on_struct_type(client):
                     .assign(
                         "values_map",
                         Dict[str, str],
-                        lambda x: x[["value", "ts2"]].apply(get_value_map, axis=1),
+                        lambda x: x[["value", "ts2"]].apply(
+                            get_value_map, axis=1
+                        ),
                     )
                     .groupby("user_id")
                     .aggregate(
