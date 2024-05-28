@@ -157,7 +157,7 @@ s3 = S3(
 
 
 def test_invalid_deltalake_cdc():
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(ValueError) as e:
 
         @source(
             s3.bucket("data", prefix="user", format="delta"),
