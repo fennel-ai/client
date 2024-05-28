@@ -1,4 +1,6 @@
 # Changelog
+## [1.3.22] - 2024-05-28
+- Add validations around S3 with Deltalake format
 
 ## [1.3.21] - 2024-05-24
 - Add changelog operator to the client. 

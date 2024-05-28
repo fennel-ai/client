@@ -59,7 +59,7 @@ def test_s3_delta(client):
         s3.bucket("data", prefix="user", format="delta"),
         every="1h",
         disorder="14d",
-        cdc="upsert",
+        cdc="native",
     )
     # docsnip-highlight end
     @dataset

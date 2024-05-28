@@ -713,7 +713,7 @@ def test_multiple_sinks():
         ),
         every="1h",
         disorder="2d",
-        cdc="upsert",
+        cdc="native",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
         until=datetime.strptime("2022-02-28T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
@@ -814,7 +814,7 @@ def test_multiple_sources():
         ),
         every="1h",
         disorder="2d",
-        cdc="upsert",
+        cdc="native",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
         until=datetime.strptime("2022-02-28T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
@@ -859,7 +859,7 @@ def test_multiple_sources():
         "dataset": "UserInfoDatasetS3",
         "dsVersion": 1,
         "every": "3600s",
-        "cdc": "Upsert",
+        "cdc": "Native",
         "disorder": "172800s",
         "startingFrom": "2021-08-10T00:00:00Z",
         "until": "2022-02-28T00:00:00Z",

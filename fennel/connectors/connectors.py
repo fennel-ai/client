@@ -74,6 +74,13 @@ def source(
             f"{', '.join(conn.required_fields())}."
         )
 
+    if (
+        isinstance(conn, S3Connector)
+        and conn.format == "delta"
+        and cdc != "native"
+    ):
+        raise ValueError("CDC must be set as native for delta format")
+
     if since is not None and not isinstance(since, datetime):
         raise TypeError(f"'since' must be of type datetime - got {type(since)}")
 
