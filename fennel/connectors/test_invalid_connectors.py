@@ -156,6 +156,37 @@ s3 = S3(
 )
 
 
+def test_invalid_deltalake_cdc():
+    with pytest.raises(AttributeError) as e:
+
+        @source(
+            s3.bucket("data", prefix="user", format="delta"),
+            every="1h",
+            cdc="upsert",
+            disorder="1d",
+        )
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        view = InternalTestClient()
+        view.add(UserInfoDataset)
+        sync_request = view._get_sync_request_proto()
+        assert len(sync_request.dataset_info) == 1
+        dataset_request = sync_request.dataset_info[0]
+        assert len(dataset_request.sources) == 3
+
+    assert str(e.value) == "CDC must be set as native for delta format"
+
+
 def test_invalid_s3_source():
     with pytest.raises(AttributeError) as e:
 

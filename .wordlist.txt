@@ -10,6 +10,7 @@ Auth
 Avro
 BigTable
 Bytewax
+CDF
 CIDR
 DDL
 DSL
