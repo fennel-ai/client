@@ -4368,7 +4368,10 @@ def test_bytes(client):
     df_derived = client.inspect("RawBytesDataDerived")
     # Assert df and df_derived are same
     assert df_derived.shape == (2, 2)
-    assert df_derived["payload_str"].tolist() == ["aGVsbG8=", "d29ybGQ="]
+    assert sorted(df_derived["payload_str"].tolist()) == [
+        "aGVsbG8=",
+        "d29ybGQ=",
+    ]
 
     df_intermediate = client.inspect("RawBytesData")
     assert df_intermediate.shape == (2, 2)
