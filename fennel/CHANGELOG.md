@@ -1,4 +1,8 @@
 # Changelog
+
+## [1.3.23] - 2024-05-28
+- Add support for bytes type. 
+
 ## [1.3.22] - 2024-05-28
 - Add validations around S3 with Deltalake format
 

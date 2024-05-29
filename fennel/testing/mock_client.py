@@ -359,13 +359,13 @@ class MockClient(Client):
         self,
         dataset: Union[str, Dataset],
         n: int = 10,
-    ) -> List[Dict[str, Any]]:
+    ) -> pd.DataFrame:
         dataset_name = dataset if isinstance(dataset, str) else dataset._name
         branch_class = self._get_branch()
         df = branch_class.get_dataset_df(dataset_name)
         if df.shape[0] <= n:
-            return df.to_dict(orient="records")
-        return df.sample(n).to_dict(orient="records")
+            return df
+        return df.sample(n)
 
     def erase(
         self, dataset_name: Union[str, Dataset], erase_keys: pd.DataFrame
