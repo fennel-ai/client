@@ -24,6 +24,10 @@ Arbitrary sequence of utf-8 characters. Like most programming languages, `str`
 doesn't support arbitrary binary bytes though.
 </Expandable>
 
+<Expandable type="bytes">
+Arbitrary sequence of binary bytes. This is useful for storing binary data.
+</Expandable>
+
 <Expandable type="List[T]">
 List of elements of any other valid type `T`. Unlike Python lists, all elements 
 must have the same type.

@@ -4298,3 +4298,88 @@ def test_unkey_operator(client):
         pd.Timestamp("2022-01-01 02:00:00", tz="UTC"),
         pd.Timestamp("2022-01-01 04:00:00", tz="UTC"),
     ]
+
+
+@pytest.mark.integration
+@mock
+def test_bytes(client):
+    webhook = Webhook(name="fennel")
+
+    @source(
+        webhook.endpoint("RawBase64EncodedData"), cdc="append", disorder="14d"
+    )
+    @dataset
+    class RawBase64EncodedData:
+        payload: str
+        ts: datetime
+
+    @dataset
+    class RawBytesData:
+        payload_decoded: bytes
+        ts: datetime
+
+        @pipeline
+        @inputs(RawBase64EncodedData)
+        def pipeline(cls, event: Dataset):
+            def t(df: pd.DataFrame) -> pd.DataFrame:
+                import base64
+
+                return df.assign(
+                    payload_decoded=df["payload"].apply(base64.b64decode)
+                )
+
+            schema = event.schema()
+            schema["payload_decoded"] = bytes
+            return event.transform(t, schema).drop("payload")
+
+    @dataset
+    class RawBytesDataDerived:
+        payload_str: str
+        ts: datetime
+
+        @pipeline
+        @inputs(RawBytesData)
+        def base64_decode(cls, event: Dataset):
+            def decode(df: pd.DataFrame) -> pd.DataFrame:
+                import base64
+
+                return df.assign(
+                    payload_str=df["payload_decoded"].apply(base64.b64encode)
+                )
+
+            schema = event.schema()
+            schema["payload_str"] = str
+            return event.transform(decode, schema).drop("payload_decoded")
+
+    client.commit(
+        datasets=[RawBase64EncodedData, RawBytesData, RawBytesDataDerived],
+        message="test",
+    )
+
+    df = pd.DataFrame(
+        {
+            "payload": ["aGVsbG8=", "d29ybGQ="],
+            "ts": [datetime(2022, 1, 1), datetime(2022, 1, 2)],
+        }
+    )
+    client.log("fennel", "RawBase64EncodedData", df)
+    client.sleep()
+
+    df_derived = client.inspect("RawBytesDataDerived")
+    # Assert df and df_derived are same
+    assert df_derived.shape == (2, 2)
+    assert df_derived["payload_str"].tolist() == ["aGVsbG8=", "d29ybGQ="]
+
+    df_intermediate = client.inspect("RawBytesData")
+    assert df_intermediate.shape == (2, 2)
+    if client.is_integration_client():
+        # Server base64 encodes the bytes
+        assert sorted(df_intermediate["payload_decoded"].tolist()) == [
+            "aGVsbG8=",
+            "d29ybGQ=",
+        ]
+    else:
+        assert df_intermediate["payload_decoded"].tolist() == [
+            b"hello",
+            b"world",
+        ]

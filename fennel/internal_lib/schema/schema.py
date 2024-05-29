@@ -159,6 +159,8 @@ def get_datatype(type_: Any) -> schema_proto.DataType:
         return schema_proto.DataType(double_type=schema_proto.DoubleType())
     elif type_ is str or type_ is np.str_ or type_ == pd.StringDtype:
         return schema_proto.DataType(string_type=schema_proto.StringType())
+    elif type_ is bytes or type_ is np.bytes_:
+        return schema_proto.DataType(bytes_type=schema_proto.BytesType())
     elif type_ is datetime or type_ is np.datetime64:
         return schema_proto.DataType(
             timestamp_type=schema_proto.TimestampType()
@@ -258,6 +260,8 @@ def convert_dtype_to_arrow_type(dtype: schema_proto.DataType) -> pa.DataType:
         return pa.float64()
     elif dtype.HasField("string_type") or dtype.HasField("regex_type"):
         return pa.string()
+    elif dtype.HasField("bytes_type"):
+        return pa.binary()
     elif dtype.HasField("bool_type"):
         return pa.bool_()
     elif dtype.HasField("timestamp_type"):
@@ -555,6 +559,18 @@ def validate_field_in_df(
         ):
             raise ValueError(
                 f"Field `{name}` is of type str, but the "
+                f"column in the dataframe is of type "
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
+            )
+    elif dtype == schema_proto.DataType(bytes_type=schema_proto.BytesType()):
+        if (
+            df[name].dtype != object
+            and df[name].dtype != np.bytes_
+            and df[name].dtype != pd.ArrowDtype(pa.binary())
+        ):
+            raise ValueError(
+                f"Field `{name}` is of type bytes, but the "
                 f"column in the dataframe is of type "
                 f"`{df[name].dtype}`. Error found during "
                 f"checking schema for `{entity_name}`."
