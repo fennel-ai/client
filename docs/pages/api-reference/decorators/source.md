@@ -92,10 +92,17 @@ As of right now, there are two kinds of values of preproc:
 * `ref: Ref`: written as `ref(str)` and means that the column denoted
   by the key of this value is aliased to another column in the sourced data. This
   is useful, for instance, when you want to rename columns while bringing them
-  to Fennel. 
+  to Fennel. With this, you can also perform indirections of kind A[B][C] and 
+  renaming them while brining to fennel.
 
 * `Any`: means that the column denoted by the key of this value should be given
   a constant value.
+
+:::info
+Fennel supports preproc ref(str) values of type A[B][C] only for the JSON format.
+If you have data in other format, please reach out to Fennel support.
+:::
+
 </Expandable>
 
 

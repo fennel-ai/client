@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
+from fennel.connectors.connectors import ref
 import pytest
 
 from fennel.connectors import (
@@ -631,5 +632,37 @@ def test_invalid_bounded_and_idleness():
 
     assert (
         "idleness parameter should not be passed when bounded is set as False"
+        == str(e.value)
+    )
+
+
+def test_invalid_preproc_value():
+    # Preproc value of type A[B][C] cannot be set for data other than JSON format
+    with pytest.raises(ValueError) as e:
+        source(
+            s3.bucket(
+                bucket_name="all_ratings", prefix="prod/apac/", format="delta"
+            ),
+            every="1h",
+            disorder="14d",
+            cdc="native",
+            preproc={"C": ref("A[B][C]"), "D": "A[B][C]"},
+        )
+    assert (
+        "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
+        == str(e.value)
+    )
+
+    # Preproc value of type A[B][C] cannot be set for data other than JSON format
+    with pytest.raises(ValueError) as e:
+        source(
+            kafka.topic(topic="topic", format="Avro"),
+            every="1h",
+            disorder="14d",
+            cdc="debezium",
+            preproc={"C": ref("A[B][C]"), "D": "A[B][C]"},
+        )
+    assert (
+        "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
         == str(e.value)
     )

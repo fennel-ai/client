@@ -2,6 +2,9 @@
 ## [1.3.24] - 2024-05-28
 - Add support for hopping/tumbling/forever/session discrete window aggregation in mock. 
 
+## [1.3.23] - 2024-05-30
+- Add support for indirections in preproc ref type
+
 ## [1.3.23] - 2024-05-28
 - Add support for bytes type. 
 

@@ -2029,3 +2029,48 @@ def test_bounded_source_with_idleness():
     assert extdb_request == expected_extdb_request, error_message(
         extdb_request, expected_extdb_request
     )
+
+
+def test_valid_preproc_value():
+    # Preproc value of type A[B][C] can be only set for data in JSON format
+    source(
+        s3.bucket(
+            bucket_name="all_ratings", prefix="prod/apac/", format="json"
+        ),
+        every="1h",
+        disorder="14d",
+        cdc="native",
+        preproc={"C": ref("A[B][C]"), "D": "A[B][C]"},
+    )
+
+    source(
+        s3.bucket(
+            bucket_name="all_ratings", prefix="prod/apac/", format="parquet"
+        ),
+        every="1h",
+        disorder="14d",
+        cdc="append",
+        preproc={"C": "A[B][C]", "D": "A[B][C]"},
+    )
+
+    source(
+        kafka.topic(topic="topic", format="Avro"),
+        every="1h",
+        disorder="14d",
+        cdc="debezium",
+        preproc={"C": "A[B][C]", "D": "A[B][C]"},
+    )
+    source(
+        kafka.topic(topic="topic"),
+        every="1h",
+        disorder="14d",
+        cdc="debezium",
+        preproc={"C": ref("A[B][C]"), "D": "A[B][C]"},
+    )
+    source(
+        kafka.topic(topic="topic", format="json"),
+        every="1h",
+        disorder="14d",
+        cdc="debezium",
+        preproc={"C": ref("A[B][C]"), "D": "A[B][C]"},
+    )

@@ -39,6 +39,19 @@ def ref(ref_name: str) -> PreProcValue:
 PreProcValue = Union[Ref, Any]
 
 
+def preproc_has_indirection(preproc: Optional[Dict[str, PreProcValue]]):
+    if not preproc:
+        return False
+
+    if len(preproc) == 0:
+        return False
+
+    for value in preproc.values():
+        if isinstance(value, Ref) and "[" in value.name:
+            return True
+    return False
+
+
 def source(
     conn: DataConnector,
     disorder: Duration,
@@ -80,6 +93,25 @@ def source(
         and cdc != "native"
     ):
         raise ValueError("CDC must be set as native for delta format")
+
+    has_preproc_indirection = preproc_has_indirection(preproc)
+    if has_preproc_indirection:
+        if (
+            isinstance(conn, KinesisConnector)
+            or isinstance(conn, S3Connector)
+            or isinstance(conn, PubSubConnector)
+        ) and conn.format != "json":
+            raise ValueError(
+                "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
+            )
+        if (
+            isinstance(conn, KafkaConnector)
+            and conn.format is not None
+            and conn.format != "json"
+        ):
+            raise ValueError(
+                "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
+            )
 
     if since is not None and not isinstance(since, datetime):
         raise TypeError(f"'since' must be of type datetime - got {type(since)}")
