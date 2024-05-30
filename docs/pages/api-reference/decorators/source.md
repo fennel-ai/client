@@ -93,7 +93,7 @@ As of right now, there are two kinds of values of preproc:
   by the key of this value is aliased to another column in the sourced data. This
   is useful, for instance, when you want to rename columns while bringing them
   to Fennel. With this, you can also perform indirections of kind A[B][C] and 
-  renaming them while brining to fennel.
+  renaming them while bringing to fennel.
 
 * `Any`: means that the column denoted by the key of this value should be given
   a constant value.
