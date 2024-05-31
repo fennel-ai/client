@@ -10,12 +10,12 @@ from google.protobuf.json_format import MessageToDict
 
 from fennel._vendor import jsondiff  # type: ignore
 from fennel._vendor.requests import Response  # type: ignore
-from fennel.dtypes.dtypes import FENNEL_STRUCT
+from fennel.dtypes.dtypes import FENNEL_STRUCT, Window
 from fennel.gen.dataset_pb2 import Operator, Filter, Transform, Assign
 from fennel.gen.featureset_pb2 import Extractor
 from fennel.gen.pycode_pb2 import PyCode
-from fennel.gen.schema_pb2 import DSSchema, DataType, Field
-from fennel.internal_lib.schema import convert_dtype_to_arrow_type
+from fennel.gen.schema_pb2 import DSSchema, DataType, Field, TimestampType
+from fennel.internal_lib.schema import convert_dtype_to_arrow_type, get_datatype
 from fennel.internal_lib.utils import parse_datetime
 
 FENNEL_DELETE_TIMESTAMP = "__fennel_delete_timestamp__"
@@ -420,3 +420,11 @@ def add_deletes(
         FENNEL_DELETE_TIMESTAMP
     ].astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
     return sorted_df
+
+
+def get_window_data_type() -> DataType:
+    return get_datatype(Window)
+
+
+def get_timestamp_data_type() -> DataType:
+    return DataType(timestamp_type=TimestampType())
