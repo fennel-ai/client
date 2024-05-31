@@ -39,6 +39,33 @@ def ref(ref_name: str) -> PreProcValue:
 PreProcValue = Union[Ref, Any]
 
 
+def preproc_has_indirection(preproc: Optional[Dict[str, PreProcValue]]):
+    if not preproc:
+        return False
+
+    if len(preproc) == 0:
+        return False
+
+    for value in preproc.values():
+        if isinstance(value, Ref):
+            if len(value.name) == 0:
+                raise ValueError(
+                    "Expected column name to be non empty inside preproc ref type"
+                )
+            child_names = value.name.split("[")
+            # If there is only 1 child, it means there is no indirection
+            if len(child_names) == 1:
+                return False
+            # Last character of all the childs except the first one should be "]"
+            for idx in range(1, len(child_names)):
+                if child_names[idx][-1] != "]":
+                    raise ValueError(
+                        "Invalid preproc value of ref type, there is no closing ] for the corresponding opening ["
+                    )
+            return True
+    return False
+
+
 def source(
     conn: DataConnector,
     disorder: Duration,
@@ -80,6 +107,25 @@ def source(
         and cdc != "native"
     ):
         raise ValueError("CDC must be set as native for delta format")
+
+    has_preproc_indirection = preproc_has_indirection(preproc)
+    if has_preproc_indirection:
+        if (
+            isinstance(conn, KinesisConnector)
+            or isinstance(conn, S3Connector)
+            or isinstance(conn, PubSubConnector)
+        ) and conn.format != "json":
+            raise ValueError(
+                "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
+            )
+        if (
+            isinstance(conn, KafkaConnector)
+            and conn.format is not None
+            and conn.format != "json"
+        ):
+            raise ValueError(
+                "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
+            )
 
     if since is not None and not isinstance(since, datetime):
         raise TypeError(f"'since' must be of type datetime - got {type(since)}")
