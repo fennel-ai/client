@@ -93,14 +93,15 @@ As of right now, there are two kinds of values of preproc:
   by the key of this value is aliased to another column in the sourced data. This
   is useful, for instance, when you want to rename columns while bringing them
   to Fennel. With this, you can also perform indirections of kind A[B][C] and 
-  renaming them while bringing to fennel.
+  rename them while bringing to fennel.
 
 * `Any`: means that the column denoted by the key of this value should be given
   a constant value.
 
 :::info
-Fennel supports preproc ref(str) values of type A[B][C] only for the JSON format.
-If you have data in other format, please reach out to Fennel support.
+Fennel supports preproc ref(str) values of type A[B][C] only for the JSON format and 
+A, B should be struct types. If you have data in other format or require indirection
+for other parent types apart from struct, please reach out to Fennel support.
 :::
 
 </Expandable>

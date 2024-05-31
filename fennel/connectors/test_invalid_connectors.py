@@ -637,6 +637,38 @@ def test_invalid_bounded_and_idleness():
 
 
 def test_invalid_preproc_value():
+    # Preproc value of "" cannot be set
+    with pytest.raises(ValueError) as e:
+        source(
+            s3.bucket(
+                bucket_name="all_ratings", prefix="prod/apac/", format="json"
+            ),
+            every="1h",
+            disorder="14d",
+            cdc="append",
+            preproc={"C": ref("")},
+        )
+    assert (
+        "Expected column name to be non empty inside preproc ref type"
+        == str(e.value)
+    )
+
+    # Preproc value of "A[B[C]" cannot be set
+    with pytest.raises(ValueError) as e:
+        source(
+            s3.bucket(
+                bucket_name="all_ratings", prefix="prod/apac/", format="json"
+            ),
+            every="1h",
+            disorder="14d",
+            cdc="append",
+            preproc={"C": ref("A[B[C]")},
+        )
+    assert (
+        "Invalid preproc value of ref type, there is no closing ] for the corresponding opening ["
+        == str(e.value)
+    )
+
     # Preproc value of type A[B][C] cannot be set for data other than JSON format
     with pytest.raises(ValueError) as e:
         source(

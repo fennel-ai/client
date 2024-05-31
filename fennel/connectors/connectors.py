@@ -47,7 +47,21 @@ def preproc_has_indirection(preproc: Optional[Dict[str, PreProcValue]]):
         return False
 
     for value in preproc.values():
-        if isinstance(value, Ref) and "[" in value.name:
+        if isinstance(value, Ref):
+            if len(value.name) == 0:
+                raise ValueError(
+                    "Expected column name to be non empty inside preproc ref type"
+                )
+            child_names = value.name.split("[")
+            # If there is only 1 child, it means there is no indirection
+            if len(child_names) == 1:
+                return False
+            # Last character of all the childs except the first one should be "]"
+            for idx in range(1, len(child_names)):
+                if child_names[idx][-1] != "]":
+                    raise ValueError(
+                        "Invalid preproc value of ref type, there is no closing ] for the corresponding opening ["
+                    )
             return True
     return False
 
