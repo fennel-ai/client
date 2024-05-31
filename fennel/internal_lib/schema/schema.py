@@ -312,7 +312,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
     if dtype.HasField("optional_type"):
         try:
             if not isinstance(
-                val, (list, tuple, dict, set, np.ndarray)
+                val, (list, tuple, dict, set, np.ndarray, frozendict)
             ) and pd.isna(val):
                 return
             else:
@@ -372,7 +372,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
         for v in val:
             validate_val_with_proto_dtype(dtype.array_type.of, v)
     elif dtype.map_type.key != schema_proto.DataType():
-        if type(val) not in [dict, np.ndarray, list]:
+        if type(val) not in [dict, np.ndarray, list, frozendict]:
             raise ValueError(
                 f"Expected type dict/list[tuple], got {type(val)} for value {val}"
             )
@@ -623,20 +623,7 @@ def validate_field_in_df(
             )
         # Check that the embedding is a list of floats of size embedding_size
         for i, row in df[name].items():
-            if not isinstance(row, np.ndarray) and not isinstance(row, list):
-                raise ValueError(
-                    f"Field `{name}` is of type embedding, but the "
-                    f"column in the dataframe is not a list. Error found during "
-                    f"checking schema for `{entity_name}`."
-                )
-            if len(row) != dtype.embedding_type.embedding_size:
-                raise ValueError(
-                    f"Field `{name}` is of type embedding, of size "
-                    f"`{dtype.embedding_type.embedding_size}`, but the "
-                    "column in the dataframe has a list of size "
-                    f"`{len(row)}`. Error found during "
-                    f"checking schema for `{entity_name}`."
-                )
+            validate_val_with_proto_dtype(dtype, row)
     elif dtype.array_type.of != schema_proto.DataType():
         if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
             arrow_type
@@ -648,12 +635,6 @@ def validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
-            if not isinstance(row, np.ndarray) and not isinstance(row, list):
-                raise ValueError(
-                    f"Field `{name}` is of type array, but the "
-                    f"column in the dataframe is not a list. Error found during "
-                    f"checking schema for `{entity_name}`."
-                )
             validate_val_with_proto_dtype(dtype, row)
     elif dtype.map_type.key != schema_proto.DataType():
         if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
@@ -666,20 +647,7 @@ def validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
-            if isinstance(row, list):
-                for val in row:
-                    if not isinstance(val, tuple):
-                        raise ValueError(
-                            f"Field `{name}` is of type map, but the "
-                            f"column in the dataframe is not a dict. (type = {type(row)}). "
-                            f"Error found during checking schema for `{entity_name}`."
-                        )
-            elif not isinstance(row, dict) and not isinstance(row, frozendict):
-                raise ValueError(
-                    f"Field `{name}` is of type map, but the "
-                    f"column in the dataframe is not a dict. (type = {type(row)}). "
-                    f"Error found during checking schema for `{entity_name}`."
-                )
+            validate_val_with_proto_dtype(dtype, row)
 
     elif dtype.between_type != schema_proto.Between():
         bw_type = dtype.between_type
@@ -824,8 +792,6 @@ def validate_field_in_df(
             )
         # Recursively check the type of each element in the column
         for i, row in df[name].items():
-            if is_nullable and pd.isna(row):
-                continue
             validate_val_with_proto_dtype(field.dtype, row)
     else:
         raise ValueError(f"Field `{name}` has unknown data type `{dtype}`.")

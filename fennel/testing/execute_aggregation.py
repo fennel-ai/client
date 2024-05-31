@@ -2,11 +2,13 @@ import heapq
 import math
 from abc import ABC, abstractmethod
 from collections import Counter
+from datetime import datetime, timezone
 from math import sqrt
-from typing import Dict, List, Type
+from typing import Dict, List, Type, Union
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 from sortedcontainers import SortedList
 
 from fennel.datasets import (
@@ -21,6 +23,7 @@ from fennel.datasets import (
     Stddev,
     Quantile,
 )
+from fennel.dtypes import Continuous, Hopping, Tumbling, Session
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype
 from fennel.testing.test_utils import (
@@ -326,6 +329,245 @@ class QuantileState(AggState):
         return self.vals[min(len(self.vals) - 1, max(index - 1, 0))]
 
 
+def get_timestamps_for_hopping_window(
+    timestamp: datetime, duration: int, stride: int
+) -> List[datetime]:
+    """
+    Given a window duration, stride and a timestamp first fetch all the windows in which the
+    given timestamp lies then return the list of window end timestamps.
+    """
+    current_ts = int(timestamp.timestamp())
+
+    # Get the window of which current timestamp is part of
+    start_ts = (((current_ts - duration) // stride) + 1) * stride
+
+    results = []
+
+    # Getting all the window of which timestamp is a part of
+    while start_ts <= current_ts:
+        results.append(
+            datetime.fromtimestamp(start_ts + duration, tz=timezone.utc)
+        )
+        start_ts = start_ts + stride
+
+    return results
+
+
+def get_timestamps_for_session_window(
+    df: pd.DataFrame, key_fields: List[str], ts_field: str, gap: int
+) -> pd.DataFrame:
+    """
+    Given a session gap first the session in which the given timestamp lies then return end timestamp of the session.
+    """
+    df = df.sort_values(by=ts_field).reset_index(drop=True)
+    sessions: List[dict] = []
+    curr_session = None
+    for _, row in df.iterrows():
+        timestamp = int(row[ts_field].timestamp())
+        if curr_session is None:
+            curr_session = {"ts": timestamp, "rows": [row]}
+        else:
+            if timestamp <= curr_session["ts"] + gap:
+                curr_session["ts"] = timestamp
+                curr_session["rows"].append(row)
+            else:
+                sessions.append(curr_session)
+                curr_session = {"ts": timestamp, "rows": [row]}
+    if curr_session is not None:
+        sessions.append(curr_session)
+    rows = []
+    for session in sessions:
+        timestamp = datetime.fromtimestamp(session["ts"], tz=timezone.utc)  # type: ignore
+        for row in session["rows"]:
+            row[ts_field] = timestamp
+            rows.append(row)
+
+    # Dropping key columns
+    return pd.DataFrame(rows).drop(columns=key_fields)
+
+
+def preprocess_df_continuous_window(
+    input_df: pd.DataFrame,
+    window: Continuous,
+    ts_field: str,
+) -> pd.DataFrame:
+    if window.duration != "forever":
+        window_secs = duration_to_timedelta(window.duration).total_seconds()
+        expire_secs = np.timedelta64(int(window_secs), "s") + np.timedelta64(
+            1, "s"
+        )
+
+        # For every row find the time it will expire and add it to the dataframe
+        # as a delete row
+        del_df = input_df.copy()
+        del_df[ts_field] = del_df[ts_field] + expire_secs
+        del_df[FENNEL_ROW_TYPE] = -1
+
+        # If the input dataframe has a delete timestamp field, pick the minimum
+        # of the two timestamps
+        if FENNEL_DELETE_TIMESTAMP in input_df.columns:
+            del_df[ts_field] = del_df[[ts_field, FENNEL_DELETE_TIMESTAMP]].min(
+                axis=1
+            )
+        input_df = pd.concat([input_df, del_df], ignore_index=True)
+    elif FENNEL_DELETE_TIMESTAMP in input_df.columns:
+        del_df = input_df.copy()
+        del_df = del_df[del_df[FENNEL_DELETE_TIMESTAMP].notna()]
+        del_df[FENNEL_ROW_TYPE] = -1
+        del_df[ts_field] = del_df[FENNEL_DELETE_TIMESTAMP]
+        input_df = pd.concat([input_df, del_df], ignore_index=True)
+    return input_df
+
+
+def preprocess_df_session_window(
+    input_df: pd.DataFrame,
+    window: Session,
+    key_fields: List[str],
+    ts_field: str,
+) -> pd.DataFrame:
+    gap = window.gap_total_seconds()
+    cols = input_df.columns
+    input_df = (
+        (
+            input_df.groupby(key_fields)
+            .apply(
+                get_timestamps_for_session_window,
+                key_fields=key_fields,
+                ts_field=ts_field,
+                gap=gap,
+            )
+            .reset_index()
+        )
+        .loc[:, cols]
+        .assign(
+            **{
+                ts_field: lambda x: x[ts_field].astype(
+                    pd.ArrowDtype(pa.timestamp("ns", "UTC"))
+                )
+            }
+        )
+    )
+
+    fennel_internal_field = "__fennel_internal_field__"
+
+    # Getting all the unique sessions against all the keys
+    internal_df = (
+        input_df.copy()[key_fields + [ts_field]]
+        .drop_duplicates()
+        .sort_values(by=ts_field)
+        .reset_index(drop=True)
+    )
+    # This groups the dataset by key_fields then fetches the next value,
+    # this ends up returning the end timestamp of next session
+    internal_df[fennel_internal_field] = internal_df.groupby(key_fields)[
+        ts_field
+    ].shift(-1)
+    internal_df = internal_df[internal_df[fennel_internal_field].notna()]
+
+    # Join with input_df.copy() to get the end timestamp against each row.
+    del_df = input_df.copy().merge(
+        internal_df, how="inner", on=key_fields + [ts_field]
+    )
+    del_df[ts_field] = del_df[fennel_internal_field]
+    del_df.drop(columns=[fennel_internal_field], inplace=True)
+    del_df[FENNEL_ROW_TYPE] = -1
+
+    # If the input dataframe has a delete timestamp field, pick the minimum
+    # of the two timestamps
+    if FENNEL_DELETE_TIMESTAMP in input_df.columns:
+        del_df[ts_field] = del_df[[ts_field, FENNEL_DELETE_TIMESTAMP]].min(
+            axis=1
+        )
+    input_df = pd.concat([input_df, del_df], ignore_index=True)
+    return input_df
+
+
+def preprocess_df_discrete_window(
+    input_df: pd.DataFrame,
+    window: Union[Hopping, Tumbling],
+    ts_field: str,
+) -> pd.DataFrame:
+    """
+    According to Aggregation Specification preprocess the dataframe to add delete or inserts.
+    """
+    if window.duration != "forever":
+        duration = window.duration_total_seconds()
+    else:
+        duration = window.stride_total_seconds()
+    stride = window.stride_total_seconds()
+
+    # Add the inserts for which row against end timestamp of every window in which the row belongs to
+    input_df = (
+        input_df.assign(
+            **{
+                ts_field: lambda x: x[ts_field].apply(
+                    lambda y: get_timestamps_for_hopping_window(
+                        y, duration, stride
+                    )
+                )
+            }
+        )
+        .explode(ts_field)
+        .assign(
+            **{
+                ts_field: lambda x: x[ts_field].astype(
+                    pd.ArrowDtype(pa.timestamp("ns", "UTC"))
+                )
+            }
+        )
+        .reset_index(drop=True)
+    )
+
+    if window.duration != "forever":
+        # Add deletes for each row as end of next window.
+        del_df = input_df.copy()
+        expire_secs = np.timedelta64(stride, "s")
+        del_df[ts_field] = del_df[ts_field] + expire_secs
+        del_df[FENNEL_ROW_TYPE] = -1
+        # If the input dataframe has a delete timestamp field, pick the minimum
+        # of the two timestamps
+        if FENNEL_DELETE_TIMESTAMP in input_df.columns:
+            del_df[ts_field] = del_df[[ts_field, FENNEL_DELETE_TIMESTAMP]].min(
+                axis=1
+            )
+        input_df = pd.concat([input_df, del_df], ignore_index=True)
+    else:
+        # forever hopping aggregates on keyed datasets
+        if FENNEL_DELETE_TIMESTAMP in input_df.columns:
+            del_df = input_df.copy()
+            del_df = del_df[del_df[FENNEL_DELETE_TIMESTAMP].notna()]
+            del_df[FENNEL_ROW_TYPE] = -1
+            del_df[ts_field] = del_df[FENNEL_DELETE_TIMESTAMP]
+            input_df = pd.concat([input_df, del_df], ignore_index=True)
+    return input_df
+
+
+def preprocess_df(
+    input_df: pd.DataFrame,
+    aggregate: AggregateType,
+    key_fields: List[str],
+    ts_field: str,
+) -> pd.DataFrame:
+    """
+    Preprocess the dataframe to add delete or inserts according to window type.
+    """
+    if isinstance(aggregate.window, Continuous):
+        input_df = preprocess_df_continuous_window(
+            input_df, aggregate.window, ts_field
+        )
+    elif isinstance(aggregate.window, (Hopping, Tumbling)):
+        input_df = preprocess_df_discrete_window(
+            input_df, aggregate.window, ts_field
+        )
+    else:
+        input_df = preprocess_df_session_window(
+            input_df, aggregate.window, key_fields, ts_field
+        )
+    return input_df.sort_values(
+        [ts_field, FENNEL_ROW_TYPE], ascending=[True, False]
+    ).reset_index(drop=True)
+
+
 def get_aggregated_df(
     input_df: pd.DataFrame,
     aggregate: AggregateType,
@@ -335,38 +577,8 @@ def get_aggregated_df(
 ) -> pd.DataFrame:
     df = input_df.copy()
     df[FENNEL_ROW_TYPE] = 1
-    if aggregate.window.duration != "forever":
-        window_secs = duration_to_timedelta(
-            aggregate.window.duration
-        ).total_seconds()
-        expire_secs = np.timedelta64(int(window_secs), "s") + np.timedelta64(
-            1, "s"
-        )
-        # For every row find the time it will expire and add it to the dataframe
-        # as a delete row
-        del_df = df.copy()
-        del_df[ts_field] = del_df[ts_field] + expire_secs
-        del_df[FENNEL_ROW_TYPE] = -1
-        # If the input dataframe has a delete timestamp field, pick the minimum
-        # of the two timestamps
-        if FENNEL_DELETE_TIMESTAMP in df.columns:
-            del_df[ts_field] = del_df[[ts_field, FENNEL_DELETE_TIMESTAMP]].min(
-                axis=1
-            )
-        df = pd.concat([df, del_df], ignore_index=True)
-        df = df.sort_values(
-            [ts_field, FENNEL_ROW_TYPE], ascending=[True, False]
-        )
-    elif FENNEL_DELETE_TIMESTAMP in df.columns:
-        # forever aggregates on keyed datasets
 
-        del_df = df[df[FENNEL_DELETE_TIMESTAMP].notna()]
-        del_df[FENNEL_ROW_TYPE] = -1
-        del_df[ts_field] = del_df[FENNEL_DELETE_TIMESTAMP]
-        df = pd.concat([df, del_df], ignore_index=True)
-        df = df.sort_values(
-            [ts_field, FENNEL_ROW_TYPE], ascending=[True, False]
-        )
+    df = preprocess_df(df, aggregate, key_fields, ts_field)
 
     # Reset the index
     df = df.reset_index(drop=True)
@@ -429,6 +641,7 @@ def get_aggregated_df(
     subset = key_fields + [ts_field]
     df = df.drop_duplicates(subset=subset, keep="last")
     df = df.reset_index(drop=True)
+
     data_type = get_datatype(output_dtype)
     df[aggregate.into_field] = cast_col_to_arrow_dtype(
         df[aggregate.into_field], data_type
