@@ -56,7 +56,7 @@ logic of the job for one iteration. Assuming job run is successful, job returns
 the list of output messages as well as any new state changes to be written back
 to RocksDB.
 
-Runner than initiates a Kafka transaction and writes all output messages to the 
+Runner then initiates a Kafka transaction and writes all output messages to the 
 appropriate partition of output topic(s). Runner also maintains a single-partition
 topic called _replaylog_. Runner writes a special marker message in the replaylog
 that somehow encodes & identifies the state store mutations (but doesn't 
