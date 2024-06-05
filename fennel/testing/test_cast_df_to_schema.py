@@ -504,7 +504,14 @@ def test_cast_col_to_pandas_dtype():
     """
     Testing casting pd.Series of arrow dtype to pandas dtype.
     """
-    value = [{"a": 1, "b": {"a": 1, "b": 2, "c": 3}, "c": [1, 2, 3, 4]}]
+    value = [
+        {
+            "a": 1,
+            "b": {"a": 1, "b": 2, "c": 3},
+            "c": [1, 2, 3, 4],
+            "d": b"hello world",
+        }
+    ]
     data = pd.Series([value], name="testing")
     data_type = schema_proto.DataType(
         array_type=schema_proto.ArrayType(
@@ -538,6 +545,12 @@ def test_cast_col_to_pandas_dtype():
                                         int_type=schema_proto.IntType()
                                     )
                                 )
+                            ),
+                        ),
+                        schema_proto.Field(
+                            name="d",
+                            dtype=schema_proto.DataType(
+                                bytes_type=schema_proto.BytesType()
                             ),
                         ),
                     ]

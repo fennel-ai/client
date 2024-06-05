@@ -172,6 +172,8 @@ def cast_col_to_pandas_dtype(
         return series.astype(pd.Float64Dtype())
     elif dtype.HasField("string_type") or dtype.HasField("regex_type"):
         return series.astype(pd.StringDtype())
+    elif dtype.HasField("bytes_type"):
+        return series.astype(object)
     elif dtype.HasField("bool_type"):
         return series.astype(pd.BooleanDtype())
     elif dtype.HasField("timestamp_type"):
@@ -222,6 +224,8 @@ def convert_val_to_pandas_dtype(
         return float(value)
     elif data_type.HasField("string_type") or data_type.HasField("regex_type"):
         return str(value)
+    elif data_type.HasField("bytes_type"):
+        return bytes(value)
     elif data_type.HasField("bool_type"):
         return bool(value)
     elif data_type.HasField("timestamp_type"):
