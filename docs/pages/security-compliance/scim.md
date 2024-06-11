@@ -26,7 +26,7 @@ role. Here are the steps for configuring SCIM on Okta:
    by toggling the "Enable SCIM" button. Keep the following generated fields
    handy for further steps:
     - SCIM endpoint : used as the connector base URL, typically looks like
-        `https://your.cluster.fennel.ai/scim`
+        `https://api.fennel.ai/scim`
     - SCIM authentication token : used to configuring SCIM authentication in Okta. 
       Note that this token is highly sensitive, and it's crucial to safeguard it 
       from any potential leaks. 
