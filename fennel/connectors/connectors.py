@@ -479,7 +479,9 @@ class Kinesis(DataSource):
 
 
 class Redshift(DataSource):
-    s3_access_role_arn: str
+    s3_access_role_arn: Optional[str]
+    username: Optional[str]
+    password: Optional[str]
     db_name: str
     host: str
     port: int = 5439
@@ -500,6 +502,8 @@ class Redshift(DataSource):
             db_name="",
             host="",
             schema="",
+            username=None,
+            password=None,
         )
 
     def identifier(self) -> str:

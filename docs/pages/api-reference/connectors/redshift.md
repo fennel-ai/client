@@ -11,7 +11,7 @@ Data connector to Redshift databases.
 A name to identify the source. The name should be unique across all Fennel sources.
 </Expandable>
 
-<Expandable title="s3_access_role_arn" type="str">
+<Expandable title="s3_access_role_arn" type="Optional[str]">
 To handle potentially large volume of data, Fennel asks Redshift to dump
 query results in a temporary S3 bucket (since it's faster to go via S3). But this
 requires Redshift to be able to access that S3 bucket. `s3_access_role_arn` is
@@ -26,10 +26,20 @@ Steps to set up IAM role:
 - Associate IAM role with Redshift cluster by following this [documentation](https://docs.aws.amazon.com/redshift/latest/mgmt/copy-unload-iam-role.html#copy-unload-iam-role-associating-with-clusters). 
  
 You can refer to a sample policy in the right side code snippets.
+Do not set this parameter in case we are going with credential based authentication
 </Expandable>
 
 <Expandable title="db_name" type="str">
 The name of the database where the relevant data resides.
+</Expandable>
+
+<Expandable title="username" type="Optional[str]">
+The username which should be used to access the database. This username should have access to the 
+database `db_name`. Do not set this parameter in case we are going with IAM authentication
+</Expandable>
+
+<Expandable title="password" type="Optional[str]">
+The password associated with the username. Do not set this parameter in case we are going with IAM authentication
 </Expandable>
 
 <Expandable title="host" type="str">

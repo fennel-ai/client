@@ -1120,6 +1120,8 @@ def _redshift_conn_to_source_proto(
     ext_db = _redshift_to_ext_db_proto(
         name=data_source.name,
         s3_access_role_arn=data_source.s3_access_role_arn,
+        username=data_source.username,
+        password=data_source.password,
         host=data_source.host,
         port=data_source.port,
         database=data_source.db_name,
@@ -1156,7 +1158,9 @@ def _redshift_conn_to_source_proto(
 
 def _redshift_to_ext_db_proto(
     name: str,
-    s3_access_role_arn: str,
+    s3_access_role_arn: Optional[str],
+    username: Optional[str],
+    password: Optional[str],
     host: str,
     port: int,
     database: str,
@@ -1166,6 +1170,8 @@ def _redshift_to_ext_db_proto(
         name=name,
         redshift=connector_proto.Redshift(
             s3_access_role_arn=s3_access_role_arn,
+            user=username,
+            password=password,
             host=host,
             port=port,
             database=database,

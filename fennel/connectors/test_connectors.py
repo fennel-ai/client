@@ -411,6 +411,15 @@ redshift = Redshift(
     schema="public",
 )
 
+redshift2 = Redshift(
+    name="redshift_src_2",
+    db_name="test",
+    host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+    schema="public",
+    username="username",
+    password="password",
+)
+
 mongo = Mongo(
     name="mongo_src",
     host="atlascluster.ushabcd.mongodb.net",
@@ -1510,6 +1519,76 @@ def test_multiple_sources():
             "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
             "port": 5439,
             "schema": "public",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        redshift2.table("test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="upsert",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetRedshiftUsingCreds:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # redshift source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetRedshiftUsingCreds)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "redshiftTable": {
+                "db": {
+                    "redshift": {
+                        "database": "test",
+                        "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+                        "port": 5439,
+                        "schema": "public",
+                        "username": "username",
+                        "password": "password",
+                    },
+                    "name": "redshift_src",
+                },
+                "tableName": "test_table",
+            }
+        },
+        "dataset": "UserInfoDatasetRedshift",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "redshift_src",
+        "redshift": {
+            "database": "test",
+            "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+            "port": 5439,
+            "schema": "public",
+            "username": "username",
+            "password": "password",
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())

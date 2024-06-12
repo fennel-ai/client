@@ -458,21 +458,34 @@ class Redshift(google.protobuf.message.Message):
     HOST_FIELD_NUMBER: builtins.int
     PORT_FIELD_NUMBER: builtins.int
     SCHEMA_FIELD_NUMBER: builtins.int
+    USER_FIELD_NUMBER: builtins.int
+    PASSWORD_FIELD_NUMBER: builtins.int
     s3_access_role_arn: builtins.str
     database: builtins.str
     host: builtins.str
     port: builtins.int
     schema: builtins.str
+    user: builtins.str
+    password: builtins.str
     def __init__(
         self,
         *,
-        s3_access_role_arn: builtins.str = ...,
+        s3_access_role_arn: builtins.str | None = ...,
         database: builtins.str = ...,
         host: builtins.str = ...,
         port: builtins.int = ...,
         schema: builtins.str = ...,
+        user: builtins.str | None = ...,
+        password: builtins.str | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "port", b"port", "s3_access_role_arn", b"s3_access_role_arn", "schema", b"schema"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_password", b"_password", "_s3_access_role_arn", b"_s3_access_role_arn", "_user", b"_user", "password", b"password", "s3_access_role_arn", b"s3_access_role_arn", "user", b"user"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_password", b"_password", "_s3_access_role_arn", b"_s3_access_role_arn", "_user", b"_user", "database", b"database", "host", b"host", "password", b"password", "port", b"port", "s3_access_role_arn", b"s3_access_role_arn", "schema", b"schema", "user", b"user"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_password", b"_password"]) -> typing_extensions.Literal["password"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_s3_access_role_arn", b"_s3_access_role_arn"]) -> typing_extensions.Literal["s3_access_role_arn"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_user", b"_user"]) -> typing_extensions.Literal["user"] | None: ...
 
 global___Redshift = Redshift
 
