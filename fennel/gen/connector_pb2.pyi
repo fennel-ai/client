@@ -450,29 +450,72 @@ class Kinesis(google.protobuf.message.Message):
 global___Kinesis = Kinesis
 
 @typing_extensions.final
-class Redshift(google.protobuf.message.Message):
+class Credentials(google.protobuf.message.Message):
+    """TODO(Harsha): Use this struct for other sources"""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    USERNAME_FIELD_NUMBER: builtins.int
+    PASSWORD_FIELD_NUMBER: builtins.int
+    username: builtins.str
+    password: builtins.str
+    def __init__(
+        self,
+        *,
+        username: builtins.str = ...,
+        password: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["password", b"password", "username", b"username"]) -> None: ...
+
+global___Credentials = Credentials
+
+@typing_extensions.final
+class RedshiftAuthentication(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     S3_ACCESS_ROLE_ARN_FIELD_NUMBER: builtins.int
-    DATABASE_FIELD_NUMBER: builtins.int
-    HOST_FIELD_NUMBER: builtins.int
-    PORT_FIELD_NUMBER: builtins.int
-    SCHEMA_FIELD_NUMBER: builtins.int
+    CREDENTIALS_FIELD_NUMBER: builtins.int
     s3_access_role_arn: builtins.str
-    database: builtins.str
-    host: builtins.str
-    port: builtins.int
-    schema: builtins.str
+    @property
+    def credentials(self) -> global___Credentials: ...
     def __init__(
         self,
         *,
         s3_access_role_arn: builtins.str = ...,
+        credentials: global___Credentials | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["credentials", b"credentials", "s3_access_role_arn", b"s3_access_role_arn", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["credentials", b"credentials", "s3_access_role_arn", b"s3_access_role_arn", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["s3_access_role_arn", "credentials"] | None: ...
+
+global___RedshiftAuthentication = RedshiftAuthentication
+
+@typing_extensions.final
+class Redshift(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DATABASE_FIELD_NUMBER: builtins.int
+    HOST_FIELD_NUMBER: builtins.int
+    PORT_FIELD_NUMBER: builtins.int
+    SCHEMA_FIELD_NUMBER: builtins.int
+    REDSHIFT_AUTHENTICATION_FIELD_NUMBER: builtins.int
+    database: builtins.str
+    host: builtins.str
+    port: builtins.int
+    schema: builtins.str
+    @property
+    def redshift_authentication(self) -> global___RedshiftAuthentication: ...
+    def __init__(
+        self,
+        *,
         database: builtins.str = ...,
         host: builtins.str = ...,
         port: builtins.int = ...,
         schema: builtins.str = ...,
+        redshift_authentication: global___RedshiftAuthentication | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "port", b"port", "s3_access_role_arn", b"s3_access_role_arn", "schema", b"schema"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["redshift_authentication", b"redshift_authentication"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "port", b"port", "redshift_authentication", b"redshift_authentication", "schema", b"schema"]) -> None: ...
 
 global___Redshift = Redshift
 

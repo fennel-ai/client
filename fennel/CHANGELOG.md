@@ -1,4 +1,7 @@
 # Changelog
+## [1.3.26] - 2024-06-12
+- Add support for credential based authentication for Redshift
+
 ## [1.3.25] - 2024-05-31
 - Add support for indirections in preproc ref type
 
