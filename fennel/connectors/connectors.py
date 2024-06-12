@@ -497,8 +497,8 @@ class Redshift(DataSource):
     def get(name: str) -> Redshift:
         return Redshift(
             name=name,
+            s3_access_role_arn=None,
             _get=True,
-            s3_access_role_arn="",
             db_name="",
             host="",
             schema="",
@@ -608,6 +608,20 @@ class TableConnector(DataConnector):
     cursor: str
 
     def __init__(self, source, table_name, cursor):
+        if isinstance(source, Redshift):
+            if source.s3_access_role_arn and (
+                source.username or source.password
+            ):
+                raise AttributeError(
+                    "username/password shouldn't be set when s3_access_role_arn is set"
+                )
+            if not source.s3_access_role_arn and (
+                not source.username or not source.password
+            ):
+                raise AttributeError(
+                    "username/password should be set when s3_access_role_arn is not set"
+                )
+
         self.data_source = source
         self.table_name = table_name
         self.cursor = cursor

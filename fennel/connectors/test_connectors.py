@@ -1487,7 +1487,9 @@ def test_multiple_sources():
             "redshiftTable": {
                 "db": {
                     "redshift": {
-                        "s3_access_role_arn": "arn:aws:iam::123:role/Redshift",
+                        "redshiftAuthentication": {
+                            "s3_access_role_arn": "arn:aws:iam::123:role/Redshift"
+                        },
                         "database": "test",
                         "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
                         "port": 5439,
@@ -1514,7 +1516,9 @@ def test_multiple_sources():
     e = {
         "name": "redshift_src",
         "redshift": {
-            "s3_access_role_arn": "arn:aws:iam::123:role/Redshift",
+            "redshiftAuthentication": {
+                "s3_access_role_arn": "arn:aws:iam::123:role/Redshift"
+            },
             "database": "test",
             "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
             "port": 5439,
@@ -1559,15 +1563,19 @@ def test_multiple_sources():
                         "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
                         "port": 5439,
                         "schema": "public",
-                        "username": "username",
-                        "password": "password",
+                        "redshiftAuthentication": {
+                            "credentials": {
+                                "username": "username",
+                                "password": "password",
+                            }
+                        },
                     },
-                    "name": "redshift_src",
+                    "name": "redshift_src_2",
                 },
                 "tableName": "test_table",
             }
         },
-        "dataset": "UserInfoDatasetRedshift",
+        "dataset": "UserInfoDatasetRedshiftUsingCreds",
         "dsVersion": 1,
         "every": "3600s",
         "cdc": "Upsert",
@@ -1581,14 +1589,15 @@ def test_multiple_sources():
     )
     extdb_request = sync_request.extdbs[0]
     e = {
-        "name": "redshift_src",
+        "name": "redshift_src_2",
         "redshift": {
             "database": "test",
             "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
             "port": 5439,
             "schema": "public",
-            "username": "username",
-            "password": "password",
+            "redshiftAuthentication": {
+                "credentials": {"username": "username", "password": "password"}
+            },
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())

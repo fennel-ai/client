@@ -1156,6 +1156,23 @@ def _redshift_conn_to_source_proto(
     )
 
 
+def _redshift_to_authentication_proto(
+    s3_access_role_arn: Optional[str],
+    username: Optional[str],
+    password: Optional[str],
+):
+    if s3_access_role_arn:
+        return connector_proto.RedshiftAuthentication(
+            s3_access_role_arn=s3_access_role_arn
+        )
+    else:
+        return connector_proto.RedshiftAuthentication(
+            credentials=connector_proto.Credentials(
+                username=username, password=password
+            )
+        )
+
+
 def _redshift_to_ext_db_proto(
     name: str,
     s3_access_role_arn: Optional[str],
@@ -1169,13 +1186,13 @@ def _redshift_to_ext_db_proto(
     return connector_proto.ExtDatabase(
         name=name,
         redshift=connector_proto.Redshift(
-            s3_access_role_arn=s3_access_role_arn,
-            user=username,
-            password=password,
             host=host,
             port=port,
             database=database,
             schema=schema,
+            redshift_authentication=_redshift_to_authentication_proto(
+                s3_access_role_arn, username, password
+            ),
         ),
     )
 
