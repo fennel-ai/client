@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import re
 from datetime import datetime, timezone
@@ -149,17 +150,18 @@ def source(
         )
 
     def decorator(dataset_cls: T):
-        conn.every = every if every is not None else DEFAULT_EVERY
-        conn.since = since
-        conn.until = until
-        conn.disorder = disorder
-        conn.cdc = cdc
-        conn.envs = EnvSelector(env)
-        conn.pre_proc = preproc
-        conn.bounded = bounded
-        conn.idleness = idleness
+        connector = copy.deepcopy(conn)
+        connector.every = every if every is not None else DEFAULT_EVERY
+        connector.since = since
+        connector.until = until
+        connector.disorder = disorder
+        connector.cdc = cdc
+        connector.envs = EnvSelector(env)
+        connector.pre_proc = preproc
+        connector.bounded = bounded
+        connector.idleness = idleness
         connectors = getattr(dataset_cls, SOURCE_FIELD, [])
-        connectors.append(conn)
+        connectors.append(connector)
         setattr(dataset_cls, SOURCE_FIELD, connectors)
         return dataset_cls
 
