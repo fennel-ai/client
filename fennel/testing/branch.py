@@ -5,11 +5,6 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Callable
 
 import pandas as pd
-from fennel.internal_lib.to_proto import (
-    features_from_fs,
-    featureset_to_proto,
-    extractors_from_fs,
-)
 
 from fennel.datasets.datasets import Dataset
 from fennel.featuresets.featureset import (
@@ -24,6 +19,11 @@ from fennel.gen.featureset_pb2 import (
 )
 from fennel.internal_lib.graph_algorithms import (
     is_extractor_graph_cyclic,
+)
+from fennel.internal_lib.to_proto import (
+    features_from_fs,
+    featureset_to_proto,
+    extractors_from_fs,
 )
 from fennel.testing.data_engine import DataEngine
 from fennel.testing.test_utils import FakeResponse
@@ -96,6 +96,9 @@ class Branch:
 
     def get_featuresets(self) -> List[Featureset]:
         return list(self.entities.featureset_map.values())
+
+    def get_features_from_fs(self, fs_name: str) -> List[str]:
+        return [f.fqn() for f in self.entities.featureset_map[fs_name].features]
 
     def log(
         self,

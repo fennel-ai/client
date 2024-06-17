@@ -13,7 +13,12 @@ import pandas as pd
 import fennel._vendor.requests as requests  # type: ignore
 from fennel.connectors import S3Connector, CSV
 from fennel.datasets import Dataset
-from fennel.featuresets import Featureset, Feature, is_valid_feature
+from fennel.featuresets import (
+    Featureset,
+    Feature,
+    is_valid_feature,
+    is_valid_featureset,
+)
 from fennel.internal_lib.schema import (
     parse_json,
     get_datatype,
@@ -210,7 +215,7 @@ class Client:
 
         outputs (List[Union[Feature, Featureset, str]]): List of feature or
             featureset objects or fully qualified feature names (when providing
-            a str) to compute.
+            a str) or featureset names to compute.
 
         input_dataframe (pd.DataFrame): Dataframe containing the input features.
 
@@ -260,9 +265,18 @@ class Client:
                 output_feature_name_to_type[out_feature.fqn()] = (
                     out_feature.dtype
                 )
-            elif isinstance(out_feature, str) and is_valid_feature(out_feature):
-                output_feature_names.append(out_feature)
-                output_feature_name_to_type[out_feature] = Any
+            elif isinstance(out_feature, str):
+                try:
+                    is_valid_feature(out_feature)
+                    output_feature_names.append(out_feature)
+                    output_feature_name_to_type[out_feature] = Any
+                except Exception as e1:
+                    # Could be a featureset name too
+                    try:
+                        is_valid_featureset(out_feature)
+                        output_feature_names.append(out_feature)
+                    except Exception as e2:
+                        raise Exception(e1, e2)
             elif isinstance(out_feature, Featureset):
                 output_feature_names.extend(
                     [f.fqn() for f in out_feature.features]
@@ -464,7 +478,7 @@ class Client:
 
         outputs (List[Union[Feature, Featureset, str]]): List of feature or
             featureset objects or fully qualified feature names (when providing
-            a str) to compute.
+            a str) or featureset names to compute.
 
         timestamp_column (str): The name of the column containing timestamps.
 
@@ -593,12 +607,16 @@ class Client:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, str):
-                if "." not in output_feature:
-                    raise Exception(
-                        f"Invalid output feature name {output_feature}. "
-                        "Please provide the feature name in the format <featureset>.<feature>."
-                    )
-                output_feature_names.append(output_feature)
+                try:
+                    is_valid_feature(output_feature)
+                    output_feature_names.append(output_feature)
+                except Exception as e1:
+                    # Could be a featureset name too
+                    try:
+                        is_valid_featureset(output_feature)
+                        output_feature_names.append(output_feature)
+                    except Exception as e2:
+                        raise Exception(e1, e2)
             elif isinstance(output_feature, Featureset):
                 output_feature_names.extend(
                     [f.fqn() for f in output_feature.features]
@@ -980,7 +998,7 @@ class Client:
         """
         for column in df.columns:
             dtype = schema.get(column, Any)
-            if schema[column] != Any:
+            if dtype != Any:
                 proto_dtype = get_datatype(dtype)
                 df[column] = cast_col_to_pandas(df[column], proto_dtype)
             else:

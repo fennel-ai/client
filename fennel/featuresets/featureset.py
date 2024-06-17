@@ -3,8 +3,6 @@ from __future__ import annotations
 import functools
 import inspect
 from dataclasses import dataclass
-
-import pandas as pd
 from typing import (
     Any,
     cast,
@@ -14,15 +12,21 @@ from typing import (
     TypeVar,
     Optional,
     List,
-    Set,
     Union,
 )
 
+import pandas as pd
 
 from fennel.datasets import Dataset, Field
 from fennel.datasets.datasets import get_index, IndexDuration
 from fennel.gen.featureset_pb2 import ExtractorType
+from fennel.internal_lib.schema import (
+    validate_val_with_dtype,
+    fennel_get_optional_inner,
+)
+from fennel.lib import FENNEL_GEN_CODE_MARKER
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
+from fennel.lib.includes import EnvSelector
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import (
     meta,
@@ -30,17 +34,10 @@ from fennel.lib.metadata import (
     get_meta_attr,
     set_meta_attr,
 )
-from fennel.lib.includes import EnvSelector
-from fennel.internal_lib.schema import (
-    validate_val_with_dtype,
-    fennel_get_optional_inner,
-)
 from fennel.lib.params import (
     FENNEL_INPUTS,
     FENNEL_OUTPUTS,
 )
-
-from fennel.lib import FENNEL_GEN_CODE_MARKER
 from fennel.utils import (
     parse_annotation_comments,
     propogate_fennel_attributes,
@@ -425,6 +422,15 @@ def is_valid_feature(feature_name: str):
         raise Exception(
             f"Invalid input feature name {feature_name}. "
             "Please provide the feature name in the format <featureset>.<feature>."
+        )
+    return True
+
+
+def is_valid_featureset(featureset_name: str):
+    if "." in featureset_name:
+        raise Exception(
+            f"Invalid featureset name {featureset_name}. "
+            "Please provide the featureset name in the format <featureset>."
         )
     return True
 

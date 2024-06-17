@@ -9,7 +9,6 @@ from typing import (
     List,
     Optional,
     Union,
-    Any,
     Tuple,
     Set,
 )
@@ -22,7 +21,12 @@ from fennel import connectors
 from fennel.client import Client
 from fennel.connectors.connectors import S3Connector
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
-from fennel.featuresets import Featureset, Feature, is_valid_feature
+from fennel.featuresets import (
+    Featureset,
+    Feature,
+    is_valid_feature,
+    is_valid_featureset,
+)
 from fennel.internal_lib.graph_algorithms import (
     get_extractor_order,
 )
@@ -266,6 +270,7 @@ class MockClient(Client):
         input_dataframe = self._transform_input_dataframe_from_inputs(
             input_dataframe, inputs, input_feature_names
         )
+        outputs = self._resolve_output_features(branch_class, outputs)
         extractors_to_run = get_extractor_order(
             inputs, outputs, entities.extractors
         )
@@ -317,6 +322,7 @@ class MockClient(Client):
         input_dataframe = self._transform_input_dataframe_from_inputs(
             input_dataframe, inputs, input_feature_names
         )
+        outputs = self._resolve_output_features(branch_class, outputs)
         extractors_to_run = get_extractor_order(
             inputs, outputs, entities.extractors
         )
@@ -522,6 +528,33 @@ class MockClient(Client):
             return self.secrets[secret_name]
         except KeyError:
             raise KeyError(f"Secret : `{secret_name}` does not exist.")
+
+    @staticmethod
+    def _resolve_output_features(
+        branch_class: Branch, outputs: List[Union[Feature, Featureset, str]]
+    ) -> List[Union[Feature, Featureset, str]]:
+        output_feature_names: List[Union[Feature, Featureset, str]] = []
+        for output in outputs:
+            if isinstance(output, Feature):
+                output_feature_names.append(output)
+            elif isinstance(output, Featureset):
+                output_feature_names.append(output)
+            elif isinstance(output, str):
+                try:
+                    is_valid_feature(output)
+                    output_feature_names.append(output)
+                except Exception as e1:
+                    # Could be a featureset name too
+                    try:
+                        is_valid_featureset(output)
+                        output_feature_names.extend(
+                            branch_class.get_features_from_fs(output)
+                        )
+                    except Exception as e2:
+                        raise Exception(e1, e2)
+            else:
+                raise Exception(f"Invalid type of outputs : {type(output)}.")
+        return output_feature_names
 
 
 def mock(test_func):
