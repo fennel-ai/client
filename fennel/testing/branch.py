@@ -106,6 +106,13 @@ class Branch:
     ) -> FakeResponse:
         return self.data_engine.log(webhook, endpoint, df, _batch_size)
 
+    def log_to_dataset(
+        self,
+        dataset: Dataset,
+        df: pd.DataFrame,
+    ) -> FakeResponse:
+        return self.data_engine.log_to_dataset(dataset, df)
+
     def commit(
         self,
         datasets: Optional[List[Dataset]] = None,

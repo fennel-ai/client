@@ -298,6 +298,25 @@ class DataEngine(object):
                 return resp
         return FakeResponse(200, "OK")
 
+    def log_to_dataset(
+        self,
+        dataset: Dataset,
+        df: pd.DataFrame,
+    ) -> FakeResponse:
+        if df.shape[0] == 0:
+            print(
+                f"Skipping log of empty dataframe for dataset {dataset._name}"
+            )
+            return FakeResponse(200, "OK")
+
+        if dataset._name not in self.datasets:
+            raise ValueError(f"Dataset `{dataset._name}` not found")
+
+        schema = self.datasets[dataset._name].core_dataset.dsschema
+        df = cast_df_to_schema(df, schema)
+        resp = self._internal_log(dataset._name, df)
+        return resp
+
     def erase(self, dataset_name: str, erase_keys: List[Dict[str, Any]]):
         if dataset_name not in self.datasets:
             return FakeResponse(404, f"Dataset {dataset_name} not " f"found")
