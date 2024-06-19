@@ -18,6 +18,7 @@ import pandas as pd
 
 import fennel.gen.schema_pb2 as schema_proto
 import fennel.lib.secrets
+from fennel import connectors
 from fennel.client import Client
 from fennel.connectors.connectors import S3Connector
 from fennel.datasets import Dataset, field, Pipeline, OnDemand  # noqa
@@ -52,8 +53,12 @@ def log(dataset: Dataset, df: pd.DataFrame):
         )
 
     client = getattr(dataset, MOCK_CLIENT_ATTR)
-    endpoint = gen_dataset_webhook_endpoint(dataset._name)
-    return client.log(internal_webhook.name, endpoint, df)
+    if dataset.num_pipelines() == 0:
+        endpoint = gen_dataset_webhook_endpoint(dataset._name)
+        return client.log(internal_webhook.name, endpoint, df)
+    else:
+        branch = client._branch
+        return client.branches_map[branch].log_to_dataset(dataset, df)
 
 
 class MockClient(Client):

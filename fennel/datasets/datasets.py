@@ -1801,6 +1801,9 @@ class Dataset(_Node[T]):
             raise ValueError("Expectations cannot have metadata.")
         return expectation
 
+    def num_pipelines(self):
+        return len(self._pipelines)
+
     @property
     def timestamp_field(self):
         return self._timestamp_field

@@ -1,4 +1,8 @@
 # Changelog
+
+## [1.3.28] - 2024-06-18
+- Allow logging to intermediate datasets for testing in the mock client. 
+
 ## [1.3.26] - 2024-06-12
 - Add support for credential based authentication for Redshift
 
