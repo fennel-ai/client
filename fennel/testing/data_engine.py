@@ -35,7 +35,6 @@ from fennel.testing.executor import Executor
 from fennel.testing.test_utils import (
     FakeResponse,
     cast_df_to_schema,
-    cast_df_to_arrow_dtype,
     cast_df_to_pandas_dtype,
     add_deletes,
     FENNEL_LOOKUP,
@@ -491,43 +490,15 @@ class DataEngine(object):
         keys[FENNEL_ORDER] = np.arange(len(keys))
         # Sort the keys by timestamp
         keys = keys.sort_values(timestamp_field)
-        if self.datasets[cls_name].aggregated_datasets:
-            data_dict = self.datasets[cls_name].aggregated_datasets
-            # Gather all the columns that are needed from data_dict to create a df.
-            result_dfs = []
-            for col, right_df in data_dict.items():  # type: ignore
-                try:
-                    df = self._as_of_lookup(
-                        cls_name, keys, right_df, join_columns, timestamp_field
-                    )
-                except ValueError as err:
-                    raise ValueError(err)
-                df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
-                df.rename(
-                    columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True
-                )
-                result_dfs.append(df)
-            # Get common columns
-            common_columns = set(result_dfs[0].columns)
-            for df in result_dfs[1:]:
-                common_columns.intersection_update(df.columns)
-
-            # Remove common columns from all DataFrames except the first one
-            for i in range(1, len(result_dfs)):
-                result_dfs[i] = result_dfs[i].drop(columns=common_columns)
-
-            # Concatenate the DataFrames column-wise
-            df = pd.concat(result_dfs, axis=1)
-        else:
-            right_df = self.datasets[cls_name].data
-            try:
-                df = self._as_of_lookup(
-                    cls_name, keys, right_df, join_columns, timestamp_field
-                )
-            except ValueError as err:
-                raise ValueError(err)
-            df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
-            df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
+        right_df = self.datasets[cls_name].data
+        try:
+            df = self._as_of_lookup(
+                cls_name, keys, right_df, join_columns, timestamp_field
+            )
+        except ValueError as err:
+            raise ValueError(err)
+        df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
+        df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
 
         found = df[FENNEL_LOOKUP].apply(lambda x: x is not np.nan)
         df.drop(columns=[FENNEL_LOOKUP], inplace=True)

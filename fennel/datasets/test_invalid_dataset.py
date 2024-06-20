@@ -1150,7 +1150,7 @@ def test_invalid_operators_over_keyed_datasets():
 
     assert (
         str(e.value)
-        == "Window operator over keyed datasets is not defined. Found dataset with keys `['event_id']` in pipeline `pipeline1`"
+        == "Using 'window' param in groupby on keyed dataset is not allowed. Found dataset with keys `['event_id']` in pipeline `pipeline1`."
     )
 
 
@@ -1184,27 +1184,6 @@ def test_invalid_window_aggregation():
     with pytest.raises(ValueError) as e:
 
         @dataset
-        class Sessions1:
-            user_id: int = field(key=True)
-            window: Window = field(key=True)
-            t: datetime
-            count: int
-
-            @pipeline
-            @inputs(Events)
-            def pipeline1(cls, a: Dataset):
-                return a.groupby("user_id", window=Session("60m")).aggregate(
-                    count=Count(window=Continuous("forever"))
-                )
-
-    assert (
-        str(e.value)
-        == "Aggregations on Tumbling/Hopping/Session window are not yet implemented."
-    )
-
-    with pytest.raises(ValueError) as e:
-
-        @dataset
         class Sessions2:
             user_id: int = field(key=True)
             window: Window = field(key=True)
@@ -1218,7 +1197,7 @@ def test_invalid_window_aggregation():
 
     assert (
         str(e.value)
-        == "Only empty 'aggregate' method is allowed after 'groupby' when you have defined a window."
+        == "Only 'aggregate' method is allowed after 'groupby' when you have defined a window."
     )
 
     with pytest.raises(AttributeError) as e:

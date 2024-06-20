@@ -1,7 +1,7 @@
 import copy
 import types
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Optional, Dict, List
 
 import numpy as np
@@ -11,8 +11,7 @@ from frozendict import frozendict
 
 import fennel.gen.schema_pb2 as schema_proto
 from fennel.datasets import Pipeline, Visitor, Dataset, Count
-from fennel.datasets.datasets import DSSchema
-from fennel.dtypes import Session, Hopping, Tumbling
+from fennel.datasets.datasets import DSSchema, WINDOW_FIELD_NAME
 from fennel.gen.schema_pb2 import Field
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype, fennel_is_optional
@@ -21,11 +20,15 @@ from fennel.internal_lib.to_proto import Serializer, to_includes_proto
 from fennel.testing.execute_aggregation import (
     get_aggregated_df,
     FENNEL_DELETE_TIMESTAMP,
+    preprocess_df,
+    FENNEL_ROW_TYPE,
 )
 from fennel.testing.test_utils import (
     cast_df_to_arrow_dtype,
     cast_df_to_pandas_dtype,
     add_deletes,
+    get_window_data_type,
+    cast_col_to_arrow_dtype,
 )
 
 pd.set_option("display.max_columns", None)
@@ -297,27 +300,71 @@ class Executor(Visitor):
         # for each timestamp for that field.
         result = {}
         output_schema = obj.dsschema()
-        for aggregate in obj.aggregates:
-            # Select the columns that are needed for the aggregate
-            # and drop the rest
-            fields = obj.keys + [input_ret.timestamp_field]
-            if not isinstance(aggregate, Count) or aggregate.unique:
-                fields.append(aggregate.of)
+        if len(obj.aggregates) > 0:
+            for aggregate in obj.aggregates:
+                # Select the columns that are needed for the aggregate -> all keys without window
+                # and drop the rest
+                fields = obj.keys_without_window + [input_ret.timestamp_field]
+                if not isinstance(aggregate, Count) or aggregate.unique:
+                    fields.append(aggregate.of)
+                if FENNEL_DELETE_TIMESTAMP in df.columns:
+                    filtered_df = df[fields + [FENNEL_DELETE_TIMESTAMP]]
+                else:
+                    filtered_df = df[fields]
+
+                result[aggregate.into_field] = get_aggregated_df(
+                    filtered_df,
+                    aggregate,
+                    input_ret.timestamp_field,
+                    obj.keys_without_window.copy(),
+                    output_schema.values[aggregate.into_field],
+                    True if obj.window_field else False,
+                )
+            final_df = join_aggregated_dataset(output_schema, result)
+        else:
+            # this is the case where 'window' param in groupby is used
+            if not obj.window_field:
+                raise ValueError(
+                    "Cannot aggregate without any aggregate specs."
+                )
+
+            fields = obj.keys_without_window + [input_ret.timestamp_field]
             if FENNEL_DELETE_TIMESTAMP in df.columns:
                 filtered_df = df[fields + [FENNEL_DELETE_TIMESTAMP]]
             else:
                 filtered_df = df[fields]
 
-            result[aggregate.into_field] = get_aggregated_df(
+            filtered_df[FENNEL_ROW_TYPE] = 1
+
+            final_df = preprocess_df(
                 filtered_df,
-                aggregate,
+                obj.window_field,
+                obj.keys_without_window,
                 input_ret.timestamp_field,
-                obj.keys,
-                output_schema.values[aggregate.into_field],
+                True,
             )
-        joined_df = join_aggregated_dataset(output_schema, result)
+
+            # Select only non deleted rows:
+            final_df = final_df.loc[final_df[FENNEL_ROW_TYPE] == 1].reset_index(
+                drop=True
+            )
+            subset = obj.keys + [input_ret.timestamp_field]
+
+            # Get the last value against each group
+            final_df = (
+                final_df.drop_duplicates(subset=subset, keep="last")
+                .reset_index(drop=True)
+                .loc[:, subset]
+            )
+
+        if obj.window_field:
+            # Convert window to pyarrow dtype
+            final_df[WINDOW_FIELD_NAME] = cast_col_to_arrow_dtype(
+                final_df[WINDOW_FIELD_NAME], get_window_data_type()
+            )
+
         return NodeRet(
-            joined_df,
+            final_df,
             input_ret.timestamp_field,
             obj.keys,
             output_schema.to_fields_proto(),
@@ -727,216 +774,5 @@ class Executor(Visitor):
             df,
             input_ret.timestamp_field,
             [],
-            obj.dsschema().to_fields_proto(),
-        )
-
-    def visitWindow(self, obj):
-        input_ret = self.visit(obj.node)
-        if input_ret is None or input_ret.df.shape[0] == 0:
-            return None
-
-        input_df = copy.deepcopy(input_ret.df)
-        input_df = input_df.sort_values(input_ret.timestamp_field)
-
-        class WindowStruct:
-            def __init__(
-                self,
-                event_time: Optional[datetime] = None,
-                event_start: Optional[datetime] = None,
-                event_end: Optional[datetime] = None,
-            ):
-                if event_time is not None:
-                    self.begin_time = event_time
-                    self.end_time = event_time + timedelta(microseconds=1)
-                elif event_start is not None and event_end is not None:
-                    self.begin_time = event_start
-                    self.end_time = event_end
-                else:
-                    raise Exception(
-                        "This window initialization pattern has not yet been implemented"
-                    )
-
-            def add_event(self, event_time: datetime):
-                self.end_time = event_time + timedelta(microseconds=1)
-
-            def to_dict(self) -> dict:
-                return {
-                    "begin": self.begin_time,
-                    "end": self.end_time,
-                }
-
-        def generate_sessions_for_df(
-            df: pd.DataFrame,
-            timestamp_col: str,
-            gap: int,
-            field: str,
-        ) -> pd.DataFrame:
-            """Group record in dataframe by session based on
-            timestamp column and the maximum gap between records
-
-                Parameters:
-                df: Dataframe to group by session
-                timestamp_col: Column indicating timestamp of the record
-                gap: Maximum gap between records to be included in session
-                field: Output field to generate the sessions
-
-                Returns:
-                Dataframe: The result dataframe contain the session
-
-            """
-            # Sort the DataFrame by timestamp_col
-            df = df.sort_values(by=timestamp_col)
-            # Initialize lists to store session information
-            window_list: List[dict] = []
-            timestamp_list: List[datetime] = []
-            current_window: Optional[WindowStruct] = None
-            rows: List = []
-
-            # Iterate through the rows of the DataFrame
-            for _, row in df.iterrows():
-                # Check if it's the first event
-                if current_window is None:
-                    current_window = WindowStruct(row[timestamp_col])
-                    rows.append(row)
-                else:
-                    # Check if the event is within the time threshold of the previous one
-                    if (
-                        row[timestamp_col]
-                        - (current_window.end_time - timedelta(microseconds=1))
-                    ).total_seconds() <= gap:
-                        current_window.add_event(row[timestamp_col])
-                        rows.append(row)
-                    else:
-                        # Save window information and reset for a new window
-                        window_list.append(current_window.to_dict())
-                        timestamp_list.append(current_window.end_time)
-                        current_window = WindowStruct(row[timestamp_col])
-                        rows = [row]
-
-            # Save the last window information
-            # Save the window information
-            window_list.append(current_window.to_dict())  # type: ignore
-            timestamp_list.append(current_window.end_time)  # type: ignore
-
-            # Create a new DataFrame with session information
-            df = pd.DataFrame(
-                {field: window_list, timestamp_col: timestamp_list}
-            )
-            return df
-
-        def generate_hopping_window_overlapped(
-            current_ts: int, duration: int, stride: int
-        ):
-            """Return window end for all windows that overlapped with current_ts"""
-            result = []
-            # First position of
-            if current_ts < duration:
-                start_ts = 0
-            else:
-                start_ts = (((current_ts - duration) // stride) + 1) * stride
-            while start_ts <= current_ts:
-                result.append(start_ts + duration)
-                start_ts += stride
-            return result
-
-        def generate_hopping_windows_for_df(
-            df: pd.DataFrame,
-            timestamp_col: str,
-            duration: int,
-            stride: int,
-            field: str,
-        ):
-            """Group record in window of fixed duration
-
-            Parameters:
-            df: Dataframe to group by session
-            timestamp_col: Column indicating timestamp of the record
-            duration: Duration of the window
-            stride: The gap between start time of consecutive windows
-            field: Output field to generate the sessions
-
-            Returns:
-            Dataframe: The result dataframe contain the session
-
-            """
-            # Sort the DataFrame by timestamp_col
-            df = df.sort_values(by=timestamp_col)
-            # Initialize lists to store session information
-            windows_map: dict = dict()
-            window_list: List[dict] = []
-            timestamp_list: List[datetime] = []
-
-            # Iterate through the rows of the DataFrame
-            for index, row in df.iterrows():
-                ts = int(row[timestamp_col].timestamp())
-                windows_ends = generate_hopping_window_overlapped(
-                    ts, duration, stride
-                )
-                for end in windows_ends:
-                    if end not in windows_map:
-                        windows_map[end] = (
-                            WindowStruct(
-                                event_start=pd.Timestamp(
-                                    end - duration,
-                                    unit="s",
-                                    tzinfo=timezone.utc,
-                                ),
-                                event_end=pd.Timestamp(
-                                    end, unit="s", tzinfo=timezone.utc
-                                ),
-                            ),
-                            [],
-                        )
-                    windows_map[end][1].append(row)
-
-            for window, rows in windows_map.values():
-                timestamp_list.append(window.end_time)  # type: ignore
-                window_list.append(window.to_dict())  # type: ignore
-
-            # Create a new DataFrame with session information
-            df = pd.DataFrame(
-                {field: window_list, timestamp_col: timestamp_list}
-            )
-            return df
-
-        list_keys = obj.keys + [input_ret.timestamp_field]
-
-        if isinstance(obj.window, Session):
-            window_dataframe = (
-                input_df.groupby(obj.input_keys)
-                .apply(
-                    generate_sessions_for_df,
-                    timestamp_col=input_ret.timestamp_field,
-                    gap=obj.window.gap_total_seconds(),
-                    field=obj.field,
-                )
-                .reset_index()
-                .loc[:, list_keys]
-            )
-        elif isinstance(obj.window, (Hopping, Tumbling)):
-            window_dataframe = (
-                input_df.groupby(obj.input_keys)
-                .apply(
-                    generate_hopping_windows_for_df,
-                    timestamp_col=input_ret.timestamp_field,
-                    duration=obj.window.duration_total_seconds(),
-                    stride=obj.window.stride_total_seconds(),
-                    field=obj.field,
-                )
-                .reset_index()
-                .loc[:, list_keys]
-            )
-        else:
-            raise ValueError(f"Invalid window type: {obj.type}")
-
-        sorted_df = window_dataframe.sort_values(input_ret.timestamp_field)
-        # Cast sorted_df to obj.schema()
-        sorted_df = cast_df_to_arrow_dtype(
-            sorted_df, obj.dsschema().to_fields_proto()
-        )
-        return NodeRet(
-            sorted_df,
-            input_ret.timestamp_field,
-            obj.keys,
             obj.dsschema().to_fields_proto(),
         )

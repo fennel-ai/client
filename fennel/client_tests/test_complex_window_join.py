@@ -31,7 +31,9 @@ class AppEventDailySession:
     @pipeline
     @inputs(AppEvent)
     def pipeline(cls, app_event: Dataset):
-        return app_event.groupby("user_id", window=Tumbling("1d")).aggregate()
+        return app_event.groupby("user_id", window=Tumbling("1d")).aggregate(
+            emit="final"
+        )
 
 
 @source(webhook.endpoint("UserDataset"), disorder="14d", cdc="append")

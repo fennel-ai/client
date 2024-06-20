@@ -10,6 +10,7 @@ import google.protobuf.duration_pb2 as duration_proto
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
+from fennel.datasets.datasets import WINDOW_FIELD_NAME
 from fennel.internal_lib.duration import (
     duration_to_timedelta,
 )
@@ -215,19 +216,35 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
         )
 
     def visitAggregate(self, obj):
-        return proto.Operator(
-            id=obj.signature(),
-            is_root=obj == self.terminal_node,
-            pipeline_name=self.pipeline_name,
-            dataset_name=self.dataset_name,
-            ds_version=self.dataset_version,
-            aggregate=proto.Aggregate(
-                operand_id=self.visit(obj.node),
-                keys=obj.keys,
-                specs=[agg.to_proto() for agg in obj.aggregates],
-                along=obj.along,
-            ),
-        )
+        if obj.window_field:
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=obj == self.terminal_node,
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                window=proto.WindowOperatorKind(
+                    operand_id=self.visit(obj.node),
+                    window_type=obj.window_field.to_proto(),
+                    field=WINDOW_FIELD_NAME,
+                    by=obj.keys_without_window,
+                    summary=None,
+                ),
+            )
+        else:
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=obj == self.terminal_node,
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                aggregate=proto.Aggregate(
+                    operand_id=self.visit(obj.node),
+                    keys=obj.keys,
+                    specs=[agg.to_proto() for agg in obj.aggregates],
+                    along=obj.along,
+                ),
+            )
 
     def visitJoin(self, obj):
         if obj.on is not None:
@@ -369,22 +386,6 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             latest=proto.Latest(
                 operand_id=self.visit(obj.node),
                 by=obj.keys,
-            ),
-        )
-
-    def visitWindow(self, obj):
-        return proto.Operator(
-            id=obj.signature(),
-            is_root=obj == self.terminal_node,
-            pipeline_name=self.pipeline_name,
-            dataset_name=self.dataset_name,
-            ds_version=self.dataset_version,
-            window=proto.WindowOperatorKind(
-                operand_id=self.visit(obj.node),
-                window_type=obj.window.to_proto(),
-                field=obj.field,
-                by=obj.input_keys,
-                summary=None,
             ),
         )
 

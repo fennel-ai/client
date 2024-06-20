@@ -112,6 +112,7 @@ INDEX_FIELD = "__fennel_index__"
 DEFAULT_INDEX_TYPE = "primary"
 DEFAULT_INDEX_OFFLINE = "forever"
 DEFAULT_INDEX_ONLINE = True
+WINDOW_FIELD_NAME = "window"
 
 primitive_numeric_types = [int, float, pd.Int64Dtype, pd.Float64Dtype, Decimal]
 
@@ -489,16 +490,21 @@ class Aggregate(_Node):
         aggregates: List[AggregateType],
         along: Optional[str],
         emit_strategy: EmitStrategy,
+        window_field: Optional[Union[Hopping, Session, Tumbling]] = None,
     ):
         super().__init__()
         if len(keys) == 0:
             raise ValueError("Must specify at least one key")
-        self.keys = keys
+        self.keys_without_window = keys.copy()
+        self.keys = keys.copy()
+        if window_field:
+            self.keys.append(WINDOW_FIELD_NAME)
         self.aggregates = aggregates
         self.node = node
         self.node.out_edges.append(self)
         self.along = along
         self.emit_strategy = emit_strategy
+        self.window_field = window_field
 
     def signature(self):
         agg_signature = fhash([agg.signature() for agg in self.aggregates])
@@ -508,7 +514,9 @@ class Aggregate(_Node):
 
     def dsschema(self):
         input_schema = self.node.dsschema()
-        keys = {f: input_schema.get_type(f) for f in self.keys}
+        keys = {f: input_schema.get_type(f) for f in self.keys_without_window}
+        if self.window_field is not None:
+            keys[WINDOW_FIELD_NAME] = Window
         values = {}
         for agg in self.aggregates:
             if isinstance(agg, Count):
@@ -562,18 +570,21 @@ class GroupBy:
         self,
         node: _Node,
         *args,
-        window: Optional[Union[Hopping, Session, Tumbling]],
+        window: Optional[Union[Hopping, Session, Tumbling]] = None,
     ):
         super().__init__()
         self.keys = args
         self.node = node
         self.node.out_edges.append(self)
-        if window is not None and not isinstance(
-            window, (Hopping, Session, Tumbling)
-        ):
-            raise TypeError(
-                "Type of 'window' param can only be either Hopping, Session or Tumbling."
-            )
+        if window is not None:
+            if not isinstance(window, (Hopping, Session, Tumbling)):
+                raise TypeError(
+                    "Type of 'window' param can only be either Hopping, Session or Tumbling."
+                )
+            if isinstance(window, Hopping) and window.duration == "forever":
+                raise TypeError(
+                    "Specifying forever hopping window in groupby 'window' param is not allowed."
+                )
         self.window_field = window
 
     def aggregate(
@@ -607,24 +618,14 @@ class GroupBy:
 
         # Handle window
         if self.window_field is not None:
-            if len(args) != 0 or len(kwargs) != 0:
-                raise ValueError(
-                    "Aggregations on Tumbling/Hopping/Session window are not yet implemented."
-                )
             if along is not None:
                 raise ValueError(
-                    "Along parameter is not supported with Tumbling/Hopping/Session window."
+                    "Along parameter is not supported when specifying window in groupby fields."
                 )
             if len(self.keys) == 0:
                 raise ValueError(
                     "There should be at least one key in 'groupby' to use 'window'"
                 )
-            return WindowOperator(
-                self.node,
-                keys=list(self.keys),
-                window=self.window_field,
-                into_field="window",
-            )
 
         # Adding aggregate to aggregates list from kwargs
         for key, value in kwargs.items():
@@ -641,8 +642,19 @@ class GroupBy:
                     "parameter or through named arguments."
                 )
 
+        if len(aggregates) == 0 and self.window_field is None:
+            raise ValueError(
+                "If there are zero aggregates then please either specify 'window' param in groupby or "
+                "use some other method like 'first' or 'last' instead of 'aggregate'."
+            )
+
         return Aggregate(
-            self.node, list(self.keys), aggregates, along, EmitStrategy(emit)
+            self.node,
+            list(self.keys),
+            aggregates,
+            along,
+            EmitStrategy(emit),
+            self.window_field,
         )
 
     def first(self) -> _Node:
@@ -650,7 +662,7 @@ class GroupBy:
             self.keys = self.keys[0]  # type: ignore
         if self.window_field is not None:
             raise ValueError(
-                "Only empty 'aggregate' method is allowed after 'groupby' when you have defined a window."
+                "Only 'aggregate' method is allowed after 'groupby' when you have defined a window."
             )
         return First(self.node, list(self.keys))  # type: ignore
 
@@ -659,7 +671,7 @@ class GroupBy:
             self.keys = self.keys[0]  # type: ignore
         if self.window_field is not None:
             raise ValueError(
-                "Only empty 'aggregate' method is allowed after 'groupby' when you have defined a window."
+                "Only 'aggregate' method is allowed after 'groupby' when you have defined a window."
             )
         return Latest(self.node, list(self.keys))  # type: ignore
 
@@ -962,64 +974,11 @@ class DropNull(_Node):
         return input_schema
 
 
-class WindowType(str, Enum):
-    Sessionize = "session"
-    Tumbling = "tumbling"
-    Hopping = "hopping"
-
-    @classmethod
-    def _missing_(cls, value):
-        valid_types = [m.value for m in cls]
-        raise ValueError(
-            f"`{value}` is not a valid 'type' in 'window' operator. "
-            f"'type' in window operator must be one of {valid_types}"
-        )
-
-
 @dataclass
 class Summary:
     field: str
     dtype: Type
     summarize_func: Callable
-
-
-class WindowOperator(_Node):
-    def __init__(
-        self,
-        node: _Node,
-        keys: List[str],
-        window: Union[Hopping, Session, Tumbling],
-        into_field: str,
-    ):
-        super().__init__()
-
-        self.input_keys = keys.copy()
-        keys.append(into_field)
-        self.keys = keys
-        self.field = into_field
-        self.window = window
-        self.node = node
-        self.node.out_edges.append(self)
-
-    def signature(self):
-        return fhash(
-            self.node.signature(),
-            self.keys,
-            self.window,
-            self.field,
-        )
-
-    def dsschema(self):
-        input_schema = self.node.dsschema()
-        keys = {
-            f: input_schema.get_type(f) for f in self.keys if f != self.field
-        }
-        keys[self.field] = Window
-        return DSSchema(
-            keys=keys,
-            values={},  # type: ignore
-            timestamp=input_schema.timestamp,
-        )
 
 
 # ---------------------------------------------------------------------
@@ -2036,8 +1995,6 @@ class Visitor:
             return self.visitDropNull(obj)
         elif isinstance(obj, Assign):
             return self.visitAssign(obj)
-        elif isinstance(obj, WindowOperator):
-            return self.visitWindow(obj)
         elif isinstance(obj, Changelog):
             return self.visitChangelog(obj)
         else:
@@ -2086,9 +2043,6 @@ class Visitor:
         raise NotImplementedError()
 
     def visitAssign(self, obj):
-        raise NotImplementedError()
-
-    def visitWindow(self, obj):
         raise NotImplementedError()
 
     def visitChangelog(self, obj):
@@ -2363,7 +2317,17 @@ class SchemaValidator(Visitor):
             raise ValueError(
                 f"Cannot add node 'Aggregate' after a terminal node in pipeline : `{self.pipeline_name}`."
             )
-        keys = {f: input_schema.get_type(f) for f in obj.keys}
+        keys = {f: input_schema.get_type(f) for f in obj.keys_without_window}
+        if obj.window_field:
+            keys[WINDOW_FIELD_NAME] = Window
+
+            # Check if input dataset is keyed
+            if len(input_schema.keys) > 0:
+                raise ValueError(
+                    f"Using 'window' param in groupby on keyed dataset is not allowed. "
+                    f"Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`."
+                )
+
         values: Dict[str, Type] = {}
         if isinstance(obj.along, str):
             along_type = input_schema.values.get(obj.along)
@@ -2381,6 +2345,18 @@ class SchemaValidator(Visitor):
                     f"error with along kwarg of aggregate operator: `{obj.along}` is not of type datetime"
                 )
         for agg in obj.aggregates:
+
+            # If default window is present in groupby then each aggregate spec cannot have window different from
+            # groupby window. Either pass them null or pass them same.
+            if obj.window_field:
+                if agg.window and agg.window != obj.window_field:
+                    raise ValueError(
+                        f"Window in spec : `{agg.window}` not be different from default "
+                        f"window set in groupby : `{obj.window_field}`"
+                    )
+                if not agg.window:
+                    agg.window = obj.window_field
+
             exceptions = agg.validate()
             if exceptions is not None:
                 raise ValueError(f"Invalid aggregate `{agg}`: {exceptions}")
@@ -2848,38 +2824,6 @@ class SchemaValidator(Visitor):
                 f"'group_by' before 'latest' in {self.pipeline_name} must specify at least one key"
             )
         output_schema.name = f"'[Pipeline:{self.pipeline_name}]->lastest node'"
-        return output_schema
-
-    def visitWindow(self, obj) -> DSSchema:
-        input_schema = copy.deepcopy(self.visit(obj.node))
-        if input_schema.is_terminal:
-            raise ValueError(
-                f"Cannot add node 'Window' after a terminal node in pipeline : `{self.pipeline_name}`."
-            )
-        # If it is a keyed dataset throw an error.
-        # We dont allow creating windows over keyed datasets, but only keyless streams.
-        if len(input_schema.keys) > 0:
-            raise TypeError(
-                f"Window operator over keyed datasets is not defined. Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`"
-            )
-        output_schema = copy.deepcopy(obj.dsschema())
-        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->window node'"
-
-        if obj.field in input_schema.keys.keys():
-            raise ValueError(
-                f"Window field name `{obj.field}` in `{output_schema_name}` must be "
-                f"different from keyed fields in `{input_schema.name}`"
-            )
-        if obj.field in input_schema.values.keys():
-            raise ValueError(
-                f"Window field name `{obj.field}` in `{output_schema_name}` must be "
-                f"different from non keyed fields in `{input_schema.name}`"
-            )
-        if len(output_schema.keys) == 0:
-            raise ValueError(
-                f"'group_by' before 'window' in `{self.pipeline_name}` must specify at least one key"
-            )
-        output_schema.name = output_schema_name
         return output_schema
 
     def visitChangelog(self, obj) -> DSSchema:

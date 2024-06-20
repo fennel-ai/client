@@ -3097,7 +3097,7 @@ def test_window_operator():
 
     operator_req = sync_request.operators[1]
     o = {
-        "id": "a4f0c87fb58dbccaaa2a115386ea5762",
+        "id": "dade60020bab201c68ff6dee603df7eb",
         "is_root": True,
         "pipelineName": "pipeline_window",
         "datasetName": "Sessions",
@@ -3135,7 +3135,7 @@ def test_window_operator_with_aggregation():
         def pipeline_window(cls, app_event: Dataset):
             sessions = (
                 app_event.groupby("user_id", window=Session("10m"))
-                .aggregate()
+                .aggregate(emit="final")
                 .assign(
                     "duration_secs",
                     int,
@@ -3230,7 +3230,7 @@ def test_window_operator_with_aggregation():
 
     operator_req = sync_request.operators[1]
     o = {
-        "id": "a4f0c87fb58dbccaaa2a115386ea5762",
+        "id": "dade60020bab201c68ff6dee603df7eb",
         "is_root": False,
         "pipelineName": "pipeline_window",
         "datasetName": "Sessions",
@@ -3249,13 +3249,13 @@ def test_window_operator_with_aggregation():
 
     operator_req = sync_request.operators[2]
     o = {
-        "id": "9a3812227a7dbdee819d143c82e23c05",
+        "id": "66dd4ccb526fe68e85ca348e49adcb3c",
         "is_root": False,
         "pipelineName": "pipeline_window",
         "datasetName": "Sessions",
         "assign": {
             "columnName": "duration_secs",
-            "operandId": "a4f0c87fb58dbccaaa2a115386ea5762",
+            "operandId": "dade60020bab201c68ff6dee603df7eb",
             "outputType": {"intType": {}},
             "pycode": {},
         },
@@ -3288,7 +3288,7 @@ def test_erase_key():
         def pipeline_window(cls, app_event: Dataset):
             sessions = (
                 app_event.groupby("user_id", window=Session("10m"))
-                .aggregate()
+                .aggregate(emit="final")
                 .assign(
                     "duration_secs",
                     int,

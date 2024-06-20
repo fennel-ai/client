@@ -8,13 +8,15 @@ ItemType = Union[str, List[str]]
 
 
 class AggregateType(BaseModel):
-    window: Union[Continuous, Hopping, Session, Tumbling]
+    window: Optional[Union[Continuous, Hopping, Session, Tumbling]]
     # Name of the field the aggregate will  be assigned to
     into_field: str = ""
 
     @validator("window", pre=True)
     def validate_window(cls, value):
-        if not isinstance(value, (Continuous, Hopping, Session, Tumbling)):
+        if value and not isinstance(
+            value, (Continuous, Hopping, Session, Tumbling)
+        ):
             raise ValueError(
                 "Aggregation window must be of type Continuous, Hopping, Session or Tumbling"
             )
@@ -42,7 +44,6 @@ class Count(AggregateType):
     def to_proto(self):
         if self.window is None:
             raise ValueError("Window must be specified for Count")
-
         return spec_proto.PreSpec(
             count=spec_proto.Count(
                 window=self.window.to_proto(),
@@ -77,6 +78,8 @@ class Distinct(AggregateType):
     unordered: bool
 
     def to_proto(self) -> spec_proto.PreSpec:
+        if self.window is None:
+            raise ValueError("Window must be specified for Distinct")
         return spec_proto.PreSpec(
             distinct=spec_proto.Distinct(
                 window=self.window.to_proto(),
@@ -97,6 +100,8 @@ class Sum(AggregateType):
     of: str
 
     def to_proto(self):
+        if self.window is None:
+            raise ValueError("Window must be specified for Distinct")
         return spec_proto.PreSpec(
             sum=spec_proto.Sum(
                 window=self.window.to_proto(),
@@ -114,6 +119,8 @@ class Average(AggregateType):
     default: float = 0.0
 
     def to_proto(self):
+        if self.window is None:
+            raise ValueError("Window must be specified for Distinct")
         return spec_proto.PreSpec(
             average=spec_proto.Average(
                 window=self.window.to_proto(),
@@ -134,6 +141,8 @@ class Quantile(AggregateType):
     of: str
 
     def to_proto(self):
+        if self.window is None:
+            raise ValueError("Window must be specified for Distinct")
         return spec_proto.PreSpec(
             quantile=spec_proto.Quantile(
                 window=self.window.to_proto(),
@@ -166,6 +175,8 @@ class Max(AggregateType):
     default: float
 
     def to_proto(self):
+        if self.window is None:
+            raise ValueError("Window must be specified for Distinct")
         return spec_proto.PreSpec(
             max=spec_proto.Max(
                 window=self.window.to_proto(),
@@ -187,6 +198,8 @@ class Min(AggregateType):
     default: float
 
     def to_proto(self):
+        if self.window is None:
+            raise ValueError("Window must be specified for Distinct")
         return spec_proto.PreSpec(
             min=spec_proto.Min(
                 window=self.window.to_proto(),
@@ -209,6 +222,8 @@ class LastK(AggregateType):
     dedup: bool
 
     def to_proto(self):
+        if self.window is None:
+            raise ValueError("Window must be specified for Distinct")
         return spec_proto.PreSpec(
             last_k=spec_proto.LastK(
                 window=self.window.to_proto(),
@@ -228,6 +243,8 @@ class Stddev(AggregateType):
     default: float = -1.0
 
     def to_proto(self):
+        if self.window is None:
+            raise ValueError("Window must be specified for Distinct")
         return spec_proto.PreSpec(
             stddev=spec_proto.Stddev(
                 window=self.window.to_proto(),

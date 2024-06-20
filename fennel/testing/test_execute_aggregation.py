@@ -216,27 +216,28 @@ def test_get_timestamps_for_session_window():
         data.groupby("a")
         .apply(
             get_timestamps_for_session_window,
-            key_fields=["a"],
+            key_fields_without_window=["a"],
             ts_field="ts_field",
             gap=1,
+            is_window_key_field=False,
         )
         .reset_index()
     )
 
     assert output["ts_field"].to_list() == [
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 7, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 7, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 9, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 9, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 9, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 9, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 9, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 14, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 7, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 7, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 9, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 9, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 9, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 9, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 9, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 14, 1, tzinfo=timezone.utc),
     ]

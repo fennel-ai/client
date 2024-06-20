@@ -3,8 +3,8 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 
 from fennel.connectors import Webhook, source
-from fennel.datasets import Count, Dataset, dataset, field, pipeline, Sum
-from fennel.dtypes import Tumbling, Session, Hopping
+from fennel.datasets import Count, Dataset, dataset, field, Max, pipeline, Sum
+from fennel.dtypes import Tumbling, Session, Hopping, Window
 from fennel.lib import inputs
 from fennel.testing import mock
 
@@ -188,3 +188,68 @@ def test_discrete_hopping_window_aggregation(client):
         ),
     )
     assert df["count"].tolist() == [2, 3, 1, 1]
+
+
+@mock
+def test_keyed_discrete_hopping_window_aggregation(client):
+
+    data = pd.read_csv("fennel/client_tests/data/app_events.csv").assign(
+        timestamp=lambda x: pd.to_datetime(x["timestamp"], utc=True)
+    )
+
+    @source(webhook.endpoint("AppEvents"), cdc="append", disorder="14d")
+    @dataset
+    class AppEvents:
+        user_id: int
+        page_id: int
+        timestamp: datetime
+
+    @dataset(index=True)
+    class EventCount:
+        user_id: int = field(key=True)
+        window: Window = field(key=True)
+        count: int
+        max_page_id: int
+        timestamp: datetime
+
+        @pipeline
+        @inputs(AppEvents)
+        def pipeline(cls, event: Dataset):
+            return event.groupby(
+                "user_id", window=Hopping("1d", "1h")
+            ).aggregate(count=Count(), max_page_id=Max(of="page_id", default=0))
+
+    client.commit(datasets=[AppEvents, EventCount], message="first_commit")
+    client.log("fennel_webhook", "AppEvents", data)
+
+    # Test online lookups
+    data = client.get_dataset_df("EventCount")
+    df, _ = client.lookup(
+        EventCount,
+        keys=pd.DataFrame(
+            {
+                "user_id": [1, 2, 3],
+                "window": [
+                    {
+                        "begin": datetime(
+                            2023, 5, 1, 13, 0, tzinfo=timezone.utc
+                        ),
+                        "end": datetime(2023, 5, 2, 13, 0, tzinfo=timezone.utc),
+                    },
+                    {
+                        "begin": datetime(
+                            2023, 5, 2, 13, 0, tzinfo=timezone.utc
+                        ),
+                        "end": datetime(2023, 5, 3, 13, 0, tzinfo=timezone.utc),
+                    },
+                    {
+                        "begin": datetime(
+                            2023, 5, 4, 15, 0, tzinfo=timezone.utc
+                        ),
+                        "end": datetime(2023, 5, 5, 15, 0, tzinfo=timezone.utc),
+                    },
+                ],
+            }
+        ),
+    )
+    assert df["count"].tolist() == [2, 1, 1]
