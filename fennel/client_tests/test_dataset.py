@@ -4443,3 +4443,44 @@ def test_log_to_dataset(client):
         "aGVsbG8=",
         "d29ybGQ=",
     ]
+
+
+@mock
+def test_empty_right_on_left_join(client):
+    @dataset
+    class A:
+        a: int
+        ts: datetime
+
+    @dataset(index=True)
+    class B:
+        a: int = field(key=True)
+        b: int
+        c: int
+        ts: datetime
+
+    @dataset
+    class C:
+        a: int
+        b: Optional[int]
+        c: Optional[int]
+        ts: datetime
+
+        @pipeline
+        @inputs(A, B)
+        def pipeline(cls, a: Dataset, b: Dataset):
+            return a.join(b, how="left", on=["a"])
+
+    client.commit(datasets=[A, B, C], message="Test")
+    log(
+        A,
+        pd.DataFrame(
+            {"a": [1, 2], "ts": [datetime(2021, 1, 1), datetime(2021, 1, 2)]}
+        ),
+    )
+
+    df = client.inspect("C")
+    assert df.shape == (2, 4)
+    assert df["b"].tolist() == [pd.NA, pd.NA]
+    assert df["c"].tolist() == [pd.NA, pd.NA]
+    assert df["a"].tolist() == [1, 2]

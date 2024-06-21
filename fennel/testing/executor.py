@@ -106,7 +106,12 @@ class Executor(Visitor):
 
     def visitDataset(self, obj) -> Optional[NodeRet]:
         if obj._name not in self.data:
-            return None
+            return NodeRet(
+                None,
+                obj.timestamp_field,
+                obj.key_fields,
+                obj.dsschema().to_fields_proto(),
+            )
         return NodeRet(
             self.data[obj._name],
             obj.timestamp_field,
@@ -116,7 +121,7 @@ class Executor(Visitor):
 
     def visitTransform(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)
-        if input_ret is None:
+        if input_ret is None or input_ret.df is None:
             return None
         transform_func_pycode = to_includes_proto(obj.func)
         mod = types.ModuleType(obj.func.__name__)
@@ -194,7 +199,7 @@ class Executor(Visitor):
 
     def visitFilter(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)
-        if input_ret is None:
+        if input_ret is None or input_ret.df is None:
             return None
         fields = obj.dsschema().to_fields_proto()
         filter_func_pycode = to_includes_proto(obj.func)
@@ -286,7 +291,11 @@ class Executor(Visitor):
             return final_df
 
         input_ret = self.visit(obj.node)
-        if input_ret is None or input_ret.df.shape[0] == 0:
+        if (
+            input_ret is None
+            or input_ret.df is None
+            or input_ret.df.shape[0] == 0
+        ):
             return None
         df = copy.deepcopy(input_ret.df)
         if obj.along is not None:
@@ -326,16 +335,31 @@ class Executor(Visitor):
     def visitJoin(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)
         right_ret = self.visit(obj.dataset)
-        if input_ret is None or right_ret is None:
+        if input_ret is None or input_ret.df is None:
             return None
 
         left_df = input_ret.df
-        right_df = copy.deepcopy(right_ret.df)
 
-        if left_df.shape[0] == 0 or right_df.shape[0] == 0:
+        if left_df is None or left_df.shape[0] == 0:
             return None
 
-        right_timestamp_field = right_ret.timestamp_field
+        if (
+            right_ret is None
+            or right_ret.df is None
+            or right_ret.df.shape[0] == 0
+        ):
+            if obj.how == "inner":
+                return None
+            else:
+                right_df = pd.DataFrame(
+                    columns=[f.name for f in right_ret.fields]  # type: ignore
+                    + [FENNEL_DELETE_TIMESTAMP]
+                )
+                right_df = cast_df_to_arrow_dtype(right_df, right_ret.fields)  # type: ignore
+        else:
+            right_df = copy.deepcopy(right_ret.df)
+
+        right_timestamp_field = right_ret.timestamp_field  # type: ignore
         left_timestamp_field = input_ret.timestamp_field
         ts_query_field = "_@@_query_ts"
         tmp_right_ts = "_@@_right_ts"
@@ -546,7 +570,7 @@ class Executor(Visitor):
 
     def visitRename(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None:
+        if input_ret is None or input_ret.df is None:
             return None
         df = input_ret.df
         # Check that the columns to be renamed are present in the dataframe
@@ -575,7 +599,7 @@ class Executor(Visitor):
 
     def visitDrop(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None:
+        if input_ret is None or input_ret.df is None:
             return None
         df = input_ret.df
         df = df.drop(columns=obj.columns)
@@ -592,7 +616,7 @@ class Executor(Visitor):
 
     def visitDropNull(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None:
+        if input_ret is None or input_ret.df is None:
             return None
         df = input_ret.df
         df = df.dropna(subset=obj.columns)
@@ -605,7 +629,11 @@ class Executor(Visitor):
 
     def visitAssign(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None or input_ret.df.shape[0] == 0:
+        if (
+            input_ret is None
+            or input_ret.df is None
+            or input_ret.df.shape[0] == 0
+        ):
             return None
         assign_func_pycode = to_includes_proto(obj.func)
         mod = types.ModuleType(assign_func_pycode.entry_point)
@@ -643,7 +671,7 @@ class Executor(Visitor):
 
     def visitDedup(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None:
+        if input_ret is None or input_ret.df is None:
             return None
         df = input_ret.df
         df = df.drop_duplicates(
@@ -658,7 +686,7 @@ class Executor(Visitor):
 
     def visitExplode(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None:
+        if input_ret is None or input_ret.df is None:
             return None
         df = input_ret.df
         # Ignore the index when exploding the dataframe. This is because the index is not unique after exploding and
@@ -678,7 +706,11 @@ class Executor(Visitor):
 
     def visitFirst(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None or input_ret.df.shape[0] == 0:
+        if (
+            input_ret is None
+            or input_ret.df is None
+            or input_ret.df.shape[0] == 0
+        ):
             return None
         df = copy.deepcopy(input_ret.df)
         df = df.sort_values(input_ret.timestamp_field)
@@ -692,7 +724,11 @@ class Executor(Visitor):
 
     def visitLatest(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None or input_ret.df.shape[0] == 0:
+        if (
+            input_ret is None
+            or input_ret.df is None
+            or input_ret.df.shape[0] == 0
+        ):
             return None
         df = copy.deepcopy(input_ret.df)
         df = df.sort_values(input_ret.timestamp_field)
@@ -706,7 +742,7 @@ class Executor(Visitor):
 
     def visitChangelog(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None:
+        if input_ret is None or input_ret.df is None:
             return None
         if FENNEL_DELETE_TIMESTAMP not in input_ret.df.columns:
             raise Exception(
@@ -732,7 +768,11 @@ class Executor(Visitor):
 
     def visitWindow(self, obj):
         input_ret = self.visit(obj.node)
-        if input_ret is None or input_ret.df.shape[0] == 0:
+        if (
+            input_ret is None
+            or input_ret.df is None
+            or input_ret.df.shape[0] == 0
+        ):
             return None
 
         input_df = copy.deepcopy(input_ret.df)
