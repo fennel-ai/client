@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import hashlib
-import re
-from textwrap import dedent, indent
-from typing import Dict, Any, List, Optional
+from textwrap import dedent
+from typing import Dict, Any, List
 
 import google.protobuf.duration_pb2 as duration_proto
 
 import fennel.gen.dataset_pb2 as proto
-import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
 from fennel.datasets.datasets import EmitStrategy
 from fennel.internal_lib.duration import (
@@ -18,16 +15,9 @@ from fennel.internal_lib.schema import get_datatype
 from fennel.internal_lib.to_proto.source_code import (
     to_includes_proto,
     get_dataset_core_code,
+    wrap_function,
 )
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
-
-
-def _del_spaces_tabs_and_newlines(s):
-    return re.sub(r"[\s\n\t]+", "", s)
-
-
-# Reserved column for server to do grouping windowing.
-SERVER_CLUSTER_COLUMN = "_@@_cluster"
 
 
 class Serializer(Visitor):
@@ -52,82 +42,6 @@ class Serializer(Visitor):
     def serialize(self):
         _ = self.visit(self.terminal_node)
         return self.operators
-
-    def wrap_function(
-        self,
-        op_pycode,
-        is_filter=False,
-        is_assign=False,
-        is_summary=False,
-        column_name: Optional[str] = None,
-    ) -> pycode_proto.PyCode:
-        gen_func_name = hashlib.sha256(
-            _del_spaces_tabs_and_newlines(op_pycode.core_code).encode()
-        ).hexdigest()[:10]
-
-        gen_function_name = f"wrapper_{gen_func_name}"
-        if op_pycode.entry_point == "<lambda>":
-            wrapper_function = f"""
-@classmethod
-def {gen_function_name}(cls, *args, **kwargs):
-    _fennel_internal = {op_pycode.generated_code.strip()}
-    return _fennel_internal(*args, **kwargs)
-"""
-        else:
-            wrapper_function = f"""
-@classmethod
-def {gen_function_name}(cls, *args, **kwargs):
-    {indent(op_pycode.generated_code, "    ")}
-    return {op_pycode.entry_point}(*args, **kwargs)
-"""
-        wrapper_function = indent(dedent(wrapper_function), "    ")
-        gen_code = (
-            dedent(self.lib_generated_code)
-            + "\n"
-            + self.dataset_code
-            + "\n"
-            + wrapper_function
-        )
-
-        new_entry_point = f"{self.dataset_name}_{gen_function_name}"
-        ret_code = f"""
-def {new_entry_point}(*args, **kwargs):
-    _fennel_internal = {self.dataset_name}.__fennel_original_cls__
-    return getattr(_fennel_internal, "{gen_function_name}")(*args, **kwargs)
-"""
-        gen_code = gen_code + "\n" + dedent(ret_code)
-
-        if is_filter:
-            old_entry_point = new_entry_point
-            new_entry_point = f"{old_entry_point}_filter"
-            gen_code += f"""
-def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
-    return df[{old_entry_point}(df)]
-"""
-        if is_assign:
-            old_entry_point = new_entry_point
-            new_entry_point = f"{old_entry_point}_assign"
-            gen_code += f"""
-def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
-    return df.assign({column_name}={old_entry_point})
-"""
-        if is_summary:
-            old_entry_point = new_entry_point
-            new_entry_point = f"{old_entry_point}_summary"
-            gen_code += f"""
-def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.groupby('{SERVER_CLUSTER_COLUMN}').apply({old_entry_point}).reset_index(name='result').sort_values('{SERVER_CLUSTER_COLUMN}')
-    return df['result']
-"""
-
-        return pycode_proto.PyCode(
-            entry_point=f"{new_entry_point}",
-            generated_code=gen_code,
-            core_code=op_pycode.core_code,
-            source_code=op_pycode.source_code,
-            includes=op_pycode.includes,
-            imports=op_pycode.imports,
-        )
 
     def visit(self, obj) -> str:
         if isinstance(obj, Dataset):
@@ -166,7 +80,12 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
             else None
         )
         transform_func_pycode = to_includes_proto(obj.func)
-        gen_pycode = self.wrap_function(transform_func_pycode)
+        gen_pycode = wrap_function(
+            self.dataset_name,
+            self.dataset_code,
+            self.lib_generated_code,
+            transform_func_pycode,
+        )
         return proto.Operator(
             id=obj.signature(),
             is_root=obj == self.terminal_node,
@@ -182,7 +101,13 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
 
     def visitFilter(self, obj):
         filter_func_pycode = to_includes_proto(obj.func)
-        gen_pycode = self.wrap_function(filter_func_pycode, is_filter=True)
+        gen_pycode = wrap_function(
+            self.dataset_name,
+            self.dataset_code,
+            self.lib_generated_code,
+            filter_func_pycode,
+            is_filter=True,
+        )
         return proto.Operator(
             id=obj.signature(),
             is_root=obj == self.terminal_node,
@@ -197,8 +122,13 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
 
     def visitAssign(self, obj):
         assign_func_pycode = to_includes_proto(obj.func)
-        gen_pycode = self.wrap_function(
-            assign_func_pycode, is_assign=True, column_name=obj.column
+        gen_pycode = wrap_function(
+            self.dataset_name,
+            self.dataset_code,
+            self.lib_generated_code,
+            assign_func_pycode,
+            is_assign=True,
+            column_name=obj.column,
         )
 
         return proto.Operator(

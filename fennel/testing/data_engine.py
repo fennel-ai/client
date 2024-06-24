@@ -1,5 +1,6 @@
 import copy
 import logging
+import types
 from collections import defaultdict
 from dataclasses import dataclass
 from dataclasses import field
@@ -37,7 +38,12 @@ from fennel.gen import schema_pb2 as schema_proto
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.internal_lib.duration import Duration, duration_to_timedelta
 from fennel.internal_lib.schema import data_schema_check
-from fennel.internal_lib.to_proto import dataset_to_proto
+from fennel.internal_lib.to_proto import (
+    dataset_to_proto,
+    get_dataset_core_code,
+    to_includes_proto,
+    wrap_function,
+)
 from fennel.internal_lib.utils import parse_datetime
 from fennel.lib.includes import EnvSelector
 from fennel.testing.execute_aggregation import FENNEL_DELETE_TIMESTAMP
@@ -45,7 +51,6 @@ from fennel.testing.executor import Executor
 from fennel.testing.test_utils import (
     FakeResponse,
     cast_df_to_schema,
-    cast_df_to_arrow_dtype,
     cast_df_to_pandas_dtype,
     add_deletes,
     FENNEL_LOOKUP,
@@ -101,6 +106,30 @@ def _preproc_df(
     return new_df
 
 
+def _preproc_where_df(
+    df: pd.DataFrame, filter_fn: Callable, ds: Dataset
+) -> pd.DataFrame:
+    filter_func_pycode = wrap_function(
+        ds._name,
+        get_dataset_core_code(ds),
+        "",
+        to_includes_proto(filter_fn),
+        is_filter=True,
+    )
+    new_df = df.copy()
+    mod = types.ModuleType(filter_func_pycode.entry_point)
+    code = filter_func_pycode.imports + "\n" + filter_func_pycode.generated_code
+    exec(code, mod.__dict__)
+    func = mod.__dict__[filter_func_pycode.entry_point]
+    try:
+        new_df = func(new_df)
+    except Exception as e:
+        raise Exception(
+            f"Error in filter function `{filter_fn.__name__}` for preproc , {e}"
+        )
+    return new_df
+
+
 @dataclass
 class _SrcInfo:
     webhook_endpoint: str
@@ -108,6 +137,7 @@ class _SrcInfo:
     bounded: bool
     idleness: Optional[Duration]
     prev_log_time: Optional[datetime] = None
+    where: Optional[Callable] = None
 
 
 @dataclass
@@ -285,6 +315,7 @@ class DataEngine(object):
         for ds in self.webhook_to_dataset_map[webhook_endpoint]:
             try:
                 schema = self.datasets[ds].core_dataset.dsschema
+                # Run preproc-transform
                 preproc = [
                     x.preproc
                     for x in self.datasets[ds].srcs
@@ -301,6 +332,26 @@ class DataEngine(object):
                         raise ValueError(
                             f"Error using pre_proc for dataset `{ds}`: {str(e)}",
                         )
+
+                # Run preproc-filter
+                wheres = [
+                    x.where
+                    for x in self.datasets[ds].srcs
+                    if x.webhook_endpoint == webhook_endpoint
+                ]
+                if len(wheres) > 0 and wheres[0] is not None:
+                    assert (
+                        len(wheres) == 1
+                    ), f"Multiple preproc wheres found for {ds} and {webhook_endpoint}"
+                    try:
+                        df = _preproc_where_df(
+                            df, wheres[0], self.datasets[ds].dataset
+                        )
+                    except ValueError as e:
+                        raise ValueError(
+                            f"Error using filter pre_proc for dataset `{ds}`: {str(e)}",
+                        )
+                # Cast output to pyarrow dtypes
                 df = cast_df_to_schema(df, schema)
 
             except Exception as e:
@@ -824,6 +875,7 @@ class DataEngine(object):
                         source.bounded,
                         source.idleness,
                         datetime.now(timezone.utc),
+                        source.where,
                     )
                 )
         return webhook_sources

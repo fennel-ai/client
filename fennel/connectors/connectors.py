@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import copy
-import json
 import re
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
 from typing import Literal
-from dataclasses import dataclass
 
 from fennel._vendor.pydantic import BaseModel, Field  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
@@ -78,6 +77,7 @@ def source(
     preproc: Optional[Dict[str, PreProcValue]] = None,
     bounded: bool = False,
     idleness: Optional[Duration] = None,
+    where: Optional[Callable] = None,
 ) -> Callable[[T], Any]:
     """
     Decorator to specify the source of data for a dataset. The source can be
@@ -92,6 +92,7 @@ def source(
     :param until: The end time until which to fetch data.
     :param env: Tier selector to use for the source, for eg "dev", "staging", "prod" etc.
     :param preproc: Preprocessing steps to apply to the data before it is used in the dataset.
+    :param where: Filters the data before ingesting into the dataset.
     :return:
     """
     if not isinstance(conn, DataConnector):
@@ -160,6 +161,7 @@ def source(
         connector.pre_proc = preproc
         connector.bounded = bounded
         connector.idleness = idleness
+        connector.where = where
         connectors = getattr(dataset_cls, SOURCE_FIELD, [])
         connectors.append(connector)
         setattr(dataset_cls, SOURCE_FIELD, connectors)
@@ -615,6 +617,7 @@ class DataConnector:
     pre_proc: Optional[Dict[str, PreProcValue]] = None
     bounded: bool = False
     idleness: Optional[Duration] = None
+    where: Optional[Callable] = None
 
     def identifier(self):
         raise NotImplementedError

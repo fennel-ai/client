@@ -7,5 +7,7 @@ from fennel.internal_lib.to_proto.to_proto import (
     extractors_from_fs,
 )
 from fennel.internal_lib.to_proto.source_code import (
+    get_dataset_core_code,
     to_includes_proto,
+    wrap_function,
 )

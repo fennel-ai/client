@@ -174,6 +174,14 @@ The `preproc` field in the source provides a way to ingest a column that
 doesn't exist. Instead, it is either given a default value or to base the value 
 of that column on another column. 
 
+### Where
+The `where` field in the source provides a way to filter out some rows from source
+during ingestion. Provide the filter criteria as a lambda function.
+
+<pre snippet="concepts/source#where" status="success" 
+  message="Using lambda to filter during ingestion."
+></pre>
+
 ### Since
 The `since` parameter (of type `datetime`) in the source provides a way to ingest 
 data from a specific time onwards from the source. When set, only the rows 
