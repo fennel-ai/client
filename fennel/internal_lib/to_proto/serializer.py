@@ -10,6 +10,7 @@ import google.protobuf.duration_pb2 as duration_proto
 import fennel.gen.dataset_pb2 as proto
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset, Pipeline, Visitor
+from fennel.datasets.datasets import EmitStrategy
 from fennel.internal_lib.duration import (
     duration_to_timedelta,
 )
@@ -215,6 +216,11 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
         )
 
     def visitAggregate(self, obj):
+        emit_strategy = (
+            proto.Aggregate.Eager
+            if obj.emit_strategy == EmitStrategy.Eager
+            else proto.Aggregate.Final
+        )
         return proto.Operator(
             id=obj.signature(),
             is_root=obj == self.terminal_node,
@@ -226,6 +232,7 @@ def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
                 keys=obj.keys,
                 specs=[agg.to_proto() for agg in obj.aggregates],
                 along=obj.along,
+                emit_strategy=emit_strategy,
             ),
         )
 
