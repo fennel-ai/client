@@ -1,5 +1,5 @@
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal as PythonDecimal
 from typing import Optional
 
@@ -133,7 +133,7 @@ def test_log_with_decimal_type(client):
     )
     assert response.status_code == requests.codes.OK, response.json()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     df = pd.DataFrame(
         {
             "user_id": [1, 2, 3, 4, 5],
@@ -184,7 +184,7 @@ def test_query_with_decimal_type(client):
     )
     assert response.status_code == requests.codes.OK, response.json()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     df = pd.DataFrame(
         {
             "user_id": [1, 2, 3, 4, 5],
@@ -364,7 +364,7 @@ def test_optional_decimal_type(client):
         )
         assert response.status_code == requests.codes.OK, response.json()
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         df = pd.DataFrame(
             {
                 "user_id": [1, 2, 3, 4, 5],

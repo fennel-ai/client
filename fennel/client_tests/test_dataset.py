@@ -179,7 +179,7 @@ class TestDataset(unittest.TestCase):
 
         # Sync the dataset
         client.commit(message="msg", datasets=[UserInfoDataset])
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         yesterday = now - pd.Timedelta(days=1)
         data = [
             [18232, "Ross", 32, "USA", yesterday],

@@ -15,7 +15,6 @@ from fennel.lib import (
     includes,
     inputs,
     outputs,
-    meta,
     expectations,
     expect_column_values_to_be_between,
 )
@@ -705,7 +704,7 @@ class TestOptionalTypes(unittest.TestCase):
             featuresets=[FloatFeatureSet],
         )
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         df = pd.DataFrame(
             {
                 "user_id": [1, 2, 3, 4, 5],
@@ -755,7 +754,7 @@ class TestOptionalTypes(unittest.TestCase):
             featuresets=[IntFeatureSet],
         )
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         df = pd.DataFrame(
             {
                 "user_id": [1, 2, 3, 4, 5],
@@ -782,3 +781,55 @@ class TestOptionalTypes(unittest.TestCase):
             14,
             pd.NA,
         ]
+
+
+@pytest.mark.integration
+@mock
+def test_featureset_name_query(client):
+    """
+    This tests the ability to provide the featureset name in outputs in query
+    """
+
+    @source(webhook.endpoint("DS1"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class DS1:
+        user_id: int = field(key=True)
+        timestamp: datetime = field(timestamp=True)
+        age: int
+
+    @featureset
+    class FS1:
+        user_id: int
+        age: Optional[int] = F(DS1.age)
+
+    client.commit(
+        message="some commit msg",
+        datasets=[DS1],
+        featuresets=[FS1],
+    )
+
+    now = datetime.now(timezone.utc)
+    df = pd.DataFrame(
+        {
+            "user_id": [1, 2, 3, 4, 5],
+            "timestamp": [now, now, now, now, now],
+            "age": [10, 11, 12, 13, 14],
+        }
+    )
+    client.log("fennel_webhook", "DS1", df)
+
+    client.sleep()
+    feature_df = client.query(
+        outputs=["FS1"],
+        inputs=[FS1.user_id],
+        input_dataframe=pd.DataFrame({"FS1.user_id": [1, 2, 3, 4, 5, 6]}),
+    )
+    assert feature_df.shape == (6, 2)
+    assert feature_df["FS1.age"].tolist() == [
+        10,
+        11,
+        12,
+        13,
+        14,
+        pd.NA,
+    ]
