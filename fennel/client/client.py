@@ -266,17 +266,15 @@ class Client:
                     out_feature.dtype
                 )
             elif isinstance(out_feature, str):
-                try:
-                    is_valid_feature(out_feature)
+                if is_valid_feature(out_feature):
                     output_feature_names.append(out_feature)
                     output_feature_name_to_type[out_feature] = Any
-                except Exception as e1:
-                    # Could be a featureset name too
-                    try:
-                        is_valid_featureset(out_feature)
-                        output_feature_names.append(out_feature)
-                    except Exception as e2:
-                        raise Exception(e1, e2)
+                elif is_valid_featureset(out_feature):
+                    output_feature_names.append(out_feature)
+                else:
+                    raise Exception(
+                        f"Please provide a valid string for outputs, got : `{out_feature}`."
+                    )
             elif isinstance(out_feature, Featureset):
                 output_feature_names.extend(
                     [f.fqn() for f in out_feature.features]
@@ -607,16 +605,14 @@ class Client:
             if isinstance(output_feature, Feature):
                 output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, str):
-                try:
-                    is_valid_feature(output_feature)
+                if is_valid_feature(output_feature):
                     output_feature_names.append(output_feature)
-                except Exception as e1:
-                    # Could be a featureset name too
-                    try:
-                        is_valid_featureset(output_feature)
-                        output_feature_names.append(output_feature)
-                    except Exception as e2:
-                        raise Exception(e1, e2)
+                elif is_valid_featureset(output_feature):
+                    output_feature_names.append(output_feature)
+                else:
+                    raise Exception(
+                        f"Please provide a valid string for output_feature, got : `{output_feature}`."
+                    )
             elif isinstance(output_feature, Featureset):
                 output_feature_names.extend(
                     [f.fqn() for f in output_feature.features]

@@ -499,6 +499,10 @@ class MockClient(Client):
                     "Providing a featureset as input is deprecated. "
                     f"List the features instead. {[f.fqn() for f in input_feature.features]}."
                 )
+            else:
+                raise Exception(
+                    f"Please provide a valid input, got : {input_feature}."
+                )
         return input_feature_names
 
     def _transform_input_dataframe_from_inputs(
@@ -540,18 +544,16 @@ class MockClient(Client):
             elif isinstance(output, Featureset):
                 output_feature_names.append(output)
             elif isinstance(output, str):
-                try:
-                    is_valid_feature(output)
+                if is_valid_feature(output):
                     output_feature_names.append(output)
-                except Exception as e1:
-                    # Could be a featureset name too
-                    try:
-                        is_valid_featureset(output)
-                        output_feature_names.extend(
-                            branch_class.get_features_from_fs(output)
-                        )
-                    except Exception as e2:
-                        raise Exception(e1, e2)
+                elif is_valid_featureset(output):
+                    output_feature_names.extend(
+                        branch_class.get_features_from_fs(output)
+                    )
+                else:
+                    raise Exception(
+                        f"Please provide a valis string for outputs, got : `{output}`."
+                    )
             else:
                 raise Exception(f"Invalid type of outputs : {type(output)}.")
         return output_feature_names

@@ -419,19 +419,13 @@ class Feature:
 
 def is_valid_feature(feature_name: str):
     if "." not in feature_name or len(feature_name.split(".")) != 2:
-        raise Exception(
-            f"Invalid input feature name {feature_name}. "
-            "Please provide the feature name in the format <featureset>.<feature>."
-        )
+        return False
     return True
 
 
 def is_valid_featureset(featureset_name: str):
     if "." in featureset_name:
-        raise Exception(
-            f"Invalid featureset name {featureset_name}. "
-            "Please provide the featureset name in the format <featureset>."
-        )
+        return False
     return True
 
 
