@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.3.32] - 2024-06-27
+- Fix default value behaviour in lookup from aggregated datasets.
+
 ## [1.3.31] - 2024-06-17
 - Add capability to provide featureset name as str in outputs of query/query_offline.
 
