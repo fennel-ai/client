@@ -544,7 +544,10 @@ class Aggregate(_Node):
             elif isinstance(agg, Stddev):
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, Quantile):
-                values[agg.into_field] = pd.Float64Dtype  # type: ignore
+                if agg.default is None:
+                    values[agg.into_field] = Optional[pd.Float64Dtype]  # type: ignore
+                else:
+                    values[agg.into_field] = pd.Float64Dtype  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
         return DSSchema(
