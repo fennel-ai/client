@@ -4,6 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime, timezone
+from decimal import Decimal
 from functools import partial
 from typing import Dict, List, Optional, Tuple, Callable, Any
 
@@ -18,7 +19,16 @@ from fennel.connectors import (
     Webhook,
     DataSource,
 )
-from fennel.datasets import Dataset, Pipeline
+from fennel.datasets import (
+    Aggregate,
+    Average,
+    Dataset,
+    Max,
+    Min,
+    Pipeline,
+    Quantile,
+    Stddev,
+)
 from fennel.datasets.datasets import (
     get_index,
     IndexDuration,
@@ -108,8 +118,9 @@ class _Dataset:
     dataset: Dataset
     srcs: List[_SrcInfo]
     data: Optional[pd.DataFrame] = None
-    aggregated_datasets: Optional[Dict[str, Any]] = None
     erased_keys: List[Dict[str, Any]] = field(default_factory=list)
+    # We use this sore default values of fields passed in aggregates
+    default_values: Dict[str, Any] = field(default_factory=dict)
 
     def empty_df(self):
         return pd.DataFrame(columns=self.fields)
@@ -236,6 +247,9 @@ class DataEngine(object):
                     )
                     if pipeline not in self.dataset_listeners[input._name]:
                         self.dataset_listeners[input._name].append(pipeline)
+
+            # Add default values of fields if passed in terminal_node
+            self._add_default_values(dataset._name, selected_pipelines)
 
         # Check that input_datasets_for_pipelines is a subset of self.datasets.
         for ds, pipelines in input_datasets_for_pipelines.items():
@@ -367,6 +381,24 @@ class DataEngine(object):
             use_as_of,
         )
 
+    def _add_default_values(
+        self, dataset_name: str, selected_pipelines: List[Pipeline]
+    ):
+        if dataset_name not in self.datasets:
+            raise ValueError(f"Dataset `{dataset_name}` not found.")
+
+        if len(selected_pipelines) == 0 or not isinstance(
+            selected_pipelines[0].terminal_node, Aggregate
+        ):
+            return
+
+        terminal_node: Aggregate = selected_pipelines[0].terminal_node
+        for aggregate in terminal_node.aggregates:
+            if isinstance(aggregate, (Average, Min, Max, Quantile, Stddev)):
+                self.datasets[dataset_name].default_values[
+                    aggregate.into_field
+                ] = aggregate.default
+
     def _filter_erase_key(
         self,
         dataset_name: str,
@@ -386,11 +418,6 @@ class DataEngine(object):
 
         if data is not None:
             self.datasets[dataset_name].data = data[data.apply(is_kept, axis=1)]
-
-        if self.datasets[dataset_name].aggregated_datasets is not None:
-            data = self.datasets[dataset_name].aggregated_datasets
-            for col, df in data.items():
-                data[col] = df[df.apply(is_kept, axis=1)]
 
     def _dataset_lookup_impl(
         self,
@@ -453,10 +480,7 @@ class DataEngine(object):
                 f"Dataset {cls_name} has {len(right_key_fields)} key fields, "
                 f"but {len(keys.columns)} key fields were provided."
             )
-        if (
-            not isinstance(self.datasets[cls_name].data, pd.DataFrame)
-            and not self.datasets[cls_name].aggregated_datasets
-        ):
+        if not isinstance(self.datasets[cls_name].data, pd.DataFrame):
             logger.warning(
                 f"Not data found for Dataset `{cls_name}` during lookup, returning an empty dataframe"
             )
@@ -491,43 +515,16 @@ class DataEngine(object):
         keys[FENNEL_ORDER] = np.arange(len(keys))
         # Sort the keys by timestamp
         keys = keys.sort_values(timestamp_field)
-        if self.datasets[cls_name].aggregated_datasets:
-            data_dict = self.datasets[cls_name].aggregated_datasets
-            # Gather all the columns that are needed from data_dict to create a df.
-            result_dfs = []
-            for col, right_df in data_dict.items():  # type: ignore
-                try:
-                    df = self._as_of_lookup(
-                        cls_name, keys, right_df, join_columns, timestamp_field
-                    )
-                except ValueError as err:
-                    raise ValueError(err)
-                df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
-                df.rename(
-                    columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True
-                )
-                result_dfs.append(df)
-            # Get common columns
-            common_columns = set(result_dfs[0].columns)
-            for df in result_dfs[1:]:
-                common_columns.intersection_update(df.columns)
 
-            # Remove common columns from all DataFrames except the first one
-            for i in range(1, len(result_dfs)):
-                result_dfs[i] = result_dfs[i].drop(columns=common_columns)
-
-            # Concatenate the DataFrames column-wise
-            df = pd.concat(result_dfs, axis=1)
-        else:
-            right_df = self.datasets[cls_name].data
-            try:
-                df = self._as_of_lookup(
-                    cls_name, keys, right_df, join_columns, timestamp_field
-                )
-            except ValueError as err:
-                raise ValueError(err)
-            df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
-            df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
+        right_df = self.datasets[cls_name].data
+        try:
+            df = self._as_of_lookup(
+                cls_name, keys, right_df, join_columns, timestamp_field
+            )
+        except ValueError as err:
+            raise ValueError(err)
+        df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
+        df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
 
         found = df[FENNEL_LOOKUP].apply(lambda x: x is not np.nan)
         df.drop(columns=[FENNEL_LOOKUP], inplace=True)
@@ -839,6 +836,25 @@ class DataEngine(object):
         Also this function would change the dtype to optional of value fields, as after lookup data_engine can
         return values or not
         """
+        # Add default values.
+        dtype_dict = (
+            self.datasets[dataset_name].dataset.dsschema().to_dtype_proto()
+        )
+        for column in dataframe.columns:
+            value = self.datasets[dataset_name].default_values.get(column, None)
+            if pd.notna(value):
+                proto_dtype = dtype_dict[column]
+                if proto_dtype.HasField("decimal_type"):
+                    if not isinstance(value, Decimal):
+                        value = Decimal(
+                            "%0.{}f".format(proto_dtype.decimal_type.scale)
+                            % float(value)  # type: ignore
+                        )
+                elif proto_dtype.HasField("timestamp_type"):
+                    value = parse_datetime(value)
+                dataframe[column] = dataframe[column].fillna(value)
+
+        # Convert non-optional fields to optional fields.
         proto_fields = (
             self.datasets[dataset_name].dataset.dsschema().to_fields_proto()
         )

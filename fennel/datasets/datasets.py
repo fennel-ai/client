@@ -2289,6 +2289,21 @@ class DSSchema:
             )
         return fields
 
+    def to_dtype_proto(self) -> Dict[str, schema_proto.DataType]:
+        """
+        Converts all the fields in the DSSchema includes keys, values and timestamps into list Field Proto
+        """
+        fields = {
+            self.timestamp: schema_proto.DataType(
+                timestamp_type=schema_proto.TimestampType()
+            )
+        }
+        for key in self.keys:
+            fields[key] = get_datatype(self.keys[key])
+        for value in self.values:
+            fields[value] = get_datatype(self.values[value])
+        return fields
+
 
 class SchemaValidator(Visitor):
     def __init__(self):
