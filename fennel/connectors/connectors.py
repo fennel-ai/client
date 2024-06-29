@@ -347,6 +347,14 @@ class Avro(BaseModel):
     token: Optional[str]
 
 
+class Protobuf(BaseModel):
+    registry: str
+    url: str
+    username: Optional[str]
+    password: Optional[str]
+    token: Optional[str]
+
+
 class Kafka(DataSource):
     bootstrap_servers: str
     security_protocol: Literal["PLAINTEXT", "SASL_PLAINTEXT", "SASL_SSL"]
@@ -358,7 +366,7 @@ class Kafka(DataSource):
         return ["topic"]
 
     def topic(
-        self, topic: str, format: Union[str, Avro] = "json"
+        self, topic: str, format: Union[str, Avro, Protobuf] = "json"
     ) -> KafkaConnector:
         return KafkaConnector(self, topic, format)
 
@@ -637,7 +645,7 @@ class KafkaConnector(DataConnector):
     Kafka."""
 
     topic: str
-    format: Optional[str | Avro]
+    format: Optional[str | Avro | Protobuf]
 
     def __init__(self, source, topic, format):
         self.data_source = source

@@ -76,3 +76,42 @@ def test_kafka_with_avro(client):
     # /docsnip
 
     client.commit(message="msg", datasets=[SomeDataset])
+
+
+@mock
+def test_kafka_with_protobuf(client):
+    os.environ["KAFKA_USERNAME"] = "test"
+    os.environ["KAFKA_PASSWORD"] = "test"
+    os.environ["SCHEMA_REGISTRY_URL"] = "http://localhost:8081"
+    os.environ["SCHEMA_REGISTRY_USERNAME"] = "test"
+    os.environ["SCHEMA_REGISTRY_PASSWORD"] = "test"
+    # docsnip kafka_with_protobuf
+    from fennel.connectors import source, Kafka, Protobuf
+    from fennel.datasets import dataset, field
+
+    kafka = Kafka(
+        name="my_kafka",
+        bootstrap_servers="localhost:9092",  # could come via os env var too
+        security_protocol="SASL_PLAINTEXT",
+        sasl_mechanism="PLAIN",
+        sasl_plain_username=os.environ["KAFKA_USERNAME"],
+        sasl_plain_password=os.environ["KAFKA_PASSWORD"],
+    )
+
+    protobuf = Protobuf(
+        registry="confluent",
+        url=os.environ["SCHEMA_REGISTRY_URL"],
+        username=os.environ["SCHEMA_REGISTRY_USERNAME"],
+        password=os.environ["SCHEMA_REGISTRY_PASSWORD"],
+    )
+
+    @source(kafka.topic("user", format=protobuf), disorder="14d", cdc="upsert")
+    @dataset
+    class SomeDataset:
+        uid: int = field(key=True)
+        email: str
+        timestamp: datetime
+
+    # /docsnip
+
+    client.commit(message="msg", datasets=[SomeDataset])
