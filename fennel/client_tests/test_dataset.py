@@ -22,6 +22,7 @@ from fennel.datasets import (
     Max,
     Sum,
     Average,
+    ExpDecaySum,
     Count,
     Stddev,
     Distinct,
@@ -691,14 +692,14 @@ class TestDataset(unittest.TestCase):
 class RatingActivity:
     userid: int
     rating: float
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"])  # type: ignore # noqa
     t: datetime
 
 
 @meta(owner="test@test.com")
 @dataset(index=True)
 class MovieRatingCalculated:
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True, erase_key=True
     )
     rating: float
@@ -769,7 +770,7 @@ class MovieRatingCalculated:
 class RatingActivityAlong:
     userid: int
     rating: float
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"])  # type: ignore # noqa
     t: datetime = field(timestamp=True)
     rating_time: datetime
 
@@ -777,7 +778,7 @@ class RatingActivityAlong:
 @meta(owner="test@test.com")
 @dataset(index=True)
 class MovieRatingCalculatedAlong:
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True, erase_key=True
     )
     rating: float
@@ -848,7 +849,7 @@ class MovieRatingCalculatedAlong:
 @source(webhook.endpoint("MovieRating"), disorder="14d", cdc="upsert")
 @dataset
 class MovieRating:
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True
     )
     rating: between(float, min=0.0, max=5.0)  # type: ignore
@@ -860,7 +861,7 @@ class MovieRating:
 @meta(owner="test@test.com")
 @dataset(index=True)
 class MovieRatingTransformed:
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True
     )
     rating_sq: float
@@ -883,7 +884,7 @@ class MovieRatingTransformed:
         x = m.transform(
             t,
             schema={
-                "movie": oneof(str, ["Jumanji", "Titanic", "RaOne"]),
+                "movie": oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]),
                 "t": datetime,
                 "rating_sq": float,
                 "rating_cube": float,
@@ -901,7 +902,7 @@ class MovieRatingTransformed:
 @meta(owner="test@test.com")
 @dataset(index=True)
 class MovieRatingAssign:
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True
     )
     rating_sq: float
@@ -1102,7 +1103,7 @@ class TestBasicAssign(unittest.TestCase):
 @source(webhook.endpoint("MovieRevenue"), disorder="14d", cdc="upsert")
 @dataset(index=True)
 class MovieRevenue:
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True
     )
     revenue: int
@@ -1112,7 +1113,7 @@ class MovieRevenue:
 @meta(owner="aditya@fennel.ai")
 @dataset(index=True)
 class MovieStats:
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True
     )
     rating: float
@@ -1139,7 +1140,9 @@ class MovieStats:
         return c.transform(
             to_millions,
             schema={
-                str(cls.movie): oneof(str, ["Jumanji", "Titanic", "RaOne"]),
+                str(cls.movie): oneof(
+                    str, ["Jumanji", "Titanic", "RaOne", "ABC"]
+                ),
                 str(cls.rating): float,
                 str(cls.t): datetime,
                 str(cls.revenue_in_millions): float,
@@ -1561,7 +1564,7 @@ class TestBasicAggregateAlong(unittest.TestCase):
 @meta(owner="test@test.com")
 @dataset(index=True)
 class MovieRatingWindowed:
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True
     )
     num_ratings_3d: int
@@ -1814,7 +1817,7 @@ class TestBasicWindowAggregate(unittest.TestCase):
 @dataset(index=True)
 class PositiveRatingActivity:
     cnt_rating: int
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True
     )
     t: datetime
@@ -2081,7 +2084,7 @@ class TestBasicDistinct(unittest.TestCase):
 class LastMovieSeen:
     userid: int = field(key=True)
     rating: float
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"])  # type: ignore # noqa
     t: datetime
 
     @pipeline
@@ -2113,7 +2116,7 @@ class NumTimesLastMovie:
     Given a movie, count the number of times it was the last movie seen by a user
     """
 
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True
     )
     count: int
@@ -2257,7 +2260,7 @@ class TestLastOp(unittest.TestCase):
 class FirstMovieSeen:
     userid: int = field(key=True)
     rating: float
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"])  # type: ignore # noqa
     t: datetime
 
     @pipeline
@@ -2273,7 +2276,7 @@ class NumTimesFirstMovie:
     Given a movie, count the number of times it was the first movie seen by a user
     """
 
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(  # type: ignore
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
         key=True
     )
     count: int
@@ -2375,7 +2378,7 @@ class TestFirstOp(unittest.TestCase):
 class FirstMovieSeenWithFilter:
     userid: int = field(key=True)
     rating: float
-    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"])  # type: ignore # noqa
     t: datetime
 
     @pipeline
@@ -4484,3 +4487,123 @@ def test_empty_right_on_left_join(client):
     assert df["b"].tolist() == [pd.NA, pd.NA]
     assert df["c"].tolist() == [pd.NA, pd.NA]
     assert df["a"].tolist() == [1, 2]
+
+
+@dataset(index=True)
+class RatingsExpAggregated:
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(key=True)  # type: ignore
+    rating_exp_agg: float
+    rating_exp_agg2: float
+    rating_exp_agg_7d: float
+    t: datetime
+
+    @pipeline
+    @inputs(RatingActivity)
+    def exp_aggregation(cls, activity: Dataset):
+        return activity.groupby("movie").aggregate(
+            rating_exp_agg=ExpDecaySum(
+                of="rating", window=Continuous("forever"), half_life="1d"
+            ),
+            rating_exp_agg2=ExpDecaySum(
+                of="rating", window=Continuous("forever"), half_life="2d"
+            ),
+            rating_exp_agg_7d=ExpDecaySum(
+                of="rating", window=Continuous("7d"), half_life="1d"
+            ),
+        )
+
+
+@pytest.mark.integration
+@mock
+def test_exponential_aggregation(client):
+    client.commit(
+        datasets=[RatingActivity, RatingsExpAggregated], message="test"
+    )
+
+    df = pd.DataFrame(
+        {
+            "userid": [1, 2, 3, 1, 2, 3],
+            "rating": [5, -4, 3, 3, 2, 4],
+            "movie": [
+                "Jumanji",
+                "Titanic",
+                "RaOne",
+                "Jumanji",
+                "Jumanji",
+                "RaOne",
+            ],
+            "t": [
+                datetime(2024, 1, 1),
+                datetime(2024, 1, 2),
+                datetime(2024, 1, 3),
+                datetime(2024, 1, 2),
+                datetime(2024, 1, 1),
+                datetime(2024, 1, 1),
+            ],
+        }
+    )
+    response = client.log("fennel_webhook", "RatingActivity", df)
+    assert response.status_code == requests.codes.OK
+    client.sleep(10)
+
+    df, found = client.lookup(
+        RatingsExpAggregated,
+        keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne", "ABC"]}),
+        timestamps=pd.Series([datetime(2024, 1, 3, 0, 0, 1)] * 4),
+    )
+    assert found.tolist() == [True, True, True, False]
+    assert df.shape == (4, 5)
+    # Jumanji = 5 / (2^2)  + 3 / 2 + 2 /4 = 1.25 + 1.5 + 0.5 = 3.25
+    expected_result_agg = [3.25, -2, 4]
+    expected_result_agg2 = [5.6213, -2.8284, 5]
+    # Approximate values
+    for i in range(3):
+        assert (
+            abs(df["rating_exp_agg"].iloc[i] - expected_result_agg[i]) < 1e-3
+        ), f"{df['rating_exp_agg'].iloc[i]} != {expected_result_agg[i]}"
+        assert (
+            abs(df["rating_exp_agg2"].iloc[i] - expected_result_agg2[i]) < 1e-3
+        ), f"{df['rating_exp_agg2'].iloc[i]} != {expected_result_agg2[i]}"
+        assert (
+            abs(df["rating_exp_agg_7d"].iloc[i] - expected_result_agg[i]) < 1e-3
+        ), f"{df['rating_exp_agg_7d'].iloc[i]} != {expected_result_agg[i]}"
+
+    df, found = client.lookup(
+        RatingsExpAggregated,
+        keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne", "ABC"]}),
+    )
+    assert found.tolist() == [True, True, True, False]
+    assert df.shape == (4, 5)
+    # All the values should be 0 as its been a long time
+
+    # TODO(Aditya): Have a uniform behavior.
+    if client.is_integration_client():
+        assert df["rating_exp_agg"].tolist() == [0, 0, 0, 0]
+        assert df["rating_exp_agg2"].tolist() == [0, 0, 0, 0]
+        assert df["rating_exp_agg_7d"].tolist() == [0, 0, 0, 0]
+    else:
+        assert df["rating_exp_agg"].tolist() == [0, 0, 0, pd.NA]
+        assert df["rating_exp_agg2"].tolist() == [0, 0, 0, pd.NA]
+        assert df["rating_exp_agg_7d"].tolist() == [0, 0, 0, pd.NA]
+
+    df, found = client.lookup(
+        RatingsExpAggregated,
+        keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne", "ABC"]}),
+        timestamps=pd.Series([datetime(2024, 1, 4, 0, 0, 1)] * 4),
+    )
+    assert found.tolist() == [True, True, True, False]
+    assert df.shape == (4, 5)
+    # Jumanji = 5 / (2^3)  + 3 / 4 + 2/8 = 0.625 + 0.75 + 0.25 = 1.625
+    expected_result_agg = [1.625, -1, 2]
+    expected_result_agg2 = [3.9748, -2.0, 3.535]
+    # Approximate values
+    for i in range(3):
+        assert (
+            abs(df["rating_exp_agg"].iloc[i] - expected_result_agg[i]) < 1e-3
+        ), f"{df['rating_exp_agg'].iloc[i]} != {expected_result_agg[i]}"
+        assert (
+            abs(df["rating_exp_agg2"].iloc[i] - expected_result_agg2[i]) < 1e-3
+        ), f"{df['rating_exp_agg2'].iloc[i]} != {expected_result_agg2[i]}"
+        assert (
+            abs(df["rating_exp_agg_7d"].iloc[i] - expected_result_agg[i]) < 1e-3
+        ), f"{df['rating_exp_agg_7d'].iloc[i]} != {expected_result_agg[i]}"

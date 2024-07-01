@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.3.36] - 2024-07-10
+- Add support for exponential decay in aggregation. 
+
 ## [1.3.35] - 2024-06-24
 - Fix logging of optional complex dtypes in mock client.
 

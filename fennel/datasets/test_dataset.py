@@ -18,6 +18,7 @@ from fennel.datasets import (
     Stddev,
     Sum,
     Quantile,
+    ExpDecaySum,
 )
 from fennel.dtypes import Embedding, Window, Continuous, Session
 from fennel.gen.services_pb2 import SyncRequest
@@ -2924,6 +2925,7 @@ def test_dataset_with_str_window_aggregate():
         count: int
         sum_age: int
         stddev_age: float
+        exp_age: float
 
         @pipeline
         @inputs(UserInfoDataset)
@@ -2939,6 +2941,9 @@ def test_dataset_with_str_window_aggregate():
                     of="age",
                     window=Continuous("forever"),
                     into_field="stddev_age",
+                ),
+                exp_age=ExpDecaySum(
+                    of="age", window=Continuous("7d"), half_life="1d"
                 ),
             )
 
@@ -2958,6 +2963,7 @@ def test_dataset_with_str_window_aggregate():
                     {"name": "count", "dtype": {"intType": {}}},
                     {"name": "sum_age", "dtype": {"intType": {}}},
                     {"name": "stddev_age", "dtype": {"doubleType": {}}},
+                    {"name": "exp_age", "dtype": {"doubleType": {}}},
                 ]
             },
             "timestamp": "timestamp",
@@ -2971,6 +2977,7 @@ def test_dataset_with_str_window_aggregate():
             "count": {},
             "gender": {},
             "timestamp": {},
+            "exp_age": {},
         },
         "pycode": {},
     }
