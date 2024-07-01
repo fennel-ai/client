@@ -98,14 +98,18 @@ def test_kafka_with_protobuf(client):
         sasl_plain_password=os.environ["KAFKA_PASSWORD"],
     )
 
+    # docsnip-highlight start
     protobuf = Protobuf(
         registry="confluent",
         url=os.environ["SCHEMA_REGISTRY_URL"],
         username=os.environ["SCHEMA_REGISTRY_USERNAME"],
         password=os.environ["SCHEMA_REGISTRY_PASSWORD"],
     )
+    # docsnip-highlight end
 
+    # docsnip-highlight start
     @source(kafka.topic("user", format=protobuf), disorder="14d", cdc="upsert")
+    # docsnip-highlight end
     @dataset
     class SomeDataset:
         uid: int = field(key=True)

@@ -41,6 +41,5 @@ username/password or token must be provided.
 </Expandable>
 
 <pre snippet="api-reference/sources/kafka#kafka_with_protobuf"
-    status="success" message="Using protobuf registry with kafka"
-    highlight="13-18, 20">
+    status="success" message="Using protobuf registry with kafka">
 </pre>

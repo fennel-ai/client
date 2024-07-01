@@ -354,6 +354,33 @@ class Protobuf(BaseModel):
     password: Optional[str]
     token: Optional[str]
 
+    def __init__(
+        self,
+        registry: str,
+        url: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        token: Optional[str] = None,
+    ):
+        if username or password:
+            if token is not None:
+                raise ValueError(
+                    "Token shouldn't be passed when using username/password based authentication"
+                )
+            if username is None or password is None:
+                raise ValueError(
+                    "Both username and password should be non-empty"
+                )
+        elif token is None:
+            raise ValueError("Either username/password or token should be set")
+        super().__init__(
+            registry=registry,
+            url=url,
+            username=username,
+            password=password,
+            token=token,
+        )
+
 
 class Kafka(DataSource):
     bootstrap_servers: str
