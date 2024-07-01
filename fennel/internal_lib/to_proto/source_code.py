@@ -1,10 +1,11 @@
 import ast
+import hashlib
 import inspect
 import os
 import re
 import sys
 from textwrap import dedent, indent
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 import fennel.gen.pycode_pb2 as pycode_proto
 from fennel.datasets import Dataset
@@ -17,6 +18,14 @@ from fennel.featuresets import Featureset
 from fennel.lib import FENNEL_GEN_CODE_MARKER
 from fennel.lib.includes.include_mod import FENNEL_INCLUDED_MOD
 from fennel.utils import fennel_get_source
+
+
+# Reserved column for server to do grouping windowing.
+SERVER_CLUSTER_COLUMN = "_@@_cluster"
+
+
+def del_spaces_tabs_and_newlines(s):
+    return re.sub(r"[\s\n\t]+", "", s)
 
 
 def _remove_empty_lines(source_code: str) -> str:
@@ -277,4 +286,83 @@ def to_includes_proto(func: Callable) -> pycode_proto.PyCode:
         entry_point=entry_point,
         includes=dependencies,
         imports=get_all_imports(),
+    )
+
+
+def wrap_function(
+    dataset_name: str,
+    dataset_code: str,
+    lib_generated_code: str,
+    op_pycode: pycode_proto.PyCode,
+    is_filter=False,
+    is_assign=False,
+    is_summary=False,
+    column_name: Optional[str] = None,
+) -> pycode_proto.PyCode:
+    gen_func_name = hashlib.sha256(
+        del_spaces_tabs_and_newlines(op_pycode.core_code).encode()
+    ).hexdigest()[:10]
+
+    gen_function_name = f"wrapper_{gen_func_name}"
+    if op_pycode.entry_point == "<lambda>":
+        wrapper_function = f"""
+@classmethod
+def {gen_function_name}(cls, *args, **kwargs):
+    _fennel_internal = {op_pycode.generated_code.strip()}
+    return _fennel_internal(*args, **kwargs)
+    """
+    else:
+        wrapper_function = f"""
+@classmethod
+def {gen_function_name}(cls, *args, **kwargs):
+    {indent(op_pycode.generated_code, "    ")}
+    return {op_pycode.entry_point}(*args, **kwargs)
+    """
+    wrapper_function = indent(dedent(wrapper_function), "    ")
+    gen_code = (
+        dedent(lib_generated_code)
+        + "\n"
+        + dataset_code
+        + "\n"
+        + wrapper_function
+    )
+
+    new_entry_point = f"{dataset_name}_{gen_function_name}"
+    ret_code = f"""
+def {new_entry_point}(*args, **kwargs):
+    _fennel_internal = {dataset_name}.__fennel_original_cls__
+    return getattr(_fennel_internal, "{gen_function_name}")(*args, **kwargs)
+    """
+    gen_code = gen_code + "\n" + dedent(ret_code)
+
+    if is_filter:
+        old_entry_point = new_entry_point
+        new_entry_point = f"{old_entry_point}_filter"
+        gen_code += f"""
+def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
+    return df[{old_entry_point}(df)]
+    """
+    if is_assign:
+        old_entry_point = new_entry_point
+        new_entry_point = f"{old_entry_point}_assign"
+        gen_code += f"""
+def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
+    return df.assign({column_name}={old_entry_point})
+    """
+    if is_summary:
+        old_entry_point = new_entry_point
+        new_entry_point = f"{old_entry_point}_summary"
+        gen_code += f"""
+def {new_entry_point}(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.groupby('{SERVER_CLUSTER_COLUMN}').apply({old_entry_point}).reset_index(name='result').sort_values('{SERVER_CLUSTER_COLUMN}')
+    return df['result']
+    """
+
+    return pycode_proto.PyCode(
+        entry_point=f"{new_entry_point}",
+        generated_code=gen_code,
+        core_code=op_pycode.core_code,
+        source_code=op_pycode.source_code,
+        includes=op_pycode.includes,
+        imports=op_pycode.imports,
     )

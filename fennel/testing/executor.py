@@ -17,7 +17,11 @@ from fennel.gen.schema_pb2 import Field
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype, fennel_is_optional
 from fennel.internal_lib.schema import validate_field_in_df
-from fennel.internal_lib.to_proto import Serializer, to_includes_proto
+from fennel.internal_lib.to_proto import (
+    Serializer,
+    to_includes_proto,
+    wrap_function,
+)
 from fennel.testing.execute_aggregation import (
     get_aggregated_df,
     FENNEL_DELETE_TIMESTAMP,
@@ -125,7 +129,12 @@ class Executor(Visitor):
             return None
         transform_func_pycode = to_includes_proto(obj.func)
         mod = types.ModuleType(obj.func.__name__)
-        gen_pycode = self.serializer.wrap_function(transform_func_pycode)
+        gen_pycode = wrap_function(
+            self.serializer.dataset_name,
+            self.serializer.dataset_code,
+            self.serializer.lib_generated_code,
+            transform_func_pycode,
+        )
         code = transform_func_pycode.imports + "\n" + gen_pycode.generated_code
         exec(code, mod.__dict__)
         func = mod.__dict__[gen_pycode.entry_point]
@@ -204,8 +213,12 @@ class Executor(Visitor):
         fields = obj.dsschema().to_fields_proto()
         filter_func_pycode = to_includes_proto(obj.func)
         mod = types.ModuleType(filter_func_pycode.entry_point)
-        gen_pycode = self.serializer.wrap_function(
-            filter_func_pycode, is_filter=True
+        gen_pycode = wrap_function(
+            self.serializer.dataset_name,
+            self.serializer.dataset_code,
+            self.serializer.lib_generated_code,
+            filter_func_pycode,
+            is_filter=True,
         )
         code = gen_pycode.imports + "\n" + gen_pycode.generated_code
         exec(code, mod.__dict__)
@@ -637,8 +650,13 @@ class Executor(Visitor):
             return None
         assign_func_pycode = to_includes_proto(obj.func)
         mod = types.ModuleType(assign_func_pycode.entry_point)
-        gen_pycode = self.serializer.wrap_function(
-            assign_func_pycode, is_assign=True, column_name=obj.column
+        gen_pycode = wrap_function(
+            self.serializer.dataset_name,
+            self.serializer.dataset_code,
+            self.serializer.lib_generated_code,
+            assign_func_pycode,
+            is_assign=True,
+            column_name=obj.column,
         )
         code = gen_pycode.imports + "\n" + gen_pycode.generated_code
         exec(code, mod.__dict__)

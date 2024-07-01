@@ -4,12 +4,13 @@ import inspect
 import json
 from datetime import datetime
 from textwrap import dedent, indent
-from typing import Any, Dict, List, Optional, Tuple, Mapping, Set
+from typing import Any, Dict, List, Optional, Tuple, Mapping, Set, Callable
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import StringValue
 
+import fennel.connectors as connectors
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.expectations_pb2 as exp_proto
@@ -21,7 +22,7 @@ import fennel.gen.pycode_pb2 as pycode_proto
 import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.services_pb2 as services_proto
-import fennel.connectors as connectors
+from fennel.connectors import kinesis
 from fennel.connectors.connectors import CSV
 from fennel.datasets import Dataset, Pipeline, Field
 from fennel.datasets.datasets import (
@@ -40,11 +41,11 @@ from fennel.internal_lib.to_proto.source_code import (
     get_dataset_core_code,
     get_all_imports,
     get_featureset_gen_code,
+    wrap_function,
 )
 from fennel.internal_lib.to_proto.source_code import to_includes_proto
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr, OWNER
-from fennel.connectors import kinesis
 from fennel.utils import fennel_get_source
 
 
@@ -448,10 +449,7 @@ def source_proto_from_ds(
     for src in sources:
         if src.pre_proc:
             _validate_source_pre_proc(src.pre_proc, ds)
-        timestamp_field = ds.timestamp_field
-        ret.append(
-            _conn_to_source_proto(src, ds._name, ds.version, timestamp_field)
-        )
+        ret.append(_conn_to_source_proto(src, ds))
     return ret  # type: ignore
 
 
@@ -729,34 +727,36 @@ def _pre_proc_to_proto(
     return proto_pre_proc
 
 
+def _preproc_filter_to_pycode(
+    dataset: Dataset, func: Optional[Callable]
+) -> Optional[pycode_proto.PyCode]:
+    if func is None:
+        return None
+    return wrap_function(
+        dataset._name,
+        get_dataset_core_code(dataset),
+        "",
+        to_includes_proto(func),
+        is_filter=True,
+    )
+
+
 def _conn_to_source_proto(
     connector: connectors.DataConnector,
-    dataset_name: str,
-    ds_version: int,
-    timestamp_field: str,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if isinstance(connector, connectors.S3Connector):
-        return _s3_conn_to_source_proto(
-            connector, dataset_name, ds_version, timestamp_field
-        )
+        return _s3_conn_to_source_proto(connector, dataset)
     elif isinstance(connector, connectors.TableConnector):
-        return _table_conn_to_source_proto(
-            connector, dataset_name, ds_version, timestamp_field
-        )
+        return _table_conn_to_source_proto(connector, dataset)
     elif isinstance(connector, connectors.KafkaConnector):
-        return _kafka_conn_to_source_proto(connector, dataset_name, ds_version)
+        return _kafka_conn_to_source_proto(connector, dataset)
     elif isinstance(connector, connectors.WebhookConnector):
-        return _webhook_to_source_proto(connector, dataset_name, ds_version)
+        return _webhook_to_source_proto(connector, dataset)
     elif isinstance(connector, connectors.KinesisConnector):
-        return _kinesis_conn_to_source_proto(
-            connector, dataset_name, ds_version
-        )
+        return _kinesis_conn_to_source_proto(connector, dataset)
     elif isinstance(connector, connectors.PubSubConnector):
-        return _pubsub_conn_to_source_proto(
-            connector,
-            dataset_name,
-            ds_version,
-        )
+        return _pubsub_conn_to_source_proto(connector, dataset)
     else:
         raise ValueError(f"Unknown connector type: {type(connector)}")
 
@@ -775,7 +775,8 @@ def _conn_to_sink_proto(
 
 
 def _webhook_to_source_proto(
-    connector: connectors.WebhookConnector, dataset_name: str, ds_version: int
+    connector: connectors.WebhookConnector,
+    dataset: Dataset,
 ):
     data_source = connector.data_source
     ext_db = connector_proto.ExtDatabase(
@@ -796,8 +797,8 @@ def _webhook_to_source_proto(
                 ),
             ),
             disorder=to_duration_proto(connector.disorder),
-            dataset=dataset_name,
-            ds_version=ds_version,
+            dataset=dataset._name,
+            ds_version=dataset.version,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
             bounded=connector.bounded,
@@ -806,14 +807,14 @@ def _webhook_to_source_proto(
                 if connector.idleness
                 else None
             ),
+            filter=_preproc_filter_to_pycode(dataset, connector.where),
         ),
     )
 
 
 def _kafka_conn_to_source_proto(
     connector: connectors.KafkaConnector,
-    dataset_name: str,
-    ds_version: int,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if not isinstance(data_source, connectors.Kafka):
@@ -835,8 +836,8 @@ def _kafka_conn_to_source_proto(
             ),
         ),
         disorder=to_duration_proto(connector.disorder),
-        dataset=dataset_name,
-        ds_version=ds_version,
+        dataset=dataset._name,
+        ds_version=dataset.version,
         cdc=to_cdc_proto(connector.cdc),
         pre_proc=_pre_proc_to_proto(connector.pre_proc),
         starting_from=_to_timestamp_proto(connector.since),
@@ -847,6 +848,7 @@ def _kafka_conn_to_source_proto(
             if connector.idleness
             else None
         ),
+        filter=_preproc_filter_to_pycode(dataset, connector.where),
     )
     return (ext_db, source)
 
@@ -905,9 +907,7 @@ def _kafka_to_ext_db_proto(
 
 def _s3_conn_to_source_proto(
     connector: connectors.S3Connector,
-    dataset_name: str,
-    ds_version: int,
-    timestamp_field: str,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if not isinstance(data_source, connectors.S3):
@@ -929,14 +929,14 @@ def _s3_conn_to_source_proto(
     )
     source = connector_proto.Source(
         table=ext_table,
-        dataset=dataset_name,
-        ds_version=ds_version,
+        dataset=dataset._name,
+        ds_version=dataset.version,
         every=to_duration_proto(connector.every),
         disorder=to_duration_proto(connector.disorder),
         starting_from=_to_timestamp_proto(connector.since),
         until=_to_timestamp_proto(connector.until),
         cursor=None,
-        timestamp_field=timestamp_field,
+        timestamp_field=dataset.timestamp_field,
         cdc=to_cdc_proto(connector.cdc),
         pre_proc=_pre_proc_to_proto(connector.pre_proc),
         bounded=connector.bounded,
@@ -945,6 +945,7 @@ def _s3_conn_to_source_proto(
             if connector.idleness
             else None
         ),
+        filter=_preproc_filter_to_pycode(dataset, connector.where),
     )
     return (ext_db, source)
 
@@ -1008,35 +1009,21 @@ def _s3_to_ext_table_proto(
 
 def _table_conn_to_source_proto(
     connector: connectors.TableConnector,
-    dataset_name: str,
-    ds_version: int,
-    timestamp_field: str,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if isinstance(data_source, connectors.BigQuery):
-        return _bigquery_conn_to_source_proto(
-            connector, data_source, dataset_name, ds_version, timestamp_field
-        )
+        return _bigquery_conn_to_source_proto(connector, data_source, dataset)
     elif isinstance(data_source, connectors.Snowflake):
-        return _snowflake_conn_to_source_proto(
-            connector, data_source, dataset_name, ds_version, timestamp_field
-        )
+        return _snowflake_conn_to_source_proto(connector, data_source, dataset)
     elif isinstance(data_source, connectors.MySQL):
-        return _mysql_conn_to_source_proto(
-            connector, data_source, dataset_name, ds_version, timestamp_field
-        )
+        return _mysql_conn_to_source_proto(connector, data_source, dataset)
     elif isinstance(data_source, connectors.Postgres):
-        return _pg_conn_to_source_proto(
-            connector, data_source, dataset_name, ds_version, timestamp_field
-        )
+        return _pg_conn_to_source_proto(connector, data_source, dataset)
     elif isinstance(data_source, connectors.Redshift):
-        return _redshift_conn_to_source_proto(
-            connector, data_source, dataset_name, ds_version, timestamp_field
-        )
+        return _redshift_conn_to_source_proto(connector, data_source, dataset)
     elif isinstance(data_source, connectors.Mongo):
-        return _mongo_conn_to_source_proto(
-            connector, data_source, dataset_name, ds_version, timestamp_field
-        )
+        return _mongo_conn_to_source_proto(connector, data_source, dataset)
     else:
         raise ValueError(f"Unknown data source type: {type(data_source)}")
 
@@ -1044,9 +1031,7 @@ def _table_conn_to_source_proto(
 def _bigquery_conn_to_source_proto(
     connector: connectors.TableConnector,
     data_source: connectors.BigQuery,
-    dataset_name: str,
-    ds_version: int,
-    timestamp_field: str,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _bigquery_to_ext_db_proto(
         data_source.name,
@@ -1063,14 +1048,14 @@ def _bigquery_conn_to_source_proto(
         ext_db,
         connector_proto.Source(
             table=ext_table,
-            dataset=dataset_name,
-            ds_version=ds_version,
+            dataset=dataset._name,
+            ds_version=dataset.version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
-            timestamp_field=timestamp_field,
+            timestamp_field=dataset.timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
             bounded=connector.bounded,
@@ -1079,6 +1064,7 @@ def _bigquery_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
+            filter=_preproc_filter_to_pycode(dataset, connector.where),
         ),
     )
 
@@ -1113,9 +1099,7 @@ def _bigquery_to_ext_table_proto(
 def _redshift_conn_to_source_proto(
     connector: connectors.TableConnector,
     data_source: connectors.Redshift,
-    dataset_name: str,
-    ds_version: int,
-    timestamp_field: str,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _redshift_to_ext_db_proto(
         name=data_source.name,
@@ -1136,12 +1120,12 @@ def _redshift_conn_to_source_proto(
         ext_db,
         connector_proto.Source(
             table=ext_table,
-            dataset=dataset_name,
-            ds_version=ds_version,
+            dataset=dataset._name,
+            ds_version=dataset.version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
-            timestamp_field=timestamp_field,
+            timestamp_field=dataset.timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
             starting_from=_to_timestamp_proto(connector.since),
@@ -1152,6 +1136,7 @@ def _redshift_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
+            filter=_preproc_filter_to_pycode(dataset, connector.where),
         ),
     )
 
@@ -1211,9 +1196,7 @@ def _redshift_to_ext_table_proto(
 def _mongo_conn_to_source_proto(
     connector: connectors.TableConnector,
     data_source: connectors.Mongo,
-    dataset_name: str,
-    ds_version: int,
-    timestamp_field: str,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _mongo_to_ext_db_proto(
         name=data_source.name,
@@ -1231,12 +1214,12 @@ def _mongo_conn_to_source_proto(
         ext_db,
         connector_proto.Source(
             table=ext_table,
-            dataset=dataset_name,
-            ds_version=ds_version,
+            dataset=dataset._name,
+            ds_version=dataset.version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
-            timestamp_field=timestamp_field,
+            timestamp_field=dataset.timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
             starting_from=_to_timestamp_proto(connector.since),
@@ -1247,6 +1230,7 @@ def _mongo_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
+            filter=_preproc_filter_to_pycode(dataset, connector.where),
         ),
     )
 
@@ -1282,8 +1266,7 @@ def _mongo_to_ext_table_proto(
 
 def _pubsub_conn_to_source_proto(
     connector: connectors.PubSubConnector,
-    dataset_name: str,
-    ds_version: int,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     ext_db = connector_proto.ExtDatabase(
@@ -1305,8 +1288,8 @@ def _pubsub_conn_to_source_proto(
                 ),
             ),
             disorder=to_duration_proto(connector.disorder),
-            dataset=dataset_name,
-            ds_version=ds_version,
+            dataset=dataset._name,
+            ds_version=dataset.version,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
             bounded=connector.bounded,
@@ -1315,6 +1298,7 @@ def _pubsub_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
+            filter=_preproc_filter_to_pycode(dataset, connector.where),
         ),
     )
 
@@ -1322,9 +1306,7 @@ def _pubsub_conn_to_source_proto(
 def _snowflake_conn_to_source_proto(
     connector: connectors.TableConnector,
     data_source: connectors.Snowflake,
-    dataset_name: str,
-    ds_version: int,
-    timestamp_field: str,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     ext_db = _snowflake_to_ext_db_proto(
         name=data_source.name,
@@ -1343,12 +1325,12 @@ def _snowflake_conn_to_source_proto(
         ext_db,
         connector_proto.Source(
             table=ext_table,
-            dataset=dataset_name,
-            ds_version=ds_version,
+            dataset=dataset._name,
+            ds_version=dataset.version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
-            timestamp_field=timestamp_field,
+            timestamp_field=dataset.timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
             starting_from=_to_timestamp_proto(connector.since),
@@ -1359,6 +1341,7 @@ def _snowflake_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
+            filter=_preproc_filter_to_pycode(dataset, connector.where),
         ),
     )
 
@@ -1401,9 +1384,7 @@ def _snowflake_to_ext_table_proto(
 def _mysql_conn_to_source_proto(
     connector: connectors.TableConnector,
     data_source: connectors.MySQL,
-    dataset_name: str,
-    ds_version: int,
-    timestamp_field: str,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if data_source._get:
         ext_db = _mysql_ref_to_ext_db_proto(name=data_source.name)
@@ -1424,12 +1405,12 @@ def _mysql_conn_to_source_proto(
         ext_db,
         connector_proto.Source(
             table=ext_table,
-            dataset=dataset_name,
-            ds_version=ds_version,
+            dataset=dataset._name,
+            ds_version=dataset.version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
-            timestamp_field=timestamp_field,
+            timestamp_field=dataset.timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
@@ -1440,6 +1421,7 @@ def _mysql_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
+            filter=_preproc_filter_to_pycode(dataset, connector.where),
         ),
     )
 
@@ -1491,9 +1473,7 @@ def _mysql_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
 def _pg_conn_to_source_proto(
     connector: connectors.TableConnector,
     data_source: connectors.Postgres,
-    dataset_name: str,
-    ds_version: int,
-    timestamp_field: str,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if data_source._get:
         ext_db = _pg_ref_to_ext_db_proto(name=data_source.name)
@@ -1514,12 +1494,12 @@ def _pg_conn_to_source_proto(
         ext_db,
         connector_proto.Source(
             table=ext_table,
-            dataset=dataset_name,
-            ds_version=ds_version,
+            dataset=dataset._name,
+            ds_version=dataset.version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
-            timestamp_field=timestamp_field,
+            timestamp_field=dataset.timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
@@ -1530,6 +1510,7 @@ def _pg_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
+            filter=_preproc_filter_to_pycode(dataset, connector.where),
         ),
     )
 
@@ -1581,8 +1562,7 @@ def _pg_ref_to_ext_db_proto(name: str) -> connector_proto.ExtDatabase:
 
 def _kinesis_conn_to_source_proto(
     connector: connectors.KinesisConnector,
-    dataset_name: str,
-    ds_version: int,
+    dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     data_source = connector.data_source
     if data_source._get:
@@ -1602,8 +1582,8 @@ def _kinesis_conn_to_source_proto(
         ext_db,
         connector_proto.Source(
             table=ext_table,
-            dataset=dataset_name,
-            ds_version=ds_version,
+            dataset=dataset._name,
+            ds_version=dataset.version,
             disorder=to_duration_proto(connector.disorder),
             cdc=to_cdc_proto(connector.cdc),
             starting_from=_to_timestamp_proto(connector.since),
@@ -1615,6 +1595,7 @@ def _kinesis_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
+            filter=_preproc_filter_to_pycode(dataset, connector.where),
         ),
     )
 

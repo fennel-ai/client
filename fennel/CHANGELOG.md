@@ -1,4 +1,8 @@
 # Changelog
+
+## [1.3.34] - 2024-06-24
+- Add support for filter during preproc.
+
 ## [1.3.33] - 2024-06-29
 - Protobuf Format Support for Kafka Connector
 
