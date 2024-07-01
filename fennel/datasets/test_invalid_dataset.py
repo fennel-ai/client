@@ -14,6 +14,7 @@ from fennel.datasets import (
     Average,
     Stddev,
     Distinct,
+    ExpDecaySum,
     index,
 )
 from fennel.dtypes import struct, Window, Continuous, Session
@@ -1252,3 +1253,173 @@ def test_invalid_window_aggregation():
                 return a.groupby("user_id", window=Session("19m")).summarize()  # type: ignore
 
     assert str(e.value) == "'GroupBy' object has no attribute 'summarize'"
+
+
+def test_invalid_exponential_aggregation():
+    @source(webhook.endpoint("A1"), cdc="append", disorder="14d")
+    @dataset
+    class A1:
+        user_id: str
+        page_id: str
+        timespent: int
+        event_id: str
+        t: datetime
+
+    with pytest.raises(TypeError) as e:
+
+        @dataset(index=True)
+        class A10:
+            user_id: str = field(key=True)
+            timespent_sum: int
+            t: datetime
+
+            @pipeline
+            @inputs(A1)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby("user_id").aggregate(
+                    timespent_sum=ExpDecaySum(
+                        of="timespent",
+                        window=Continuous("forever"),
+                        half_life="1d",
+                    )
+                )
+
+    assert (
+        str(e.value)
+        == "[TypeError('Field `timespent_sum` has type `float` in `pipeline pipeline_window output value` schema but type `int` in `A10 value` schema.')]"
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset(index=True)
+        class A11:
+            user_id: str = field(key=True)
+            timespent_sum: float
+            t: datetime
+
+            @pipeline
+            @inputs(A1)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby("user_id").aggregate(
+                    timespent_sum=ExpDecaySum(
+                        of="timespent",
+                        window=Continuous("forever"),
+                        half_life=3,
+                    )
+                )
+
+    assert (
+        str(e.value)
+        == "Invalid half life duration for exp decay aggregation: duration 3 must be a specified as a string for eg. 1d/2m/3y."
+    )
+
+    with pytest.raises(Exception) as e:
+
+        @dataset(index=True)
+        class A12:
+            user_id: str = field(key=True)
+            count: int
+            t: datetime
+
+            @pipeline
+            @inputs(A1)
+            def pipeline_window(cls, event: Dataset):
+                return (
+                    event.groupby("user_id", "page_id")
+                    .aggregate(
+                        timespent_sum=ExpDecaySum(
+                            of="timespent",
+                            window=Continuous("forever"),
+                            half_life="1d",
+                        ),
+                        emit="final",
+                    )
+                    .groupby("user_id")
+                    .aggregate(count=Count(window=Continuous("1h")))
+                )
+
+    assert (
+        str(e.value) == "ExpDecaySum aggregation does not support emit='final'."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset(index=True)
+        class A13:
+            user_id: str = field(key=True)
+            count: int
+            t: datetime
+
+            @pipeline
+            @inputs(A1)
+            def pipeline_window(cls, event: Dataset):
+                return (
+                    event.groupby("user_id", "page_id")
+                    .aggregate(
+                        timespent_sum=ExpDecaySum(
+                            of="timespent",
+                            window=Continuous("forever"),
+                            half_life="1d",
+                        )
+                    )
+                    .groupby("user_id")
+                    .aggregate(count=Count(window=Continuous("1h")))
+                )
+
+    assert (
+        str(e.value)
+        == "Cannot add node 'Aggregate' after a terminal node in pipeline : `pipeline_window`."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset(index=True)
+        class A14:
+            user_id: str = field(key=True)
+            count: int
+            t: datetime
+
+            @pipeline
+            @inputs(A1)
+            def pipeline_window(cls, event: Dataset):
+                return (
+                    event.groupby("user_id", "page_id")
+                    .aggregate(
+                        timespent_sum=ExpDecaySum(
+                            of="timespent",
+                            window=Continuous("forever"),
+                            half_life="1d",
+                        )
+                    )
+                    .groupby("user_id")
+                    .aggregate(count=Count(window=Continuous("1h")))
+                )
+
+    assert (
+        str(e.value)
+        == "Cannot add node 'Aggregate' after a terminal node in pipeline : `pipeline_window`."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @dataset(index=True)
+        class A15:
+            user_id: str = field(key=True)
+            timespent_sum: float
+            t: datetime
+
+            @pipeline
+            @inputs(A1)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby("user_id").aggregate(
+                    timespent_sum=ExpDecaySum(
+                        of="page_id",
+                        window=Continuous("forever"),
+                        half_life="1d",
+                    )
+                )
+
+    assert (
+        str(e.value)
+        == "Cannot take exponential decay sum of field page_id of type str"
+    )

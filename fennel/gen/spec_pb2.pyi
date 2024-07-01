@@ -28,6 +28,7 @@ class PreSpec(google.protobuf.message.Message):
     STDDEV_FIELD_NUMBER: builtins.int
     DISTINCT_FIELD_NUMBER: builtins.int
     QUANTILE_FIELD_NUMBER: builtins.int
+    EXP_DECAY_FIELD_NUMBER: builtins.int
     @property
     def sum(self) -> global___Sum: ...
     @property
@@ -46,6 +47,8 @@ class PreSpec(google.protobuf.message.Message):
     def distinct(self) -> global___Distinct: ...
     @property
     def quantile(self) -> global___Quantile: ...
+    @property
+    def exp_decay(self) -> global___ExponentialDecayAggregate: ...
     def __init__(
         self,
         *,
@@ -58,10 +61,11 @@ class PreSpec(google.protobuf.message.Message):
         stddev: global___Stddev | None = ...,
         distinct: global___Distinct | None = ...,
         quantile: global___Quantile | None = ...,
+        exp_decay: global___ExponentialDecayAggregate | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "distinct", b"distinct", "last_k", b"last_k", "max", b"max", "min", b"min", "quantile", b"quantile", "stddev", b"stddev", "sum", b"sum", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "distinct", b"distinct", "last_k", b"last_k", "max", b"max", "min", b"min", "quantile", b"quantile", "stddev", b"stddev", "sum", b"sum", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sum", "average", "count", "last_k", "min", "max", "stddev", "distinct", "quantile"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "distinct", b"distinct", "exp_decay", b"exp_decay", "last_k", b"last_k", "max", b"max", "min", b"min", "quantile", b"quantile", "stddev", b"stddev", "sum", b"sum", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["average", b"average", "count", b"count", "distinct", b"distinct", "exp_decay", b"exp_decay", "last_k", b"last_k", "max", b"max", "min", b"min", "quantile", b"quantile", "stddev", b"stddev", "sum", b"sum", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sum", "average", "count", "last_k", "min", "max", "stddev", "distinct", "quantile", "exp_decay"] | None: ...
 
 global___PreSpec = PreSpec
 
@@ -305,3 +309,29 @@ class Quantile(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_default", b"_default"]) -> typing_extensions.Literal["default"] | None: ...
 
 global___Quantile = Quantile
+
+@typing_extensions.final
+class ExponentialDecayAggregate(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    OF_FIELD_NUMBER: builtins.int
+    NAME_FIELD_NUMBER: builtins.int
+    WINDOW_FIELD_NUMBER: builtins.int
+    HALF_LIFE_SECONDS_FIELD_NUMBER: builtins.int
+    of: builtins.str
+    name: builtins.str
+    @property
+    def window(self) -> window_pb2.Window: ...
+    half_life_seconds: builtins.int
+    def __init__(
+        self,
+        *,
+        of: builtins.str = ...,
+        name: builtins.str = ...,
+        window: window_pb2.Window | None = ...,
+        half_life_seconds: builtins.int = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["half_life_seconds", b"half_life_seconds", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
+
+global___ExponentialDecayAggregate = ExponentialDecayAggregate

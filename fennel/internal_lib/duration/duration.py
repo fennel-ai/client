@@ -16,7 +16,7 @@ Duration = str
 
 
 def duration_to_timedelta(duration_string: Duration) -> timedelta:
-    if type(duration_string) is not str:
+    if type(duration_string) is not str or str.isdigit(duration_string):
         raise TypeError(
             f"duration {duration_string} must be a specified as a string for "
             f"eg. 1d/2m/3y."
