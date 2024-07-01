@@ -1,4 +1,6 @@
 # Changelog
+## [1.3.33] - 2024-06-29
+- Protobuf Format Support for Kafka Connector
 
 ## [1.3.32] - 2024-06-27
 - Fix default value behaviour in lookup from aggregated datasets.

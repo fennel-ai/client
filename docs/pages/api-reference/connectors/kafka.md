@@ -44,9 +44,9 @@ SASL password.
 The name of the kafka topic that needs to be sourced into the dataset.
 </Expandable>
 
-<Expandable title="format" type='"json" | Avro' defaultVal="json">
-The format of the data in Kafka topic. Both `"json"` and 
-[Avro](/api-reference/connectors/avro) supported.
+<Expandable title="format" type='"json" | Avro | Protobuf' defaultVal="json">
+The format of the data in Kafka topic. `"json"`, 
+[Avro](/api-reference/connectors/avro) and [Protobuf](/api-reference/connectors/protobuf) supported.
 </Expandable>
 
 <pre snippet="api-reference/sources/kafka#basic"
@@ -56,6 +56,11 @@ The format of the data in Kafka topic. Both `"json"` and
 <pre snippet="api-reference/sources/kafka_sink#basic"
     status="success" message="Capturing change from a dataset to a Kafka sink"
 ></pre>
+
+:::info
+Fennel supports only Append and Upsert mode CDC with data in Protobuf format. If you require support
+for CDC data format, please reach out to Fennel support.
+:::
 
 #### Errors
 <Expandable title="Connectivity problems">

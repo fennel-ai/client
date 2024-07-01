@@ -20,6 +20,7 @@ import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import google.protobuf.timestamp_pb2
 import kinesis_pb2
+import pycode_pb2
 import schema_pb2
 import schema_registry_pb2
 import sys
@@ -150,19 +151,23 @@ class KafkaFormat(google.protobuf.message.Message):
 
     JSON_FIELD_NUMBER: builtins.int
     AVRO_FIELD_NUMBER: builtins.int
+    PROTOBUF_FIELD_NUMBER: builtins.int
     @property
     def json(self) -> global___JsonFormat: ...
     @property
     def avro(self) -> global___AvroFormat: ...
+    @property
+    def protobuf(self) -> global___ProtobufFormat: ...
     def __init__(
         self,
         *,
         json: global___JsonFormat | None = ...,
         avro: global___AvroFormat | None = ...,
+        protobuf: global___ProtobufFormat | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["json", "avro"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "protobuf", b"protobuf", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "protobuf", b"protobuf", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["json", "avro", "protobuf"] | None: ...
 
 global___KafkaFormat = KafkaFormat
 
@@ -192,6 +197,23 @@ class AvroFormat(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> None: ...
 
 global___AvroFormat = AvroFormat
+
+@typing_extensions.final
+class ProtobufFormat(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SCHEMA_REGISTRY_FIELD_NUMBER: builtins.int
+    @property
+    def schema_registry(self) -> schema_registry_pb2.SchemaRegistry: ...
+    def __init__(
+        self,
+        *,
+        schema_registry: schema_registry_pb2.SchemaRegistry | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> None: ...
+
+global___ProtobufFormat = ProtobufFormat
 
 @typing_extensions.final
 class Reference(google.protobuf.message.Message):
@@ -956,6 +978,7 @@ class Source(google.protobuf.message.Message):
     BOUNDED_FIELD_NUMBER: builtins.int
     IDLENESS_FIELD_NUMBER: builtins.int
     UNTIL_FIELD_NUMBER: builtins.int
+    FILTER_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
@@ -977,6 +1000,8 @@ class Source(google.protobuf.message.Message):
     def idleness(self) -> google.protobuf.duration_pb2.Duration: ...
     @property
     def until(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    @property
+    def filter(self) -> pycode_pb2.PyCode: ...
     def __init__(
         self,
         *,
@@ -994,11 +1019,14 @@ class Source(google.protobuf.message.Message):
         bounded: builtins.bool = ...,
         idleness: google.protobuf.duration_pb2.Duration | None = ...,
         until: google.protobuf.timestamp_pb2.Timestamp | None = ...,
+        filter: pycode_pb2.PyCode | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_idleness", b"_idleness", "cursor", b"cursor", "disorder", b"disorder", "every", b"every", "idleness", b"idleness", "starting_from", b"starting_from", "table", b"table", "until", b"until"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_idleness", b"_idleness", "bounded", b"bounded", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "disorder", b"disorder", "ds_version", b"ds_version", "every", b"every", "idleness", b"idleness", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field", "until", b"until", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_filter", b"_filter", "_idleness", b"_idleness", "cursor", b"cursor", "disorder", b"disorder", "every", b"every", "filter", b"filter", "idleness", b"idleness", "starting_from", b"starting_from", "table", b"table", "until", b"until"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_filter", b"_filter", "_idleness", b"_idleness", "bounded", b"bounded", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "disorder", b"disorder", "ds_version", b"ds_version", "every", b"every", "filter", b"filter", "idleness", b"idleness", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field", "until", b"until", "version", b"version"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_filter", b"_filter"]) -> typing_extensions.Literal["filter"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_idleness", b"_idleness"]) -> typing_extensions.Literal["idleness"] | None: ...
 

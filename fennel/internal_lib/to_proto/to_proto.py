@@ -1702,7 +1702,7 @@ def to_pubsub_format_proto(format: str) -> connector_proto.PubSubFormat:
 
 
 def to_kafka_format_proto(
-    format: Optional[str | connectors.Avro],
+    format: Optional[str | connectors.Avro | connectors.Protobuf],
 ) -> Optional[connector_proto.KafkaFormat]:
     if format is None or format == "json":
         return connector_proto.KafkaFormat(json=connector_proto.JsonFormat())
@@ -1711,6 +1711,20 @@ def to_kafka_format_proto(
             raise ValueError(f"Registry unsupported: {format.registry}")
         return connector_proto.KafkaFormat(
             avro=connector_proto.AvroFormat(
+                schema_registry=schema_registry_proto.SchemaRegistry(
+                    registry_provider=schema_registry_proto.RegistryProvider.CONFLUENT,
+                    url=format.url,
+                    auth=to_auth_proto(
+                        format.username, format.password, format.token
+                    ),
+                )
+            )
+        )
+    if isinstance(format, connectors.Protobuf):
+        if format.registry != "confluent":
+            raise ValueError(f"Registry unsupported: {format.registry}")
+        return connector_proto.KafkaFormat(
+            protobuf=connector_proto.ProtobufFormat(
                 schema_registry=schema_registry_proto.SchemaRegistry(
                     registry_provider=schema_registry_proto.RegistryProvider.CONFLUENT,
                     url=format.url,

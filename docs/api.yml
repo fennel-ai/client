@@ -54,6 +54,7 @@ sidebar:
     title: "Connectors"
     pages:
       - "api-reference/connectors/avro"
+      - "api-reference/connectors/protobuf"
       - "api-reference/connectors/bigquery"
       - "api-reference/connectors/deltalake"
       - "api-reference/connectors/hudi"

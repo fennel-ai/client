@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from fennel.connectors.connectors import ref
+from fennel.connectors.connectors import Protobuf, ref
 import pytest
 
 from fennel.connectors import (
@@ -698,3 +698,61 @@ def test_invalid_preproc_value():
         "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
         == str(e.value)
     )
+
+
+def test_invalid_protobuf_args():
+    with pytest.raises(ValueError) as e:
+        Protobuf(
+            registry="confluent",
+            url="https://psrc-zj6ny.us-east-2.aws.confluent.cloud",
+            username=None,
+            password="password",
+            token="token",
+        )
+    assert (
+        "Token shouldn't be passed when using username/password based authentication"
+        == str(e.value)
+    )
+
+    with pytest.raises(ValueError) as e:
+        Protobuf(
+            registry="confluent",
+            url="https://psrc-zj6ny.us-east-2.aws.confluent.cloud",
+            username="username",
+            password=None,
+            token="token",
+        )
+    assert (
+        "Token shouldn't be passed when using username/password based authentication"
+        == str(e.value)
+    )
+
+    with pytest.raises(ValueError) as e:
+        Protobuf(
+            registry="confluent",
+            url="https://psrc-zj6ny.us-east-2.aws.confluent.cloud",
+            username="username",
+            password=None,
+            token=None,
+        )
+    assert "Both username and password should be non-empty" == str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        Protobuf(
+            registry="confluent",
+            url="https://psrc-zj6ny.us-east-2.aws.confluent.cloud",
+            username=None,
+            password="password",
+            token=None,
+        )
+    assert "Both username and password should be non-empty" == str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        Protobuf(
+            registry="confluent",
+            url="https://psrc-zj6ny.us-east-2.aws.confluent.cloud",
+            username=None,
+            password=None,
+            token=None,
+        )
+    assert "Either username/password or token should be set" == str(e.value)

@@ -347,6 +347,41 @@ class Avro(BaseModel):
     token: Optional[str]
 
 
+class Protobuf(BaseModel):
+    registry: str
+    url: str
+    username: Optional[str]
+    password: Optional[str]
+    token: Optional[str]
+
+    def __init__(
+        self,
+        registry: str,
+        url: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        token: Optional[str] = None,
+    ):
+        if username or password:
+            if token is not None:
+                raise ValueError(
+                    "Token shouldn't be passed when using username/password based authentication"
+                )
+            if username is None or password is None:
+                raise ValueError(
+                    "Both username and password should be non-empty"
+                )
+        elif token is None:
+            raise ValueError("Either username/password or token should be set")
+        super().__init__(
+            registry=registry,
+            url=url,
+            username=username,
+            password=password,
+            token=token,
+        )
+
+
 class Kafka(DataSource):
     bootstrap_servers: str
     security_protocol: Literal["PLAINTEXT", "SASL_PLAINTEXT", "SASL_SSL"]
@@ -358,7 +393,7 @@ class Kafka(DataSource):
         return ["topic"]
 
     def topic(
-        self, topic: str, format: Union[str, Avro] = "json"
+        self, topic: str, format: Union[str, Avro, Protobuf] = "json"
     ) -> KafkaConnector:
         return KafkaConnector(self, topic, format)
 
@@ -637,7 +672,7 @@ class KafkaConnector(DataConnector):
     Kafka."""
 
     topic: str
-    format: Optional[str | Avro]
+    format: Optional[str | Avro | Protobuf]
 
     def __init__(self, source, topic, format):
         self.data_source = source

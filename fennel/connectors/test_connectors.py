@@ -22,6 +22,7 @@ from fennel.connectors import (
     Kafka,
     Kinesis,
     Avro,
+    Protobuf,
     ref,
     S3Connector,
     PubSub,
@@ -1285,6 +1286,76 @@ def test_multiple_sources():
                 "topic": "test_topic",
                 "format": {
                     "avro": {
+                        "schemaRegistry": {
+                            "url": "http://localhost:8000",
+                            "auth": {
+                                "basic": {"username": "user", "password": "pwd"}
+                            },
+                        }
+                    }
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetKafka",
+        "dsVersion": 1,
+        "disorder": "1209600s",
+        "cdc": "Debezium",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+
+    protobuf = Protobuf(
+        registry="confluent",
+        url="http://localhost:8000",
+        username="user",
+        password="pwd",
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        kafka.topic(
+            "test_topic",
+            format=protobuf,
+        ),
+        cdc="debezium",
+        disorder="14d",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetKafka:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetKafka)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "kafkaTopic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrapServers": "localhost:9092",
+                        "securityProtocol": "PLAINTEXT",
+                        "saslMechanism": "PLAIN",
+                        "saslPlainUsername": "test",
+                        "saslPlainPassword": "test",
+                    },
+                },
+                "topic": "test_topic",
+                "format": {
+                    "protobuf": {
                         "schemaRegistry": {
                             "url": "http://localhost:8000",
                             "auth": {
