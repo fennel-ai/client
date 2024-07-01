@@ -22,6 +22,7 @@ from fennel.datasets import (
     Max,
     Sum,
     Average,
+    ExpDecaySum,
     Count,
     Stddev,
     Distinct,
@@ -4443,3 +4444,43 @@ def test_log_to_dataset(client):
         "aGVsbG8=",
         "d29ybGQ=",
     ]
+
+"""
+@dataset
+class RatingActivity:
+    userid: int
+    rating: float
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"])  # type: ignore # noqa
+    t: datetime
+"""
+
+@dataset
+class RatingsExpAggregated:
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne"]) = field(key=True)
+    rating_exp_agg: float
+    rating_exp_agg2: float
+    rating_exp_agg_7d: float
+    t: datetime
+
+    @pipeline
+    @inputs(RatingActivity)
+    def exp_aggregation(cls, activity: Dataset):
+        return activity.groupby("movie").aggregate(
+            rating_exp_agg=ExpDecaySum(of="rating", window=Continuous("forever"), half_life="1d"),
+            rating_exp_agg2=ExpDecaySum(of="rating", window=Continuous("forever"), half_life="2d"),
+            rating_exp_agg_7d=ExpDecaySum(of="rating", window=Continuous("7d"), half_life="1d"),
+        )
+
+
+@mock
+def test_exponential_aggregation(client):
+    client.commit(datasets=[RatingActivity, RatingsExpAggregated], message="test")
+
+    log(RatingActivity,
+        pd.DataFrame({
+            "userid": [1, 2, 3],
+            "rating": [5, 4, 3],
+            "movie": ["Jumanji", "Titanic", "RaOne"],
+            "t": [datetime(2022, 1, 1), datetime(2022, 1, 2), datetime(2022, 1, 3)]
+        })
+    )

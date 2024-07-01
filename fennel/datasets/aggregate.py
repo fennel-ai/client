@@ -3,6 +3,7 @@ from typing import List, Union, Optional
 import fennel.gen.spec_pb2 as spec_proto
 from fennel._vendor.pydantic import BaseModel, Extra, validator  # type: ignore
 from fennel.dtypes import Continuous, Tumbling, Hopping, Session
+from fennel.internal_lib.duration import Duration, duration_to_timedelta
 
 ItemType = Union[str, List[str]]
 
@@ -160,6 +161,27 @@ class Quantile(AggregateType):
     def agg_type(self):
         return "quantile"
 
+
+class ExpDecaySum(AggregateType):
+    of: str
+    half_life: Duration
+
+    def to_proto(self):
+        half_life = duration_to_timedelta(self.half_life)
+        return spec_proto.PreSpec(
+            exp_decay=spec_proto.ExponentialDecayAggregate(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+                half_life_seconds=half_life.seconds,
+            )
+        )
+
+    def signature(self):
+        return f"max_{self.of}_{self.window.signature()}"
+
+    def agg_type(self):
+        return "exponential_decay_aggregate"
 
 class Max(AggregateType):
     of: str

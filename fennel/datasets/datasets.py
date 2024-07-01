@@ -39,6 +39,7 @@ from fennel.datasets.aggregate import (
     Max,
     Stddev,
     Quantile,
+    ExpDecaySum
 )
 from fennel.dtypes.dtypes import (
     get_fennel_struct,
@@ -544,6 +545,8 @@ class Aggregate(_Node):
             elif isinstance(agg, Stddev):
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, Quantile):
+                values[agg.into_field] = pd.Float64Dtype  # type: ignore
+            elif isinstance(agg, ExpDecaySum):
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
@@ -2478,6 +2481,24 @@ class SchemaValidator(Visitor):
                     raise TypeError(
                         f"Cannot get quantile of field {agg.of} of type {dtype_to_string(dtype)}"
                     )
+            elif isinstance(agg, ExpDecaySum):
+                dtype = input_schema.get_type(agg.of)
+                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                    raise TypeError(
+                       f"Cannot take exponential decay sum of field {agg.of} of type {dtype_to_string(dtype)}"
+                    )
+                if agg.half_life is None:
+                    raise ValueError(
+                        f"half_life must be set for ExponentialDecaySum"
+                    )
+                try:
+                    _ = duration_to_timedelta(agg.half_life)
+                except Exception as e:
+                    raise ValueError(
+                        "Invalid half_life value for ExponentialDecaySum: "
+                        f"{agg.half_life}. {str(e)}"
+                    )
+                values[agg.into_field] = dtype  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
 

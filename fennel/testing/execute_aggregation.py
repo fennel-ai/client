@@ -23,6 +23,7 @@ from fennel.datasets import (
     Stddev,
     Quantile,
 )
+from fennel.datasets.aggregate import ExpDecaySum
 from fennel.dtypes import Continuous, Hopping, Tumbling, Session
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype
@@ -39,11 +40,11 @@ FENNEL_FAKE_OF_FIELD = "fennel_fake_of_field"
 
 class AggState(ABC):
     @abstractmethod
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, ts):
         pass
 
     @abstractmethod
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, ts):
         pass
 
     @abstractmethod
@@ -55,11 +56,11 @@ class SumState(AggState):
     def __init__(self):
         self.sum = 0
 
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, _ts):
         self.sum += val
         return self.sum
 
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, _ts):
         self.sum -= val
         return self.sum
 
@@ -71,11 +72,11 @@ class CountState(AggState):
     def __init__(self):
         self.count = 0
 
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, _ts):
         self.count += 1
         return self.count
 
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, _ts):
         self.count -= 1
         return self.count
 
@@ -88,12 +89,12 @@ class CountUniqueState(AggState):
         self.count = 0
         self.counter = Counter()
 
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, _ts):
         self.counter[val] += 1
         self.count = len(self.counter)
         return self.count
 
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, _ts):
         self.counter[val] -= 1
         if self.counter[val] == 0:
             del self.counter[val]
@@ -110,12 +111,12 @@ class AvgState(AggState):
         self.count = 0
         self.default = default
 
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, _ts):
         self.sum += val
         self.count += 1
         return self.get_val()
 
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, _ts):
         self.sum -= val
         self.count -= 1
         return self.get_val()
@@ -132,7 +133,7 @@ class LastKState(AggState):
         self.dedeup = dedup
         self.vals = []
 
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, _ts):
         self.vals.append(val)
         if not self.dedeup:
             return list(reversed(self.vals[-self.k :]))
@@ -145,7 +146,7 @@ class LastKState(AggState):
                     break
         return list(to_ret[: self.k])
 
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, _ts):
         if val in self.vals:
             self.vals.remove(val)
         if not self.dedeup:
@@ -200,13 +201,13 @@ class MinState(AggState):
         self.min_heap = Heap(heap_type="min")
         self.default = default
 
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, _ts):
         if val not in self.counter:
             self.min_heap.push(val)
         self.counter[val] += 1
         return self.min_heap.top()
 
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, _ts):
         if val not in self.counter:
             return self.get_val()
         if self.counter[val] == 1:
@@ -229,13 +230,13 @@ class MaxState(AggState):
         self.max_heap = Heap(heap_type="max")
         self.default = default
 
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, _ts):
         if val not in self.counter:
             self.max_heap.push(val)
         self.counter[val] += 1
         return self.max_heap.top()
 
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, _ts):
         if val not in self.counter:
             return self.get_val()
         if self.counter[val] == 1:
@@ -252,6 +253,44 @@ class MaxState(AggState):
         return val if val else self.default
 
 
+class ExpDecayAggState(AggState):
+    def __init__(self, max_exponent, half_life):
+        self.max_exponent = max_exponent
+        print("max_exponent", max_exponent)
+        print("half_life", half_life)
+        half_life_seconds = duration_to_timedelta(half_life).total_seconds()
+        print("half_life_seconds", half_life_seconds)
+        self.decay = math.log(2)/half_life_seconds
+        self.log_sum_pos = 0
+        self.log_sum_neg = 0
+
+    def add_val_to_state(self, val, ts):
+        print("Here",ts)
+        ts = int(ts.timestamp())
+        if val >=0:
+            self.log_sum_pos += val * math.exp(ts * self.decay - self.max_exponent)
+        else:
+            self.log_sum_pos += -1 * val * math.exp(ts * self.decay - self.max_exponent)
+        return self.get_val()
+
+    def del_val_from_state(self, val, ts):
+        ts = int(ts.timestamp())
+        if val >=0:
+            self.log_sum_pos -= val * (ts * self.decay - self.max_exponent).exp()
+        else:
+            self.log_sum_pos -= -1 * val * (ts * self.decay - self.max_exponent).exp()
+        return self.get_val()
+
+    def get_val(self):
+        """
+        Since exponential decay aggregate depends on the query time
+        we will only return the state required to do the computation
+        at query time.
+        :return:
+        """
+        return [self.log_sum_pos, self.log_sum_neg, self.max_exponent, self.decay]
+
+
 class StddevState(AggState):
     def __init__(self, default):
         self.count = 0
@@ -259,7 +298,7 @@ class StddevState(AggState):
         self.m2 = 0
         self.default = default
 
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, _ts):
         self.count += 1
         delta = val - self.mean
         self.mean += delta / self.count
@@ -267,7 +306,7 @@ class StddevState(AggState):
         self.m2 += delta * delta2
         return self.get_val()
 
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, _ts):
         self.count -= 1
         if self.count == 0:
             self.mean = 0
@@ -294,11 +333,11 @@ class DistinctState(AggState):
     def __init__(self):
         self.counter = Counter()
 
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, _ts):
         self.counter[val] += 1
         return list(self.counter.keys())
 
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, _ts):
         self.counter[val] -= 1
         if self.counter[val] == 0:
             del self.counter[val]
@@ -314,11 +353,11 @@ class QuantileState(AggState):
         self.default = default
         self.vals = SortedList()
 
-    def add_val_to_state(self, val):
+    def add_val_to_state(self, val, _ts):
         self.vals.add(val)
         return self.get_val()
 
-    def del_val_from_state(self, val):
+    def del_val_from_state(self, val, _ts):
         self.vals.remove(val)
         return self.get_val()
 
@@ -327,6 +366,8 @@ class QuantileState(AggState):
             return self.default
         index = int(math.floor(self.p * len(self.vals))) + 1
         return self.vals[min(len(self.vals) - 1, max(index - 1, 0))]
+
+
 
 
 def get_timestamps_for_hopping_window(
@@ -592,8 +633,17 @@ def get_aggregated_df(
 
     state: Dict[int, AggState] = {}
     result_vals = []
+
+    if isinstance(aggregate, ExpDecaySum):
+        max_exponent = max(df[ts_field])
+        max_exponent = int(max_exponent.timestamp())
+        print("max_exponent", max_exponent)
+    else:
+        max_exponent = None
+
     for i, row in df.iterrows():
         val = row.loc[of_field]
+        ts = row[ts_field]
         row_key_fields = []
         for key_field in key_fields:
             row_key_fields.append(row.loc[key_field])
@@ -602,7 +652,7 @@ def get_aggregated_df(
         if row[FENNEL_ROW_TYPE] == -1:
             if key not in state:
                 raise Exception("Delete row without insert row")
-            result_vals.append(state[key].del_val_from_state(val))
+            result_vals.append(state[key].del_val_from_state(val, ts))
         else:
             # Add val to state
             if key not in state:
@@ -627,11 +677,13 @@ def get_aggregated_df(
                     state[key] = DistinctState()
                 elif isinstance(aggregate, Quantile):
                     state[key] = QuantileState(aggregate.default, aggregate.p)
+                elif isinstance(aggregate, ExpDecaySum):
+                    state[key] = ExpDecayAggState(max_exponent, aggregate.half_life )
                 else:
                     raise Exception(
                         f"Unsupported aggregate function {aggregate}"
                     )
-            result_vals.append(state[key].add_val_to_state(val))
+            result_vals.append(state[key].add_val_to_state(val, ts))
 
     df[aggregate.into_field] = result_vals
     if aggregate.into_field != of_field:
