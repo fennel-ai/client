@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime, timezone
+from typing import Optional, List
 
 import pandas as pd
 import pytest
@@ -14,9 +15,9 @@ from fennel.testing import mock
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+"
 
 wh = Webhook(name="fennel_webhook")
+__owner__ = "eng@fennel.ai"
 
 
-@meta(owner="test@test.com")
 @source(wh.endpoint("UserInfoDataset"), cdc="upsert", disorder="14d")
 @dataset
 class UserInfoDataset:
@@ -78,9 +79,9 @@ class TestDataset(unittest.TestCase):
                 response = client.log("fennel_webhook", "UserInfoDataset", df)
             assert (
                 str(e.value)
-                == "Schema validation failed during data insertion to "
-                "`UserInfoDataset` [ValueError('Field `age` is of type "
-                "between, but the value `123` is out of bounds. Error found during checking schema for `UserInfoDataset`.')]"
+                == "Schema validation failed during data insertion to `UserInfoDataset` "
+                "[ValueError('Field `age` is of type between, but Value 123 is out of bounds "
+                "for between type, bounds are [0, 100].')]"
             )
 
         now = datetime.now(timezone.utc)
@@ -107,8 +108,11 @@ class TestDataset(unittest.TestCase):
             with pytest.raises(Exception) as e:
                 response = client.log("fennel_webhook", "UserInfoDataset", df)
             assert (
-                """Schema validation failed during data insertion to `UserInfoDataset` [ValueError("Field 'gender' is of type oneof, but the value 'transgender' is not found in the set of options ['female', 'male']. Error found during checking schema for `UserInfoDataset`."), ValueError("Field 'country_code' is of type oneof, but the value '11' is not found in the set of options [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]. Error found during checking schema for `UserInfoDataset`.")]"""
-                == str(e.value)
+                "Schema validation failed during data insertion to `UserInfoDataset` "
+                '[ValueError("Field `gender` is of type oneof, but Value transgender is not '
+                "in options ['male', 'female'].\"), ValueError('Field `country_code` is "
+                "of type oneof, but Value 11 is not in options [1, 2, 3, 4, 5, 6, 7, 8, 9, "
+                "10].')]" == str(e.value)
             )
 
         now = datetime.now(timezone.utc)
@@ -135,6 +139,35 @@ class TestDataset(unittest.TestCase):
             with pytest.raises(Exception) as e:
                 response = client.log("fennel_webhook", "UserInfoDataset", df)
             assert (
-                """[ValueError('Field `email` is of type regex, but the value `johnfennel` does not match the regex `[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]"""
-                in str(e.value)
+                "Schema validation failed during data insertion to `UserInfoDataset` "
+                "[ValueError('Field `email` is of type regex[str], but Value johnfennel does "
+                "not match regex [a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+.')]"
+                == str(e.value)
             )
+
+    @mock
+    def test_log_with_optional_list_schema(self, client):
+        @source(wh.endpoint("Transactions"), cdc="append", disorder="14d")
+        @dataset
+        class Transactions:
+            user_id: str
+            amount: Optional[List[int]]
+            t: datetime
+
+        client.commit(datasets=[Transactions], message="first_commit")
+
+        # Log correct data
+        now = datetime.now(timezone.utc)
+        df = pd.DataFrame(
+            {
+                "user_id": [1, 2, 3],
+                "amount": [[1, 2, 4], None, []],
+                "t": [
+                    now,
+                    now,
+                    now,
+                ],
+            }
+        )
+        response = client.log("fennel_webhook", "Transactions", df)
+        assert response.status_code == requests.codes.OK, response.json()
