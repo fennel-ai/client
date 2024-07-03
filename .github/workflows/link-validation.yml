@@ -1,0 +1,41 @@
+name: Content Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate-content:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the client repository
+        uses: actions/checkout@v3
+
+      - name: Checkout the turbo repository
+        uses: actions/checkout@v3
+        with:
+          repository: fennel-ai/turbo
+          token: ${{ secrets.TURBO_TOKEN }}
+          path: turbo
+
+      - name: Copy docs folder to turbo repo
+        run: |
+          mkdir -p turbo/apps/docs/_content
+          cp -r docs/* turbo/apps/docs/_content/
+
+      - name: Install pnpm
+        run: |
+          npm install -g pnpm
+
+      - name: Install dependencies
+        run: |
+          cd turbo
+          pnpm install
+
+      - name: Set environment variable and build
+        run: |
+          cd turbo/apps/docs
+          export MODE=EDIT
+          pnpm run build
