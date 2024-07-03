@@ -25,9 +25,10 @@ jobs:
           mkdir -p turbo/apps/docs/_content
           cp -r docs/* turbo/apps/docs/_content/
 
-      - name: Install pnpm
+      - name: Install pnpm and turbo
         run: |
-          npm install -g pnpm
+          npm i -g pnpm
+          npm i -g turbo
 
       - name: Install dependencies
         run: |
@@ -37,5 +38,6 @@ jobs:
       - name: Set environment variable and build
         run: |
           cd turbo/apps/docs
+          pnpm install
           export MODE=EDIT
           pnpm run build
