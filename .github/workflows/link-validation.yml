@@ -37,6 +37,6 @@ jobs:
 
       - name: Set environment variable and build
         run: |
-          cd turbo
+          cd turbo/apps/docs
           export MODE=EDIT
-          pnpm run dev --filter=docs...
+          pnpm run build
