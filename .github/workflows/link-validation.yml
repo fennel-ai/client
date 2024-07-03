@@ -30,17 +30,14 @@ jobs:
           npm i -g pnpm
           npm i -g turbo
 
-      - name: Clear pnpm store
-        run: pnpm store prune
-      
       - name: Install dependencies
         run: |
           cd turbo
-          pnpm install --frozen-lockfile
+          pnpm install --frozen-lockfile --reporter=ndjson
 
       - name: Set environment variable and build
         env:
           MODE: EDIT
         run: |
           cd turbo/apps/docs
-          pnpm run build
+          NODE_OPTIONS="--trace-warnings" pnpm run build
