@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.3.35] - 2024-06-24
+- Fix logging of optional complex dtypes in mock client.
+
 ## [1.3.34] - 2024-06-24
 - Add support for filter during preproc.
 
