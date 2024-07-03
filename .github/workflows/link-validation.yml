@@ -39,4 +39,4 @@ jobs:
         run: |
           cd turbo
           export MODE=EDIT
-          pnpm run build
+          pnpm run dev --filter=docs...
