@@ -37,9 +37,7 @@ jobs:
           pnpm install --frozen-lockfile --reporter=ndjson
 
       - name: Set environment variable and build
-        env:
-          MODE: EDIT
         run: |
           cd turbo
-          pnpm turbo run build --filter docs
+          MODE=EDIT pnpm turbo run build --filter docs
           
