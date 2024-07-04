@@ -40,6 +40,8 @@ jobs:
         env:
           MODE: "EDIT"
         run: |
-          cd turbo
-          pnpm turbo run build --filter docs
+          cd turbo/apps/docs
+          touch .env
+          echo MODE=EDIT >> .env
+          cd ../../ && pnpm turbo run build --filter docs
           
