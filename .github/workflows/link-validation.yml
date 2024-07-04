@@ -39,7 +39,7 @@ jobs:
       - name: Set environment variable and build
         env:
           MODE: EDIT
-          NODE_PATH: turbo/apps/docs/node_modules
         run: |
-          cd turbo/apps/docs
-          NODE_OPTIONS="--trace-warnings" pnpm run build
+          cd turbo
+          pnpm turbo run build --filter docs
+          
