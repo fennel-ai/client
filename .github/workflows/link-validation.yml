@@ -39,5 +39,5 @@ jobs:
       - name: Set environment variable and build
         run: |
           cd turbo
-          MODE=EDIT pnpm turbo run build --filter docs
+          MODE='"EDIT"' pnpm turbo run build --filter docs
           
