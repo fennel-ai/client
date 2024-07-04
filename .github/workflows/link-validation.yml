@@ -33,10 +33,12 @@ jobs:
           pnpm install --frozen-lockfile --reporter=ndjson
 
       - name: Set environment variable and build
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
         run: |
           cd turbo/apps/docs
           touch .env
-          echo HEAD_REF=$GITHUB_REF_NAME >> .env
+          echo HEAD_REF=$GITHUB_HEAD_REF >> .env
           echo GITHUB_TOKEN=$TURBO_TOKEN >> .env
           cat .env
           cd ../../ && pnpm turbo run build --filter docs
