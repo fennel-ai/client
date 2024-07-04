@@ -18,12 +18,8 @@ jobs:
         with:
           repository: fennel-ai/turbo
           token: ${{ secrets.TURBO_TOKEN }}
+          ref: rk/test-link-checking
           path: turbo
-
-      - name: Copy docs folder to turbo repo
-        run: |
-          mkdir -p turbo/apps/docs/_content
-          cp -r docs/* turbo/apps/docs/_content/
 
       - uses: pnpm/action-setup@v4
         name: Install pnpm
@@ -37,11 +33,9 @@ jobs:
           pnpm install --frozen-lockfile --reporter=ndjson
 
       - name: Set environment variable and build
-        env:
-          MODE: "EDIT"
         run: |
           cd turbo/apps/docs
           touch .env
-          echo MODE=EDIT >> .env
+          echo HEAD_REF=$GITHUB_REF_NAME >> .env
           cd ../../ && pnpm turbo run build --filter docs
           
