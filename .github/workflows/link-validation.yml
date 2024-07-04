@@ -37,5 +37,7 @@ jobs:
           cd turbo/apps/docs
           touch .env
           echo HEAD_REF=$GITHUB_REF_NAME >> .env
+          echo GITHUB_TOKEN=$TURBO_TOKEN >> .env
+          cat .env
           cd ../../ && pnpm turbo run build --filter docs
           
