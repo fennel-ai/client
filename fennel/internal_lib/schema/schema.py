@@ -296,66 +296,72 @@ def convert_dtype_to_arrow_type(dtype: schema_proto.DataType) -> pa.DataType:
         raise TypeError(f"Invalid dtype: {dtype}.")
 
 
+def check_val_is_null(val: Any) -> bool:
+    if isinstance(val, (list, tuple, dict, set, np.ndarray, frozendict)):
+        return False
+    try:
+        if pd.isna(val):
+            return True
+        else:
+            return False
+    except ValueError:
+        return False
+
+
 def validate_val_with_dtype(dtype: Type, val):
     proto_dtype = get_datatype(dtype)
     validate_val_with_proto_dtype(proto_dtype, val)
 
 
-def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
+def validate_val_with_proto_dtype(
+    dtype: schema_proto.DataType, val: Any, nullable: bool = False
+):
     """
     The function validates that the value is of the correct type for the given dtype.
 
-    :param dtype:
-    :param val:
+    :param dtype: Proto Dtype of the val
+    :param val: Value
+    :param nullable: If value can be nullable or not
     :return:
     """
+    if nullable and check_val_is_null(val):
+        return True
     if dtype.HasField("optional_type"):
-        try:
-            if not isinstance(
-                val, (list, tuple, dict, set, np.ndarray, frozendict)
-            ) and pd.isna(val):
-                return
-            else:
-                return validate_val_with_proto_dtype(
-                    dtype.optional_type.of, val
-                )
-        # ValueError error occurs when you do something like pd.notna([1, 2, None])
-        except ValueError:
-            return validate_val_with_proto_dtype(dtype.optional_type.of, val)
+        return validate_val_with_proto_dtype(dtype.optional_type.of, val, True)
     elif dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
-        if type(val) is not int and type(val) is not np.int64:
+        if not isinstance(val, (int, np.int64)):
             raise ValueError(
                 f"Expected type int, got {type(val)} for value {val}"
             )
     elif dtype == schema_proto.DataType(double_type=schema_proto.DoubleType()):
-        if type(val) is not float and type(val) is not np.float64:
+        if not isinstance(val, (float, np.float64, np.float32, np.float16)):
             raise ValueError(
                 f"Expected type float, got {type(val)} for value {val}"
             )
     elif dtype == schema_proto.DataType(string_type=schema_proto.StringType()):
-        if type(val) is not str:
+        if not isinstance(val, str):
             raise ValueError(
                 f"Expected type str, got {type(val)} for value {val}"
             )
     elif dtype == schema_proto.DataType(
         timestamp_type=schema_proto.TimestampType()
     ):
-        if type(val) not in [datetime, pd.Timestamp, np.datetime64]:
+        if not isinstance(val, (datetime, pd.Timestamp, np.datetime64, int)):
             raise ValueError(
                 f"Expected type datetime, got {type(val)} for value {val}"
             )
     elif dtype == schema_proto.DataType(date_type=schema_proto.DateType()):
-        if type(val) is not date:
+        if not isinstance(val, date):
             raise ValueError(
                 f"Expected type date, got {type(val)} for value {val}"
             )
     elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
-        if type(val) is not bool:
+        if not isinstance(val, bool):
             raise ValueError(
                 f"Expected type bool, got {type(val)} for value {val}"
             )
     elif dtype.embedding_type.embedding_size > 0:
-        if type(val) not in [np.ndarray, list]:
+        if not isinstance(val, (np.ndarray, list)):
             raise ValueError(
                 f"Expected type np.ndarray, got {type(val)} for value {val}"
             )
@@ -364,7 +370,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
                 f"Expected embedding of size {dtype.embedding_type.embedding_size}, got {len(val)} for value {val}"
             )
     elif dtype.array_type.of != schema_proto.DataType():
-        if type(val) not in [np.ndarray, list]:
+        if not isinstance(val, (np.ndarray, list)):
             raise ValueError(
                 f"Expected type list, got {type(val)} for value {val}"
             )
@@ -372,13 +378,13 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
         for v in val:
             validate_val_with_proto_dtype(dtype.array_type.of, v)
     elif dtype.map_type.key != schema_proto.DataType():
-        if type(val) not in [dict, np.ndarray, list, frozendict]:
+        if not isinstance(val, (dict, np.ndarray, list, frozendict)):
             raise ValueError(
                 f"Expected type dict/list[tuple], got {type(val)} for value {val}"
             )
         # Recursively check the type of each element in the dict
         # Check that all keys are strings
-        if type(val) is dict:
+        if isinstance(val, (dict, frozendict)):
             for k in val.keys():
                 if type(k) is not str:
                     raise ValueError(
@@ -400,7 +406,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
         if bw_type.dtype == schema_proto.DataType(
             int_type=schema_proto.IntType()
         ):
-            if type(val) is not int:
+            if not isinstance(val, (int, np.int64)):
                 raise ValueError(
                     f"Expected type int, got {type(val)} for value {val}"
                 )
@@ -409,7 +415,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
         elif bw_type.dtype == schema_proto.DataType(
             double_type=schema_proto.DoubleType()
         ):
-            if type(val) is not float:
+            if not isinstance(val, (float, np.float64)):
                 raise ValueError(
                     f"Expected type float, got {type(val)} for value {val}"
                 )
@@ -417,19 +423,19 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
             max_bound = bw_type.max.float
         if min_bound > val or max_bound < val:
             raise ValueError(
-                f"Value {val} is out of bounds for between type {dtype}, bounds are"
+                f"Value {val} is out of bounds for between type, bounds are "
                 f"[{min_bound}, {max_bound}]"
             )
     elif dtype.one_of_type != schema_proto.OneOf():
         of_type = dtype.one_of_type
         if of_type.of == schema_proto.DataType(int_type=schema_proto.IntType()):
-            if type(val) is not int:
+            if not isinstance(val, (int, np.int64)):
                 raise ValueError(
                     f"Expected type int, got {type(val)} for value {val}"
                 )
             if val not in [int(x.int) for x in of_type.options]:
                 raise ValueError(
-                    f"Value {val} is not in options {of_type.options} for oneof type {dtype}"
+                    f"Value {val} is not in options {[x.int for x in of_type.options]}"
                 )
         elif of_type.of == schema_proto.DataType(
             string_type=schema_proto.StringType()
@@ -440,7 +446,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
                 )
             if val not in [str(x.string) for x in of_type.options]:
                 raise ValueError(
-                    f"Value {val} is not in options {of_type.options} for oneof type {dtype}"
+                    f"Value {val} is not in options {[x.string for x in of_type.options]}"
                 )
     elif dtype.regex_type != schema_proto.RegexType():
         if type(val) is not str:
@@ -452,9 +458,12 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
                 f"Value {val} does not match regex {dtype.regex_type.pattern}"
             )
     elif dtype.struct_type != schema_proto.StructType():
-        if type(val) is not dict:
-            # TODO(Aditya): Actually compare the structs
-            return
+        if hasattr(val, FENNEL_STRUCT):
+            val = val.as_json()
+        if not isinstance(val, (dict, frozendict)):
+            raise ValueError(
+                f"Expected type fennel struct or dict, got `{type(val).__name__}` for value `{val}`"
+            )
         # Recursively check the type of each element in the dict
         for field in dtype.struct_type.fields:
             if field.name not in val:
@@ -463,11 +472,7 @@ def validate_val_with_proto_dtype(dtype: schema_proto.DataType, val):
                 )
             validate_val_with_proto_dtype(field.dtype, val[field.name])
     elif dtype.decimal_type != schema_proto.DecimalType():
-        if (
-            not isinstance(val, PythonDecimal)
-            and not isinstance(val, float)
-            and not isinstance(val, int)
-        ):
+        if not isinstance(val, (PythonDecimal, float, int)):
             raise ValueError(
                 f"Expected type python Decimal or float or int, got `{type(val).__name__}` for value `{val}`"
             )
@@ -598,8 +603,6 @@ def validate_field_in_df(
                 f"`{df[name].dtype}`. Error found during "
                 f"checking schema for `{entity_name}`."
             )
-        for i, row in df[name].items():
-            validate_val_with_proto_dtype(dtype, row)
     elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
         if (
             df[name].dtype != np.bool_
@@ -622,9 +625,13 @@ def validate_field_in_df(
                 f"`{df[name].dtype}`. Error found during "
                 f"checking schema for `{entity_name}`."
             )
-        # Check that the embedding is a list of floats of size embedding_size
         for i, row in df[name].items():
-            validate_val_with_proto_dtype(dtype, row)
+            try:
+                validate_val_with_proto_dtype(dtype, row, is_nullable)
+            except ValueError as e:
+                raise ValueError(
+                    f"Field `{name}` is of type embedding, but {e}."
+                )
     elif dtype.array_type.of != schema_proto.DataType():
         if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
             arrow_type
@@ -636,7 +643,10 @@ def validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
-            validate_val_with_proto_dtype(dtype, row)
+            try:
+                validate_val_with_proto_dtype(dtype, row, is_nullable)
+            except ValueError as e:
+                raise ValueError(f"Field `{name}` is of type array, but {e}.")
     elif dtype.map_type.key != schema_proto.DataType():
         if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
             arrow_type
@@ -648,8 +658,10 @@ def validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
-            validate_val_with_proto_dtype(dtype, row)
-
+            try:
+                validate_val_with_proto_dtype(dtype, row, is_nullable)
+            except ValueError as e:
+                raise ValueError(f"Field `{name}` is of type map, but {e}.")
     elif dtype.between_type != schema_proto.Between():
         bw_type = dtype.between_type
         if bw_type.dtype == schema_proto.DataType(
@@ -666,8 +678,6 @@ def validate_field_in_df(
                     f"`{df[name].dtype}`. Error found during "
                     f"checking schema for `{entity_name}`."
                 )
-            min_bound = bw_type.min.int
-            max_bound = bw_type.max.int
         elif bw_type.dtype == schema_proto.DataType(
             double_type=schema_proto.DoubleType()
         ):
@@ -684,22 +694,13 @@ def validate_field_in_df(
                     f"`{df[name].dtype}`. Error found during "
                     f"checking schema for `{entity_name}`."
                 )
-            min_bound = bw_type.min.float  # type: ignore
-            max_bound = bw_type.max.float  # type: ignore
         else:
             raise TypeError("'between' type only accepts int or float types")
         for i, row in df[name].items():
-            if (
-                row < min_bound
-                or row > max_bound
-                or (bw_type.strict_min and row == min_bound)
-                or (bw_type.strict_max and row == max_bound)
-            ):
-                raise ValueError(
-                    f"Field `{name}` is of type between, but the "
-                    f"value `{row}` is out of bounds. Error found during "
-                    f"checking schema for `{entity_name}`."
-                )
+            try:
+                validate_val_with_proto_dtype(dtype, row, is_nullable)
+            except ValueError as e:
+                raise ValueError(f"Field `{name}` is of type between, but {e}.")
     elif dtype.one_of_type != schema_proto.OneOf():
         of_type = dtype.one_of_type
         if of_type.of == schema_proto.DataType(int_type=schema_proto.IntType()):
@@ -714,7 +715,6 @@ def validate_field_in_df(
                     f"`{df[name].dtype}`. Error found during "
                     f"checking schema for `{entity_name}`."
                 )
-            options = set(int(x.int) for x in of_type.options)
         elif of_type.of == schema_proto.DataType(
             string_type=schema_proto.StringType()
         ):
@@ -730,21 +730,13 @@ def validate_field_in_df(
                     f"`{df[name].dtype}`. Error found during "
                     f"checking schema for `{entity_name}`."
                 )
-            options = set(
-                str(x.string) for x in of_type.options  # type: ignore
-            )
         else:
             raise TypeError("oneof type only accepts int or str types")
-
         for i, row in df[name].items():
-            if row not in options:
-                sorted_options = sorted(options)
-                raise ValueError(
-                    f"Field '{name}' is of type oneof, but the "
-                    f"value '{row}' is not found in the set of options "
-                    f"{sorted_options}. Error found during "
-                    f"checking schema for `{entity_name}`."
-                )
+            try:
+                validate_val_with_proto_dtype(dtype, row, is_nullable)
+            except ValueError as e:
+                raise ValueError(f"Field `{name}` is of type oneof, but {e}.")
     elif dtype.regex_type.pattern != "":
         if (
             df[name].dtype != object
@@ -758,15 +750,12 @@ def validate_field_in_df(
                 f"`{df[name].dtype}`. Error found during "
                 f"checking schema for `{entity_name}`."
             )
-        regex = dtype.regex_type.pattern
         for i, row in df[name].items():
-            full_match = "^" + regex + "$"
-            if not re.match(full_match, row):
+            try:
+                validate_val_with_proto_dtype(dtype, row, is_nullable)
+            except ValueError as e:
                 raise ValueError(
-                    f"Field `{name}` is of type regex, but the "
-                    f"value `{row}` does not match the regex "
-                    f"`{regex}`. Error found during "
-                    f"checking schema for `{entity_name}`."
+                    f"Field `{name}` is of type regex[str], but {e}."
                 )
     elif dtype.struct_type.name != "":
         if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
@@ -778,10 +767,10 @@ def validate_field_in_df(
                 f"checking schema for `{entity_name}`."
             )
         for i, row in df[name].items():
-            # Recursively check the type of each element in the dict
-            if type(row) is dict:
-                validate_val_with_proto_dtype(field.dtype, row)
-            # TODO(Aditya) : Fix the non dict case
+            try:
+                validate_val_with_proto_dtype(dtype, row, is_nullable)
+            except ValueError as e:
+                raise ValueError(f"Field `{name}` is of type struct, but {e}.")
     elif dtype.decimal_type.scale != 0:
         if df[name].dtype != object and df[name].dtype != pd.ArrowDtype(
             arrow_type
@@ -791,9 +780,11 @@ def validate_field_in_df(
                 f"column in the dataframe is not a decimal. Error found during "
                 f"checking schema for `{entity_name}`."
             )
-        # Recursively check the type of each element in the column
         for i, row in df[name].items():
-            validate_val_with_proto_dtype(field.dtype, row)
+            try:
+                validate_val_with_proto_dtype(dtype, row, is_nullable)
+            except ValueError as e:
+                raise ValueError(f"Field `{name}` is of type decimal, but {e}.")
     else:
         raise ValueError(f"Field `{name}` has unknown data type `{dtype}`.")
 
