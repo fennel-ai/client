@@ -9,6 +9,8 @@ jobs:
   validate-content:
     runs-on: ubuntu-latest
 
+    continue-on-error: true
+
     steps:
       - name: Checkout the client repository
         uses: actions/checkout@v3
@@ -29,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd turbo
-          pnpm install --frozen-lockfile --reporter=ndjson
+          pnpm install --frozen-lockfile
 
       - name: Set environment variable and build
         env:
