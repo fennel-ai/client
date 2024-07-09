@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.4.1] - 2024-07-16
+- Fixed rendering of lambda function in unformatted code.
+
 ## [1.4.0] - 2024-07-15
 - Added mock client support keyed window aggregations. 
 

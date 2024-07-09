@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional, List
 
 import pandas as pd
+import pytest
 
 from fennel.datasets import dataset, field, Dataset, pipeline, Sum
 from fennel.dtypes import Continuous
@@ -10,9 +11,10 @@ from fennel.internal_lib.to_proto.source_code import (
     get_featureset_core_code,
     get_dataset_core_code,
     lambda_to_python_regular_func,
-    remove_source_and_sink_decorator,
+    remove_decorators,
 )
 from fennel.lib import includes, meta, inputs, outputs
+from fennel.testing import mock
 
 
 @meta(owner="me@fennel.ai")
@@ -200,7 +202,7 @@ def test_lambda_source_code_gen():
     y1 = get_lambda(lambda x: x * (x + 2) + x + 4)
 
     y2 = get_lambda(get_lambda(get_lambda(get_lambda(get_lambda(lambda x:
-    x * x + 1 + 2 * 3 + 4)))))
+                                                                x * x + 1 + 2 * 3 + 4)))))
     expected_source_code = """lambda x: x * x + 1 + 2 * 3 + 4"""
     assert expected_source_code == lambda_to_python_regular_func(y2)
 
@@ -268,8 +270,8 @@ def test_longer_lambda_source_code_gen():
 
     lambda_func = get_lambda(
         lambda x: extract_keys(x, json_col='json_payload',
-            keys=['user_id', 'latitude', 'longitude', 'token'],
-            values=["a", "b", "c", "d"]),
+                               keys=['user_id', 'latitude', 'longitude', 'token'],
+                               values=["a", "b", "c", "d"]),
     )
     expected_source_code = """lambda x: extract_keys(x, json_col='json_payload', keys=['user_id', 'latitude', 'longitude', 'token'], values=["a", "b", "c", "d"])"""
     assert expected_source_code == lambda_to_python_regular_func(lambda_func)
@@ -277,25 +279,27 @@ def test_longer_lambda_source_code_gen():
     # More complex multi-line lambda
     lambda_func = get_lambda(
         get_lambda(lambda x: extract_keys(x, json_col='json_payload',
-            keys=['user_id', 'latitude', 'longitude', 'token'],
-            values=["a", "b", "c", "d"])))
+                                          keys=['user_id', 'latitude', 'longitude', 'token'],
+                                          values=["a", "b", "c", "d"])))
     expected_source_code = """lambda x: extract_keys(x, json_col='json_payload', keys=['user_id', 'latitude', 'longitude', 'token'], values=["a", "b", "c", "d"])"""
     assert expected_source_code == lambda_to_python_regular_func(lambda_func)
 
     # Create a complex lambda with a lambda inside
     lambda_func = get_lambda(
-        lambda x: extract_location_index(x, index_col='location_index',
+        lambda x: extract_location_index(
+            x, index_col='location_index',
             latitude_col='latitude', longitude_col='longitude',
-            resolution=lambda x: x + 1)
+            resolution=lambda x: x + 1
+        )
     )
-    expected_source_code = """lambda x: extract_location_index(x, index_col='location_index', latitude_col='latitude', longitude_col='longitude', resolution=lambda x: x + 1)"""
+    expected_source_code = """lambda x: extract_location_index( x, index_col='location_index', latitude_col='latitude', longitude_col='longitude', resolution=lambda x: x + 1 )"""
     assert expected_source_code == lambda_to_python_regular_func(lambda_func)
 
 
 # fmt: on
 
 
-def test_source_code_removal():
+def test_decorator_removal():
     example_1 = """
 @source(
     s3.bucket(bucket_name="fennel-demo-data", prefix="outbrain_1682921988000/documents_meta.csv"),
@@ -321,7 +325,7 @@ class DocumentsMeta:
 
     assert (
         expected_1.rstrip()
-        == remove_source_and_sink_decorator(example_1).rstrip()
+        == remove_decorators(example_1, ["source", "sink"]).rstrip()
     )
 
     example_2 = """
@@ -336,8 +340,7 @@ class UserInfoDataset:
     timestamp: datetime
 """
 
-    expected_2 = """
-@meta(owner="test@test.com")
+    expected_2 = """@meta(owner="test@test.com")
 
 @dataset
 class UserInfoDataset:
@@ -350,7 +353,7 @@ class UserInfoDataset:
 
     assert (
         expected_2.strip()
-        == remove_source_and_sink_decorator(example_2).strip()
+        == remove_decorators(example_2, ["source", "sink"]).rstrip()
     )
 
     sink_example = """
@@ -365,8 +368,7 @@ class UserInfoDataset:
     timestamp: datetime
 """
 
-    expected_sink = """
-@meta(owner="test@test.com")
+    expected_sink = """@meta(owner="test@test.com")
 
 @dataset
 class UserInfoDataset:
@@ -378,5 +380,100 @@ class UserInfoDataset:
 """
     assert (
         expected_sink.strip()
-        == remove_source_and_sink_decorator(sink_example).strip()
+        == remove_decorators(sink_example, ["source", "sink"]).rstrip()
+    )
+
+    meta_example = """
+@meta(owner="test@test.com")
+@sink(kafka_sink.topic("stitchfix_demo"), env="prod", cdc="debezium")
+@dataset
+class UserInfoDataset:
+    user_id: int = field(key=True)
+    name: str
+    age: between(int, 0, 100)
+    gender: oneof(str, ["male", "female", "non-binary"])
+    timestamp: datetime
+    """
+
+    expected_meta = """
+@sink(kafka_sink.topic("stitchfix_demo"), env="prod", cdc="debezium")
+@dataset
+class UserInfoDataset:
+    user_id: int = field(key=True)
+    name: str
+    age: between(int, 0, 100)
+    gender: oneof(str, ["male", "female", "non-binary"])
+    timestamp: datetime
+    """
+    assert (
+        expected_meta.strip()
+        == remove_decorators(meta_example, ["meta"]).rstrip()
+    )
+
+
+@mock
+def test_invalid_lambda(client):
+    @meta(owner="me@fennel.ai")
+    @dataset
+    class UserAgeFilterFailed:
+        name: str = field(key=True)
+        age: int
+        city: str
+        timestamp: datetime
+
+        @pipeline
+        @inputs(UserAge)
+        def pipeline(cls, event: Dataset):
+            return (
+                event.filter(
+                    lambda x: (x["age"] >= 10)
+                    & (x["age"] >= 20)
+                    & (x["age"] >= 30)
+                )
+                .filter(
+                    lambda x: (x["age"] >= 10)
+                    & (x["age"] >= 10)
+                    & (x["age"] >= 10)
+                )
+                .filter(
+                    lambda x: (x["age"] >= 10)
+                    & (x["age"] >= 10)
+                    & (x["age"] >= 10)
+                )
+            )
+
+    with pytest.raises(ValueError) as e:
+        client.commit(
+            datasets=[UserAge, UserAgeFilterFailed], message="first_message"
+        )
+
+    assert (
+        str(e.value)
+        == """Not able to choose lambda function between lambda x: (x["age"] >= 10) and lambda x: (x["age"] >= 10)& (x["age"] >= 10). If lambda contains more than one line, please define the function within the parentheses."""
+    )
+
+    @meta(owner="me@fennel.ai")
+    @dataset
+    class UserAgeFilterPassed:
+        name: str = field(key=True)
+        age: int
+        city: str
+        timestamp: datetime
+
+        @pipeline
+        @inputs(UserAge)
+        def pipeline(cls, event: Dataset):
+            return event.filter(
+                lambda x: (
+                    (x["age"] >= 10)
+                    & (x["age"] >= 10)
+                    & (x["age"] >= 10)
+                    & (x["age"] >= 10)
+                    & (x["age"] >= 10)
+                    & (x["age"] >= 10)
+                )
+            )
+
+    client.commit(
+        datasets=[UserAge, UserAgeFilterPassed], message="first_message"
     )

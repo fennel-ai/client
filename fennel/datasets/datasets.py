@@ -369,6 +369,26 @@ class _Node(Generic[T]):
         return Union_(self, other)
 
 
+def get_all_operators() -> List[str]:
+    """
+    Get all the operators a user can use on a Dataset in a pipeline.
+    Returns:
+        List[str] -> List operator names in string.
+    """
+    class_dict = dict(_Node.__dict__)
+    output = []
+    for member in class_dict:
+        if "__" not in member and member not in [
+            "signature",
+            "isignature",
+            "schema",
+            "dsschema",
+            "num_out_edges",
+        ]:
+            output.append(member)
+    return output
+
+
 class Transform(_Node):
     def __init__(self, node: _Node, func: Callable, schema: Optional[Dict]):
         super().__init__()
