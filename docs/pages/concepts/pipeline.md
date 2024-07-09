@@ -79,7 +79,7 @@ Typically, streaming engines support three types of windows:
 3. **Session** - dynamic length based on user events. Often used for very specific 
    purposes different from other kinds of windows.
 
-Fennel supports all of these via the [window operator](/api-reference/operators/window). 
+Fennel supports all of these via the [window parameter](/api-reference/operators/groupby). 
 However, Machine learning use cases often require another kind of window - Continuous.  
 
 **Continuous Windows**
