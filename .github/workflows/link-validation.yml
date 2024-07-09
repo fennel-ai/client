@@ -1,0 +1,44 @@
+name: Content Validation
+
+on:
+  pull_request:
+    branches:
+      - pre-1.0
+
+jobs:
+  validate-content:
+    runs-on: ubuntu-latest
+
+    continue-on-error: true
+
+    steps:
+      - name: Checkout the client repository
+        uses: actions/checkout@v3
+
+      - name: Checkout the turbo repository
+        uses: actions/checkout@v3
+        with:
+          repository: fennel-ai/turbo
+          token: ${{ secrets.TURBO_TOKEN }}
+          path: turbo
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 8
+          run_install: false
+
+      - name: Install dependencies
+        run: |
+          cd turbo
+          pnpm install --frozen-lockfile
+      - name: Set environment variable and build
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+        run: |
+          cd turbo/apps/docs
+          touch .env
+          echo HEAD_REF=$GITHUB_HEAD_REF >> .env
+          echo GITHUB_TOKEN=$TURBO_TOKEN >> .env
+          cat .env
+          cd ../../ && pnpm turbo run build --filter docs
