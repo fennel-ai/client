@@ -33,7 +33,7 @@ external sources and b) in pipelines as data is being transformed.
 
 Fennel console exposes all write side errors for you to see and fix. (Note: 
 the number & rate of of errors is exposed as metric behind Prometheus endpoint too
-in case you want to do automated alerting on it. See [observability](/observability/prometheus/) 
+in case you want to do automated alerting on it. See [observability](/observability/prometheus) 
 for details.
 
 ![Diagram](/assets/errors.png)
