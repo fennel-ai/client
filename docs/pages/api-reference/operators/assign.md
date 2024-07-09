@@ -16,7 +16,7 @@ on the dataset.
 
 <Expandable title="dtype" type="Type">
 The data type of the new column to be added - must be a valid Fennel supported
-[data type](/api-reference#api-reference/data-types).
+[data type](/api-reference/data-types).
 </Expandable>
 
 <Expandable title="func" type="Callable[pd.Dataframe, pd.Series[T]]">

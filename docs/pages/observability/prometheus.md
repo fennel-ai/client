@@ -7,7 +7,7 @@ status: 'published'
 # Prometheus Metrics
 
 For monitoring/alerting, Fennel exposes all relevant metrics behind a Prometheus
-endpoint. You can point [Grafana](/monitoring/prometheus), [New Relic](/monitoring/newrelic), 
+endpoint. You can point [Grafana](/observability/grafana), [New Relic](/observability/newrelic), 
 or any other metric system that speaks the Prometheus protocol towards this endpoint. 
 Once your metric system is connected to Fennel's Prometheus endpoint, you can 
 seamlessly use your existing monitoring/alerting stack.

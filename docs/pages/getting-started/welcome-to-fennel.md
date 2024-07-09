@@ -51,7 +51,7 @@ cases. Here are some of the most common ones:
 [Start](/getting-started/quickstart) here if you want to directly dive deep into
  an end-to-end example.&#x20;
 
-Or if you are not in a hurry, read about the main [concepts](/getting-started/concepts) 
+Or if you are not in a hurry, read about the main [concepts](/concepts/introduction/) 
 first followed by some more details about Fennel's [architecture](/architecture/overview).
 
 We, the team behind Fennel, have thoroughly enjoyed building Fennel and hope 
