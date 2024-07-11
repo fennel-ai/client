@@ -2150,10 +2150,10 @@ class TestLastOp(unittest.TestCase):
             LastMovieSeen,
             pd.DataFrame(
                 {
-                    "userid": [1, 2, 3],
-                    "rating": [4.5, 3, 5],
-                    "movie": ["Jumanji", "Titanic", "Titanic"],
-                    "t": [now, now, now],
+                    "userid": [1, 2, 3, 3, 3],
+                    "rating": [4.5, 3, 5, 2, 3],
+                    "movie": ["Jumanji", "Titanic", "RaOne", "ABC", "RaOne"],
+                    "t": [now, now, now, now, now],
                 }
             ),
         )

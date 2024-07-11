@@ -383,6 +383,7 @@ def add_deletes(
     # Initialize the delete timestamps list with length of the dataframe
     delete_timestamps = [None] * len(sorted_df)
 
+    rows_to_delete = []
     for i in range(len(sorted_df)):
         row = sorted_df.iloc[i]
         row_key_fields = []
@@ -393,6 +394,11 @@ def add_deletes(
             last_index_for_key[key] = i
         else:
             last_index = last_index_for_key[key]
+            if row[ts_col] == sorted_df.iloc[last_index][ts_col]:
+                # Delete this row if the timestamp is the same as the last row
+                rows_to_delete.append(last_index)
+                last_index_for_key[key] = i
+                continue
             # Add the timestamp of the current row as the delete timestamp for the last row
             # Subtract 1 microsecond to ensure that the delete timestamp is strictly less than the
             # timestamp of the next row
@@ -402,6 +408,13 @@ def add_deletes(
 
     # Add the delete timestamp as a hidden column to the dataframe
     sorted_df[FENNEL_DELETE_TIMESTAMP] = delete_timestamps
+
+    if len(rows_to_delete) > 0:
+        # Drop the rows that are marked for deletion
+        sorted_df = sorted_df.drop(index=rows_to_delete)
+        # Reset the index
+        sorted_df = sorted_df.reset_index(drop=True)
+
     # Cast the timestamp column to arrow timestamp type
     sorted_df[FENNEL_DELETE_TIMESTAMP] = sorted_df[
         FENNEL_DELETE_TIMESTAMP
