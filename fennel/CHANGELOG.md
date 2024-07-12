@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.3.38] - 2024-07-10
+- Return json instead of response in client methods
+
 ## [1.3.36] - 2024-07-10
 - Add support for exponential decay in aggregation. 
 
