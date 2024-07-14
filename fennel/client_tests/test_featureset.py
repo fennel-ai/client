@@ -18,7 +18,7 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.testing import mock
+from fennel.testing import mock, log
 
 ################################################################################
 #                           Feature Single Extractor Unit Tests
@@ -832,4 +832,59 @@ def test_featureset_name_query(client):
         13,
         14,
         pd.NA,
+    ]
+
+
+@mock
+def test_embedding_features(client):
+    @dataset(version=4, index=True)
+    class ImageEmbeddings:
+        image_id: int = field(key=True)
+        embedding: Embedding[2]
+        ts: datetime
+
+    @featureset
+    class ImageFeature:
+        image_id: int
+        embedding: Optional[Embedding[2]] = F(ImageEmbeddings.embedding)
+
+    @featureset
+    class ImageFeatureWithDefault:
+        image_id: int = F(ImageFeature.image_id)
+        embedding2: Embedding[2] = F(
+            ImageEmbeddings.embedding, default=[11.0, 13.2]
+        )
+
+    client.commit(
+        datasets=[ImageEmbeddings],
+        featuresets=[ImageFeature, ImageFeatureWithDefault],
+        message="committing image embeddings",
+    )
+
+    log(
+        ImageEmbeddings,
+        df=pd.DataFrame(
+            {
+                "image_id": [1, 2, 3],
+                "embedding": [[1.0, 2.0], [2.0, 3.0], [3.0, 4.0]],
+                "ts": [datetime.now(), datetime.now(), datetime.now()],
+            }
+        ),
+    )
+
+    feature_df = client.query(
+        outputs=[ImageFeature, ImageFeatureWithDefault],
+        inputs=[ImageFeature.image_id],
+        input_dataframe=pd.DataFrame({"ImageFeature.image_id": [1, 2, 4]}),
+    )
+    assert feature_df.shape == (3, 4)
+    assert feature_df["ImageFeature.embedding"].tolist() == [
+        [1.0, 2.0],
+        [2.0, 3.0],
+        pd.NA,
+    ]
+    assert feature_df["ImageFeatureWithDefault.embedding2"].tolist() == [
+        [1.0, 2.0],
+        [2.0, 3.0],
+        [11.0, 13.2],
     ]
