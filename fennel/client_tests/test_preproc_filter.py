@@ -11,7 +11,7 @@ from fennel.datasets import (
     field,
     pipeline,
 )
-from fennel.lib import inputs
+from fennel.lib import inputs, meta
 from fennel.testing import mock
 
 __owner__ = "nitin@fennel.ai"
@@ -23,11 +23,36 @@ webhook = Webhook(name="fennel_webhook")
 def test_preproc_filter(client):
     if sys.version_info >= (3, 10):
 
+        @meta(owner="nitin@fennel.ai")
         @source(
             webhook.endpoint("A1"),
             cdc="append",
             disorder="14d",
-            where=lambda x: x["age"] >= 5,
+            env="prod",
+            where=lambda x: ((x["age"] > 0) & (x["age"] % 100 == 1)),
+        )
+        @source(
+            webhook.endpoint("A1"),
+            cdc="append",
+            disorder="14d",
+            env="staging",
+            where=lambda x: (
+                (x["age"] > 0)
+                & (x["age"] % 100 == 1)
+                & (x["age"] > 0)
+                & (x["age"] % 100 == 1)
+                & True
+                & (x["age"] > 0)
+                & (x["age"] % 100 == 1)
+                & (x["age"] > 0)
+                & (x["age"] % 100 == 1)
+                & True
+                & (x["age"] > 0)
+                & (x["age"] % 100 == 1)
+                & (x["age"] > 0)
+                & (x["age"] % 100 == 1)
+                & True
+            ),
         )
         @dataset
         class A1:
@@ -46,13 +71,13 @@ def test_preproc_filter(client):
             def pipeline_window(cls, event: Dataset):
                 return event.groupby("user_id").latest()
 
-        client.commit(datasets=[A1, A2], message="first_commit")
+        client.commit(datasets=[A1, A2], message="first_commit", env="prod")
 
         now = datetime.now(timezone.utc)
         df = pd.DataFrame(
             {
                 "user_id": [1, 1, 1, 2, 2, 3, 4, 5, 5, 5],
-                "age": [10, 11, 12, 1, 2, 2, 3, 3, 4, 5],
+                "age": [100, 11, 12, 1, 2, 2, 3, 3, 4, 5],
                 "t": [now, now, now, now, now, now, now, now, now, now],
             }
         )
@@ -64,4 +89,4 @@ def test_preproc_filter(client):
             A2,
             keys=pd.DataFrame({"user_id": [1, 2, 3, 4, 5]}),
         )
-        assert df["age"].tolist() == [12, pd.NA, pd.NA, pd.NA, 5]
+        assert df["age"].tolist() == [pd.NA, 1, pd.NA, pd.NA, pd.NA]
