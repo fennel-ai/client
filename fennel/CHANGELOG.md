@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.4.0] - 2024-07-15
+- Added mock client support keyed window aggregations. 
+
 ## [1.3.38] - 2024-07-10
 - Return json instead of response in client methods
 

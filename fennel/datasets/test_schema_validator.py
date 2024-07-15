@@ -15,7 +15,7 @@ from fennel.datasets import (
     Min,
     Max,
 )
-from fennel.dtypes import Window, Continuous, Session
+from fennel.dtypes import Window, Continuous, Session, Tumbling
 from fennel.lib import meta, inputs
 
 
@@ -1508,4 +1508,120 @@ def test_aggregation_after_eager_emit_not_allowed():
     assert (
         str(e.value)
         == "Cannot add node 'Aggregate' after a terminal node in pipeline : `pipeline_window`."
+    )
+
+
+def test_discrete_aggregations():
+    @dataset
+    class Event:
+        id: int
+        user_id: int
+        ts1: datetime = field(timestamp=True)
+        ts2: datetime
+        value: int
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class Aggregate1:
+            user_id: int = field(key=True)
+            ts1: datetime = field(timestamp=True)
+            count: int
+            sum: int
+
+            @pipeline
+            @inputs(Event)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby("user_id").aggregate(
+                    count=Count(window=Continuous("1h")),
+                    sum=Sum(window=Tumbling("1h"), of="value"),
+                )
+
+    assert (
+        str(e.value)
+        == "Windows in all specs have to be either discrete (Hopping/Tumbling/Session) or non-discrete "
+        "(Continuous/Forever) not both in pipeline `pipeline_window`."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class Aggregate2:
+            user_id: int
+            ts1: datetime = field(timestamp=True)
+            count: int
+            sum: int
+
+            @pipeline
+            @inputs(Event)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby(window=Tumbling("1h")).aggregate(
+                    count=Count(window=Continuous("1h")),
+                )
+
+    assert (
+        str(e.value)
+        == "There should be at least one key in 'groupby' to use 'window'"
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class Aggregate3:
+            user_id: int = field(key=True)
+            ts1: datetime = field(timestamp=True)
+            count: int
+            sum: int
+
+            @pipeline
+            @inputs(Event)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby("user_id").aggregate(
+                    count=Count(window=Session("1h")),
+                )
+
+    assert (
+        str(e.value)
+        == "1 validation error for Count\nwindow\n  Aggregation window must be of type Continuous, Hopping or Tumbling (type=value_error)"
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class Aggregate4:
+            user_id: int = field(key=True)
+            window: Window = field(key=True)
+            ts1: datetime = field(timestamp=True)
+            count: int
+
+            @pipeline
+            @inputs(Event)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby(
+                    "user_id", window=Tumbling("1h")
+                ).aggregate(count=Count(), along="ts2")
+
+    assert (
+        str(e.value)
+        == "'along' param can only be used with non-discrete windows (Continuous/Forever) and lazy emit strategy."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class Aggregate5:
+            user_id: int = field(key=True)
+            ts1: datetime = field(timestamp=True)
+            count: int
+
+            @pipeline
+            @inputs(Event)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby("user_id").aggregate(
+                    count=Count(window=Tumbling("1h")), along="ts2"
+                )
+
+    assert (
+        str(e.value)
+        == "'along' param can only be used with non-discrete windows (Continuous/Forever) and lazy emit strategy."
     )

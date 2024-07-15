@@ -10,7 +10,7 @@ from fennel.internal_lib.duration import Duration, duration_to_timedelta
 def bucketize(
     timestamp: Union[datetime, pd.Timestamp],
     window: Union[Duration, Tuple[Duration, Duration], Hopping, Tumbling],
-) -> pd.Series:
+) -> Window:
     """
     This helper function applies a lambda function on the timestamp column mentioned in the parameter.
     Lambda function fetches the last window which ended just before the given timestamp.
