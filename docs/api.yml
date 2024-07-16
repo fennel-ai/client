@@ -80,6 +80,7 @@ sidebar:
       - "api-reference/aggregations/stddev"
       - "api-reference/aggregations/sum"
       - "api-reference/aggregations/quantile"
+      - "api-reference/aggregations/exponential-decay-sum"
 
   - slug: "api-reference/decorators"
     title: "Decorators"

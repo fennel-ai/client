@@ -7,7 +7,7 @@ import google.protobuf.duration_pb2 as duration_proto
 
 import fennel.gen.dataset_pb2 as proto
 from fennel.datasets import Dataset, Pipeline, Visitor
-from fennel.datasets.datasets import EmitStrategy
+from fennel.datasets.datasets import WINDOW_FIELD_NAME, EmitStrategy
 from fennel.internal_lib.duration import (
     duration_to_timedelta,
 )
@@ -151,20 +151,36 @@ class Serializer(Visitor):
             if obj.emit_strategy == EmitStrategy.Eager
             else proto.Aggregate.Final
         )
-        return proto.Operator(
-            id=obj.signature(),
-            is_root=obj == self.terminal_node,
-            pipeline_name=self.pipeline_name,
-            dataset_name=self.dataset_name,
-            ds_version=self.dataset_version,
-            aggregate=proto.Aggregate(
-                operand_id=self.visit(obj.node),
-                keys=obj.keys,
-                specs=[agg.to_proto() for agg in obj.aggregates],
-                along=obj.along,
-                emit_strategy=emit_strategy,
-            ),
-        )
+        if obj.window_field:
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=obj == self.terminal_node,
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                window=proto.WindowOperatorKind(
+                    operand_id=self.visit(obj.node),
+                    window_type=obj.window_field.to_proto(),
+                    field=WINDOW_FIELD_NAME,
+                    by=obj.keys_without_window,
+                    summary=None,
+                ),
+            )
+        else:
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=obj == self.terminal_node,
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                aggregate=proto.Aggregate(
+                    operand_id=self.visit(obj.node),
+                    keys=obj.keys,
+                    specs=[agg.to_proto() for agg in obj.aggregates],
+                    along=obj.along,
+                    emit_strategy=emit_strategy,
+                ),
+            )
 
     def visitJoin(self, obj):
         if obj.on is not None:
@@ -306,22 +322,6 @@ class Serializer(Visitor):
             latest=proto.Latest(
                 operand_id=self.visit(obj.node),
                 by=obj.keys,
-            ),
-        )
-
-    def visitWindow(self, obj):
-        return proto.Operator(
-            id=obj.signature(),
-            is_root=obj == self.terminal_node,
-            pipeline_name=self.pipeline_name,
-            dataset_name=self.dataset_name,
-            ds_version=self.dataset_version,
-            window=proto.WindowOperatorKind(
-                operand_id=self.visit(obj.node),
-                window_type=obj.window.to_proto(),
-                field=obj.field,
-                by=obj.input_keys,
-                summary=None,
             ),
         )
 

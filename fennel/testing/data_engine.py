@@ -1,6 +1,8 @@
 import copy
 import logging
 import types
+import math
+
 from collections import defaultdict
 from dataclasses import dataclass
 from dataclasses import field
@@ -29,6 +31,7 @@ from fennel.datasets import (
     Pipeline,
     Quantile,
     Stddev,
+    ExpDecaySum,
 )
 from fennel.datasets.datasets import (
     get_index,
@@ -60,7 +63,6 @@ from fennel.testing.test_utils import (
 
 TEST_PORT = 50051
 TEST_DATA_PORT = 50052
-
 
 logger = logging.getLogger(__name__)
 internal_webhook = Webhook(name="_internal_fennel_webhook")
@@ -566,17 +568,16 @@ class DataEngine(object):
         keys[FENNEL_ORDER] = np.arange(len(keys))
         # Sort the keys by timestamp
         keys = keys.sort_values(timestamp_field)
-
         right_df = self.datasets[cls_name].data
         try:
             df = self._as_of_lookup(
                 cls_name, keys, right_df, join_columns, timestamp_field
             )
+            df = self._materialize_intermediate_df(df, ts)
         except ValueError as err:
             raise ValueError(err)
         df.rename(columns={FENNEL_TIMESTAMP: timestamp_field}, inplace=True)
         df = df.set_index(FENNEL_ORDER).loc[np.arange(len(df)), :]
-
         found = df[FENNEL_LOOKUP].apply(lambda x: x is not np.nan)
         df.drop(columns=[FENNEL_LOOKUP], inplace=True)
         if len(fields) > 0:
@@ -585,6 +586,40 @@ class DataEngine(object):
         # Drop all hidden columns
         df = df.loc[:, ~df.columns.str.startswith("__fennel")]
         return self._cast_after_lookup(cls_name, df), found
+
+    def _materialize_intermediate_df(self, df: pd.DataFrame, ts: pd.Series):
+        """
+        For some cases such as Exponential Decay Aggregation the column in the dataframe only stores
+        an intermediate state of the computation. This function materializes the intermediate state
+        to the final state that is to be returned.
+        """
+        for col in df.columns:
+            if not col.endswith("@@internal_state"):
+                continue
+
+            _, col_name, intermediate_col_type, _ = col.split("@@")
+            res = []
+            if intermediate_col_type == "exp_decay":
+                for i in range(len(df)):
+                    val = df[col].iloc[i]
+                    # Intermediate state is a list of 4 values
+                    if not isinstance(val, list) or len(val) != 4:
+                        res.append(pd.NA)
+                        continue
+                    log_sum_pos, log_sum_neg, max_exponent, decay = val
+                    reduced_val = 0.0
+                    timestamp_sec = ts.iloc[i].timestamp()
+                    exp = max_exponent + log_sum_pos - (timestamp_sec * decay)
+                    reduced_val += math.exp(exp) if exp > -25.0 else 0.0
+                    exp = max_exponent + log_sum_neg - (timestamp_sec * decay)
+                    reduced_val -= math.exp(exp) if exp > -25.0 else 0.0
+                    res.append(reduced_val)
+                df[col_name] = res
+            else:
+                raise ValueError(
+                    f"Intermediate column type {intermediate_col_type} not supported"
+                )
+        return df
 
     def _as_of_lookup(
         self,
