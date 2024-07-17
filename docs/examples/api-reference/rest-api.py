@@ -92,3 +92,19 @@ class TestRestAPI(unittest.TestCase):
         response = requests.post(url, headers=headers, data=req)
         assert response.status_code == requests.codes.OK, response.json()
         # /docsnip
+
+    @patch("requests.get")
+    def test_lineage(self, mock_get):
+        mock_get.return_value.status_code = 200
+
+        # docsnip lineage
+        url = "{}/api/v1/lineage".format(SERVER)
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer <API-TOKEN>",
+            "X-FENNEL-BRANCH": BRANCH_NAME,
+        }
+
+        response = requests.get(url, headers=headers)
+        assert response.status_code == requests.codes.OK, response.json()
+        # /docsnip

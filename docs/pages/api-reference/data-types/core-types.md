@@ -15,6 +15,10 @@ Implemented as signed 8 byte integer (`int64`)
 Implemented as signed 8 byte float with `double` precision
 </Expandable>
 
+<Expandable type="Decimal[int]">
+Implemented as signed 16 byte integer (`int128`) with int val as precision.
+</Expandable>
+
 <Expandable type="bool">
 Implemented as standard 1 byte boolean
 </Expandable>
@@ -56,6 +60,12 @@ Describes a timestamp, implemented as microseconds since Unix epoch (so minimum
 granularity is microseconds). Can be natively parsed from multiple formats though
 internally is stored as 8-byte signed integer describing timestamp as microseconds
 from epoch in UTC.
+</Expandable>
+
+<Expandable type="date">
+Describes a date, implemented as days since Unix epoch. Can be natively parsed from 
+multiple formats though internally is stored as 8-byte signed integer describing 
+date as days epoch in UTC.
 </Expandable>
 
 <Expandable type="struct {k1: T1, k2: T2, ...}">
