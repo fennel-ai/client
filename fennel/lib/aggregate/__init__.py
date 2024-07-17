@@ -10,4 +10,5 @@ from fennel.datasets.aggregate import (
     AggregateType,
     Stddev,
     Quantile,
+    ExpDecaySum,
 )

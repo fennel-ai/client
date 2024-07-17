@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime
 
 from fennel.connectors import Kafka, S3, source
@@ -70,25 +71,26 @@ def test_stacked_sources_in_env(client):
 
 @mock
 def test_filter_preproc_source(client):
-    s3 = S3(name="mys3")
+    if sys.version_info >= (3, 10):
+        s3 = S3(name="mys3")
 
-    # docsnip where
-    # docsnip-highlight start
-    @source(
-        s3.bucket("data", path="*"),
-        disorder="1w",
-        cdc="append",
-        where=lambda x: x["skuid"] >= 1000,
-    )
-    # docsnip-highlight end
-    @dataset
-    class Order:
-        uid: int
-        skuid: int
-        at: datetime
+        # docsnip where
+        # docsnip-highlight start
+        @source(
+            s3.bucket("data", path="*"),
+            disorder="1w",
+            cdc="append",
+            where=lambda x: x["skuid"] >= 1000,
+        )
+        # docsnip-highlight end
+        @dataset
+        class Order:
+            uid: int
+            skuid: int
+            at: datetime
 
-    client.commit(
-        message="some commit msg",
-        datasets=[Order],
-    )
-    # /docsnip
+        client.commit(
+            message="some commit msg",
+            datasets=[Order],
+        )
+        # /docsnip

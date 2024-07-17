@@ -20,131 +20,141 @@ from fennel.testing.execute_aggregation import (
 
 def test_sum_state():
     state = SumState()
-    assert state.add_val_to_state(1) == 1
-    assert state.add_val_to_state(2) == 3
-    assert state.add_val_to_state(3) == 6
-    assert state.del_val_from_state(2) == 4
-    assert state.del_val_from_state(1) == 3
-    assert state.add_val_to_state(3) == 6
+    now = datetime.now(timezone.utc)
+    assert state.add_val_to_state(1, now) == 1
+    assert state.add_val_to_state(2, now) == 3
+    assert state.add_val_to_state(3, now) == 6
+    assert state.del_val_from_state(2, now) == 4
+    assert state.del_val_from_state(1, now) == 3
+    assert state.add_val_to_state(3, now) == 6
     assert state.get_val() == 6
 
 
 def test_count_state():
     state = CountState()
-    assert state.add_val_to_state(1) == 1
-    assert state.add_val_to_state(2) == 2
-    assert state.add_val_to_state(3) == 3
-    assert state.del_val_from_state(2) == 2
-    assert state.del_val_from_state(1) == 1
-    assert state.add_val_to_state(3) == 2
+    now = datetime.now(timezone.utc)
+    assert state.add_val_to_state(1, now) == 1
+    assert state.add_val_to_state(2, now) == 2
+    assert state.add_val_to_state(3, now) == 3
+    assert state.del_val_from_state(2, now) == 2
+    assert state.del_val_from_state(1, now) == 1
+    assert state.add_val_to_state(3, now) == 2
     assert state.get_val() == 2
 
 
 def test_count_unique_state():
     state = CountUniqueState()
-    assert state.add_val_to_state(1) == 1
-    assert state.add_val_to_state(1) == 1
-    assert state.add_val_to_state(2) == 2
-    assert state.add_val_to_state(3) == 3
-    assert state.del_val_from_state(2) == 2
-    assert state.del_val_from_state(1) == 2
-    assert state.del_val_from_state(1) == 1
-    assert state.add_val_to_state(3) == 1
+    now = datetime.now(timezone.utc)
+    assert state.add_val_to_state(1, now) == 1
+    assert state.add_val_to_state(1, now) == 1
+    assert state.add_val_to_state(2, now) == 2
+    assert state.add_val_to_state(3, now) == 3
+    assert state.del_val_from_state(2, now) == 2
+    assert state.del_val_from_state(1, now) == 2
+    assert state.del_val_from_state(1, now) == 1
+    assert state.add_val_to_state(3, now) == 1
 
 
 def test_avg_state():
     state = AvgState(-1.0)
+    now = datetime.now(timezone.utc)
     assert state.get_val() == -1.0
-    assert state.add_val_to_state(1) == 1
-    assert state.add_val_to_state(2) == 1.5
-    assert state.add_val_to_state(3) == 2.0
-    assert state.del_val_from_state(2) == 2
-    assert state.del_val_from_state(1) == 3
+    assert state.add_val_to_state(1, now) == 1
+    assert state.add_val_to_state(2, now) == 1.5
+    assert state.add_val_to_state(3, now) == 2.0
+    assert state.del_val_from_state(2, now) == 2
+    assert state.del_val_from_state(1, now) == 3
     assert state.get_val() == 3
-    assert state.del_val_from_state(3) == -1.0
+    assert state.del_val_from_state(3, now) == -1.0
     assert state.get_val() == -1.0
 
 
 def test_lastk_state():
     state = LastKState(k=3, dedup=False)
-    assert state.add_val_to_state(1) == [1]
-    assert state.add_val_to_state(2) == [2, 1]
-    assert state.add_val_to_state(3) == [3, 2, 1]
-    assert state.add_val_to_state(4) == [4, 3, 2]
-    assert state.add_val_to_state(5) == [5, 4, 3]
+    now = datetime.now(timezone.utc)
+    assert state.add_val_to_state(1, now) == [1]
+    assert state.add_val_to_state(2, now) == [2, 1]
+    assert state.add_val_to_state(3, now) == [3, 2, 1]
+    assert state.add_val_to_state(4, now) == [4, 3, 2]
+    assert state.add_val_to_state(5, now) == [5, 4, 3]
 
-    assert state.del_val_from_state(3) == [5, 4, 2]
-    assert state.del_val_from_state(4) == [5, 2, 1]
-    assert state.del_val_from_state(5) == [2, 1]
-    assert state.del_val_from_state(5) == [2, 1]
+    assert state.del_val_from_state(3, now) == [5, 4, 2]
+    assert state.del_val_from_state(4, now) == [5, 2, 1]
+    assert state.del_val_from_state(5, now) == [2, 1]
+    assert state.del_val_from_state(5, now) == [2, 1]
 
 
 def test_lastk_state_dedup():
     state = LastKState(k=3, dedup=True)
-    assert state.add_val_to_state(1) == [1]
-    assert state.add_val_to_state(2) == [2, 1]
-    assert state.add_val_to_state(1) == [1, 2]
-    assert state.add_val_to_state(3) == [3, 1, 2]
-    assert state.add_val_to_state(4) == [4, 3, 1]
-    assert state.add_val_to_state(1) == [1, 4, 3]
+    now = datetime.now(timezone.utc)
+    assert state.add_val_to_state(1, now) == [1]
+    assert state.add_val_to_state(2, now) == [2, 1]
+    assert state.add_val_to_state(1, now) == [1, 2]
+    assert state.add_val_to_state(3, now) == [3, 1, 2]
+    assert state.add_val_to_state(4, now) == [4, 3, 1]
+    assert state.add_val_to_state(1, now) == [1, 4, 3]
 
-    assert state.del_val_from_state(3) == [1, 4, 2]
-    assert state.del_val_from_state(4) == [1, 2]
+    assert state.del_val_from_state(3, now) == [1, 4, 2]
+    assert state.del_val_from_state(4, now) == [1, 2]
 
 
 def test_min_state():
     state = MinState(default=3.0)
+    now = datetime.now(timezone.utc)
     assert state.get_val() == 3.0
-    assert state.add_val_to_state(1) == 1
-    assert state.add_val_to_state(2) == 1
-    assert state.add_val_to_state(3) == 1
-    assert state.del_val_from_state(2) == 1
-    assert state.del_val_from_state(1) == 3
-    assert state.add_val_to_state(3) == 3
+    assert state.add_val_to_state(1, now) == 1
+    assert state.add_val_to_state(2, now) == 1
+    assert state.add_val_to_state(3, now) == 1
+    assert state.del_val_from_state(2, now) == 1
+    assert state.del_val_from_state(1, now) == 3
+    assert state.add_val_to_state(3, now) == 3
     assert state.get_val() == 3
-    assert state.del_val_from_state(3) == 3
+    assert state.del_val_from_state(3, now) == 3
     assert state.get_val() == 3
-    assert state.del_val_from_state(3) == 3.0
+    assert state.del_val_from_state(3, now) == 3.0
 
 
 def test_max_state():
     state = MaxState(default=3.0)
+    now = datetime.now(timezone.utc)
     assert state.get_val() == 3.0
-    assert state.add_val_to_state(1) == 1
-    assert state.add_val_to_state(2) == 2
-    assert state.add_val_to_state(3) == 3
-    assert state.del_val_from_state(2) == 3
-    assert state.del_val_from_state(1) == 3
-    assert state.add_val_to_state(3) == 3
+    assert state.add_val_to_state(1, now) == 1
+    assert state.add_val_to_state(2, now) == 2
+    assert state.add_val_to_state(3, now) == 3
+    assert state.del_val_from_state(2, now) == 3
+    assert state.del_val_from_state(1, now) == 3
+    assert state.add_val_to_state(3, now) == 3
     assert state.get_val() == 3
-    assert state.del_val_from_state(3) == 3
+    assert state.del_val_from_state(3, now) == 3
     assert state.get_val() == 3
-    assert state.del_val_from_state(3) == 3.0
+    assert state.del_val_from_state(3, now) == 3.0
 
 
 def test_stddev_state():
     state = StddevState(default=-1.0)
-    assert state.add_val_to_state(1) == 0
-    assert state.add_val_to_state(1) == 0
-    assert state.add_val_to_state(10) == sqrt(18)
-    assert state.del_val_from_state(1) == 4.5
-    assert state.del_val_from_state(1) == 0
+    now = datetime.now(timezone.utc)
+    assert state.add_val_to_state(1, now) == 0
+    assert state.add_val_to_state(1, now) == 0
+    assert state.add_val_to_state(10, now) == sqrt(18)
+    assert state.del_val_from_state(1, now) == 4.5
+    assert state.del_val_from_state(1, now) == 0
     assert state.get_val() == 0
-    assert state.del_val_from_state(10) == -1.0
+    assert state.del_val_from_state(10, now) == -1.0
 
 
 def test_distinct_state():
     state = DistinctState()
-    assert state.add_val_to_state(1) == [1]
-    assert state.add_val_to_state(1) == [1]
-    assert state.add_val_to_state(2) == [1, 2]
+    now = datetime.now(timezone.utc)
+    assert state.add_val_to_state(1, now) == [1]
+    assert state.add_val_to_state(1, now) == [1]
+    assert state.add_val_to_state(2, now) == [1, 2]
     assert state.get_val() == [1, 2]
-    assert state.add_val_to_state(3) == [1, 2, 3]
-    assert state.del_val_from_state(2) == [1, 3]
-    assert state.del_val_from_state(1) == [1, 3]
-    assert state.add_val_to_state(3) == [1, 3]
+    assert state.add_val_to_state(3, now) == [1, 2, 3]
+    assert state.del_val_from_state(2, now) == [1, 3]
+    assert state.del_val_from_state(1, now) == [1, 3]
+    assert state.add_val_to_state(3, now) == [1, 3]
     assert state.get_val() == [1, 3]
-    assert state.del_val_from_state(3) == [1, 3]
+    assert state.del_val_from_state(3, now) == [1, 3]
 
 
 def test_get_timestamps_for_hopping_window():
@@ -216,27 +226,28 @@ def test_get_timestamps_for_session_window():
         data.groupby("a")
         .apply(
             get_timestamps_for_session_window,
-            key_fields=["a"],
+            key_fields_without_window=["a"],
             ts_field="ts_field",
             gap=1,
+            is_window_key_field=False,
         )
         .reset_index()
     )
 
     assert output["ts_field"].to_list() == [
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 7, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 7, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 3, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 9, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 9, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 9, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 9, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 9, tzinfo=timezone.utc),
-        datetime(2020, 1, 2, 13, 0, 14, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 7, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 7, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 3, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 9, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 9, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 9, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 9, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 9, 1, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 13, 0, 14, 1, tzinfo=timezone.utc),
     ]

@@ -27,6 +27,7 @@ from fennel.internal_lib.schema import (
 from fennel.internal_lib.to_proto import to_sync_request_proto
 from fennel.internal_lib.utils import cast_col_to_pandas
 from fennel.utils import check_response, to_columnar_json
+from fennel.internal_lib.schema import get_primitive_dtype
 
 V1_API = "/api/v1"
 
@@ -625,12 +626,15 @@ class Client:
             "timestamp_column": timestamp_column,
             "s3_output": _s3_connector_dict(output_s3) if output_s3 else None,
         }
-        return self._post_json(
+        response = self._post_json(
             "{}/query_offline".format(
                 V1_API,
             ),
             req,
         )
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+        return response.json()
 
     def track_offline_query(self, request_id):
         """Get the progress of query offline run.
@@ -647,9 +651,12 @@ class Client:
         indicates that all processing has been completed successfully.
 
         """
-        return self._get(
+        response = self._get(
             f"{V1_API}/query_offline/status?request_id={request_id}"
         )
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+        return response.json()
 
     def cancel_offline_query(self, request_id):
         """Cancel the query offline run.
@@ -666,10 +673,13 @@ class Client:
         indicates that all processing has been completed successfully.
 
         """
-        return self._post_json(
+        response = self._post_json(
             f"{V1_API}/query_offline/cancel?request_id={request_id}",
             {},
         )
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+        return response.json()
 
     # ----------------------- Debug API's --------------------------------------
 
@@ -728,14 +738,13 @@ class Client:
                 found,
             )
         result = pd.DataFrame(resp_json["data"])
-
         # Get the schema
         output_dtypes = {}
         for column in result.columns:
             if isinstance(dataset, Dataset):
                 for field in dataset.fields:
                     if field.name == column:
-                        dtype = field.dtype
+                        dtype = get_primitive_dtype(field.dtype)
                         if fennel_is_optional(dtype):
                             output_dtypes[column] = dtype
                         else:

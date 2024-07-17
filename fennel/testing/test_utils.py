@@ -10,12 +10,12 @@ from google.protobuf.json_format import MessageToDict
 
 from fennel._vendor import jsondiff  # type: ignore
 from fennel._vendor.requests import Response  # type: ignore
-from fennel.dtypes.dtypes import FENNEL_STRUCT
+from fennel.dtypes.dtypes import FENNEL_STRUCT, Window
 from fennel.gen.dataset_pb2 import Operator, Filter, Transform, Assign
 from fennel.gen.featureset_pb2 import Extractor
 from fennel.gen.pycode_pb2 import PyCode
-from fennel.gen.schema_pb2 import DSSchema, DataType, Field
-from fennel.internal_lib.schema import convert_dtype_to_arrow_type
+from fennel.gen.schema_pb2 import DSSchema, DataType, Field, TimestampType
+from fennel.internal_lib.schema import convert_dtype_to_arrow_type, get_datatype
 from fennel.internal_lib.utils import parse_datetime
 
 FENNEL_DELETE_TIMESTAMP = "__fennel_delete_timestamp__"
@@ -383,6 +383,7 @@ def add_deletes(
     # Initialize the delete timestamps list with length of the dataframe
     delete_timestamps = [None] * len(sorted_df)
 
+    rows_to_delete = []
     for i in range(len(sorted_df)):
         row = sorted_df.iloc[i]
         row_key_fields = []
@@ -393,6 +394,11 @@ def add_deletes(
             last_index_for_key[key] = i
         else:
             last_index = last_index_for_key[key]
+            if row[ts_col] == sorted_df.iloc[last_index][ts_col]:
+                # Delete this row if the timestamp is the same as the last row
+                rows_to_delete.append(last_index)
+                last_index_for_key[key] = i
+                continue
             # Add the timestamp of the current row as the delete timestamp for the last row
             # Subtract 1 microsecond to ensure that the delete timestamp is strictly less than the
             # timestamp of the next row
@@ -402,8 +408,23 @@ def add_deletes(
 
     # Add the delete timestamp as a hidden column to the dataframe
     sorted_df[FENNEL_DELETE_TIMESTAMP] = delete_timestamps
+
+    if len(rows_to_delete) > 0:
+        # Drop the rows that are marked for deletion
+        sorted_df = sorted_df.drop(index=rows_to_delete)
+        # Reset the index
+        sorted_df = sorted_df.reset_index(drop=True)
+
     # Cast the timestamp column to arrow timestamp type
     sorted_df[FENNEL_DELETE_TIMESTAMP] = sorted_df[
         FENNEL_DELETE_TIMESTAMP
     ].astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
     return sorted_df
+
+
+def get_window_data_type() -> DataType:
+    return get_datatype(Window)
+
+
+def get_timestamp_data_type() -> DataType:
+    return DataType(timestamp_type=TimestampType())

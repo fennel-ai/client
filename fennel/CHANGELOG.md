@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.4.1] - 2024-07-16
+- Fixed rendering of lambda function in unformatted code.
+
+## [1.4.0] - 2024-07-15
+- Added mock client support keyed window aggregations. 
+
+## [1.3.38] - 2024-07-10
+- Return json instead of response in client methods
+
+## [1.3.36] - 2024-07-10
+- Add support for exponential decay in aggregation. 
+
+## [1.3.35] - 2024-06-24
+- Fix logging of optional complex dtypes in mock client.
+
 ## [1.3.34] - 2024-06-24
 - Add support for filter during preproc.
 
