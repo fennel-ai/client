@@ -30,7 +30,7 @@ explore Fennel locally without needing a Fennel server.
 ## Deploying Fennel Server
 
 Fennel runs as a single tenant system inside your cloud so that your data and 
-code never leave your cloud perimeter. See [deployment model](/security/deployment-model)
+code never leave your cloud perimeter. See [deployment model](/security-compliance/deployment-model)
 for details. 
 
 With this deployment model, here are the steps for deploying Fennel servers in 
