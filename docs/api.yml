@@ -21,6 +21,7 @@ sidebar:
     pages:
       - "api-reference/rest-api/query"
       - "api-reference/rest-api/log"
+      - "api-reference/rest-api/lineage"
 
 
   - slug: "api-reference/data-types"
