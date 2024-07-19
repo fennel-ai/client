@@ -236,6 +236,19 @@ class Serializer(Visitor):
             ),
         )
 
+    def visitSelect(self, obj):
+        return proto.Operator(
+            id=obj.signature(),
+            is_root=obj == self.terminal_node,
+            pipeline_name=self.pipeline_name,
+            dataset_name=self.dataset_name,
+            ds_version=self.dataset_version,
+            drop=proto.Drop(
+                operand_id=self.visit(obj.node),
+                dropcols=obj.drop_columns,
+            ),
+        )
+
     def visitDropNull(self, obj):
         return proto.Operator(
             id=obj.signature(),

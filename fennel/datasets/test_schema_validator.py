@@ -139,6 +139,60 @@ def test_drop_schema_validation_drop_empty():
     )
 
 
+def test_select_schema_valid_names():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abc@xyx.com")
+        @dataset
+        class A:
+            x: int = field(key=True)
+            y: int
+            t: datetime
+
+        @meta(owner="abc@xyz.ai")
+        @dataset
+        class B:
+            y: int
+            t: datetime
+
+            @pipeline
+            @inputs(A)
+            def my_pipeline(cls, a: Dataset):
+                return a.select(["x", "z"])
+
+    assert (
+        str(e.value)
+        == """invalid select - '[Pipeline:my_pipeline]->select node' field : `z` not found in '[Dataset:A]'"""
+    )
+
+
+def test_select_schema_no_key():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abc@xyx.com")
+        @dataset
+        class A:
+            x: int = field(key=True)
+            y: int
+            t: datetime
+
+        @meta(owner="abc@xyz.ai")
+        @dataset
+        class B:
+            y: int
+            t: datetime
+
+            @pipeline
+            @inputs(A)
+            def my_pipeline(cls, a: Dataset):
+                return a.select(["y"])
+
+    assert (
+        str(e.value)
+        == """invalid select - '[Pipeline:my_pipeline]->select node' key field : `x` must be in columns"""
+    )
+
+
 def test_rename_duplicate_names_one():
     with pytest.raises(ValueError) as e:
 

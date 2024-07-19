@@ -93,7 +93,7 @@ def test_invalid_select():
 
     assert (
         str(e.value)
-        == """Field `a1` is a key or timestamp field in schema of select node input '[Dataset:A]'. Value fields are: ['a2', 'a3', 'a4']"""
+        == """invalid select - '[Pipeline:from_a]->select node' key field : `a1` must be in columns"""
     )
 
 

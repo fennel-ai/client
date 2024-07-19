@@ -2001,7 +2001,7 @@ def test_select_and_rename_column():
             "dropcols": ["a3", "a4"],
             "operandId": "10340ca369826992acc29dc84b073c18",
         },
-        "id": "0d52839b6fb94cde94dea24334ad9bce",
+        "id": "9a49f6b30e963d0b36f1dcb85e308b50",
         "isRoot": True,
         "pipelineName": "from_a",
         "ds_version": 1,
