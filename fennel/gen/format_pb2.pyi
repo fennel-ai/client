@@ -79,28 +79,12 @@ class FileFormat(google.protobuf.message.Message):
         ) -> None: ...
         def ClearField(self, field_name: typing_extensions.Literal["delimiter", b"delimiter"]) -> None: ...
 
-    @typing_extensions.final
-    class Protobuf(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-        SCHEMA_REGISTRY_FIELD_NUMBER: builtins.int
-        @property
-        def schema_registry(self) -> schema_registry_pb2.SchemaRegistry: ...
-        def __init__(
-            self,
-            *,
-            schema_registry: schema_registry_pb2.SchemaRegistry | None = ...,
-        ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> None: ...
-
     PARQUET_FIELD_NUMBER: builtins.int
     JSON_FIELD_NUMBER: builtins.int
     AVRO_FIELD_NUMBER: builtins.int
     HUDI_FIELD_NUMBER: builtins.int
     DELTA_TABLE_FIELD_NUMBER: builtins.int
     CSV_FIELD_NUMBER: builtins.int
-    PROTOBUF_FIELD_NUMBER: builtins.int
     @property
     def parquet(self) -> global___FileFormat.Parquet: ...
     @property
@@ -112,11 +96,9 @@ class FileFormat(google.protobuf.message.Message):
     @property
     def delta_table(self) -> global___FileFormat.DeltaTable: ...
     @property
-    def csv(self) -> global___FileFormat.CSV: ...
-    @property
-    def protobuf(self) -> global___FileFormat.Protobuf:
+    def csv(self) -> global___FileFormat.CSV:
         """deprecated jsonl = 7;
-        next id = 9;
+        next id = 8;
         """
     def __init__(
         self,
@@ -127,10 +109,9 @@ class FileFormat(google.protobuf.message.Message):
         hudi: global___FileFormat.Hudi | None = ...,
         delta_table: global___FileFormat.DeltaTable | None = ...,
         csv: global___FileFormat.CSV | None = ...,
-        protobuf: global___FileFormat.Protobuf | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["avro", b"avro", "csv", b"csv", "delta_table", b"delta_table", "hudi", b"hudi", "json", b"json", "kind", b"kind", "parquet", b"parquet", "protobuf", b"protobuf"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["avro", b"avro", "csv", b"csv", "delta_table", b"delta_table", "hudi", b"hudi", "json", b"json", "kind", b"kind", "parquet", b"parquet", "protobuf", b"protobuf"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["parquet", "json", "avro", "hudi", "delta_table", "csv", "protobuf"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["avro", b"avro", "csv", b"csv", "delta_table", b"delta_table", "hudi", b"hudi", "json", b"json", "kind", b"kind", "parquet", b"parquet"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["avro", b"avro", "csv", b"csv", "delta_table", b"delta_table", "hudi", b"hudi", "json", b"json", "kind", b"kind", "parquet", b"parquet"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["kind", b"kind"]) -> typing_extensions.Literal["parquet", "json", "avro", "hudi", "delta_table", "csv"] | None: ...
 
 global___FileFormat = FileFormat

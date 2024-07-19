@@ -151,23 +151,19 @@ class KafkaFormat(google.protobuf.message.Message):
 
     JSON_FIELD_NUMBER: builtins.int
     AVRO_FIELD_NUMBER: builtins.int
-    PROTOBUF_FIELD_NUMBER: builtins.int
     @property
     def json(self) -> global___JsonFormat: ...
     @property
     def avro(self) -> global___AvroFormat: ...
-    @property
-    def protobuf(self) -> global___ProtobufFormat: ...
     def __init__(
         self,
         *,
         json: global___JsonFormat | None = ...,
         avro: global___AvroFormat | None = ...,
-        protobuf: global___ProtobufFormat | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "protobuf", b"protobuf", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "protobuf", b"protobuf", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["json", "avro", "protobuf"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["json", "avro"] | None: ...
 
 global___KafkaFormat = KafkaFormat
 
@@ -197,23 +193,6 @@ class AvroFormat(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> None: ...
 
 global___AvroFormat = AvroFormat
-
-@typing_extensions.final
-class ProtobufFormat(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    SCHEMA_REGISTRY_FIELD_NUMBER: builtins.int
-    @property
-    def schema_registry(self) -> schema_registry_pb2.SchemaRegistry: ...
-    def __init__(
-        self,
-        *,
-        schema_registry: schema_registry_pb2.SchemaRegistry | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> None: ...
-
-global___ProtobufFormat = ProtobufFormat
 
 @typing_extensions.final
 class Reference(google.protobuf.message.Message):

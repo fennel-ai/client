@@ -50,6 +50,7 @@ from fennel.dtypes.dtypes import (
     Session,
     Tumbling,
 )
+from fennel.expr import Expr
 from fennel.gen import schema_pb2 as schema_proto
 from fennel.internal_lib.duration import (
     Duration,
@@ -244,7 +245,30 @@ class _Node(Generic[T]):
     def filter(self, func: Callable) -> _Node:
         return Filter(self, func)
 
-    def assign(self, name: str, dtype: Type, func: Callable) -> _Node:
+    def assign(self, *args, **kwargs) -> _Node:
+        """
+        Assign is an overloaded operator that can be used in several ways:
+        1. Assigning a new column with a lambda function:
+            >>> ds.assign("new_column", int, lambda x: x.old_column + 1)
+        2. Using kwarg syntax to assign a column:
+            >>> ds.assign(new_column=F("old_column") + 1).astype(int))
+        3. Assigning multiple columns:
+            >>> ds.assign(
+            ...     new_column1=(F("old_column1") + 1).astype(int),
+            ...     new_column2=(F("old_column2") + 2).astype(int),
+            ... )
+        
+        """
+        # Check if the user is using the first syntax
+        if len(args) == 3 and isinstance(args[0], str) and isinstance(
+            args[1], type
+        ):
+            return Assign(self, args[0], args[1], args[2]) 
+        # Check if the user is using the second syntax
+        if len(args) == 0 and len(kwargs) > 0:
+            return Assign(self, kwargs)
+    
+    def assign(self, name: str, dtype: Type, func: Callable | Expr) -> _Node:
         return Assign(self, name, dtype, func)
 
     def groupby(
@@ -412,7 +436,7 @@ class Transform(_Node):
 
 class Assign(_Node):
     def __init__(
-        self, node: _Node, column: str, output_type: Type, func: Callable
+        self, node: _Node, column: str, output_type: Type, func: Callable, **kwargs
     ):
         super().__init__()
         self.node = node
@@ -420,6 +444,22 @@ class Assign(_Node):
         self.func = func
         self.column = column
         self.output_type = output_type
+        self.output_expressions = {}
+        # Map of column names to expressions
+        if len(kwargs) > 0:
+            for (k, v) in kwargs.items():
+                self.output_expressions[k] = v
+         
+        
+    @classmethod
+    def from_expressions(cls, **kwargs):
+        for (k, v) in kwargs.items():
+            if not isinstance(v, Expr):
+                raise ValueError(
+                    "Assign.from_expressions expects all values to be of type Expr"
+                )
+        return 
+
 
     def signature(self):
         if isinstance(self.node, Dataset):

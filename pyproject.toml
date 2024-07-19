@@ -39,8 +39,13 @@ pyspelling = "^2.8.2"
 pyyaml = "^6.0.1"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["maturin", "setuptools>=42", "wheel"]
+build-backend = "maturin"
+
+[tool.maturin]
+name = "fennel_data_lib"
+sdist-directory = "python_package"
+manifest-path = "../server/fennel_data_lib/Cargo.toml"
 
 # inspired from - https://github.com/pypa/pip/blob/main/pyproject.toml
 
