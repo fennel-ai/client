@@ -367,14 +367,16 @@ def add_deletes(
     """
     This function adds delete rows to the dataframe based on the keys provided.
     """
+    df = df.copy()
+
     if len(key_fields) == 0:
         raise ValueError("Cannot add deletes to a dataset with no key fields")
 
     if FENNEL_DELETE_TIMESTAMP in df.columns:
         return df
 
-    # Sort the dataframe by timestamp
-    sorted_df = df.sort_values(ts_col)
+    # Sort the dataframe by timestamp and reset the index
+    sorted_df = df.sort_values(ts_col).reset_index(drop=True)
     # Iterate over the dataframe and add deletes for each row, with the timestamp
     # set to the timestamp of the next row for the same key
 

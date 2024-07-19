@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.4.2] - 2024-07-19
+- Add reset index before deletion
+
 ## [1.4.1] - 2024-07-16
 - Fixed rendering of lambda function in unformatted code.
 
