@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.4.3] - 2024-07-19
+- Add more schema validations for select operator.
+
 ## [1.4.2] - 2024-07-19
 - Add reset index before deletion
 

@@ -674,6 +674,23 @@ class Executor(Visitor):
             obj.dsschema().to_fields_proto(),
         )
 
+    def visitSelect(self, obj):
+        input_ret = self.visit(obj.node)
+        if input_ret is None or input_ret.df is None:
+            return None
+        df = input_ret.df
+        df = df.drop(columns=obj.drop_columns)
+        for col in obj.drop_columns:
+            if col in input_ret.key_fields:
+                input_ret.key_fields.remove(col)
+
+        return NodeRet(
+            df,
+            input_ret.timestamp_field,
+            input_ret.key_fields,
+            obj.dsschema().to_fields_proto(),
+        )
+
     def visitDropNull(self, obj):
         input_ret = self.visit(obj.node)
         if input_ret is None or input_ret.df is None:
