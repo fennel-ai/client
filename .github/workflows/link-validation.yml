@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd turbo
-          pnpm install --frozen-lockfile
+          pnpm install
 
       - name: Set environment variable and build
         env:
