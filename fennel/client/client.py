@@ -36,7 +36,7 @@ V1_API = "/api/v1"
 # a multiple of 3 (this is the default TCP retransmission window)
 _DEFAULT_CONNECT_TIMEOUT = 10
 # Default request timeout(s).
-_DEFAULT_TIMEOUT = 30
+_DEFAULT_TIMEOUT = 180
 # Name of the default branch
 _MAIN_BRANCH = "main"
 _BRANCH_HEADER_NAME = "X-FENNEL-BRANCH"
