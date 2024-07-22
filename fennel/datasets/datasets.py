@@ -986,7 +986,8 @@ class Select(_Node):
         self.node.out_edges.append(self)
 
     def signature(self):
-        return fhash(self.node.signature(), self.columns)
+        # Doing this to make signature same as previous one.
+        return fhash(self.node.signature(), self.drop_columns)
 
     def dsschema(self):
         input_schema = copy.deepcopy(self.node.dsschema())
