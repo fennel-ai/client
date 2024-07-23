@@ -386,7 +386,6 @@ class QueryEngine:
         results = results[extractor.derived_extractor_info.field.name]
         default_value = extractor.derived_extractor_info.default
         proto_dtype = get_datatype(extractor.derived_extractor_info.field.dtype)
-
         # Custom operations on default value for datetime and decimal type
         if proto_dtype.HasField("decimal_type"):
             if pd.notna(default_value) and not isinstance(

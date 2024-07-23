@@ -131,7 +131,7 @@ def struct(cls):
 # ---------------------------------------------------------------------
 
 
-@dataclass
+@dataclass(frozen=True)
 class _Embedding:
     dim: int
 

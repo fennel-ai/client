@@ -70,7 +70,7 @@ def parse_json(annotation, json) -> Any:
                     f"Union must be of the form `Union[type, None]`, "
                     f"got `{annotation}`"
                 )
-            if json is None or pd.isna(json):
+            if json is None or (not isinstance(json, list) and pd.isna(json)):
                 return None
             return parse_json(args[0], json)
         if origin is list:

@@ -298,7 +298,6 @@ def extractor(
                     f"Series[feature, str] or dataframe[<list of features defined in this featureset>], "
                     f"found {type(return_annotation)}"
                 )
-
         setattr(
             extractor_func,
             EXTRACTOR_ATTR,
@@ -615,6 +614,11 @@ class Featureset:
             extractor.set_inputs_from_featureset(self, feature)
             extractor.featureset = self._name
             extractor.outputs = [feature]
+            # If extractor already exists, throw an error
+            if extractor.name in [e.name for e in output]:
+                raise ValueError(
+                    f"An auto-generated extractor `{extractor.name}` already exists in the featureset `{self._name}`."
+                )
             output.append(extractor)
         return output
 
