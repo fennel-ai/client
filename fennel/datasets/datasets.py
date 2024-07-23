@@ -274,32 +274,27 @@ class _Node(Generic[T]):
         return Rename(self, columns)
 
     def drop(self, *args, columns: Optional[List[str]] = None) -> _Node:
-        drop_cols = _Node.__get_drop_args(*args, columns=columns)
-        return self.__drop(drop_cols)
+        drop_cols = _Node.__get_list_args(*args, columns=columns)
+        return Drop(self, drop_cols)
 
     def dropnull(self, *args, columns: Optional[List[str]] = None) -> _Node:
-        cols = None
         if len(args) == 0 and columns is None:  # dropnull with no get_args
             cols = self.dsschema().get_optional_cols()
         else:
-            cols = _Node.__get_drop_args(
+            cols = _Node.__get_list_args(
                 *args, columns=columns, name="dropnull"
             )
         return DropNull(self, cols)
 
     def select(self, *args, columns: Optional[List[str]] = None) -> _Node:
-        cols = _Node.__get_drop_args(*args, columns=columns, name="select")
+        cols = _Node.__get_list_args(*args, columns=columns, name="select")
         ts = self.dsschema().timestamp
-        # Keep the timestamp col
+        if ts not in cols:
+            cols.append(ts)
         drop_cols = list(
-            filter(
-                lambda c: c not in cols and c != ts, self.dsschema().fields()
-            )
+            filter(lambda c: c not in cols, self.dsschema().fields())
         )
-        # All the cols were selected
-        if len(drop_cols) == 0:
-            return self
-        return self.__drop(drop_cols, name="select")
+        return Select(self, cols, drop_cols)
 
     def dedup(self, *args, by: Optional[List[str]] = None) -> _Node:
         # If 'by' is not provided, dedup by all value fields.
@@ -321,7 +316,7 @@ class _Node(Generic[T]):
         return Dedup(self, collist)
 
     def explode(self, *args, columns: List[str] = None) -> _Node:
-        columns = _Node.__get_drop_args(*args, columns=columns, name="explode")
+        columns = _Node.__get_list_args(*args, columns=columns, name="explode")
         return Explode(self, columns)
 
     def changelog(self, delete_column: str) -> _Node:
@@ -342,11 +337,8 @@ class _Node(Generic[T]):
     def num_out_edges(self) -> int:
         return len(self.out_edges)
 
-    def __drop(self, columns: List[str], name="drop") -> _Node:
-        return Drop(self, columns, name=name)
-
     @classmethod
-    def __get_drop_args(
+    def __get_list_args(
         cls, *args, columns: Optional[List[str]], name="drop"
     ) -> List[str]:
         if args and columns is not None:
@@ -967,11 +959,10 @@ class Rename(_Node):
 
 
 class Drop(_Node):
-    def __init__(self, node: _Node, columns: List[str], name="drop"):
+    def __init__(self, node: _Node, columns: List[str]):
         super().__init__()
         self.node = node
         self.columns = columns
-        self.__name = name
         self.node.out_edges.append(self)
 
     def signature(self):
@@ -983,9 +974,25 @@ class Drop(_Node):
             input_schema.drop_column(field)
         return input_schema
 
-    @property
-    def name(self):
-        return self.__name
+
+class Select(_Node):
+    def __init__(
+        self, node: _Node, columns: List[str], drop_columns: List[str]
+    ):
+        super().__init__()
+        self.node = node
+        self.columns = columns
+        self.drop_columns = drop_columns
+        self.node.out_edges.append(self)
+
+    def signature(self):
+        # Doing this to make signature same as previous one.
+        return fhash(self.node.signature(), self.drop_columns)
+
+    def dsschema(self):
+        input_schema = copy.deepcopy(self.node.dsschema())
+        input_schema.select_columns(self.columns)
+        return input_schema
 
 
 class DropNull(_Node):
@@ -2018,6 +2025,8 @@ class Visitor:
             return self.visitRename(obj)
         elif isinstance(obj, Drop):
             return self.visitDrop(obj)
+        elif isinstance(obj, Select):
+            return self.visitSelect(obj)
         elif isinstance(obj, Dedup):
             return self.visitDedup(obj)
         elif isinstance(obj, Explode):
@@ -2060,6 +2069,9 @@ class Visitor:
         raise NotImplementedError()
 
     def visitDrop(self, obj):
+        raise NotImplementedError()
+
+    def visitSelect(self, obj):
         raise NotImplementedError()
 
     def visitDedup(self, obj):
@@ -2178,6 +2190,21 @@ class DSSchema:
             raise Exception(
                 f"field `{name}` not found in schema of `{self.name}`"
             )
+
+    def select_columns(self, columns: List[str]):
+        for column in columns:
+            if column not in self.fields():
+                raise ValueError(
+                    f"field `{column}` not found in schema of `{self.name}`"
+                )
+        if self.timestamp not in columns:
+            raise ValueError(
+                f"cannot drop timestamp field `{self.timestamp}` from `{self.name}`"
+            )
+        self.keys = {key: self.keys[key] for key in self.keys if key in columns}
+        self.values = {
+            key: self.values[key] for key in self.values if key in columns
+        }
 
     def update_column(self, name: str, type: Type):
         if name in self.keys:
@@ -2770,8 +2797,42 @@ class SchemaValidator(Visitor):
             if field not in val_fields:
                 raise ValueError(
                     f"Field `{field}` is a key or timestamp field in schema of "
-                    f"{obj.name} node input {input_schema.name}. Value fields are: {list(val_fields)}"
+                    f"drop node input {input_schema.name}. Value fields are: {list(val_fields)}"
                 )
+        output_schema = obj.dsschema()
+        output_schema.name = output_schema_name
+        return output_schema
+
+    def visitSelect(self, obj) -> DSSchema:
+        input_schema = copy.deepcopy(self.visit(obj.node))
+        if input_schema.is_terminal:
+            raise ValueError(
+                f"Cannot add node 'Select' after a terminal node in pipeline : `{self.pipeline_name}`."
+            )
+
+        timestamp = input_schema.timestamp
+        key_fields = input_schema.keys
+
+        output_schema_name = f"'[Pipeline:{self.pipeline_name}]->select node'"
+        if obj.columns is None or len(obj.columns) == 0:
+            raise ValueError(
+                f"invalid select - {output_schema_name} must have at least one column to select"
+            )
+        if timestamp not in obj.columns:
+            raise ValueError(
+                f"invalid select - {output_schema_name} timestamp field : `{timestamp}` must be in columns"
+            )
+        for key_field in key_fields:
+            if key_field not in obj.columns:
+                raise ValueError(
+                    f"invalid select - {output_schema_name} key field : `{key_field}` must be in columns"
+                )
+        for column in obj.columns:
+            if column not in input_schema.fields():
+                raise ValueError(
+                    f"invalid select - {output_schema_name} field : `{column}` not found in {input_schema.name}"
+                )
+
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
         return output_schema

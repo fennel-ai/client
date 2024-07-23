@@ -1,3 +1,4 @@
+import sys
 import unittest
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, List
@@ -835,6 +836,10 @@ def test_featureset_name_query(client):
     ]
 
 
+@pytest.mark.skipif(
+    sys.version_info[:2] <= (3, 10),
+    reason="Optional embedding not supported in python 3.9/10",
+)
 @mock
 def test_embedding_features(client):
     @dataset(version=4, index=True)

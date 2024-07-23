@@ -8,9 +8,6 @@ on:
 jobs:
   validate-content:
     runs-on: ubuntu-latest
-
-    continue-on-error: true
-
     steps:
       - name: Checkout the client repository
         uses: actions/checkout@v3
@@ -31,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd turbo
-          pnpm install --frozen-lockfile
+          pnpm install
 
       - name: Set environment variable and build
         env:
