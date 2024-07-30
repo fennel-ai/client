@@ -2191,7 +2191,7 @@ def test_bounded_source_with_idleness():
 
 
 def test_valid_preproc_value():
-    # Preproc value of type A[B][C] can be only set for data in JSON format
+    # Preproc value of type A[B][C] can be set for data in JSON and Protobuf formats
     source(
         s3.bucket(
             bucket_name="all_ratings", prefix="prod/apac/", format="json"
@@ -2228,6 +2228,20 @@ def test_valid_preproc_value():
     )
     source(
         kafka.topic(topic="topic", format="json"),
+        every="1h",
+        disorder="14d",
+        cdc="debezium",
+        preproc={"C": ref("A[B][C]"), "D": "A[B][D]"},
+    )
+
+    protobuf = Protobuf(
+        registry="confluent",
+        url="http://localhost:8000",
+        username="user",
+        password="pwd",
+    )
+    source(
+        kafka.topic(topic="topic", format=protobuf),
         every="1h",
         disorder="14d",
         cdc="debezium",

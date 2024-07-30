@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from lib2to3.fixes.fix_tuple_params import tuple_name
 from typing import Optional
 
 from fennel.connectors.connectors import Protobuf, ref
@@ -669,7 +670,7 @@ def test_invalid_preproc_value():
         == str(e.value)
     )
 
-    # Preproc value of type A[B][C] cannot be set for data other than JSON format
+    # Preproc value of type A[B][C] cannot be set for data other than JSON and Protobuf formats
     with pytest.raises(ValueError) as e:
         source(
             s3.bucket(
@@ -685,7 +686,7 @@ def test_invalid_preproc_value():
         == str(e.value)
     )
 
-    # Preproc value of type A[B][C] cannot be set for data other than JSON format
+    # Preproc value of type A[B][C] cannot be set for data other than JSON and Protobuf formats
     with pytest.raises(ValueError) as e:
         source(
             kafka.topic(topic="topic", format="Avro"),
@@ -695,7 +696,24 @@ def test_invalid_preproc_value():
             preproc={"C": ref("A[B][C]"), "D": "A[B][C]"},
         )
     assert (
-        "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
+        "Preproc of type ref('A[B][C]') is applicable only for data in JSON and Protobuf formats"
+        == str(e.value)
+    )
+
+    # Preproc value of type A[B][C] cannot be set for table sources
+    with pytest.raises(ValueError) as e:
+        source(
+            mysql.table(
+                "users",
+                cursor="added_on",
+            ),
+            every="1h",
+            disorder="14d",
+            cdc="debezium",
+            preproc={"C": ref("A[B][C]"), "D": "A[B][C]"},
+        )
+    assert (
+        "Preproc of type ref('A[B][C]') is not supported for table source"
         == str(e.value)
     )
 

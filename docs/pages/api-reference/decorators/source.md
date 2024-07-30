@@ -99,7 +99,7 @@ As of right now, there are two kinds of values of preproc:
   a constant value.
 
 :::info
-Fennel supports preproc ref(str) values of type A[B][C] only for the JSON format and 
+Fennel supports preproc ref(str) values of type A[B][C] only for the JSON and Protobuf formats, and 
 A, B should be struct types. If you have data in other format or require indirection
 for other parent types apart from struct, please reach out to Fennel support.
 :::
