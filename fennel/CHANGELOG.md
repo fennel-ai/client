@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.4.5] - 2024-07-30
+## [1.4.6] - 2024-07-30
 - Add support for indirections in preproc ref type for Protobuf format
 
 ## [1.4.4] - 2024-07-19
