@@ -1822,16 +1822,22 @@ class PositiveRatingActivity:
     )
     t: datetime
 
+    # fmt: off
     @pipeline
     @inputs(RatingActivity)
     def filter_positive_ratings(cls, rating: Dataset):
         filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
+#       This is a random comment
         filter2 = filtered_ds.filter(
             lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
         )
+        # a = b + 2
         return filter2.groupby("movie").aggregate(
             Count(window=Continuous("forever"), into_field=str(cls.cnt_rating)),
         )
+
+
+# fmt: on
 
 
 class TestBasicFilter(unittest.TestCase):
