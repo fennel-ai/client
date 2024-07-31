@@ -46,8 +46,9 @@ def get_featureset_core_code(
         if not extractor.func:
             continue
         extractor_code = fennel_get_source(extractor.func)
-        extractor_code = indent(dedent(extractor_code), " " * 4)
+        extractor_code_indented = indent(dedent(extractor_code), " " * 4)
         # Delete extractor code from source_code
+        source_code = source_code.replace(extractor_code_indented, "")
         source_code = source_code.replace(extractor_code, "")
 
     # If python version 3.8 or below add @feature decorator
@@ -187,12 +188,12 @@ def get_dataset_core_code(dataset: Dataset) -> str:
     source_code = fennel_get_source(dataset.__fennel_original_cls__)
     for pipeline in dataset._pipelines:
         pipeline_code = fennel_get_source(pipeline.func)
-        pipeline_code = indent(dedent(pipeline_code), " " * 4)
+        pipeline_code_indented = indent(dedent(pipeline_code), " " * 4)
         # Delete pipeline code from source_code
+        source_code = source_code.replace(pipeline_code_indented, "")
         source_code = source_code.replace(pipeline_code, "")
     # Delete decorator @source() and @sink from source_code using regex
     source_code = remove_decorators(source_code, ["source", "sink"])
-
     # If python version 3.8 or below add @dataset decorator
     if sys.version_info < (3, 9):
         source_code = f"@dataset\n{dedent(source_code)}"
