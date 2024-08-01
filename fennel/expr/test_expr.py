@@ -5,20 +5,20 @@ from typing import Dict
 from fennel.datasets import dataset
 
 from fennel.expr import F, when
-from fennel.expr.visitor import Printer
+from fennel.expr.visitor import ExprPrinter
 from fennel.expr.serializer import ExprSerializer
 from google.protobuf.json_format import ParseDict  # type: ignore
 from fennel.gen.expr_pb2 import Expr
 from fennel.testing.test_utils import error_message
-from fennel.expr.utils import compute_expr
+from fennel.expr.utils import compute_expr, compile
 
 
 def test_basic_expr1():
     expr = (F("num") + F("d")).isnull()
     df = pd.DataFrame({"num": [1, 2, 3, 4], "d": [5, 6, 7, 8]})
     serializer = ExprSerializer()
-    proto_expr = serializer.serialize(expr.root)
-    proto_bytes = proto_expr.SerializeToString()
+    print(compile(expr, {"num": int, "d": int}))
+    assert compile(expr, {"num": int, "d": int}) == bool
     ret = compute_expr(expr, df, {"num": int, "d": int})
     assert ret.tolist() == [False, False, False, False]
 
@@ -26,7 +26,7 @@ def test_basic_expr1():
 def test_basic_expr2():
 
     expr = F("a") + F("b") + 3
-    printer = Printer()
+    printer = ExprPrinter()
     expected = "((Field[`a`] + Field[`b`]) + 3)"
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
@@ -40,7 +40,7 @@ def test_basic_expr2():
                 }
             },
             "right": {
-                "jsonLiteral": {"literal": '"3"', "dtype": {"intType": {}}}
+                "jsonLiteral": {"literal": "3", "dtype": {"intType": {}}}
             },
         }
     }
@@ -60,12 +60,12 @@ def test_basic_expr2():
     assert ret.tolist() == [9, 11, 13, 15]
     ret = compute_expr(expr, df, TestDataset.schema())
     assert ret.tolist() == [9, 11, 13, 15]
-    print(ret)
+    assert compile(expr, {"a": int, "b": int}) == int
 
 
 def test_math_expr():
     expr = (F("a").num.floor() + 3.2).num.ceil()
-    printer = Printer()
+    printer = ExprPrinter()
     expected = "CEIL((FLOOR(Field[`a`]) + 3.2))"
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
@@ -82,7 +82,7 @@ def test_math_expr():
                     },
                     "right": {
                         "jsonLiteral": {
-                            "literal": '"3.2"',
+                            "literal": "3.2",
                             "dtype": {"doubleType": {}},
                         }
                     },
@@ -97,40 +97,71 @@ def test_math_expr():
     df = pd.DataFrame({"a": [1.4, 2.9, 3.1, 4.8], "b": ["a", "b", "c", "d"]})
     ret = compute_expr(expr, df, {"a": float})
     assert ret.tolist() == [5, 6, 7, 8]
+    assert compile(expr, {"a": float}) == int
 
-    expr = when(F("a").num.floor() > 5).then(F("b")).when(F("a") > 3).then(F("a")).otherwise(1)
-    df = pd.DataFrame({"a": [1.4, 3.2, 6.1, 4.8], "b": [100, 200, 300,400]})
+    expr = (
+        when(F("a").num.floor() > 5)
+        .then(F("b"))
+        .when(F("a") > 3)
+        .then(F("a"))
+        .otherwise(1)
+    )
+    df = pd.DataFrame({"a": [1.4, 3.2, 6.1, 4.8], "b": [100, 200, 300, 400]})
     ret = compute_expr(expr, df, {"a": float, "b": int})
-    assert ret.tolist() == [1, 3.2, 300, 4.8]     
+    assert ret.tolist() == [1, 3.2, 300, 4.8]
+    assert compile(expr, {"a": float, "b": int}) == float
+
+
+def test_bool_expr():
+    expr = (F("a") == 5) | ((F("b") == "random") & (F("c") == 3.2))
+    printer = ExprPrinter()
+    expected = """((Field[`a`] == 5) or ((Field[`b`] == "random") and (Field[`c`] == 3.2)))"""
+    #assert expected == printer.print(expr.root)
+       
+    df = pd.DataFrame(
+        {
+            "a": [4, 5, 3, 4],
+            "b": ["radfsfom", "random", "random", "random"],
+            "c": [3.2, 1.2, 3.4, 3.2],
+        }
+    ) 
+    ret = compute_expr(expr, df, {"a": int, "b": str, "c": float})
+    assert ret.tolist() == [False, True, False, True]
+    assert compile(expr, {"a": int, "b": str, "c": float}) == bool
 
 def test_str_expr():
-    expr = (F("a") + F("b")).str.lower().len().ceil()
-    printer = Printer()
-    expected = "CEIL(LEN(LOWER((Field[`a`] + Field[`b`]))))"
+    expr = (F("a").str.concat(F("b"))).str.lower().len().ceil()
+    printer = ExprPrinter()
+    expected = "CEIL(LEN(LOWER(Field[`a`] + Field[`b`])))"
     assert expected == printer.print(expr.root)
 
     expr = (
-        when((F("a").str.upper()).str.contains(F("c")))
+        when(((F("a").str.concat(F("b"))).str.upper()).str.contains(F("c")))
         .then(F("b"))
         .otherwise("No Match")
     )
-    expected = 'WHEN CONTAINS(UPPER(Field[`a`]), Field[`c`]) THEN Field[`b`] ELSE "No Match"'
+    expected = 'WHEN CONTAINS(UPPER(Field[`a`] + Field[`b`]), Field[`c`]) THEN Field[`b`] ELSE "No Match"'
     assert expected == printer.print(expr.root)
     df = pd.DataFrame(
         {
             "a": ["p", "BRandomS", "CRandomStrin", "tqz"],
             "b": ["aa", "tring", "g", "d"],
-            "c": ["A", "B", "C", "D"],
+            "c": [
+                "RANDOMSTRING",
+                "RANDOMSTRING",
+                "RANDOMSTRING",
+                "RANDOMSTRING",
+            ],
         }
     )
-    ret = compute_expr(expr, df, {"a": str, "b": str})
+    ret = compute_expr(expr, df, {"a": str, "b": str, "c": str})
     assert ret.tolist() == [
         "No Match",
-        "BRandomSB",
-        "CRandomStringC",
+        "tring",
+        "g",
         "No Match",
     ]
-
+    assert compile(expr, {"a": str, "b": str, "c": str}) == str
     expr = (
         when(F("a").str.contains("p"))
         .then(F("b"))
@@ -155,7 +186,7 @@ def test_str_expr():
                                 "contains": {
                                     "element": {
                                         "jsonLiteral": {
-                                            "literal": '"\\"p\\""',
+                                            "literal": '"p"',
                                             "dtype": {"stringType": {}},
                                         }
                                     }
@@ -173,7 +204,7 @@ def test_str_expr():
                                 "contains": {
                                     "element": {
                                         "jsonLiteral": {
-                                            "literal": '"\\"b\\""',
+                                            "literal": '"b"',
                                             "dtype": {"stringType": {}},
                                         }
                                     }
@@ -191,7 +222,7 @@ def test_str_expr():
                                 "contains": {
                                     "element": {
                                         "jsonLiteral": {
-                                            "literal": '"\\"C\\""',
+                                            "literal": '"C"',
                                             "dtype": {"stringType": {}},
                                         }
                                     }
@@ -204,7 +235,7 @@ def test_str_expr():
             ],
             "otherwise": {
                 "jsonLiteral": {
-                    "literal": '"\\"No Match\\""',
+                    "literal": '"No Match"',
                     "dtype": {"stringType": {}},
                 }
             },
@@ -220,15 +251,16 @@ def test_str_expr():
             "c": ["A", "B", "C", "D"],
         }
     )
-    ret = compute_expr(expr, df, {})
+    ret = compute_expr(expr, df, {"a": str, "b": str, "c": str})
     print(ret)
+    assert compile(expr, {"a": str, "b": str, "c": str}) == str
 
 
 def test_dict_op():
     expr = (F("a").dict.get("x") + F("a").dict.get("y")).num.ceil() + F(
         "a"
     ).dict.len()
-    printer = Printer()
+    printer = ExprPrinter()
     expected = """(CEIL((Field[`a`].get("x") + Field[`a`].get("y"))) + LEN(Field[`a`]))"""
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
@@ -246,7 +278,7 @@ def test_dict_op():
                                         "get": {
                                             "field": {
                                                 "jsonLiteral": {
-                                                    "literal": '"\\"x\\""',
+                                                    "literal": '"x"',
                                                     "dtype": {"stringType": {}},
                                                 }
                                             }
@@ -261,7 +293,7 @@ def test_dict_op():
                                         "get": {
                                             "field": {
                                                 "jsonLiteral": {
-                                                    "literal": '"\\"y\\""',
+                                                    "literal": '"y"',
                                                     "dtype": {"stringType": {}},
                                                 }
                                             }
@@ -281,3 +313,4 @@ def test_dict_op():
     }
     expected_expr = ParseDict(d, Expr())
     assert expected_expr == proto_expr, error_message(proto_expr, expected_expr)
+    assert compile(expr, {"a": Dict[str, int]}) == int

@@ -1,11 +1,13 @@
 from typing import List, Dict
 
 import pandas as pd
+from fennel.internal_lib.schema.schema import from_proto
 import pyarrow as pa
 from fennel.expr.expr import Expr
 from fennel.expr.serializer import ExprSerializer
-from fennel_data_lib import compute
+from fennel_data_lib import compute, compile as data_lib_compile
 from fennel.internal_lib.schema import get_datatype
+import fennel.gen.schema_pb2 as schema_proto
 
 
 def convert_object(obj):
@@ -81,3 +83,16 @@ def compute_expr(expr: Expr, df: pd.DataFrame, schema: Dict) -> pd.Series:
         proto_schema[key] = get_datatype(value).SerializeToString()
     arrow_col = compute(proto_bytes, df_pa, proto_schema)
     return pa_to_pd(arrow_col)
+
+
+def compile(expr: Expr, schema: Dict) -> bytes:
+    serializer = ExprSerializer()
+    proto_expr = serializer.serialize(expr.root)
+    proto_bytes = proto_expr.SerializeToString()
+    proto_schema = {}
+    for key, value in schema.items():
+        proto_schema[key] = get_datatype(value).SerializeToString()
+    type_bytes = data_lib_compile(proto_bytes, proto_schema)
+    datatype = schema_proto.DataType()
+    datatype.ParseFromString(type_bytes)
+    return from_proto(datatype)

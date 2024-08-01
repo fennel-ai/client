@@ -7,7 +7,7 @@ import google.protobuf.duration_pb2 as duration_proto
 
 import fennel.gen.dataset_pb2 as proto
 from fennel.datasets import Dataset, Pipeline, Visitor
-from fennel.datasets.datasets import WINDOW_FIELD_NAME, EmitStrategy
+from fennel.datasets.datasets import WINDOW_FIELD_NAME, UDFType, EmitStrategy
 from fennel.internal_lib.duration import (
     duration_to_timedelta,
 )
@@ -100,50 +100,74 @@ class Serializer(Visitor):
         )
 
     def visitFilter(self, obj):
-        filter_func_pycode = to_includes_proto(obj.func)
-        gen_pycode = wrap_function(
-            self.dataset_name,
-            self.dataset_code,
-            self.lib_generated_code,
-            filter_func_pycode,
-            is_filter=True,
-        )
-        return proto.Operator(
-            id=obj.signature(),
-            is_root=obj == self.terminal_node,
-            pipeline_name=self.pipeline_name,
-            dataset_name=self.dataset_name,
-            ds_version=self.dataset_version,
-            filter=proto.Filter(
-                operand_id=self.visit(obj.node),
-                pycode=gen_pycode,
-            ),
-        )
+        if obj.filter_type == UDFType.python:
+            filter_func_pycode = to_includes_proto(obj.func)
+            gen_pycode = wrap_function(
+                self.dataset_name,
+                self.dataset_code,
+                self.lib_generated_code,
+                filter_func_pycode,
+                is_filter=True,
+            )
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=obj == self.terminal_node,
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                filter=proto.Filter(
+                    operand_id=self.visit(obj.node),
+                    pycode=gen_pycode,
+                ),
+            )
+        else:
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=obj == self.terminal_node,
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                filter_expr=proto.FilterExpr(
+                    operand_id=self.visit(obj.node),
+                ),
+            )
 
     def visitAssign(self, obj):
-        assign_func_pycode = to_includes_proto(obj.func)
-        gen_pycode = wrap_function(
-            self.dataset_name,
-            self.dataset_code,
-            self.lib_generated_code,
-            assign_func_pycode,
-            is_assign=True,
-            column_name=obj.column,
-        )
-
-        return proto.Operator(
-            id=obj.signature(),
-            is_root=(obj == self.terminal_node),
-            pipeline_name=self.pipeline_name,
-            dataset_name=self.dataset_name,
-            ds_version=self.dataset_version,
-            assign=proto.Assign(
-                operand_id=self.visit(obj.node),
-                pycode=gen_pycode,
+        if obj.assign_type == UDFType.python:
+            assign_func_pycode = to_includes_proto(obj.func)
+            gen_pycode = wrap_function(
+                self.dataset_name,
+                self.dataset_code,
+                self.lib_generated_code,
+                assign_func_pycode,
+                is_assign=True,
                 column_name=obj.column,
-                output_type=get_datatype(obj.output_type),
-            ),
-        )
+            )
+
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=(obj == self.terminal_node),
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                assign=proto.Assign(
+                    operand_id=self.visit(obj.node),
+                    pycode=gen_pycode,
+                    column_name=obj.column,
+                    output_type=get_datatype(obj.output_type),
+                ),
+            )
+        elif obj.assign_type == UDFType.expr:
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=(obj == self.terminal_node),
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                assign_expr=proto.AssignExpr(
+                    operand_id=self.visit(obj.node),
+                ),
+            )
 
     def visitAggregate(self, obj):
         emit_strategy = (

@@ -584,6 +584,9 @@ class StringOp(google.protobuf.message.Message):
     TOLOWER_FIELD_NUMBER: builtins.int
     TOUPPER_FIELD_NUMBER: builtins.int
     CONTAINS_FIELD_NUMBER: builtins.int
+    STARTSWITH_FIELD_NUMBER: builtins.int
+    ENDSWITH_FIELD_NUMBER: builtins.int
+    CONCAT_FIELD_NUMBER: builtins.int
     @property
     def len(self) -> global___Len: ...
     @property
@@ -592,6 +595,12 @@ class StringOp(google.protobuf.message.Message):
     def toupper(self) -> global___ToUpper: ...
     @property
     def contains(self) -> global___Contains: ...
+    @property
+    def startswith(self) -> global___StartsWith: ...
+    @property
+    def endswith(self) -> global___EndsWith: ...
+    @property
+    def concat(self) -> global___Concat: ...
     def __init__(
         self,
         *,
@@ -599,10 +608,13 @@ class StringOp(google.protobuf.message.Message):
         tolower: global___ToLower | None = ...,
         toupper: global___ToUpper | None = ...,
         contains: global___Contains | None = ...,
+        startswith: global___StartsWith | None = ...,
+        endswith: global___EndsWith | None = ...,
+        concat: global___Concat | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["contains", b"contains", "fn_type", b"fn_type", "len", b"len", "tolower", b"tolower", "toupper", b"toupper"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["contains", b"contains", "fn_type", b"fn_type", "len", b"len", "tolower", b"tolower", "toupper", b"toupper"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["len", "tolower", "toupper", "contains"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["concat", b"concat", "contains", b"contains", "endswith", b"endswith", "fn_type", b"fn_type", "len", b"len", "startswith", b"startswith", "tolower", b"tolower", "toupper", b"toupper"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["concat", b"concat", "contains", b"contains", "endswith", b"endswith", "fn_type", b"fn_type", "len", b"len", "startswith", b"startswith", "tolower", b"tolower", "toupper", b"toupper"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["len", "tolower", "toupper", "contains", "startswith", "endswith", "concat"] | None: ...
 
 global___StringOp = StringOp
 
@@ -625,6 +637,57 @@ class ToUpper(google.protobuf.message.Message):
     ) -> None: ...
 
 global___ToUpper = ToUpper
+
+@typing_extensions.final
+class StartsWith(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    KEY_FIELD_NUMBER: builtins.int
+    @property
+    def key(self) -> global___Expr: ...
+    def __init__(
+        self,
+        *,
+        key: global___Expr | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["key", b"key"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["key", b"key"]) -> None: ...
+
+global___StartsWith = StartsWith
+
+@typing_extensions.final
+class EndsWith(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    KEY_FIELD_NUMBER: builtins.int
+    @property
+    def key(self) -> global___Expr: ...
+    def __init__(
+        self,
+        *,
+        key: global___Expr | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["key", b"key"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["key", b"key"]) -> None: ...
+
+global___EndsWith = EndsWith
+
+@typing_extensions.final
+class Concat(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    OTHER_FIELD_NUMBER: builtins.int
+    @property
+    def other(self) -> global___Expr: ...
+    def __init__(
+        self,
+        *,
+        other: global___Expr | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["other", b"other"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["other", b"other"]) -> None: ...
+
+global___Concat = Concat
 
 @typing_extensions.final
 class StringFn(google.protobuf.message.Message):

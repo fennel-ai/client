@@ -13,18 +13,19 @@ class InvalidExprException(Exception):
 
 
 class Expr(object):
-    def __init__(self, root=None):
+    def __init__(self, root=None, dtype=None):
         self.nodeid = id(self)
         self.inline = False
         self.out_edges = []
         self.root = self if root is None else root
-        self.dtype = None
+        self.dtype = dtype
 
     def edge(self, node):
         self.out_edges.append(node)
-        
+
     def astype(self, dtype: Type) -> Expr:
         self.dtype = dtype
+        return self
 
     @property
     def num(self):
@@ -80,15 +81,10 @@ class Expr(object):
         return Binary(self, "[]", item)
 
     def __nonzero__(self):
-        raise InvalidExprException(
-            "can not convert: '%s' which is part of query graph to bool" % self
-        )
+        raise InvalidExprException("can not convert: '%s' to bool" % self)
 
     def __bool__(self):
-        raise InvalidExprException(
-            "can not convert expr: '%s' which is part of query graph to bool"
-            % self
-        )
+        raise InvalidExprException("can not convert: '%s' to bool"% self)
 
     def __add__(self, other: Any) -> Expr:
         other = make_expr(other)
@@ -399,6 +395,11 @@ class StringNoop(StringOp):
     pass
 
 
+@dataclass
+class Concat(StringOp):
+    other: Expr
+
+
 class _String(Expr):
 
     def __init__(self, expr: Expr, op: StringOp):
@@ -415,6 +416,10 @@ class _String(Expr):
     def contains(self, item) -> _Bool:
         item_expr = make_expr(item)
         return _Bool(_String(self, StrContains(item_expr)))
+
+    def concat(self, other: Expr) -> _String:
+        other = make_expr(other)
+        return _String(self, Concat(other))
 
     def len(self) -> _Number:
         return _Number(_String(self, StrLen()), MathNoop())
@@ -619,7 +624,9 @@ class Binary(Expr):
         self.right = right
         left.edge(self)
         right.edge(self)
-        super(Binary, self).__init__()
+
+        dtype = right.dtype if right.dtype is not None else left.dtype
+        super(Binary, self).__init__(None, dtype)
 
     def __str__(self) -> str:
         if self.op == "[]":
@@ -729,8 +736,12 @@ def lit(v: Any, type: Optional[Type] = None) -> Expr:
         return Literal(v, str)
     elif isinstance(v, bool):
         return Literal(v, bool)
+    elif v is None:
+        return Literal(v, None)
     else:
-        raise "Cannot infer type of literal, please provide type"
+        raise Exception(
+            f"Cannot infer type of literal {v}, please provide type"
+        )
 
 
 def when(expr: Expr) -> When:

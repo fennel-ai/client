@@ -28,6 +28,7 @@ from fennel.expr.expr import (
     Upper,
     StrContains,
     DictContains,
+    Concat,
     DictGet,
     DictLen,
     DictNoop,
@@ -137,7 +138,7 @@ class Visitor(object):
         raise NotImplementedError
 
 
-class Printer(Visitor):
+class ExprPrinter(Visitor):
 
     def print(self, obj):
         return self.visit(obj)
@@ -223,6 +224,8 @@ class Printer(Visitor):
             return "UPPER(%s)" % self.visit(obj.operand)
         elif isinstance(obj.op, StrContains):
             return f"CONTAINS({self.visit(obj.operand)}, {self.visit(obj.op.item)})"
+        elif isinstance(obj.op, Concat):
+            return f"{self.visit(obj.operand)} + {self.visit(obj.op.other)}"
         else:
             raise InvalidExprException("invalid string operation: %s" % obj.op)
 

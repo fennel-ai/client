@@ -1,8 +1,10 @@
-from typing import List
+from typing import Any, List
+import json
+
+from fennel.dtypes.dtypes import FENNEL_STRUCT
 
 from .visitor import Visitor
 import fennel.gen.expr_pb2 as proto
-from fennel.internal_lib.to_proto import val_as_json
 from fennel.internal_lib.schema import get_datatype
 
 from fennel.expr.expr import (
@@ -32,6 +34,7 @@ from fennel.expr.expr import (
     Lower,
     Upper,
     StrContains,
+    Concat,
     DictContains,
     DictGet,
     DictLen,
@@ -96,9 +99,9 @@ class ExprSerializer(Visitor):
         elif obj.op == "<":
             expr.binary.op = proto.BinOp.LT
         elif obj.op == ">=":
-            expr.binary.op = proto.BinOp.GE
+            expr.binary.op = proto.BinOp.GTE
         elif obj.op == "<=":
-            expr.binary.op = proto.BinOp.LE
+            expr.binary.op = proto.BinOp.LTE
         else:
             raise InvalidExprException("invalid binary operation: %s" % obj.op)
         left = self.visit(obj.left)
@@ -190,6 +193,14 @@ class ExprSerializer(Visitor):
                     contains=proto.Contains(element=self.visit(obj.op.item))
                 )
             )
+        elif isinstance(obj.op, Concat):
+            expr.string_fn.fn.CopyFrom(
+                proto.StringOp(
+                    concat=proto.Concat(
+                        other=self.visit(obj.op.other),
+                    )
+                )
+            )
         else:
             raise InvalidExprException("invalid string operation: %s" % obj.op)
         expr.string_fn.string.CopyFrom(self.visit(obj.operand))
@@ -224,3 +235,14 @@ class ExprSerializer(Visitor):
             raise InvalidExprException("invalid dict operation: %s" % obj.op)
         expr.dict_fn.dict.CopyFrom(self.visit(obj.expr))
         return expr
+
+
+def val_as_json(val: Any) -> str:
+    if isinstance(val, str):
+        return val
+    if getattr(val.__class__, FENNEL_STRUCT, False):
+        return json.dumps(val.as_json())
+    try:
+        return json.dumps(val)
+    except TypeError:
+        return json.dumps(str(val))

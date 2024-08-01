@@ -18,6 +18,7 @@ from fennel.datasets import (
     index,
 )
 from fennel.dtypes import struct, Window, Continuous, Session
+from fennel.expr import F
 from fennel.lib import (
     meta,
     inputs,
@@ -218,6 +219,77 @@ class RatingActivity:
     rating: float
     movie: str
     t: datetime
+
+
+def test_incorrect_assign_expr_type():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class RatingActivityTransformed:
+            userid: int
+            rating_sq: float
+            movie_suffixed: str
+            t: datetime
+
+            @pipeline
+            @inputs(RatingActivity)
+            def transform(cls, rating: Dataset):
+                return rating.assign(
+                    rating_sq=(F("rating") * F("rating")).astype(str),
+                    movie_suffixed=F("movie").str.concat("_suffix").astype(int),
+                ).drop("rating","movie")
+
+    assert (
+        str(e.value)
+        == """invalid assign - '[Pipeline:transform]->assign node' type errors: [TypeError("expression `(Field[`rating`] * Field[`rating`])` has type `<class 'float'>` does not match the type of column `rating_sq`, <class 'str'>"), TypeError('expression `Field[`movie`] + "_suffix"` has type `<class \\\'str\\\'>` does not match the type of column `movie_suffixed`, <class \\\'int\\\'>')]"""
+    )
+    
+    with pytest.raises(TypeError) as e2:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class RatingActivityTransformed2:
+            userid: int
+            rating_sq: int
+            movie_suffixed: str
+            t: datetime
+
+            @pipeline
+            @inputs(RatingActivity)
+            def transform(cls, rating: Dataset):
+                return rating.assign(
+                    rating_sq=(F("rating") * F("rating")).astype(float),
+                    movie_suffixed=F("movie").str.concat("_suffix").astype(str),
+                ).drop("rating","movie")
+
+    assert (
+        str(e2.value)
+        == """[TypeError('Field `rating_sq` has type `float` in `pipeline transform output value` schema but type `int` in `RatingActivityTransformed2 value` schema.')]"""
+    )
+    
+    with pytest.raises(ValueError) as e2:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class RatingActivityTransformed2:
+            userid: int
+            rating_sq: int
+            movie_suffixed: str
+            t: datetime
+
+            @pipeline
+            @inputs(RatingActivity)
+            def transform(cls, rating: Dataset):
+                return rating.assign(
+                    rating_sq=(F("rating") % F("rating")).astype(float),
+                    movie_suffixed=(F("movie") + "_suffix").astype(str),
+                ).drop("rating","movie")
+
+    assert (
+        str(e2.value)
+        == """invalid assign - '[Pipeline:transform]->assign node' error in expression for column `movie_suffixed`: Failed to compile expression: invalid expression: both sides of '+' must be numeric types but found String & String, left: col(movie), right: lit(String("_suffix"))"""
+    )
 
 
 def test_incorrect_aggregate():

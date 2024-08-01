@@ -320,11 +320,13 @@ class StddevState(AggState):
         return self.get_val()
 
     def del_val_from_state(self, val, _ts):
-        self.count -= 1
-        if self.count == 0:
+        if self.count == 1:  # If removing the last value, reset everything
+            self.count = 0
             self.mean = 0
             self.m2 = 0
             return self.default
+
+        self.count -= 1
         delta = val - self.mean
         self.mean -= delta / self.count
         delta2 = val - self.mean
