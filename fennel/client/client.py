@@ -438,8 +438,7 @@ class Client:
         name (str): The name of the branch to checkout.
 
         """
-        branch_list = self.list_branches()
-        if init and name not in branch_list:
+        if init and name not in self.list_branches():
             self.init_branch(name)
         self._branch = name
 
