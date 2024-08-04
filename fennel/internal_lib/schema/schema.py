@@ -872,11 +872,11 @@ def from_proto(data_type: schema_proto.DataType) -> Any:
         return bytes
     elif field == "array_type":
         element_type = from_proto(data_type.array_type.of)
-        return List[element_type]
+        return List[element_type]  # type: ignore
     elif field == "map_type":
         key_type = from_proto(data_type.map_type.key)
         value_type = from_proto(data_type.map_type.value)
-        return Dict[key_type, value_type]
+        return Dict[key_type, value_type]  # type: ignore
     elif field == "struct_type":
         fields = [
             (f.name, from_proto(f.dtype)) for f in data_type.struct_type.fields

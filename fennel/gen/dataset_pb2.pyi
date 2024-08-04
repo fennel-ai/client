@@ -542,18 +542,51 @@ global___Assign = Assign
 class AssignExpr(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
+    class ExprsEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> expr_pb2.Expr: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: expr_pb2.Expr | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
+    @typing_extensions.final
+    class OutputTypesEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> schema_pb2.DataType: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: schema_pb2.DataType | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
     OPERAND_ID_FIELD_NUMBER: builtins.int
-    COLUMNS_FIELD_NUMBER: builtins.int
     EXPRS_FIELD_NUMBER: builtins.int
     OUTPUT_TYPES_FIELD_NUMBER: builtins.int
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
     @property
-    def columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    def exprs(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, expr_pb2.Expr]: ...
     @property
-    def exprs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[expr_pb2.Expr]: ...
-    @property
-    def output_types(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[schema_pb2.DataType]: ...
+    def output_types(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, schema_pb2.DataType]: ...
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -562,12 +595,11 @@ class AssignExpr(google.protobuf.message.Message):
         self,
         *,
         operand_id: builtins.str = ...,
-        columns: collections.abc.Iterable[builtins.str] | None = ...,
-        exprs: collections.abc.Iterable[expr_pb2.Expr] | None = ...,
-        output_types: collections.abc.Iterable[schema_pb2.DataType] | None = ...,
+        exprs: collections.abc.Mapping[builtins.str, expr_pb2.Expr] | None = ...,
+        output_types: collections.abc.Mapping[builtins.str, schema_pb2.DataType] | None = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["columns", b"columns", "exprs", b"exprs", "operand_id", b"operand_id", "operand_name", b"operand_name", "output_types", b"output_types"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["exprs", b"exprs", "operand_id", b"operand_id", "operand_name", b"operand_name", "output_types", b"output_types"]) -> None: ...
 
 global___AssignExpr = AssignExpr
 

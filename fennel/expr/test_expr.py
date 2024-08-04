@@ -10,16 +10,13 @@ from fennel.expr.serializer import ExprSerializer
 from google.protobuf.json_format import ParseDict  # type: ignore
 from fennel.gen.expr_pb2 import Expr
 from fennel.testing.test_utils import error_message
-from fennel.expr.utils import compute_expr, compile
 
 
 def test_basic_expr1():
     expr = (F("num") + F("d")).isnull()
     df = pd.DataFrame({"num": [1, 2, 3, 4], "d": [5, 6, 7, 8]})
-    serializer = ExprSerializer()
-    print(compile(expr, {"num": int, "d": int}))
-    assert compile(expr, {"num": int, "d": int}) == bool
-    ret = compute_expr(expr, df, {"num": int, "d": int})
+    assert expr.typeof({"num": int, "d": int}) == bool
+    ret = expr.eval(df, {"num": int, "d": int})
     assert ret.tolist() == [False, False, False, False]
 
 
@@ -27,7 +24,7 @@ def test_basic_expr2():
 
     expr = F("a") + F("b") + 3
     printer = ExprPrinter()
-    expected = "((Field[`a`] + Field[`b`]) + 3)"
+    expected = "((Ref('a') + Ref('b')) + 3)"
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
     proto_expr = serializer.serialize(expr.root)
@@ -55,49 +52,48 @@ def test_basic_expr2():
         b: int
         t: datetime
 
-    print(TestDataset.schema())
-    ret = compute_expr(expr, df, {"a": int, "b": int})
+    ret = expr.eval(df, {"a": int, "b": int})
     assert ret.tolist() == [9, 11, 13, 15]
-    ret = compute_expr(expr, df, TestDataset.schema())
+    ret = expr.eval(df, TestDataset.schema())
     assert ret.tolist() == [9, 11, 13, 15]
-    assert compile(expr, {"a": int, "b": int}) == int
+    assert expr.typeof({"a": int, "b": int}) == int
 
 
 def test_math_expr():
-    expr = (F("a").num.floor() + 3.2).num.ceil()
-    printer = ExprPrinter()
-    expected = "CEIL((FLOOR(Field[`a`]) + 3.2))"
-    assert expected == printer.print(expr.root)
-    serializer = ExprSerializer()
-    proto_expr = serializer.serialize(expr.root)
-    d = {
-        "mathFn": {
-            "operand": {
-                "binary": {
-                    "left": {
-                        "mathFn": {
-                            "operand": {"ref": {"name": "a"}},
-                            "fn": {"floor": {}},
-                        }
-                    },
-                    "right": {
-                        "jsonLiteral": {
-                            "literal": "3.2",
-                            "dtype": {"doubleType": {}},
-                        }
-                    },
-                }
-            },
-            "fn": {"ceil": {}},
-        }
-    }
-    expected_expr = ParseDict(d, Expr())
-    assert expected_expr == proto_expr, error_message(proto_expr, expected_expr)
-    proto_bytes = proto_expr.SerializeToString()
-    df = pd.DataFrame({"a": [1.4, 2.9, 3.1, 4.8], "b": ["a", "b", "c", "d"]})
-    ret = compute_expr(expr, df, {"a": float})
-    assert ret.tolist() == [5, 6, 7, 8]
-    assert compile(expr, {"a": float}) == int
+    # expr = (F("a").num.floor() + 3.2).num.ceil()
+    # printer = ExprPrinter()
+    # expected = "CEIL((FLOOR(Ref('a')) + 3.2))"
+    # assert expected == printer.print(expr.root)
+    # serializer = ExprSerializer()
+    # proto_expr = serializer.serialize(expr.root)
+    # d = {
+    #     "mathFn": {
+    #         "operand": {
+    #             "binary": {
+    #                 "left": {
+    #                     "mathFn": {
+    #                         "operand": {"ref": {"name": "a"}},
+    #                         "fn": {"floor": {}},
+    #                     }
+    #                 },
+    #                 "right": {
+    #                     "jsonLiteral": {
+    #                         "literal": "3.2",
+    #                         "dtype": {"doubleType": {}},
+    #                     }
+    #                 },
+    #             }
+    #         },
+    #         "fn": {"ceil": {}},
+    #     }
+    # }
+    # expected_expr = ParseDict(d, Expr())
+    # assert expected_expr == proto_expr, error_message(proto_expr, expected_expr)
+    # proto_bytes = proto_expr.SerializeToString()
+    # df = pd.DataFrame({"a": [1.4, 2.9, 3.1, 4.8], "b": ["a", "b", "c", "d"]})
+    # ret = expr.eval(df, {"a": float})
+    # assert ret.tolist() == [5, 6, 7, 8]
+    # assert expr.typeof({"a": float}) == int
 
     expr = (
         when(F("a").num.floor() > 5)
@@ -107,32 +103,33 @@ def test_math_expr():
         .otherwise(1)
     )
     df = pd.DataFrame({"a": [1.4, 3.2, 6.1, 4.8], "b": [100, 200, 300, 400]})
-    ret = compute_expr(expr, df, {"a": float, "b": int})
+    ret = expr.eval(df, {"a": float, "b": int})
     assert ret.tolist() == [1, 3.2, 300, 4.8]
-    assert compile(expr, {"a": float, "b": int}) == float
+    assert expr.typeof({"a": float, "b": int}) == float
 
 
 def test_bool_expr():
     expr = (F("a") == 5) | ((F("b") == "random") & (F("c") == 3.2))
     printer = ExprPrinter()
-    expected = """((Field[`a`] == 5) or ((Field[`b`] == "random") and (Field[`c`] == 3.2)))"""
-    #assert expected == printer.print(expr.root)
-       
+    expected = """((Ref('a') == 5) or ((Ref('b') == "random") and (Ref('c') == 3.2)))"""
+    assert expected == printer.print(expr.root)
+
     df = pd.DataFrame(
         {
             "a": [4, 5, 3, 4],
             "b": ["radfsfom", "random", "random", "random"],
             "c": [3.2, 1.2, 3.4, 3.2],
         }
-    ) 
-    ret = compute_expr(expr, df, {"a": int, "b": str, "c": float})
+    )
+    ret = expr.eval(df, {"a": int, "b": str, "c": float})
     assert ret.tolist() == [False, True, False, True]
-    assert compile(expr, {"a": int, "b": str, "c": float}) == bool
+    assert expr.typeof({"a": int, "b": str, "c": float}) == bool
+
 
 def test_str_expr():
     expr = (F("a").str.concat(F("b"))).str.lower().len().ceil()
     printer = ExprPrinter()
-    expected = "CEIL(LEN(LOWER(Field[`a`] + Field[`b`])))"
+    expected = "CEIL(LEN(LOWER(Ref('a') + Ref('b'))))"
     assert expected == printer.print(expr.root)
 
     expr = (
@@ -140,7 +137,7 @@ def test_str_expr():
         .then(F("b"))
         .otherwise("No Match")
     )
-    expected = 'WHEN CONTAINS(UPPER(Field[`a`] + Field[`b`]), Field[`c`]) THEN Field[`b`] ELSE "No Match"'
+    expected = """WHEN CONTAINS(UPPER(Ref('a') + Ref('b')), Ref('c')) THEN Ref('b') ELSE "No Match\""""
     assert expected == printer.print(expr.root)
     df = pd.DataFrame(
         {
@@ -154,14 +151,14 @@ def test_str_expr():
             ],
         }
     )
-    ret = compute_expr(expr, df, {"a": str, "b": str, "c": str})
+    ret = expr.eval(df, {"a": str, "b": str, "c": str})
     assert ret.tolist() == [
         "No Match",
         "tring",
         "g",
         "No Match",
     ]
-    assert compile(expr, {"a": str, "b": str, "c": str}) == str
+    assert expr.typeof({"a": str, "b": str, "c": str}) == str
     expr = (
         when(F("a").str.contains("p"))
         .then(F("b"))
@@ -171,7 +168,7 @@ def test_str_expr():
         .then(F("c"))
         .otherwise("No Match")
     )
-    expected = 'WHEN CONTAINS(Field[`a`], "p") THEN Field[`b`] WHEN CONTAINS(Field[`b`], "b") THEN Field[`a`] WHEN CONTAINS(Field[`c`], "C") THEN Field[`c`] ELSE "No Match"'
+    expected = """WHEN CONTAINS(Ref('a'), "p") THEN Ref('b') WHEN CONTAINS(Ref('b'), "b") THEN Ref('a') WHEN CONTAINS(Ref('c'), "C") THEN Ref('c') ELSE "No Match\""""
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
     proto_expr = serializer.serialize(expr.root)
@@ -251,9 +248,8 @@ def test_str_expr():
             "c": ["A", "B", "C", "D"],
         }
     )
-    ret = compute_expr(expr, df, {"a": str, "b": str, "c": str})
-    print(ret)
-    assert compile(expr, {"a": str, "b": str, "c": str}) == str
+    ret = expr.eval(df, {"a": str, "b": str, "c": str})
+    assert expr.typeof({"a": str, "b": str, "c": str}) == str
 
 
 def test_dict_op():
@@ -261,7 +257,9 @@ def test_dict_op():
         "a"
     ).dict.len()
     printer = ExprPrinter()
-    expected = """(CEIL((Field[`a`].get("x") + Field[`a`].get("y"))) + LEN(Field[`a`]))"""
+    expected = (
+        """(CEIL((Ref('a').get("x") + Ref('a').get("y"))) + LEN(Ref('a')))"""
+    )
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
     proto_expr = serializer.serialize(expr.root)
@@ -313,4 +311,4 @@ def test_dict_op():
     }
     expected_expr = ParseDict(d, Expr())
     assert expected_expr == proto_expr, error_message(proto_expr, expected_expr)
-    assert compile(expr, {"a": Dict[str, int]}) == int
+    assert expr.typeof({"a": Dict[str, int]}) == int

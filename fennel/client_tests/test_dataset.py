@@ -893,11 +893,7 @@ class MovieRatingTransformed:
             },
         )
 
-        return x.assign(
-            name="rating_orig",
-            dtype=float,
-            func=lambda df: df["rating_sq"] ** 0.5,
-        )
+        return x.assign("rating_orig", float, lambda df: df["rating_sq"] ** 0.5)
 
 
 @meta(owner="test@test.com")
@@ -939,7 +935,7 @@ class MovieRatingAssignExpr:
     @inputs(MovieRating)
     def pipeline_assign(cls, m: Dataset):
         rating_transformed = m.assign(
-            rating_sq=F("rating") * F("rating").astype(float),
+            rating_sq=(F("rating") * F("rating")).astype(float),
             rating_cube=(F("rating") * F("rating") * F("rating")).astype(float),
             rating_into_5=(F("rating") * 5).astype(float),
         )
@@ -1075,6 +1071,7 @@ class TestBasicAssign(unittest.TestCase):
     def test_basic_assign(self, client):
         test_cases = [MovieRatingAssignExpr, MovieRatingAssign]
         for case in test_cases:
+            client.init_branch(case.__name__)
             client.commit(
                 message="msg",
                 datasets=[MovieRating, case, RatingActivity],
@@ -1878,7 +1875,9 @@ class PositiveRatingActivityExpr:
     def filter_positive_ratings(cls, rating: Dataset):
         filtered_ds = rating.filter(F("rating") >= 3.5)
         filter2 = filtered_ds.filter(
-            (F("movie") == "Jumanji") | (F("movie") == "Titanic") | (F("movie") == "RaOne") 
+            (F("movie") == "Jumanji")
+            | (F("movie") == "Titanic")
+            | (F("movie") == "RaOne")
         )
         return filter2.groupby("movie").aggregate(
             Count(window=Continuous("forever"), into_field=str(cls.cnt_rating)),
@@ -1891,6 +1890,7 @@ class TestBasicFilter(unittest.TestCase):
     def test_basic_filter(self, client):
         test_cases = [PositiveRatingActivityExpr]
         for case in test_cases:
+            client.init_branch(case.__name__)
             # # Sync the dataset
             client.commit(
                 message="msg",

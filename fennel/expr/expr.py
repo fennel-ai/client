@@ -1,31 +1,37 @@
 from __future__ import annotations
 from enum import Enum
 from dataclasses import dataclass
-from typing import Any, Callable, Type, Optional
+from typing import Any, Callable, Dict, Type, Optional
 
 import json
 
 from fennel.dtypes.dtypes import FENNEL_STRUCT
+import pandas as pd
+from fennel.internal_lib.schema.schema import from_proto
+import pyarrow as pa
+from fennel_data_lib import compute, compile as data_lib_compile
+from fennel.internal_lib.schema import get_datatype
+import fennel.gen.schema_pb2 as schema_proto
 
 
 class InvalidExprException(Exception):
     pass
 
 
+class TypedExpr:
+    def __init__(self, expr: Expr, dtype: Type):
+        self.expr = expr
+        self.dtype = dtype
+
+
 class Expr(object):
-    def __init__(self, root=None, dtype=None):
+    def __init__(self, root=None):
         self.nodeid = id(self)
         self.inline = False
-        self.out_edges = []
         self.root = self if root is None else root
-        self.dtype = dtype
 
-    def edge(self, node):
-        self.out_edges.append(node)
-
-    def astype(self, dtype: Type) -> Expr:
-        self.dtype = dtype
-        return self
+    def astype(self, dtype: Type) -> TypedExpr:
+        return TypedExpr(self, dtype)
 
     @property
     def num(self):
@@ -84,7 +90,7 @@ class Expr(object):
         raise InvalidExprException("can not convert: '%s' to bool" % self)
 
     def __bool__(self):
-        raise InvalidExprException("can not convert: '%s' to bool"% self)
+        raise InvalidExprException("can not convert: '%s' to bool" % self)
 
     def __add__(self, other: Any) -> Expr:
         other = make_expr(other)
@@ -293,18 +299,96 @@ class Expr(object):
     def __rxor__(self, other: Any):
         raise InvalidExprException("binary operation 'xor' not supported")
 
-    def varname(self, dollar: bool = True) -> str:
-        name = self.nodeid
-        if dollar:
-            return f"${name}"
-        else:
-            return f"{name}"
-
     def __hash__(self) -> int:
         return self.nodeid
 
-    def num_out_edges(self) -> int:
-        return len(self.out_edges)
+    def typeof(self, schema: Dict) -> Type:
+        from fennel.expr.serializer import ExprSerializer
+
+        serializer = ExprSerializer()
+        proto_expr = serializer.serialize(self.root)
+        proto_bytes = proto_expr.SerializeToString()
+        proto_schema = {}
+        for key, value in schema.items():
+            proto_schema[key] = get_datatype(value).SerializeToString()
+        type_bytes = data_lib_compile(proto_bytes, proto_schema)
+        datatype = schema_proto.DataType()
+        datatype.ParseFromString(type_bytes)
+        return from_proto(datatype)
+
+    def eval(self, input_df: pd.DataFrame, schema: Dict) -> pd.Series:
+        from fennel.expr.serializer import ExprSerializer
+
+        def convert_object(obj):
+            if isinstance(obj, list):
+                result = [convert_object(i) for i in obj]
+            elif isinstance(obj, dict):
+                result = {}
+                for key in obj:
+                    result[key] = convert_object(obj[key])
+            elif hasattr(obj, "as_json"):
+                result = obj.as_json()
+            else:
+                result = obj
+            return result
+
+        def convert_objects(df):
+            for col in df.columns:
+                df[col] = df[col].apply(convert_object)
+            return df
+
+        def pd_to_pa(pd_data, schema=None):
+            # Schema unspecified - as in the case with lookups
+            if not schema:
+                if isinstance(pd_data, pd.Series):
+                    pd_data = pd_data.apply(convert_object)
+                    return pa.Array.from_pandas(pd_data)
+                elif isinstance(pd_data, pd.DataFrame):
+                    pd_data = convert_objects(pd_data)
+                    return pa.RecordBatch.from_pandas(
+                        pd_data, preserve_index=False
+                    )
+                else:
+                    raise ValueError("only pd.Series or pd.Dataframe expected")
+
+            # Single column expected
+            if isinstance(schema, pa.Field):
+                # extra columns may have been provided
+                if isinstance(pd_data, pd.DataFrame):
+                    if schema.name not in pd_data:
+                        raise ValueError(
+                            f"Dataframe does not contain column {schema.name}"
+                        )
+                    # df -> series
+                    pd_data = pd_data[schema.name]
+
+                if not isinstance(pd_data, pd.Series):
+                    raise ValueError("only pd.Series or pd.Dataframe expected")
+                pd_data = pd_data.apply(convert_object)
+                return pa.Array.from_pandas(pd_data, type=schema.type)
+
+            # Multiple columns case: use the columns we need
+            result_df = pd.DataFrame()
+            for col in schema.names:
+                if col not in pd_data:
+                    raise ValueError(f"Dataframe does not contain column {col}")
+                result_df[col] = pd_data[col].apply(convert_object)
+            return pa.RecordBatch.from_pandas(
+                result_df, preserve_index=False, schema=schema
+            )
+
+        def pa_to_pd(pa_data):
+            return pa_data.to_pandas(types_mapper=pd.ArrowDtype)
+
+        serializer = ExprSerializer()
+        proto_expr = serializer.serialize(self.root)
+        proto_bytes = proto_expr.SerializeToString()
+        df_pa = pd_to_pa(input_df)
+        proto_schema = {}
+        for key, value in schema.items():
+            proto_schema[key] = get_datatype(value).SerializeToString()
+        arrow_col = compute(proto_bytes, df_pa, proto_schema)
+        return pa_to_pd(arrow_col)
 
 
 class _Bool(Expr):
@@ -461,15 +545,15 @@ class _Dict(Expr):
 
     def get(self, key: str, default: Optional[Expr] = None) -> Expr:
         key = make_expr(key)
-        default = make_expr(default) if default is not None else None
-        return _Dict(self, DictGet(key, default))
+        default = make_expr(default) if default is not None else None  # type: ignore
+        return _Dict(self, DictGet(key, default))  # type: ignore
 
     def len(self) -> Expr:
         return _Number(_Dict(self, DictLen()), MathNoop())
 
     def contains(self, field: Expr) -> Expr:
         field = make_expr(field)
-        return Expr(_Dict(self, DictContains(field)))
+        return Expr(_Dict(self, DictContains(field)))  # type: ignore
 
 
 #########################################################
@@ -574,7 +658,6 @@ class Unary(Expr):
             )
         self.op = op
         self.operand = operand
-        operand.edge(self)
         super(Unary, self).__init__()
 
     def __str__(self) -> str:
@@ -622,11 +705,8 @@ class Binary(Expr):
         self.left = left
         self.op = op
         self.right = right
-        left.edge(self)
-        right.edge(self)
 
-        dtype = right.dtype if right.dtype is not None else left.dtype
-        super(Binary, self).__init__(None, dtype)
+        super(Binary, self).__init__(None)
 
     def __str__(self) -> str:
         if self.op == "[]":
@@ -638,39 +718,34 @@ class Binary(Expr):
 class When(Expr):
     def __init__(self, expr: Expr, root: Optional[Expr] = None):
         self.expr = make_expr(expr)
-        self.expr.edge(self)
-        print("Created when")
         self._then = None
-        print("Created when2")
         super(When, self).__init__(self if root is None else root)
 
     def then(self, expr: Expr) -> Then:
-        self._then = Then(expr, self.root)
-        return self._then
+        self._then = Then(expr, self.root)  # type: ignore
+        return self._then  # type: ignore
 
 
 class Then(Expr):
     def __init__(self, expr: Expr, root: Optional[Expr] = None):
         self.expr = make_expr(expr)
-        self.expr.edge(self)
         self._otherwise = None
         self._chained_when = None
         super(Then, self).__init__(self if root is None else root)
 
     def when(self, expr: Expr) -> When:
-        self._chained_when = When(expr, self.root)
-        return self._chained_when
+        self._chained_when = When(expr, self.root)  # type: ignore
+        return self._chained_when  # type: ignore
 
-    def otherwise(self, expr: Expr) -> Then:
-        self._otherwise = Otherwise(make_expr(expr), self.root)
-        return self._otherwise
+    def otherwise(self, expr: Expr) -> Otherwise:
+        self._otherwise = Otherwise(make_expr(expr), self.root)  # type: ignore
+        return self._otherwise  # type: ignore
 
 
 class Otherwise(Expr):
 
     def __init__(self, expr: Expr, root: Optional[Expr] = None):
         self.expr = make_expr(expr)
-        self.expr.edge(self)
         super(Otherwise, self).__init__(self if root is None else root)
 
 
@@ -684,7 +759,7 @@ class Ref(Expr):
         super(Ref, self).__init__()
 
     def __str__(self) -> str:
-        return f"Field[`{self._col}`]"
+        return f"Ref('{self._col}')"
 
 
 class IsNull(Expr):
@@ -709,8 +784,14 @@ def make_expr(v: Any) -> Any:
     """Tries to convert v to Expr. Throws an exception if conversion is not possible."""
     if isinstance(v, Expr):
         return v
-    elif isinstance(v, Callable):
-        raise f"Functions cannot be converted to an expression, found {v}"
+    elif isinstance(v, Callable):  # type: ignore
+        raise TypeError(
+            "Functions cannot be converted to an expression, found {v}"
+        )
+    elif isinstance(v, TypedExpr):
+        raise TypeError(
+            "astype() must be used as a standalone operation on the entire expression, syntax: (<expr>).astype(<type>). It cannot be combined with other expressions."
+        )
     else:
         return lit(v)
 
@@ -737,7 +818,7 @@ def lit(v: Any, type: Optional[Type] = None) -> Expr:
     elif isinstance(v, bool):
         return Literal(v, bool)
     elif v is None:
-        return Literal(v, None)
+        return Literal(v, None)  # type: ignore
     else:
         raise Exception(
             f"Cannot infer type of literal {v}, please provide type"

@@ -131,12 +131,6 @@ class Visitor(object):
     def visitStruct(self, obj):
         raise NotImplementedError
 
-    def visitList(self, obj):
-        raise NotImplementedError
-
-    def visitBool(self, obj):
-        raise NotImplementedError
-
 
 class ExprPrinter(Visitor):
 
@@ -144,7 +138,6 @@ class ExprPrinter(Visitor):
         return self.visit(obj)
 
     def visitLiteral(self, obj):
-        print("Visiting Literal", obj.c)
         return obj.c
 
     def visitRef(self, obj):

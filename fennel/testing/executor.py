@@ -6,7 +6,6 @@ from typing import Any, Optional, Dict, List
 
 import numpy as np
 import pandas as pd
-from fennel.expr.utils import compute_expr
 from fennel.expr.visitor import ExprPrinter
 import pyarrow as pa
 from frozendict import frozendict
@@ -213,9 +212,13 @@ class Executor(Visitor):
 
     def visitFilter(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)
-        if input_ret is None or input_ret.df is None or input_ret.df.shape[0] == 0:
+        if (
+            input_ret is None
+            or input_ret.df is None
+            or input_ret.df.shape[0] == 0
+        ):
             return None
-        
+
         fields = obj.dsschema().to_fields_proto()
         if obj.filter_type == UDFType.python:
             filter_func_pycode = to_includes_proto(obj.func)
@@ -242,10 +245,10 @@ class Executor(Visitor):
             input_df = copy.deepcopy(input_ret.df)
             f_df = input_df.copy()
             f_df.reset_index(drop=True, inplace=True)
-            print(f_df)
             try:
-                print(compute_expr(obj.filter_expr, input_df, obj.dsschema().schema()))
-                f_df = f_df[compute_expr(obj.filter_expr, input_df, obj.dsschema().schema())]
+                f_df = f_df[
+                    obj.filter_expr.eval(input_df, obj.dsschema().schema())
+                ]
             except Exception as e:
                 printer = ExprPrinter()
                 raise Exception(
@@ -765,14 +768,14 @@ class Executor(Visitor):
         else:
             input_df = copy.deepcopy(input_ret.df)
             df = copy.deepcopy(input_df)
-            for col, expr in obj.output_expressions.items():
+            for col, typed_expr in obj.output_expressions.items():
                 if col in input_ret.df.columns:
                     raise Exception(
                         f"Column `{col}` already present in dataframe"
                     )
                 input_dsschema = obj.node.dsschema().schema()
                 try:
-                    df[col] = compute_expr(expr, input_df, input_dsschema)
+                    df[col] = typed_expr.expr.eval(input_df, input_dsschema)
                 except Exception as e:
                     raise Exception(
                         f"Error in assign node for column `{col}` for pipeline "
