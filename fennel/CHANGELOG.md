@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.0] - 2024-08-04
+- Rust based expressions
+
 ## [1.4.6] - 2024-07-30
 - Add support for indirections in preproc ref type for Protobuf format
 
