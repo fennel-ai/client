@@ -60,40 +60,39 @@ def test_basic_expr2():
 
 
 def test_math_expr():
-    # expr = (F("a").num.floor() + 3.2).num.ceil()
-    # printer = ExprPrinter()
-    # expected = "CEIL((FLOOR(Ref('a')) + 3.2))"
-    # assert expected == printer.print(expr.root)
-    # serializer = ExprSerializer()
-    # proto_expr = serializer.serialize(expr.root)
-    # d = {
-    #     "mathFn": {
-    #         "operand": {
-    #             "binary": {
-    #                 "left": {
-    #                     "mathFn": {
-    #                         "operand": {"ref": {"name": "a"}},
-    #                         "fn": {"floor": {}},
-    #                     }
-    #                 },
-    #                 "right": {
-    #                     "jsonLiteral": {
-    #                         "literal": "3.2",
-    #                         "dtype": {"doubleType": {}},
-    #                     }
-    #                 },
-    #             }
-    #         },
-    #         "fn": {"ceil": {}},
-    #     }
-    # }
-    # expected_expr = ParseDict(d, Expr())
-    # assert expected_expr == proto_expr, error_message(proto_expr, expected_expr)
-    # proto_bytes = proto_expr.SerializeToString()
-    # df = pd.DataFrame({"a": [1.4, 2.9, 3.1, 4.8], "b": ["a", "b", "c", "d"]})
-    # ret = expr.eval(df, {"a": float})
-    # assert ret.tolist() == [5, 6, 7, 8]
-    # assert expr.typeof({"a": float}) == int
+    expr = (F("a").num.floor() + 3.2).num.ceil()
+    printer = ExprPrinter()
+    expected = "CEIL((FLOOR(Ref('a')) + 3.2))"
+    assert expected == printer.print(expr.root)
+    serializer = ExprSerializer()
+    proto_expr = serializer.serialize(expr.root)
+    d = {
+        "mathFn": {
+            "operand": {
+                "binary": {
+                    "left": {
+                        "mathFn": {
+                            "operand": {"ref": {"name": "a"}},
+                            "fn": {"floor": {}},
+                        }
+                    },
+                    "right": {
+                        "jsonLiteral": {
+                            "literal": "3.2",
+                            "dtype": {"doubleType": {}},
+                        }
+                    },
+                }
+            },
+            "fn": {"ceil": {}},
+        }
+    }
+    expected_expr = ParseDict(d, Expr())
+    assert expected_expr == proto_expr, error_message(proto_expr, expected_expr)
+    df = pd.DataFrame({"a": [1.4, 2.9, 3.1, 4.8], "b": ["a", "b", "c", "d"]})
+    ret = expr.eval(df, {"a": float})
+    assert ret.tolist() == [5, 6, 7, 8]
+    assert expr.typeof({"a": float}) == int
 
     expr = (
         when(F("a").num.floor() > 5)

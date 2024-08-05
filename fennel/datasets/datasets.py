@@ -499,6 +499,11 @@ class Assign(_Node):
     @classmethod
     def from_expressions(cls, self, **kwargs):
         for k, v in kwargs.items():
+            if isinstance(v, Expr):
+                raise TypeError(
+                    f"type not specified for column {k} in assign operator, please use .astype(...) to specify the type"
+                )
+
             if not isinstance(v, TypedExpr):
                 raise ValueError(
                     "Assign.from_expressions expects all values to be of type Expr",

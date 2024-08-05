@@ -9,7 +9,7 @@ from fennel.dtypes.dtypes import FENNEL_STRUCT
 import pandas as pd
 from fennel.internal_lib.schema.schema import from_proto
 import pyarrow as pa
-from fennel_data_lib import eval, type_of 
+from fennel_data_lib import eval, type_of
 from fennel.internal_lib.schema import get_datatype
 import fennel.gen.schema_pb2 as schema_proto
 
