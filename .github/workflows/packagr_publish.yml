@@ -14,8 +14,6 @@ jobs:
       # Checkout the Python client repository
       - name: Check out client repository (Python)
         uses: actions/checkout@v2
-        with:
-          path: 'client'
 
       # Checkout the Rust server repository
       - name: Check out server repository (Rust)
