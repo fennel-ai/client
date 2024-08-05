@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from typing import Dict
 import dataclasses
 import re
 import typing
@@ -852,3 +852,66 @@ def data_schema_check(
         except Exception as e:
             raise e
     return exceptions
+
+
+def from_proto(data_type: schema_proto.DataType) -> Any:
+    field = data_type.WhichOneof("dtype")
+    if field == "int_type":
+        return int
+    elif field == "double_type":
+        return float
+    elif field == "string_type":
+        return str
+    elif field == "bool_type":
+        return bool
+    elif field == "timestamp_type":
+        return datetime
+    elif field == "date_type":
+        return date
+    elif field == "bytes_type":
+        return bytes
+    elif field == "array_type":
+        element_type = from_proto(data_type.array_type.of)
+        return List[element_type]  # type: ignore
+    elif field == "map_type":
+        key_type = from_proto(data_type.map_type.key)
+        value_type = from_proto(data_type.map_type.value)
+        return Dict[key_type, value_type]  # type: ignore
+    elif field == "struct_type":
+        fields = [
+            (f.name, from_proto(f.dtype)) for f in data_type.struct_type.fields
+        ]
+        # Dynamically create the dataclass with the specified fields
+        return dataclasses.make_dataclass(data_type.struct_type.name, fields)
+    elif field == "optional_type":
+        return Optional[from_proto(data_type.optional_type.of)]
+    elif field == "decimal_type":
+        return Decimal
+    elif field == "regex_type":
+        return regex(data_type.regex_type.pattern)
+    elif field == "embedding_type":
+        return _Embedding(data_type.embedding_type.embedding_size)
+    elif field == "between_type":
+        dtype = from_proto(data_type.between_type.dtype)
+        min_value = data_type.between_type.min
+        max_value = data_type.between_type.max
+        min = min_value.int if hasattr(min_value, "int") else min_value.float
+        max = max_value.int if hasattr(max_value, "int") else max_value.float
+        return between(
+            dtype=dtype,
+            min=min,
+            max=max,
+            strict_min=data_type.between_type.strict_min,
+            strict_max=data_type.between_type.strict_max,
+        )
+    elif field == "one_of_type":
+        dtype = from_proto(data_type.one_of_type.of)
+        options = [
+            option.int if hasattr(option, "int") else option.string
+            for option in data_type.one_of_type.options
+        ]
+        return oneof(dtype=dtype, options=options)
+    else:
+        raise ValueError(f"Unsupported data type field: {field}")
+
+    return None

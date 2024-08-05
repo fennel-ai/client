@@ -37,6 +37,7 @@ class DataType(google.protobuf.message.Message):
     DECIMAL_TYPE_FIELD_NUMBER: builtins.int
     DATE_TYPE_FIELD_NUMBER: builtins.int
     BYTES_TYPE_FIELD_NUMBER: builtins.int
+    NULL_TYPE_FIELD_NUMBER: builtins.int
     @property
     def int_type(self) -> global___IntType: ...
     @property
@@ -69,6 +70,8 @@ class DataType(google.protobuf.message.Message):
     def date_type(self) -> global___DateType: ...
     @property
     def bytes_type(self) -> global___BytesType: ...
+    @property
+    def null_type(self) -> global___NullType: ...
     def __init__(
         self,
         *,
@@ -88,10 +91,11 @@ class DataType(google.protobuf.message.Message):
         decimal_type: global___DecimalType | None = ...,
         date_type: global___DateType | None = ...,
         bytes_type: global___BytesType | None = ...,
+        null_type: global___NullType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "between_type", b"between_type", "bool_type", b"bool_type", "bytes_type", b"bytes_type", "date_type", b"date_type", "decimal_type", b"decimal_type", "double_type", b"double_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "int_type", b"int_type", "map_type", b"map_type", "one_of_type", b"one_of_type", "optional_type", b"optional_type", "regex_type", b"regex_type", "string_type", b"string_type", "struct_type", b"struct_type", "timestamp_type", b"timestamp_type"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "between_type", b"between_type", "bool_type", b"bool_type", "bytes_type", b"bytes_type", "date_type", b"date_type", "decimal_type", b"decimal_type", "double_type", b"double_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "int_type", b"int_type", "map_type", b"map_type", "one_of_type", b"one_of_type", "optional_type", b"optional_type", "regex_type", b"regex_type", "string_type", b"string_type", "struct_type", b"struct_type", "timestamp_type", b"timestamp_type"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["dtype", b"dtype"]) -> typing_extensions.Literal["int_type", "double_type", "string_type", "bool_type", "timestamp_type", "array_type", "map_type", "embedding_type", "between_type", "one_of_type", "regex_type", "optional_type", "struct_type", "decimal_type", "date_type", "bytes_type"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "between_type", b"between_type", "bool_type", b"bool_type", "bytes_type", b"bytes_type", "date_type", b"date_type", "decimal_type", b"decimal_type", "double_type", b"double_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "int_type", b"int_type", "map_type", b"map_type", "null_type", b"null_type", "one_of_type", b"one_of_type", "optional_type", b"optional_type", "regex_type", b"regex_type", "string_type", b"string_type", "struct_type", b"struct_type", "timestamp_type", b"timestamp_type"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["array_type", b"array_type", "between_type", b"between_type", "bool_type", b"bool_type", "bytes_type", b"bytes_type", "date_type", b"date_type", "decimal_type", b"decimal_type", "double_type", b"double_type", "dtype", b"dtype", "embedding_type", b"embedding_type", "int_type", b"int_type", "map_type", b"map_type", "null_type", b"null_type", "one_of_type", b"one_of_type", "optional_type", b"optional_type", "regex_type", b"regex_type", "string_type", b"string_type", "struct_type", b"struct_type", "timestamp_type", b"timestamp_type"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["dtype", b"dtype"]) -> typing_extensions.Literal["int_type", "double_type", "string_type", "bool_type", "timestamp_type", "array_type", "map_type", "embedding_type", "between_type", "one_of_type", "regex_type", "optional_type", "struct_type", "decimal_type", "date_type", "bytes_type", "null_type"] | None: ...
 
 global___DataType = DataType
 
@@ -114,6 +118,16 @@ class Field(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "name", b"name"]) -> None: ...
 
 global___Field = Field
+
+@typing_extensions.final
+class NullType(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___NullType = NullType
 
 @typing_extensions.final
 class IntType(google.protobuf.message.Message):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import datetime
+import enum
 import functools
 import inspect
 import sys
@@ -26,6 +27,8 @@ from typing import (
 import pandas as pd
 from typing_extensions import Literal
 
+from fennel.expr.expr import TypedExpr
+from fennel.expr.visitor import ExprPrinter
 import fennel.gen.index_pb2 as index_proto
 from fennel._vendor.pydantic import BaseModel  # type: ignore
 from fennel.datasets.aggregate import (
@@ -42,6 +45,7 @@ from fennel.datasets.aggregate import (
     ExpDecaySum,
 )
 from fennel.dtypes.dtypes import (
+    FENNEL_STRUCT,
     get_fennel_struct,
     Window,
     Decimal,
@@ -50,6 +54,7 @@ from fennel.dtypes.dtypes import (
     Session,
     Tumbling,
 )
+from fennel.expr import Expr
 from fennel.gen import schema_pb2 as schema_proto
 from fennel.internal_lib.duration import (
     Duration,
@@ -241,11 +246,49 @@ class _Node(Generic[T]):
             return Transform(self, func, None)
         return Transform(self, func, copy.deepcopy(schema))
 
-    def filter(self, func: Callable) -> _Node:
+    def filter(self, func: Callable | Expr) -> _Node:
         return Filter(self, func)
 
-    def assign(self, name: str, dtype: Type, func: Callable) -> _Node:
-        return Assign(self, name, dtype, func)
+    def assign(self, *args, **kwargs) -> _Node:
+        """
+        Assign is an overloaded operator that can be used in several ways:
+        1. Assigning a new column with a lambda function:
+            >>> ds.assign("new_column", int, lambda x: x.old_column + 1)
+        2. Assigning one or more columns:
+            >>> ds.assign(
+            ...     new_column1=(F("old_column1") + 1).astype(int),
+            ...     new_column2=(F("old_column2") + 2).astype(int),
+            ... )
+
+        """
+        # Check if the user is using the first syntax
+        # Skip args[1] check because type check can be flaky
+        # and args[0] and args[2] are always strings and callable
+        if (
+            len(args) == 3
+            and isinstance(args[0], str)
+            and isinstance(args[2], Callable)  # type: ignore
+        ):
+            return Assign(self, args[0], args[1], args[2])
+
+        # If there are 3 kwargs for name, dtype, func throw an error
+        if (
+            len(kwargs) == 3
+            and "name" in kwargs
+            and "dtype" in kwargs
+            and "func" in kwargs
+        ):
+            raise TypeError(
+                "assign operator can either take 3 args for name, dtype, func or kwargs for expressions, not both"
+            )
+
+        # Check if the user is using the second syntax
+        if len(args) == 0 and len(kwargs) > 0:
+            return Assign.from_expressions(self, **kwargs)
+
+        raise Exception(
+            "Invalid arguments to assign, please see the documentation for more information."
+        )
 
     def groupby(
         self, *args, window: Optional[Union[Hopping, Session, Tumbling]] = None
@@ -410,9 +453,19 @@ class Transform(_Node):
         )
 
 
+class UDFType(str, Enum):
+    expr = "expr"
+    python = "python"
+
+
 class Assign(_Node):
     def __init__(
-        self, node: _Node, column: str, output_type: Type, func: Callable
+        self,
+        node: _Node,
+        column: Optional[str],
+        output_type: Optional[Type],
+        func: Optional[Callable],
+        **kwargs,
     ):
         super().__init__()
         self.node = node
@@ -420,6 +473,43 @@ class Assign(_Node):
         self.func = func
         self.column = column
         self.output_type = output_type
+        self.output_expressions = {}
+        self.assign_type = UDFType.python
+        # Check that either node, column and output_type are all None or all not None
+        if (
+            node is None
+            and column is None
+            and output_type is None
+            and len(kwargs) == 0
+        ) or (
+            node is not None
+            and column is not None
+            and output_type is not None
+            and len(kwargs) > 0
+        ):
+            raise ValueError(
+                "Assign expects either to use the arguments `node`, `column` and `output_type` or use the keyword arguments for expressions"
+            )
+        # Map of column names to expressions
+        if len(kwargs) > 0:
+            for k, v in kwargs.items():
+                self.output_expressions[k] = v
+            self.assign_type = UDFType.expr
+
+    @classmethod
+    def from_expressions(cls, self, **kwargs):
+        for k, v in kwargs.items():
+            if isinstance(v, Expr):
+                raise TypeError(
+                    f"type not specified for column {k} in assign operator, please use .astype(...) to specify the type"
+                )
+
+            if not isinstance(v, TypedExpr):
+                raise ValueError(
+                    "Assign.from_expressions expects all values to be of type Expr",
+                    f"found `{type(v)}` for column `{k}`",
+                )
+        return Assign(self, None, None, None, **kwargs)
 
     def signature(self):
         if isinstance(self.node, Dataset):
@@ -427,27 +517,54 @@ class Assign(_Node):
                 self.node._name,
                 self.func,
                 self.column,
+                (
+                    self.output_type.__name__
+                    if self.output_type is not None
+                    else None
+                ),
+            )
+        if self.assign_type == UDFType.python:
+            return fhash(
+                self.node.signature(),
+                self.func,
+                self.column,
                 self.output_type.__name__,
             )
-        return fhash(
-            self.node.signature(),
-            self.func,
-            self.column,
-            self.output_type.__name__,
-        )
+        else:
+            return fhash(
+                self.node.signature(),
+                self.output_expressions,
+            )
 
     def dsschema(self):
         input_schema = self.node.dsschema()
-        input_schema.update_column(self.column, get_pd_dtype(self.output_type))
+        if self.assign_type == UDFType.python:
+            input_schema.update_column(
+                self.column, get_pd_dtype(self.output_type)
+            )
+        else:
+            for col, expr in self.output_expressions.items():
+                input_schema.update_column(col, get_pd_dtype(expr.dtype))
         return input_schema
 
 
 class Filter(_Node):
-    def __init__(self, node: _Node, func: Callable):
+    def __init__(self, node: _Node, fiter_fn: Callable | Expr):
         super().__init__()
         self.node = node
         self.node.out_edges.append(self)
-        self.func = func  # noqa: E731
+        self.filter_expr = None
+        self.func = None  # noqa: E731
+        if isinstance(fiter_fn, Callable):  # type: ignore
+            self.filter_type = UDFType.python
+            self.func = fiter_fn
+        elif isinstance(fiter_fn, Expr):  # type: ignore
+            self.filter_type = UDFType.expr
+            self.filter_expr = fiter_fn
+        else:
+            raise ValueError(
+                f"Filter expects either a lambda function or an expression object, found {type(func)}"  # type: ignore
+            )
 
     def signature(self):
         if isinstance(self.node, Dataset):
@@ -2325,6 +2442,7 @@ class SchemaValidator(Visitor):
 
     def validate(self, pipe: Pipeline) -> DSSchema:
         self.pipeline_name = pipe.name
+        self.dsname = pipe.dataset_name
         return self.visit(pipe.terminal_node)
 
     def visit(self, obj) -> DSSchema:
@@ -2381,6 +2499,12 @@ class SchemaValidator(Visitor):
                 f"Cannot add node 'Filter' after a terminal node in pipeline : `{self.pipeline_name}`."
             )
         input_schema.name = f"'[Pipeline:{self.pipeline_name}]->filter node'"
+        if obj.filter_type == UDFType.expr:
+            expr_type = obj.filter_expr.typeof(input_schema.schema())
+            if expr_type != bool:
+                raise TypeError(
+                    f"Filter expression must return type bool, found {dtype_to_string(expr_type)}."
+                )
         return input_schema
 
     def visitAggregate(self, obj) -> DSSchema:
@@ -2764,10 +2888,46 @@ class SchemaValidator(Visitor):
                 f"Cannot add node 'Assign' after a terminal node in pipeline : `{self.pipeline_name}`."
             )
         output_schema_name = f"'[Pipeline:{self.pipeline_name}]->assign node'"
-        if obj.column is None or len(obj.column) == 0:
-            raise ValueError(
-                f"invalid assign - {output_schema_name} must specify a column to assign"
-            )
+        if obj.assign_type == UDFType.expr:
+            if len(obj.output_expressions) == 0:
+                raise ValueError(
+                    f"invalid assign - {output_schema_name} must have at least one column to assign"
+                )
+            # Ensure there are no duplicate columns
+            if len(obj.output_expressions) != len(
+                set(obj.output_expressions.keys())
+            ):
+                raise ValueError(
+                    f"invalid assign - {output_schema_name} cannot have duplicate columns"
+                )
+            # Fetch the type for every column and match it against the type provided in the expression
+            type_errors = []
+            for col, typed_expr in obj.output_expressions.items():
+                try:
+                    expr_type = typed_expr.expr.typeof(input_schema.schema())
+                except Exception as e:
+                    raise ValueError(
+                        f"invalid assign - {output_schema_name} error in expression for column `{col}`: {str(e)}"
+                    )
+                if typed_expr.dtype != expr_type:
+                    printer = ExprPrinter()
+                    type_errors.append(
+                        f"'{col}' is of type `{dtype_to_string(typed_expr.dtype)}`, can not be cast to `{dtype_to_string(expr_type)}`. Full expression: `{printer.print(typed_expr.expr.root)}`"
+                    )
+
+            if len(type_errors) > 0:
+                joined_errors = "\n\t".join(type_errors)
+                print(joined_errors)
+                raise TypeError(
+                    f"found type errors in assign node of `{self.dsname}.{self.pipeline_name}`:\n\t{joined_errors}"
+                )
+
+        else:
+            if obj.column is None or len(obj.column) == 0:
+                raise ValueError(
+                    f"invalid assign - {output_schema_name} must specify a column to assign"
+                )
+
         val_fields = input_schema.values.keys()
         if (
             obj.column in input_schema.keys

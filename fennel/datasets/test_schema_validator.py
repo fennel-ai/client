@@ -1180,11 +1180,7 @@ def test_assign():
             @pipeline
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
-                return activity.assign(
-                    name="t",
-                    dtype=float,
-                    func=lambda df: float(df["t"]),
-                )
+                return activity.assign("t", float, lambda df: float(df["t"]))
 
     assert (
         str(e.value)
@@ -1203,11 +1199,7 @@ def test_assign():
             @pipeline
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
-                return activity.assign(
-                    name="",
-                    dtype=float,
-                    func=lambda df: float(df["t"]),
-                )
+                return activity.assign("", float, lambda df: float(df["t"]))
 
     assert (
         str(e.value)
@@ -1226,11 +1218,7 @@ def test_assign():
             @pipeline
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
-                return activity.assign(
-                    name="",
-                    dtype=float,
-                    func=lambda df: float(df["t"]),
-                )
+                return activity.assign("", float, lambda df: float(df["t"]))
 
     assert (
         str(e.value)
@@ -1249,9 +1237,7 @@ def test_assign():
             @inputs(RatingActivity)
             def create_dataset(cls, activity: Dataset):
                 return activity.assign(
-                    name="userid",
-                    dtype=float,
-                    func=lambda df: float(df["userid"]),
+                    "userid", float, lambda df: float(df["userid"])
                 )
 
     assert (

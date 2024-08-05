@@ -5,9 +5,10 @@ from typing import Dict, Any, List
 
 import google.protobuf.duration_pb2 as duration_proto
 
+from fennel.expr.serializer import ExprSerializer
 import fennel.gen.dataset_pb2 as proto
 from fennel.datasets import Dataset, Pipeline, Visitor
-from fennel.datasets.datasets import WINDOW_FIELD_NAME, EmitStrategy
+from fennel.datasets.datasets import WINDOW_FIELD_NAME, UDFType, EmitStrategy
 from fennel.internal_lib.duration import (
     duration_to_timedelta,
 )
@@ -100,50 +101,87 @@ class Serializer(Visitor):
         )
 
     def visitFilter(self, obj):
-        filter_func_pycode = to_includes_proto(obj.func)
-        gen_pycode = wrap_function(
-            self.dataset_name,
-            self.dataset_code,
-            self.lib_generated_code,
-            filter_func_pycode,
-            is_filter=True,
-        )
-        return proto.Operator(
-            id=obj.signature(),
-            is_root=obj == self.terminal_node,
-            pipeline_name=self.pipeline_name,
-            dataset_name=self.dataset_name,
-            ds_version=self.dataset_version,
-            filter=proto.Filter(
+        if obj.filter_type == UDFType.python:
+            filter_func_pycode = to_includes_proto(obj.func)
+            gen_pycode = wrap_function(
+                self.dataset_name,
+                self.dataset_code,
+                self.lib_generated_code,
+                filter_func_pycode,
+                is_filter=True,
+            )
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=obj == self.terminal_node,
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                filter=proto.Filter(
+                    operand_id=self.visit(obj.node),
+                    pycode=gen_pycode,
+                ),
+            )
+        else:
+            serializer = ExprSerializer()
+            filter_expr = proto.FilterExpr(
                 operand_id=self.visit(obj.node),
-                pycode=gen_pycode,
-            ),
-        )
+                expr=serializer.serialize(obj.filter_expr.root),
+            )
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=obj == self.terminal_node,
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                filter_expr=filter_expr,
+            )
 
     def visitAssign(self, obj):
-        assign_func_pycode = to_includes_proto(obj.func)
-        gen_pycode = wrap_function(
-            self.dataset_name,
-            self.dataset_code,
-            self.lib_generated_code,
-            assign_func_pycode,
-            is_assign=True,
-            column_name=obj.column,
-        )
-
-        return proto.Operator(
-            id=obj.signature(),
-            is_root=(obj == self.terminal_node),
-            pipeline_name=self.pipeline_name,
-            dataset_name=self.dataset_name,
-            ds_version=self.dataset_version,
-            assign=proto.Assign(
-                operand_id=self.visit(obj.node),
-                pycode=gen_pycode,
+        if obj.assign_type == UDFType.python:
+            assign_func_pycode = to_includes_proto(obj.func)
+            gen_pycode = wrap_function(
+                self.dataset_name,
+                self.dataset_code,
+                self.lib_generated_code,
+                assign_func_pycode,
+                is_assign=True,
                 column_name=obj.column,
-                output_type=get_datatype(obj.output_type),
-            ),
-        )
+            )
+
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=(obj == self.terminal_node),
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                assign=proto.Assign(
+                    operand_id=self.visit(obj.node),
+                    pycode=gen_pycode,
+                    column_name=obj.column,
+                    output_type=get_datatype(obj.output_type),
+                ),
+            )
+        elif obj.assign_type == UDFType.expr:
+            serializer = ExprSerializer()
+            assign_expr_message = proto.AssignExpr(
+                operand_id=self.visit(obj.node)
+            )
+            for col, typed_expr in obj.output_expressions.items():
+                assign_expr_message.exprs[col].CopyFrom(
+                    serializer.serialize(typed_expr.expr.root)
+                )
+                assign_expr_message.output_types[col].CopyFrom(
+                    get_datatype(typed_expr.dtype)
+                )
+
+            return proto.Operator(
+                id=obj.signature(),
+                is_root=(obj == self.terminal_node),
+                pipeline_name=self.pipeline_name,
+                dataset_name=self.dataset_name,
+                ds_version=self.dataset_version,
+                assign_expr=assign_expr_message,
+            )
 
     def visitAggregate(self, obj):
         emit_strategy = (

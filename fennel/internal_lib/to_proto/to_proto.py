@@ -85,6 +85,15 @@ def _expectations_to_proto(
     ]
 
 
+def val_as_json(val: Any) -> str:
+    if getattr(val.__class__, FENNEL_STRUCT, False):
+        return json.dumps(val.as_json())
+    try:
+        return json.dumps(val)
+    except TypeError:
+        return json.dumps(str(val))
+
+
 # ------------------------------------------------------------------------------
 # Sync
 # ------------------------------------------------------------------------------
@@ -652,14 +661,7 @@ def _to_field_lookup_proto(
         return fs_proto.FieldLookupInfo(
             field=_field_to_proto(info.field), default_value=json.dumps(None)
         )
-
-    if getattr(info.default.__class__, FENNEL_STRUCT, False):
-        default_val = json.dumps(info.default.as_json())
-    else:
-        try:
-            default_val = json.dumps(info.default)
-        except TypeError:
-            default_val = json.dumps(str(info.default))
+    default_val = val_as_json(info.default)
 
     return fs_proto.FieldLookupInfo(
         field=_field_to_proto(info.field),
