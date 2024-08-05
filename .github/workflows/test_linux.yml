@@ -89,9 +89,16 @@ jobs:
       - name: Install maturin
         run: python -m pip install maturin
 
-      - name: Build and link the package using Maturin Develop
-        run: maturin develop --release --manifest-path ./server/fennel_data_lib/Cargo.toml
+      # Build the package using Maturin
+      - name: Build the package using Maturin
+        run: maturin build --release --features "extension-module" --manifest-path ./server/fennel_data_lib/Cargo.toml --out dist 
 
+      # Install the built package
+      - name: Install built package
+        run: |
+          source .venv/bin/activate
+          python -m pip install dist/*.whl
+          python -c "import fennel_data_lib"
 
       #----------------------------------------------
       # install your root project, if required
@@ -103,6 +110,6 @@ jobs:
       - name: Run tests
         run: |
           source .venv/bin/activate
-          poetry run pytest fennel --run_slow
-          poetry run pytest docs
+          pytest fennel --run_slow
+          pytest docs
           poetry run python -m unittest discover fennel
