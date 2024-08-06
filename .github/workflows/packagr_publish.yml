@@ -67,17 +67,20 @@ jobs:
 
       # Build the package using Maturin
       - name: Build the package using Maturin
-        run: maturin build --release --manifest-path ./server/fennel_data_lib/Cargo.toml --out dist --no-sdist
-
-      # Install the built package
+        run: maturin build --release --features "extension-module" --manifest-path ./server/fennel_data_lib/Cargo.toml --out dist 
+     
+     # Install the built package
       - name: Install built package
-        run: pip install dist/*.whl
+        run: |
+          source .venv/bin/activate
+          python -m pip install dist/*.whl
+          python -c "import fennel_data_lib"
 
       # Run Python tests
       - name: Run tests
         run: |
           source .venv/bin/activate
-          poetry run pytest fennel --run_slow
+          pytest fennel --run_slow
 
       # Publish the package to PyPI if all tests pass
       - name: Publish to PyPI
