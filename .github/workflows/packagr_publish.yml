@@ -85,4 +85,5 @@ jobs:
       # Publish the package to PyPI if all tests pass
       - name: Publish to PyPI
         run: |
+          pip install setuptools wheel twine
           twine upload --repository pypi dist/* --verbose -u __token__ -p ${{ secrets.PYPI_PACKAGR_ACCESS_TOKEN }}

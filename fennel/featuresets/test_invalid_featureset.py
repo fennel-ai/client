@@ -363,3 +363,25 @@ def test_invalid_extractors(client):
         "['user_id', 'home_geoid', 'country', 'credit_score'] found : `home_geoids` in "
         "extractor : `my_extractor`."
     )
+
+
+@mock
+def test_invalid_alias_feature(client):
+    @featureset
+    class A:
+        user_id: Optional[int]
+        home_geoid: int
+        credit_score: int
+
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class B:
+            user_id: int = F(A.user_id, default=0)
+            home_geoid: int
+            credit_score: int
+
+    assert (
+        str(e.value)
+        == "'Please specify a reference to a field of a dataset to use \"default\" param', found arg: `user_id` and default: `0`"
+    )

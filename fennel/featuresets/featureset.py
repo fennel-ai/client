@@ -72,13 +72,19 @@ def feature(
     **kwargs,
 ) -> T:  # type: ignore
     if len(args) > 1:
-        raise ValueError(
-            f"We can only reference to only one feature or one field at a time found : {args}"
+        raise TypeError(
+            f"Please reference to only one feature or one field at a time found : {args}"
         )
-    if len(args) == 0 and default is not None:
-        raise ValueError(
-            'Please specify a reference to a field of a dataset to use "default" param'
-        )
+    if default is not None:
+        if len(args) == 0:
+            raise TypeError(
+                'Please specify a reference to a field of a dataset to use "default" param'
+            )
+        if not isinstance(args[0], Field):
+            raise TypeError(
+                f"'Please specify a reference to a field of a dataset to use \"default\" param', found arg: `{args[0]}` and default: `{default}`"
+            )
+
     if len(args) == 0 and version is None:
         version = 0
 

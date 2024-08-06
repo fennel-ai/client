@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.1] - 2024-08-05
+- Support chained lookup extractors 
+
 ## [1.5.0] - 2024-08-04
 - Rust based expressions
 
