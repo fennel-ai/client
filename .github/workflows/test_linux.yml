@@ -45,10 +45,6 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
-      # Install protoc
-      - name: Install protoc
-        run: sudo apt-get install -y protobuf-compiler libprotoc-dev
-
       #----------------------------------------------
       #       load cached venv if cache exists
       #----------------------------------------------
