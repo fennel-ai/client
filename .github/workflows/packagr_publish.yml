@@ -1,89 +1,86 @@
-name: Build, Test, and Publish
+name: Packagr Publish
 
+# Controls when the workflow will run
 on:
+  # Triggers the workflow on push but only for the main branch
   push:
     branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build-and-publish:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    name: Build, Test, and Publish Package
 
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    name: Run tests and publish latest version if succcessful
     steps:
-      # Checkout the Python client repository
-      - name: Check out client repository (Python)
+      #----------------------------------------------
+      #       check-out repo and set-up python
+      #----------------------------------------------
+      - name: Check out repository
         uses: actions/checkout@v2
 
-      # Checkout the Rust server repository
-      - name: Check out server repository (Rust)
-        uses: actions/checkout@v2
-        with:
-          repository: 'fennel-ai/server'
-          token: ${{ secrets.SERVER_CHECKOUT }}
-          path: 'server'
-          ref: 'main'
-
-      # Set up Python environment
-      - name: Set up Python
+      - name: Set up python
+        id: setup-python
         uses: actions/setup-python@v2
         with:
           python-version: 3.12
 
-      # Install Poetry
+      #----------------------------------------------
+      #  -----  install & configure poetry  -----
+      #----------------------------------------------
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
-      # Load cached Python virtual environment if it exists
+      #----------------------------------------------
+      #       load cached venv if cache exists
+      #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v2
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      
-      # Install Python dependencies if the cache does not exist
+
+      #----------------------------------------------
+      # install dependencies if cache does not exist
+      #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
 
-      # Set up Rust toolchain
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          default: true
+      #----------------------------------------------
+      # install your root project, if required
+      #----------------------------------------------
+      - name: Install library
+        run: poetry install --no-interaction
 
-      # Install protobuf compiler (protoc)
-      - name: Install protobuf compiler (protoc)
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-
-      # Install Maturin to build the package
-      - name: Install Maturin
-        run: python -m pip install maturin
-
-      # Build the package using Maturin
-      - name: Build the package using Maturin
-        run: maturin build --release --features "extension-module" --manifest-path ./server/fennel_data_lib/Cargo.toml --out dist 
-     
-     # Install the built package
-      - name: Install built package
-        run: |
-          source .venv/bin/activate
-          python -m pip install dist/*.whl
-          python -c "import fennel_data_lib"
-
-      # Run Python tests
+      # Run test suite
       - name: Run tests
         run: |
           source .venv/bin/activate
-          pytest fennel --run_slow
+          poetry run pytest . --run_slow
+          poetry run python -m unittest discover fennel
 
-      # Publish the package to PyPI if all tests pass
-      - name: Publish to PyPI
+
+      #----------------------------------------------
+      # publish to pypi - this is run only if the previous steps are successful
+      #----------------------------------------------
+      - name: Publish to Pypi
         run: |
+          rm -rf dist/*
           pip install setuptools wheel twine
+          poetry build
           twine upload --repository pypi dist/* --verbose -u __token__ -p ${{ secrets.PYPI_PACKAGR_ACCESS_TOKEN }}
+          
+       
+         
+      

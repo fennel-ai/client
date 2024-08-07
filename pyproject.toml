@@ -19,6 +19,8 @@ pytest-timeout = "^2.2.0"
 pytest = "7.1.3"
 pytest-rerunfailures = "^13.0"
 sortedcontainers = "^2.4.0"
+typing-extensions = "^4.12.0"
+fennel_data_lib = "^0.1.2"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"
@@ -39,14 +41,10 @@ pyspelling = "^2.8.2"
 pyyaml = "^6.0.1"
 
 [build-system]
-requires = ["maturin", "setuptools>=42", "wheel"]
-build-backend = "maturin"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.maturin]
-name = "fennel_data_lib"
-sdist-directory = "python_package"
-manifest-path = "../server/fennel_data_lib/Cargo.toml"
-
+# inspired from - https://github.com/pypa/pip/blob/main/pyproject.toml
 # inspired from - https://github.com/pypa/pip/blob/main/pyproject.toml
 
 # vendoring configuration

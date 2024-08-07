@@ -23,8 +23,6 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-
-
     # Steps represent a sequence of tasks that will be executed as part of the job
     name: Unit tests with py-version ${{ matrix.python-version }}
     steps:
@@ -38,27 +36,6 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-
-      #----------------------------------------------
-      #       check-out server repo
-      #----------------------------------------------
-      - name: Check out server repository (Rust)
-        uses: actions/checkout@v2
-        with:
-          repository: 'fennel-ai/server'
-          token: ${{ secrets.SERVER_CHECKOUT }}  
-          path: 'server'
-          ref: 'main'  
-
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          default: true
-
-      - name: Install protobuf compiler (protoc)
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
@@ -67,6 +44,11 @@ jobs:
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
+
+      # Install protoc
+      - name: Install protoc
+        run: sudo apt-get install -y protobuf-compiler libprotoc-dev
+
       #----------------------------------------------
       #       load cached venv if cache exists
       #----------------------------------------------
@@ -82,24 +64,6 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
-
-    #----------------------------------------------
-      #       install maturin 
-      #----------------------------------------------     
-      - name: Install maturin
-        run: python -m pip install maturin
-
-      # Build the package using Maturin
-      - name: Build the package using Maturin
-        run: maturin build --release --features "extension-module" --manifest-path ./server/fennel_data_lib/Cargo.toml --out dist 
-
-      # Install the built package
-      - name: Install built package
-        run: |
-          source .venv/bin/activate
-          python -m pip install dist/*.whl
-          python -c "import fennel_data_lib"
-
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
@@ -110,6 +74,5 @@ jobs:
       - name: Run tests
         run: |
           source .venv/bin/activate
-          pytest fennel --run_slow
-          pytest docs
+          poetry run pytest . --run_slow
           poetry run python -m unittest discover fennel
