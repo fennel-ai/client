@@ -430,14 +430,17 @@ class Client:
             )
         return [branch.get("name") for branch in resp["branches"]]
 
-    def checkout(self, name: str):
+    def checkout(self, name: str, init: bool = False):
         """Checkouts the client to another branch.
 
         Parameters:
         ----------
         name (str): The name of the branch to checkout.
+        init (bool): If the branch should be created if it doesn't exist
 
         """
+        if init and name not in self.list_branches():
+            self.init_branch(name)
         self._branch = name
 
     def branch(self) -> str:

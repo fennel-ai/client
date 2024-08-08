@@ -86,7 +86,9 @@ class IntegrationClient(Client):
         time.sleep(10)
         return resp
 
-    def checkout(self, name: str):
+    def checkout(self, name: str, init: bool = False):
+        if init and name not in self.list_branches():
+            self.init_branch(name)
         self._branch = name
         fennel.datasets.datasets.dataset_lookup = partial(lookup_wrapper, name, False)  # type: ignore
 

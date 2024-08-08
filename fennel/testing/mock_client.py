@@ -438,7 +438,9 @@ class MockClient(Client):
     def list_branches(self) -> List[str]:
         return list(self.branches_map.keys())
 
-    def checkout(self, name: str):
+    def checkout(self, name: str, init: bool = False):
+        if init and name not in self.list_branches():
+            self.init_branch(name)
         self._branch = name
 
     # ----------------------- Secret API's -----------------------------------
