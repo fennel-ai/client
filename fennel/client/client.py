@@ -436,6 +436,7 @@ class Client:
         Parameters:
         ----------
         name (str): The name of the branch to checkout.
+        init (bool): If the branch should be created if it doesn't exist
 
         """
         if init and name not in self.list_branches():
