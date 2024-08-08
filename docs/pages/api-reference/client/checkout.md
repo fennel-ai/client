@@ -33,5 +33,5 @@ If not specified via explicit `checkout`, by default, clients point to the 'main
 
 :::info
 Note that `checkout` doesn't validate that the `name` points to a real branch by default. Instead, it just changes the local state of the client. If the branch doesn't 
-exist, subsequent branch operations will fail, not the `checkout` itself. However, when `init` is set to `True`, `checkout` will first create the branch if a real branch is not found and subsquently point to it.
+exist, subsequent branch operations will fail, not the `checkout` itself. However, when `init` is set to `True`, `checkout` will first create the branch if a real branch is not found and subsequently point to it.
 :::
