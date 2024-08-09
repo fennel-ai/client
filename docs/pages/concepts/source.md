@@ -90,7 +90,7 @@ is when realtime data is say in Kafka but with a short retention and the archive
 is stored, say in S3. Here is one (but not the only) way of doing this:
 
 <pre snippet="concepts/source#stacked" status="success" 
-  message="Using s3 for dev and Kafka for prod"
+  message="Reading archive data from s3 and live data from Kafka"
 ></pre>
 
 ## Managing Different Dev / Prod Sources
@@ -99,7 +99,9 @@ to be used in a given environment. With this, you can have the same logical data
 get hydrated from different physical external stores in production and dev 
 environments.
 
-<pre snippet="concepts/source#selector"></pre>
+<pre snippet="concepts/source#selector"
+  message="Using s3 for dev and Kafka for prod"
+></pre>
 
 In above example, sources are given an `env` kwarg and during the [commit](/api-reference/client/commit)
 operation, env is specified to be 'prod' to select only the 'prod' sources.
