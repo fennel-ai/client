@@ -185,9 +185,9 @@ class Serializer(Visitor):
 
     def visitAggregate(self, obj):
         emit_strategy = (
-            proto.Aggregate.Eager
+            proto.EmitStrategy.Eager
             if obj.emit_strategy == EmitStrategy.Eager
-            else proto.Aggregate.Final
+            else proto.EmitStrategy.Final
         )
         if obj.window_field:
             return proto.Operator(

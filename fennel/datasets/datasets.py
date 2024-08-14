@@ -2548,6 +2548,7 @@ class SchemaValidator(Visitor):
 
         found_discrete = False
         found_non_discrete = False
+        lookback = None
         for agg in obj.aggregates:
 
             # If default window is present in groupby then each aggregate spec cannot have window different from
@@ -2576,6 +2577,16 @@ class SchemaValidator(Visitor):
                         f" non-discrete (Continuous/Forever) not both in pipeline `{self.pipeline_name}`."
                     )
                 found_non_discrete = True
+
+            # Check lookback in all windows are same
+            if isinstance(agg.window, (Hopping, Tumbling)):
+                curr_lookback = agg.window.lookback_total_seconds()
+                if lookback and curr_lookback != lookback:
+                    raise ValueError(
+                        f"Windows in all specs must have same lookback found {lookback} and {curr_lookback} in "
+                        f"pipeline `{self.pipeline_name}`."
+                    )
+                lookback = curr_lookback
 
             exceptions = agg.validate()
             if exceptions is not None:

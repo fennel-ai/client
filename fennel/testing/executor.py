@@ -11,8 +11,21 @@ import pyarrow as pa
 from frozendict import frozendict
 
 import fennel.gen.schema_pb2 as schema_proto
-from fennel.datasets import Pipeline, Visitor, Dataset, Count
-from fennel.datasets.datasets import UDFType, DSSchema, WINDOW_FIELD_NAME
+from fennel.datasets import Pipeline, Visitor, Dataset
+from fennel.datasets.datasets import DSSchema, UDFType, WINDOW_FIELD_NAME
+from fennel.datasets.aggregate import (
+    AggregateType,
+    Average,
+    Count,
+    Distinct,
+    ExpDecaySum,
+    Sum,
+    Min,
+    Max,
+    LastK,
+    Quantile,
+    Stddev,
+)
 from fennel.gen.schema_pb2 import Field
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype, fennel_is_optional
@@ -274,7 +287,9 @@ class Executor(Visitor):
 
     def visitAggregate(self, obj):
         def join_aggregated_dataset(
-            schema: DSSchema, column_wise_df: Dict[str, pd.DataFrame]
+            schema: DSSchema,
+            column_wise_df: Dict[str, pd.DataFrame],
+            aggregates: List[AggregateType],
         ) -> pd.DataFrame:
             """
             Internal function to join aggregated datasets, where each aggregated
@@ -324,6 +339,33 @@ class Executor(Visitor):
             # Delete FENNEL_TIMESTAMP column as this should be generated again
             if FENNEL_DELETE_TIMESTAMP in df.columns:  # type: ignore
                 final_df.drop(columns=[FENNEL_DELETE_TIMESTAMP], inplace=True)  # type: ignore
+
+            # During merging there can be multiple rows which has some columns as null, we need to fill them default
+            # values.
+            for aggregate in aggregates:
+                if isinstance(aggregate, (Count, Sum, ExpDecaySum)):
+                    final_df[aggregate.into_field] = final_df[
+                        aggregate.into_field
+                    ].fillna(0)
+                if isinstance(aggregate, (LastK, Distinct)):
+                    # final_df[aggregate.into_field] = final_df[
+                    #     aggregate.into_field
+                    # ].fillna([])
+                    # fillna doesn't work for list type or dict type :cols
+                    for row in final_df.loc[
+                        final_df[aggregate.into_field].isnull()
+                    ].index:
+                        final_df.loc[row, aggregate.into_field] = []
+                if isinstance(aggregate, (Average, Min, Max, Stddev, Quantile)):
+                    if pd.isna(aggregate.default):
+                        final_df[aggregate.into_field] = final_df[
+                            aggregate.into_field
+                        ].fillna(pd.NA)
+                    else:
+                        final_df[aggregate.into_field] = final_df[
+                            aggregate.into_field
+                        ].fillna(aggregate.default)
+
             return final_df
 
         input_ret = self.visit(obj.node)
@@ -362,7 +404,9 @@ class Executor(Visitor):
                     output_schema.values[aggregate.into_field],
                     True if obj.window_field else False,
                 )
-            final_df = join_aggregated_dataset(output_schema, result)
+            final_df = join_aggregated_dataset(
+                output_schema, result, obj.aggregates
+            )
         else:
             # this is the case where 'window' param in groupby is used
             if not obj.window_field:

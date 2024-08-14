@@ -159,6 +159,7 @@ def test_distinct_state():
 
 def test_get_timestamps_for_hopping_window():
     timestamp = datetime(2020, 1, 2, 13, 0, 0, tzinfo=timezone.utc)
+    frontier = datetime.now(timezone.utc)
 
     secs_1d = 24 * 60 * 60
     secs_1h = 60 * 60
@@ -166,10 +167,14 @@ def test_get_timestamps_for_hopping_window():
     # Test tumbling window of duration 1d.
     assert [
         datetime(2020, 1, 3, 0, 0, 0, tzinfo=timezone.utc)
-    ] == get_timestamps_for_hopping_window(timestamp, secs_1d, secs_1d)
+    ] == get_timestamps_for_hopping_window(
+        timestamp, frontier, secs_1d, secs_1d, 0
+    )
 
     # Test Hopping window of duration 1d stride 1h.
-    assert get_timestamps_for_hopping_window(timestamp, secs_1d, secs_1h) == [
+    assert get_timestamps_for_hopping_window(
+        timestamp, frontier, secs_1d, secs_1h, 0
+    ) == [
         datetime(2020, 1, 2, 14, 0, tzinfo=timezone.utc),
         datetime(2020, 1, 2, 15, 0, tzinfo=timezone.utc),
         datetime(2020, 1, 2, 16, 0, tzinfo=timezone.utc),
@@ -194,6 +199,55 @@ def test_get_timestamps_for_hopping_window():
         datetime(2020, 1, 3, 11, 0, tzinfo=timezone.utc),
         datetime(2020, 1, 3, 12, 0, tzinfo=timezone.utc),
         datetime(2020, 1, 3, 13, 0, tzinfo=timezone.utc),
+    ]
+
+
+def test_get_timestamps_for_hopping_window_with_lookback():
+    timestamp = datetime(2020, 1, 2, 13, 0, 0, tzinfo=timezone.utc)
+    frontier = datetime(2020, 1, 3, 14, 0, 0, tzinfo=timezone.utc)
+
+    secs_1d = 24 * 60 * 60
+    secs_1h = 60 * 60
+
+    # Test tumbling window of duration 1d with lookback of 15 hours
+    assert [] == get_timestamps_for_hopping_window(
+        timestamp, frontier, secs_1d, secs_1d, 15 * 60 * 60
+    )
+
+    # Test tumbling window of duration 1d with lookback of 14 hours
+    assert [
+        datetime(2020, 1, 3, 0, 0, 0, tzinfo=timezone.utc)
+    ] == get_timestamps_for_hopping_window(
+        timestamp, frontier, secs_1d, secs_1d, 60 * 60
+    )
+
+    # Test Hopping window of duration 1d stride 1h and lookback of 2 hours.
+    assert get_timestamps_for_hopping_window(
+        timestamp, frontier, secs_1d, secs_1h, 2 * 60 * 60
+    ) == [
+        datetime(2020, 1, 2, 14, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 15, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 16, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 17, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 18, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 19, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 20, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 21, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 22, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 2, 23, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 0, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 1, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 2, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 3, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 4, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 5, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 6, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 7, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 8, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 9, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 10, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 11, 0, tzinfo=timezone.utc),
+        datetime(2020, 1, 3, 12, 0, tzinfo=timezone.utc),
     ]
 
 
