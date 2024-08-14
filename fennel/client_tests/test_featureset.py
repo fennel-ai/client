@@ -872,7 +872,11 @@ def test_embedding_features(client):
             {
                 "image_id": [1, 2, 3],
                 "embedding": [[1.0, 2.0], [2.0, 3.0], [3.0, 4.0]],
-                "ts": [datetime.now(), datetime.now(), datetime.now()],
+                "ts": [
+                    datetime.now(timezone.utc),
+                    datetime.now(timezone.utc),
+                    datetime.now(timezone.utc),
+                ],
             }
         ),
     )

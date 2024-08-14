@@ -229,7 +229,7 @@ def test_valid_derived_extractors():
             "datasets": [],
             "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
             "features": ["user_id"],
-            "metadata": {},
+            "metadata": {"description": "alias feature"},
             "version": 0,
             "pycode": None,
             "feature_set_name": "UserInfo",
@@ -243,7 +243,7 @@ def test_valid_derived_extractors():
                 {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
             ],
             "features": ["gender"],
-            "metadata": {},
+            "metadata": {"description": "lookup derived feature"},
             "version": 0,
             "pycode": None,
             "feature_set_name": "UserInfo",
@@ -260,7 +260,10 @@ def test_valid_derived_extractors():
                 {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
             ],
             "features": ["age_years"],
-            "metadata": {},
+            "metadata": {
+                "owner": "zaki@fennel.ai",
+                "description": "lookup with meta",
+            },
             "version": 0,
             "pycode": None,
             "feature_set_name": "UserInfo",
@@ -277,7 +280,10 @@ def test_valid_derived_extractors():
                 {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
             ],
             "features": ["dob"],
-            "metadata": {},
+            "metadata": {
+                "deprecated": True,
+                "description": "deprecated feature",
+            },
             "version": 0,
             "pycode": None,
             "feature_set_name": "UserInfo",
@@ -294,7 +300,7 @@ def test_valid_derived_extractors():
                 {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
             ],
             "features": ["optional_nickname"],
-            "metadata": {},
+            "metadata": {"description": "optional lookup derived feature"},
             "version": 0,
             "pycode": None,
             "feature_set_name": "UserInfo",
@@ -335,7 +341,9 @@ def test_valid_derived_extractors():
                 }
             ],
             "features": ["age_group"],
-            "metadata": {},
+            "metadata": {
+                "description": "alias a feature that has an explicit extractor"
+            },
             "version": 0,
             "pycode": None,
             "feature_set_name": "AgeInfo",
@@ -354,7 +362,9 @@ def test_valid_derived_extractors():
                 }
             ],
             "features": ["age"],
-            "metadata": {},
+            "metadata": {
+                "description": "alias a feature that has a derived extractor"
+            },
             "version": 0,
             "pycode": None,
             "feature_set_name": "AgeInfo",
