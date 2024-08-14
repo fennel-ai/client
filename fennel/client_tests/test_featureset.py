@@ -1056,3 +1056,60 @@ def test_chained_lookups(client):
         "Rugby",
     ]
     assert feature_df["UserInfo3.num_players"].tolist() == [9, 11, 6, pd.NA]
+
+
+@pytest.mark.integration
+@mock
+def test_auto_extractor_removal(client):
+    @source(webhook.endpoint("IndexDataset"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class IndexDataset:
+        user_id: int = field(key=True)
+        name: str
+        age: int
+        timestamp: datetime
+
+    @featureset
+    class IndexFeatures:
+        user_id: int
+        name: Optional[str] = F(IndexDataset.name)
+        age: Optional[int] = F(IndexDataset.age)
+
+    response = client.commit(
+        datasets=[IndexDataset],
+        featuresets=[IndexFeatures],
+        message="first_commit",
+    )
+    assert response.status_code == requests.codes.OK, response.json()
+
+    # Try removing one auto extractor from incremental mode
+    def remove_age():
+        @featureset
+        class IndexFeatures:
+            user_id: int
+            name: Optional[str] = F(IndexDataset.name)
+            age: Optional[int] = F(IndexDataset.age).meta(deleted=True)
+
+        return IndexFeatures
+
+    client.commit(
+        featuresets=[remove_age()], message="second_commit", incremental=True
+    )
+    assert response.status_code == requests.codes.OK, response.json()
+
+    # Try removing one auto extractor from normal commit
+    def remove_name():
+        @featureset
+        class IndexFeatures:
+            user_id: int
+            name: Optional[str] = F(IndexDataset.name).meta(deleted=True)
+            age: Optional[int] = F(IndexDataset.age).meta(deleted=True)
+
+        return IndexFeatures
+
+    client.commit(
+        datasets=[IndexDataset],
+        featuresets=[remove_name()],
+        message="third_commit",
+    )
+    assert response.status_code == requests.codes.OK, response.json()

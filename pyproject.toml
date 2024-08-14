@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fennel-ai"
-version = "1.5.3"
+version = "1.5.4"
 description = "The modern realtime feature engineering platform"
 authors = ["Fennel AI <developers@fennel.ai>"]
 packages = [{ include = "fennel" }]
@@ -21,6 +21,7 @@ pytest-rerunfailures = "^13.0"
 sortedcontainers = "^2.4.0"
 typing-extensions = "^4.12.0"
 fennel-data-lib = "0.1.12"
+pyarrow = "^14.0.2"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"

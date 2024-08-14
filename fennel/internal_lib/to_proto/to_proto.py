@@ -623,6 +623,11 @@ def _extractor_to_proto(
             extractor.derived_extractor_info
         )
 
+    if extractor.extractor_type == ExtractorType.PY_FUNC:
+        metadata = get_metadata_proto(extractor.func)
+    else:
+        metadata = get_metadata_proto(extractor)
+
     proto_extractor = fs_proto.Extractor(
         name=extractor.name,
         datasets=[
@@ -630,7 +635,7 @@ def _extractor_to_proto(
         ],
         inputs=inputs,
         features=[feature.name for feature in extractor.outputs],
-        metadata=get_metadata_proto(extractor.func),
+        metadata=metadata,
         version=extractor.version,
         pycode=to_extractor_pycode(extractor, fs, fs_obj_map),
         feature_set_name=extractor.featureset,

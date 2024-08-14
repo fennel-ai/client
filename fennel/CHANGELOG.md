@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.4] - 2024-08-14
+- Add support for removal of auto extractors
+
 ## [1.5.1] - 2024-08-05
 - Support chained lookup extractors 
 
