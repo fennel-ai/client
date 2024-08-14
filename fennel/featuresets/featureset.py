@@ -34,6 +34,7 @@ from fennel.lib.metadata import (
     get_meta_attr,
     set_meta_attr,
 )
+from fennel.lib.metadata.metadata import get_meta
 from fennel.lib.params import (
     FENNEL_INPUTS,
     FENNEL_OUTPUTS,
@@ -586,6 +587,11 @@ class Featureset:
                 extractor.outputs = [feature]
                 extractor.inputs = [ref]
                 extractor.featureset = self._name
+                feature_meta = get_meta(feature)
+                if feature_meta:
+                    extractor = cast(
+                        Extractor, meta(**feature_meta.dict())(extractor)
+                    )
                 output.append(extractor)
                 continue
 
@@ -620,6 +626,11 @@ class Featureset:
             extractor.set_inputs_from_featureset(self, feature)
             extractor.featureset = self._name
             extractor.outputs = [feature]
+            feature_meta = get_meta(feature)
+            if feature_meta:
+                extractor = cast(
+                    Extractor, meta(**feature_meta.dict())(extractor)
+                )
             # If extractor already exists, throw an error
             if extractor.name in [e.name for e in output]:
                 raise ValueError(
