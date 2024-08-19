@@ -390,6 +390,12 @@ class Expr(object):
         arrow_col = eval(proto_bytes, df_pa, proto_schema)
         return pa_to_pd(arrow_col)
 
+    def __str__(self) -> str:  # type: ignore
+        from fennel.expr.visitor import ExprPrinter
+
+        printer = ExprPrinter()
+        return printer.print(self.root)
+
 
 class _Bool(Expr):
     def __init__(self, expr: Expr):

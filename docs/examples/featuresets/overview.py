@@ -227,7 +227,7 @@ def test_featureset_auto_convention(client):
     webhook = Webhook(name="fennel_webhook")
     # docsnip featureset_auto_convention
     # docsnip-highlight next-line
-    from fennel.featuresets import feature as F
+    from fennel.featuresets import feature
 
     @source(webhook.endpoint("Movie"), disorder="14d", cdc="upsert")
     @dataset(index=True)
@@ -243,8 +243,8 @@ def test_featureset_auto_convention(client):
     @featureset
     class MovieFeatures:
         # docsnip-highlight start
-        id: int = F(Request.movie_id)
-        duration: int = F(Movie.duration, default=-1)
+        id: int = feature(Request.movie_id)
+        duration: int = feature(Movie.duration, default=-1)
         # docsnip-highlight end
 
     # /docsnip

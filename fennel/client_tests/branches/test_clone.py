@@ -7,7 +7,7 @@ from fennel._vendor import requests
 from fennel.connectors import source, Webhook
 from fennel.datasets import Dataset, dataset, field, pipeline, Count
 from fennel.dtypes import Continuous
-from fennel.featuresets import featureset, feature as F, extractor
+from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import inputs, outputs
 from fennel.testing import mock
 
@@ -58,11 +58,11 @@ class CountryStats:
 @featureset
 class UserInfoFeatureset:
     user_id: int
-    name: str = F(UserInfoDataset.name, default="None")  # type: ignore
-    age: int = F(UserInfoDataset.age, default=1)  # type: ignore
-    gender: str = F(UserInfoDataset.gender, default="None")  # type: ignore
-    country_code: int = F(UserInfoDataset.country_code, default=1)  # type: ignore
-    email: str = F(UserInfoDataset.email, default="None")  # type: ignore
+    name: str = feature(UserInfoDataset.name, default="None")  # type: ignore
+    age: int = feature(UserInfoDataset.age, default=1)  # type: ignore
+    gender: str = feature(UserInfoDataset.gender, default="None")  # type: ignore
+    country_code: int = feature(UserInfoDataset.country_code, default=1)  # type: ignore
+    email: str = feature(UserInfoDataset.email, default="None")  # type: ignore
 
 
 def _get_changed_dataset(filter_condition):
@@ -114,11 +114,11 @@ def _get_changed_featureset():
     @featureset
     class UserInfoFeatureset:
         user_id: int
-        name: str = F(UserInfoDataset.name, default="None")  # type: ignore
+        name: str = feature(UserInfoDataset.name, default="None")  # type: ignore
         age: int
-        gender: str = F(UserInfoDataset.gender, default="None")  # type: ignore
+        gender: str = feature(UserInfoDataset.gender, default="None")  # type: ignore
         country_code: int
-        email: str = F(UserInfoDataset.email, default="None")  # type: ignore
+        email: str = feature(UserInfoDataset.email, default="None")  # type: ignore
 
         @extractor(deps=[UserInfoDataset], version=2)
         @inputs("user_id")

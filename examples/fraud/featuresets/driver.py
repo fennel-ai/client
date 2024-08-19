@@ -8,7 +8,7 @@ from fraud.datasets.sourced import (
 )
 
 from fraud.featuresets.request import Request
-from fennel.featuresets import featureset, feature as F, extractor
+from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import inputs, outputs
 from fennel.dtypes import oneof
 
@@ -36,15 +36,15 @@ class AgeFS:
 
 @featureset
 class ReservationLevelFS:
-    driver_id: int = F(Request.driver_id)
-    guest_protection_level: Optional[str] = F(
+    driver_id: int = feature(Request.driver_id)
+    guest_protection_level: Optional[str] = feature(
         RentCarCheckoutEventDS.protection_level,
     )
-    total_trip_price_amount: float = F(
+    total_trip_price_amount: float = feature(
         RentCarCheckoutEventDS.total_trip_price_amount,
         default=0.0,
     )
-    delivery_type: oneof(str, ["AIRPORT", "HOME"]) = F(
+    delivery_type: oneof(str, ["AIRPORT", "HOME"]) = feature(
         RentCarCheckoutEventDS.delivery_type,
         default="AIRPORT",
     )
@@ -68,8 +68,8 @@ class ReservationLevelFS:
 
 @featureset
 class CreditScoreFS:
-    driver_id: int = F(Request.driver_id)
-    ais_score: float = F(
+    driver_id: int = feature(Request.driver_id)
+    ais_score: float = feature(
         DriverCreditScoreDS.score,
         default=0.0,
     )

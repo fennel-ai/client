@@ -9,7 +9,7 @@ from fraud.datasets.velocity import (
 from fraud.featuresets.request import Request
 
 from fennel import extractor
-from fennel.featuresets import featureset, feature as F
+from fennel.featuresets import featureset, feature
 from fennel.lib import inputs, outputs
 
 __owner__ = "eng@app.com"
@@ -17,16 +17,18 @@ __owner__ = "eng@app.com"
 
 @featureset
 class DriverVelocityFS:
-    driver_id: int = F(Request.driver_id)
+    driver_id: int = feature(Request.driver_id)
     percent_past_guest_cancelled_trips: float
-    num_past_completed_trips: int = F(
+    num_past_completed_trips: int = feature(
         NumCompletedTripsDS.num_past_completed_trips, default=0
     )
-    num_logins_last_day: int = F(LoginsLastDayDS.num_logins_last_day, default=0)
-    num_checkout_pages_last_day: int = F(
+    num_logins_last_day: int = feature(
+        LoginsLastDayDS.num_logins_last_day, default=0
+    )
+    num_checkout_pages_last_day: int = feature(
         CheckoutPagesLastDayDS.num_checkout_pages_last_day, default=0
     )
-    num_past_approved_trips: int = F(
+    num_past_approved_trips: int = feature(
         PastApprovedDS.num_past_approved_trips, default=0
     )
 

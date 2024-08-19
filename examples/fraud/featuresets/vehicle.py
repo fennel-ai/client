@@ -2,7 +2,7 @@ import pandas as pd
 from fraud.datasets.vehicle import MarketAreaDS
 from fraud.featuresets.request import Request
 
-from fennel.featuresets import featureset, feature as F, extractor
+from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import inputs, outputs
 
 __owner__ = "eng@app.com"
@@ -10,8 +10,8 @@ __owner__ = "eng@app.com"
 
 @featureset
 class VehicleFS:
-    vehicle_id: int = F(Request.vehicle_id)
-    market_area_id: int = F(MarketAreaDS.market_area_id, default=0)
+    vehicle_id: int = feature(Request.vehicle_id)
+    market_area_id: int = feature(MarketAreaDS.market_area_id, default=0)
     vehicle_state: str
 
     @extractor(deps=[MarketAreaDS], version=1)

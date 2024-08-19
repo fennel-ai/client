@@ -11,7 +11,7 @@ import fennel._vendor.requests as requests
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
 from fennel.dtypes import Embedding, struct
-from fennel.featuresets import featureset, extractor, feature as F
+from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import (
     includes,
     inputs,
@@ -19,6 +19,7 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
+from fennel.expr import F
 from fennel.testing import mock, log
 
 ################################################################################
@@ -50,7 +51,7 @@ class UserInfoDataset:
 @featureset
 class UserInfoSingleExtractor:
     userid: int
-    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age: int = feature().meta(owner="aditya@fennel.ai")  # type: ignore
     age_squared: int
     age_cubed: int
     is_name_common: bool
@@ -88,12 +89,14 @@ class UserInfoMultipleExtractor:
     userid: int
     name: str
     country_geoid: int
-    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age: int = feature().meta(owner="aditya@fennel.ai")  # type: ignore
     age_squared: int
     age_cubed: int
     is_name_common: bool
     age_reciprocal: float
     age_doubled: int
+    age_reciprocal_expr: float = feature(1 / (F("age") / (3600.0 * 24)) + 0.01)
+    age_double_expr: int = feature(F("age") * 2)
 
     @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")
@@ -154,7 +157,6 @@ class UserInfoMultipleExtractor:
 class TestSimpleExtractor(unittest.TestCase):
     @pytest.mark.integration
     def test_get_age_and_name_features(self):
-        print("Running test_get_age_and_name_features")
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
         assert UserInfoMultipleExtractor.all() == [
@@ -167,6 +169,8 @@ class TestSimpleExtractor(unittest.TestCase):
             "UserInfoMultipleExtractor.is_name_common",
             "UserInfoMultipleExtractor.age_reciprocal",
             "UserInfoMultipleExtractor.age_doubled",
+            "UserInfoMultipleExtractor.age_reciprocal_expr",
+            "UserInfoMultipleExtractor.age_double_expr",
         ]
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
         df = UserInfoMultipleExtractor.get_age_and_name_features(
@@ -235,6 +239,90 @@ class TestSimpleExtractor(unittest.TestCase):
             res["UserInfoMultipleExtractor.age_doubled"].tolist(), [64, 48]
         )
 
+    @pytest.mark.integration
+    @mock
+    def test_e2e_query(self, client):
+        client.commit(
+            message="some commit msg",
+            datasets=[UserInfoDataset],
+            featuresets=[UserInfoMultipleExtractor],
+        )
+        now = datetime.now(timezone.utc)
+        data = [
+            [18232, "John", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", now],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "UserInfoDataset", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+
+        feature_df = client.query(
+            outputs=[UserInfoMultipleExtractor],
+            inputs=[UserInfoMultipleExtractor.userid],
+            input_dataframe=pd.DataFrame(
+                {"UserInfoMultipleExtractor.userid": [18232, 18234]}
+            ),
+        )
+        assert feature_df.shape == (2, 11)
+        assert feature_df.columns.tolist() == [
+            "UserInfoMultipleExtractor.userid",
+            "UserInfoMultipleExtractor.name",
+            "UserInfoMultipleExtractor.country_geoid",
+            "UserInfoMultipleExtractor.age",
+            "UserInfoMultipleExtractor.age_squared",
+            "UserInfoMultipleExtractor.age_cubed",
+            "UserInfoMultipleExtractor.is_name_common",
+            "UserInfoMultipleExtractor.age_reciprocal",
+            "UserInfoMultipleExtractor.age_doubled",
+            "UserInfoMultipleExtractor.age_reciprocal_expr",
+            "UserInfoMultipleExtractor.age_double_expr",
+        ]
+        assert feature_df["UserInfoMultipleExtractor.userid"].tolist() == [
+            18232,
+            18234,
+        ]
+
+        assert feature_df["UserInfoMultipleExtractor.age"].tolist() == [32, 24]
+        assert feature_df["UserInfoMultipleExtractor.age_squared"].tolist() == [
+            1024,
+            576,
+        ]
+        assert feature_df["UserInfoMultipleExtractor.age_cubed"].tolist() == [
+            32768,
+            13824,
+        ]
+        assert feature_df[
+            "UserInfoMultipleExtractor.is_name_common"
+        ].tolist() == [
+            True,
+            False,
+        ]
+        expected_age_reciprocal = [2700.01, 3600.01]
+        assert (
+            feature_df["UserInfoMultipleExtractor.age_reciprocal"].tolist()
+            == expected_age_reciprocal
+        )
+        assert feature_df["UserInfoMultipleExtractor.age_doubled"].tolist() == [
+            64,
+            48,
+        ]
+        assert feature_df[
+            "UserInfoMultipleExtractor.country_geoid"
+        ].tolist() == [5, 3]
+        assert feature_df["UserInfoMultipleExtractor.name"].tolist() == [
+            "John",
+            "Monica",
+        ]
+        assert (
+            feature_df["UserInfoMultipleExtractor.age_reciprocal_expr"].tolist()
+            == expected_age_reciprocal
+        )
+        assert feature_df[
+            "UserInfoMultipleExtractor.age_double_expr"
+        ].tolist() == [64, 48]
+
 
 @struct
 class Velocity:
@@ -260,22 +348,22 @@ class FlightRequest:
 
 @featureset
 class GeneratedFeatures:
-    user_id: int = F(UserInfoSingleExtractor.userid)  # type: ignore
-    id: int = F(FlightRequest.id)  # type: ignore
-    country: str = F(UserInfoDataset.country, default="pluto")  # type: ignore
-    velocity: Velocity = F(
+    user_id: int = feature(UserInfoSingleExtractor.userid)  # type: ignore
+    id: int = feature(FlightRequest.id)  # type: ignore
+    country: str = feature(UserInfoDataset.country, default="pluto")  # type: ignore
+    velocity: Velocity = feature(
         FlightDataset.v_cruising,  # type: ignore
         default=Velocity(500.0, 0),  # type: ignore
     )
-    layout: Dict[str, Optional[int]] = F(
+    layout: Dict[str, Optional[int]] = feature(
         FlightDataset.layout,  # type: ignore
         default={"economy": 0},
     )
-    pilots: List[int] = F(
+    pilots: List[int] = feature(
         FlightDataset.pilot_ids,  # type: ignore
         default=[0, 0, 0],
     )
-    base_region: Optional[str] = F(
+    base_region: Optional[str] = feature(
         FlightDataset.region,  # type: ignore
     )
 
@@ -420,10 +508,22 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 9))
+        self.assertEqual(feature_df.shape, (2, 11))
         self.assertEqual(
             list(feature_df["UserInfoMultipleExtractor.age_reciprocal"]),
             [2700.01, 3600.01],
+        )
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_doubled"]),
+            [64, 48],
+        )
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_reciprocal_expr"]),
+            [2700.01, 3600.01],
+        )
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_double_expr"]),
+            [64, 48],
         )
 
 
@@ -697,7 +797,7 @@ class TestOptionalTypes(unittest.TestCase):
         @featureset
         class FloatFeatureSet:
             user_id: int
-            income: Optional[float] = F(FloatDataset.income)
+            income: Optional[float] = feature(FloatDataset.income)
 
         client.commit(
             message="some commit msg",
@@ -747,7 +847,7 @@ class TestOptionalTypes(unittest.TestCase):
         @featureset
         class IntFeatureSet:
             user_id: int
-            age: Optional[int] = F(IntDataset.age)
+            age: Optional[int] = feature(IntDataset.age)
 
         client.commit(
             message="some commit msg",
@@ -801,7 +901,7 @@ def test_featureset_name_query(client):
     @featureset
     class FS1:
         user_id: int
-        age: Optional[int] = F(DS1.age)
+        age: Optional[int] = feature(DS1.age)
 
     client.commit(
         message="some commit msg",
@@ -851,12 +951,12 @@ def test_embedding_features(client):
     @featureset
     class ImageFeature:
         image_id: int
-        embedding: Optional[Embedding[2]] = F(ImageEmbeddings.embedding)
+        embedding: Optional[Embedding[2]] = feature(ImageEmbeddings.embedding)
 
     @featureset
     class ImageFeatureWithDefault:
-        image_id: int = F(ImageFeature.image_id)
-        embedding2: Embedding[2] = F(
+        image_id: int = feature(ImageFeature.image_id)
+        embedding2: Embedding[2] = feature(
             ImageEmbeddings.embedding, default=[11.0, 13.2]
         )
 
@@ -922,26 +1022,26 @@ class Sport:
 
 @featureset
 class UserInfo:
-    user_id: int = F(Request.user_id)
-    country: Optional[str] = F(UserInfoDataset.country)
-    sport: Optional[str] = F(CountryInfo.national_sport)
-    num_players: Optional[int] = F(Sport.num_players)
+    user_id: int = feature(Request.user_id)
+    country: Optional[str] = feature(UserInfoDataset.country)
+    sport: Optional[str] = feature(CountryInfo.national_sport)
+    num_players: Optional[int] = feature(Sport.num_players)
 
 
 @featureset
 class UserInfo2:
-    user_id: int = F(Request.user_id)
-    country: Optional[str] = F(UserInfoDataset.country)
-    sport: str = F(CountryInfo.national_sport, default="Cricket")
-    num_players: Optional[int] = F(Sport.num_players)
+    user_id: int = feature(Request.user_id)
+    country: Optional[str] = feature(UserInfoDataset.country)
+    sport: str = feature(CountryInfo.national_sport, default="Cricket")
+    num_players: Optional[int] = feature(Sport.num_players)
 
 
 @featureset
 class UserInfo3:
-    user_id: int = F(Request.user_id)
-    country: Optional[str] = F(UserInfoDataset.country)
-    sport: str = F(CountryInfo.national_sport, default="Rugby")
-    num_players: Optional[int] = F(Sport.num_players)
+    user_id: int = feature(Request.user_id)
+    country: Optional[str] = feature(UserInfoDataset.country)
+    sport: str = feature(CountryInfo.national_sport, default="Rugby")
+    num_players: Optional[int] = feature(Sport.num_players)
 
 
 @pytest.mark.integration
@@ -1076,8 +1176,8 @@ def test_auto_extractor_removal(client):
     @featureset
     class IndexFeatures:
         user_id: int
-        name: Optional[str] = F(IndexDataset.name)
-        age: Optional[int] = F(IndexDataset.age)
+        name: Optional[str] = feature(IndexDataset.name)
+        age: Optional[int] = feature(IndexDataset.age)
 
     response = client.commit(
         datasets=[IndexDataset],
@@ -1091,8 +1191,8 @@ def test_auto_extractor_removal(client):
         @featureset
         class IndexFeatures:
             user_id: int
-            name: Optional[str] = F(IndexDataset.name)
-            age: Optional[int] = F(IndexDataset.age).meta(deleted=True)
+            name: Optional[str] = feature(IndexDataset.name)
+            age: Optional[int] = feature(IndexDataset.age).meta(deleted=True)
 
         return IndexFeatures
 
@@ -1106,8 +1206,8 @@ def test_auto_extractor_removal(client):
         @featureset
         class IndexFeatures:
             user_id: int
-            name: Optional[str] = F(IndexDataset.name).meta(deleted=True)
-            age: Optional[int] = F(IndexDataset.age).meta(deleted=True)
+            name: Optional[str] = feature(IndexDataset.name).meta(deleted=True)
+            age: Optional[int] = feature(IndexDataset.age).meta(deleted=True)
 
         return IndexFeatures
 

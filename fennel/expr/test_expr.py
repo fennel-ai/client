@@ -5,7 +5,7 @@ from typing import Dict
 from fennel.datasets import dataset
 
 from fennel.expr import F, when
-from fennel.expr.visitor import ExprPrinter
+from fennel.expr.visitor import ExprPrinter, FetchReferences
 from fennel.expr.serializer import ExprSerializer
 from google.protobuf.json_format import ParseDict  # type: ignore
 from fennel.gen.expr_pb2 import Expr
@@ -18,6 +18,9 @@ def test_basic_expr1():
     assert expr.typeof({"num": int, "d": int}) == bool
     ret = expr.eval(df, {"num": int, "d": int})
     assert ret.tolist() == [False, False, False, False]
+    ref_extractor = FetchReferences()
+    ref_extractor.visit(expr.root)
+    assert ref_extractor.refs == {"num", "d"}
 
 
 def test_basic_expr2():
@@ -58,6 +61,10 @@ def test_basic_expr2():
     assert ret.tolist() == [9, 11, 13, 15]
     assert expr.typeof({"a": int, "b": int}) == int
 
+    ref_extractor = FetchReferences()
+    ref_extractor.visit(expr.root)
+    assert ref_extractor.refs == {"a", "b"}
+
 
 def test_math_expr():
     expr = (F("a").num.floor() + 3.2).num.ceil()
@@ -94,17 +101,31 @@ def test_math_expr():
     assert ret.tolist() == [5, 6, 7, 8]
     assert expr.typeof({"a": float}) == int
 
+    ref_extractor = FetchReferences()
+    ref_extractor.visit(expr.root)
+    assert ref_extractor.refs == {"a"}
+
     expr = (
         when(F("a").num.floor() > 5)
         .then(F("b"))
         .when(F("a") > 3)
         .then(F("a"))
-        .otherwise(1)
+        .otherwise(1 + F("d"))
     )
-    df = pd.DataFrame({"a": [1.4, 3.2, 6.1, 4.8], "b": [100, 200, 300, 400]})
-    ret = expr.eval(df, {"a": float, "b": int})
-    assert ret.tolist() == [1, 3.2, 300, 4.8]
-    assert expr.typeof({"a": float, "b": int}) == float
+    df = pd.DataFrame(
+        {
+            "a": [1.4, 3.2, 6.1, 4.8],
+            "b": [100, 200, 300, 400],
+            "d": [1, 2, 3, 4],
+        }
+    )
+    ret = expr.eval(df, {"a": float, "b": int, "d": int})
+    assert ret.tolist() == [2.0, 3.2, 300, 4.8]
+    assert expr.typeof({"a": float, "b": int, "d": int}) == float
+
+    ref_extractor = FetchReferences()
+    ref_extractor.visit(expr.root)
+    assert ref_extractor.refs == {"a", "b", "d"}
 
 
 def test_bool_expr():
@@ -124,12 +145,19 @@ def test_bool_expr():
     assert ret.tolist() == [False, True, False, True]
     assert expr.typeof({"a": int, "b": str, "c": float}) == bool
 
+    ref_extractor = FetchReferences()
+    ref_extractor.visit(expr.root)
+    assert ref_extractor.refs == {"a", "b", "c"}
+
 
 def test_str_expr():
     expr = (F("a").str.concat(F("b"))).str.lower().len().ceil()
     printer = ExprPrinter()
     expected = "CEIL(LEN(LOWER(Ref('a') + Ref('b'))))"
     assert expected == printer.print(expr.root)
+    ref_extractor = FetchReferences()
+    ref_extractor.visit(expr.root)
+    assert ref_extractor.refs == {"a", "b"}
 
     expr = (
         when(((F("a").str.concat(F("b"))).str.upper()).str.contains(F("c")))
@@ -138,6 +166,8 @@ def test_str_expr():
     )
     expected = """WHEN CONTAINS(UPPER(Ref('a') + Ref('b')), Ref('c')) THEN Ref('b') ELSE "No Match\""""
     assert expected == printer.print(expr.root)
+    ref_extractor = FetchReferences()
+    assert ref_extractor.fetch(expr.root) == {"a", "b", "c"}
     df = pd.DataFrame(
         {
             "a": ["p", "BRandomS", "CRandomStrin", "tqz"],
@@ -259,6 +289,9 @@ def test_dict_op():
     expected = (
         """(CEIL((Ref('a').get("x") + Ref('a').get("y"))) + LEN(Ref('a')))"""
     )
+    ref_extractor = FetchReferences()
+    ref_extractor.visit(expr.root)
+    assert ref_extractor.refs == {"a"}
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
     proto_expr = serializer.serialize(expr.root)

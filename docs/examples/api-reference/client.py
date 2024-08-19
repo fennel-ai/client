@@ -7,7 +7,7 @@ import requests
 
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
-from fennel.featuresets import feature as F, featureset, extractor
+from fennel.featuresets import feature, featureset, extractor
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.testing import mock
 
@@ -41,7 +41,7 @@ class UserFeatures:
     name: str
     country_geoid: int
     # The users gender among male/female/non-binary
-    age: int = F().meta(owner="aditya@fennel.ai")
+    age: int = feature().meta(owner="aditya@fennel.ai")
     age_squared: int
     age_cubed: int
     is_name_common: bool

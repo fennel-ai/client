@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.6] - 2024-08-20
+- Add support for expression based extractors
+
 ## [1.5.5] - 2024-08-20
 - Enable discrete aggregation with lookback
 

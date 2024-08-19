@@ -8,7 +8,7 @@ import fennel._vendor.requests as requests
 from fennel.connectors import Webhook, source
 from fennel.datasets import dataset, Dataset, field, pipeline, LastK
 from fennel.dtypes import struct, Continuous
-from fennel.featuresets import featureset, feature as F, extractor
+from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import inputs, outputs
 from fennel.testing import mock
 
@@ -96,10 +96,10 @@ class Request:
 
 @featureset
 class MovieFeatures:
-    director_id: int = F(Request.director_id)  # type: ignore
-    movie_id: int = F(Request.movie_id)  # type: ignore
+    director_id: int = feature(Request.director_id)  # type: ignore
+    movie_id: int = feature(Request.movie_id)  # type: ignore
     role_list_py: List[Role]
-    role_list_assign: List[Role] = F(MovieInfo.role_list, default=[])  # type: ignore
+    role_list_assign: List[Role] = feature(MovieInfo.role_list, default=[])  # type: ignore
     role_list_struct: List[Role]
     movie_budget: MovieBudget
 

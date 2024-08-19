@@ -8,7 +8,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 import fennel._vendor.requests as requests
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, extractor, feature as F
+from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.testing import *
 
@@ -48,7 +48,7 @@ def power_4(x: int) -> int:
 @featureset
 class UserInfoSingleExtractor:
     userid: int
-    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age: int = feature().meta(owner="aditya@fennel.ai")  # type: ignore
     age_power_four: int
     age_cubed: int
     is_name_common: bool

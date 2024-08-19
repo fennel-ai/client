@@ -6,7 +6,7 @@ import pandas as pd
 from fennel.connectors import Webhook, source
 from fennel.datasets import dataset, Dataset, field, pipeline, Quantile
 from fennel.dtypes import Continuous
-from fennel.featuresets import featureset, feature as F
+from fennel.featuresets import featureset, feature
 from fennel.lib import inputs
 from fennel.testing import mock
 
@@ -47,7 +47,7 @@ class TransactionsDerived:
 @featureset
 class TransactionFeatures:
     user_id: int
-    median: Optional[float] = F(TransactionsDerived.median)
+    median: Optional[float] = feature(TransactionsDerived.median)
 
 
 @mock

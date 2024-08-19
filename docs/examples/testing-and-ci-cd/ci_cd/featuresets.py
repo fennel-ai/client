@@ -7,13 +7,13 @@ __owner__ = "mohit@fennel.ai"
 
 
 # docsnip gh_action_featureset
-from fennel import featureset, feature as F
+from fennel import featureset, feature
 
 
 @featureset
 class TicketFeatures:
     ticket_id: str
-    price: int = F(Ticket.price, default=0)
+    price: int = feature(Ticket.price, default=0)
 
 
 # /docsnip

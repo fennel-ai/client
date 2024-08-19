@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fennel.featuresets import featureset, feature as F
+from fennel.featuresets import featureset, feature
 from fennel.dtypes import oneof
 
 __owner__ = "eng@app.com"
@@ -17,46 +17,50 @@ from fraud.featuresets.request import Request
 
 @featureset
 class FraudModel:
-    driver_id: int = F(Request.driver_id)
+    driver_id: int = feature(Request.driver_id)
 
     # Velocity FS
-    num_past_completed_trips: int = F(DriverVelocityFS.num_past_completed_trips)
-    percent_past_guest_cancelled_trips: float = F(
+    num_past_completed_trips: int = feature(
+        DriverVelocityFS.num_past_completed_trips
+    )
+    percent_past_guest_cancelled_trips: float = feature(
         DriverVelocityFS.percent_past_guest_cancelled_trips
     )
-    num_logins_last_day: int = F(DriverVelocityFS.num_logins_last_day)
-    num_checkout_pages_last_day: int = F(
+    num_logins_last_day: int = feature(DriverVelocityFS.num_logins_last_day)
+    num_checkout_pages_last_day: int = feature(
         DriverVelocityFS.num_checkout_pages_last_day
     )
-    num_past_approved_trips: int = F(DriverVelocityFS.num_past_approved_trips)
+    num_past_approved_trips: int = feature(
+        DriverVelocityFS.num_past_approved_trips
+    )
 
     # Payment features
-    num_postal_codes: int = F(PaymentFS.num_postal_codes)
-    num_failed_payment_verification_attempts: int = F(
+    num_postal_codes: int = feature(PaymentFS.num_postal_codes)
+    num_failed_payment_verification_attempts: int = feature(
         PaymentFS.num_failed_payment_verification_attempts,
     )
-    payment_type: str = F(PaymentFS.payment_type)
-    is_debit_card: bool = F(PaymentFS.is_debit_card)
-    max_radar_score: float = F(PaymentFS.max_radar_score)
-    min_radar_score: float = F(PaymentFS.min_radar_score)
+    payment_type: str = feature(PaymentFS.payment_type)
+    is_debit_card: bool = feature(PaymentFS.is_debit_card)
+    max_radar_score: float = feature(PaymentFS.max_radar_score)
+    min_radar_score: float = feature(PaymentFS.min_radar_score)
 
     # Age features
-    account_age: float = F(AgeFS.account_age)
-    age: float = F(AgeFS.age)
+    account_age: float = feature(AgeFS.account_age)
+    age: float = feature(AgeFS.age)
 
     # Reservation features
-    guest_protection_level: Optional[str] = F(
+    guest_protection_level: Optional[str] = feature(
         ReservationLevelFS.guest_protection_level
     )
-    total_trip_price_amount: float = F(
+    total_trip_price_amount: float = feature(
         ReservationLevelFS.total_trip_price_amount
     )
-    delivery_type: oneof(str, ["AIRPORT", "HOME"]) = F(
+    delivery_type: oneof(str, ["AIRPORT", "HOME"]) = feature(
         ReservationLevelFS.delivery_type
     )
-    trip_duration_hours: float = F(ReservationLevelFS.trip_duration_hours)
+    trip_duration_hours: float = feature(ReservationLevelFS.trip_duration_hours)
 
     # Vehicle features
-    vehicle_id: int = F(Request.vehicle_id)
-    vehicle_state: str = F(VehicleFS.vehicle_state)
-    market_area_id: int = F(VehicleFS.market_area_id)
+    vehicle_id: int = feature(Request.vehicle_id)
+    vehicle_state: str = feature(VehicleFS.vehicle_state)
+    market_area_id: int = feature(VehicleFS.market_area_id)

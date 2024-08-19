@@ -1,6 +1,6 @@
 import pandas as pd
 
-from fennel.featuresets import feature as F, featureset, extractor
+from fennel.featuresets import feature as f, featureset, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock
 

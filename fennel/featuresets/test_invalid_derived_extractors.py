@@ -7,7 +7,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, extractor, feature as F
+from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import *
 
@@ -43,8 +43,8 @@ def test_invalid_multiple_extracts():
         @meta(owner="user@xyz.ai")
         @featureset
         class UserInfo3:
-            user_id: int = F(User.id)
-            age: int = F(
+            user_id: int = feature(User.id)
+            age: int = feature(
                 UserInfoDataset.age,
                 default=0,
             )
@@ -72,8 +72,8 @@ def test_invalid_missing_fields():
 
         @featureset
         class UserInfo4:
-            user_id: int = F(User.id)
-            age: int = F(default=0)
+            user_id: int = feature(User.id)
+            age: int = feature(default=0)
 
     assert (
         str(e.value)
@@ -85,7 +85,7 @@ def test_invalid_missing_fields():
 
         @featureset
         class UserInfo6:
-            age: int = F(UserInfoDataset.age, default=0)
+            age: int = feature(UserInfoDataset.age, default=0)
 
     assert (
         str(e.value)

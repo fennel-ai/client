@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from fennel.featuresets import featureset, extractor, feature as F
+from fennel.featuresets import featureset, extractor, feature
 from fennel.internal_lib.graph_algorithms import is_extractor_graph_cyclic
 from fennel.lib import inputs, outputs
 

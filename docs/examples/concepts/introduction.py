@@ -399,7 +399,7 @@ def dummy_function():
 @mock
 def test_branches(client):
     from fennel.datasets import dataset, field
-    from fennel.featuresets import feature as F, featureset
+    from fennel.featuresets import feature, featureset
     from fennel.connectors import Webhook, source
 
     webhook = Webhook(name="some_webhook")
@@ -415,7 +415,7 @@ def test_branches(client):
     @featureset
     class SomeFeatureset:
         uid: int
-        country: str = F(SomeDataset.country, default="unknown")
+        country: str = feature(SomeDataset.country, default="unknown")
 
     # docsnip branches
     client.init_branch("dev")

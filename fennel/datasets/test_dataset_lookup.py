@@ -6,7 +6,7 @@ import pandas as pd
 import fennel.datasets.datasets
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, feature as F, extractor
+from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import inputs, outputs
 from fennel.testing import *
 
@@ -57,8 +57,8 @@ def test_dataset_lookup():
         userid: int
         name: str
         # The users gender among male/female/non-binary
-        age_sq: int = F().meta(owner="aditya@fennel.ai")
-        age_cube: int = F().meta(owner="mohit@fennel.ai")
+        age_sq: int = feature().meta(owner="aditya@fennel.ai")
+        age_cube: int = feature().meta(owner="mohit@fennel.ai")
         gender: str
 
         @extractor(deps=[UserInfoDataset])
