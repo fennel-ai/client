@@ -53,7 +53,7 @@ def test_simple_create_with_checkout(client):
     branch_list = client.list_branches()
     assert len(branch_list) == 1
 
-    client.checkout("checkout-test", True)
+    client.checkout("checkout-test", init=True)
     assert client.branch() == "checkout-test"
     branch_list = client.list_branches()
     assert len(branch_list) == 2

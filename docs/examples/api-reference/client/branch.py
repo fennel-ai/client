@@ -58,7 +58,7 @@ def test_basic(client):
 
         # create and change active branch from `mybranch` to `mybranch2`
         # docsnip-highlight start
-        client.checkout("mybranch2", True)
+        client.checkout("mybranch2", init=True)
         assert client.branch() == "mybranch2"
         # docsnip-highlight end
 
