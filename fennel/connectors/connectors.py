@@ -116,17 +116,23 @@ def source(
             isinstance(conn, KinesisConnector)
             or isinstance(conn, S3Connector)
             or isinstance(conn, PubSubConnector)
-        ) and conn.format != "json":
-            raise ValueError(
-                "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
-            )
-        if (
-            isinstance(conn, KafkaConnector)
-            and conn.format is not None
-            and conn.format != "json"
         ):
+            if conn.format != "json":
+                raise ValueError(
+                    "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
+                )
+        elif isinstance(conn, KafkaConnector):
+            if (
+                conn.format is not None
+                and conn.format != "json"
+                and not isinstance(conn.format, Protobuf)
+            ):
+                raise ValueError(
+                    "Preproc of type ref('A[B][C]') is applicable only for data in JSON and Protobuf formats"
+                )
+        else:
             raise ValueError(
-                "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
+                "Preproc of type ref('A[B][C]') is not supported for table source"
             )
 
     if since is not None and not isinstance(since, datetime):

@@ -320,11 +320,13 @@ class StddevState(AggState):
         return self.get_val()
 
     def del_val_from_state(self, val, _ts):
-        self.count -= 1
-        if self.count == 0:
+        if self.count == 1:  # If removing the last value, reset everything
+            self.count = 0
             self.mean = 0
             self.m2 = 0
             return self.default
+
+        self.count -= 1
         delta = val - self.mean
         self.mean -= delta / self.count
         delta2 = val - self.mean
@@ -382,21 +384,27 @@ class QuantileState(AggState):
 
 
 def get_timestamps_for_hopping_window(
-    timestamp: datetime, duration: int, stride: int
+    timestamp: datetime,
+    frontier: datetime,
+    duration: int,
+    stride: int,
+    lookback: int,
 ) -> List[datetime]:
     """
     Given a window duration, stride and a timestamp first fetch all the windows in which the
     given timestamp lies then return the list of window end timestamps.
     """
+    until = int(frontier.timestamp()) - lookback
+
     current_ts = int(timestamp.timestamp())
 
-    # Get the window of which current timestamp is part of
+    # Get the first window of which current timestamp is part of
     start_ts = (((current_ts - duration) // stride) + 1) * stride
 
     results = []
 
     # Getting all the window of which timestamp is a part of
-    while start_ts <= current_ts:
+    while start_ts <= current_ts and (start_ts + duration) <= until:
         results.append(
             datetime.fromtimestamp(start_ts + duration, tz=timezone.utc)
         )
@@ -600,17 +608,25 @@ def add_inserts_deletes_discrete_window(
     """
     According to Aggregation Specification preprocess the dataframe to add delete or inserts.
     """
+    frontier = input_df[ts_field].max()
     if window.duration != "forever":
         duration = window.duration_total_seconds()
     else:
         duration = window.stride_total_seconds()
     stride = window.stride_total_seconds()
+    lookback = window.lookback_total_seconds()
+
+    # New frontier
+    until = frontier - timedelta(seconds=lookback)
 
     # Add the inserts for which row against end timestamp of every window in which the row belongs to
     input_df[ts_field] = input_df[ts_field].apply(
-        lambda y: get_timestamps_for_hopping_window(y, duration, stride)
+        lambda y: get_timestamps_for_hopping_window(
+            y, frontier, duration, stride, lookback
+        )
     )
     input_df = input_df.explode(ts_field).reset_index(drop=True)
+    input_df = input_df.loc[input_df[ts_field].notna()]
     input_df[ts_field] = cast_col_to_arrow_dtype(
         input_df[ts_field], get_timestamp_data_type()
     )
@@ -636,6 +652,9 @@ def add_inserts_deletes_discrete_window(
             del_df[FENNEL_ROW_TYPE] = -1
             del_df[ts_field] = del_df[FENNEL_DELETE_TIMESTAMP]
             input_df = pd.concat([input_df, del_df], ignore_index=True)
+
+    # Filter out rows which are greater than until -> (frontier - lookback)
+    input_df = input_df.loc[input_df[ts_field] <= until].reset_index(drop=True)
 
     # Get the window field from end timestamp, then first cast arrow type and then to frozendict
     if is_window_key_field:

@@ -2191,7 +2191,7 @@ def test_bounded_source_with_idleness():
 
 
 def test_valid_preproc_value():
-    # Preproc value of type A[B][C] can be only set for data in JSON format
+    # Preproc value of type A[B][C] can be set for data in JSON and Protobuf formats
     source(
         s3.bucket(
             bucket_name="all_ratings", prefix="prod/apac/", format="json"
@@ -2228,6 +2228,20 @@ def test_valid_preproc_value():
     )
     source(
         kafka.topic(topic="topic", format="json"),
+        every="1h",
+        disorder="14d",
+        cdc="debezium",
+        preproc={"C": ref("A[B][C]"), "D": "A[B][D]"},
+    )
+
+    protobuf = Protobuf(
+        registry="confluent",
+        url="http://localhost:8000",
+        username="user",
+        password="pwd",
+    )
+    source(
+        kafka.topic(topic="topic", format=protobuf),
         every="1h",
         disorder="14d",
         cdc="debezium",
@@ -2271,7 +2285,7 @@ def test_filter_preproc():
         source_request = sync_request.sources[0]
         s = {
             "table": {
-                "mysql_table": {
+                "mysqlTable": {
                     "db": {
                         "name": "mysql",
                         "mysql": {
@@ -2282,24 +2296,24 @@ def test_filter_preproc():
                             "port": 3306,
                         },
                     },
-                    "table_name": "users",
-                },
+                    "tableName": "users",
+                }
             },
             "dataset": "UserInfoDataset",
+            "dsVersion": 1,
             "every": "3600s",
-            "cdc": "Upsert",
+            "cursor": "added_on",
             "disorder": "72000s",
+            "timestampField": "timestamp",
+            "cdc": "Upsert",
             "bounded": True,
             "idleness": "3600s",
-            "cursor": "added_on",
-            "timestamp_field": "timestamp",
-            "dsVersion": 1,
             "filter": {
-                "entry_point": "UserInfoDataset_wrapper_2e6e95b302_filter",
-                "source_code": 'lambda df: df["user_id"] == 1',
-                "core_code": 'lambda df: df["user_id"] == 1',
-                "generated_code": '\n\n@meta(owner="test@test.com")\n@dataset\nclass UserInfoDataset:\n    user_id: int = field(key=True)\n    name: str\n    gender: str\n    # Users date of birth\n    dob: str\n    age: int\n    account_creation_date: datetime\n    country: Optional[str]\n    timestamp: datetime = field(timestamp=True)\n\n\n    @classmethod\n    def wrapper_2e6e95b302(cls, *args, **kwargs):\n        _fennel_internal = lambda df: df["user_id"] == 1\n        return _fennel_internal(*args, **kwargs)\n\n\ndef UserInfoDataset_wrapper_2e6e95b302(*args, **kwargs):\n    _fennel_internal = UserInfoDataset.__fennel_original_cls__\n    return getattr(_fennel_internal, "wrapper_2e6e95b302")(*args, **kwargs)\n\ndef UserInfoDataset_wrapper_2e6e95b302_filter(df: pd.DataFrame) -> pd.DataFrame:\n    return df[UserInfoDataset_wrapper_2e6e95b302(df)]\n    ',
-                "imports": "__fennel_gen_code__=True\nimport pandas as pd\nimport numpy as np\nimport json\nimport os\nimport sys\nfrom datetime import datetime, date\nimport time\nimport random\nimport math\nimport re\nfrom enum import Enum\nfrom typing import *\nfrom collections import defaultdict\nfrom fennel.connectors.connectors import *\nfrom fennel.datasets import *\nfrom fennel.featuresets import *\nfrom fennel.featuresets import feature as F\nfrom fennel.lib.expectations import *\nfrom fennel.internal_lib.schema import *\nfrom fennel.internal_lib.utils import *\nfrom fennel.lib.params import *\nfrom fennel.dtypes.dtypes import *\nfrom fennel.datasets.aggregate import *\nfrom fennel.lib.includes import includes\nfrom fennel.lib.metadata import meta\nfrom fennel.lib import secrets, bucketize\nfrom fennel.datasets.datasets import dataset_lookup\n",
+                "entryPoint": "UserInfoDataset_wrapper_2e6e95b302_filter",
+                "sourceCode": 'lambda df: df["user_id"] == 1',
+                "coreCode": 'lambda df: df["user_id"] == 1',
+                "generatedCode": '\n\n@meta(owner="test@test.com")\n@dataset\nclass UserInfoDataset:\n    user_id: int = field(key=True)\n    name: str\n    gender: str\n    # Users date of birth\n    dob: str\n    age: int\n    account_creation_date: datetime\n    country: Optional[str]\n    timestamp: datetime = field(timestamp=True)\n\n\n    @classmethod\n    def wrapper_2e6e95b302(cls, *args, **kwargs):\n        _fennel_internal = lambda df: df["user_id"] == 1\n        return _fennel_internal(*args, **kwargs)\n\n\ndef UserInfoDataset_wrapper_2e6e95b302(*args, **kwargs):\n    _fennel_internal = UserInfoDataset.__fennel_original_cls__\n    return getattr(_fennel_internal, "wrapper_2e6e95b302")(*args, **kwargs)\n\ndef UserInfoDataset_wrapper_2e6e95b302_filter(df: pd.DataFrame) -> pd.DataFrame:\n    return df[UserInfoDataset_wrapper_2e6e95b302(df)]\n    ',
+                "imports": "__fennel_gen_code__=True\nimport pandas as pd\nimport numpy as np\nimport json\nimport os\nimport sys\nfrom datetime import datetime, date\nimport time\nimport random\nimport math\nimport re\nfrom enum import Enum\nfrom typing import *\nfrom collections import defaultdict\nfrom fennel.connectors.connectors import *\nfrom fennel.datasets import *\nfrom fennel.featuresets import *\nfrom fennel.featuresets import feature\nfrom fennel.featuresets import feature as F\nfrom fennel.lib.expectations import *\nfrom fennel.internal_lib.schema import *\nfrom fennel.internal_lib.utils import *\nfrom fennel.lib.params import *\nfrom fennel.dtypes.dtypes import *\nfrom fennel.datasets.aggregate import *\nfrom fennel.lib.includes import includes\nfrom fennel.lib.metadata import meta\nfrom fennel.lib import secrets, bucketize\nfrom fennel.datasets.datasets import dataset_lookup\nfrom fennel.expr import col\n",
             },
         }
         expected_source_request = ParseDict(s, connector_proto.Source())

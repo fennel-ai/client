@@ -517,11 +517,6 @@ class DataEngine(object):
             )
 
         join_columns = keys.columns.tolist()
-        if keys.isnull().values.any():
-            null_rows = keys[keys.isnull().any(axis=1)]
-            raise ValueError(
-                f"Null values found in key fields {join_columns}\n. Eg {null_rows}"
-            )
         right_key_fields = self.datasets[cls_name].dataset.key_fields
         if len(right_key_fields) == 0:
             raise ValueError(

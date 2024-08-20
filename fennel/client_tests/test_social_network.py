@@ -12,6 +12,7 @@ from fennel.dtypes import regex, oneof, Continuous
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock, log
+from fennel.expr import col
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -148,8 +149,9 @@ class Request:
 class UserFeatures:
     user_id: str = F(Request.user_id)  # type: ignore
     num_views: int
-    num_category_views: int
-    category_view_ratio: float
+    category: str = F(Request.category)  # type: ignore
+    num_category_views: int = F(UserCategoryDataset.num_views, default=0)  # type: ignore
+    category_view_ratio: float = F(col("num_category_views") / col("num_views"))
     last_viewed_post: int = F(LastViewedPost.post_id, default=-1)  # type: ignore
     last_viewed_post2: List[int] = F(
         LastViewedPostByAgg.post_id, default=[-1]  # type: ignore
@@ -161,32 +163,7 @@ class UserFeatures:
     def extract_user_views(cls, ts: pd.Series, user_ids: pd.Series):
         views, _ = UserViewsDataset.lookup(ts, user_id=user_ids)  # type: ignore
         views = views.fillna(0)
-
         return views["num_views"]
-
-    @extractor(deps=[UserCategoryDataset, UserViewsDataset])  # type: ignore
-    @inputs(Request.user_id, Request.category)
-    @outputs("category_view_ratio", "num_category_views")
-    def extractor_category_view(
-        cls,
-        ts: pd.Series,
-        user_ids: pd.Series,
-        categories: pd.Series,
-    ):
-        category_views, _ = UserCategoryDataset.lookup(  # type: ignore
-            ts, user_id=user_ids, category=categories
-        )
-        views, _ = UserViewsDataset.lookup(ts, user_id=user_ids)  # type: ignore
-        category_views = category_views.fillna(0)
-        views = views.fillna(0.001)
-        category_views["num_views"] = category_views["num_views"].astype(int)
-        category_view_ratio = category_views["num_views"] / views["num_views"]
-        return pd.DataFrame(
-            {
-                "category_view_ratio": category_view_ratio,
-                "num_category_views": category_views["num_views"],
-            }
-        )
 
 
 @pytest.mark.integration

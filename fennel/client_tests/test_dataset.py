@@ -12,6 +12,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel.connectors import source, Webhook, ref
+from fennel.expr import col
 from fennel.datasets import (
     dataset,
     field,
@@ -892,11 +893,7 @@ class MovieRatingTransformed:
             },
         )
 
-        return x.assign(
-            name="rating_orig",
-            dtype=float,
-            func=lambda df: df["rating_sq"] ** 0.5,
-        )
+        return x.assign("rating_orig", float, lambda df: df["rating_sq"] ** 0.5)
 
 
 @meta(owner="test@test.com")
@@ -921,6 +918,30 @@ class MovieRatingAssign:
             "rating_into_5", float, lambda df: df["rating"] * 5
         )
         return rating_into_5.drop("num_ratings", "sum_ratings", "rating")
+
+
+@meta(owner="test@test.com")
+@dataset(index=True)
+class MovieRatingAssignExpr:
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
+        key=True
+    )
+    rating_sq: float
+    rating_cube: float
+    rating_into_5: float
+    t: datetime
+
+    @pipeline
+    @inputs(MovieRating)
+    def pipeline_assign(cls, m: Dataset):
+        rating_transformed = m.assign(
+            rating_sq=(col("rating") * col("rating")).astype(float),
+            rating_cube=(col("rating") * col("rating") * col("rating")).astype(
+                float
+            ),
+            rating_into_5=(col("rating") * 5).astype(float),
+        )
+        return rating_transformed.drop("num_ratings", "sum_ratings", "rating")
 
 
 class TestBasicTransform(unittest.TestCase):
@@ -1050,53 +1071,55 @@ class TestBasicAssign(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_basic_assign(self, client):
-        # # Sync the dataset
-        client.commit(
-            message="msg",
-            datasets=[MovieRating, MovieRatingAssign, RatingActivity],
-        )
-        now = datetime.now(timezone.utc)
-        two_hours_ago = now - timedelta(hours=2)
-        data = [
-            ["Jumanji", 4, 343, 789, two_hours_ago],
-            ["Titanic", 5, 729, 1232, now],
-        ]
-        columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
-        df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "MovieRating", df)
-        assert response.status_code == requests.codes.OK, response.json()
-        client.sleep()
-        # Do some lookups to verify pipeline_transform is working as expected
-        an_hour_ago = now - timedelta(hours=1)
-        ts = pd.Series([an_hour_ago, an_hour_ago])
-        keys = pd.DataFrame({"movie": ["Jumanji", "Titanic"]})
-        df, found = client.lookup(
-            "MovieRatingAssign",
-            timestamps=ts,
-            keys=keys,
-        )
+        test_cases = [MovieRatingAssignExpr, MovieRatingAssign]
+        for case in test_cases:
+            client.init_branch(case.__name__)
+            client.commit(
+                message="msg",
+                datasets=[MovieRating, case, RatingActivity],
+            )
+            now = datetime.now(timezone.utc)
+            two_hours_ago = now - timedelta(hours=2)
+            data = [
+                ["Jumanji", 4, 343, 789, two_hours_ago],
+                ["Titanic", 5, 729, 1232, now],
+            ]
+            columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
+            df = pd.DataFrame(data, columns=columns)
+            response = client.log("fennel_webhook", "MovieRating", df)
+            assert response.status_code == requests.codes.OK, response.json()
+            client.sleep()
+            # Do some lookups to verify pipeline_transform is working as expected
+            an_hour_ago = now - timedelta(hours=1)
+            ts = pd.Series([an_hour_ago, an_hour_ago])
+            keys = pd.DataFrame({"movie": ["Jumanji", "Titanic"]})
+            df, found = client.lookup(
+                case.__name__,
+                timestamps=ts,
+                keys=keys,
+            )
 
-        assert found.tolist() == [True, False]
-        assert df.shape == (2, 5)
-        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
-        assert df["rating_sq"].tolist()[0] == 16
-        assert pd.isna(df["rating_sq"].tolist()[1])
-        assert df["rating_cube"].tolist()[0] == 64
-        assert pd.isna(df["rating_cube"].tolist()[1])
-        assert df["rating_into_5"].tolist()[0] == 20
-        assert pd.isna(df["rating_into_5"].tolist()[1])
+            assert found.tolist() == [True, False]
+            assert df.shape == (2, 5)
+            assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+            assert df["rating_sq"].tolist()[0] == 16
+            assert pd.isna(df["rating_sq"].tolist()[1])
+            assert df["rating_cube"].tolist()[0] == 64
+            assert pd.isna(df["rating_cube"].tolist()[1])
+            assert df["rating_into_5"].tolist()[0] == 20
+            assert pd.isna(df["rating_into_5"].tolist()[1])
 
-        client.sleep()
-        df, _ = client.lookup(
-            "MovieRatingAssign",
-            keys=keys,
-        )
+            client.sleep()
+            df, _ = client.lookup(
+                case.__name__,
+                keys=keys,
+            )
 
-        assert df.shape == (2, 5)
-        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
-        assert df["rating_sq"].tolist() == [16, 25]
-        assert df["rating_cube"].tolist() == [64, 125]
-        assert df["rating_into_5"].tolist() == [20, 25]
+            assert df.shape == (2, 5)
+            assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+            assert df["rating_sq"].tolist() == [16, 25]
+            assert df["rating_cube"].tolist() == [64, 125]
+            assert df["rating_into_5"].tolist() == [20, 25]
 
 
 @meta(owner="test@test.com")
@@ -1822,12 +1845,41 @@ class PositiveRatingActivity:
     )
     t: datetime
 
+    # fmt: off
     @pipeline
     @inputs(RatingActivity)
     def filter_positive_ratings(cls, rating: Dataset):
         filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
+#       This is a random comment
         filter2 = filtered_ds.filter(
             lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
+        )
+        # a = b + 2
+        return filter2.groupby("movie").aggregate(
+            Count(window=Continuous("forever"), into_field=str(cls.cnt_rating)),
+        )
+
+
+# fmt: on
+
+
+@meta(owner="test@test.com")
+@dataset(index=True)
+class PositiveRatingActivityExpr:
+    cnt_rating: int
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
+        key=True
+    )
+    t: datetime
+
+    @pipeline
+    @inputs(RatingActivity)
+    def filter_positive_ratings(cls, rating: Dataset):
+        filtered_ds = rating.filter(col("rating") >= 3.5)
+        filter2 = filtered_ds.filter(
+            (col("movie") == "Jumanji")
+            | (col("movie") == "Titanic")
+            | (col("movie") == "RaOne")
         )
         return filter2.groupby("movie").aggregate(
             Count(window=Continuous("forever"), into_field=str(cls.cnt_rating)),
@@ -1838,63 +1890,67 @@ class TestBasicFilter(unittest.TestCase):
     @pytest.mark.integration
     @mock
     def test_basic_filter(self, client):
-        # # Sync the dataset
-        client.commit(
-            message="msg",
-            datasets=[PositiveRatingActivity, RatingActivity],
-        )
-        now = datetime.now(timezone.utc)
-        one_hour_ago = now - timedelta(hours=1)
-        two_hours_ago = now - timedelta(hours=2)
-        three_hours_ago = now - timedelta(hours=3)
-        four_hours_ago = now - timedelta(hours=4)
-        five_hours_ago = now - timedelta(hours=5)
-        minute_ago = now - timedelta(minutes=1)
-        data = [
-            [18231, 4.5, "Jumanji", five_hours_ago],
-            [18231, 3, "Jumanji", four_hours_ago],
-            [18231, 3.5, "Jumanji", three_hours_ago],
-            [18231, 4, "Titanic", three_hours_ago],
-            [18231, 3, "Titanic", two_hours_ago],
-            [18231, 5, "Titanic", one_hour_ago],
-            [18231, 4, "Titanic", minute_ago],
-            [18231, 2, "RaOne", one_hour_ago],
-            [18231, 3, "RaOne", minute_ago],
-            [18231, 1, "RaOne", two_hours_ago],
-        ]
-        columns = ["userid", "rating", "movie", "t"]
-        df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "RatingActivity", df)
-        assert response.status_code == requests.codes.OK, response.json()
+        test_cases = [PositiveRatingActivityExpr]
+        for case in test_cases:
+            client.init_branch(case.__name__)
+            # # Sync the dataset
+            client.commit(
+                message="msg",
+                datasets=[case, RatingActivity],
+            )
+            now = datetime.now(timezone.utc)
+            one_hour_ago = now - timedelta(hours=1)
+            two_hours_ago = now - timedelta(hours=2)
+            three_hours_ago = now - timedelta(hours=3)
+            four_hours_ago = now - timedelta(hours=4)
+            five_hours_ago = now - timedelta(hours=5)
+            minute_ago = now - timedelta(minutes=1)
+            data = [
+                [18231, 4.5, "Jumanji", five_hours_ago],
+                [18231, 3, "Jumanji", four_hours_ago],
+                [18231, 3.5, "Jumanji", three_hours_ago],
+                [18231, 4, "Titanic", three_hours_ago],
+                [18231, 3, "Titanic", two_hours_ago],
+                [18231, 5, "Titanic", one_hour_ago],
+                [18231, 4, "Titanic", minute_ago],
+                [18231, 2, "RaOne", one_hour_ago],
+                [18231, 3, "RaOne", minute_ago],
+                [18231, 1, "RaOne", two_hours_ago],
+            ]
+            columns = ["userid", "rating", "movie", "t"]
+            df = pd.DataFrame(data, columns=columns)
+            response = client.log("fennel_webhook", "RatingActivity", df)
+            assert response.status_code == requests.codes.OK, response.json()
 
-        client.sleep()
+            client.sleep()
 
-        # Do some lookups to verify pipeline_aggregate is working as expected
-        df, _ = client.lookup(
-            "PositiveRatingActivity",
-            keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne"]}),
-        )
-        assert df.shape == (3, 3)
-        assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
-        if client.is_integration_client():
-            # backend returns default values for aggregate dataset
-            assert df["cnt_rating"].tolist() == [2, 3, 0]
-        else:
-            assert df["cnt_rating"].tolist() == [2, 3, pd.NA]
+            # Do some lookups to verify pipeline_aggregate is working as expected
+            df, _ = client.lookup(
+                case.__name__,
+                keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne"]}),
+            )
+            assert df.shape == (3, 3)
+            print(df)
+            assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
+            if client.is_integration_client():
+                # backend returns default values for aggregate dataset
+                assert df["cnt_rating"].tolist() == [2, 3, 0]
+            else:
+                assert df["cnt_rating"].tolist() == [2, 3, pd.NA]
 
-        ts = pd.Series([two_hours_ago, two_hours_ago, two_hours_ago])
-        df, _ = client.lookup(
-            "PositiveRatingActivity",
-            keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne"]}),
-            timestamps=ts,
-        )
-        assert df.shape == (3, 3)
-        assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
-        if client.is_integration_client():
-            # backend returns default values for aggregate dataset
-            assert df["cnt_rating"].tolist() == [2, 1, 0]
-        else:
-            assert df["cnt_rating"].tolist() == [2, 1, pd.NA]
+            ts = pd.Series([two_hours_ago, two_hours_ago, two_hours_ago])
+            df, _ = client.lookup(
+                case.__name__,
+                keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne"]}),
+                timestamps=ts,
+            )
+            assert df.shape == (3, 3)
+            assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
+            if client.is_integration_client():
+                # backend returns default values for aggregate dataset
+                assert df["cnt_rating"].tolist() == [2, 1, 0]
+            else:
+                assert df["cnt_rating"].tolist() == [2, 1, pd.NA]
 
 
 @meta(owner="test@test.com")

@@ -11,6 +11,7 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import StringValue
 
 import fennel.connectors as connectors
+from fennel.expr.serializer import ExprSerializer
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.expectations_pb2 as exp_proto
@@ -83,6 +84,15 @@ def _expectations_to_proto(
             entity_version=entity_version,
         )
     ]
+
+
+def val_as_json(val: Any) -> str:
+    if getattr(val.__class__, FENNEL_STRUCT, False):
+        return json.dumps(val.as_json())
+    try:
+        return json.dumps(val)
+    except TypeError:
+        return json.dumps(str(val))
 
 
 # ------------------------------------------------------------------------------
@@ -499,7 +509,7 @@ def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
         import numpy as np
         from typing import List, Dict, Tuple, Optional, Union, Any, no_type_check
         from fennel.featuresets import *
-        from fennel.featuresets import featureset, feature
+        from fennel.featuresets import featureset, feature as F
         from fennel.lib.metadata import meta
         from fennel.lib.includes import includes
         from fennel.internal_lib.schema import *
@@ -614,6 +624,20 @@ def _extractor_to_proto(
             extractor.derived_extractor_info
         )
 
+    proto_expr = None
+    if extractor.extractor_type == ExtractorType.EXPR:
+        if extractor.expr is None:
+            raise TypeError(
+                f"Expr extractor `{extractor.name}` must have an expr"
+            )
+        serializer = ExprSerializer()
+        proto_expr = serializer.serialize(extractor.expr.root)
+
+    if extractor.extractor_type == ExtractorType.PY_FUNC:
+        metadata = get_metadata_proto(extractor.func)
+    else:
+        metadata = get_metadata_proto(extractor)
+
     proto_extractor = fs_proto.Extractor(
         name=extractor.name,
         datasets=[
@@ -621,12 +645,13 @@ def _extractor_to_proto(
         ],
         inputs=inputs,
         features=[feature.name for feature in extractor.outputs],
-        metadata=get_metadata_proto(extractor.func),
+        metadata=metadata,
         version=extractor.version,
         pycode=to_extractor_pycode(extractor, fs, fs_obj_map),
         feature_set_name=extractor.featureset,
         extractor_type=extractor.extractor_type,
         field_info=extractor_field_info,
+        expr=proto_expr,
     )
 
     return proto_extractor
@@ -652,14 +677,7 @@ def _to_field_lookup_proto(
         return fs_proto.FieldLookupInfo(
             field=_field_to_proto(info.field), default_value=json.dumps(None)
         )
-
-    if getattr(info.default.__class__, FENNEL_STRUCT, False):
-        default_val = json.dumps(info.default.as_json())
-    else:
-        try:
-            default_val = json.dumps(info.default)
-        except TypeError:
-            default_val = json.dumps(str(info.default))
+    default_val = val_as_json(info.default)
 
     return fs_proto.FieldLookupInfo(
         field=_field_to_proto(info.field),

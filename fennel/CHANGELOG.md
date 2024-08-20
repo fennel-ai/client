@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.5.6] - 2024-08-20
+- Add support for expression based extractors
+
+## [1.5.5] - 2024-08-20
+- Enable discrete aggregation with lookback
+
+## [1.5.4] - 2024-08-14
+- Add support for removal of auto extractors
+
+## [1.5.1] - 2024-08-05
+- Support chained lookup extractors 
+
+## [1.5.0] - 2024-08-04
+- Rust based expressions
+
+## [1.4.6] - 2024-07-30
+- Add support for indirections in preproc ref type for Protobuf format
+
 ## [1.4.4] - 2024-07-19
 - Increase default timeout to 180 seconds.
 

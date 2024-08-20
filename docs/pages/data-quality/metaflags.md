@@ -36,10 +36,10 @@ class User:
 @meta(owner='feed-team@xyz.ai')
 @featureset
 class UserFeatures:
-    uid: int = feature()
-    zip: str = feature().meta(tags=['PII'])
-    bmi: float = feature().meta(owner='alan@xyz.ai')
-    bmr: float = feature().meta(deprecated=True)
+    uid: int = F()
+    zip: str = F().meta(tags=['PII'])
+    bmi: float = F().meta(owner='alan@xyz.ai')
+    bmr: float = F().meta(deprecated=True)
     ..
 
     @meta(description='based on algorithm specified here: bit.ly/xyy123')

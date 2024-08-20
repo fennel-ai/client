@@ -64,9 +64,9 @@ class MovieInfo:
     def movie_info(cls, movie: Dataset):
         return (
             movie.assign(
-                name="role",
-                dtype=Role,
-                func=lambda x: x[["role_id", "name", "cost"]].apply(
+                "role",
+                Role,
+                lambda x: x[["role_id", "name", "cost"]].apply(
                     lambda z: Role(
                         **{"role_id": z[0], "name": z[1], "cost": z[2]}
                     ),

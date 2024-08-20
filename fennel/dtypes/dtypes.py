@@ -4,7 +4,15 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from textwrap import dedent
-from typing import TYPE_CHECKING, Union, List, get_args, ForwardRef, Any
+from typing import (
+    TYPE_CHECKING,
+    Union,
+    List,
+    get_args,
+    ForwardRef,
+    Any,
+    Optional,
+)
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 import pandas as pd
@@ -333,6 +341,7 @@ class Continuous:
 @dataclass
 class Tumbling:
     duration: str
+    lookback: Optional[str] = None
 
     def __post_init__(self):
         """
@@ -342,6 +351,11 @@ class Tumbling:
             raise ValueError(
                 "'forever' is not a valid duration value for Tumbling window."
             )
+        if self.lookback:
+            try:
+                duration_to_timedelta(self.lookback)
+            except Exception as e:
+                raise ValueError(f"Failed when parsing lookback : {e}.")
         try:
             duration_to_timedelta(self.duration)
         except Exception as e:
@@ -363,11 +377,17 @@ class Tumbling:
     def stride_total_seconds(self) -> int:
         return int(duration_to_timedelta(self.duration).total_seconds())
 
+    def lookback_total_seconds(self) -> int:
+        if self.lookback is None:
+            return 0
+        return int(duration_to_timedelta(self.lookback).total_seconds())
+
 
 @dataclass
 class Hopping:
     duration: str
     stride: str
+    lookback: Optional[str] = None
 
     def __post_init__(self):
         """
@@ -377,9 +397,12 @@ class Hopping:
             stride_timedelta = duration_to_timedelta(self.stride)
         except Exception as e:
             raise ValueError(f"Failed when parsing stride : {e}.")
-        if self.duration == "forever":
-            raise ValueError("Forever hopping window is not yet supported.")
-        else:
+        if self.lookback:
+            try:
+                duration_to_timedelta(self.lookback)
+            except Exception as e:
+                raise ValueError(f"Failed when parsing lookback : {e}.")
+        if self.duration != "forever":
             try:
                 duration_timedelta = duration_to_timedelta(self.duration)
             except Exception as e:
@@ -390,14 +413,19 @@ class Hopping:
                 )
 
     def to_proto(self) -> window_proto.Window:
-        duration = duration_proto.Duration()
-        duration.FromTimedelta(duration_to_timedelta(self.duration))
-
         stride = duration_proto.Duration()
         stride.FromTimedelta(duration_to_timedelta(self.stride))
-        return window_proto.Window(
-            hopping=window_proto.Hopping(duration=duration, stride=stride)
-        )
+
+        if self.duration != "forever":
+            duration = duration_proto.Duration()
+            duration.FromTimedelta(duration_to_timedelta(self.duration))
+            return window_proto.Window(
+                hopping=window_proto.Hopping(duration=duration, stride=stride)
+            )
+        else:
+            return window_proto.Window(
+                forever_hopping=window_proto.ForeverHopping(stride=stride)
+            )
 
     def signature(self) -> str:
         return f"hopping-{self.duration}-{self.stride}"
@@ -411,6 +439,11 @@ class Hopping:
 
     def stride_total_seconds(self) -> int:
         return int(duration_to_timedelta(self.stride).total_seconds())
+
+    def lookback_total_seconds(self) -> int:
+        if self.lookback is None:
+            return 0
+        return int(duration_to_timedelta(self.lookback).total_seconds())
 
 
 @dataclass

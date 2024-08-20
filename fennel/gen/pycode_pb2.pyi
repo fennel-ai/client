@@ -98,3 +98,25 @@ class PyCode(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["core_code", b"core_code", "entry_point", b"entry_point", "generated_code", b"generated_code", "imports", b"imports", "includes", b"includes", "ref_includes", b"ref_includes", "source_code", b"source_code"]) -> None: ...
 
 global___PyCode = PyCode
+
+@typing_extensions.final
+class UDcol(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    PYCODE_FIELD_NUMBER: builtins.int
+    JSON_LITERAL_FIELD_NUMBER: builtins.int
+    @property
+    def pycode(self) -> global___PyCode: ...
+    json_literal: builtins.str
+    """Used for serializing a literal as a JSON string"""
+    def __init__(
+        self,
+        *,
+        pycode: global___PyCode | None = ...,
+        json_literal: builtins.str = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["json_literal", b"json_literal", "node", b"node", "pycode", b"pycode"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["json_literal", b"json_literal", "node", b"node", "pycode", b"pycode"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["pycode", "json_literal"] | None: ...
+
+global___UDF = UDF
