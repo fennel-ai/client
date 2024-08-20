@@ -10,7 +10,7 @@ from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import inputs, outputs
-from fennel.expr import F
+from fennel.expr import col
 
 # noinspection PyUnresolvedReferences
 from fennel.testing import *
@@ -399,12 +399,12 @@ def test_invalid_expr_feature(client):
             user_id: int
             home_geoid: int
             age: int = feature(UserInfoDataset.age, default=0)
-            age_squared: int = feature(F("Age") * F("Age"))
+            age_squared: int = feature(col("Age") * col("Age"))
             credit_score: int
 
     assert (
         str(e.value)
-        == "When using F(<feature_name>) for expressions, one can only choose from the features defined in the current featureset. Please choose an input from : ['user_id', 'home_geoid', 'age', 'age_squared', 'credit_score'] found : `Age` in extractor : `_fennel_expr_UserInfo3.age_squared`."
+        == "When using col(<feature_name>) for expressions, one can only choose from the features defined in the current featureset. Please choose an input from : ['user_id', 'home_geoid', 'age', 'age_squared', 'credit_score'] found : `Age` in extractor : `_fennel_expr_UserInfo3.age_squared`."
     )
 
     # Using default value for an expression feature
@@ -415,7 +415,7 @@ def test_invalid_expr_feature(client):
             user_id: int
             home_geoid: int
             age: int = feature(UserInfoDataset.age, default=0)
-            age_squared: int = feature(F("age") * F("age"), default=0)
+            age_squared: int = feature(col("age") * col("age"), default=0)
             credit_score: int
 
     assert (
@@ -431,7 +431,7 @@ def test_invalid_expr_feature(client):
             user_id: int
             home_geoid: int
             age: int = feature(UserInfoDataset.age, default=0)
-            age_squared: str = feature(F("age") * F("age"))
+            age_squared: str = feature(col("age") * col("age"))
             credit_score: int
 
     assert (
@@ -448,11 +448,11 @@ def test_invalid_expr_feature(client):
             home_geoid: int
             age: int = feature(UserInfoDataset.age, default=0)
             age_squared: int = feature(
-                F("UserInfoDataset.age") * F("UserInfoDataset.age")
+                col("UserInfoDataset.age") * col("UserInfoDataset.age")
             )
             credit_score: int
 
     assert (
         str(e.value)
-        == "When using F(<feature_name>) for expressions, one can only choose from the features defined in the current featureset. Please choose an input from : ['user_id', 'home_geoid', 'age', 'age_squared', 'credit_score'] found : `UserInfoDataset.age` in extractor : `_fennel_expr_UserInfo6.age_squared`."
+        == "When using col(<feature_name>) for expressions, one can only choose from the features defined in the current featureset. Please choose an input from : ['user_id', 'home_geoid', 'age', 'age_squared', 'credit_score'] found : `UserInfoDataset.age` in extractor : `_fennel_expr_UserInfo6.age_squared`."
     )

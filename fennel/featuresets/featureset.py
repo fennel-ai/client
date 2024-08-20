@@ -595,7 +595,7 @@ class Featureset:
                         inputs.append(self._feature_map[input])
                     except KeyError:
                         raise ValueError(
-                            f"When using F(<feature_name>) for expressions, one can only choose from the features defined in the current featureset. "
+                            f"When using col(<feature_name>) for expressions, one can only choose from the features defined in the current featureset. "
                             f"Please choose an input from : {list(self._feature_map.keys())} found : `{input}` in extractor : `{extractor.name}`."
                         )
                 elif isinstance(input, Feature):

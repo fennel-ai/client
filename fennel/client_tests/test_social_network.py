@@ -12,7 +12,7 @@ from fennel.dtypes import regex, oneof, Continuous
 from fennel.featuresets import featureset, feature, extractor
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import mock, log
-from fennel.expr import F
+from fennel.expr import col
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -152,7 +152,7 @@ class UserFeatures:
     category: str = feature(Request.category)  # type: ignore
     num_category_views: int = feature(UserCategoryDataset.num_views, default=0)  # type: ignore
     category_view_ratio: float = feature(
-        F("num_category_views") / F("num_views")
+        col("num_category_views") / col("num_views")
     )
     last_viewed_post: int = feature(LastViewedPost.post_id, default=-1)  # type: ignore
     last_viewed_post2: List[int] = feature(

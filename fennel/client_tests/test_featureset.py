@@ -19,7 +19,7 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.expr import F
+from fennel.expr import col
 from fennel.testing import mock, log
 
 ################################################################################
@@ -95,8 +95,8 @@ class UserInfoMultipleExtractor:
     is_name_common: bool
     age_reciprocal: float
     age_doubled: int
-    age_reciprocal_expr: float = feature(1 / (F("age") / (3600.0 * 24)) + 0.01)
-    age_double_expr: int = feature(F("age") * 2)
+    age_reciprocal_expr: float = feature(1 / (col("age") / (3600.0 * 24)) + 0.01)
+    age_double_expr: int = feature(col("age") * 2)
 
     @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")

@@ -11,7 +11,7 @@ from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature
 from fennel.lib import meta, inputs, outputs, desc
 from fennel.testing import *
-from fennel.expr import F
+from fennel.expr import col
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -50,11 +50,11 @@ def test_simple_featureset():
         # The users gender among male/female/non-binary
         gender: str
         age: int = feature().meta(owner="aditya@fennel.ai")
-        age_sq: int = feature(F("age") * F("age"))
-        age_double: int = feature(F("age") * 2)
+        age_sq: int = feature(col("age") * col("age"))
+        age_double: int = feature(col("age") * 2)
         height: int
         weight: float
-        bmi: float = feature(F("weight") / F("height") / F("height") * 2.20462)
+        bmi: float = feature(col("weight") / col("height") / col("height") * 2.20462)
         income: int = feature().meta(deprecated=True)
 
         @extractor(deps=[UserInfoDataset], version=2)

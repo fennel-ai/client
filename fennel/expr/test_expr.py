@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Dict
 from fennel.datasets import dataset
 
-from fennel.expr import F, when
+from fennel.expr import col, when
 from fennel.expr.visitor import ExprPrinter, FetchReferences
 from fennel.expr.serializer import ExprSerializer
 from google.protobuf.json_format import ParseDict  # type: ignore
@@ -13,7 +13,7 @@ from fennel.testing.test_utils import error_message
 
 
 def test_basic_expr1():
-    expr = (F("num") + F("d")).isnull()
+    expr = (col("num") + col("d")).isnull()
     df = pd.DataFrame({"num": [1, 2, 3, 4], "d": [5, 6, 7, 8]})
     assert expr.typeof({"num": int, "d": int}) == bool
     ret = expr.eval(df, {"num": int, "d": int})
@@ -25,7 +25,7 @@ def test_basic_expr1():
 
 def test_basic_expr2():
 
-    expr = F("a") + F("b") + 3
+    expr = col("a") + col("b") + 3
     printer = ExprPrinter()
     expected = "((Ref('a') + Ref('b')) + 3)"
     assert expected == printer.print(expr.root)
@@ -67,7 +67,7 @@ def test_basic_expr2():
 
 
 def test_math_expr():
-    expr = (F("a").num.floor() + 3.2).num.ceil()
+    expr = (col("a").num.floor() + 3.2).num.ceil()
     printer = ExprPrinter()
     expected = "CEIL((FLOOR(Ref('a')) + 3.2))"
     assert expected == printer.print(expr.root)
@@ -106,11 +106,11 @@ def test_math_expr():
     assert ref_extractor.refs == {"a"}
 
     expr = (
-        when(F("a").num.floor() > 5)
-        .then(F("b"))
-        .when(F("a") > 3)
-        .then(F("a"))
-        .otherwise(1 + F("d"))
+        when(col("a").num.floor() > 5)
+        .then(col("b"))
+        .when(col("a") > 3)
+        .then(col("a"))
+        .otherwise(1 + col("d"))
     )
     df = pd.DataFrame(
         {
@@ -129,7 +129,7 @@ def test_math_expr():
 
 
 def test_bool_expr():
-    expr = (F("a") == 5) | ((F("b") == "random") & (F("c") == 3.2))
+    expr = (col("a") == 5) | ((col("b") == "random") & (col("c") == 3.2))
     printer = ExprPrinter()
     expected = """((Ref('a') == 5) or ((Ref('b') == "random") and (Ref('c') == 3.2)))"""
     assert expected == printer.print(expr.root)
@@ -151,7 +151,7 @@ def test_bool_expr():
 
 
 def test_str_expr():
-    expr = (F("a").str.concat(F("b"))).str.lower().len().ceil()
+    expr = (col("a").str.concat(col("b"))).str.lower().len().ceil()
     printer = ExprPrinter()
     expected = "CEIL(LEN(LOWER(Ref('a') + Ref('b'))))"
     assert expected == printer.print(expr.root)
@@ -160,8 +160,8 @@ def test_str_expr():
     assert ref_extractor.refs == {"a", "b"}
 
     expr = (
-        when(((F("a").str.concat(F("b"))).str.upper()).str.contains(F("c")))
-        .then(F("b"))
+        when(((col("a").str.concat(col("b"))).str.upper()).str.contains(col("c")))
+        .then(col("b"))
         .otherwise("No Match")
     )
     expected = """WHEN CONTAINS(UPPER(Ref('a') + Ref('b')), Ref('c')) THEN Ref('b') ELSE "No Match\""""
@@ -189,12 +189,12 @@ def test_str_expr():
     ]
     assert expr.typeof({"a": str, "b": str, "c": str}) == str
     expr = (
-        when(F("a").str.contains("p"))
-        .then(F("b"))
-        .when(F("b").str.contains("b"))
-        .then(F("a"))
-        .when(F("c").str.contains("C"))
-        .then(F("c"))
+        when(col("a").str.contains("p"))
+        .then(col("b"))
+        .when(col("b").str.contains("b"))
+        .then(col("a"))
+        .when(col("c").str.contains("C"))
+        .then(col("c"))
         .otherwise("No Match")
     )
     expected = """WHEN CONTAINS(Ref('a'), "p") THEN Ref('b') WHEN CONTAINS(Ref('b'), "b") THEN Ref('a') WHEN CONTAINS(Ref('c'), "C") THEN Ref('c') ELSE "No Match\""""
@@ -282,7 +282,7 @@ def test_str_expr():
 
 
 def test_dict_op():
-    expr = (F("a").dict.get("x") + F("a").dict.get("y")).num.ceil() + F(
+    expr = (col("a").dict.get("x") + col("a").dict.get("y")).num.ceil() + col(
         "a"
     ).dict.len()
     printer = ExprPrinter()

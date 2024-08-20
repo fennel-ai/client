@@ -807,7 +807,7 @@ def make_expr(v: Any) -> Any:
 #################################################################
 
 
-def F(col: str) -> Expr:
+def col(col: str) -> Expr:
     return Ref(col)
 
 
