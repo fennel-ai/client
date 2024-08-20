@@ -402,6 +402,7 @@ def get_all_imports() -> str:
         "from fennel.connectors.connectors import *",
         "from fennel.datasets import *",
         "from fennel.featuresets import *",
+        "from fennel.featuresets import feature",
         "from fennel.featuresets import feature as F",
         "from fennel.lib.expectations import *",
         "from fennel.internal_lib.schema import *",
@@ -413,6 +414,7 @@ def get_all_imports() -> str:
         "from fennel.lib.metadata import meta",
         "from fennel.lib import secrets, bucketize",
         "from fennel.datasets.datasets import dataset_lookup",
+        "from fennel.expr import col",
     ]
 
     gen_code_marker = f"{FENNEL_GEN_CODE_MARKER}=True\n"

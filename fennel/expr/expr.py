@@ -390,6 +390,12 @@ class Expr(object):
         arrow_col = eval(proto_bytes, df_pa, proto_schema)
         return pa_to_pd(arrow_col)
 
+    def __str__(self) -> str:  # type: ignore
+        from fennel.expr.visitor import ExprPrinter
+
+        printer = ExprPrinter()
+        return printer.print(self.root)
+
 
 class _Bool(Expr):
     def __init__(self, expr: Expr):
@@ -759,7 +765,7 @@ class Ref(Expr):
         super(Ref, self).__init__()
 
     def __str__(self) -> str:
-        return f"Ref('{self._col}')"
+        return f"col('{self._col}')"
 
 
 class IsNull(Expr):
@@ -801,7 +807,7 @@ def make_expr(v: Any) -> Any:
 #################################################################
 
 
-def F(col: str) -> Expr:
+def col(col: str) -> Expr:
     return Ref(col)
 
 

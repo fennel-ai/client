@@ -1,1 +1,1 @@
-from fennel.expr.expr import F, lit, when, Expr
+from fennel.expr.expr import col, lit, when, Expr

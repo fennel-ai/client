@@ -100,7 +100,7 @@ class PyCode(google.protobuf.message.Message):
 global___PyCode = PyCode
 
 @typing_extensions.final
-class UDF(google.protobuf.message.Message):
+class UDcol(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     PYCODE_FIELD_NUMBER: builtins.int

@@ -77,18 +77,18 @@ def get_vertices_and_edges(
         if isinstance(f, Feature):
             featureset = f.featureset_name
             caps_only = "".join([c for c in featureset if c.isupper()])
-            return f"F({caps_only}.{f.name})"
+            return f"col({caps_only}.{f.name})"
         elif isinstance(f, Featureset):
             raise ValueError(
                 "Featureset is not supported as an input to an extractor"
             )
         elif type(f) is tuple:
-            return "DF(" + ",".join([get_feature_vertex(f) for f in f]) + ")"
+            return "Dcol(" + ",".join([get_feature_vertex(f) for f in f]) + ")"
         elif isinstance(f, str):
             featureset = f.split(".")[0]
             caps_only = "".join([c for c in featureset if c.isupper()])
             feature_name = f.split(".")[1]
-            return f"F({caps_only}.{feature_name})"
+            return f"col({caps_only}.{feature_name})"
         raise ValueError(f"Unknown type {type(f)}")
 
     vertices = set()

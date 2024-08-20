@@ -11,6 +11,7 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import StringValue
 
 import fennel.connectors as connectors
+from fennel.expr.serializer import ExprSerializer
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.expectations_pb2 as exp_proto
@@ -508,7 +509,7 @@ def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
         import numpy as np
         from typing import List, Dict, Tuple, Optional, Union, Any, no_type_check
         from fennel.featuresets import *
-        from fennel.featuresets import featureset, feature
+        from fennel.featuresets import featureset, feature as F
         from fennel.lib.metadata import meta
         from fennel.lib.includes import includes
         from fennel.internal_lib.schema import *
@@ -623,6 +624,15 @@ def _extractor_to_proto(
             extractor.derived_extractor_info
         )
 
+    proto_expr = None
+    if extractor.extractor_type == ExtractorType.EXPR:
+        if extractor.expr is None:
+            raise TypeError(
+                f"Expr extractor `{extractor.name}` must have an expr"
+            )
+        serializer = ExprSerializer()
+        proto_expr = serializer.serialize(extractor.expr.root)
+
     if extractor.extractor_type == ExtractorType.PY_FUNC:
         metadata = get_metadata_proto(extractor.func)
     else:
@@ -641,6 +651,7 @@ def _extractor_to_proto(
         feature_set_name=extractor.featureset,
         extractor_type=extractor.extractor_type,
         field_info=extractor_field_info,
+        expr=proto_expr,
     )
 
     return proto_extractor

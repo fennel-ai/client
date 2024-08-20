@@ -10,6 +10,7 @@ from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
 from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import inputs, outputs
+from fennel.expr import col
 
 # noinspection PyUnresolvedReferences
 from fennel.testing import *
@@ -384,4 +385,74 @@ def test_invalid_alias_feature(client):
     assert (
         str(e.value)
         == "'Please specify a reference to a field of a dataset to use \"default\" param', found arg: `user_id` and default: `0`"
+    )
+
+
+@mock
+def test_invalid_expr_feature(client):
+
+    # Using a feature that is not defined in the featureset
+    with pytest.raises(ValueError) as e:
+
+        @featureset
+        class UserInfo3:
+            user_id: int
+            home_geoid: int
+            age: int = F(UserInfoDataset.age, default=0)
+            age_squared: int = F(col("Age") * col("Age"))
+            credit_score: int
+
+    assert (
+        str(e.value)
+        == "extractor for 'age_squared' refers to feature col('Age') not present in 'UserInfo3'; 'col' can only reference features from the same featureset"
+    )
+
+    # Using default value for an expression feature
+    with pytest.raises(ValueError) as e:
+
+        @featureset
+        class UserInfo4:
+            user_id: int
+            home_geoid: int
+            age: int = F(UserInfoDataset.age, default=0)
+            age_squared: int = F(col("age") * col("age"), default=0)
+            credit_score: int
+
+    assert (
+        str(e.value)
+        == "error in expression based extractor 'col('age') * col('age')'; can not set default value for expressions, maybe use fillnull instead?"
+    )
+
+    # Incorrect type for an expression feature
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class UserInfo5:
+            user_id: int
+            home_geoid: int
+            age: int = F(UserInfoDataset.age, default=0)
+            age_squared: str = F(col("age") * col("age"))
+            credit_score: int
+
+    assert (
+        str(e.value)
+        == "expression 'col('age') * col('age')' for feature 'age_squared' is of type 'str' not 'int'"
+    )
+
+    # Using dataset field in expression feature
+    with pytest.raises(ValueError) as e:
+
+        @featureset
+        class UserInfo6:
+            user_id: int
+            home_geoid: int
+            age: int = F(UserInfoDataset.age, default=0)
+            age_squared: int = F(
+                col("UserInfoDataset.age") * col("UserInfoDataset.age")
+            )
+            credit_score: int
+
+    assert (
+        str(e.value)
+        == "extractor for 'age_squared' refers to feature col('UserInfoDataset.age') not present in 'UserInfo6'; 'col' can only reference features from the same featureset"
     )

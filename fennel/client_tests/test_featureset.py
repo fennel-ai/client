@@ -19,6 +19,7 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
+from fennel.expr import col
 from fennel.testing import mock, log
 
 ################################################################################
@@ -94,6 +95,8 @@ class UserInfoMultipleExtractor:
     is_name_common: bool
     age_reciprocal: float
     age_doubled: int
+    age_reciprocal_expr: float = F(1 / (col("age") / (3600.0 * 24)) + 0.01)
+    age_double_expr: int = F(col("age") * 2)
 
     @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")
@@ -154,7 +157,6 @@ class UserInfoMultipleExtractor:
 class TestSimpleExtractor(unittest.TestCase):
     @pytest.mark.integration
     def test_get_age_and_name_features(self):
-        print("Running test_get_age_and_name_features")
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
         assert UserInfoMultipleExtractor.all() == [
@@ -167,6 +169,8 @@ class TestSimpleExtractor(unittest.TestCase):
             "UserInfoMultipleExtractor.is_name_common",
             "UserInfoMultipleExtractor.age_reciprocal",
             "UserInfoMultipleExtractor.age_doubled",
+            "UserInfoMultipleExtractor.age_reciprocal_expr",
+            "UserInfoMultipleExtractor.age_double_expr",
         ]
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
         df = UserInfoMultipleExtractor.get_age_and_name_features(
@@ -234,6 +238,90 @@ class TestSimpleExtractor(unittest.TestCase):
         self.assertEqual(
             res["UserInfoMultipleExtractor.age_doubled"].tolist(), [64, 48]
         )
+
+    @pytest.mark.integration
+    @mock
+    def test_e2e_query(self, client):
+        client.commit(
+            message="some commit msg",
+            datasets=[UserInfoDataset],
+            featuresets=[UserInfoMultipleExtractor],
+        )
+        now = datetime.now(timezone.utc)
+        data = [
+            [18232, "John", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", now],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "UserInfoDataset", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+
+        feature_df = client.query(
+            outputs=[UserInfoMultipleExtractor],
+            inputs=[UserInfoMultipleExtractor.userid],
+            input_dataframe=pd.DataFrame(
+                {"UserInfoMultipleExtractor.userid": [18232, 18234]}
+            ),
+        )
+        assert feature_df.shape == (2, 11)
+        assert feature_df.columns.tolist() == [
+            "UserInfoMultipleExtractor.userid",
+            "UserInfoMultipleExtractor.name",
+            "UserInfoMultipleExtractor.country_geoid",
+            "UserInfoMultipleExtractor.age",
+            "UserInfoMultipleExtractor.age_squared",
+            "UserInfoMultipleExtractor.age_cubed",
+            "UserInfoMultipleExtractor.is_name_common",
+            "UserInfoMultipleExtractor.age_reciprocal",
+            "UserInfoMultipleExtractor.age_doubled",
+            "UserInfoMultipleExtractor.age_reciprocal_expr",
+            "UserInfoMultipleExtractor.age_double_expr",
+        ]
+        assert feature_df["UserInfoMultipleExtractor.userid"].tolist() == [
+            18232,
+            18234,
+        ]
+
+        assert feature_df["UserInfoMultipleExtractor.age"].tolist() == [32, 24]
+        assert feature_df["UserInfoMultipleExtractor.age_squared"].tolist() == [
+            1024,
+            576,
+        ]
+        assert feature_df["UserInfoMultipleExtractor.age_cubed"].tolist() == [
+            32768,
+            13824,
+        ]
+        assert feature_df[
+            "UserInfoMultipleExtractor.is_name_common"
+        ].tolist() == [
+            True,
+            False,
+        ]
+        expected_age_reciprocal = [2700.01, 3600.01]
+        assert (
+            feature_df["UserInfoMultipleExtractor.age_reciprocal"].tolist()
+            == expected_age_reciprocal
+        )
+        assert feature_df["UserInfoMultipleExtractor.age_doubled"].tolist() == [
+            64,
+            48,
+        ]
+        assert feature_df[
+            "UserInfoMultipleExtractor.country_geoid"
+        ].tolist() == [5, 3]
+        assert feature_df["UserInfoMultipleExtractor.name"].tolist() == [
+            "John",
+            "Monica",
+        ]
+        assert (
+            feature_df["UserInfoMultipleExtractor.age_reciprocal_expr"].tolist()
+            == expected_age_reciprocal
+        )
+        assert feature_df[
+            "UserInfoMultipleExtractor.age_double_expr"
+        ].tolist() == [64, 48]
 
 
 @struct
@@ -420,10 +508,22 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 9))
+        self.assertEqual(feature_df.shape, (2, 11))
         self.assertEqual(
             list(feature_df["UserInfoMultipleExtractor.age_reciprocal"]),
             [2700.01, 3600.01],
+        )
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_doubled"]),
+            [64, 48],
+        )
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_reciprocal_expr"]),
+            [2700.01, 3600.01],
+        )
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_double_expr"]),
+            [64, 48],
         )
 
 

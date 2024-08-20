@@ -19,11 +19,14 @@ import pandas as pd
 
 from fennel.datasets import Dataset, Field
 from fennel.datasets.datasets import get_index, IndexDuration
+from fennel.expr.expr import Expr
+from fennel.expr.visitor import FetchReferences
 from fennel.gen.featureset_pb2 import ExtractorType
 from fennel.internal_lib.schema import (
     validate_val_with_dtype,
     fennel_get_optional_inner,
 )
+from fennel.internal_lib.utils.utils import dtype_to_string
 from fennel.lib import FENNEL_GEN_CODE_MARKER
 from fennel.lib.expectations import Expectations, GE_ATTR_FUNC
 from fennel.lib.includes import EnvSelector
@@ -74,12 +77,16 @@ def feature(
 ) -> T:  # type: ignore
     if len(args) > 1:
         raise TypeError(
-            f"Please reference to only one feature or one field at a time found : {args}"
+            f"Please refer to only one feature/field/expression at a time found : {args}"
         )
     if default is not None:
         if len(args) == 0:
             raise TypeError(
                 'Please specify a reference to a field of a dataset to use "default" param'
+            )
+        if isinstance(args[0], Expr):
+            raise ValueError(
+                f"error in expression based extractor '{args[0]}'; can not set default value for expressions, maybe use fillnull instead?"
             )
         if not isinstance(args[0], Field):
             raise TypeError(
@@ -93,7 +100,10 @@ def feature(
         # Rest of fields filled in later
     )
     if len(args) != 0:
-        feature_obj.ref = args[0]
+        if isinstance(args[0], Expr):
+            feature_obj._expr = args[0]
+        else:
+            feature_obj.ref = args[0]
     else:
         feature_obj.ref = None
     feature_obj.ref_default = default
@@ -346,6 +356,7 @@ class Feature:
     _ref_default: Optional[Any] = None
     _ref_version: Optional[int] = None
     _ref_env: Optional[Union[str, List[str]]] = None
+    _expr: Optional[Expr] = None
     _name: str = ""
     _featureset_name: str = ""
     fqn_: str = ""
@@ -551,6 +562,68 @@ class Featureset:
     def all(self) -> List[Feature]:
         return self._features
 
+    def _get_expression_extractors(self) -> List[Extractor]:
+        extractors = []
+        for feature in self._features:
+            expr = feature._expr
+            if expr is None:
+                continue
+            if not isinstance(expr, Expr):
+                raise TypeError(
+                    f"Expected an Expr object for feature {feature.name} "
+                    f"but found {type(expr)}"
+                )
+
+            ref_extractor = FetchReferences()
+            user_defined_inputs = ref_extractor.fetch(expr)
+            extractor = Extractor(
+                name=f"_fennel_expr_{feature.fqn()}",
+                extractor_type=ExtractorType.EXPR,
+                user_defined_inputs=list(user_defined_inputs),
+                user_defined_outputs=[feature],
+                version=feature.ref_version or 0,
+                func=None,
+                derived_extractor_info=None,
+                depends_on=None,
+                env=feature.ref_env,
+            )
+            # Converting the string in extractor inputs decorator to Feature object
+            inputs = []
+            for input in extractor.user_defined_inputs:
+                if isinstance(input, str):
+                    try:
+                        inputs.append(self._feature_map[input])
+                    except KeyError:
+                        raise ValueError(
+                            f"extractor for '{feature}' refers to feature col('{input}') not present in '{self._name}'; 'col' can only reference features from the same featureset"
+                        )
+                elif isinstance(input, Feature):
+                    inputs.append(input)
+                else:
+                    raise ValueError(
+                        f"Parameter `{input}` is not a feature, but a "
+                        f"`{type(input)}`, and hence not supported as an input for the extractor "
+                        f"`{extractor.name}`"
+                    )
+
+            extractor.expr = expr
+            extractor.inputs = inputs
+            input_types = {inp.name: inp.dtype for inp in inputs}
+            computed_dtype = expr.typeof(input_types)
+            if computed_dtype != feature.dtype:
+                raise TypeError(
+                    f"expression '{expr}' for feature '{feature.name}' is of type '{dtype_to_string(feature.dtype)}' not '{dtype_to_string(computed_dtype)}'"
+                )
+            extractor.featureset = self._name
+            extractor.outputs = [feature]
+            feature_meta = get_meta(feature)
+            if feature_meta:
+                extractor = cast(
+                    Extractor, meta(**feature_meta.dict())(extractor)
+                )
+            extractors.append(extractor)
+        return extractors
+
     def _get_generated_extractors(
         self,
     ) -> List[Extractor]:
@@ -574,15 +647,15 @@ class Featureset:
             # aliasing
             if isinstance(ref, Feature):
                 extractor = Extractor(
-                    f"_fennel_alias_{ref.fqn()}",
-                    ExtractorType.ALIAS,
-                    [ref],
-                    [feature],
-                    feature.ref_version,
-                    None,
-                    None,
-                    None,
-                    feature.ref_env,
+                    name=f"_fennel_alias_{ref.fqn()}",
+                    extractor_type=ExtractorType.ALIAS,
+                    user_defined_inputs=[ref],
+                    user_defined_outputs=[feature],
+                    version=feature.ref_version,
+                    func=None,
+                    derived_extractor_info=None,
+                    depends_on=None,
+                    env=feature.ref_env,
                 )
                 extractor.outputs = [feature]
                 extractor.inputs = [ref]
@@ -641,6 +714,8 @@ class Featureset:
 
     def _get_extractors(self) -> List[Extractor]:
         extractors = []
+        # Expression based extractors
+        extractors.extend(list(self._get_expression_extractors()))
 
         # getting auto generated extractors for features
         extractors.extend(list(self._get_generated_extractors()))
@@ -835,6 +910,8 @@ class Extractor:
     func: Optional[Callable]
     derived_extractor_info: Optional[DatasetLookupInfo]
     featureset: str
+    # Expression based extractors
+    expr: Optional[Expr]
     # depended on datasets: used for autogenerated extractors
     depends_on: List[Dataset]
 

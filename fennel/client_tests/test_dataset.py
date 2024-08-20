@@ -12,7 +12,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel.connectors import source, Webhook, ref
-from fennel.expr import F
+from fennel.expr import col
 from fennel.datasets import (
     dataset,
     field,
@@ -935,9 +935,11 @@ class MovieRatingAssignExpr:
     @inputs(MovieRating)
     def pipeline_assign(cls, m: Dataset):
         rating_transformed = m.assign(
-            rating_sq=(F("rating") * F("rating")).astype(float),
-            rating_cube=(F("rating") * F("rating") * F("rating")).astype(float),
-            rating_into_5=(F("rating") * 5).astype(float),
+            rating_sq=(col("rating") * col("rating")).astype(float),
+            rating_cube=(col("rating") * col("rating") * col("rating")).astype(
+                float
+            ),
+            rating_into_5=(col("rating") * 5).astype(float),
         )
         return rating_transformed.drop("num_ratings", "sum_ratings", "rating")
 
@@ -1873,11 +1875,11 @@ class PositiveRatingActivityExpr:
     @pipeline
     @inputs(RatingActivity)
     def filter_positive_ratings(cls, rating: Dataset):
-        filtered_ds = rating.filter(F("rating") >= 3.5)
+        filtered_ds = rating.filter(col("rating") >= 3.5)
         filter2 = filtered_ds.filter(
-            (F("movie") == "Jumanji")
-            | (F("movie") == "Titanic")
-            | (F("movie") == "RaOne")
+            (col("movie") == "Jumanji")
+            | (col("movie") == "Titanic")
+            | (col("movie") == "RaOne")
         )
         return filter2.groupby("movie").aggregate(
             Count(window=Continuous("forever"), into_field=str(cls.cnt_rating)),

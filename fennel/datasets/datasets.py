@@ -256,8 +256,8 @@ class _Node(Generic[T]):
             >>> ds.assign("new_column", int, lambda x: x.old_column + 1)
         2. Assigning one or more columns:
             >>> ds.assign(
-            ...     new_column1=(F("old_column1") + 1).astype(int),
-            ...     new_column2=(F("old_column2") + 2).astype(int),
+            ...     new_column1=(col("old_column1") + 1).astype(int),
+            ...     new_column2=(col("old_column2") + 2).astype(int),
             ... )
 
         """

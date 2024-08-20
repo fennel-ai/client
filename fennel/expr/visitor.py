@@ -236,3 +236,87 @@ class ExprPrinter(Visitor):
                 return f"{self.visit(obj.expr)}.get('{self.visit(obj.op.key)}', {self.visit(obj.op.default)})"
         elif isinstance(obj.op, DictLen):
             return f"LEN({self.visit(obj.expr)})"
+
+
+class FetchReferences(Visitor):
+
+    def __init__(self):
+        self.refs = set()
+
+    def fetch(self, obj):
+        self.visit(obj)
+        return self.refs
+
+    def visitRef(self, obj):
+        self.refs.add(obj._col)
+
+    def visitUnary(self, obj):
+        self.visit(obj.expr)
+
+    def visitBinary(self, obj):
+        self.visit(obj.left)
+        self.visit(obj.right)
+
+    def visitIsNull(self, obj):
+        self.visit(obj.expr)
+
+    def visitFillNull(self, obj):
+        self.visit(obj.expr)
+        self.visit(obj.fill)
+
+    def visitWhen(self, obj):
+        cur_when = obj
+        when_then_pairs: List[When, Then] = []
+        while cur_when is not None:
+            if cur_when._then is None:
+                raise InvalidExprException(
+                    f"THEN clause missing for WHEN clause {self.visit(cur_when)}"
+                )
+            when_then_pairs.append((cur_when, cur_when._then))
+            cur_when = cur_when._then._chained_when
+
+        for when, then in when_then_pairs:
+            self.visit(when.expr)
+            self.visit(then.expr)
+
+        if when_then_pairs[-1][1]._otherwise is not None:
+            self.visit(when_then_pairs[-1][1]._otherwise.expr)
+
+    def visitThen(self, obj):
+        self.visit(obj.expr)
+
+    def visitOtherwise(self, obj):
+        self.visit(obj.expr)
+
+    def visitNumber(self, obj):
+        self.visit(obj.operand)
+
+    def visitString(self, obj):
+        self.visit(obj.operand)
+        if isinstance(obj.op, StrContains):
+            self.visit(obj.op.item)
+        elif isinstance(obj.op, Concat):
+            self.visit(obj.op.other)
+
+    def visitDict(self, obj):
+        self.visit(obj.expr)
+        if isinstance(obj.op, DictContains):
+            self.visit(obj.op.item)
+        elif isinstance(obj.op, DictGet):
+            self.visit(obj.op.key)
+            if obj.op.default is not None:
+                self.visit(obj.op.default)
+
+    def visitList(self, obj):
+        for item in obj.items:
+            self.visit(item)
+
+    def visitStruct(self, obj):
+        for field in obj.fields:
+            self.visit(field)
+
+    def visitLiteral(self, obj):
+        pass
+
+    def visitBool(self, obj):
+        self.visit(obj.expr)
