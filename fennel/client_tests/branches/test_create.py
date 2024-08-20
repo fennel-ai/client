@@ -45,6 +45,22 @@ def test_simple_create(client):
 
 @pytest.mark.integration
 @mock
+def test_simple_create_with_checkout(client):
+    branch_list = client.list_branches()
+    assert len(branch_list) == 1
+
+    client.checkout("checkout-test")
+    branch_list = client.list_branches()
+    assert len(branch_list) == 1
+
+    client.checkout("checkout-test", init=True)
+    assert client.branch() == "checkout-test"
+    branch_list = client.list_branches()
+    assert len(branch_list) == 2
+
+
+@pytest.mark.integration
+@mock
 def test_duplicate_create(client):
     """
     Creating a branch with the name that already exists throws 400

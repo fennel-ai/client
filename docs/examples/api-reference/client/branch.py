@@ -55,4 +55,12 @@ def test_basic(client):
 
         # all subsequent operations will be on `mybranch`
         client.commit(...)
+
+        # create and change active branch from `mybranch` to `mybranch2`
+        # docsnip-highlight start
+        client.checkout("mybranch2", init=True)
+        assert client.branch() == "mybranch2"
+        # docsnip-highlight end
+
+        # all subsequent operations will be on `mybranch2`
         # /docsnip
