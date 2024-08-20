@@ -241,7 +241,9 @@ def test_incorrect_assign_expr_type():
             def transform(cls, rating: Dataset):
                 return rating.assign(
                     rating_sq=(col("rating") * col("rating")).astype(str),
-                    movie_suffixed=col("movie").str.concat("_suffix").astype(int),
+                    movie_suffixed=col("movie")
+                    .str.concat("_suffix")
+                    .astype(int),
                 ).drop("rating", "movie")
 
     expected_err = (
@@ -267,7 +269,9 @@ def test_incorrect_assign_expr_type():
             def transform(cls, rating: Dataset):
                 return rating.assign(
                     rating_sq=(col("rating") * col("rating")).astype(float),
-                    movie_suffixed=col("movie").str.concat("_suffix").astype(str),
+                    movie_suffixed=col("movie")
+                    .str.concat("_suffix")
+                    .astype(str),
                 ).drop("rating", "movie")
 
     assert (

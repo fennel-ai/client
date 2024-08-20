@@ -13,16 +13,16 @@ are very naturally modeled in Fennel. Let's look at one good way of doing this:
 ```python
 @featureset
 class SearchRequest:
-    time: datetime = feature()
-    ip: str = feature()
-    device_type: str = feature()
-    query: str = feature()
+    time: datetime = F()
+    ip: str = F()
+    device_type: str = F()
+    query: str = F()
 
 @featureset
 class UserFeatures:
-    uid: int = feature()
+    uid: int = F()
     ...
-    ctr_by_device_type: float = feature()
+    ctr_by_device_type: float = F()
     ..
 
     @extractor

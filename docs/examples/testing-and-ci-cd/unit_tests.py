@@ -95,7 +95,7 @@ class TestDataset(unittest.TestCase):
 # /docsnip
 
 # docsnip featuresets_testing
-from fennel.featuresets import feature, featureset, extractor
+from fennel.featuresets import feature as F, featureset, extractor
 
 
 @meta(owner="test@test.com")
@@ -104,7 +104,7 @@ class UserInfoFeatures:
     userid: int
     name: str
     # The users gender among male/female/non-binary
-    age: int = feature().meta(owner="aditya@fennel.ai")
+    age: int = F().meta(owner="aditya@fennel.ai")
     age_squared: int
     age_cubed: int
     is_name_common: bool
@@ -177,7 +177,7 @@ class UserInfoMultipleExtractor:
     name: str
     country_geoid: int
     # The users gender among male/female/non-binary
-    age: int = feature().meta(owner="aditya@fennel.ai")
+    age: int = F().meta(owner="aditya@fennel.ai")
     age_squared: int
     age_cubed: int
     is_name_common: bool

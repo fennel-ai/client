@@ -11,7 +11,7 @@ import fennel._vendor.requests as requests
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
 from fennel.dtypes import Embedding, struct
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import (
     includes,
     inputs,
@@ -51,7 +51,7 @@ class UserInfoDataset:
 @featureset
 class UserInfoSingleExtractor:
     userid: int
-    age: int = feature().meta(owner="aditya@fennel.ai")  # type: ignore
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
     age_squared: int
     age_cubed: int
     is_name_common: bool
@@ -89,14 +89,14 @@ class UserInfoMultipleExtractor:
     userid: int
     name: str
     country_geoid: int
-    age: int = feature().meta(owner="aditya@fennel.ai")  # type: ignore
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
     age_squared: int
     age_cubed: int
     is_name_common: bool
     age_reciprocal: float
     age_doubled: int
-    age_reciprocal_expr: float = feature(1 / (col("age") / (3600.0 * 24)) + 0.01)
-    age_double_expr: int = feature(col("age") * 2)
+    age_reciprocal_expr: float = F(1 / (col("age") / (3600.0 * 24)) + 0.01)
+    age_double_expr: int = F(col("age") * 2)
 
     @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")
@@ -348,22 +348,22 @@ class FlightRequest:
 
 @featureset
 class GeneratedFeatures:
-    user_id: int = feature(UserInfoSingleExtractor.userid)  # type: ignore
-    id: int = feature(FlightRequest.id)  # type: ignore
-    country: str = feature(UserInfoDataset.country, default="pluto")  # type: ignore
-    velocity: Velocity = feature(
+    user_id: int = F(UserInfoSingleExtractor.userid)  # type: ignore
+    id: int = F(FlightRequest.id)  # type: ignore
+    country: str = F(UserInfoDataset.country, default="pluto")  # type: ignore
+    velocity: Velocity = F(
         FlightDataset.v_cruising,  # type: ignore
         default=Velocity(500.0, 0),  # type: ignore
     )
-    layout: Dict[str, Optional[int]] = feature(
+    layout: Dict[str, Optional[int]] = F(
         FlightDataset.layout,  # type: ignore
         default={"economy": 0},
     )
-    pilots: List[int] = feature(
+    pilots: List[int] = F(
         FlightDataset.pilot_ids,  # type: ignore
         default=[0, 0, 0],
     )
-    base_region: Optional[str] = feature(
+    base_region: Optional[str] = F(
         FlightDataset.region,  # type: ignore
     )
 
@@ -797,7 +797,7 @@ class TestOptionalTypes(unittest.TestCase):
         @featureset
         class FloatFeatureSet:
             user_id: int
-            income: Optional[float] = feature(FloatDataset.income)
+            income: Optional[float] = F(FloatDataset.income)
 
         client.commit(
             message="some commit msg",
@@ -847,7 +847,7 @@ class TestOptionalTypes(unittest.TestCase):
         @featureset
         class IntFeatureSet:
             user_id: int
-            age: Optional[int] = feature(IntDataset.age)
+            age: Optional[int] = F(IntDataset.age)
 
         client.commit(
             message="some commit msg",
@@ -901,7 +901,7 @@ def test_featureset_name_query(client):
     @featureset
     class FS1:
         user_id: int
-        age: Optional[int] = feature(DS1.age)
+        age: Optional[int] = F(DS1.age)
 
     client.commit(
         message="some commit msg",
@@ -951,12 +951,12 @@ def test_embedding_features(client):
     @featureset
     class ImageFeature:
         image_id: int
-        embedding: Optional[Embedding[2]] = feature(ImageEmbeddings.embedding)
+        embedding: Optional[Embedding[2]] = F(ImageEmbeddings.embedding)
 
     @featureset
     class ImageFeatureWithDefault:
-        image_id: int = feature(ImageFeature.image_id)
-        embedding2: Embedding[2] = feature(
+        image_id: int = F(ImageFeature.image_id)
+        embedding2: Embedding[2] = F(
             ImageEmbeddings.embedding, default=[11.0, 13.2]
         )
 
@@ -1022,26 +1022,26 @@ class Sport:
 
 @featureset
 class UserInfo:
-    user_id: int = feature(Request.user_id)
-    country: Optional[str] = feature(UserInfoDataset.country)
-    sport: Optional[str] = feature(CountryInfo.national_sport)
-    num_players: Optional[int] = feature(Sport.num_players)
+    user_id: int = F(Request.user_id)
+    country: Optional[str] = F(UserInfoDataset.country)
+    sport: Optional[str] = F(CountryInfo.national_sport)
+    num_players: Optional[int] = F(Sport.num_players)
 
 
 @featureset
 class UserInfo2:
-    user_id: int = feature(Request.user_id)
-    country: Optional[str] = feature(UserInfoDataset.country)
-    sport: str = feature(CountryInfo.national_sport, default="Cricket")
-    num_players: Optional[int] = feature(Sport.num_players)
+    user_id: int = F(Request.user_id)
+    country: Optional[str] = F(UserInfoDataset.country)
+    sport: str = F(CountryInfo.national_sport, default="Cricket")
+    num_players: Optional[int] = F(Sport.num_players)
 
 
 @featureset
 class UserInfo3:
-    user_id: int = feature(Request.user_id)
-    country: Optional[str] = feature(UserInfoDataset.country)
-    sport: str = feature(CountryInfo.national_sport, default="Rugby")
-    num_players: Optional[int] = feature(Sport.num_players)
+    user_id: int = F(Request.user_id)
+    country: Optional[str] = F(UserInfoDataset.country)
+    sport: str = F(CountryInfo.national_sport, default="Rugby")
+    num_players: Optional[int] = F(Sport.num_players)
 
 
 @pytest.mark.integration
@@ -1176,8 +1176,8 @@ def test_auto_extractor_removal(client):
     @featureset
     class IndexFeatures:
         user_id: int
-        name: Optional[str] = feature(IndexDataset.name)
-        age: Optional[int] = feature(IndexDataset.age)
+        name: Optional[str] = F(IndexDataset.name)
+        age: Optional[int] = F(IndexDataset.age)
 
     response = client.commit(
         datasets=[IndexDataset],
@@ -1191,8 +1191,8 @@ def test_auto_extractor_removal(client):
         @featureset
         class IndexFeatures:
             user_id: int
-            name: Optional[str] = feature(IndexDataset.name)
-            age: Optional[int] = feature(IndexDataset.age).meta(deleted=True)
+            name: Optional[str] = F(IndexDataset.name)
+            age: Optional[int] = F(IndexDataset.age).meta(deleted=True)
 
         return IndexFeatures
 
@@ -1206,8 +1206,8 @@ def test_auto_extractor_removal(client):
         @featureset
         class IndexFeatures:
             user_id: int
-            name: Optional[str] = feature(IndexDataset.name).meta(deleted=True)
-            age: Optional[int] = feature(IndexDataset.age).meta(deleted=True)
+            name: Optional[str] = F(IndexDataset.name).meta(deleted=True)
+            age: Optional[int] = F(IndexDataset.age).meta(deleted=True)
 
         return IndexFeatures
 

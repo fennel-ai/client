@@ -9,7 +9,7 @@ __owner__ = "ml-team@fennel.ai"
 # docsnip featuresets_reading_datasets
 from fennel.datasets import dataset, field
 from fennel.connectors import source, Webhook
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import inputs, outputs
 
 webhook = Webhook(name="fennel_webhook")
@@ -51,8 +51,8 @@ class Request:
 
 @featureset
 class UserFeaturesDerived:
-    uid: int = feature(Request.user_id)
-    name: str = feature(User.name, default="Unknown")
+    uid: int = F(Request.user_id)
+    name: str = F(User.name, default="Unknown")
 
 
 # /docsnip
@@ -66,8 +66,8 @@ class Request2:
 
 @featureset
 class UserFeaturesDerived2:
-    uid: int = feature(Request2.uid)
-    name: str = feature(User.name, default="Unknown")
+    uid: int = F(Request2.uid)
+    name: str = F(User.name, default="Unknown")
 
 
 # /docsnip

@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 from dateutil.relativedelta import relativedelta  # type: ignore
 
-from fennel import meta, Count, featureset, feature, extractor
+from fennel import meta, Count, featureset, extractor
+from fennel.featuresets import feature as F
 from fennel.connectors import Webhook
 from fennel.connectors import source
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -99,16 +100,16 @@ class RequestFeatures0:
 @featureset
 class RequestFeatures1:
     ts: datetime
-    id1: int = feature(RequestFeatures0.rider_id)  # type: ignore
+    id1: int = F(RequestFeatures0.rider_id)  # type: ignore
 
 
 @featureset
 class RequestFeatures2:
     ts: datetime
-    id2: int = feature(RequestFeatures1.id1)  # type: ignore
-    rider_id: int = feature(RequestFeatures0.rider_id)  # type: ignore
+    id2: int = F(RequestFeatures1.id1)  # type: ignore
+    rider_id: int = F(RequestFeatures0.rider_id)  # type: ignore
     const: int
-    num_trips: int = feature(
+    num_trips: int = F(
         NumCompletedTripsDataset.count_num_completed_trips,  # type: ignore
         default=0,
     )
@@ -123,34 +124,34 @@ class RequestFeatures2:
 @featureset
 class RequestFeatures3:
     ts: datetime
-    rider_id: int = feature(RequestFeatures2.id2)  # type: ignore
+    rider_id: int = F(RequestFeatures2.id2)  # type: ignore
     vehicle_id: int
     reservation_id: Optional[int]
 
 
 @featureset
 class RiderFeatures:
-    id: int = feature(RequestFeatures2.id2)  # type: ignore
-    rider_id: int = feature(RequestFeatures3.rider_id)  # type: ignore
-    created: datetime = feature(
+    id: int = F(RequestFeatures2.id2)  # type: ignore
+    rider_id: int = F(RequestFeatures3.rider_id)  # type: ignore
+    created: datetime = F(
         RiderDataset.created,  # type: ignore
         default=datetime(2000, 1, 1, 0, 0, 0),
     )
-    birthdate: datetime = feature(
+    birthdate: datetime = F(
         RiderDataset.birthdate,  # type: ignore
         default=datetime(2000, 1, 1, 0, 0, 0),
     )
     age_years: int
-    ais_score: float = feature(
+    ais_score: float = F(
         RiderCreditScoreDataset.score,  # type: ignore
         default=-1.0,
     )
-    dl_state: str = feature(
+    dl_state: str = F(
         CountryLicenseDataset.country_code,  # type: ignore
         default="Unknown",
     )
     is_us_dl: bool
-    num_past_completed_trips: int = feature(
+    num_past_completed_trips: int = F(
         NumCompletedTripsDataset.count_num_completed_trips,  # type: ignore
         default=0,
     )

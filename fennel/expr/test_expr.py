@@ -160,7 +160,9 @@ def test_str_expr():
     assert ref_extractor.refs == {"a", "b"}
 
     expr = (
-        when(((col("a").str.concat(col("b"))).str.upper()).str.contains(col("c")))
+        when(
+            ((col("a").str.concat(col("b"))).str.upper()).str.contains(col("c"))
+        )
         .then(col("b"))
         .otherwise("No Match")
     )

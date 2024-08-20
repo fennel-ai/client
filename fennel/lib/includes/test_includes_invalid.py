@@ -7,7 +7,7 @@ import pytest
 import fennel._vendor.requests as requests
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.testing import mock
 
@@ -42,7 +42,7 @@ def power_4(x: int) -> int:
 @featureset
 class UserInfoExtractor:
     userid: int
-    age: int = feature().meta(owner="aditya@fennel.ai")  # type: ignore
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
     age_power_four: int
     age_cubed: int
     is_name_common: bool
@@ -118,7 +118,7 @@ def test_invalid_code_changes(client):
         @featureset
         class UserInfoExtractorInvalid:
             userid: int
-            age: int = feature().meta(owner="aditya@fennel.ai")  # type: ignore
+            age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
             age_power_four: int
             age_cubed: int
             is_name_common: bool
@@ -157,7 +157,7 @@ def test_invalid_code_changes(client):
         @featureset
         class UserInfoExtractorInvalid:
             userid: int
-            age: int = feature().meta(owner="aditya@fennel.ai")  # type: ignore
+            age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
             age_power_four: int
             age_cubed: int
             is_name_common: bool
@@ -201,7 +201,7 @@ def test_invalid_code_changes(client):
         @featureset
         class UserInfoExtractorInvalid:
             userid: int
-            age: int = feature().meta(owner="aditya@fennel.ai")  # type: ignore
+            age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
             age_power_four: int
             age_cubed: int
             is_name_common: bool

@@ -936,7 +936,9 @@ class MovieRatingAssignExpr:
     def pipeline_assign(cls, m: Dataset):
         rating_transformed = m.assign(
             rating_sq=(col("rating") * col("rating")).astype(float),
-            rating_cube=(col("rating") * col("rating") * col("rating")).astype(float),
+            rating_cube=(col("rating") * col("rating") * col("rating")).astype(
+                float
+            ),
             rating_into_5=(col("rating") * 5).astype(float),
         )
         return rating_transformed.drop("num_ratings", "sum_ratings", "rating")

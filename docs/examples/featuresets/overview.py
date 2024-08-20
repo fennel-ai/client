@@ -13,7 +13,7 @@ __owner__ = "nikhil@fennel.ai"
 
 def test_featureset_overview():
     # docsnip featureset
-    from fennel.featuresets import featureset, extractor
+    from fennel.featuresets import featureset, extractor, feature as F
     from fennel.lib import inputs, outputs
 
     @featureset
@@ -75,7 +75,7 @@ def test_feature_versioning(client):
 @mock
 def test_featureset_auto_extractors(client):
     from fennel.datasets import dataset, field
-    from fennel.featuresets import featureset, extractor
+    from fennel.featuresets import featureset, extractor, feature as F
     from fennel.lib import inputs, outputs
     from fennel.connectors import source, Webhook
 
@@ -94,7 +94,7 @@ def test_featureset_auto_extractors(client):
     class MovieFeatures:
         id: int
         # docsnip-highlight next-line
-        duration: int = feature(Movie.duration, default=-1)
+        duration: int = F(Movie.duration, default=-1)
         over_2hrs: bool
 
         @extractor
@@ -148,7 +148,7 @@ def test_featureset_auto_extractors(client):
 
 @mock
 def test_featureset_alias(client):
-    from fennel.featuresets import featureset, feature, extractor
+    from fennel.featuresets import featureset, feature as F, extractor
     from fennel.lib import inputs, outputs
     from fennel.connectors import source, Webhook
 
@@ -168,8 +168,8 @@ def test_featureset_alias(client):
 
     @featureset
     class MovieFeatures:
-        id: int = feature(Request.movie_id)  # docsnip-highlight
-        duration: int = feature(Movie.duration, default=-1)
+        id: int = F(Request.movie_id)  # docsnip-highlight
+        duration: int = F(Movie.duration, default=-1)
 
     # /docsnip
 
@@ -227,7 +227,7 @@ def test_featureset_auto_convention(client):
     webhook = Webhook(name="fennel_webhook")
     # docsnip featureset_auto_convention
     # docsnip-highlight next-line
-    from fennel.featuresets import feature
+    from fennel.featuresets import feature as F
 
     @source(webhook.endpoint("Movie"), disorder="14d", cdc="upsert")
     @dataset(index=True)
@@ -243,8 +243,8 @@ def test_featureset_auto_convention(client):
     @featureset
     class MovieFeatures:
         # docsnip-highlight start
-        id: int = feature(Request.movie_id)
-        duration: int = feature(Movie.duration, default=-1)
+        id: int = F(Request.movie_id)
+        duration: int = F(Movie.duration, default=-1)
         # docsnip-highlight end
 
     # /docsnip

@@ -8,7 +8,7 @@ from google.protobuf.json_format import ParseDict  # type: ignore
 import fennel.gen.featureset_pb2 as fs_proto
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs, desc
 from fennel.testing import *
 from fennel.expr import col
@@ -49,13 +49,13 @@ def test_simple_featureset():
         home_geoid: int
         # The users gender among male/female/non-binary
         gender: str
-        age: int = feature().meta(owner="aditya@fennel.ai")
-        age_sq: int = feature(col("age") * col("age"))
-        age_double: int = feature(col("age") * 2)
+        age: int = F().meta(owner="aditya@fennel.ai")
+        age_sq: int = F(col("age") * col("age"))
+        age_double: int = F(col("age") * 2)
         height: int
         weight: float
-        bmi: float = feature(col("weight") / col("height") / col("height") * 2.20462)
-        income: int = feature().meta(deprecated=True)
+        bmi: float = F(col("weight") / col("height") / col("height") * 2.20462)
+        income: int = F().meta(deprecated=True)
 
         @extractor(deps=[UserInfoDataset], version=2)
         @inputs(User.id, User.age)
@@ -304,7 +304,7 @@ def test_complex_featureset():
         home_geoid: int
         # The users gender among male/female/non-binary
         gender: str
-        age: int = feature().meta(owner="aditya@fennel.ai")
+        age: int = F().meta(owner="aditya@fennel.ai")
         income: int
 
         @extractor(deps=[UserInfoDataset])
@@ -469,12 +469,12 @@ def test_extractor_env_selector():
     @meta(owner="aditya@fennel.ai")
     @featureset
     class UserInfo:
-        user_id: int = feature(Request.user_id, env=["~staging", "~prod"])
+        user_id: int = F(Request.user_id, env=["~staging", "~prod"])
         home_geoid: int
         # The users gender among male/female/non-binary
         gender: str
-        age: int = feature().meta(owner="aditya@fennel.ai")
-        income: int = feature(
+        age: int = F().meta(owner="aditya@fennel.ai")
+        income: int = F(
             UserInfoDataset.avg_income,
             default=1,
             env=["~prod"],

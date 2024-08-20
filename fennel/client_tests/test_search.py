@@ -12,7 +12,7 @@ from fennel import connectors
 from fennel.connectors import source
 from fennel.datasets import dataset, Dataset, pipeline, field, Count, Sum
 from fennel.dtypes import Embedding, oneof, Continuous
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.testing import mock
 
@@ -376,7 +376,7 @@ class Query:
 @featureset
 class UserBehaviorFeatures:
     user_id: int
-    num_views: int = feature().meta(owner="aditya@fennel.ai")  # type: ignore
+    num_views: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
     num_short_views_7d: int
     num_long_views: int
 

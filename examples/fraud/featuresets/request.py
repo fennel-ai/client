@@ -1,4 +1,4 @@
-from fennel.featuresets import featureset, feature
+from fennel.featuresets import featureset, feature as F
 
 __owner__ = "eng@app.com"
 

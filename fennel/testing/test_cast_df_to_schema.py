@@ -7,7 +7,7 @@ import pytest
 
 from fennel.datasets import dataset, field
 from fennel.dtypes import between, oneof, regex
-from fennel.featuresets import featureset, feature
+from fennel.featuresets import featureset, feature as F
 from fennel.gen import schema_pb2 as schema_proto
 from fennel.internal_lib.to_proto.to_proto import fields_to_dsschema
 from fennel.testing import mock
@@ -578,7 +578,7 @@ def test_casting_empty_dataframe(client):
     @featureset
     class UserFeatures:
         user_id: int
-        latest_phone_update: Optional[datetime] = feature(UserPhone.updated_at)
+        latest_phone_update: Optional[datetime] = F(UserPhone.updated_at)
 
     client.commit(
         datasets=[UserPhone], featuresets=[UserFeatures], message="first-commit"

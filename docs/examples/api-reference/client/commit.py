@@ -12,7 +12,7 @@ def test_basic(client):
     # docsnip basic
     from fennel.datasets import dataset, field
     from fennel.connectors import source, Webhook
-    from fennel.featuresets import feature, featureset, extractor
+    from fennel.featuresets import feature as F, featureset, extractor
 
     webhook = Webhook(name="some_webhook")
 
@@ -37,7 +37,7 @@ def test_basic(client):
     @featureset
     class TransactionFeatures:
         txid: int
-        amount: int = feature(Transaction.amount, default=0)
+        amount: int = F(Transaction.amount, default=0)
         amount_is_high: bool
 
         @extractor(env="bronze")
@@ -61,7 +61,7 @@ def test_incremental(client):
     # docsnip incremental
     from fennel.datasets import dataset, field
     from fennel.connectors import source, Webhook
-    from fennel.featuresets import featureset, feature, extractor
+    from fennel.featuresets import featureset, feature as F, extractor
     from fennel.lib import inputs, outputs
 
     webhook = Webhook(name="some_webhook")
@@ -82,7 +82,7 @@ def test_incremental(client):
     @featureset
     class TransactionFeatures:
         txid: int
-        amount: int = feature(Transaction.amount, default=0)
+        amount: int = F(Transaction.amount, default=0)
         amount_is_high: bool
 
         @extractor(env="bronze")

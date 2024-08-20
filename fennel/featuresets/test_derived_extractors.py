@@ -9,7 +9,7 @@ import fennel.gen.featureset_pb2 as fs_proto
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field
 from fennel.dtypes import struct
-from fennel.featuresets import featureset, extractor, feature
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import meta, inputs, outputs
 from fennel.testing import *
 
@@ -50,26 +50,26 @@ def test_valid_derived_extractors():
     @featureset
     class UserInfo:
         # alias feature
-        user_id: int = feature(User.id)
+        user_id: int = F(User.id)
         # lookup derived feature
-        gender: str = feature(
+        gender: str = F(
             UserInfoDataset.gender,
             default="unspecified",
         )
         # lookup with meta
-        age_years: int = feature(
+        age_years: int = F(
             UserInfoDataset.age,
             default=0,
         ).meta(owner="zaki@fennel.ai")
         # deprecated feature
-        dob: str = feature(
+        dob: str = F(
             UserInfoDataset.dob,
             default="unspecified",
         ).meta(deprecated=True)
         # depends on derived feature
         age_group: AgeGroup
         # optional lookup derived feature
-        optional_nickname: Optional[str] = feature(UserInfoDataset.nickname)
+        optional_nickname: Optional[str] = F(UserInfoDataset.nickname)
 
         @extractor(deps=[UserInfoDataset])
         @inputs("age_years")
@@ -88,9 +88,9 @@ def test_valid_derived_extractors():
     @featureset
     class AgeInfo:
         # alias a feature that has an explicit extractor
-        age_group: AgeGroup = feature(UserInfo.age_group)
+        age_group: AgeGroup = F(UserInfo.age_group)
         # alias a feature that has a derived extractor
-        age: int = feature(UserInfo.age_years)
+        age: int = F(UserInfo.age_years)
 
     view = InternalTestClient()
     view.add(UserInfoDataset)

@@ -509,7 +509,7 @@ def featureset_to_proto(fs: Featureset) -> fs_proto.CoreFeatureset:
         import numpy as np
         from typing import List, Dict, Tuple, Optional, Union, Any, no_type_check
         from fennel.featuresets import *
-        from fennel.featuresets import featureset, feature
+        from fennel.featuresets import featureset, feature as F
         from fennel.lib.metadata import meta
         from fennel.lib.includes import includes
         from fennel.internal_lib.schema import *

@@ -51,7 +51,7 @@ def test_branches_basic(client):
 def test_branches_clone(client):
     from fennel.connectors import Webhook, source
     from fennel.datasets import dataset
-    from fennel.featuresets import featureset, feature
+    from fennel.featuresets import featureset, feature as F
 
     webhook = Webhook(name="webhook")
 

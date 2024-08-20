@@ -10,7 +10,7 @@ def test_tag_propagation(client):
 
     from fennel.datasets import dataset, field, Dataset, pipeline, Sum
     from fennel.dtypes import Continuous
-    from fennel.featuresets import featureset, feature
+    from fennel.featuresets import featureset, feature as F
     from fennel.lib import inputs, meta
     from fennel.connectors import source, Webhook
 
@@ -52,8 +52,8 @@ def test_tag_propagation(client):
     class UserFeatures:
         uid: int
         # docsnip-highlight start
-        city: str = feature(User.city, default="unknown")
-        total_in_hometown: float = feature(TxnByCity.total, default=0.0)
+        city: str = F(User.city, default="unknown")
+        total_in_hometown: float = F(TxnByCity.total, default=0.0)
         # docsnip-highlight end
 
     # /docsnip
