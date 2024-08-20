@@ -25,6 +25,21 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+class _EmitStrategy:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _EmitStrategyEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_EmitStrategy.ValueType], builtins.type):
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    Eager: _EmitStrategy.ValueType  # 0
+    Final: _EmitStrategy.ValueType  # 1
+
+class EmitStrategy(_EmitStrategy, metaclass=_EmitStrategyEnumTypeWrapper): ...
+
+Eager: EmitStrategy.ValueType  # 0
+Final: EmitStrategy.ValueType  # 1
+global___EmitStrategy = EmitStrategy
+
 @typing_extensions.final
 class CoreDataset(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -281,19 +296,6 @@ global___Operator = Operator
 class Aggregate(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    class _EmitStrategy:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
-
-    class _EmitStrategyEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Aggregate._EmitStrategy.ValueType], builtins.type):  # noqa: F821
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
-        Eager: Aggregate._EmitStrategy.ValueType  # 0
-        Final: Aggregate._EmitStrategy.ValueType  # 1
-
-    class EmitStrategy(_EmitStrategy, metaclass=_EmitStrategyEnumTypeWrapper): ...
-    Eager: Aggregate.EmitStrategy.ValueType  # 0
-    Final: Aggregate.EmitStrategy.ValueType  # 1
-
     OPERAND_ID_FIELD_NUMBER: builtins.int
     KEYS_FIELD_NUMBER: builtins.int
     SPECS_FIELD_NUMBER: builtins.int
@@ -306,7 +308,7 @@ class Aggregate(google.protobuf.message.Message):
     @property
     def specs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[spec_pb2.PreSpec]: ...
     along: builtins.str
-    emit_strategy: global___Aggregate.EmitStrategy.ValueType
+    emit_strategy: global___EmitStrategy.ValueType
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -318,7 +320,7 @@ class Aggregate(google.protobuf.message.Message):
         keys: collections.abc.Iterable[builtins.str] | None = ...,
         specs: collections.abc.Iterable[spec_pb2.PreSpec] | None = ...,
         along: builtins.str | None = ...,
-        emit_strategy: global___Aggregate.EmitStrategy.ValueType = ...,
+        emit_strategy: global___EmitStrategy.ValueType = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_along", b"_along", "along", b"along"]) -> builtins.bool: ...

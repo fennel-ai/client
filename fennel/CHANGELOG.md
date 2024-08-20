@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.5] - 2024-08-20
+- Enable discrete aggregation with lookback
+
 ## [1.5.4] - 2024-08-14
 - Add support for removal of auto extractors
 

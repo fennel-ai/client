@@ -26,6 +26,7 @@ class Window(google.protobuf.message.Message):
     SESSION_FIELD_NUMBER: builtins.int
     TUMBLING_FIELD_NUMBER: builtins.int
     HOPPING_FIELD_NUMBER: builtins.int
+    FOREVER_HOPPING_FIELD_NUMBER: builtins.int
     @property
     def sliding(self) -> global___Sliding: ...
     @property
@@ -36,6 +37,8 @@ class Window(google.protobuf.message.Message):
     def tumbling(self) -> global___Tumbling: ...
     @property
     def hopping(self) -> global___Hopping: ...
+    @property
+    def forever_hopping(self) -> global___ForeverHopping: ...
     def __init__(
         self,
         *,
@@ -44,10 +47,11 @@ class Window(google.protobuf.message.Message):
         session: global___Session | None = ...,
         tumbling: global___Tumbling | None = ...,
         hopping: global___Hopping | None = ...,
+        forever_hopping: global___ForeverHopping | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["forever", b"forever", "hopping", b"hopping", "session", b"session", "sliding", b"sliding", "tumbling", b"tumbling", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["forever", b"forever", "hopping", b"hopping", "session", b"session", "sliding", b"sliding", "tumbling", b"tumbling", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sliding", "forever", "session", "tumbling", "hopping"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["forever", b"forever", "forever_hopping", b"forever_hopping", "hopping", b"hopping", "session", b"session", "sliding", b"sliding", "tumbling", b"tumbling", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["forever", b"forever", "forever_hopping", b"forever_hopping", "hopping", b"hopping", "session", b"session", "sliding", b"sliding", "tumbling", b"tumbling", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["sliding", "forever", "session", "tumbling", "hopping", "forever_hopping"] | None: ...
 
 global___Window = Window
 
@@ -119,6 +123,23 @@ class Hopping(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["duration", b"duration", "stride", b"stride"]) -> None: ...
 
 global___Hopping = Hopping
+
+@typing_extensions.final
+class ForeverHopping(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    STRIDE_FIELD_NUMBER: builtins.int
+    @property
+    def stride(self) -> google.protobuf.duration_pb2.Duration: ...
+    def __init__(
+        self,
+        *,
+        stride: google.protobuf.duration_pb2.Duration | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["stride", b"stride"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["stride", b"stride"]) -> None: ...
+
+global___ForeverHopping = ForeverHopping
 
 @typing_extensions.final
 class Session(google.protobuf.message.Message):
