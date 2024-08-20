@@ -27,7 +27,7 @@ def test_basic_expr2():
 
     expr = col("a") + col("b") + 3
     printer = ExprPrinter()
-    expected = "((Ref('a') + Ref('b')) + 3)"
+    expected = "((col('a') + col('b')) + 3)"
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
     proto_expr = serializer.serialize(expr.root)
@@ -69,7 +69,7 @@ def test_basic_expr2():
 def test_math_expr():
     expr = (col("a").num.floor() + 3.2).num.ceil()
     printer = ExprPrinter()
-    expected = "CEIL((FLOOR(Ref('a')) + 3.2))"
+    expected = "CEIL((FLOOR(col('a')) + 3.2))"
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
     proto_expr = serializer.serialize(expr.root)
@@ -131,7 +131,7 @@ def test_math_expr():
 def test_bool_expr():
     expr = (col("a") == 5) | ((col("b") == "random") & (col("c") == 3.2))
     printer = ExprPrinter()
-    expected = """((Ref('a') == 5) or ((Ref('b') == "random") and (Ref('c') == 3.2)))"""
+    expected = """((col('a') == 5) or ((col('b') == "random") and (col('c') == 3.2)))"""
     assert expected == printer.print(expr.root)
 
     df = pd.DataFrame(
@@ -153,7 +153,7 @@ def test_bool_expr():
 def test_str_expr():
     expr = (col("a").str.concat(col("b"))).str.lower().len().ceil()
     printer = ExprPrinter()
-    expected = "CEIL(LEN(LOWER(Ref('a') + Ref('b'))))"
+    expected = "CEIL(LEN(LOWER(col('a') + col('b'))))"
     assert expected == printer.print(expr.root)
     ref_extractor = FetchReferences()
     ref_extractor.visit(expr.root)
@@ -166,7 +166,7 @@ def test_str_expr():
         .then(col("b"))
         .otherwise("No Match")
     )
-    expected = """WHEN CONTAINS(UPPER(Ref('a') + Ref('b')), Ref('c')) THEN Ref('b') ELSE "No Match\""""
+    expected = """WHEN CONTAINS(UPPER(col('a') + col('b')), col('c')) THEN col('b') ELSE "No Match\""""
     assert expected == printer.print(expr.root)
     ref_extractor = FetchReferences()
     assert ref_extractor.fetch(expr.root) == {"a", "b", "c"}
@@ -199,7 +199,7 @@ def test_str_expr():
         .then(col("c"))
         .otherwise("No Match")
     )
-    expected = """WHEN CONTAINS(Ref('a'), "p") THEN Ref('b') WHEN CONTAINS(Ref('b'), "b") THEN Ref('a') WHEN CONTAINS(Ref('c'), "C") THEN Ref('c') ELSE "No Match\""""
+    expected = """WHEN CONTAINS(col('a'), "p") THEN col('b') WHEN CONTAINS(col('b'), "b") THEN col('a') WHEN CONTAINS(col('c'), "C") THEN col('c') ELSE "No Match\""""
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
     proto_expr = serializer.serialize(expr.root)
@@ -289,7 +289,7 @@ def test_dict_op():
     ).dict.len()
     printer = ExprPrinter()
     expected = (
-        """(CEIL((Ref('a').get("x") + Ref('a').get("y"))) + LEN(Ref('a')))"""
+        """(CEIL((col('a').get("x") + col('a').get("y"))) + LEN(col('a')))"""
     )
     ref_extractor = FetchReferences()
     ref_extractor.visit(expr.root)

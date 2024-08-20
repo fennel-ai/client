@@ -86,7 +86,7 @@ def feature(
             )
         if isinstance(args[0], Expr):
             raise ValueError(
-                f"Default value cannot be set for an expression, use fillnull instead, found : {args[0]}"
+                f"error in expression based extractor '{args[0]}'; can not set default value for expressions, maybe use fillnull instead?"
             )
         if not isinstance(args[0], Field):
             raise TypeError(
@@ -595,8 +595,7 @@ class Featureset:
                         inputs.append(self._feature_map[input])
                     except KeyError:
                         raise ValueError(
-                            f"When using col(<feature_name>) for expressions, one can only choose from the features defined in the current featureset. "
-                            f"Please choose an input from : {list(self._feature_map.keys())} found : `{input}` in extractor : `{extractor.name}`."
+                            f"extractor for '{feature}' refers to feature col('{input}') not present in '{self._name}'; 'col' can only reference features from the same featureset"
                         )
                 elif isinstance(input, Feature):
                     inputs.append(input)
@@ -613,8 +612,7 @@ class Featureset:
             computed_dtype = expr.typeof(input_types)
             if computed_dtype != feature.dtype:
                 raise TypeError(
-                    f"Expected expression {expr} for feature `{feature.name}` to return dtype `{dtype_to_string(feature.dtype)}` "
-                    f"but got `{dtype_to_string(computed_dtype)}`"
+                    f"expression '{expr}' for feature '{feature.name}' is of type '{dtype_to_string(feature.dtype)}' not '{dtype_to_string(computed_dtype)}'"
                 )
             extractor.featureset = self._name
             extractor.outputs = [feature]

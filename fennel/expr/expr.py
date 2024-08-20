@@ -765,7 +765,7 @@ class Ref(Expr):
         super(Ref, self).__init__()
 
     def __str__(self) -> str:
-        return f"Ref('{self._col}')"
+        return f"col('{self._col}')"
 
 
 class IsNull(Expr):

@@ -360,11 +360,11 @@ class QueryEngine:
     ) -> pd.Series:
         if len(extractor.outputs) != 1:
             raise ValueError(
-                f"Expr extractor {extractor.name} must have exactly one output feature, found {len(extractor.outputs)}"
+                f"expression based extractor outputs {len(extractor.outputs)} features, expected one"
             )
         if len(extractor.depends_on) != 0:
             raise ValueError(
-                f"Expr extractor {extractor.name} must have exactly zero dependent datasets, found {len(extractor.depends_on)}"
+                f"extractor for feature {extractor.outputs[0]} depends on {len(extractor.depends_on)} datasets, expression based extractors can not depend on datasets"
             )
         input_features = {
             k.name: intermediate_data[k.fqn()] for k in extractor.inputs  # type: ignore

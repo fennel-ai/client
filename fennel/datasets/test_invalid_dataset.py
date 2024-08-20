@@ -248,8 +248,8 @@ def test_incorrect_assign_expr_type():
 
     expected_err = (
         "found type errors in assign node of `RatingActivityTransformed.transform`:\n"
-        + "\t'rating_sq' is of type `str`, can not be cast to `float`. Full expression: `(Ref('rating') * Ref('rating'))`\n"
-        + "\t'movie_suffixed' is of type `int`, can not be cast to `str`. Full expression: `Ref('movie') + \"_suffix\"`"
+        + "\t'rating_sq' is of type `str`, can not be cast to `float`. Full expression: `(col('rating') * col('rating'))`\n"
+        + "\t'movie_suffixed' is of type `int`, can not be cast to `str`. Full expression: `col('movie') + \"_suffix\"`"
     )
 
     assert str(e.value) == expected_err

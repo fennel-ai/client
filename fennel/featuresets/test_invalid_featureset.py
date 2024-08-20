@@ -404,7 +404,7 @@ def test_invalid_expr_feature(client):
 
     assert (
         str(e.value)
-        == "When using col(<feature_name>) for expressions, one can only choose from the features defined in the current featureset. Please choose an input from : ['user_id', 'home_geoid', 'age', 'age_squared', 'credit_score'] found : `Age` in extractor : `_fennel_expr_UserInfo3.age_squared`."
+        == "extractor for 'age_squared' refers to feature col('Age') not present in 'UserInfo3'; 'col' can only reference features from the same featureset"
     )
 
     # Using default value for an expression feature
@@ -420,7 +420,7 @@ def test_invalid_expr_feature(client):
 
     assert (
         str(e.value)
-        == "Default value cannot be set for an expression, use fillnull instead, found : Ref('age') * Ref('age')"
+        == "error in expression based extractor 'col('age') * col('age')'; can not set default value for expressions, maybe use fillnull instead?"
     )
 
     # Incorrect type for an expression feature
@@ -436,7 +436,7 @@ def test_invalid_expr_feature(client):
 
     assert (
         str(e.value)
-        == "Expected expression Ref('age') * Ref('age') for feature `age_squared` to return dtype `str` but got `int`"
+        == "expression 'col('age') * col('age')' for feature 'age_squared' is of type 'str' not 'int'"
     )
 
     # Using dataset field in expression feature
@@ -454,5 +454,5 @@ def test_invalid_expr_feature(client):
 
     assert (
         str(e.value)
-        == "When using col(<feature_name>) for expressions, one can only choose from the features defined in the current featureset. Please choose an input from : ['user_id', 'home_geoid', 'age', 'age_squared', 'credit_score'] found : `UserInfoDataset.age` in extractor : `_fennel_expr_UserInfo6.age_squared`."
+        == "extractor for 'age_squared' refers to feature col('UserInfoDataset.age') not present in 'UserInfo6'; 'col' can only reference features from the same featureset"
     )
