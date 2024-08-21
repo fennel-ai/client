@@ -414,7 +414,6 @@ def get_all_imports() -> str:
         "from fennel.lib.metadata import meta",
         "from fennel.lib import secrets, bucketize",
         "from fennel.datasets.datasets import dataset_lookup",
-        "from fennel.expr import col",
     ]
 
     gen_code_marker = f"{FENNEL_GEN_CODE_MARKER}=True\n"
