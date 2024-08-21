@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.7] - 2024-08-21
+- Fix proto for lookback
+
 ## [1.5.6] - 2024-08-20
 - Add support for expression based extractors
 
