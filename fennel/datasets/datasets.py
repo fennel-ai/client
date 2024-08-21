@@ -301,6 +301,7 @@ class _Node(Generic[T]):
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
         within: Tuple[Duration, Duration] = ("forever", "0s"),
+        right_fields: Optional[List[str]] = None,
     ) -> Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError(
@@ -309,7 +310,7 @@ class _Node(Generic[T]):
             )
         if not isinstance(other, _Node):
             raise TypeError("Cannot join with a non-dataset object")
-        return Join(self, other, within, how, on, left_on, right_on)
+        return Join(self, other, within, how, on, left_on, right_on, right_fields)
 
     def rename(self, columns: Dict[str, str]) -> _Node:
         return Rename(self, columns)
@@ -935,6 +936,7 @@ class Join(_Node):
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
+        right_fields: Optional[List[str]] = None,
         # Currently not supported
         lsuffix: str = "",
         rsuffix: str = "",
@@ -963,6 +965,7 @@ class Join(_Node):
         self.right_on = right_on
         self.within = within
         self.how = how
+        self.right_fields = right_fields
         self.lsuffix = lsuffix
         self.rsuffix = rsuffix
         self.node.out_edges.append(self)
@@ -976,6 +979,7 @@ class Join(_Node):
                 self.left_on,
                 self.right_on,
                 self.how,
+                self.right_fields,
                 self.lsuffix,
                 self.rsuffix,
             )
@@ -987,6 +991,7 @@ class Join(_Node):
             self.right_on,
             self.within,
             self.how,
+            self.right_fields,
             self.lsuffix,
             self.rsuffix,
         )
@@ -1034,13 +1039,15 @@ class Join(_Node):
         if self.how == "left":
             right_value_schema = make_types_optional(right_value_schema)
 
-        # Add right value columns to left schema. Check for column name collisions
+        # Add right value columns to left schema. Check for column name collisions. Filter keys present in right_fields.
         joined_dsschema = copy.deepcopy(left_dsschema)
         for col, dtype in right_value_schema.items():
             if col in left_schema:
                 raise ValueError(
                     f"Column name collision. `{col}` already exists in schema of left input {left_dsschema.name}, while joining with {self.dataset.dsschema().name}"
                 )
+            if self.right_fields is not None and col not in self.right_fields:
+                continue
             joined_dsschema.append_value_column(col, dtype)
 
         return joined_dsschema
@@ -2841,6 +2848,16 @@ class SchemaValidator(Visitor):
             raise ValueError(
                 f'"how" in {output_schema_name} must be either "inner" or "left" for `{output_schema_name}`'
             )
+        
+        if obj.right_fields is not None:
+            for field in obj.right_fields:
+                # TODO(sat): Can right_fields contain timestamp and key fields, or just val fields?
+                # Right now this assumes it can have any.
+                if field not in right_schema.fields():
+                    raise ValueError(
+                        f"Field `{field}` specified in right_fields {obj.right_fields}"
+                        f"doesn't exist in right schema {right_schema} of {output_schema_name}."
+                    )
 
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
