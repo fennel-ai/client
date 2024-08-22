@@ -341,7 +341,7 @@ class Continuous:
 @dataclass
 class Tumbling:
     duration: str
-    lookback: Optional[str] = None
+    lookback: str = "0s"
 
     def __post_init__(self):
         """
@@ -364,8 +364,10 @@ class Tumbling:
     def to_proto(self) -> window_proto.Window:
         duration = duration_proto.Duration()
         duration.FromTimedelta(duration_to_timedelta(self.duration))
+        lookback = duration_proto.Duration()
+        lookback.FromTimedelta(duration_to_timedelta(self.lookback))
         return window_proto.Window(
-            tumbling=window_proto.Tumbling(duration=duration)
+            tumbling=window_proto.Tumbling(duration=duration, lookback=lookback)
         )
 
     def signature(self) -> str:
@@ -387,7 +389,7 @@ class Tumbling:
 class Hopping:
     duration: str
     stride: str
-    lookback: Optional[str] = None
+    lookback: str = "0s"
 
     def __post_init__(self):
         """
@@ -415,16 +417,21 @@ class Hopping:
     def to_proto(self) -> window_proto.Window:
         stride = duration_proto.Duration()
         stride.FromTimedelta(duration_to_timedelta(self.stride))
-
+        lookback = duration_proto.Duration()
+        lookback.FromTimedelta(duration_to_timedelta(self.lookback))
         if self.duration != "forever":
             duration = duration_proto.Duration()
             duration.FromTimedelta(duration_to_timedelta(self.duration))
             return window_proto.Window(
-                hopping=window_proto.Hopping(duration=duration, stride=stride)
+                hopping=window_proto.Hopping(
+                    duration=duration, stride=stride, lookback=lookback
+                )
             )
         else:
             return window_proto.Window(
-                forever_hopping=window_proto.ForeverHopping(stride=stride)
+                forever_hopping=window_proto.ForeverHopping(
+                    stride=stride, lookback=lookback
+                )
             )
 
     def signature(self) -> str:
