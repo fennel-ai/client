@@ -227,7 +227,12 @@ def test_simple_featureset():
     actual_extractor = sync_request.extractors[0]
     e = {
         "name": "_fennel_expr_UserInfo.age_sq",
-        "inputs": [{"feature": {"featureSetName": "UserInfo", "name": "age"}}],
+        "inputs": [
+            {
+                "feature": {"featureSetName": "UserInfo", "name": "age"},
+                "dtype": {"intType": {}},
+            }
+        ],
         "features": ["age_sq"],
         "metadata": {},
         "featureSetName": "UserInfo",
@@ -248,7 +253,12 @@ def test_simple_featureset():
     actual_extractor = sync_request.extractors[1]
     e = {
         "name": "_fennel_expr_UserInfo.age_double",
-        "inputs": [{"feature": {"featureSetName": "UserInfo", "name": "age"}}],
+        "inputs": [
+            {
+                "feature": {"featureSetName": "UserInfo", "name": "age"},
+                "dtype": {"intType": {}},
+            }
+        ],
         "features": ["age_double"],
         "metadata": {},
         "featureSetName": "UserInfo",
@@ -273,8 +283,14 @@ def test_simple_featureset():
         "name": "get_user_info",
         "datasets": ["UserInfoDataset"],
         "inputs": [
-            {"feature": {"feature_set_name": "User", "name": "id"}},
-            {"feature": {"feature_set_name": "User", "name": "age"}},
+            {
+                "feature": {"feature_set_name": "User", "name": "id"},
+                "dtype": {"int_type": {}},
+            },
+            {
+                "feature": {"feature_set_name": "User", "name": "age"},
+                "dtype": {"double_type": {}},
+            },
         ],
         "features": [
             "userid",
@@ -409,7 +425,12 @@ def test_complex_featureset():
     e = {
         "name": "get_user_info1",
         "datasets": ["UserInfoDataset"],
-        "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
+        "inputs": [
+            {
+                "feature": {"feature_set_name": "User", "name": "id"},
+                "dtype": {"int_type": {}},
+            }
+        ],
         "features": ["userid", "home_geoid"],
         "metadata": {},
         "version": 0,
@@ -427,7 +448,12 @@ def test_complex_featureset():
     e = {
         "name": "get_user_info2",
         "datasets": ["UserInfoDataset"],
-        "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
+        "inputs": [
+            {
+                "feature": {"feature_set_name": "User", "name": "id"},
+                "dtype": {"int_type": {}},
+            }
+        ],
         "features": ["gender", "age"],
         "metadata": {},
         "version": 0,
@@ -445,7 +471,12 @@ def test_complex_featureset():
     e = {
         "name": "get_user_info3",
         "datasets": [],
-        "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
+        "inputs": [
+            {
+                "feature": {"feature_set_name": "User", "name": "id"},
+                "dtype": {"int_type": {}},
+            }
+        ],
         "features": ["income"],
         "metadata": {},
         "version": 0,

@@ -382,7 +382,12 @@ def test_featureset_with_extractors():
     e = {
         "name": "get_user_info1",
         "datasets": ["UserInfoDataset"],
-        "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
+        "inputs": [
+            {
+                "feature": {"feature_set_name": "User", "name": "id"},
+                "dtype": {"int_type": {}},
+            }
+        ],
         "features": ["userid", "home_geoid"],
         "metadata": {
             "owner": "a@xyz.com",
@@ -405,7 +410,12 @@ def test_featureset_with_extractors():
     e = {
         "name": "get_user_info2",
         "datasets": ["UserInfoDataset"],
-        "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
+        "inputs": [
+            {
+                "feature": {"feature_set_name": "User", "name": "id"},
+                "dtype": {"int_type": {}},
+            }
+        ],
         "features": ["gender", "age"],
         "metadata": {
             "owner": "b@xyz.com",
@@ -426,7 +436,12 @@ def test_featureset_with_extractors():
     e = {
         "name": "get_user_info3",
         "datasets": ["UserInfoDataset"],
-        "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
+        "inputs": [
+            {
+                "feature": {"feature_set_name": "User", "name": "id"},
+                "dtype": {"int_type": {}},
+            }
+        ],
         "features": ["income"],
         "metadata": {
             "owner": "c@xyz.com",
