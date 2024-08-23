@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.8] - 2024-08-23
+- Fix selection of indexes from dataset decorator
+
 ## [1.5.7] - 2024-08-21
 - Fix proto for lookback
 
