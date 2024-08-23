@@ -656,6 +656,35 @@ class Executor(Visitor):
             columns=[tmp_ts_low, ts_query_field, tmp_left_ts, tmp_right_ts],
             inplace=True,
         )
+
+        if obj.right_fields is not None and len(obj.right_fields) > 0:
+            for col_name in obj.right_fields:
+                if col_name in right_ret.key_fields:
+                    raise Exception(
+                        f"right_fields member {col_name} cannot be one of right dataframe's "
+                        f"key fields {right_ret.key_fields}"
+                    )
+                if col_name == right_ret.timestamp_field:
+                    raise Exception(
+                        f"right_fields member {col_name} cannot be right dataframe's timestamp "
+                        f"field {right_ret.timestamp_field}"
+                    )
+                if col_name not in [f.name for f in right_ret.fields]:
+                    raise Exception(
+                        f"right_fields member {col_name} not present in right dataframe's "
+                        f"fields {right_ret.fields}"
+                    )
+
+            cols_to_drop = []
+            for field in right_ret.fields:
+                col_name = field.name
+                if col_name not in right_ret.key_fields and col_name != right_ret.timestamp_field \
+                    and col_name not in obj.right_fields:
+                    cols_to_drop.append(col_name)
+
+            merged_df.drop(columns=cols_to_drop, inplace=True)
+
+
         # sort the dataframe by the timestamp
         sorted_df = merged_df.sort_values(left_timestamp_field)
 

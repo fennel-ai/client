@@ -1046,7 +1046,7 @@ class Join(_Node):
                 raise ValueError(
                     f"Column name collision. `{col}` already exists in schema of left input {left_dsschema.name}, while joining with {self.dataset.dsschema().name}"
                 )
-            if self.right_fields is not None and col not in self.right_fields:
+            if self.right_fields is not None and len(self.right_fields) > 0 and col not in self.right_fields:
                 continue
             joined_dsschema.append_value_column(col, dtype)
 
@@ -2848,15 +2848,14 @@ class SchemaValidator(Visitor):
             raise ValueError(
                 f'"how" in {output_schema_name} must be either "inner" or "left" for `{output_schema_name}`'
             )
-        
-        if obj.right_fields is not None:
+
+        if obj.right_fields is not None and len(obj.right_fields) > 0:
+            allowed_right_fields = [x for x in right_schema.values.keys()] + [right_schema.timestamp]
             for field in obj.right_fields:
-                # TODO(sat): Can right_fields contain timestamp and key fields, or just val fields?
-                # Right now this assumes it can have any.
-                if field not in right_schema.fields():
+                if field not in allowed_right_fields:
                     raise ValueError(
-                        f"Field `{field}` specified in right_fields {obj.right_fields}"
-                        f"doesn't exist in right schema {right_schema} of {output_schema_name}."
+                        f"Field `{field}` specified in right_fields {obj.right_fields} doesn't exist in "
+                        f"allowed fields of right schema {right_schema} of {output_schema_name}."
                     )
 
         output_schema = obj.dsschema()

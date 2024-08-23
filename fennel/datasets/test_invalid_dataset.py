@@ -792,7 +792,36 @@ def test_dataset_incorrect_join_right_fields():
                 c = a.join(b, how="inner", on=["user_id"], right_fields=["rank"])  # type: ignore
                 return c
 
-    assert "doesn't exist in right schema" in str(e.value)
+    assert "doesn't exist in allowed fields of right schema" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class XYZ:
+            user_id: int
+            name: str
+            timestamp: datetime
+
+        @dataset(index=True)
+        class ABC:
+            user_id: int = field(key=True)
+            age: int
+            timestamp: datetime
+
+        @dataset
+        class XYZJoinedABC:
+            user_id: int
+            name: str
+            age: int
+            timestamp: datetime
+
+            @pipeline
+            @inputs(XYZ, ABC)
+            def create_pipeline(cls, a: Dataset, b: Dataset):
+                c = a.join(b, how="inner", on=["user_id"], right_fields=["user_id"])  # type: ignore
+                return c
+
+    assert "doesn't exist in allowed fields of right schema" in str(e.value)
 
 
 def test_dataset_incorrect_join_bounds():
