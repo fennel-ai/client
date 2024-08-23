@@ -75,6 +75,25 @@ class UserInfoSingleExtractor:
         ]
 
 
+@featureset
+class UserInfoSingleErrorProneExtractor:
+    userid: int
+    age: int = F().meta(owner="aditya@fennel.ai")  # type: ignore
+    age_squared: int
+    age_cubed: int
+    is_name_common: bool
+
+    @extractor(deps=[UserInfoDataset])  # type: ignore
+    @inputs("userid", "age")
+    @outputs("age", "age_squared", "age_cubed", "is_name_common")
+    def get_user_info(cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series):
+        output_df = pd.DataFrame({
+            'userid': user_id.iloc[:-1],  # Drop the last row to create a mismatch
+            'age': user_age.iloc[:-1]  # Drop the last row to create a mismatch
+        })
+        return output_df
+
+
 def get_country_geoid(country: str) -> int:
     if country == "Russia":
         return 1
@@ -238,6 +257,33 @@ class TestSimpleExtractor(unittest.TestCase):
         self.assertEqual(
             res["UserInfoMultipleExtractor.age_doubled"].tolist(), [64, 48]
         )
+
+    @pytest.mark.integration
+    @mock
+    def test_simple_error_extractor(self, client):
+        client.commit(
+            message="some commit msg",
+            datasets=[UserInfoDataset],
+            featuresets=[UserInfoMultipleExtractor],
+        )
+        now = datetime.now(timezone.utc)
+        data = [
+            [18232, "John", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", now],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "UserInfoDataset", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+        ts = pd.Series([now, now])
+        user_ids = pd.Series([18232, 18234])
+        age = pd.Series([18, 22])
+        with pytest.raises(AssertionError) as exc_info:
+            UserInfoSingleErrorProneExtractor.get_user_info(
+                UserInfoMultipleExtractor, ts, user_ids, age
+            )
+        assert "Output length mismatch" in str(exc_info.value)
 
     @pytest.mark.integration
     @mock
