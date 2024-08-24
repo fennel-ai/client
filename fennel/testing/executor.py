@@ -664,11 +664,6 @@ class Executor(Visitor):
                         f"right_fields member {col_name} cannot be one of right dataframe's "
                         f"key fields {right_ret.key_fields}"
                     )
-                if col_name == right_ret.timestamp_field:
-                    raise Exception(
-                        f"right_fields member {col_name} cannot be right dataframe's timestamp "
-                        f"field {right_ret.timestamp_field}"
-                    )
                 if col_name not in [f.name for f in right_ret.fields]:
                     raise Exception(
                         f"right_fields member {col_name} not present in right dataframe's "
