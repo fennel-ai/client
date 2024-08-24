@@ -1198,17 +1198,32 @@ def dataset(
             raise ValueError(
                 "When 'index' is set as True then 'offline' or 'online' params can only be set as False."
             )
-        elif not offline and not online:
+        # handling @dataset(index=True) choosing both index
+        elif offline is None and online is None:
             index_obj = Index(
                 type=IndexType.primary,
                 online=True,
                 offline=IndexDuration.forever,
             )
-        elif not offline:
+        # handling @dataset(index=True, offline=False, online=False) choosing none
+        elif (
+            not offline
+            and not online
+            and offline is not None
+            and online is not None
+        ):
+            index_obj = Index(
+                type=IndexType.primary,
+                online=False,
+                offline=IndexDuration.none,
+            )
+        # handling @dataset(index=True, offline=False) choosing only offline index
+        elif offline is not None and not offline:
             index_obj = Index(
                 type=IndexType.primary, online=True, offline=IndexDuration.none
             )
-        else:
+        # handling @dataset(index=True, online=False) choosing only online index
+        elif online is not None and not online:
             index_obj = Index(
                 type=IndexType.primary,
                 online=False,
