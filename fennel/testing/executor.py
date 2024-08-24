@@ -658,13 +658,14 @@ class Executor(Visitor):
         )
 
         if obj.right_fields is not None and len(obj.right_fields) > 0:
+            all_right_fields = [f.name for f in right_ret.fields]
             for col_name in obj.right_fields:
                 if col_name in right_ret.key_fields:
                     raise Exception(
                         f"right_fields member {col_name} cannot be one of right dataframe's "
                         f"key fields {right_ret.key_fields}"
                     )
-                if col_name not in [f.name for f in right_ret.fields]:
+                if col_name not in all_right_fields:
                     raise Exception(
                         f"right_fields member {col_name} not present in right dataframe's "
                         f"fields {right_ret.fields}"
@@ -679,6 +680,14 @@ class Executor(Visitor):
 
             merged_df.drop(columns=cols_to_drop, inplace=True)
 
+            # Add timestamp column if present in right_fields
+            if right_timestamp_field in obj.right_fields:
+                if right_timestamp_field in merged_df.columns:
+                    raise Exception(
+                        f"right_fields member {right_timestamp_field} already present in "
+                        f"merged dataframe"
+                    )
+                merged_df[right_timestamp_field] = right_df[right_timestamp_field]
 
         # sort the dataframe by the timestamp
         sorted_df = merged_df.sort_values(left_timestamp_field)

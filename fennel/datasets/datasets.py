@@ -1009,6 +1009,8 @@ class Join(_Node):
             self.dataset.dsschema().values
         )
 
+        right_ts = self.dataset.dsschema().timestamp
+
         rhs_keys = set(self.dataset.dsschema().keys)
         join_keys = set(self.on) if self.on is not None else set(self.right_on)
         # Ensure on or right_on are the keys of the right dataset
@@ -1039,6 +1041,17 @@ class Join(_Node):
         if self.how == "left":
             right_value_schema = make_types_optional(right_value_schema)
 
+        # TODO(sat): Are the same checks here and in SchemaValidator redundant?
+        # If right_fields is set, check that it contains elements from right schema values and timestamp only
+        if self.right_fields is not None and len(self.right_fields) > 0:
+            allowed_col_names = [x for x in right_value_schema.keys()] + [right_ts]
+            for col_name in self.right_fields:
+                if col_name not in allowed_col_names:
+                    raise ValueError(
+                        f"Column `{col_name}` not found in schema {self.dataset.dsschema()} of right input "
+                        f"{self.dataset.dsschema().name}"
+                    )
+
         # Add right value columns to left schema. Check for column name collisions. Filter keys present in right_fields.
         joined_dsschema = copy.deepcopy(left_dsschema)
         for col, dtype in right_value_schema.items():
@@ -1049,6 +1062,10 @@ class Join(_Node):
             if self.right_fields is not None and len(self.right_fields) > 0 and col not in self.right_fields:
                 continue
             joined_dsschema.append_value_column(col, dtype)
+
+        # Add timestamp column if present in right_fields
+        if self.right_fields is not None and right_ts in self.right_fields:
+            joined_dsschema.append_value_column(right_ts, datetime.datetime)
 
         return joined_dsschema
 
@@ -2857,6 +2874,12 @@ class SchemaValidator(Visitor):
                         f"Field `{field}` specified in right_fields {obj.right_fields} doesn't exist in "
                         f"allowed fields of right schema {right_schema} of {output_schema_name}."
                     )
+
+            if right_schema.timestamp in obj.right_fields and right_schema.timestamp in left_schema.fields():
+                raise ValueError(
+                    f"Field `{right_schema.timestamp}` specified in right_fields {obj.right_fields} "
+                    f"already exists in left schema of {output_schema_name}."
+                )
 
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
