@@ -453,6 +453,7 @@ class ListOp(google.protobuf.message.Message):
     LEN_FIELD_NUMBER: builtins.int
     GET_FIELD_NUMBER: builtins.int
     CONTAINS_FIELD_NUMBER: builtins.int
+    HAS_NULL_FIELD_NUMBER: builtins.int
     @property
     def len(self) -> global___Len: ...
     @property
@@ -461,16 +462,19 @@ class ListOp(google.protobuf.message.Message):
     @property
     def contains(self) -> global___Contains:
         """Check if the list contains an element"""
+    @property
+    def has_null(self) -> global___HasNull: ...
     def __init__(
         self,
         *,
         len: global___Len | None = ...,
         get: global___Expr | None = ...,
         contains: global___Contains | None = ...,
+        has_null: global___HasNull | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["contains", b"contains", "fn_type", b"fn_type", "get", b"get", "len", b"len"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["contains", b"contains", "fn_type", b"fn_type", "get", b"get", "len", b"len"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["len", "get", "contains"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["contains", b"contains", "fn_type", b"fn_type", "get", b"get", "has_null", b"has_null", "len", b"len"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["contains", b"contains", "fn_type", b"fn_type", "get", b"get", "has_null", b"has_null", "len", b"len"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["len", "get", "contains", "has_null"] | None: ...
 
 global___ListOp = ListOp
 
@@ -483,6 +487,16 @@ class Len(google.protobuf.message.Message):
     ) -> None: ...
 
 global___Len = Len
+
+@typing_extensions.final
+class HasNull(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___HasNull = HasNull
 
 @typing_extensions.final
 class Contains(google.protobuf.message.Message):
