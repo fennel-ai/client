@@ -812,6 +812,7 @@ class Executor(Visitor):
         else:
             input_df = copy.deepcopy(input_ret.df)
             df = copy.deepcopy(input_df)
+            df.reset_index(drop=True, inplace=True)
             for col, typed_expr in obj.output_expressions.items():
                 if col in input_ret.df.columns:
                     raise Exception(
