@@ -317,7 +317,8 @@ class Expr(object):
     def __hash__(self) -> int:
         return self.nodeid
 
-    def typeof(self, schema: Dict) -> Type:
+    def typeof(self, schema: Dict=None) -> Type:
+        schema = schema or {}
         from fennel.expr.serializer import ExprSerializer
 
         serializer = ExprSerializer()

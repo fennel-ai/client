@@ -57,8 +57,9 @@ ecosystem. For such Python based operators, input/outputs variables
 are Pandas DataFrames or Pandas Series. Here is an example with `filter` and
 `assign` operator:
 
-<pre snippet="datasets/pipelines#transform_pipeline"></pre>
-
+<pre snippet="datasets/pipelines#transform_pipeline"
+status="success" message="Using free-form Python in pipelines"
+></pre>
 
 The only constraint on the pipeline topology is that `aggregate` has to be the
 terminal node i.e. it's not allowed to compose any other operator on the output
@@ -66,6 +67,25 @@ of `aggregate` operator. This constraint allows Fennel to
 significantly reduce costs/performance of doing continuous sliding aggregations. 
 And it's possible that even this constraint will be removed in the future.
 
+### Expressions
+
+While Fennel lets you write free-form Python using lambdas, Fennel also offers 
+a native expressions API (similar to engines like Spark or Polars) for more 
+structured operations. The above example can be rewritten using expressions as 
+follows:
+
+<pre snippet="datasets/pipelines#transform_pipeline_expr"
+status="success" message="Using expressions in pipelines"
+></pre>
+
+These expressions are strutured and hence can be fully executed in Fennel's 
+Rust engine with zero dependency on Python at the runtime, making them 10-100x
+faster. In addition, they are able to catch almost all errors at the compile 
+time itself, hence improve the reliability of your pipelines.
+
+The recommendation is to use expressions whenever you can and fall back to 
+free-form Python lambdas when you want to do something that can not be done 
+using the expressions.
 
 ### Windowing
 
@@ -79,8 +99,8 @@ Typically, streaming engines support three types of windows:
 3. **Session** - dynamic length based on user events. Often used for very specific 
    purposes different from other kinds of windows.
 
-Fennel supports all of these via the [window parameter](/api-reference/operators/groupby). 
-However, Machine learning use cases often require another kind of window - Continuous.  
+Fennel supports all of these. However, Machine learning use cases often require 
+another kind of window - Continuous.  
 
 **Continuous Windows**
 
