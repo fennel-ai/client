@@ -9,7 +9,7 @@ import json
 import sys
 import textwrap
 from typing import Any, cast, Callable, Dict, List, Tuple, Union
-
+from fennel.expr.expr import TypedExpr, Expr
 from pandas import DataFrame
 
 import fennel._vendor.astunparse as astunparse
@@ -162,6 +162,12 @@ def _json_default(item: Any):
 
     if isinstance(item, datetime.timedelta):
         return str(item.total_seconds())
+
+    if isinstance(item, TypedExpr):
+        return str(item.expr) + str(item.dtype)
+
+    if isinstance(item, Expr):
+        return str(item)
 
     raise TypeError(f"object of type {type(item).__name__} not hashable")
 

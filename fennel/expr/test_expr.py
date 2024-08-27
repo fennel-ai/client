@@ -4,12 +4,20 @@ from datetime import datetime
 from typing import Dict
 from fennel.datasets import dataset
 
-from fennel.expr import col, when
+from fennel.expr import col, when, lit
 from fennel.expr.visitor import ExprPrinter, FetchReferences
 from fennel.expr.serializer import ExprSerializer
 from google.protobuf.json_format import ParseDict  # type: ignore
 from fennel.gen.expr_pb2 import Expr
 from fennel.testing.test_utils import error_message
+
+
+def test_const_expr():
+    expr = lit(1, int)
+    assert expr.typeof({}) == int
+    df = pd.DataFrame({"a": [1, 2, 3, 4]})
+    df2 = expr.eval(df, {"a": int})
+    assert df2.tolist() == [1, 1, 1, 1]
 
 
 def test_basic_expr1():
