@@ -169,6 +169,30 @@ def test_fraud(client):
             )
 
     # /docsnip
+    # docsnip transform_pipeline_expr
+    # docsnip-highlight next-line
+    from fennel.expr import col
+
+    @dataset
+    class FraudActivity:
+        uid: int
+        merchant_id: int
+        amount_cents: float
+        timestamp: datetime
+
+        @pipeline
+        @inputs(Activity)
+        def create_fraud_dataset(cls, activity: Dataset):
+            return (
+                activity
+                    # docsnip-highlight start
+                    .filter(col("action_type") == "report")
+                    .assign(amount_cents=(col("amount") / 100.0).astype(float))
+                    # docsnip-highlight end
+                    .drop("action_type", "amount")
+            )
+
+    # /docsnip
     # # Sync the dataset
     client.commit(message="msg", datasets=[Activity, FraudActivity])
     now = datetime.now(timezone.utc)
