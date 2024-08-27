@@ -2938,7 +2938,7 @@ class SchemaValidator(Visitor):
                 if typed_expr.dtype != expr_type:
                     printer = ExprPrinter()
                     type_errors.append(
-                        f"'{col}' is of type `{dtype_to_string(typed_expr.dtype)}`, can not be cast to `{dtype_to_string(expr_type)}`. Full expression: `{printer.print(typed_expr.expr.root)}`"
+                        f"'{col}' is expected to be of type `{dtype_to_string(typed_expr.dtype)}`, but evaluates to `{dtype_to_string(expr_type)}`. Full expression: `{printer.print(typed_expr.expr.root)}`"
                     )
 
             if len(type_errors) > 0:
