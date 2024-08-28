@@ -41,6 +41,17 @@ class PostInfo:
     timestamp: datetime
 
 
+@source(webhook.endpoint("PostInfoWithRightFields"), disorder="14d", cdc="upsert")
+@dataset(index=True)
+@meta(owner="data-eng@myspace.com")
+class PostInfoWithRightFields:
+    title: str
+    category: str  # type: ignore
+    post_id: int = field(key=True)
+    timestamp: datetime
+    extra_field: str
+
+
 @meta(owner="data-eng@myspace.com")
 @dataset
 @source(webhook.endpoint("ViewData"), disorder="14d", cdc="append")
@@ -102,6 +113,25 @@ class UserCategoryDataset:
 
 @meta(owner="ml-eng@myspace.com")
 @dataset(index=True)
+class UserCategoryDatasetWithRightFields:
+    user_id: str = field(key=True)
+    category: str = field(key=True)
+    num_views: int
+    time_stamp: datetime
+
+    @pipeline
+    @inputs(ViewData, PostInfoWithRightFields)
+    def count_user_views(cls, view_data: Dataset, post_info: Dataset):
+        post_info_enriched = view_data.join(
+            post_info, how="inner", on=["post_id"], right_fields=["title", "category"]
+        )
+        return post_info_enriched.groupby("user_id", "category").aggregate(
+            [Count(window=Continuous("6y 8s"), into_field="num_views")]
+        )
+
+
+@meta(owner="ml-eng@myspace.com")
+@dataset(index=True)
 class LastViewedPost:
     user_id: str = field(key=True)
     post_id: int
@@ -151,6 +181,28 @@ class UserFeatures:
     num_views: int
     category: str = F(Request.category)  # type: ignore
     num_category_views: int = F(UserCategoryDataset.num_views, default=0)  # type: ignore
+    category_view_ratio: float = F(col("num_category_views") / col("num_views"))
+    last_viewed_post: int = F(LastViewedPost.post_id, default=-1)  # type: ignore
+    last_viewed_post2: List[int] = F(
+        LastViewedPostByAgg.post_id, default=[-1]  # type: ignore
+    )
+
+    @extractor(deps=[UserViewsDataset])  # type: ignore
+    @inputs(Request.user_id)
+    @outputs("num_views")
+    def extract_user_views(cls, ts: pd.Series, user_ids: pd.Series):
+        views, _ = UserViewsDataset.lookup(ts, user_id=user_ids)  # type: ignore
+        views = views.fillna(0)
+        return views["num_views"]
+
+
+@meta(owner="feature-team@myspace.com")
+@featureset
+class UserFeaturesWithRightFields:
+    user_id: str = F(Request.user_id)  # type: ignore
+    num_views: int
+    category: str = F(Request.category)  # type: ignore
+    num_category_views: int = F(UserCategoryDatasetWithRightFields.num_views, default=0)  # type: ignore
     category_view_ratio: float = F(col("num_category_views") / col("num_views"))
     last_viewed_post: int = F(LastViewedPost.post_id, default=-1)  # type: ignore
     last_viewed_post2: List[int] = F(
@@ -256,6 +308,102 @@ def test_social_network(client):
     if client.is_integration_client():
         return
     df = client.get_dataset_df("UserCategoryDataset")
+    assert df.shape == (1998, 4)
+
+
+@pytest.mark.integration
+@mock
+def test_social_network_with_right_fields(client):
+    client.commit(
+        message="social network",
+        datasets=[
+            UserInfo,
+            PostInfoWithRightFields,
+            ViewData,
+            CityInfo,
+            UserViewsDataset,
+            UserCategoryDatasetWithRightFields,
+            LastViewedPost,
+            LastViewedPostByAgg,
+        ],
+        featuresets=[Request, UserFeaturesWithRightFields],
+    )
+    user_data_df = pd.read_csv("fennel/client_tests/data/user_data.csv")
+    post_data_df = pd.read_csv("fennel/client_tests/data/post_data.csv")
+    post_data_len = len(post_data_df.index)
+    post_data_df["extra_field"] = list(range(0, post_data_len))
+    view_data_df = pd.read_csv("fennel/client_tests/data/view_data_sampled.csv")
+    ts = "2018-01-01 00:00:00"
+    user_data_df["timestamp"] = ts
+    post_data_df["timestamp"] = ts
+    view_data_df["time_stamp"] = view_data_df["time_stamp"].apply(
+        lambda x: datetime.strptime(x, "%m/%d/%Y %H:%M %p")
+    )
+    # # Advance all timestamps by 6 years
+    user_data_df["timestamp"] = pd.to_datetime(
+        user_data_df["timestamp"]
+    ) + pd.DateOffset(years=4)
+    post_data_df["timestamp"] = pd.to_datetime(
+        post_data_df["timestamp"]
+    ) + pd.DateOffset(years=4)
+    view_data_df["time_stamp"] = view_data_df["time_stamp"] + pd.DateOffset(
+        years=4
+    )
+
+    res = client.log("fennel_webhook", "UserInfo", user_data_df)
+    assert res.status_code == requests.codes.OK, res.json()
+    res = client.log("fennel_webhook", "PostInfoWithRightFields", post_data_df)
+    assert res.status_code == requests.codes.OK, res.json()
+    res = client.log("fennel_webhook", "ViewData", view_data_df)
+    assert res.status_code == requests.codes.OK, res.json()
+
+    if client.is_integration_client():
+        client.sleep(120)
+
+    keys = pd.DataFrame(
+        {
+            "city": ["Wufeng", "Coyaima", "San Angelo"],
+            "gender": ["Male", "Male", "Female"],
+        }
+    )
+
+    df, found = client.lookup(
+        "CityInfo",
+        keys=keys,
+    )
+    assert found.to_list() == [True, True, True]
+
+    feature_df = client.query(
+        outputs=[UserFeaturesWithRightFields],
+        inputs=[Request.user_id, Request.category],
+        input_dataframe=pd.DataFrame(
+            {
+                "Request.user_id": [
+                    "5eece14efc13ae6609000000",
+                    "5eece14efc13ae660900003c",
+                ],
+                "Request.category": ["banking", "programming"],
+            }
+        ),
+    )
+    assert (
+        feature_df["UserFeaturesWithRightFields.num_views"].to_list(),
+        feature_df["UserFeaturesWithRightFields.num_category_views"].to_list(),
+        feature_df["UserFeaturesWithRightFields.category_view_ratio"].to_list(),
+    ) == ([2, 4], [0, 1], [0.0, 0.25])
+
+    # Assert that both the last_viewed_post and last_viewed_post2 features are extracted correctly
+    last_post_viewed = feature_df["UserFeaturesWithRightFields.last_viewed_post"].to_list()
+    last_post_viewed2 = [
+        x[0] for x in feature_df["UserFeaturesWithRightFields.last_viewed_post2"].to_list()
+    ]
+    assert last_post_viewed == [936609766, 735291550]
+    assert last_post_viewed2 == last_post_viewed
+
+    if client.is_integration_client():
+        return
+    df = client.get_dataset_df("UserCategoryDatasetWithRightFields")
+    assert "extra_field" not in df.columns
     assert df.shape == (1998, 4)
 
 
