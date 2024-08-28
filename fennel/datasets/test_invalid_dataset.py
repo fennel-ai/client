@@ -127,6 +127,7 @@ def test_invalid_assign():
 
 
 def test_select_drop_invalid_param():
+
     with pytest.raises(ValueError) as e:
 
         @meta(owner="test@test.com")
@@ -140,7 +141,7 @@ def test_select_drop_invalid_param():
 
         @meta(owner="thaqib@fennel.ai")
         @dataset
-        class B:
+        class B1:
             a1: int = field(key=True)
             a2: int
             t: datetime

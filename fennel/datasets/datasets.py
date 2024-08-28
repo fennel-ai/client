@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import warnings
 import copy
 import datetime
 import enum
@@ -334,6 +334,12 @@ class _Node(Generic[T]):
         ts = self.dsschema().timestamp
         if ts not in cols:
             cols.append(ts)
+        if len(cols) == len(self.dsschema().fields()):
+            warnings.warn(
+                f"Selecting all columns {cols} in the dataset, consider skipping the select operator."
+            )
+            return self
+
         drop_cols = list(
             filter(lambda c: c not in cols, self.dsschema().fields())
         )
@@ -2981,10 +2987,19 @@ class SchemaValidator(Visitor):
         val_fields = input_schema.values.keys()
         for field in obj.columns:
             if field not in val_fields:
-                raise ValueError(
-                    f"Field `{field}` is a key or timestamp field in schema of "
-                    f"drop node input {input_schema.name}. Value fields are: {list(val_fields)}"
-                )
+                if (
+                    field == input_schema.timestamp
+                    or field in input_schema.keys
+                ):
+                    raise ValueError(
+                        f"Field `{field}` is a key or timestamp field in schema of "
+                        f"drop node input {input_schema.name}. Value fields are: {list(val_fields)}"
+                    )
+                else:
+                    raise ValueError(
+                        f"Field `{field}` does not exist in schema of drop node input {input_schema.name}"
+                    )
+
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
         return output_schema
@@ -3018,6 +3033,16 @@ class SchemaValidator(Visitor):
                 raise ValueError(
                     f"invalid select - {output_schema_name} field : `{column}` not found in {input_schema.name}"
                 )
+
+        # If all columns are selected, throw an error since the corresponding
+        # drop operator will get empty columns, returning a server error.
+        selected_columns = set(obj.columns)
+        # Add timestamp field to the selected columns
+        selected_columns.add(timestamp)
+        if len(selected_columns) == len(input_schema.fields()):
+            warnings.warn(
+                f"invalid select - {output_schema_name} has selected all the fields in the dataset `{self.dsname}`. Please remove the select operator."
+            )
 
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name

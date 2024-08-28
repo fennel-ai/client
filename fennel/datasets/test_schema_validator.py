@@ -140,7 +140,7 @@ def test_drop_schema_validation_drop_empty():
 
 
 def test_select_schema_valid_names():
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(TypeError) as e:
 
         @meta(owner="abc@xyx.com")
         @dataset
@@ -162,7 +162,7 @@ def test_select_schema_valid_names():
 
     assert (
         str(e.value)
-        == """invalid select - '[Pipeline:my_pipeline]->select node' field : `z` not found in '[Dataset:A]'"""
+        == """[TypeError('Field `x` is present in `pipeline my_pipeline output` `key` schema but not present in `B key` schema.')]"""
     )
 
 
