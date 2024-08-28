@@ -35,6 +35,7 @@ class UserTransactions:
     user_id: int
     merchant_id: int
     transaction_amount: float
+    metadata: str
     timestamp: datetime
 
     @pipeline
@@ -49,8 +50,15 @@ class UserTransactions:
             df_json = df["metadata"].apply(json.loads).apply(pd.Series)
             df = pd.concat([df_json, df[["user_id", "timestamp"]]], axis=1)
             df["transaction_amount"] = df["transaction_amount"] / 100
+            df["metadata"] = "some_metadata"
             return df[
-                ["merchant_id", "transaction_amount", "user_id", "timestamp"]
+                [
+                    "merchant_id",
+                    "transaction_amount",
+                    "user_id",
+                    "timestamp",
+                    "metadata",
+                ]
             ]
 
         transformed_ds = dropnull_amounts.transform(
@@ -60,6 +68,7 @@ class UserTransactions:
                 "merchant_id": int,
                 "user_id": int,
                 "timestamp": datetime,
+                "metadata": str,
             },
         )
         # /docsnip
@@ -73,6 +82,7 @@ class UserTransactionsV2:
     transaction_amount: float
     transaction_amount_sq: float
     user_id_str: str
+    metadata: str
     timestamp: datetime
 
     @pipeline
@@ -99,7 +109,7 @@ class UserFirstAction:
     def create_user_first_action_category(cls, txns: Dataset):
         # docsnip first
         first_txns = txns.groupby("user_id").first()
-        return first_txns.drop("merchant_id")
+        return first_txns.drop("merchant_id", "metadata")
         # /docsnip
 
 

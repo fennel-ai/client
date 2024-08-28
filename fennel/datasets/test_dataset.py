@@ -3388,3 +3388,121 @@ def test_aggregation_emit_final():
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
     )
+
+
+def test_select_all_columns():
+    @meta(owner="test@test.com")
+    @dataset
+    class A:
+        a1: int
+        a2: int
+        a3: str
+        a4: float
+        t: datetime
+
+    @meta(owner="thaqib@fennel.ai")
+    @dataset
+    class B:
+        a1: int
+        a2: int
+        a3: str
+        a4: float
+        t: datetime
+
+        @pipeline
+        @inputs(A)
+        def from_a_to_b(cls, a: Dataset):
+            return a.select("a1", "a2", "a3", "a4")
+
+    @meta(owner="thaqib@fennel.ai")
+    @dataset
+    class C:
+        a3: str
+        a4: float
+        t: datetime
+
+        @pipeline
+        @inputs(A)
+        def from_a_to_c(cls, a: Dataset):
+            return a.drop("a1", "a2").select("a3", "a4")
+
+    @meta(owner="thaqib@fennel.ai")
+    @dataset
+    class D:
+        a1: int
+        a2: int
+        t: datetime
+
+        @pipeline
+        @inputs(A)
+        def from_a_to_d(cls, a: Dataset):
+            return a.select("a1", "a2", "a3", "a4").drop("a3", "a4")
+
+    view = InternalTestClient()
+    view.add(A)  # type: ignore
+    view.add(B)  # type: ignore
+    view.add(C)  # type: ignore
+    view.add(D)  # type: ignore
+    sync_request = view._get_sync_request_proto()
+    operators = sync_request.operators
+    # 3 ds ref + 2 drop operators
+    assert len(operators) == 5
+    operator_req = operators[0]
+    ds_ref = {
+        "id": "A",
+        "isRoot": True,
+        "pipelineName": "from_a_to_b",
+        "datasetName": "B",
+        "datasetRef": {"referringDatasetName": "A"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    ds_ref = {
+        "id": "A",
+        "pipelineName": "from_a_to_c",
+        "datasetName": "C",
+        "datasetRef": {"referringDatasetName": "A"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operators[1] == expected_operator_request, error_message(
+        operators[1], expected_operator_request
+    )
+    drop = {
+        "id": "69fa3b1907d6753bce7b409eb822632b",
+        "isRoot": True,
+        "pipelineName": "from_a_to_c",
+        "datasetName": "C",
+        "drop": {"operandId": "A", "dropcols": ["a1", "a2"]},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(drop, ds_proto.Operator())
+    assert operators[2] == expected_operator_request, error_message(
+        operators[2], expected_operator_request
+    )
+    ds_ref = {
+        "id": "A",
+        "pipelineName": "from_a_to_d",
+        "datasetName": "D",
+        "datasetRef": {"referringDatasetName": "A"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operators[3] == expected_operator_request, error_message(
+        operators[3], expected_operator_request
+    )
+    drop = {
+        "id": "98ba3bf35c472883e9e3530b49b7c38e",
+        "isRoot": True,
+        "pipelineName": "from_a_to_d",
+        "datasetName": "D",
+        "drop": {"operandId": "A", "dropcols": ["a3", "a4"]},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(drop, ds_proto.Operator())
+    assert operators[4] == expected_operator_request, error_message(
+        operators[4], expected_operator_request
+    )
