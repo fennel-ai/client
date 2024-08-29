@@ -88,6 +88,7 @@ sidebar:
     pages:
       - "api-reference/decorators/meta"
       - "api-reference/decorators/source"
+      - "api-reference/decorators/sink"
       - "api-reference/decorators/dataset"
       - "api-reference/decorators/pipeline"
       - "api-reference/decorators/inputs"

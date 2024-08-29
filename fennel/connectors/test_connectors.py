@@ -360,6 +360,10 @@ s3 = S3(
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
 )
 
+simple_s3 = S3(
+    name="my_s3_src"
+)
+
 bigquery = BigQuery(
     name="bq_movie_tags",
     project_id="gold-cocoa-356105",
@@ -493,6 +497,9 @@ def test_env_selector_on_connector():
         cdc="upsert",
         env=["dev"],
     )
+    @source(
+        kafka.topic("test_topic"), disorder="14d", cdc="upsert", env=["prod_new"]
+    )
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
@@ -505,6 +512,7 @@ def test_env_selector_on_connector():
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
 
+
     @meta(owner="test@test.com")
     @sink(
         kafka.topic("test_topic1"),
@@ -515,6 +523,11 @@ def test_env_selector_on_connector():
         kafka.topic("test_topic2"),
         cdc="debezium",
         env=["staging"],
+    )
+    @sink(
+        simple_s3.bucket("random_bucket", prefix="prod/apac/", format="delta"),
+        every="1d", how="Incremental", renames={"uid": "new_uid"},
+        env=["prod_new"]
     )
     @dataset
     class UserInfoDatasetDerived:
@@ -661,6 +674,35 @@ def test_env_selector_on_connector():
         sink_request, expected_sink_request
     )
 
+    sync_request = view._get_sync_request_proto(env="prod_new")
+    assert len(sync_request.datasets) == 2
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.sinks) == 1
+    assert len(sync_request.extdbs) == 2
+
+    sink_request = sync_request.sinks[0]
+    s = {
+        "table": {
+            "s3Table": {
+                "bucket": "random_bucket",
+                "pathPrefix": "prod/apac/",
+                "format": "delta",
+                "db": {
+                    "name": "my_s3_src",
+                    "s3": {},
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetDerived",
+        "dsVersion": 1,
+        "every": "86400s",
+        "how": {"incremental": {}},
+        "create": True,
+    }
+    expected_sink_request = ParseDict(s, connector_proto.Sink())
+    assert sink_request == expected_sink_request, error_message(
+        sink_request, expected_sink_request
+    )
 
 def test_kafka_sink_and_source_doesnt_create_extra_extdbs():
     @meta(owner="test@test.com")
