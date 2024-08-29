@@ -193,9 +193,10 @@ def sink(
             f"{conn.name} does not specify required fields "
             f"{', '.join(conn.required_fields())}."
         )
-    
 
-    if not isinstance(conn, KafkaConnector) and not isinstance(conn, S3Connector):
+    if not isinstance(conn, KafkaConnector) and not isinstance(
+        conn, S3Connector
+    ):
         raise ValueError(
             "Sink is only supported for Kafka and S3, found %s" % type(conn)
         )
@@ -217,8 +218,14 @@ def sink(
             raise ValueError("Only Incremental style supported for S3 sink")
         if not isinstance(conn.data_source, S3):
             raise ValueError("S3 specifications not defined for S3 sink")
-        if conn.data_source.aws_access_key_id or conn.data_source.aws_access_key_id or conn.data_source.role_arn:
-            raise ValueError("S3 sink only supports data access through Fennel DataAccess IAM Role")
+        if (
+            conn.data_source.aws_access_key_id
+            or conn.data_source.aws_access_key_id
+            or conn.data_source.role_arn
+        ):
+            raise ValueError(
+                "S3 sink only supports data access through Fennel DataAccess IAM Role"
+            )
 
     def decorator(dataset_cls: T):
         conn.cdc = cdc
@@ -657,8 +664,6 @@ class DataConnector:
     how: Optional[Literal["incremental", "recreate"] | SnapshotData] = None
     create: Optional[bool] = None
     renames: Optional[Dict[str, str]] = {}
-    since: Optional[datetime] = None
-    until: Optional[datetime] = None
 
     def identifier(self):
         raise NotImplementedError
