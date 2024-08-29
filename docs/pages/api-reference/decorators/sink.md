@@ -45,10 +45,10 @@ decorate a single dataset with many `@sink` decorators and choose only one of
 them to commit depending on the environment.
 </Expandable>
 
-<Expandable title="how" type='Optional[Literal["Incremental", "Recreate"] | SnapshotData]' defaultVal="None">
+<Expandable title="how" type='Optional[Literal["incremental", "recreate"] | SnapshotData]' defaultVal="None">
 This denotes the style of sink
-* Incremental denotes we incrementally sink the new changes to data
-* Recreate denotes we recreate the entire sink every time
+* incremental denotes we incrementally sink the new changes to data
+* recreate denotes we recreate the entire sink every time
 * SnapshotData denotes we sink only the current snapshot of dataset
 
 :::info
