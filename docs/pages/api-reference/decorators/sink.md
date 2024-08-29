@@ -47,9 +47,9 @@ them to commit depending on the environment.
 
 <Expandable title="how" type='Optional[Literal["incremental", "recreate"] | SnapshotData]' defaultVal="None">
 This denotes the style of sink
-* incremental denotes we incrementally sink the new changes to data
-* recreate denotes we recreate the entire sink every time
-* SnapshotData denotes we sink only the current snapshot of dataset
+* incremental: Fennel incrementally sinks the new data changes
+* recreate: Fennel recreates the entire sink every time
+* SnapshotData: Fennel sinks only the current snapshot of dataset
 
 :::info
 Fennel supports only Increment style of sink. If you want the style to be either Recreate or SnapshotData,
