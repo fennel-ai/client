@@ -4,7 +4,7 @@ import inspect
 import json
 from datetime import datetime
 from textwrap import dedent, indent
-from typing import Any, Dict, List, Optional, Tuple, Mapping, Set, Callable
+from typing import Any, Dict, List, Literal, Optional, Tuple, Mapping, Set, Callable
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -24,7 +24,7 @@ import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.services_pb2 as services_proto
 from fennel.connectors import kinesis
-from fennel.connectors.connectors import CSV
+from fennel.connectors.connectors import CSV, SnapshotData
 from fennel.datasets import Dataset, Pipeline, Field
 from fennel.datasets.datasets import (
     indices_from_ds,
@@ -467,12 +467,11 @@ def sinks_from_ds(
     ds: Dataset, is_source_dataset: bool = False, env: Optional[str] = None
 ) -> List[Tuple[connector_proto.ExtDatabase, connector_proto.Sink]]:
     """
-    Returns the source proto for a dataset if it exists
+    Returns the sink proto for a dataset if it exists
 
-    :param ds: The dataset to get the source proto for.
-    :param source_field: The attr for the source field.
-    :param timestamp_field: An optional column that can be used to sort the
-    data from the source.
+    :param ds: The dataset to get the sink proto for.
+    :param is_source_dataset: Determines whether the dataset is source or not
+    :param env: Env of the sink
     """
     if hasattr(ds, connectors.SINK_FIELD):
         all_sinks: List[connectors.DataConnector] = getattr(
@@ -786,6 +785,8 @@ def _conn_to_sink_proto(
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if isinstance(connector, connectors.KafkaConnector):
         return _kafka_conn_to_sink_proto(connector, dataset_name, ds_version)
+    if isinstance(connector, connectors.S3Connector):
+        return _s3_conn_to_sink_proto(connector, dataset_name, ds_version)
     else:
         raise ValueError(
             f"Unsupported connector type: {type(connector)} for sink"
@@ -966,6 +967,72 @@ def _s3_conn_to_source_proto(
         filter=_preproc_filter_to_pycode(dataset, connector.where),
     )
     return (ext_db, source)
+
+def _renames_to_proto(
+    renames: Optional[Dict[str, str]]
+) -> Mapping[str, str]:
+    if renames is None:
+        return {}
+
+    renames = {}
+    for k, v in renames.items():
+        renames[k] = v
+    return renames
+
+def _how_to_proto(how: Optional[Literal["incremental", "recreate"] | SnapshotData]) -> Optional[connector_proto.Style]:
+    if how is None:
+         return None
+     
+    if isinstance(how, str):
+        if how == "incremental":
+            return connector_proto.Style(incremental=connector_proto.Incremental())
+        elif how == "recreate":
+            return connector_proto.Style(recreate=connector_proto.Recreate())
+    
+    if isinstance(how, SnapshotData):
+        return connector_proto.Style(snapshot=connector_proto.SnapshotData(marker=how.marker, num_retain=how.num_retain))
+     
+
+    raise ValueError("Invalid value for how to convert to proto {}".format(how))
+    ...
+
+def _s3_conn_to_sink_proto(
+    connector: connectors.S3Connector,
+    dataset_name: str,
+    ds_version: int,
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Sink]:
+    data_source = connector.data_source
+    if not isinstance(data_source, connectors.S3):
+        raise ValueError("S3Connector must have S3 as data_sink")
+    ext_db = _s3_to_ext_db_proto(
+        data_source.name,
+        data_source.aws_access_key_id,
+        data_source.aws_secret_access_key,
+        data_source.role_arn,
+    )
+    ext_table = _s3_to_ext_table_proto(
+        ext_db,
+        bucket=connector.bucket_name,
+        path_prefix=connector.path_prefix,
+        path_suffix=connector.path_suffix,
+        format=connector.format,
+        presorted=connector.presorted,
+        spread=connector.spread,
+    )
+    cdc = to_cdc_proto(connector.cdc) if connector.cdc else None
+    sink = connector_proto.Sink(
+        table=ext_table,
+        dataset=dataset_name,
+        ds_version=ds_version,
+        cdc=cdc,
+        every=to_duration_proto(connector.every),
+        how=_how_to_proto(connector.how),
+        create=connector.create,
+        renames=_renames_to_proto(connector.renames),
+        since=_to_timestamp_proto(connector.since),
+        until=_to_timestamp_proto(connector.until),
+    )
+    return ext_db, sink
 
 
 def _s3_to_ext_db_proto(

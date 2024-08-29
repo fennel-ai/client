@@ -157,6 +157,9 @@ s3 = S3(
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
 )
 
+simple_s3 = S3(
+    name="my_simple_s3_src"
+)
 
 def test_invalid_deltalake_cdc():
     with pytest.raises(ValueError) as e:
@@ -391,7 +394,7 @@ def test_invalid_sink(client):
 
     assert (
         str(e.value)
-        == "Sink only support Kafka Connector, found <class 'fennel.connectors.connectors.KinesisConnector'>"
+        == "Sink is only supported for Kafka and S3, found <class 'fennel.connectors.connectors.KinesisConnector'>"
     )
 
 
@@ -774,3 +777,72 @@ def test_invalid_protobuf_args():
             token=None,
         )
     assert "Either username/password or token should be set" == str(e.value)
+
+
+def test_invalid_s3_batch_sink():
+    # CDC passed 
+    with pytest.raises(ValueError) as e:
+        sink(
+            simple_s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+            ),
+            every="1h",
+            cdc="append",
+        )
+
+    assert (
+        "CDC shouldn't be set for S3 sink"
+        == str(e.value)
+    )
+
+    # Format set to JSON
+    with pytest.raises(ValueError) as e:
+        sink(
+            simple_s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+                format="json",
+            ),
+            every="1h",
+        )
+
+    assert (
+        "Only Delta format supported for S3 sink"
+        == str(e.value)
+    )
+
+    # Recreate style passed for how
+    with pytest.raises(ValueError) as e:
+        sink(
+            simple_s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+                format="delta",
+            ),
+            every="1h",
+            how="recreate"
+        )
+
+    assert (
+        "Only Incremental style supported for S3 sink"
+        == str(e.value)
+    )
+    
+    # Access and Secret keys passed for S3
+    with pytest.raises(ValueError) as e:
+        sink(
+            s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+                format="delta",
+            ),
+            every="1h",
+            how="incremental"
+        )
+
+    assert (
+        "S3 sink only supports data access through Fennel DataAccess IAM Role"
+        == str(e.value)
+    )
+    

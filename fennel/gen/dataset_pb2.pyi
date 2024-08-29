@@ -370,6 +370,7 @@ class Join(google.protobuf.message.Message):
     LHS_OPERAND_NAME_FIELD_NUMBER: builtins.int
     RHS_DSREF_OPERAND_NAME_FIELD_NUMBER: builtins.int
     HOW_FIELD_NUMBER: builtins.int
+    BROADCAST_FIELD_NUMBER: builtins.int
     lhs_operand_id: builtins.str
     rhs_dsref_operand_id: builtins.str
     """RHS of a JOIN can only be a dataset, here it refers to the DSRef operator"""
@@ -386,6 +387,7 @@ class Join(google.protobuf.message.Message):
     """
     rhs_dsref_operand_name: builtins.str
     how: global___Join.How.ValueType
+    broadcast: builtins.bool
     def __init__(
         self,
         *,
@@ -397,9 +399,10 @@ class Join(google.protobuf.message.Message):
         lhs_operand_name: builtins.str = ...,
         rhs_dsref_operand_name: builtins.str = ...,
         how: global___Join.How.ValueType = ...,
+        broadcast: builtins.bool = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_within_high", b"_within_high", "_within_low", b"_within_low", "within_high", b"within_high", "within_low", b"within_low"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_within_high", b"_within_high", "_within_low", b"_within_low", "how", b"how", "lhs_operand_id", b"lhs_operand_id", "lhs_operand_name", b"lhs_operand_name", "on", b"on", "rhs_dsref_operand_id", b"rhs_dsref_operand_id", "rhs_dsref_operand_name", b"rhs_dsref_operand_name", "within_high", b"within_high", "within_low", b"within_low"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_within_high", b"_within_high", "_within_low", b"_within_low", "broadcast", b"broadcast", "how", b"how", "lhs_operand_id", b"lhs_operand_id", "lhs_operand_name", b"lhs_operand_name", "on", b"on", "rhs_dsref_operand_id", b"rhs_dsref_operand_id", "rhs_dsref_operand_name", b"rhs_dsref_operand_name", "within_high", b"within_high", "within_low", b"within_low"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_within_high", b"_within_high"]) -> typing_extensions.Literal["within_high"] | None: ...
     @typing.overload

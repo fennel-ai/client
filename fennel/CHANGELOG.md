@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.14] - 2024-08-29
+- Add support for S3 batch sink
+
 ## [1.5.13] - 2024-08-29
 - Allow not passing a column for optional types in struct
 

@@ -938,6 +938,70 @@ class MongoCollection(google.protobuf.message.Message):
 global___MongoCollection = MongoCollection
 
 @typing_extensions.final
+class SnapshotData(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    MARKER_FIELD_NUMBER: builtins.int
+    NUM_RETAIN_FIELD_NUMBER: builtins.int
+    marker: builtins.str
+    num_retain: builtins.int
+    def __init__(
+        self,
+        *,
+        marker: builtins.str = ...,
+        num_retain: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["marker", b"marker", "num_retain", b"num_retain"]) -> None: ...
+
+global___SnapshotData = SnapshotData
+
+@typing_extensions.final
+class Incremental(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___Incremental = Incremental
+
+@typing_extensions.final
+class Recreate(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___Recreate = Recreate
+
+@typing_extensions.final
+class Style(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    INCREMENTAL_FIELD_NUMBER: builtins.int
+    RECREATE_FIELD_NUMBER: builtins.int
+    SNAPSHOT_FIELD_NUMBER: builtins.int
+    @property
+    def incremental(self) -> global___Incremental: ...
+    @property
+    def recreate(self) -> global___Recreate: ...
+    @property
+    def snapshot(self) -> global___SnapshotData: ...
+    def __init__(
+        self,
+        *,
+        incremental: global___Incremental | None = ...,
+        recreate: global___Recreate | None = ...,
+        snapshot: global___SnapshotData | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["Style", b"Style", "incremental", b"incremental", "recreate", b"recreate", "snapshot", b"snapshot"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["Style", b"Style", "incremental", b"incremental", "recreate", b"recreate", "snapshot", b"snapshot"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["Style", b"Style"]) -> typing_extensions.Literal["incremental", "recreate", "snapshot"] | None: ...
+
+global___Style = Style
+
+@typing_extensions.final
 class Source(google.protobuf.message.Message):
     """-----------------------------------------
     Finally, all the sources and sinks
@@ -1036,24 +1100,71 @@ global___Source = Source
 class Sink(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
+    class RenamesEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        value: builtins.str
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: builtins.str = ...,
+        ) -> None: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
     TABLE_FIELD_NUMBER: builtins.int
     DATASET_FIELD_NUMBER: builtins.int
     DS_VERSION_FIELD_NUMBER: builtins.int
     CDC_FIELD_NUMBER: builtins.int
+    EVERY_FIELD_NUMBER: builtins.int
+    HOW_FIELD_NUMBER: builtins.int
+    CREATE_FIELD_NUMBER: builtins.int
+    RENAMES_FIELD_NUMBER: builtins.int
+    SINCE_FIELD_NUMBER: builtins.int
+    UNTIL_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
     ds_version: builtins.int
     cdc: global___CDCStrategy.ValueType
+    @property
+    def every(self) -> google.protobuf.duration_pb2.Duration: ...
+    @property
+    def how(self) -> global___Style: ...
+    create: builtins.bool
+    @property
+    def renames(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]: ...
+    @property
+    def since(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    @property
+    def until(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     def __init__(
         self,
         *,
         table: global___ExtTable | None = ...,
         dataset: builtins.str = ...,
         ds_version: builtins.int = ...,
-        cdc: global___CDCStrategy.ValueType = ...,
+        cdc: global___CDCStrategy.ValueType | None = ...,
+        every: google.protobuf.duration_pb2.Duration | None = ...,
+        how: global___Style | None = ...,
+        create: builtins.bool = ...,
+        renames: collections.abc.Mapping[builtins.str, builtins.str] | None = ...,
+        since: google.protobuf.timestamp_pb2.Timestamp | None = ...,
+        until: google.protobuf.timestamp_pb2.Timestamp | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["cdc", b"cdc", "dataset", b"dataset", "ds_version", b"ds_version", "table", b"table"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_cdc", b"_cdc", "_how", b"_how", "_since", b"_since", "_until", b"_until", "cdc", b"cdc", "every", b"every", "how", b"how", "since", b"since", "table", b"table", "until", b"until"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cdc", b"_cdc", "_how", b"_how", "_since", b"_since", "_until", b"_until", "cdc", b"cdc", "create", b"create", "dataset", b"dataset", "ds_version", b"ds_version", "every", b"every", "how", b"how", "renames", b"renames", "since", b"since", "table", b"table", "until", b"until"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_cdc", b"_cdc"]) -> typing_extensions.Literal["cdc"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_how", b"_how"]) -> typing_extensions.Literal["how"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_since", b"_since"]) -> typing_extensions.Literal["since"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_until", b"_until"]) -> typing_extensions.Literal["until"] | None: ...
 
 global___Sink = Sink
