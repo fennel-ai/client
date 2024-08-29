@@ -46,7 +46,7 @@ def test_s3_sink(client):
 
     @dataset
     @sink(
-        s3.bucket("datalake", prefix="user"),
+        s3.bucket("datalake", prefix="user", format="delta"),
         every="1d",
         how="incremental",
         renames={"uid": "new_uid"},

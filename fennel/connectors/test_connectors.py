@@ -527,7 +527,7 @@ def test_env_selector_on_connector():
     @sink(
         simple_s3.bucket("random_bucket", prefix="prod/apac/", format="delta"),
         every="1d",
-        how="Incremental",
+        how="incremental",
         renames={"uid": "new_uid"},
         env=["prod_new"],
     )
