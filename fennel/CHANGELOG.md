@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.13] - 2024-08-29
+- Allow not passing a column for optional types in struct
+
 ## [1.5.12] - 2024-08-29
 - Add support for timestamp dtype parsing in case of non timestamp field.
 

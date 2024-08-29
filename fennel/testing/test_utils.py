@@ -185,9 +185,14 @@ def parse_datetime_in_value(
                 )
         output: Dict[Any, Any] = {}
         for field in dtype.struct_type.fields:
-            output[field.name] = parse_datetime_in_value(
-                value[field.name], field.dtype
-            )
+            dtype = field.dtype
+            name = field.name
+            if not dtype.HasField("optional_type") and name not in value:
+                raise ValueError(
+                    f"value not found for non optional field : {field}"
+                )
+            if name in value:
+                output[name] = parse_datetime_in_value(value[name], dtype)
         return output
     else:
         return value
@@ -312,9 +317,16 @@ def convert_val_to_pandas_dtype(
         fields = data_type.struct_type.fields
         output = {}
         for field in fields:
-            output[field.name] = convert_val_to_pandas_dtype(
-                value[field.name], field.dtype, nullable
-            )
+            dtype = field.dtype
+            name = field.name
+            if not dtype.HasField("optional_type") and name not in value:
+                raise ValueError(
+                    f"value not found for non optional field : {field}"
+                )
+            if name in value:
+                output[name] = convert_val_to_pandas_dtype(
+                    value[name], dtype, nullable
+                )
         return output
 
 
