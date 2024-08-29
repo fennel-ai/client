@@ -360,9 +360,7 @@ s3 = S3(
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
 )
 
-simple_s3 = S3(
-    name="my_s3_src"
-)
+simple_s3 = S3(name="my_s3_src")
 
 bigquery = BigQuery(
     name="bq_movie_tags",
@@ -498,7 +496,10 @@ def test_env_selector_on_connector():
         env=["dev"],
     )
     @source(
-        kafka.topic("test_topic"), disorder="14d", cdc="upsert", env=["prod_new"]
+        kafka.topic("test_topic"),
+        disorder="14d",
+        cdc="upsert",
+        env=["prod_new"],
     )
     @dataset
     class UserInfoDataset:
@@ -511,7 +512,6 @@ def test_env_selector_on_connector():
         account_creation_date: datetime
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
-
 
     @meta(owner="test@test.com")
     @sink(
@@ -526,8 +526,10 @@ def test_env_selector_on_connector():
     )
     @sink(
         simple_s3.bucket("random_bucket", prefix="prod/apac/", format="delta"),
-        every="1d", how="Incremental", renames={"uid": "new_uid"},
-        env=["prod_new"]
+        every="1d",
+        how="Incremental",
+        renames={"uid": "new_uid"},
+        env=["prod_new"],
     )
     @dataset
     class UserInfoDatasetDerived:
@@ -703,6 +705,7 @@ def test_env_selector_on_connector():
     assert sink_request == expected_sink_request, error_message(
         sink_request, expected_sink_request
     )
+
 
 def test_kafka_sink_and_source_doesnt_create_extra_extdbs():
     @meta(owner="test@test.com")

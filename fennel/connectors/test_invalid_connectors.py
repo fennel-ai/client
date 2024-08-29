@@ -157,9 +157,8 @@ s3 = S3(
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
 )
 
-simple_s3 = S3(
-    name="my_simple_s3_src"
-)
+simple_s3 = S3(name="my_simple_s3_src")
+
 
 def test_invalid_deltalake_cdc():
     with pytest.raises(ValueError) as e:
@@ -780,7 +779,7 @@ def test_invalid_protobuf_args():
 
 
 def test_invalid_s3_batch_sink():
-    # CDC passed 
+    # CDC passed
     with pytest.raises(ValueError) as e:
         sink(
             simple_s3.bucket(
@@ -791,10 +790,7 @@ def test_invalid_s3_batch_sink():
             cdc="append",
         )
 
-    assert (
-        "CDC shouldn't be set for S3 sink"
-        == str(e.value)
-    )
+    assert "CDC shouldn't be set for S3 sink" == str(e.value)
 
     # Format set to JSON
     with pytest.raises(ValueError) as e:
@@ -807,10 +803,7 @@ def test_invalid_s3_batch_sink():
             every="1h",
         )
 
-    assert (
-        "Only Delta format supported for S3 sink"
-        == str(e.value)
-    )
+    assert "Only Delta format supported for S3 sink" == str(e.value)
 
     # Recreate style passed for how
     with pytest.raises(ValueError) as e:
@@ -821,14 +814,11 @@ def test_invalid_s3_batch_sink():
                 format="delta",
             ),
             every="1h",
-            how="recreate"
+            how="recreate",
         )
 
-    assert (
-        "Only Incremental style supported for S3 sink"
-        == str(e.value)
-    )
-    
+    assert "Only Incremental style supported for S3 sink" == str(e.value)
+
     # Access and Secret keys passed for S3
     with pytest.raises(ValueError) as e:
         sink(
@@ -838,11 +828,10 @@ def test_invalid_s3_batch_sink():
                 format="delta",
             ),
             every="1h",
-            how="incremental"
+            how="incremental",
         )
 
     assert (
         "S3 sink only supports data access through Fennel DataAccess IAM Role"
         == str(e.value)
     )
-    

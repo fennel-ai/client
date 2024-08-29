@@ -50,12 +50,12 @@ def test_sink_decorator(client):
         every="1d",
         how="incremental",
         renames={
-            "uid": "new_uid", # 'uid' column should be renamed to 'new_uid'
-            "email": "new_email", # 'email' column should be renamed to 'new_email'
+            "uid": "new_uid",  # 'uid' column should be renamed to 'new_uid'
+            "email": "new_email",  # 'email' column should be renamed to 'new_email'
         },
         since=datetime(2021, 1, 1, 3, 30, 0),  # 3:30 AM on 1st Jan 2021
         until=datetime(2022, 1, 1, 0, 0, 0),  # 12:00 AM on 1st Jan 2022
-        env="prod"
+        env="prod",
     )  # docsnip-highlight
     class SomeDatasetFiltered:
         uid: int = field(key=True)

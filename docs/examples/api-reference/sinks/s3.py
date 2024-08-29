@@ -45,7 +45,12 @@ def test_s3_sink(client):
     from fennel.connectors import sink
 
     @dataset
-    @sink(s3.bucket("datalake", prefix="user"), every="1d", how="incremental", renames={"uid": "new_uid"})  # docsnip-highlight
+    @sink(
+        s3.bucket("datalake", prefix="user"),
+        every="1d",
+        how="incremental",
+        renames={"uid": "new_uid"},
+    )  # docsnip-highlight
     class SomeDatasetFiltered:
         uid: int = field(key=True)
         email: str

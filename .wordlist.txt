@@ -103,6 +103,7 @@ SSO
 SearchRequest
 ShardIteratorType
 Signifier
+SnapshotData
 Stddev
 Subprocessor
 SubscribeToShard

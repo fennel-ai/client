@@ -4,7 +4,17 @@ import inspect
 import json
 from datetime import datetime
 from textwrap import dedent, indent
-from typing import Any, Dict, List, Literal, Optional, Tuple, Mapping, Set, Callable
+from typing import (
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Mapping,
+    Set,
+    Callable,
+)
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -805,6 +815,8 @@ def _webhook_to_source_proto(
             retention=to_duration_proto(data_source.retention),
         ),
     )
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for webhook source")
     return (
         ext_db,
         connector_proto.Source(
@@ -838,6 +850,8 @@ def _kafka_conn_to_source_proto(
     data_source = connector.data_source
     if not isinstance(data_source, connectors.Kafka):
         raise ValueError("KafkaConnector must have Kafka as data_source")
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for Kafka source")
     ext_db = _kafka_to_ext_db_proto(
         data_source.name,
         data_source.bootstrap_servers,
@@ -880,6 +894,8 @@ def _kafka_conn_to_sink_proto(
     data_source = connector.data_source
     if not isinstance(data_source, connectors.Kafka):
         raise ValueError("KafkaConnector must have Kafka as data_source")
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for kafka sink")
     ext_db = _kafka_to_ext_db_proto(
         data_source.name,
         data_source.bootstrap_servers,
@@ -931,6 +947,8 @@ def _s3_conn_to_source_proto(
     data_source = connector.data_source
     if not isinstance(data_source, connectors.S3):
         raise ValueError("S3Connector must have S3 as data_source")
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for S3 source")
     ext_db = _s3_to_ext_db_proto(
         data_source.name,
         data_source.aws_access_key_id,
@@ -968,9 +986,8 @@ def _s3_conn_to_source_proto(
     )
     return (ext_db, source)
 
-def _renames_to_proto(
-    renames: Optional[Dict[str, str]]
-) -> Mapping[str, str]:
+
+def _renames_to_proto(renames: Optional[Dict[str, str]]) -> Mapping[str, str]:
     if renames is None:
         return {}
 
@@ -979,22 +996,31 @@ def _renames_to_proto(
         renames[k] = v
     return renames
 
-def _how_to_proto(how: Optional[Literal["incremental", "recreate"] | SnapshotData]) -> Optional[connector_proto.Style]:
+
+def _how_to_proto(
+    how: Optional[Literal["incremental", "recreate"] | SnapshotData]
+) -> Optional[connector_proto.Style]:
     if how is None:
-         return None
-     
+        return None
+
     if isinstance(how, str):
         if how == "incremental":
-            return connector_proto.Style(incremental=connector_proto.Incremental())
+            return connector_proto.Style(
+                incremental=connector_proto.Incremental()
+            )
         elif how == "recreate":
             return connector_proto.Style(recreate=connector_proto.Recreate())
-    
+
     if isinstance(how, SnapshotData):
-        return connector_proto.Style(snapshot=connector_proto.SnapshotData(marker=how.marker, num_retain=how.num_retain))
-     
+        return connector_proto.Style(
+            snapshot=connector_proto.SnapshotData(
+                marker=how.marker, num_retain=how.num_retain
+            )
+        )
 
     raise ValueError("Invalid value for how to convert to proto {}".format(how))
     ...
+
 
 def _s3_conn_to_sink_proto(
     connector: connectors.S3Connector,
@@ -1118,6 +1144,8 @@ def _bigquery_conn_to_source_proto(
     data_source: connectors.BigQuery,
     dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for BigQuery source")
     ext_db = _bigquery_to_ext_db_proto(
         data_source.name,
         data_source.project_id,
@@ -1186,6 +1214,8 @@ def _redshift_conn_to_source_proto(
     data_source: connectors.Redshift,
     dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for Redshift source")
     ext_db = _redshift_to_ext_db_proto(
         name=data_source.name,
         s3_access_role_arn=data_source.s3_access_role_arn,
@@ -1283,6 +1313,8 @@ def _mongo_conn_to_source_proto(
     data_source: connectors.Mongo,
     dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for Mongo source")
     ext_db = _mongo_to_ext_db_proto(
         name=data_source.name,
         host=data_source.host,
@@ -1353,6 +1385,8 @@ def _pubsub_conn_to_source_proto(
     connector: connectors.PubSubConnector,
     dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for PubSub source")
     data_source = connector.data_source
     ext_db = connector_proto.ExtDatabase(
         name=data_source.name,
@@ -1393,6 +1427,8 @@ def _snowflake_conn_to_source_proto(
     data_source: connectors.Snowflake,
     dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for Snowflake source")
     ext_db = _snowflake_to_ext_db_proto(
         name=data_source.name,
         account=data_source.account,
@@ -1471,6 +1507,8 @@ def _mysql_conn_to_source_proto(
     data_source: connectors.MySQL,
     dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for Mysql source")
     if data_source._get:
         ext_db = _mysql_ref_to_ext_db_proto(name=data_source.name)
     else:
@@ -1560,6 +1598,8 @@ def _pg_conn_to_source_proto(
     data_source: connectors.Postgres,
     dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for Postgres source")
     if data_source._get:
         ext_db = _pg_ref_to_ext_db_proto(name=data_source.name)
     else:
@@ -1649,6 +1689,8 @@ def _kinesis_conn_to_source_proto(
     connector: connectors.KinesisConnector,
     dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for Kinesis source")
     data_source = connector.data_source
     if data_source._get:
         ext_db = _kinesis_ref_to_ext_db_proto(name=data_source.name)
