@@ -514,6 +514,15 @@ def test_cast_col_to_pandas_dtype():
             "d": b"hello world",
         }
     ]
+    parsed_value = [
+        {
+            "a": 1,
+            "b": {"a": 1, "b": 2, "c": 3},
+            "c": [1, 2, 3, 4],
+            "d": b"hello world",
+            "e": pd.NA,
+        }
+    ]
     data = pd.Series([value], name="testing")
     data_type = schema_proto.DataType(
         array_type=schema_proto.ArrayType(
@@ -555,6 +564,16 @@ def test_cast_col_to_pandas_dtype():
                                 bytes_type=schema_proto.BytesType()
                             ),
                         ),
+                        schema_proto.Field(
+                            name="e",
+                            dtype=schema_proto.DataType(
+                                optional_type=schema_proto.OptionalType(
+                                    of=schema_proto.DataType(
+                                        timestamp_type=schema_proto.TimestampType()
+                                    )
+                                )
+                            ),
+                        ),
                     ]
                 )
             )
@@ -565,7 +584,7 @@ def test_cast_col_to_pandas_dtype():
     pandas_dtype_data = cast_col_to_pandas_dtype(arrow_dtype_data, data_type)
 
     assert pandas_dtype_data.dtype == object
-    assert pandas_dtype_data.tolist()[0] == value
+    assert pandas_dtype_data.tolist()[0] == parsed_value
 
 
 def test_optional_timestamp_cast_col_to_pandas_dtype():
