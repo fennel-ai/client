@@ -69,7 +69,8 @@ def as_json(self):
 
 
 def parse_datetime(value: Union[int, str, datetime]) -> datetime:
-    if isinstance(value, int):
+    if isinstance(value, (int, float)):
+        value = int(value)
         try:
             value = pd.to_datetime(value, unit="s", utc=True)
         except ValueError:
