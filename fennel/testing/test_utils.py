@@ -1,6 +1,6 @@
 import json
 from math import isnan
-from typing import Any, Union, List
+from typing import Any, Union, List, Dict
 
 import numpy as np
 import pandas as pd
@@ -141,6 +141,58 @@ def parse_struct_into_dict(value: Any) -> Union[dict, list]:
         return value
 
 
+def parse_datetime_in_value(
+    value: Any, dtype: DataType, nullable: bool = False
+) -> Any:
+    """
+    This function assumes that there's a struct somewhere in the value that needs to be converted into json.
+    """
+    if nullable:
+        try:
+            if not isinstance(
+                value, (list, tuple, dict, set, np.ndarray, frozendict)
+            ) and pd.isna(value):
+                return pd.NA
+        # ValueError error occurs when you do something like pd.isnull([1, 2, None])
+        except ValueError:
+            pass
+    if dtype.HasField("optional_type"):
+        return parse_datetime_in_value(value, dtype.optional_type.of, True)
+    elif dtype.HasField("timestamp_type"):
+        return parse_datetime(value)
+    elif dtype.HasField("array_type"):
+        return [parse_datetime_in_value(x, dtype.array_type.of) for x in value]
+    elif dtype.HasField("map_type"):
+        if isinstance(value, (dict, frozendict)):
+            return {
+                key: parse_datetime_in_value(value, dtype.array_type.of)
+                for (key, value) in value.items()
+            }
+        elif isinstance(value, (list, np.ndarray)):
+            return [
+                (key, parse_datetime_in_value(value, dtype.array_type.of))
+                for (key, value) in value
+            ]
+        else:
+            return value
+    elif dtype.HasField("struct_type"):
+        if hasattr(value, FENNEL_STRUCT):
+            try:
+                value = value.as_json()
+            except Exception as e:
+                raise TypeError(
+                    f"Not able parse value: {value} into json, error: {e}"
+                )
+        output: Dict[Any, Any] = {}
+        for field in dtype.struct_type.fields:
+            output[field.name] = parse_datetime_in_value(
+                value[field.name], field.dtype
+            )
+        return output
+    else:
+        return value
+
+
 def cast_col_to_arrow_dtype(series: pd.Series, dtype: DataType) -> pd.Series:
     """
     This function casts dtype of pd.Series object into pd.ArrowDtype depending on the DataType proto.
@@ -153,6 +205,8 @@ def cast_col_to_arrow_dtype(series: pd.Series, dtype: DataType) -> pd.Series:
     # dtype conversion fails with fennel struct
     if check_dtype_has_struct_type(dtype):
         series = series.apply(lambda x: parse_struct_into_dict(x))
+    # Parse datetime values
+    series = series.apply(lambda x: parse_datetime_in_value(x, dtype))
     arrow_type = convert_dtype_to_arrow_type(dtype)
     return series.astype(pd.ArrowDtype(arrow_type))
 

@@ -1,20 +1,22 @@
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List
 
 import pandas as pd
 import pyarrow as pa
 import pytest
 
 from fennel.datasets import dataset, field
-from fennel.dtypes import between, oneof, regex
+from fennel.dtypes import between, oneof, regex, struct
 from fennel.featuresets import featureset, feature as F
 from fennel.gen import schema_pb2 as schema_proto
+from fennel.internal_lib.schema import get_datatype
 from fennel.internal_lib.to_proto.to_proto import fields_to_dsschema
 from fennel.testing import mock
 from fennel.testing.test_utils import (
     cast_df_to_schema,
     cast_col_to_arrow_dtype,
     cast_col_to_pandas_dtype,
+    parse_datetime_in_value,
 )
 
 __owner__ = "nitin@fennel.ai"
@@ -446,7 +448,7 @@ def test_invalid_cast_col_to_arrow_dtype():
         cast_col_to_arrow_dtype(data, data_type)
     assert (
         str(e.value)
-        == "object of type <class 'str'> cannot be converted to int"
+        == "Unknown datetime string format, unable to parse: fdfd, at position 0"
     )
 
     # 2. Casting of a map
@@ -566,6 +568,34 @@ def test_cast_col_to_pandas_dtype():
     assert pandas_dtype_data.tolist()[0] == value
 
 
+def test_optional_timestamp_cast_col_to_pandas_dtype():
+    """
+    Testing casting pd.Series of arrow dtype to pandas dtype.
+    """
+    value = [1, 2, 3, None, None]
+    parsed_value = [
+        datetime.fromtimestamp(1, tz=timezone.utc),
+        datetime.fromtimestamp(2, tz=timezone.utc),
+        datetime.fromtimestamp(3, tz=timezone.utc),
+        pd.NaT,
+        pd.NaT,
+    ]
+    data = pd.Series(value, name="testing")
+    data_type = schema_proto.DataType(
+        optional_type=schema_proto.OptionalType(
+            of=schema_proto.DataType(
+                timestamp_type=schema_proto.TimestampType()
+            )
+        )
+    )
+
+    arrow_dtype_data = cast_col_to_arrow_dtype(data, data_type)
+    pandas_dtype_data = cast_col_to_pandas_dtype(arrow_dtype_data, data_type)
+
+    assert pandas_dtype_data.dtype == "datetime64[ns, UTC]"
+    assert pandas_dtype_data.tolist() == parsed_value
+
+
 @mock
 def test_casting_empty_dataframe(client):
     @dataset(index=True)
@@ -592,4 +622,62 @@ def test_casting_empty_dataframe(client):
     assert feature_df["UserFeatures.latest_phone_update"].tolist() == [
         pd.NaT,
         pd.NaT,
+    ]
+
+
+def test_parse_datetime_in_value():
+    dtype = get_datatype(List[datetime])
+    value = [0, 1, 3, 4, 5]
+    parse_value = parse_datetime_in_value(value, dtype)
+    assert parse_value == [
+        datetime.fromtimestamp(0, tz=timezone.utc),
+        datetime.fromtimestamp(1, tz=timezone.utc),
+        datetime.fromtimestamp(3, tz=timezone.utc),
+        datetime.fromtimestamp(4, tz=timezone.utc),
+        datetime.fromtimestamp(5, tz=timezone.utc),
+    ]
+
+    dtype = get_datatype(List[Optional[datetime]])
+    value = [0, 1, None, 4, 5]
+    parse_value = parse_datetime_in_value(value, dtype)
+    assert parse_value == [
+        datetime.fromtimestamp(0, tz=timezone.utc),
+        datetime.fromtimestamp(1, tz=timezone.utc),
+        pd.NA,
+        datetime.fromtimestamp(4, tz=timezone.utc),
+        datetime.fromtimestamp(5, tz=timezone.utc),
+    ]
+
+    dtype = get_datatype(Optional[datetime])
+    value = None
+    parse_value = parse_datetime_in_value(value, dtype)
+    assert parse_value is pd.NA
+
+    dtype = get_datatype(datetime)
+    value = 1
+    parse_value = parse_datetime_in_value(value, dtype)
+    assert parse_value == datetime.fromtimestamp(1, tz=timezone.utc)
+
+    @struct
+    class A:
+        name: str
+        birthdate: Optional[datetime]
+
+    dtype = get_datatype(List[A])
+    value = [
+        A(name=1, birthdate=1),
+        A(name=1, birthdate=None),
+        A(name=1, birthdate=datetime.fromtimestamp(0, tz=timezone.utc)),
+        {"name": 1, "birthdate": 1},
+        {"name": 1, "birthdate": None},
+        {"name": 1, "birthdate": datetime.fromtimestamp(0, tz=timezone.utc)},
+    ]
+    parse_value = parse_datetime_in_value(value, dtype)
+    assert parse_value == [
+        {"name": 1, "birthdate": datetime.fromtimestamp(1, tz=timezone.utc)},
+        {"name": 1, "birthdate": pd.NA},
+        {"name": 1, "birthdate": datetime.fromtimestamp(0, tz=timezone.utc)},
+        {"name": 1, "birthdate": datetime.fromtimestamp(1, tz=timezone.utc)},
+        {"name": 1, "birthdate": pd.NA},
+        {"name": 1, "birthdate": datetime.fromtimestamp(0, tz=timezone.utc)},
     ]

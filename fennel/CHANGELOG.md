@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.12] - 2024-08-29
+- Add support for timestamp dtype parsing in case of non timestamp field.
+
 ## [1.5.8] - 2024-08-23
 - Fix selection of indexes from dataset decorator
 
