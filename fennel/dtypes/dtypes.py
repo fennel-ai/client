@@ -11,7 +11,6 @@ from typing import (
     get_args,
     ForwardRef,
     Any,
-    Optional,
 )
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
@@ -19,6 +18,12 @@ import pandas as pd
 
 import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.window_pb2 as window_proto
+from fennel.internal_lib import (
+    FENNEL_STRUCT,
+    FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
+    FENNEL_STRUCT_SRC_CODE,
+    META_FIELD,
+)
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.utils.utils import (
     get_origin,
@@ -26,11 +31,6 @@ from fennel.internal_lib.utils.utils import (
     as_json,
     dtype_to_string,
 )
-from fennel.lib.metadata.metadata import META_FIELD
-
-FENNEL_STRUCT = "__fennel_struct__"
-FENNEL_STRUCT_SRC_CODE = "__fennel_struct_src_code__"
-FENNEL_STRUCT_DEPENDENCIES_SRC_CODE = "__fennel_struct_dependencies_src_code__"
 
 
 def _contains_user_defined_class(annotation) -> bool:

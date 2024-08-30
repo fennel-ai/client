@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import Dict
+
 import dataclasses
 import re
 import typing
 from datetime import datetime, date
 from decimal import Decimal as PythonDecimal
+from typing import Dict
 from typing import (
     Union,
     Any,
@@ -30,7 +31,12 @@ from fennel.dtypes.dtypes import (
     _Embedding,
     _Decimal,
 )
-from fennel.internal_lib.utils.utils import get_origin, is_user_defined_class
+from fennel.internal_lib.utils.utils import (
+    get_origin,
+    is_user_defined_class,
+    parse_struct_into_dict,
+    parse_datetime_in_value,
+)
 
 FENNEL_STRUCT = "__fennel_struct__"
 FENNEL_STRUCT_SRC_CODE = "__fennel_struct_src_code__"
@@ -914,4 +920,34 @@ def from_proto(data_type: schema_proto.DataType) -> Any:
     else:
         raise ValueError(f"Unsupported data type field: {field}")
 
-    return None
+
+def cast_col_to_arrow_dtype(
+    series: pd.Series, dtype: schema_proto.DataType
+) -> pd.Series:
+    """
+    This function casts dtype of pd.Series object into pd.ArrowDtype depending on the DataType proto.
+    """
+    if not dtype.HasField("optional_type"):
+        if series.isnull().any():
+            raise ValueError("Null values found in non-optional field.")
+
+    # Let's convert structs into json, this is done because arrow
+    # dtype conversion fails with fennel struct
+    if check_dtype_has_struct_type(dtype):
+        series = series.apply(lambda x: parse_struct_into_dict(x))
+    # Parse datetime values
+    series = series.apply(lambda x: parse_datetime_in_value(x, dtype))
+    arrow_type = convert_dtype_to_arrow_type(dtype)
+    return series.astype(pd.ArrowDtype(arrow_type))
+
+
+def check_dtype_has_struct_type(dtype: schema_proto.DataType) -> bool:
+    if dtype.HasField("struct_type"):
+        return True
+    elif dtype.HasField("optional_type"):
+        return check_dtype_has_struct_type(dtype.optional_type.of)
+    elif dtype.HasField("array_type"):
+        return check_dtype_has_struct_type(dtype.array_type.of)
+    elif dtype.HasField("map_type"):
+        return check_dtype_has_struct_type(dtype.map_type.value)
+    return False

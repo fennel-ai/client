@@ -13,6 +13,7 @@ database
 """
 import builtins
 import collections.abc
+import expr_pb2
 import google.protobuf.descriptor
 import google.protobuf.duration_pb2
 import google.protobuf.internal.containers
@@ -900,20 +901,48 @@ global___PubSubTopic = PubSubTopic
 class PreProcValue(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
+    class Eval(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        SCHEMA_FIELD_NUMBER: builtins.int
+        EXPR_FIELD_NUMBER: builtins.int
+        PYCODE_FIELD_NUMBER: builtins.int
+        @property
+        def schema(self) -> schema_pb2.Schema: ...
+        @property
+        def expr(self) -> expr_pb2.Expr: ...
+        @property
+        def pycode(self) -> pycode_pb2.PyCode: ...
+        def __init__(
+            self,
+            *,
+            schema: schema_pb2.Schema | None = ...,
+            expr: expr_pb2.Expr | None = ...,
+            pycode: pycode_pb2.PyCode | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["eval_type", b"eval_type", "expr", b"expr", "pycode", b"pycode", "schema", b"schema"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["eval_type", b"eval_type", "expr", b"expr", "pycode", b"pycode", "schema", b"schema"]) -> None: ...
+        def WhichOneof(self, oneof_group: typing_extensions.Literal["eval_type", b"eval_type"]) -> typing_extensions.Literal["expr", "pycode"] | None: ...
+
     REF_FIELD_NUMBER: builtins.int
     VALUE_FIELD_NUMBER: builtins.int
+    EVAL_FIELD_NUMBER: builtins.int
     ref: builtins.str
     @property
     def value(self) -> schema_pb2.Value: ...
+    @property
+    def eval(self) -> global___PreProcValue.Eval: ...
     def __init__(
         self,
         *,
         ref: builtins.str = ...,
         value: schema_pb2.Value | None = ...,
+        eval: global___PreProcValue.Eval | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["ref", b"ref", "value", b"value", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["ref", b"ref", "value", b"value", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["ref", "value"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["eval", b"eval", "ref", b"ref", "value", b"value", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["eval", b"eval", "ref", b"ref", "value", b"value", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["ref", "value", "eval"] | None: ...
 
 global___PreProcValue = PreProcValue
 

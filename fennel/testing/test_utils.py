@@ -1,21 +1,20 @@
 import json
 from math import isnan
-from typing import Any, Union, List, Dict
+from typing import Any, List
 
 import numpy as np
 import pandas as pd
 import pyarrow as pa
-from frozendict import frozendict
 from google.protobuf.json_format import MessageToDict
 
 from fennel._vendor import jsondiff  # type: ignore
 from fennel._vendor.requests import Response  # type: ignore
-from fennel.dtypes.dtypes import FENNEL_STRUCT, Window
+from fennel.dtypes.dtypes import Window
 from fennel.gen.dataset_pb2 import Operator, Filter, Transform, Assign
 from fennel.gen.featureset_pb2 import Extractor
 from fennel.gen.pycode_pb2 import PyCode
 from fennel.gen.schema_pb2 import DSSchema, DataType, Field, TimestampType
-from fennel.internal_lib.schema import convert_dtype_to_arrow_type, get_datatype
+from fennel.internal_lib.schema import get_datatype, cast_col_to_arrow_dtype
 from fennel.internal_lib.utils import parse_datetime
 
 FENNEL_DELETE_TIMESTAMP = "__fennel_delete_timestamp__"
@@ -108,112 +107,6 @@ def almost_equal(a: float, b: float, epsilon: float = 1e-6) -> bool:
     if isnan(a) and isnan(b):
         return True
     return abs(a - b) < epsilon
-
-
-def check_dtype_has_struct_type(dtype: DataType) -> bool:
-    if dtype.HasField("struct_type"):
-        return True
-    elif dtype.HasField("optional_type"):
-        return check_dtype_has_struct_type(dtype.optional_type.of)
-    elif dtype.HasField("array_type"):
-        return check_dtype_has_struct_type(dtype.array_type.of)
-    elif dtype.HasField("map_type"):
-        return check_dtype_has_struct_type(dtype.map_type.value)
-    return False
-
-
-def parse_struct_into_dict(value: Any) -> Union[dict, list]:
-    """
-    This function assumes that there's a struct somewhere in the value that needs to be converted into json.
-    """
-    if hasattr(value, FENNEL_STRUCT):
-        try:
-            return value.as_json()
-        except Exception as e:
-            raise TypeError(
-                f"Not able parse value: {value} into json, error: {e}"
-            )
-    elif isinstance(value, list) or isinstance(value, np.ndarray):
-        return [parse_struct_into_dict(x) for x in value]
-    elif isinstance(value, dict) or isinstance(value, frozendict):
-        return {key: parse_struct_into_dict(val) for key, val in value.items()}
-    else:
-        return value
-
-
-def parse_datetime_in_value(
-    value: Any, dtype: DataType, nullable: bool = False
-) -> Any:
-    """
-    This function assumes that there's a struct somewhere in the value that needs to be converted into json.
-    """
-    if nullable:
-        try:
-            if not isinstance(
-                value, (list, tuple, dict, set, np.ndarray, frozendict)
-            ) and pd.isna(value):
-                return pd.NA
-        # ValueError error occurs when you do something like pd.isnull([1, 2, None])
-        except ValueError:
-            pass
-    if dtype.HasField("optional_type"):
-        return parse_datetime_in_value(value, dtype.optional_type.of, True)
-    elif dtype.HasField("timestamp_type"):
-        return parse_datetime(value)
-    elif dtype.HasField("array_type"):
-        return [parse_datetime_in_value(x, dtype.array_type.of) for x in value]
-    elif dtype.HasField("map_type"):
-        if isinstance(value, (dict, frozendict)):
-            return {
-                key: parse_datetime_in_value(value, dtype.array_type.of)
-                for (key, value) in value.items()
-            }
-        elif isinstance(value, (list, np.ndarray)):
-            return [
-                (key, parse_datetime_in_value(value, dtype.array_type.of))
-                for (key, value) in value
-            ]
-        else:
-            return value
-    elif dtype.HasField("struct_type"):
-        if hasattr(value, FENNEL_STRUCT):
-            try:
-                value = value.as_json()
-            except Exception as e:
-                raise TypeError(
-                    f"Not able parse value: {value} into json, error: {e}"
-                )
-        output: Dict[Any, Any] = {}
-        for field in dtype.struct_type.fields:
-            dtype = field.dtype
-            name = field.name
-            if not dtype.HasField("optional_type") and name not in value:
-                raise ValueError(
-                    f"value not found for non optional field : {field}"
-                )
-            if name in value:
-                output[name] = parse_datetime_in_value(value[name], dtype)
-        return output
-    else:
-        return value
-
-
-def cast_col_to_arrow_dtype(series: pd.Series, dtype: DataType) -> pd.Series:
-    """
-    This function casts dtype of pd.Series object into pd.ArrowDtype depending on the DataType proto.
-    """
-    if not dtype.HasField("optional_type"):
-        if series.isnull().any():
-            raise ValueError("Null values found in non-optional field.")
-
-    # Let's convert structs into json, this is done because arrow
-    # dtype conversion fails with fennel struct
-    if check_dtype_has_struct_type(dtype):
-        series = series.apply(lambda x: parse_struct_into_dict(x))
-    # Parse datetime values
-    series = series.apply(lambda x: parse_datetime_in_value(x, dtype))
-    arrow_type = convert_dtype_to_arrow_type(dtype)
-    return series.astype(pd.ArrowDtype(arrow_type))
 
 
 def cast_col_to_pandas_dtype(
@@ -397,8 +290,8 @@ def cast_df_to_schema(
     """
     # Handle fields in keys and values
     fields = list(dsschema.keys.fields) + list(dsschema.values.fields)
+    columns = [field.name for field in fields] + [dsschema.timestamp]
     df = df.copy()
-    df = df.reset_index(drop=True)
     for f in fields:
         if f.name not in df.columns:
             raise ValueError(
@@ -424,7 +317,7 @@ def cast_df_to_schema(
         raise ValueError(
             f"Failed to cast data logged to timestamp column {dsschema.timestamp}: {e}"
         )
-    return df
+    return df[columns]
 
 
 def add_deletes(
