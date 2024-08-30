@@ -1,17 +1,20 @@
 from __future__ import annotations
-from enum import Enum
+
+import json
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Type, Optional
 
-import json
-
-from fennel.dtypes.dtypes import FENNEL_STRUCT
 import pandas as pd
-from fennel.internal_lib.schema.schema import from_proto
 import pyarrow as pa
 from fennel_data_lib import eval, type_of
-from fennel.internal_lib.schema import get_datatype
+
 import fennel.gen.schema_pb2 as schema_proto
+from fennel.internal_lib import FENNEL_STRUCT
+from fennel.internal_lib.schema import (
+    from_proto,
+    get_datatype,
+    cast_col_to_arrow_dtype,
+)
 
 
 class InvalidExprException(Exception):
@@ -319,63 +322,17 @@ class Expr(object):
     def eval(self, input_df: pd.DataFrame, schema: Dict) -> pd.Series:
         from fennel.expr.serializer import ExprSerializer
 
-        def convert_object(obj):
-            if isinstance(obj, list):
-                result = [convert_object(i) for i in obj]
-            elif isinstance(obj, dict):
-                result = {}
-                for key in obj:
-                    result[key] = convert_object(obj[key])
-            elif hasattr(obj, "as_json"):
-                result = obj.as_json()
-            else:
-                result = obj
-            return result
-
-        def convert_objects(df):
-            for col in df.columns:
-                df[col] = df[col].apply(convert_object)
-            return df
-
-        def pd_to_pa(pd_data, schema=None):
-            # Schema unspecified - as in the case with lookups
-            if not schema:
-                if isinstance(pd_data, pd.Series):
-                    pd_data = pd_data.apply(convert_object)
-                    return pa.Array.from_pandas(pd_data)
-                elif isinstance(pd_data, pd.DataFrame):
-                    pd_data = convert_objects(pd_data)
-                    return pa.RecordBatch.from_pandas(
-                        pd_data, preserve_index=False
+        def pd_to_pa(pd_data: pd.DataFrame, schema: Dict[str, Type]):
+            new_df = pd_data.copy()
+            for column, dtype in schema.items():
+                dtype = get_datatype(dtype)
+                if column not in new_df.columns:
+                    raise InvalidExprException(
+                        f"column : {column} not found in input dataframe but defined in schema."
                     )
-                else:
-                    raise ValueError("only pd.Series or pd.Dataframe expected")
-
-            # Single column expected
-            if isinstance(schema, pa.Field):
-                # extra columns may have been provided
-                if isinstance(pd_data, pd.DataFrame):
-                    if schema.name not in pd_data:
-                        raise ValueError(
-                            f"Dataframe does not contain column {schema.name}"
-                        )
-                    # df -> series
-                    pd_data = pd_data[schema.name]
-
-                if not isinstance(pd_data, pd.Series):
-                    raise ValueError("only pd.Series or pd.Dataframe expected")
-                pd_data = pd_data.apply(convert_object)
-                return pa.Array.from_pandas(pd_data, type=schema.type)
-
-            # Multiple columns case: use the columns we need
-            result_df = pd.DataFrame()
-            for col in schema.names:
-                if col not in pd_data:
-                    raise ValueError(f"Dataframe does not contain column {col}")
-                result_df[col] = pd_data[col].apply(convert_object)
-            return pa.RecordBatch.from_pandas(
-                result_df, preserve_index=False, schema=schema
-            )
+                new_df[column] = cast_col_to_arrow_dtype(new_df[column], dtype)
+            new_df = new_df.loc[:, list(schema.keys())]
+            return pa.RecordBatch.from_pandas(new_df, preserve_index=False)
 
         def pa_to_pd(pa_data):
             return pa_data.to_pandas(types_mapper=pd.ArrowDtype)
@@ -383,7 +340,7 @@ class Expr(object):
         serializer = ExprSerializer()
         proto_expr = serializer.serialize(self.root)
         proto_bytes = proto_expr.SerializeToString()
-        df_pa = pd_to_pa(input_df)
+        df_pa = pd_to_pa(input_df, schema)
         proto_schema = {}
         for key, value in schema.items():
             proto_schema[key] = get_datatype(value).SerializeToString()
@@ -780,6 +737,8 @@ class IsNull(Expr):
 class FillNull(Expr):
     def __init__(self, expr: Expr, value: Any):
         self.expr = expr
+        self.fill = lit(value)
+        super(FillNull, self).__init__()
         self.value = make_expr(value)
 
     def __str__(self) -> str:

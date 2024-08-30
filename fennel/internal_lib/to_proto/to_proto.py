@@ -21,7 +21,6 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import StringValue
 
 import fennel.connectors as connectors
-from fennel.expr.serializer import ExprSerializer
 import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.expectations_pb2 as exp_proto
@@ -40,12 +39,19 @@ from fennel.datasets.datasets import (
     indices_from_ds,
 )
 from fennel.dtypes.dtypes import FENNEL_STRUCT
+from fennel.expr.expr import Expr, TypedExpr
+from fennel.expr.serializer import ExprSerializer
+from fennel.expr.visitor import ExprPrinter
 from fennel.featuresets import Featureset, Feature, Extractor, ExtractorType
 from fennel.internal_lib.duration import (
     Duration,
     duration_to_timedelta,
 )
-from fennel.internal_lib.schema import get_datatype, validate_val_with_dtype
+from fennel.internal_lib.schema import (
+    get_datatype,
+    validate_val_with_dtype,
+    get_python_type_from_pd,
+)
 from fennel.internal_lib.to_proto import Serializer
 from fennel.internal_lib.to_proto.source_code import (
     get_featureset_core_code,
@@ -55,6 +61,7 @@ from fennel.internal_lib.to_proto.source_code import (
     wrap_function,
 )
 from fennel.internal_lib.to_proto.source_code import to_includes_proto
+from fennel.internal_lib.utils import dtype_to_string
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr, OWNER
 from fennel.utils import fennel_get_source
@@ -298,7 +305,6 @@ def sync_validation_for_datasets(ds: Dataset, env: Optional[str] = None):
     for pipeline in ds._pipelines:
         if pipeline.env.is_entity_selected(env):
             pipelines.append(pipeline)
-
     sources = source_from_ds(ds, env)
     if len(sources) > 0 and len(pipelines) > 0:
         raise ValueError(
@@ -419,6 +425,8 @@ def expectations_from_ds(ds: Dataset) -> List[exp_proto.Expectations]:
 def _validate_source_pre_proc(
     pre_proc: Dict[str, connectors.PreProcValue], ds: Dataset
 ):
+    timestamp_field = ds.timestamp_field
+    dataset_schema = ds.schema()
     for field_name, pre_proc_val in pre_proc.items():
         ds_field = None
         for field in ds._fields:
@@ -427,18 +435,58 @@ def _validate_source_pre_proc(
                 break
         if not ds_field:
             raise ValueError(
-                f"Dataset {ds._name} has a source with a pre_proc value set for field {field_name}, "
+                f"Dataset `{ds._name}` has a source with a pre_proc value field `{field_name}`, "
                 "but the field is not defined in the dataset."
             )
         # If the pre_proc is a `ref`, then skip - we can't check the value type or if the exists in the dataset
         if isinstance(pre_proc_val, connectors.Ref):
             continue
-        # Else check that the data type matches the field type
-        if validate_val_with_dtype(ds_field.dtype, pre_proc_val):  # type: ignore
-            raise ValueError(
-                f"Dataset {ds._name} has a source with a pre_proc value set for field {field_name}, "
-                f"but the field type does not match the pre_proc value {pre_proc_val} type."
-            )
+        elif isinstance(pre_proc_val, connectors.Eval):
+            # Cannot set timestamp field through preproc eval
+            if field_name == timestamp_field:
+                raise ValueError(
+                    f"Dataset `{ds._name}` has timestamp field set from assign preproc. Please either ref "
+                    f"preproc or set a constant value."
+                )
+
+            # Run output col dtype validation for Expr.
+            if isinstance(pre_proc_val.eval_type, (Expr, TypedExpr)):
+                expr = (
+                    pre_proc_val.eval_type
+                    if isinstance(pre_proc_val.eval_type, Expr)
+                    else pre_proc_val.eval_type.expr
+                )
+                typed_dtype = (
+                    None
+                    if isinstance(pre_proc_val.eval_type, Expr)
+                    else pre_proc_val.eval_type.dtype
+                )
+                input_schema = ds.schema()
+                if pre_proc_val.additional_schema:
+                    for name, dtype in pre_proc_val.additional_schema.items():
+                        input_schema[name] = dtype
+                expr_type = expr.typeof(input_schema)
+                if expr_type != get_python_type_from_pd(
+                    dataset_schema[field_name]
+                ):
+                    printer = ExprPrinter()
+                    raise TypeError(
+                        f"`{field_name}` is of type `{dtype_to_string(dataset_schema[field_name])}` in Dataset `{ds._name}`, "
+                        f"can not be cast to `{dtype_to_string(expr_type)}`. Full expression: `{printer.print(expr.root)}`"
+                    )
+                if typed_dtype and expr_type != typed_dtype:
+                    printer = ExprPrinter()
+                    raise TypeError(
+                        f"`{field_name}` in Dataset `{ds._name}` can not be cast to `{dtype_to_string(typed_dtype)}`, "
+                        f"evaluated dtype is `{dtype_to_string(expr_type)}`. Full expression: `{printer.print(expr.root)}`"
+                    )
+        else:
+            # Else check that the data type matches the field type
+            if validate_val_with_dtype(ds_field.dtype, pre_proc_val):  # type: ignore
+                raise ValueError(
+                    f"Dataset `{ds._name}` has a source with a pre_proc value set for field `{field_name}`, "
+                    f"but the field type does not match the pre_proc value `{pre_proc_val}` type."
+                )
 
 
 def source_from_ds(
@@ -701,57 +749,95 @@ def _to_field_lookup_proto(
 
 
 def _pre_proc_value_to_proto(
+    dataset: Dataset,
+    column_name: str,
     pre_proc_value: connectors.PreProcValue,
 ) -> connector_proto.PreProcValue:
     if isinstance(pre_proc_value, connectors.Ref):
         return connector_proto.PreProcValue(
             ref=pre_proc_value.name,
         )
-    # Get the dtype of the pre_proc value.
-    #
-    # NOTE: We use the same the utility used to serialize the field types so that the types and their
-    # serialization are consistent.
-    dtype = get_datatype(type(pre_proc_value))
-    if dtype == schema_proto.DataType(string_type=schema_proto.StringType()):
-        return connector_proto.PreProcValue(
-            value=schema_proto.Value(string=pre_proc_value)
-        )
-    elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
-        return connector_proto.PreProcValue(
-            value=schema_proto.Value(bool=pre_proc_value)
-        )
-    elif dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
-        return connector_proto.PreProcValue(
-            value=schema_proto.Value(int=pre_proc_value)
-        )
-    elif dtype == schema_proto.DataType(double_type=schema_proto.DoubleType()):
-        return connector_proto.PreProcValue(
-            value=schema_proto.Value(float=pre_proc_value)
-        )
-    elif dtype == schema_proto.DataType(
-        timestamp_type=schema_proto.TimestampType()
-    ):
-        ts = Timestamp()
-        ts.FromDatetime(pre_proc_value)
-        return connector_proto.PreProcValue(
-            value=schema_proto.Value(timestamp=ts)
-        )
-    # TODO(mohit): Extend the pre_proc value proto to support other types
+    elif isinstance(pre_proc_value, connectors.Eval):
+        if pre_proc_value.additional_schema:
+            fields = [
+                schema_proto.Field(name=name, dtype=get_datatype(dtype))
+                for (name, dtype) in pre_proc_value.additional_schema.items()
+            ]
+            schema = schema_proto.Schema(fields=fields)
+        else:
+            schema = None
+
+        if isinstance(pre_proc_value.eval_type, (Expr, TypedExpr)):
+            serializer = ExprSerializer()
+            if isinstance(pre_proc_value.eval_type, Expr):
+                root = pre_proc_value.eval_type.root
+            else:
+                root = pre_proc_value.eval_type.expr.root
+            return connector_proto.PreProcValue(
+                eval=connector_proto.PreProcValue.Eval(
+                    schema=schema,
+                    expr=serializer.serialize(root),
+                )
+            )
+        else:
+            return connector_proto.PreProcValue(
+                eval=connector_proto.PreProcValue.Eval(
+                    schema=schema,
+                    pycode=_preproc_assign_to_pycode(
+                        dataset, column_name, pre_proc_value.eval_type
+                    ),
+                )
+            )
     else:
-        raise ValueError(
-            f"PreProc value {pre_proc_value} is of type {dtype}, "
-            f"which is not currently not supported."
-        )
+        # Get the dtype of the pre_proc value.
+        #
+        # NOTE: We use the same the utility used to serialize the field types so that the types and their
+        # serialization are consistent.
+        dtype = get_datatype(type(pre_proc_value))
+        if dtype == schema_proto.DataType(
+            string_type=schema_proto.StringType()
+        ):
+            return connector_proto.PreProcValue(
+                value=schema_proto.Value(string=pre_proc_value)
+            )
+        elif dtype == schema_proto.DataType(bool_type=schema_proto.BoolType()):
+            return connector_proto.PreProcValue(
+                value=schema_proto.Value(bool=pre_proc_value)
+            )
+        elif dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
+            return connector_proto.PreProcValue(
+                value=schema_proto.Value(int=pre_proc_value)
+            )
+        elif dtype == schema_proto.DataType(
+            double_type=schema_proto.DoubleType()
+        ):
+            return connector_proto.PreProcValue(
+                value=schema_proto.Value(float=pre_proc_value)
+            )
+        elif dtype == schema_proto.DataType(
+            timestamp_type=schema_proto.TimestampType()
+        ):
+            ts = Timestamp()
+            ts.FromDatetime(pre_proc_value)
+            return connector_proto.PreProcValue(
+                value=schema_proto.Value(timestamp=ts)
+            )
+        # TODO(mohit): Extend the pre_proc value proto to support other types
+        else:
+            raise ValueError(
+                f"PreProc value {pre_proc_value} is of type {dtype}, "
+                f"which is not currently not supported."
+            )
 
 
 def _pre_proc_to_proto(
-    pre_proc: Optional[Dict[str, connectors.PreProcValue]]
+    dataset: Dataset, pre_proc: Optional[Dict[str, connectors.PreProcValue]]
 ) -> Mapping[str, connector_proto.PreProcValue]:
     if pre_proc is None:
         return {}
     proto_pre_proc = {}
     for k, v in pre_proc.items():
-        proto_pre_proc[k] = _pre_proc_value_to_proto(v)
+        proto_pre_proc[k] = _pre_proc_value_to_proto(dataset, k, v)
     return proto_pre_proc
 
 
@@ -766,6 +852,19 @@ def _preproc_filter_to_pycode(
         "",
         to_includes_proto(func),
         is_filter=True,
+    )
+
+
+def _preproc_assign_to_pycode(
+    dataset: Dataset, column_name: str, func: Callable
+) -> pycode_proto.PyCode:
+    return wrap_function(
+        dataset._name,
+        get_dataset_core_code(dataset),
+        "",
+        to_includes_proto(func),
+        is_assign=True,
+        column_name=column_name,
     )
 
 
@@ -832,7 +931,7 @@ def _webhook_to_source_proto(
             dataset=dataset._name,
             ds_version=dataset._version,
             cdc=to_cdc_proto(connector.cdc),
-            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
             idleness=(
                 to_duration_proto(connector.idleness)
@@ -873,7 +972,7 @@ def _kafka_conn_to_source_proto(
         dataset=dataset._name,
         ds_version=dataset._version,
         cdc=to_cdc_proto(connector.cdc),
-        pre_proc=_pre_proc_to_proto(connector.pre_proc),
+        pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
         starting_from=_to_timestamp_proto(connector.since),
         until=_to_timestamp_proto(connector.until),
         bounded=connector.bounded,
@@ -976,7 +1075,7 @@ def _s3_conn_to_source_proto(
         cursor=None,
         timestamp_field=dataset.timestamp_field,
         cdc=to_cdc_proto(connector.cdc),
-        pre_proc=_pre_proc_to_proto(connector.pre_proc),
+        pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
         bounded=connector.bounded,
         idleness=(
             to_duration_proto(connector.idleness)
@@ -1171,7 +1270,7 @@ def _bigquery_conn_to_source_proto(
             until=_to_timestamp_proto(connector.until),
             timestamp_field=dataset.timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
-            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
             idleness=(
                 to_duration_proto(connector.idleness)
@@ -1243,7 +1342,7 @@ def _redshift_conn_to_source_proto(
             disorder=to_duration_proto(connector.disorder),
             timestamp_field=dataset.timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
-            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
             bounded=connector.bounded,
@@ -1339,7 +1438,7 @@ def _mongo_conn_to_source_proto(
             disorder=to_duration_proto(connector.disorder),
             timestamp_field=dataset.timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
-            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
             bounded=connector.bounded,
@@ -1411,7 +1510,7 @@ def _pubsub_conn_to_source_proto(
             dataset=dataset._name,
             ds_version=dataset._version,
             cdc=to_cdc_proto(connector.cdc),
-            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
             idleness=(
                 to_duration_proto(connector.idleness)
@@ -1454,7 +1553,7 @@ def _snowflake_conn_to_source_proto(
             disorder=to_duration_proto(connector.disorder),
             timestamp_field=dataset.timestamp_field,
             cdc=to_cdc_proto(connector.cdc),
-            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
             bounded=connector.bounded,
@@ -1538,7 +1637,7 @@ def _mysql_conn_to_source_proto(
             cdc=to_cdc_proto(connector.cdc),
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
-            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
             idleness=(
                 to_duration_proto(connector.idleness)
@@ -1629,7 +1728,7 @@ def _pg_conn_to_source_proto(
             cdc=to_cdc_proto(connector.cdc),
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
-            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
             idleness=(
                 to_duration_proto(connector.idleness)
@@ -1716,7 +1815,7 @@ def _kinesis_conn_to_source_proto(
             cdc=to_cdc_proto(connector.cdc),
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
-            pre_proc=_pre_proc_to_proto(connector.pre_proc),
+            pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
             idleness=(
                 to_duration_proto(connector.idleness)

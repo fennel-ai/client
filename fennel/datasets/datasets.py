@@ -2,7 +2,6 @@ from __future__ import annotations
 import warnings
 import copy
 import datetime
-import enum
 import functools
 import inspect
 import sys
@@ -45,7 +44,6 @@ from fennel.datasets.aggregate import (
     ExpDecaySum,
 )
 from fennel.dtypes.dtypes import (
-    FENNEL_STRUCT,
     get_fennel_struct,
     Window,
     Decimal,

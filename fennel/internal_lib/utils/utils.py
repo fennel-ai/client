@@ -1,11 +1,14 @@
 import dataclasses
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Union
+from typing import Any, Union, Dict
 
+import numpy as np
 import pandas as pd
+from frozendict import frozendict
 
 from fennel.gen.schema_pb2 import DataType
+from fennel.internal_lib import FENNEL_STRUCT
 
 
 def _get_args(type_: Any) -> Any:
@@ -124,3 +127,79 @@ def cast_col_to_pandas(
         )
     else:
         return series.fillna(pd.NA)
+
+
+def parse_struct_into_dict(value: Any) -> Union[dict, list]:
+    """
+    This function assumes that there's a struct somewhere in the value that needs to be converted into json.
+    """
+    if hasattr(value, FENNEL_STRUCT):
+        try:
+            return value.as_json()
+        except Exception as e:
+            raise TypeError(
+                f"Not able parse value: {value} into json, error: {e}"
+            )
+    elif isinstance(value, list) or isinstance(value, np.ndarray):
+        return [parse_struct_into_dict(x) for x in value]
+    elif isinstance(value, dict) or isinstance(value, frozendict):
+        return {key: parse_struct_into_dict(val) for key, val in value.items()}
+    else:
+        return value
+
+
+def parse_datetime_in_value(
+    value: Any, dtype: DataType, nullable: bool = False
+) -> Any:
+    """
+    This function assumes that there's a struct somewhere in the value that needs to be converted into json.
+    """
+    if nullable:
+        try:
+            if not isinstance(
+                value, (list, tuple, dict, set, np.ndarray, frozendict)
+            ) and pd.isna(value):
+                return pd.NA
+        # ValueError error occurs when you do something like pd.isnull([1, 2, None])
+        except ValueError:
+            pass
+    if dtype.HasField("optional_type"):
+        return parse_datetime_in_value(value, dtype.optional_type.of, True)
+    elif dtype.HasField("timestamp_type"):
+        return parse_datetime(value)
+    elif dtype.HasField("array_type"):
+        return [parse_datetime_in_value(x, dtype.array_type.of) for x in value]
+    elif dtype.HasField("map_type"):
+        if isinstance(value, (dict, frozendict)):
+            return {
+                key: parse_datetime_in_value(value, dtype.array_type.of)
+                for (key, value) in value.items()
+            }
+        elif isinstance(value, (list, np.ndarray)):
+            return [
+                (key, parse_datetime_in_value(value, dtype.array_type.of))
+                for (key, value) in value
+            ]
+        else:
+            return value
+    elif dtype.HasField("struct_type"):
+        if hasattr(value, FENNEL_STRUCT):
+            try:
+                value = value.as_json()
+            except Exception as e:
+                raise TypeError(
+                    f"Not able parse value: {value} into json, error: {e}"
+                )
+        output: Dict[Any, Any] = {}
+        for field in dtype.struct_type.fields:
+            dtype = field.dtype
+            name = field.name
+            if not dtype.HasField("optional_type") and name not in value:
+                raise ValueError(
+                    f"value not found for non optional field : {field}"
+                )
+            if name in value:
+                output[name] = parse_datetime_in_value(value[name], dtype)
+        return output
+    else:
+        return value

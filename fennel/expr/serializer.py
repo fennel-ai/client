@@ -116,10 +116,10 @@ class ExprSerializer(Visitor):
         return expr
 
     def visitFillNull(self, obj):
-        return "FILL NULL(%s, %s)" % (
-            self.visit(obj.expr),
-            self.visit(obj.fill),
-        )
+        expr = proto.Expr()
+        expr.fillnull.fill.CopyFrom(self.visit(obj.fill))
+        expr.fillnull.operand.CopyFrom(self.visit(obj.expr))
+        return expr
 
     def visitWhen(self, obj):
         expr = proto.Expr()

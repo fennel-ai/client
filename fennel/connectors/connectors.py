@@ -4,12 +4,23 @@ import copy
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
-from typing import Literal
+from typing import (
+    Any,
+    Callable,
+    List,
+    Optional,
+    TypeVar,
+    Union,
+    Tuple,
+    Dict,
+    Type,
+    Literal,
+)
 
 from fennel._vendor.pydantic import BaseModel, Field  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
 from fennel.connectors.kinesis import at_timestamp
+from fennel.expr.expr import Expr, TypedExpr
 from fennel.internal_lib.duration import (
     Duration,
 )
@@ -32,11 +43,27 @@ class Ref(BaseModel):
     name: str
 
 
+@dataclass
+class Eval:
+    eval_type: Union[Callable, Expr, TypedExpr]
+    additional_schema: Optional[Dict[str, Type]] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 def ref(ref_name: str) -> PreProcValue:
     return Ref(name=ref_name)
 
 
-PreProcValue = Union[Ref, Any]
+def eval(
+    eval_type: Union[Callable, Expr, TypedExpr],
+    schema: Optional[Dict[str, Type]] = None,
+) -> PreProcValue:
+    return Eval(eval_type=eval_type, additional_schema=schema)
+
+
+PreProcValue = Union[Ref, Any, Eval]
 
 
 def preproc_has_indirection(preproc: Optional[Dict[str, PreProcValue]]):
@@ -906,3 +933,12 @@ class PubSubConnector(DataConnector):
 
     def identifier(self) -> str:
         return f"{self.data_source.identifier()}(topic={self.topic_id}, format={self.format})"
+
+
+def is_table_source(con: DataConnector) -> bool:
+    if isinstance(
+        con,
+        (KinesisConnector, PubSubConnector, KafkaConnector, WebhookConnector),
+    ):
+        return False
+    return True

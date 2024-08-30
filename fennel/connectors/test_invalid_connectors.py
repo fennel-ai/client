@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from lib2to3.fixes.fix_tuple_params import tuple_name
 from typing import Optional
 
-from fennel.connectors.connectors import Protobuf, ref
+from fennel.connectors.connectors import Protobuf, ref, eval
 import pytest
 
 from fennel.connectors import (
@@ -20,6 +20,7 @@ from fennel.connectors import (
     S3Connector,
 )
 from fennel.datasets import dataset, field
+from fennel.expr import col
 from fennel.lib import meta
 
 # noinspection PyUnresolvedReferences
@@ -833,5 +834,112 @@ def test_invalid_s3_batch_sink():
 
     assert (
         "S3 sink only supports data access through Fennel DataAccess IAM Role"
+        == str(e.value)
+    )
+
+
+@mock
+def test_invalid_timestamp_assign_preproc(client):
+
+    @source(
+        mysql.table(
+            "users",
+            cursor="added_on",
+        ),
+        every="1h",
+        disorder="20h",
+        bounded=True,
+        idleness="1h",
+        cdc="upsert",
+        preproc={"timestamp": eval(col("val1"), schema={"val1": datetime})},
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        timestamp: datetime = field(timestamp=True)
+
+    # Setting timestamp field through assign preproc
+    with pytest.raises(ValueError) as e:
+        client.commit(datasets=[UserInfoDataset], message="test")
+
+    assert (
+        "Dataset `UserInfoDataset` has timestamp field set from assign preproc. Please either ref preproc or set a constant value."
+        == str(e.value)
+    )
+
+
+@mock
+def test_invalid_assign_preproc(client):
+
+    @source(
+        mysql.table(
+            "users",
+            cursor="added_on",
+        ),
+        every="1h",
+        disorder="20h",
+        bounded=True,
+        idleness="1h",
+        cdc="upsert",
+        preproc={"age": eval(col("val1"), schema={"val1": int})},
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        timestamp: datetime = field(timestamp=True)
+
+    # Setting timestamp field through assign preproc
+    with pytest.raises(ValueError) as e:
+        client.commit(datasets=[UserInfoDataset], message="test")
+
+    assert (
+        "Dataset `UserInfoDataset` has a source with a pre_proc value field `age`, but the field is not defined in the dataset."
+        == str(e.value)
+    )
+
+
+@mock
+def test_invalid_eval_assign_preproc(client):
+
+    @source(
+        mysql.table(
+            "users",
+            cursor="added_on",
+        ),
+        every="1h",
+        disorder="20h",
+        bounded=True,
+        idleness="1h",
+        cdc="upsert",
+        preproc={"age": eval(col("val1"), schema={"val1": float})},
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        timestamp: datetime = field(timestamp=True)
+
+    # Setting timestamp field through assign preproc
+    with pytest.raises(TypeError) as e:
+        client.commit(datasets=[UserInfoDataset], message="test")
+
+    assert (
+        "`age` is of type `int` in Dataset `UserInfoDataset`, can not be cast to `float`. Full expression: `col('val1')`"
         == str(e.value)
     )

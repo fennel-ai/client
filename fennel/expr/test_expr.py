@@ -65,8 +65,6 @@ def test_basic_expr2():
 
     ret = expr.eval(df, {"a": int, "b": int})
     assert ret.tolist() == [9, 11, 13, 15]
-    ret = expr.eval(df, TestDataset.schema())
-    assert ret.tolist() == [9, 11, 13, 15]
     assert expr.typeof({"a": int, "b": int}) == int
 
     ref_extractor = FetchReferences()

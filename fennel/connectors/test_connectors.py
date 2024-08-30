@@ -2,6 +2,7 @@ import sys
 from datetime import datetime
 from typing import Optional
 
+import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.connector_pb2 as connector_proto
@@ -22,9 +23,11 @@ from fennel.connectors import (
     ref,
     S3Connector,
     PubSub,
+    eval,
 )
 from fennel.connectors.connectors import CSV
 from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.expr import col, lit
 from fennel.lib import meta
 from fennel.lib.params import inputs
 
@@ -2365,3 +2368,152 @@ def test_filter_preproc():
         assert source_request == expected_source_request, error_message(
             source_request, expected_source_request
         )
+
+
+def test_assign_python_preproc():
+    if sys.version_info >= (3, 10):
+
+        @source(
+            mysql.table(
+                "users",
+                cursor="added_on",
+            ),
+            every="1h",
+            disorder="20h",
+            bounded=True,
+            idleness="1h",
+            cdc="upsert",
+            preproc={"age": eval(lambda x: pd.to_numeric(x["age_str"]))},
+        )
+        @meta(owner="test@test.com")
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            age_str: str
+            timestamp: datetime = field(timestamp=True)
+
+        view = InternalTestClient()
+        view.add(UserInfoDataset)
+        sync_request = view._get_sync_request_proto()
+
+        assert len(sync_request.sources) == 1
+        source_request = sync_request.sources[0]
+        s = {
+            "table": {
+                "mysqlTable": {
+                    "db": {
+                        "name": "mysql",
+                        "mysql": {
+                            "host": "localhost",
+                            "database": "test",
+                            "user": "root",
+                            "password": "root",
+                            "port": 3306,
+                        },
+                    },
+                    "tableName": "users",
+                }
+            },
+            "dataset": "UserInfoDataset",
+            "dsVersion": 1,
+            "every": "3600s",
+            "cursor": "added_on",
+            "disorder": "72000s",
+            "timestampField": "timestamp",
+            "cdc": "Upsert",
+            "bounded": True,
+            "idleness": "3600s",
+            "preProc": {"age": {"eval": {"pycode": {}}}},
+        }
+        expected_source_request = ParseDict(s, connector_proto.Source())
+        source_request.pre_proc.get("age").eval.pycode.Clear()
+        assert source_request == expected_source_request, error_message(
+            source_request, expected_source_request
+        )
+
+
+def test_assign_eval_preproc():
+
+    @source(
+        mysql.table(
+            "users",
+            cursor="added_on",
+        ),
+        every="1h",
+        disorder="20h",
+        bounded=True,
+        idleness="1h",
+        cdc="upsert",
+        preproc={
+            "age": eval(
+                (col("val1") * col("val2") + lit(1)),
+                schema={"val1": int, "val2": int},
+            )
+        },
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDataset)
+    sync_request = view._get_sync_request_proto()
+
+    assert len(sync_request.sources) == 1
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "mysqlTable": {
+                "db": {
+                    "name": "mysql",
+                    "mysql": {
+                        "host": "localhost",
+                        "database": "test",
+                        "user": "root",
+                        "password": "root",
+                        "port": 3306,
+                    },
+                },
+                "tableName": "users",
+            }
+        },
+        "dataset": "UserInfoDataset",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cursor": "added_on",
+        "disorder": "72000s",
+        "timestampField": "timestamp",
+        "cdc": "Upsert",
+        "bounded": True,
+        "idleness": "3600s",
+        "preProc": {
+            "age": {
+                "eval": {
+                    "expr": {},
+                    "schema": {
+                        "fields": [
+                            {"name": "val1", "dtype": {"intType": {}}},
+                            {"name": "val2", "dtype": {"intType": {}}},
+                        ]
+                    },
+                }
+            }
+        },
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    source_request.pre_proc.get("age").eval.expr.Clear()
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )

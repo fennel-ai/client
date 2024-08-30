@@ -11,12 +11,12 @@ from fennel.featuresets import featureset, feature as F
 from fennel.gen import schema_pb2 as schema_proto
 from fennel.internal_lib.schema import get_datatype
 from fennel.internal_lib.to_proto.to_proto import fields_to_dsschema
+from fennel.internal_lib.utils.utils import parse_datetime_in_value
 from fennel.testing import mock
 from fennel.testing.test_utils import (
     cast_df_to_schema,
     cast_col_to_arrow_dtype,
     cast_col_to_pandas_dtype,
-    parse_datetime_in_value,
 )
 
 __owner__ = "nitin@fennel.ai"
