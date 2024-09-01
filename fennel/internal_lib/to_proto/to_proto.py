@@ -597,7 +597,8 @@ def feature_to_proto_as_input(f: Feature) -> fs_proto.Input:
         feature=fs_proto.Input.Feature(
             feature_set_name=f.featureset_name,
             name=f.name,
-        )
+        ),
+        dtype=get_datatype(f.dtype),
     )
 
 
