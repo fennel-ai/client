@@ -76,7 +76,9 @@ def time_unit_to_proto(unit: TimeUnit) -> proto.TimeUnit:
         return proto.TimeUnit.MONTH
     elif unit == TimeUnit.YEAR:
         return proto.TimeUnit.YEAR
-    
+    raise InvalidExprException("invalid time unit: %s" % unit)
+
+
 class ExprSerializer(Visitor):
     def __init__(self):
         super(ExprSerializer, self).__init__()
@@ -302,10 +304,8 @@ class ExprSerializer(Visitor):
         elif isinstance(obj.op, DateTimeParts):
             part = proto.Part()
             part.unit = time_unit_to_proto(obj.op.part)
-            expr.datetime_fn.fn.CopyFrom(
-                proto.DateTimeOp(part=part)
-            )
-        elif isinstance(obj.op, DateTimeSince): 
+            expr.datetime_fn.fn.CopyFrom(proto.DateTimeOp(part=part))
+        elif isinstance(obj.op, DateTimeSince):
             expr.datetime_fn.fn.CopyFrom(
                 proto.DateTimeOp(
                     since=proto.Since(
@@ -359,23 +359,18 @@ class ExprSerializer(Visitor):
             expr.list_fn.fn.CopyFrom(proto.ListOp(has_null=proto.HasNull()))
         expr.list_fn.list.CopyFrom(self.visit(obj.expr))
         return expr
-    
+
     def visitStruct(self, obj):
         expr = proto.Expr()
         if isinstance(obj.op, StructNoop):
             return self.visit(obj.operand)
         elif isinstance(obj.op, StructGet):
-            expr.struct_fn.fn.CopyFrom(
-                proto.StructOp(
-                    field=obj.op.field
-                )
-            )
+            expr.struct_fn.fn.CopyFrom(proto.StructOp(field=obj.op.field))
         else:
             raise InvalidExprException("invalid struct operation: %s" % obj.op)
         expr.struct_fn.struct.CopyFrom(self.visit(obj.operand))
         return expr
-    
-    
+
     def visitMakeStruct(self, obj):
         expr = proto.Expr()
         fields = {}
@@ -384,23 +379,33 @@ class ExprSerializer(Visitor):
         expr.make_struct.fields.update(fields)
         expr.make_struct.struct_type.CopyFrom(get_datatype(obj.dtype))
         return expr
-    
+
     def visitMakeStruct(self, obj):
-        expr = proto.Expr()  # Assuming proto.Expr() is the right way to initialize this
-        # Initialize the fields map directly rather than replacing it
+        expr = proto.Expr()
         for field, value in obj.fields.items():
-            # Retrieve or initialize the message at the map key
             field_expr = expr.make_struct.fields.get_or_create(field)
-            # Copy the content of the visited value into the map's message field
             field_expr.CopyFrom(self.visit(value))
-        
+
         # Ensure get_datatype returns a correct protobuf message of type StructType
         dtype = get_datatype(obj.dtype)
         if dtype.struct_type is None:
-            raise InvalidExprException("Expected struct_type to be a StructType, found {}".format(dtype))
+            raise InvalidExprException(
+                "Expected struct_type to be a StructType, found {}".format(
+                    dtype
+                )
+            )
         expr.make_struct.struct_type.CopyFrom(dtype.struct_type)
-        
+
         return expr
+
+    def visitDateTimeFromEpoch(self, obj):
+        expr = proto.Expr()
+        from_epoch = proto.FromEpoch()
+        from_epoch.unit = time_unit_to_proto(obj.unit)
+        from_epoch.duration.CopyFrom(self.visit(obj.duration))
+        expr.from_epoch.CopyFrom(from_epoch)
+        return expr
+
 
 def val_as_json(val: Any) -> str:
     if isinstance(val, str):

@@ -9,7 +9,7 @@ from fennel.datasets import dataset
 
 from fennel.dtypes.dtypes import struct
 from fennel.expr import col, when, lit
-from fennel.expr.expr import TimeUnit, make_struct
+from fennel.expr.expr import TimeUnit, from_epoch, make_struct
 from fennel.expr.visitor import ExprPrinter, FetchReferences
 from fennel.expr.serializer import ExprSerializer
 from google.protobuf.json_format import ParseDict  # type: ignore
@@ -387,7 +387,9 @@ def compare_values(received, expected, dtype):
                 r = getattr(act, field.name)
                 e = getattr(exp, field.name)
                 if not is_user_defined_class(field.type):
-                    assert r == e, f"Expected {e}, got {r} for field {field.name} in struct {act}"
+                    assert (
+                        r == e
+                    ), f"Expected {e}, got {r} for field {field.name} in struct {act}"
                 else:
                     compare_values([r], [e], field.type)
     else:
@@ -579,17 +581,16 @@ def test_parse():
 
     # Parse strings
     # TODO(Aditya): Check why this is failing
-    # test_case = ExprTestCase(
-    #     expr = (col("a").str.parse(str)),
-    #     df = pd.DataFrame({"a": ["a1", "b", "c", "d"]}),
-    #     schema={"a": str},
-    #     display = "PARSE(col('a'), <class 'str'>)",
-    #     refs = {"a"},
-    #
-    #     eval_result=["a1", "b", "c", "d"],
-    #     expected_dtype = str,
-    #     proto_json=None,
-    # )
+    test_case = ExprTestCase(
+        expr=(col("a").str.parse(str)),
+        df=pd.DataFrame({"a": ["a1", "b", "c", "d"]}),
+        schema={"a": str},
+        display="PARSE(col('a'), <class 'str'>)",
+        refs={"a"},
+        eval_result=["a1", "b", "c", "d"],
+        expected_dtype=str,
+        proto_json=None,
+    )
     # check_test_case(test_case)
 
 
@@ -671,31 +672,41 @@ def test_list():
             proto_json=None,
         ),
         # List contains for list of strings
+        ExprTestCase(
+            expr=(col("a2").list.contains(col("b2"))),
+            df=pd.DataFrame(
+                {
+                    "a2": [
+                        ["a", "b", "c"],
+                        ["d", "e", "f"],
+                        ["g", "h", "i"],
+                        ["a", "b", "c"],
+                    ],
+                    "b2": ["a", "e", "c", "d"],
+                }
+            ),
+            schema={"a2": List[str], "b2": str},
+            display="""CONTAINS(col('a2'), col('b2'))""",
+            refs={"a2", "b2"},
+            eval_result=[True, True, False, False],
+            expected_dtype=bool,
+            proto_json=None,
+        ),
+        # (TODO: Aditya) Support for struct inside a list
+        # Support struct inside a list
         # ExprTestCase(
-        #     expr=(col("a").list.contains("a")),
-        #     df=pd.DataFrame(
-        #         {"a": [["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"]]}
-        #     ),
-        #     schema={"a": List[str]},
-        #     display="CONTAINS(col('a'), \"a\")",
-        #     refs={"a"},
-        #
-        #     eval_result=[True, True, True],
-        #     expected_dtype=bool,
-        #     proto_json=None,
-        # ),
-        # TODO(Aditya): Add support for struct in list
-        # ExprTestCase(
-        #     expr=(col("a").list.contains(A(1, 2, "a"))),
-        #     df=pd.DataFrame({"a": [[A(1, 2, "a"), A(2, 3, "b")], [A(4, 5, "c"), A(1, 2, "a")]]}),
+        #     #expr=(col("a").list.contains(make_struct({"x": 1, "y": 2, "z": "a"}, A))),
+        #     expr=(col("a").list.len()),
+        #     df=pd.DataFrame({"a": [[A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]]}),
         #     schema={"a": List[A]},
-        #     display="CONTAINS(col('a'), A(1, 2, 'a'))",
+        #     display="LEN(col('a'))",
+        #     #display="""CONTAINS(col('a'), STRUCT(x=1, y=2, z="a"))""",
         #     refs={"a"},
-        #
-        #     eval_result=[True, True],
-        #     expected_dtype=bool,
+        #     eval_result=[True, False, False],
+        #     expected_dtype=int,
+        #     #expected_dtype=bool,
         #     proto_json=None,
-        #  )
+        #  ),
         # List length
         ExprTestCase(
             expr=(col("a").list.len()),
@@ -753,15 +764,15 @@ def test_struct():
             proto_json=None,
         ),
         ExprTestCase(
-            expr=(col("a").struct.get("x")+col("a").struct.get("y")),
+            expr=(col("a").struct.get("x") + col("a").struct.get("y")),
             df=pd.DataFrame({"a": [A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]}),
             schema={"a": A},
             display="(col('a').x + col('a').y)",
             refs={"a"},
             eval_result=[3, 5, 9],
             expected_dtype=int,
-            proto_json=None,   
-        )
+            proto_json=None,
+        ),
     ]
 
     for case in cases:
@@ -829,7 +840,14 @@ def test_datetime():
         ),
         # Since a datetime, unit is days
         ExprTestCase(
-            expr=(col("a").dt.since(lit("2021-01-01 00:01:00+0000").str.strptime("%Y-%m-%d %H:%M:%S%z"), unit="day")),
+            expr=(
+                col("a").dt.since(
+                    lit("2021-01-01 00:01:00+0000").str.strptime(
+                        "%Y-%m-%d %H:%M:%S%z"
+                    ),
+                    unit="day",
+                )
+            ),
             df=pd.DataFrame(
                 {
                     "a": [
@@ -848,7 +866,14 @@ def test_datetime():
         ),
         # Since a datetime, unit is years
         ExprTestCase(
-            expr=(col("a").dt.since(lit("2021-01-01 00:01:00+0000").str.strptime("%Y-%m-%d %H:%M:%S%z"), TimeUnit.YEAR)),
+            expr=(
+                col("a").dt.since(
+                    lit("2021-01-01 00:01:00+0000").str.strptime(
+                        "%Y-%m-%d %H:%M:%S%z"
+                    ),
+                    TimeUnit.YEAR,
+                )
+            ),
             df=pd.DataFrame(
                 {
                     "a": [
@@ -946,10 +971,11 @@ def test_datetime():
             proto_json=None,
         ),
     ]
-    
+
     for case in cases:
         check_test_case(case)
-       
+
+
 def random_datetime(start_year=1970, end_year=2024):
     year = random.randint(start_year, end_year)
     month = random.randint(1, 12)
@@ -957,44 +983,221 @@ def random_datetime(start_year=1970, end_year=2024):
     hour = random.randint(0, 23)
     minute = random.randint(0, 59)
     second = random.randint(0, 59)
-    
-    dt = datetime(year, month, day, hour, minute, second) 
-    return dt.strftime('%Y-%m-%d %H:%M:%S')
 
-        
+    dt = datetime(year, month, day, hour, minute, second)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def test_parse_str_to_and_from_datetime():
     df = pd.DataFrame({"a": [random_datetime() for _ in range(100)]})
     schema = {"a": str}
-    expr = col("a").str.strptime("%Y-%m-%d %H:%M:%S").dt.strftime("%Y-%m-%d %H:%M:%S")
+    expr = (
+        col("a")
+        .str.strptime("%Y-%m-%d %H:%M:%S")
+        .dt.strftime("%Y-%m-%d %H:%M:%S")
+    )
     ret = expr.eval(df, schema)
     assert ret.tolist() == df["a"].tolist()
-    
-    
+
+
 def test_make_struct():
     cases = [
         # Make a struct
         ExprTestCase(
-            expr=(make_struct({"x": col("a"), "y": col("a") + col("b"), "z": "constant"}, A)),
+            expr=(
+                make_struct(
+                    {"x": col("a"), "y": col("a") + col("b"), "z": "constant"},
+                    A,
+                )
+            ),
             df=pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}),
             schema={"a": int, "b": int},
             display="""STRUCT(x=col('a'), y=(col('a') + col('b')), z="constant")""",
             refs={"a", "b"},
-            eval_result=[A(1, 5, "constant"), A(2, 7, "constant"), A(3, 9, "constant")],
+            eval_result=[
+                A(1, 5, "constant"),
+                A(2, 7, "constant"),
+                A(3, 9, "constant"),
+            ],
             expected_dtype=A,
             proto_json=None,
         ),
         # Make a nested struct
         ExprTestCase(
-            expr=(make_struct({"a": make_struct({"x": col("a"), "y": col("b"), "z": col("c")}, A), "b": make_struct({"p": col("d"), "q": col("e")}, B), "c": col("f")}, Nested)),
-            df=pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": ["str_1", "str_2", "str_3"], "d": [10, 11, 12], "e": ["a", "b", "c"], "f": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}),
-            schema={"a": int, "b": int, "c": str, "d": int, "e": str, "f": List[int]},
+            expr=(
+                make_struct(
+                    {
+                        "a": make_struct(
+                            {"x": col("a"), "y": col("b"), "z": col("c")}, A
+                        ),
+                        "b": make_struct({"p": col("d"), "q": col("e")}, B),
+                        "c": col("f"),
+                    },
+                    Nested,
+                )
+            ),
+            df=pd.DataFrame(
+                {
+                    "a": [1, 2, 3],
+                    "b": [4, 5, 6],
+                    "c": ["str_1", "str_2", "str_3"],
+                    "d": [10, 11, 12],
+                    "e": ["a", "b", "c"],
+                    "f": [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+                }
+            ),
+            schema={
+                "a": int,
+                "b": int,
+                "c": str,
+                "d": int,
+                "e": str,
+                "f": List[int],
+            },
             display="""STRUCT(a=STRUCT(x=col('a'), y=col('b'), z=col('c')), b=STRUCT(p=col('d'), q=col('e')), c=col('f'))""",
             refs={"a", "b", "c", "d", "e", "f"},
-            eval_result=[Nested(A(1, 4, "str_1"), B(10, "a"), [1, 2, 3]), Nested(A(2, 5, "str_2"), B(11, "b"), [4, 5, 6]), Nested(A(3, 6, "str_3"), B(12, "c"), [7, 8, 9])],
+            eval_result=[
+                Nested(A(1, 4, "str_1"), B(10, "a"), [1, 2, 3]),
+                Nested(A(2, 5, "str_2"), B(11, "b"), [4, 5, 6]),
+                Nested(A(3, 6, "str_3"), B(12, "c"), [7, 8, 9]),
+            ],
             expected_dtype=Nested,
             proto_json=None,
         ),
     ]
-    
+
+    for case in cases:
+        check_test_case(case)
+
+
+def test_from_epoch():
+    cases = [
+        # From epoch
+        ExprTestCase(
+            expr=(from_epoch(col("a"), unit="second")),
+            df=pd.DataFrame({"a": [1725321570, 1725321570]}),
+            schema={"a": int},
+            display="""FROM_EPOCH(col('a'), unit=TimeUnit.SECOND)""",
+            refs={"a"},
+            eval_result=[
+                pd.Timestamp("2024-09-02 23:59:30+0000", tz="UTC"),
+                pd.Timestamp("2024-09-02 23:59:30+0000", tz="UTC"),
+            ],
+            expected_dtype=datetime,
+            proto_json=None,
+        ),
+        # From epoch years
+        ExprTestCase(
+            expr=(from_epoch(col("a") * col("b"), unit="millisecond")),
+            df=pd.DataFrame({"a": [1725321570, 1725321570], "b": [1000, 1000]}),
+            schema={"a": int, "b": int},
+            display="""FROM_EPOCH((col('a') * col('b')), unit=TimeUnit.MILLISECOND)""",
+            refs=set(["a", "b"]),
+            eval_result=[
+                pd.Timestamp("2024-09-02 23:59:30+0000", tz="UTC"),
+                pd.Timestamp("2024-09-02 23:59:30+0000", tz="UTC"),
+            ],
+            expected_dtype=datetime,
+            proto_json=None,
+        ),
+    ]
+
+    for case in cases:
+        check_test_case(case)
+
+
+def test_fillnull():
+    cases = [
+        ExprTestCase(
+            expr=(col("a").fillnull(0)),
+            df=pd.DataFrame({"a": [1, 2, None, 4]}),
+            schema={"a": Optional[int]},
+            display="FILL_NULL(col('a'), 0)",
+            refs={"a"},
+            eval_result=[1, 2, 0, 4],
+            expected_dtype=int,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=(col("a").fillnull("missing")),
+            df=pd.DataFrame({"a": ["a", "b", None, "d"]}),
+            schema={"a": Optional[str]},
+            display="FILL_NULL(col('a'), \"missing\")",
+            refs={"a"},
+            eval_result=["a", "b", "missing", "d"],
+            expected_dtype=str,
+            proto_json=None,
+        ),
+        # Fillnull for datetime
+        ExprTestCase(
+            expr=(
+                col("a")
+                .str.strptime("%Y-%m-%d")
+                .fillnull((lit("2021-01-01").str.strptime("%Y-%m-%d", "UTC")))
+            ),
+            df=pd.DataFrame({"a": ["2021-01-01", None, "2021-01-03"]}),
+            schema={"a": Optional[str]},
+            display="""FILL_NULL(STRPTIME(col('a'), %Y-%m-%d), STRPTIME("2021-01-01", %Y-%m-%d, UTC))""",
+            refs={"a"},
+            eval_result=[
+                pd.Timestamp("2021-01-01 00:00:00+0000", tz="UTC"),
+                pd.Timestamp("2021-01-01 00:00:00+0000", tz="UTC"),
+                pd.Timestamp("2021-01-03 00:00:00+0000", tz="UTC"),
+            ],
+            expected_dtype=datetime,
+            proto_json=None,
+        ),
+    ]
+    for case in cases:
+        check_test_case(case)
+
+
+def test_isnull():
+    cases = [
+        ExprTestCase(
+            expr=(col("a").isnull()),
+            df=pd.DataFrame({"a": [1, 2, None, 4]}),
+            schema={"a": Optional[int]},
+            display="IS_NULL(col('a'))",
+            refs={"a"},
+            eval_result=[False, False, True, False],
+            expected_dtype=bool,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=(col("a").isnull()),
+            df=pd.DataFrame({"a": ["a", "b", None, "d"]}),
+            schema={"a": Optional[str]},
+            display="IS_NULL(col('a'))",
+            refs={"a"},
+            eval_result=[False, False, True, False],
+            expected_dtype=bool,
+            proto_json=None,
+        ),
+        # Each type is a struct
+        # TODO(Aditya): Fix this test case
+        # ExprTestCase(
+        #     expr=(col("a").isnull()),
+        #     df=pd.DataFrame({"a": [A(1, 2, "a"), A(2, 3, "b"), pd.NA]}),
+        #     schema={"a": Optional[A]},
+        #     display="IS_NULL(col('a'))",
+        #     refs={"a"},
+        #     eval_result=[False, False, True],
+        #     expected_dtype=bool,
+        #     proto_json=None,
+        # ),
+        # Each type is a list
+        ExprTestCase(
+            expr=(col("a").isnull()),
+            df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], None]}),
+            schema={"a": Optional[List[int]]},
+            display="IS_NULL(col('a'))",
+            refs={"a"},
+            eval_result=[False, False, True],
+            expected_dtype=bool,
+            proto_json=None,
+        ),
+    ]
+
     for case in cases:
         check_test_case(case)
