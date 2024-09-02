@@ -166,9 +166,9 @@ class MockClient(Client):
             1. If version same and old == new then eligible.
             2. new != old then version should be higher.
             """
-            if dataset_new.version > dataset_old.version:
+            if dataset_new._version > dataset_old._version:
                 return True
-            elif dataset_new.version < dataset_old.version:
+            elif dataset_new._version < dataset_old._version:
                 return False
             else:
                 return dataset_old.signature() == dataset_new.signature()

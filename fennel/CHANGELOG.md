@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.15] - 2024-09-01
+- Allow version to be used as field in dataset
+
 ## [1.5.14] - 2024-08-29
 - Add support for S3 batch sink
 

@@ -497,7 +497,7 @@ def sinks_from_ds(
             )
 
         return [
-            _conn_to_sink_proto(sink, ds._name, ds.version)
+            _conn_to_sink_proto(sink, ds._name, ds._version)
             for sink in filtered_sinks
         ]
 
@@ -830,7 +830,7 @@ def _webhook_to_source_proto(
             ),
             disorder=to_duration_proto(connector.disorder),
             dataset=dataset._name,
-            ds_version=dataset.version,
+            ds_version=dataset._version,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
             bounded=connector.bounded,
@@ -871,7 +871,7 @@ def _kafka_conn_to_source_proto(
         ),
         disorder=to_duration_proto(connector.disorder),
         dataset=dataset._name,
-        ds_version=dataset.version,
+        ds_version=dataset._version,
         cdc=to_cdc_proto(connector.cdc),
         pre_proc=_pre_proc_to_proto(connector.pre_proc),
         starting_from=_to_timestamp_proto(connector.since),
@@ -968,7 +968,7 @@ def _s3_conn_to_source_proto(
     source = connector_proto.Source(
         table=ext_table,
         dataset=dataset._name,
-        ds_version=dataset.version,
+        ds_version=dataset._version,
         every=to_duration_proto(connector.every),
         disorder=to_duration_proto(connector.disorder),
         starting_from=_to_timestamp_proto(connector.since),
@@ -1163,7 +1163,7 @@ def _bigquery_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset._name,
-            ds_version=dataset.version,
+            ds_version=dataset._version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
@@ -1237,7 +1237,7 @@ def _redshift_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset._name,
-            ds_version=dataset.version,
+            ds_version=dataset._version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
@@ -1333,7 +1333,7 @@ def _mongo_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset._name,
-            ds_version=dataset.version,
+            ds_version=dataset._version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
@@ -1409,7 +1409,7 @@ def _pubsub_conn_to_source_proto(
             ),
             disorder=to_duration_proto(connector.disorder),
             dataset=dataset._name,
-            ds_version=dataset.version,
+            ds_version=dataset._version,
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(connector.pre_proc),
             bounded=connector.bounded,
@@ -1448,7 +1448,7 @@ def _snowflake_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset._name,
-            ds_version=dataset.version,
+            ds_version=dataset._version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
@@ -1530,7 +1530,7 @@ def _mysql_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset._name,
-            ds_version=dataset.version,
+            ds_version=dataset._version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
@@ -1621,7 +1621,7 @@ def _pg_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset._name,
-            ds_version=dataset.version,
+            ds_version=dataset._version,
             cursor=connector.cursor,
             every=to_duration_proto(connector.every),
             disorder=to_duration_proto(connector.disorder),
@@ -1711,7 +1711,7 @@ def _kinesis_conn_to_source_proto(
         connector_proto.Source(
             table=ext_table,
             dataset=dataset._name,
-            ds_version=dataset.version,
+            ds_version=dataset._version,
             disorder=to_duration_proto(connector.disorder),
             cdc=to_cdc_proto(connector.cdc),
             starting_from=_to_timestamp_proto(connector.since),

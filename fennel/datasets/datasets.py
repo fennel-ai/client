@@ -1963,10 +1963,6 @@ class Dataset(_Node[T]):
     def fields(self):
         return self._fields
 
-    @property
-    def version(self):
-        return self._version
-
 
 # ---------------------------------------------------------------------
 # Index
@@ -2114,7 +2110,7 @@ def indices_from_ds(
 
     if index_obj.online:
         online_index = index_proto.OnlineIndex(
-            ds_version=obj.version,
+            ds_version=obj._version,
             ds_name=obj._name,
             index_type=index_type,
             duration=index_proto.IndexDuration(forever="forever"),
@@ -2126,7 +2122,7 @@ def indices_from_ds(
         offline_index = None
     elif index_obj.offline == IndexDuration.forever:
         offline_index = index_proto.OfflineIndex(
-            ds_version=obj.version,
+            ds_version=obj._version,
             ds_name=obj._name,
             index_type=index_type,
             duration=index_proto.IndexDuration(forever="forever"),
