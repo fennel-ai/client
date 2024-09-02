@@ -78,7 +78,6 @@ class Expr(object):
     def fillnull(self, value: Any):
         return FillNull(self, value)
 
-    
     # We also add all the math functions
 
     def abs(self) -> _Number:
@@ -613,89 +612,101 @@ class TimeUnit(Enum):
     SECOND = "second"
     MILLISECOND = "millisecond"
     MICROSECOND = "microsecond"
-    
+
     @staticmethod
     def from_string(time_unit_str: str | TimeUnit) -> TimeUnit:
         if isinstance(time_unit_str, TimeUnit):
             return time_unit_str
-        
+
         for unit in TimeUnit:
             if unit.value == time_unit_str.lower():
                 return unit
         raise ValueError(f"Unknown time unit: {time_unit_str}")
-   
+
 
 @dataclass
 class DateTimeParts(DateTimeOp):
     part: TimeUnit
 
+
 @dataclass
 class DateTimeSince(DateTimeOp):
     other: Expr
     unit: TimeUnit
-    
+
+
 @dataclass
 class DateTimeSinceEpoch(DateTimeOp):
     unit: TimeUnit
 
+
 @dataclass
 class DateTimeStrftime(DateTimeOp):
     format: str
+
+
+@dataclass
+class DateTimeFromEpoch(Expr):
+    duration: Expr
+    unit: TimeUnit
+
 
 class _DateTime(Expr):
     def __init__(self, expr: Expr, op: DateTimeOp):
         self.op = op
         self.operand = expr
         super(_DateTime, self).__init__()
-        
+
     def parts(self, part: TimeUnit) -> _Number:
         part = TimeUnit.from_string(part)
         return _Number(_DateTime(self, DateTimeParts(part)), MathNoop())
-    
+
     def since(self, other: Expr, unit: TimeUnit) -> _Number:
         unit = TimeUnit.from_string(unit)
         other_expr = make_expr(other)
-        return _Number(_DateTime(self, DateTimeSince(other_expr, unit)), MathNoop())
-    
+        return _Number(
+            _DateTime(self, DateTimeSince(other_expr, unit)), MathNoop()
+        )
+
     def since_epoch(self, unit: TimeUnit) -> _Number:
         unit = TimeUnit.from_string(unit)
         return _Number(_DateTime(self, DateTimeSinceEpoch(unit)), MathNoop())
-    
+
     def strftime(self, format: str) -> _String:
         return _String(_DateTime(self, DateTimeStrftime(format)), StringNoop())
-    
+
     @property
     def year(self) -> _Number:
         return self.parts(TimeUnit.YEAR)
-    
+
     @property
     def month(self) -> _Number:
         return self.parts(TimeUnit.MONTH)
-    
+
     @property
     def week(self) -> _Number:
         return self.parts(TimeUnit.WEEK)
-    
+
     @property
     def day(self) -> _Number:
         return self.parts(TimeUnit.DAY)
-    
+
     @property
-    def hour(self) -> _Number:  
+    def hour(self) -> _Number:
         return self.parts(TimeUnit.HOUR)
-    
+
     @property
     def minute(self) -> _Number:
         return self.parts(TimeUnit.MINUTE)
-    
+
     @property
     def second(self) -> _Number:
         return self.parts(TimeUnit.SECOND)
-    
+
     @property
     def millisecond(self) -> _Number:
         return self.parts(TimeUnit.MILLISECOND)
-    
+
     @property
     def microsecond(self) -> _Number:
         return self.parts(TimeUnit.MICROSECOND)
@@ -898,9 +909,8 @@ class IsNull(Expr):
 class FillNull(Expr):
     def __init__(self, expr: Expr, value: Any):
         self.expr = expr
-        self.fill = lit(value)
         super(FillNull, self).__init__()
-        self.value = make_expr(value)
+        self.fill = make_expr(value)
 
     def __str__(self) -> str:
         return f"fillnull({self.expr}, {self.value})"
@@ -911,6 +921,7 @@ class MakeStruct(Expr):
         self.fields = fields
         self.dtype = type
         super(MakeStruct, self).__init__()
+
 
 def make_expr(v: Any) -> Any:
     """Tries to convert v to Expr. Throws an exception if conversion is not possible."""
@@ -960,6 +971,13 @@ def lit(v: Any, type: Optional[Type] = None) -> Expr:
 def when(expr: Expr) -> When:
     return When(expr)
 
+
 def make_struct(fields: Dict[str, Expr], type: Type) -> Expr:
     fields = {k: make_expr(v) for k, v in fields.items()}
     return MakeStruct(fields, type)
+
+
+def from_epoch(duration: Expr, unit: str | TimeUnit) -> _DateTime:
+    duration = make_expr(duration)
+    unit = TimeUnit.from_string(unit)
+    return _DateTime(DateTimeFromEpoch(duration, unit), DateTimeNoop())

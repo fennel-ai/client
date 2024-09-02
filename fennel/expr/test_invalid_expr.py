@@ -45,7 +45,7 @@ def test_invalid_datetime():
         expr.eval(df, {"a": str})
     assert (
         str(e.value)
-        == "Failed to evaluate expression: failed to eval expression: col(a).str.parse_datetime(\"%Y-%m-%d\", timezone=\"\"America/New_York\"\"), error: invalid operation: conversion from `str` to `datetime[μs, America/New_York]` failed in column 'a' for 3 out of 3 values: [\"1\", \"2\", \"3\"]"
+        == 'Failed to evaluate expression: failed to eval expression: col(a).str.parse_datetime("%Y-%m-%d", timezone=""America/New_York""), error: invalid operation: conversion from `str` to `datetime[μs, America/New_York]` failed in column \'a\' for 3 out of 3 values: ["1", "2", "3"]'
     )
 
     with pytest.raises(ValueError) as e:
@@ -57,6 +57,7 @@ def test_invalid_datetime():
 
 
 # Missing then for a when
+
 
 def test_missing_then():
     expr = when(col("a") == 1)
@@ -74,15 +75,18 @@ def test_missing_then():
     assert str(e.value) == "'When' object has no attribute 'otherwise'"
 
 
-
 @struct
 class A:
     x: int
     y: int
     z: str
 
+
 def test_struct():
     with pytest.raises(InvalidExprException) as e:
         expr = col("a").struct.get(col("b"))
-   
-    assert str(e.value) == "invalid field access for struct, expected string but got col('b')"
+
+    assert (
+        str(e.value)
+        == "invalid field access for struct, expected string but got col('b')"
+    )

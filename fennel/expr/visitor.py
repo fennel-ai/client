@@ -1,9 +1,11 @@
 from typing import List
 
 from fennel.expr.expr import (
+    DateTimeFromEpoch,
     DateTimeParts,
     DateTimeSince,
     DateTimeSinceEpoch,
+    DateTimeStrftime,
     ListContains,
     ListGet,
     ListHasNull,
@@ -99,10 +101,12 @@ class Visitor(object):
 
         elif isinstance(obj, _DateTime):
             ret = self.visitDateTime(obj)
-            
+
         elif isinstance(obj, MakeStruct):
             ret = self.visitMakeStruct(obj)
 
+        elif isinstance(obj, DateTimeFromEpoch):
+            ret = self.visitDateTimeFromEpoch(obj)
         else:
             raise InvalidExprException("invalid expression type: %s" % obj)
 
@@ -158,6 +162,10 @@ class Visitor(object):
 
     def visitMakeStruct(self, obj):
         raise NotImplementedError
+
+    def visitDateTimeFromEpoch(self, obj):
+        raise NotImplementedError
+
 
 class ExprPrinter(Visitor):
 
@@ -242,9 +250,12 @@ class ExprPrinter(Visitor):
             return f"SINCE({self.visit(obj.operand)}, {self.visit(obj.op.other)}, unit={obj.op.unit})"
         elif isinstance(obj.op, DateTimeSinceEpoch):
             return f"SINCE_EPOCH({self.visit(obj.operand)}, unit={obj.op.unit})"
-        
+        elif isinstance(obj.op, DateTimeStrftime):
+            return f"STRFTIME({self.visit(obj.operand)}, {obj.op.format})"
         else:
-            raise InvalidExprException("invalid datetime operation: %s" % obj.op)
+            raise InvalidExprException(
+                "invalid datetime operation: %s" % obj.op
+            )
 
     def visitString(self, obj):
         if isinstance(obj.op, StringNoop):
@@ -307,7 +318,11 @@ class ExprPrinter(Visitor):
 
     def visitMakeStruct(self, obj):
         return f"STRUCT({', '.join([f'{k}={self.visit(v)}' for k, v in obj.fields.items()])})"
-    
+
+    def visitDateTimeFromEpoch(self, obj):
+        return f"FROM_EPOCH({self.visit(obj.duration)}, unit={obj.unit})"
+
+
 class FetchReferences(Visitor):
 
     def __init__(self):
@@ -389,15 +404,18 @@ class FetchReferences(Visitor):
 
     def visitLiteral(self, obj):
         pass
-        
+
     def visitBool(self, obj):
         self.visit(obj.expr)
 
     def visitDateTime(self, obj):
         self.visit(obj.operand)
-        if isinstance(obj.op, DateTimeSince): 
-            self.visit(obj.op.other) 
-    
+        if isinstance(obj.op, DateTimeSince):
+            self.visit(obj.op.other)
+
     def visitMakeStruct(self, obj):
         for k, v in obj.fields.items():
             self.visit(v)
+
+    def visitDateTimeFromEpoch(self, obj):
+        self.visit(obj.duration)
