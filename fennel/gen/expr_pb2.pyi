@@ -27,13 +27,17 @@ class _UnaryOpEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTy
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     NEG: _UnaryOp.ValueType  # 0
     NOT: _UnaryOp.ValueType  # 1
-    LEN: _UnaryOp.ValueType  # 2
+    """LEN = 2; [DEPRECATED]
+    NEXT ID = 3;
+    """
 
 class UnaryOp(_UnaryOp, metaclass=_UnaryOpEnumTypeWrapper): ...
 
 NEG: UnaryOp.ValueType  # 0
 NOT: UnaryOp.ValueType  # 1
-LEN: UnaryOp.ValueType  # 2
+"""LEN = 2; [DEPRECATED]
+NEXT ID = 3;
+"""
 global___UnaryOp = UnaryOp
 
 class _BinOp:
@@ -75,6 +79,37 @@ AND: BinOp.ValueType  # 12
 OR: BinOp.ValueType  # 13
 global___BinOp = BinOp
 
+class _TimeUnit:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _TimeUnitEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_TimeUnit.ValueType], builtins.type):
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    UNKNOWN: _TimeUnit.ValueType  # 0
+    SECOND: _TimeUnit.ValueType  # 1
+    MINUTE: _TimeUnit.ValueType  # 2
+    HOUR: _TimeUnit.ValueType  # 3
+    DAY: _TimeUnit.ValueType  # 4
+    WEEK: _TimeUnit.ValueType  # 5
+    MONTH: _TimeUnit.ValueType  # 6
+    YEAR: _TimeUnit.ValueType  # 7
+    MICROSECOND: _TimeUnit.ValueType  # 8
+    MILLISECOND: _TimeUnit.ValueType  # 9
+
+class TimeUnit(_TimeUnit, metaclass=_TimeUnitEnumTypeWrapper): ...
+
+UNKNOWN: TimeUnit.ValueType  # 0
+SECOND: TimeUnit.ValueType  # 1
+MINUTE: TimeUnit.ValueType  # 2
+HOUR: TimeUnit.ValueType  # 3
+DAY: TimeUnit.ValueType  # 4
+WEEK: TimeUnit.ValueType  # 5
+MONTH: TimeUnit.ValueType  # 6
+YEAR: TimeUnit.ValueType  # 7
+MICROSECOND: TimeUnit.ValueType  # 8
+MILLISECOND: TimeUnit.ValueType  # 9
+global___TimeUnit = TimeUnit
+
 @typing_extensions.final
 class Expr(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -91,6 +126,10 @@ class Expr(google.protobuf.message.Message):
     STRUCT_FN_FIELD_NUMBER: builtins.int
     DICT_FN_FIELD_NUMBER: builtins.int
     STRING_FN_FIELD_NUMBER: builtins.int
+    DATETIME_FN_FIELD_NUMBER: builtins.int
+    DATETIME_LITERAL_FIELD_NUMBER: builtins.int
+    MAKE_STRUCT_FIELD_NUMBER: builtins.int
+    FROM_EPOCH_FIELD_NUMBER: builtins.int
     @property
     def ref(self) -> global___Ref: ...
     @property
@@ -116,6 +155,14 @@ class Expr(google.protobuf.message.Message):
     def dict_fn(self) -> global___DictFn: ...
     @property
     def string_fn(self) -> global___StringFn: ...
+    @property
+    def datetime_fn(self) -> global___DateTimeFn: ...
+    @property
+    def datetime_literal(self) -> global___DatetimeLiteral: ...
+    @property
+    def make_struct(self) -> global___MakeStruct: ...
+    @property
+    def from_epoch(self) -> global___FromEpoch: ...
     def __init__(
         self,
         *,
@@ -131,12 +178,113 @@ class Expr(google.protobuf.message.Message):
         struct_fn: global___StructFn | None = ...,
         dict_fn: global___DictFn | None = ...,
         string_fn: global___StringFn | None = ...,
+        datetime_fn: global___DateTimeFn | None = ...,
+        datetime_literal: global___DatetimeLiteral | None = ...,
+        make_struct: global___MakeStruct | None = ...,
+        from_epoch: global___FromEpoch | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "math_fn", b"math_fn", "node", b"node", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "math_fn", b"math_fn", "node", b"node", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["ref", "json_literal", "unary", "case", "binary", "isnull", "fillnull", "list_fn", "math_fn", "struct_fn", "dict_fn", "string_fn"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["ref", "json_literal", "unary", "case", "binary", "isnull", "fillnull", "list_fn", "math_fn", "struct_fn", "dict_fn", "string_fn", "datetime_fn", "datetime_literal", "make_struct", "from_epoch"] | None: ...
 
 global___Expr = Expr
+
+@typing_extensions.final
+class FromEpoch(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DURATION_FIELD_NUMBER: builtins.int
+    UNIT_FIELD_NUMBER: builtins.int
+    @property
+    def duration(self) -> global___Expr: ...
+    unit: global___TimeUnit.ValueType
+    def __init__(
+        self,
+        *,
+        duration: global___Expr | None = ...,
+        unit: global___TimeUnit.ValueType = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["duration", b"duration"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["duration", b"duration", "unit", b"unit"]) -> None: ...
+
+global___FromEpoch = FromEpoch
+
+@typing_extensions.final
+class DatetimeLiteral(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    YEAR_FIELD_NUMBER: builtins.int
+    MONTH_FIELD_NUMBER: builtins.int
+    DAY_FIELD_NUMBER: builtins.int
+    HOUR_FIELD_NUMBER: builtins.int
+    MINUTE_FIELD_NUMBER: builtins.int
+    SECOND_FIELD_NUMBER: builtins.int
+    MICROSECOND_FIELD_NUMBER: builtins.int
+    TIMEZONE_FIELD_NUMBER: builtins.int
+    year: builtins.int
+    month: builtins.int
+    day: builtins.int
+    hour: builtins.int
+    minute: builtins.int
+    second: builtins.int
+    microsecond: builtins.int
+    @property
+    def timezone(self) -> global___Timezone: ...
+    def __init__(
+        self,
+        *,
+        year: builtins.int = ...,
+        month: builtins.int = ...,
+        day: builtins.int = ...,
+        hour: builtins.int = ...,
+        minute: builtins.int = ...,
+        second: builtins.int = ...,
+        microsecond: builtins.int = ...,
+        timezone: global___Timezone | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["timezone", b"timezone"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["day", b"day", "hour", b"hour", "microsecond", b"microsecond", "minute", b"minute", "month", b"month", "second", b"second", "timezone", b"timezone", "year", b"year"]) -> None: ...
+
+global___DatetimeLiteral = DatetimeLiteral
+
+@typing_extensions.final
+class MakeStruct(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    @typing_extensions.final
+    class FieldsEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> global___Expr: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: global___Expr | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
+    STRUCT_TYPE_FIELD_NUMBER: builtins.int
+    FIELDS_FIELD_NUMBER: builtins.int
+    @property
+    def struct_type(self) -> schema_pb2.StructType: ...
+    @property
+    def fields(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___Expr]: ...
+    def __init__(
+        self,
+        *,
+        struct_type: schema_pb2.StructType | None = ...,
+        fields: collections.abc.Mapping[builtins.str, global___Expr] | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["struct_type", b"struct_type"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields", "struct_type", b"struct_type"]) -> None: ...
+
+global___MakeStruct = MakeStruct
 
 @typing_extensions.final
 class JsonLiteral(google.protobuf.message.Message):
@@ -587,6 +735,8 @@ class StringOp(google.protobuf.message.Message):
     STARTSWITH_FIELD_NUMBER: builtins.int
     ENDSWITH_FIELD_NUMBER: builtins.int
     CONCAT_FIELD_NUMBER: builtins.int
+    STRPTIME_FIELD_NUMBER: builtins.int
+    JSON_DECODE_FIELD_NUMBER: builtins.int
     @property
     def len(self) -> global___Len: ...
     @property
@@ -601,6 +751,10 @@ class StringOp(google.protobuf.message.Message):
     def endswith(self) -> global___EndsWith: ...
     @property
     def concat(self) -> global___Concat: ...
+    @property
+    def strptime(self) -> global___Strptime: ...
+    @property
+    def json_decode(self) -> global___JsonDecode: ...
     def __init__(
         self,
         *,
@@ -611,12 +765,66 @@ class StringOp(google.protobuf.message.Message):
         startswith: global___StartsWith | None = ...,
         endswith: global___EndsWith | None = ...,
         concat: global___Concat | None = ...,
+        strptime: global___Strptime | None = ...,
+        json_decode: global___JsonDecode | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["concat", b"concat", "contains", b"contains", "endswith", b"endswith", "fn_type", b"fn_type", "len", b"len", "startswith", b"startswith", "tolower", b"tolower", "toupper", b"toupper"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["concat", b"concat", "contains", b"contains", "endswith", b"endswith", "fn_type", b"fn_type", "len", b"len", "startswith", b"startswith", "tolower", b"tolower", "toupper", b"toupper"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["len", "tolower", "toupper", "contains", "startswith", "endswith", "concat"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["concat", b"concat", "contains", b"contains", "endswith", b"endswith", "fn_type", b"fn_type", "json_decode", b"json_decode", "len", b"len", "startswith", b"startswith", "strptime", b"strptime", "tolower", b"tolower", "toupper", b"toupper"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["concat", b"concat", "contains", b"contains", "endswith", b"endswith", "fn_type", b"fn_type", "json_decode", b"json_decode", "len", b"len", "startswith", b"startswith", "strptime", b"strptime", "tolower", b"tolower", "toupper", b"toupper"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["len", "tolower", "toupper", "contains", "startswith", "endswith", "concat", "strptime", "json_decode"] | None: ...
 
 global___StringOp = StringOp
+
+@typing_extensions.final
+class Timezone(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    TIMEZONE_FIELD_NUMBER: builtins.int
+    timezone: builtins.str
+    def __init__(
+        self,
+        *,
+        timezone: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["timezone", b"timezone"]) -> None: ...
+
+global___Timezone = Timezone
+
+@typing_extensions.final
+class JsonDecode(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DTYPE_FIELD_NUMBER: builtins.int
+    @property
+    def dtype(self) -> schema_pb2.DataType: ...
+    def __init__(
+        self,
+        *,
+        dtype: schema_pb2.DataType | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype"]) -> None: ...
+
+global___JsonDecode = JsonDecode
+
+@typing_extensions.final
+class Strptime(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    FORMAT_FIELD_NUMBER: builtins.int
+    TIMEZONE_FIELD_NUMBER: builtins.int
+    format: builtins.str
+    @property
+    def timezone(self) -> global___Timezone: ...
+    def __init__(
+        self,
+        *,
+        format: builtins.str = ...,
+        timezone: global___Timezone | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["timezone", b"timezone"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["format", b"format", "timezone", b"timezone"]) -> None: ...
+
+global___Strptime = Strptime
 
 @typing_extensions.final
 class ToLower(google.protobuf.message.Message):
@@ -709,3 +917,119 @@ class StringFn(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["fn", b"fn", "string", b"string"]) -> None: ...
 
 global___StringFn = StringFn
+
+@typing_extensions.final
+class DateTimeFn(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DATETIME_FIELD_NUMBER: builtins.int
+    FN_FIELD_NUMBER: builtins.int
+    @property
+    def datetime(self) -> global___Expr: ...
+    @property
+    def fn(self) -> global___DateTimeOp: ...
+    def __init__(
+        self,
+        *,
+        datetime: global___Expr | None = ...,
+        fn: global___DateTimeOp | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["datetime", b"datetime", "fn", b"fn"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["datetime", b"datetime", "fn", b"fn"]) -> None: ...
+
+global___DateTimeFn = DateTimeFn
+
+@typing_extensions.final
+class DateTimeOp(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SINCE_FIELD_NUMBER: builtins.int
+    SINCE_EPOCH_FIELD_NUMBER: builtins.int
+    STRFTIME_FIELD_NUMBER: builtins.int
+    PART_FIELD_NUMBER: builtins.int
+    @property
+    def since(self) -> global___Since: ...
+    @property
+    def since_epoch(self) -> global___SinceEpoch: ...
+    @property
+    def strftime(self) -> global___Strftime: ...
+    @property
+    def part(self) -> global___Part: ...
+    def __init__(
+        self,
+        *,
+        since: global___Since | None = ...,
+        since_epoch: global___SinceEpoch | None = ...,
+        strftime: global___Strftime | None = ...,
+        part: global___Part | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["fn_type", b"fn_type", "part", b"part", "since", b"since", "since_epoch", b"since_epoch", "strftime", b"strftime"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["fn_type", b"fn_type", "part", b"part", "since", b"since", "since_epoch", b"since_epoch", "strftime", b"strftime"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["since", "since_epoch", "strftime", "part"] | None: ...
+
+global___DateTimeOp = DateTimeOp
+
+@typing_extensions.final
+class Since(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    OTHER_FIELD_NUMBER: builtins.int
+    UNIT_FIELD_NUMBER: builtins.int
+    @property
+    def other(self) -> global___Expr: ...
+    unit: global___TimeUnit.ValueType
+    def __init__(
+        self,
+        *,
+        other: global___Expr | None = ...,
+        unit: global___TimeUnit.ValueType = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["other", b"other"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["other", b"other", "unit", b"unit"]) -> None: ...
+
+global___Since = Since
+
+@typing_extensions.final
+class SinceEpoch(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    UNIT_FIELD_NUMBER: builtins.int
+    unit: global___TimeUnit.ValueType
+    def __init__(
+        self,
+        *,
+        unit: global___TimeUnit.ValueType = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["unit", b"unit"]) -> None: ...
+
+global___SinceEpoch = SinceEpoch
+
+@typing_extensions.final
+class Strftime(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    FORMAT_FIELD_NUMBER: builtins.int
+    format: builtins.str
+    def __init__(
+        self,
+        *,
+        format: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["format", b"format"]) -> None: ...
+
+global___Strftime = Strftime
+
+@typing_extensions.final
+class Part(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    UNIT_FIELD_NUMBER: builtins.int
+    unit: global___TimeUnit.ValueType
+    def __init__(
+        self,
+        *,
+        unit: global___TimeUnit.ValueType = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["unit", b"unit"]) -> None: ...
+
+global___Part = Part
