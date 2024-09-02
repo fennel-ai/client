@@ -41,6 +41,7 @@ class UserInfoDataset:
     age: int = field().meta(description="Users age lol")  # type: ignore
     account_creation_date: datetime
     country: Optional[str]
+    version: int
     timestamp: datetime = field(timestamp=True)
 
 
@@ -58,7 +59,6 @@ def test_simple_dataset():
             {
                 "name": "UserInfoDataset",
                 "metadata": {"owner": "ml-eng@fennel.ai"},
-                "version": 1,
                 "dsschema": {
                     "keys": {
                         "fields": [
@@ -81,6 +81,7 @@ def test_simple_dataset():
                                     "optionalType": {"of": {"stringType": {}}}
                                 },
                             },
+                            {"name": "version", "dtype": {"intType": {}}},
                         ]
                     },
                     "timestamp": "timestamp",
@@ -88,8 +89,9 @@ def test_simple_dataset():
                 "history": "63072000s",
                 "retention": "63072000s",
                 "fieldMetadata": {
-                    "age": {"description": "Users age lol"},
+                    "version": {},
                     "name": {},
+                    "age": {"description": "Users age lol"},
                     "account_creation_date": {},
                     "country": {},
                     "user_id": {"owner": "xyz@fennel.ai"},
@@ -99,6 +101,7 @@ def test_simple_dataset():
                 },
                 "pycode": {},
                 "isSourceDataset": True,
+                "version": 1,
             }
         ],
         "sources": [
@@ -118,8 +121,8 @@ def test_simple_dataset():
                 },
                 "dataset": "UserInfoDataset",
                 "dsVersion": 1,
-                "cdc": "Upsert",
                 "disorder": "1209600s",
+                "cdc": "Upsert",
             }
         ],
         "extdbs": [
