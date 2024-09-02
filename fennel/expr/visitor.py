@@ -4,13 +4,13 @@ from fennel.expr.expr import (
     DateTimeParts,
     DateTimeSince,
     DateTimeSinceEpoch,
-    DateTimeStrftime,
     ListContains,
     ListGet,
     ListHasNull,
     ListLen,
     ListNoop,
     Literal,
+    MakeStruct,
     Ref,
     StructGet,
     StructNoop,
@@ -99,6 +99,9 @@ class Visitor(object):
 
         elif isinstance(obj, _DateTime):
             ret = self.visitDateTime(obj)
+            
+        elif isinstance(obj, MakeStruct):
+            ret = self.visitMakeStruct(obj)
 
         else:
             raise InvalidExprException("invalid expression type: %s" % obj)
@@ -153,6 +156,8 @@ class Visitor(object):
     def visitDateTime(self, obj):
         raise NotImplementedError
 
+    def visitMakeStruct(self, obj):
+        raise NotImplementedError
 
 class ExprPrinter(Visitor):
 
@@ -237,8 +242,7 @@ class ExprPrinter(Visitor):
             return f"SINCE({self.visit(obj.operand)}, {self.visit(obj.op.other)}, unit={obj.op.unit})"
         elif isinstance(obj.op, DateTimeSinceEpoch):
             return f"SINCE_EPOCH({self.visit(obj.operand)}, unit={obj.op.unit})"
-        elif isinstance(obj.op, DateTimeStrftime):
-            return f"STRFTIME({self.visit(obj.operand)}, {obj.op.format})"
+        
         else:
             raise InvalidExprException("invalid datetime operation: %s" % obj.op)
 
@@ -301,6 +305,9 @@ class ExprPrinter(Visitor):
         else:
             raise InvalidExprException("invalid struct operation: %s" % obj.op)
 
+    def visitMakeStruct(self, obj):
+        return f"STRUCT({', '.join([f'{k}={self.visit(v)}' for k, v in obj.fields.items()])})"
+    
 class FetchReferences(Visitor):
 
     def __init__(self):
@@ -391,3 +398,6 @@ class FetchReferences(Visitor):
         if isinstance(obj.op, DateTimeSince): 
             self.visit(obj.op.other) 
     
+    def visitMakeStruct(self, obj):
+        for k, v in obj.fields.items():
+            self.visit(v)

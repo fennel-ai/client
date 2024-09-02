@@ -387,7 +387,7 @@ def compare_values(received, expected, dtype):
                 r = getattr(act, field.name)
                 e = getattr(exp, field.name)
                 if not is_user_defined_class(field.type):
-                    assert r == e
+                    assert r == e, f"Expected {e}, got {r} for field {field.name} in struct {act}"
                 else:
                     compare_values([r], [e], field.type)
     else:
@@ -976,24 +976,24 @@ def test_make_struct():
         ExprTestCase(
             expr=(make_struct({"x": col("a"), "y": col("a") + col("b"), "z": "constant"}, A)),
             df=pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}),
-            schema={},
-            display="MAKE_STRUCT(x=1, y=2, z='a')",
-            refs=set(),
-            eval_result=[A(1, 2, "a")],
+            schema={"a": int, "b": int},
+            display="""STRUCT(x=col('a'), y=(col('a') + col('b')), z="constant")""",
+            refs={"a", "b"},
+            eval_result=[A(1, 5, "constant"), A(2, 7, "constant"), A(3, 9, "constant")],
             expected_dtype=A,
             proto_json=None,
         ),
-        # # Make a nested struct
-        # ExprTestCase(
-        #     expr=(make_struct(a=make_struct(x=1, y=2, z="a"), b=make_struct(p=1, q="b"), c=[1, 2, 3])),
-        #     df=pd.DataFrame({}),
-        #     schema={},
-        #     display="MAKE_STRUCT(a=MAKE_STRUCT(x=1, y=2, z='a'), b=MAKE_STRUCT(p=1, q='b'), c=[1, 2, 3])",
-        #     refs=set(),
-        #     eval_result=[Nested(A(1, 2, "a"), B(1, "b"), [1, 2, 3])],
-        #     expected_dtype=Nested,
-        #     proto_json=None,
-        # ),
+        # Make a nested struct
+        ExprTestCase(
+            expr=(make_struct({"a": make_struct({"x": col("a"), "y": col("b"), "z": col("c")}, A), "b": make_struct({"p": col("d"), "q": col("e")}, B), "c": col("f")}, Nested)),
+            df=pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": ["str_1", "str_2", "str_3"], "d": [10, 11, 12], "e": ["a", "b", "c"], "f": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}),
+            schema={"a": int, "b": int, "c": str, "d": int, "e": str, "f": List[int]},
+            display="""STRUCT(a=STRUCT(x=col('a'), y=col('b'), z=col('c')), b=STRUCT(p=col('d'), q=col('e')), c=col('f'))""",
+            refs={"a", "b", "c", "d", "e", "f"},
+            eval_result=[Nested(A(1, 4, "str_1"), B(10, "a"), [1, 2, 3]), Nested(A(2, 5, "str_2"), B(11, "b"), [4, 5, 6]), Nested(A(3, 6, "str_3"), B(12, "c"), [7, 8, 9])],
+            expected_dtype=Nested,
+            proto_json=None,
+        ),
     ]
     
     for case in cases:
