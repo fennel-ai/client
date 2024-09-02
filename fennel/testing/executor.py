@@ -657,17 +657,17 @@ class Executor(Visitor):
             inplace=True,
         )
 
-        if obj.right_fields is not None and len(obj.right_fields) > 0:
+        if obj.fields is not None and len(obj.fields) > 0:
             all_right_fields = [f.name for f in right_ret.fields]
-            for col_name in obj.right_fields:
+            for col_name in obj.fields:
                 if col_name in right_ret.key_fields:
                     raise Exception(
-                        f"right_fields member {col_name} cannot be one of right dataframe's "
+                        f"fields member {col_name} cannot be one of right dataframe's "
                         f"key fields {right_ret.key_fields}"
                     )
                 if col_name not in all_right_fields:
                     raise Exception(
-                        f"right_fields member {col_name} not present in right dataframe's "
+                        f"fields member {col_name} not present in right dataframe's "
                         f"fields {right_ret.fields}"
                     )
 
@@ -675,16 +675,16 @@ class Executor(Visitor):
             for field in right_ret.fields:
                 col_name = field.name
                 if col_name not in right_ret.key_fields and col_name != right_ret.timestamp_field \
-                    and col_name not in obj.right_fields:
+                    and col_name not in obj.fields:
                     cols_to_drop.append(col_name)
 
             merged_df.drop(columns=cols_to_drop, inplace=True)
 
-            # Add timestamp column if present in right_fields
-            if right_timestamp_field in obj.right_fields:
+            # Add timestamp column if present in fields
+            if right_timestamp_field in obj.fields:
                 if right_timestamp_field in merged_df.columns:
                     raise Exception(
-                        f"right_fields member {right_timestamp_field} already present in "
+                        f"fields member {right_timestamp_field} already present in "
                         f"merged dataframe"
                     )
                 merged_df[right_timestamp_field] = right_df[right_timestamp_field]

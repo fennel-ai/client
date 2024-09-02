@@ -123,7 +123,7 @@ class UserCategoryDatasetWithRightFields:
     @inputs(ViewData, PostInfoWithRightFields)
     def count_user_views(cls, view_data: Dataset, post_info: Dataset):
         post_info_enriched = view_data.join(
-            post_info, how="inner", on=["post_id"], right_fields=["title", "category"]
+            post_info, how="inner", on=["post_id"], fields=["title", "category"]
         )
         return post_info_enriched.groupby("user_id", "category").aggregate(
             [Count(window=Continuous("6y 8s"), into_field="num_views")]
@@ -313,7 +313,7 @@ def test_social_network(client):
 
 @pytest.mark.integration
 @mock
-def test_social_network_with_right_fields(client):
+def test_social_network_with_fields(client):
     client.commit(
         message="social network",
         datasets=[

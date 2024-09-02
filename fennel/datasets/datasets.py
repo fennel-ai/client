@@ -301,7 +301,7 @@ class _Node(Generic[T]):
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
         within: Tuple[Duration, Duration] = ("forever", "0s"),
-        right_fields: Optional[List[str]] = None,
+        fields: Optional[List[str]] = None,
     ) -> Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError(
@@ -310,7 +310,7 @@ class _Node(Generic[T]):
             )
         if not isinstance(other, _Node):
             raise TypeError("Cannot join with a non-dataset object")
-        return Join(self, other, within, how, on, left_on, right_on, right_fields)
+        return Join(self, other, within, how, on, left_on, right_on, fields)
 
     def rename(self, columns: Dict[str, str]) -> _Node:
         return Rename(self, columns)
@@ -936,7 +936,7 @@ class Join(_Node):
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
-        right_fields: Optional[List[str]] = None,
+        fields: Optional[List[str]] = None,
         # Currently not supported
         lsuffix: str = "",
         rsuffix: str = "",
@@ -965,7 +965,7 @@ class Join(_Node):
         self.right_on = right_on
         self.within = within
         self.how = how
-        self.right_fields = right_fields
+        self.fields = fields
         self.lsuffix = lsuffix
         self.rsuffix = rsuffix
         self.node.out_edges.append(self)
@@ -979,7 +979,7 @@ class Join(_Node):
                 self.left_on,
                 self.right_on,
                 self.how,
-                self.right_fields,
+                self.fields,
                 self.lsuffix,
                 self.rsuffix,
             )
@@ -991,7 +991,7 @@ class Join(_Node):
             self.right_on,
             self.within,
             self.how,
-            self.right_fields,
+            self.fields,
             self.lsuffix,
             self.rsuffix,
         )
@@ -1041,30 +1041,29 @@ class Join(_Node):
         if self.how == "left":
             right_value_schema = make_types_optional(right_value_schema)
 
-        # TODO(sat): Are the same checks here and in SchemaValidator redundant?
-        # If right_fields is set, check that it contains elements from right schema values and timestamp only
-        if self.right_fields is not None and len(self.right_fields) > 0:
+        # If fields is set, check that it contains elements from right schema values and timestamp only
+        if self.fields is not None and len(self.fields) > 0:
             allowed_col_names = [x for x in right_value_schema.keys()] + [right_ts]
-            for col_name in self.right_fields:
+            for col_name in self.fields:
                 if col_name not in allowed_col_names:
                     raise ValueError(
-                        f"Column `{col_name}` not found in schema {self.dataset.dsschema()} of right input "
+                        f"fields member `{col_name}` not present in allowed fields {allowed_col_names} of right input "
                         f"{self.dataset.dsschema().name}"
                     )
 
-        # Add right value columns to left schema. Check for column name collisions. Filter keys present in right_fields.
+        # Add right value columns to left schema. Check for column name collisions. Filter keys present in fields.
         joined_dsschema = copy.deepcopy(left_dsschema)
         for col, dtype in right_value_schema.items():
             if col in left_schema:
                 raise ValueError(
                     f"Column name collision. `{col}` already exists in schema of left input {left_dsschema.name}, while joining with {self.dataset.dsschema().name}"
                 )
-            if self.right_fields is not None and len(self.right_fields) > 0 and col not in self.right_fields:
+            if self.fields is not None and len(self.fields) > 0 and col not in self.fields:
                 continue
             joined_dsschema.append_value_column(col, dtype)
 
-        # Add timestamp column if present in right_fields
-        if self.right_fields is not None and right_ts in self.right_fields:
+        # Add timestamp column if present in fields
+        if self.fields is not None and right_ts in self.fields:
             joined_dsschema.append_value_column(right_ts, datetime.datetime)
 
         return joined_dsschema
@@ -2866,18 +2865,19 @@ class SchemaValidator(Visitor):
                 f'"how" in {output_schema_name} must be either "inner" or "left" for `{output_schema_name}`'
             )
 
-        if obj.right_fields is not None and len(obj.right_fields) > 0:
-            allowed_right_fields = [x for x in right_schema.values.keys()] + [right_schema.timestamp]
-            for field in obj.right_fields:
-                if field not in allowed_right_fields:
+        if obj.fields is not None and len(obj.fields) > 0:
+            allowed_fields = [x for x in right_schema.values.keys()] + [right_schema.timestamp]
+            for field in obj.fields:
+                if field not in allowed_fields:
                     raise ValueError(
-                        f"Field `{field}` specified in right_fields {obj.right_fields} doesn't exist in "
-                        f"allowed fields of right schema {right_schema} of {output_schema_name}."
+                        f"Field `{field}` specified in fields {obj.fields} "
+                        f"doesn't exist in allowed fields {allowed_fields} of "
+                        f"right schema of {output_schema_name}."
                     )
 
-            if right_schema.timestamp in obj.right_fields and right_schema.timestamp in left_schema.fields():
+            if right_schema.timestamp in obj.fields and right_schema.timestamp in left_schema.fields():
                 raise ValueError(
-                    f"Field `{right_schema.timestamp}` specified in right_fields {obj.right_fields} "
+                    f"Field `{right_schema.timestamp}` specified in fields {obj.fields} "
                     f"already exists in left schema of {output_schema_name}."
                 )
 

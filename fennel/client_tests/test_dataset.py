@@ -1434,7 +1434,7 @@ class MovieStatsWithRightFields:
                 ]
             ]
 
-        c = rating.join(revenue, how="left", on=[str(cls.movie)], right_fields=["revenue"])
+        c = rating.join(revenue, how="left", on=[str(cls.movie)], fields=["revenue"])
         # Transform provides additional columns which will be filtered out.
         return c.transform(
             to_millions,
@@ -1452,7 +1452,7 @@ class MovieStatsWithRightFields:
 class TestBasicJoinWithRightFields(unittest.TestCase):
     @pytest.mark.integration
     @mock
-    def test_basic_join_with_right_fields(self, client):
+    def test_basic_join_with_fields(self, client):
         # # Sync the dataset
         client.commit(
             message="msg",
