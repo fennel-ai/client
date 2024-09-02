@@ -1,8 +1,19 @@
 from typing import List
 
 from fennel.expr.expr import (
+    DateTimeParts,
+    DateTimeSince,
+    DateTimeSinceEpoch,
+    DateTimeStrftime,
+    ListContains,
+    ListGet,
+    ListHasNull,
+    ListLen,
+    ListNoop,
     Literal,
     Ref,
+    StructGet,
+    StructNoop,
     Unary,
     When,
     Then,
@@ -23,15 +34,19 @@ from fennel.expr.expr import (
     Abs,
     Floor,
     StringNoop,
+    StringParse,
     StrLen,
     Lower,
     Upper,
+    StringStrpTime,
     StrContains,
     DictContains,
     Concat,
     DictGet,
     DictLen,
     DictNoop,
+    _DateTime,
+    DateTimeNoop,
 )
 
 
@@ -81,6 +96,10 @@ class Visitor(object):
 
         elif isinstance(obj, _Bool):
             ret = self.visitBool(obj)
+
+        elif isinstance(obj, _DateTime):
+            ret = self.visitDateTime(obj)
+
         else:
             raise InvalidExprException("invalid expression type: %s" % obj)
 
@@ -131,6 +150,9 @@ class Visitor(object):
     def visitStruct(self, obj):
         raise NotImplementedError
 
+    def visitDateTime(self, obj):
+        raise NotImplementedError
+
 
 class ExprPrinter(Visitor):
 
@@ -168,7 +190,7 @@ class ExprPrinter(Visitor):
         while cur_when is not None:
             if cur_when._then is None:
                 raise InvalidExprException(
-                    f"THEN clause missing for WHEN clause {self.visit(cur_when)}"
+                    f"THEN clause missing for WHEN clause {cur_when.expr}"
                 )
             when_then_pairs.append((cur_when, cur_when._then))
             cur_when = cur_when._then._chained_when
@@ -206,6 +228,20 @@ class ExprPrinter(Visitor):
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)
 
+    def visitDateTime(self, obj):
+        if isinstance(obj.op, DateTimeNoop):
+            return self.visit(obj.operand)
+        elif isinstance(obj.op, DateTimeParts):
+            return f"DATEPART({self.visit(obj.operand)}, {obj.op.part})"
+        elif isinstance(obj.op, DateTimeSince):
+            return f"SINCE({self.visit(obj.operand)}, {self.visit(obj.op.other)}, unit={obj.op.unit})"
+        elif isinstance(obj.op, DateTimeSinceEpoch):
+            return f"SINCE_EPOCH({self.visit(obj.operand)}, unit={obj.op.unit})"
+        elif isinstance(obj.op, DateTimeStrftime):
+            return f"STRFTIME({self.visit(obj.operand)}, {obj.op.format})"
+        else:
+            raise InvalidExprException("invalid datetime operation: %s" % obj.op)
+
     def visitString(self, obj):
         if isinstance(obj.op, StringNoop):
             return self.visit(obj.operand)
@@ -219,6 +255,12 @@ class ExprPrinter(Visitor):
             return f"CONTAINS({self.visit(obj.operand)}, {self.visit(obj.op.item)})"
         elif isinstance(obj.op, Concat):
             return f"{self.visit(obj.operand)} + {self.visit(obj.op.other)}"
+        elif isinstance(obj.op, StringStrpTime):
+            if obj.op.timezone is not None:
+                return f"STRPTIME({self.visit(obj.operand)}, {obj.op.format}, {obj.op.timezone})"
+            return f"STRPTIME({self.visit(obj.operand)}, {obj.op.format})"
+        elif isinstance(obj.op, StringParse):
+            return f"PARSE({self.visit(obj.operand)}, {obj.op.dtype})"
         else:
             raise InvalidExprException("invalid string operation: %s" % obj.op)
 
@@ -237,6 +279,27 @@ class ExprPrinter(Visitor):
         elif isinstance(obj.op, DictLen):
             return f"LEN({self.visit(obj.expr)})"
 
+    def visitList(self, obj):
+        if isinstance(obj.op, ListNoop):
+            return self.visit(obj.expr)
+        elif isinstance(obj.op, ListContains):
+            return (
+                f"CONTAINS({self.visit(obj.expr)}, {self.visit(obj.op.item)})"
+            )
+        elif isinstance(obj.op, ListGet):
+            return f"{self.visit(obj.expr)}[{self.visit(obj.op.index)}]"
+        elif isinstance(obj.op, ListLen):
+            return f"LEN({self.visit(obj.expr)})"
+        elif isinstance(obj.op, ListHasNull):
+            return f"HAS_NULL({self.visit(obj.expr)})"
+
+    def visitStruct(self, obj):
+        if isinstance(obj.op, StructNoop):
+            return self.visit(obj.operand)
+        elif isinstance(obj.op, StructGet):
+            return f"{self.visit(obj.operand)}.{obj.op.field}"
+        else:
+            raise InvalidExprException("invalid struct operation: %s" % obj.op)
 
 class FetchReferences(Visitor):
 
@@ -270,7 +333,7 @@ class FetchReferences(Visitor):
         while cur_when is not None:
             if cur_when._then is None:
                 raise InvalidExprException(
-                    f"THEN clause missing for WHEN clause {self.visit(cur_when)}"
+                    f"THEN clause missing for WHEN clause {cur_when.expr}"
                 )
             when_then_pairs.append((cur_when, cur_when._then))
             cur_when = cur_when._then._chained_when
@@ -308,15 +371,23 @@ class FetchReferences(Visitor):
                 self.visit(obj.op.default)
 
     def visitList(self, obj):
-        for item in obj.items:
-            self.visit(item)
+        self.visit(obj.expr)
+        if isinstance(obj.op, ListContains):
+            self.visit(obj.op.item)
+        elif isinstance(obj.op, ListGet):
+            self.visit(obj.op.index)
 
     def visitStruct(self, obj):
-        for field in obj.fields:
-            self.visit(field)
+        self.visit(obj.operand)
 
     def visitLiteral(self, obj):
         pass
-
+        
     def visitBool(self, obj):
         self.visit(obj.expr)
+
+    def visitDateTime(self, obj):
+        self.visit(obj.operand)
+        if isinstance(obj.op, DateTimeSince): 
+            self.visit(obj.op.other) 
+    

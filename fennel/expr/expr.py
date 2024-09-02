@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+from enum import Enum
 import json
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Type, Optional
 
 import pandas as pd
+import json
+import inspect
+import numpy as np
+
+from fennel.dtypes.dtypes import FENNEL_STRUCT, FENNEL_STRUCT_SRC_CODE
+import pandas as pd
+from fennel.internal_lib.schema.schema import from_proto, parse_json
 import pyarrow as pa
 from fennel_data_lib import eval, type_of
 
@@ -14,6 +22,10 @@ from fennel.internal_lib.schema import (
     from_proto,
     get_datatype,
     cast_col_to_arrow_dtype,
+)
+from fennel.internal_lib.utils.utils import (
+    cast_col_to_pandas,
+    is_user_defined_class,
 )
 
 
@@ -66,6 +78,7 @@ class Expr(object):
     def fillnull(self, value: Any):
         return FillNull(self, value)
 
+    
     # We also add all the math functions
 
     def abs(self) -> _Number:
@@ -334,8 +347,12 @@ class Expr(object):
             new_df = new_df.loc[:, list(schema.keys())]
             return pa.RecordBatch.from_pandas(new_df, preserve_index=False)
 
-        def pa_to_pd(pa_data):
-            return pa_data.to_pandas(types_mapper=pd.ArrowDtype)
+        def pa_to_pd(pa_data, ret_type):
+            ret = pa_data.to_pandas(types_mapper=pd.ArrowDtype)
+            ret = cast_col_to_pandas(ret, get_datatype(ret_type))
+            if is_user_defined_class(ret_type):
+                ret = ret.apply(lambda x: parse_json(ret_type, x))
+            return ret
 
         serializer = ExprSerializer()
         proto_expr = serializer.serialize(self.root)
@@ -344,8 +361,9 @@ class Expr(object):
         proto_schema = {}
         for key, value in schema.items():
             proto_schema[key] = get_datatype(value).SerializeToString()
+        ret_type = self.typeof(schema)
         arrow_col = eval(proto_bytes, df_pa, proto_schema)
-        return pa_to_pd(arrow_col)
+        return pa_to_pd(arrow_col, ret_type)
 
     def __str__(self) -> str:  # type: ignore
         from fennel.expr.visitor import ExprPrinter
@@ -443,6 +461,17 @@ class StringNoop(StringOp):
 
 
 @dataclass
+class StringStrpTime(StringOp):
+    format: str
+    timezone: Optional[str]
+
+
+@dataclass
+class StringParse(StringOp):
+    dtype: Type
+
+
+@dataclass
 class Concat(StringOp):
     other: Expr
 
@@ -470,6 +499,16 @@ class _String(Expr):
 
     def len(self) -> _Number:
         return _Number(_String(self, StrLen()), MathNoop())
+
+    def strptime(
+        self, format: str, timezone: Optional[str] = None
+    ) -> _DateTime:
+        return _DateTime(
+            _String(self, StringStrpTime(format, timezone)), DateTimeNoop()
+        )
+
+    def parse(self, dtype: Type) -> Expr:
+        return _String(self, StringParse(dtype))
 
 
 #########################################################
@@ -530,7 +569,7 @@ class StructOp:
 
 @dataclass
 class StructGet(StructOp):
-    key: Expr
+    field: str
 
 
 class StructNoop(StructOp):
@@ -538,7 +577,17 @@ class StructNoop(StructOp):
 
 
 class _Struct(Expr):
-    pass
+    def __init__(self, expr: Expr, op: DateTimeOp):
+        self.op = op
+        self.operand = expr
+        super(_Struct, self).__init__()
+
+    def get(self, key: str) -> Expr:
+        if not isinstance(key, str):
+            raise InvalidExprException(
+                f"invalid field access for struct, expected string but got {key}"
+            )
+        return _Struct(self, StructGet(key))
 
 
 #########################################################
@@ -554,8 +603,102 @@ class DateTimeNoop(DateTimeOp):
     pass
 
 
+class TimeUnit(Enum):
+    YEAR = "year"
+    MONTH = "month"
+    WEEK = "week"
+    DAY = "day"
+    HOUR = "hour"
+    MINUTE = "minute"
+    SECOND = "second"
+    MILLISECOND = "millisecond"
+    MICROSECOND = "microsecond"
+    
+    @staticmethod
+    def from_string(time_unit_str: str | TimeUnit) -> TimeUnit:
+        if isinstance(time_unit_str, TimeUnit):
+            return time_unit_str
+        
+        for unit in TimeUnit:
+            if unit.value == time_unit_str.lower():
+                return unit
+        raise ValueError(f"Unknown time unit: {time_unit_str}")
+   
+
+@dataclass
+class DateTimeParts(DateTimeOp):
+    part: TimeUnit
+
+@dataclass
+class DateTimeSince(DateTimeOp):
+    other: Expr
+    unit: TimeUnit
+    
+@dataclass
+class DateTimeSinceEpoch(DateTimeOp):
+    unit: TimeUnit
+
+@dataclass
+class DateTimeStrftime(DateTimeOp):
+    format: str
+
 class _DateTime(Expr):
-    pass
+    def __init__(self, expr: Expr, op: DateTimeOp):
+        self.op = op
+        self.operand = expr
+        super(_DateTime, self).__init__()
+        
+    def parts(self, part: TimeUnit) -> _Number:
+        part = TimeUnit.from_string(part)
+        return _Number(_DateTime(self, DateTimeParts(part)), MathNoop())
+    
+    def since(self, other: Expr, unit: TimeUnit) -> _Number:
+        unit = TimeUnit.from_string(unit)
+        other_expr = make_expr(other)
+        return _Number(_DateTime(self, DateTimeSince(other_expr, unit)), MathNoop())
+    
+    def since_epoch(self, unit: TimeUnit) -> _Number:
+        unit = TimeUnit.from_string(unit)
+        return _Number(_DateTime(self, DateTimeSinceEpoch(unit)), MathNoop())
+    
+    def strftime(self, format: str) -> _String:
+        return _String(_DateTime(self, DateTimeStrftime(format)), StringNoop())
+    
+    @property
+    def year(self) -> _Number:
+        return self.parts(TimeUnit.YEAR)
+    
+    @property
+    def month(self) -> _Number:
+        return self.parts(TimeUnit.MONTH)
+    
+    @property
+    def week(self) -> _Number:
+        return self.parts(TimeUnit.WEEK)
+    
+    @property
+    def day(self) -> _Number:
+        return self.parts(TimeUnit.DAY)
+    
+    @property
+    def hour(self) -> _Number:  
+        return self.parts(TimeUnit.HOUR)
+    
+    @property
+    def minute(self) -> _Number:
+        return self.parts(TimeUnit.MINUTE)
+    
+    @property
+    def second(self) -> _Number:
+        return self.parts(TimeUnit.SECOND)
+    
+    @property
+    def millisecond(self) -> _Number:
+        return self.parts(TimeUnit.MILLISECOND)
+    
+    @property
+    def microsecond(self) -> _Number:
+        return self.parts(TimeUnit.MICROSECOND)
 
 
 #########################################################
@@ -581,12 +724,30 @@ class ListGet(ListOp):
     index: Expr
 
 
+class ListHasNull(ListOp):
+    pass
+
+
 class ListNoop(ListOp):
     pass
 
 
 class _List(Expr):
-    pass
+    def __init__(self, expr: Expr, op: ListOp):
+        self.op = op
+        self.expr = expr
+        super(_List, self).__init__()
+
+    def len(self) -> _Number:
+        return _Number(_List(self, ListLen()), MathNoop())
+
+    def contains(self, item: Expr) -> _Bool:
+        item_expr = make_expr(item)
+        return _Bool(_List(self, ListContains(item_expr)))
+
+    def get(self, index: Expr) -> Expr:
+        index_expr = make_expr(index)
+        return _List(self, ListGet(index_expr))
 
 
 #######################################################
@@ -745,6 +906,12 @@ class FillNull(Expr):
         return f"fillnull({self.expr}, {self.value})"
 
 
+class MakeStruct(Expr):
+    def __init__(self, fields: Dict[str, Expr], type: Type):
+        self.fields = fields
+        self.dtype = type
+        super(MakeStruct, self).__init__()
+
 def make_expr(v: Any) -> Any:
     """Tries to convert v to Expr. Throws an exception if conversion is not possible."""
     if isinstance(v, Expr):
@@ -792,3 +959,6 @@ def lit(v: Any, type: Optional[Type] = None) -> Expr:
 
 def when(expr: Expr) -> When:
     return When(expr)
+
+def make_struct(fields: Dict[str, Expr], type: Type) -> Expr:
+    return MakeStruct(fields, type)
