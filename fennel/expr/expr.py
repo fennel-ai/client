@@ -961,4 +961,5 @@ def when(expr: Expr) -> When:
     return When(expr)
 
 def make_struct(fields: Dict[str, Expr], type: Type) -> Expr:
+    fields = {k: make_expr(v) for k, v in fields.items()}
     return MakeStruct(fields, type)

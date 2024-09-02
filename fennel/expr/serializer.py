@@ -374,6 +374,33 @@ class ExprSerializer(Visitor):
             raise InvalidExprException("invalid struct operation: %s" % obj.op)
         expr.struct_fn.struct.CopyFrom(self.visit(obj.operand))
         return expr
+    
+    
+    def visitMakeStruct(self, obj):
+        expr = proto.Expr()
+        fields = {}
+        for field, value in obj.fields.items():
+            fields[field] = self.visit(value)
+        expr.make_struct.fields.update(fields)
+        expr.make_struct.struct_type.CopyFrom(get_datatype(obj.dtype))
+        return expr
+    
+    def visitMakeStruct(self, obj):
+        expr = proto.Expr()  # Assuming proto.Expr() is the right way to initialize this
+        # Initialize the fields map directly rather than replacing it
+        for field, value in obj.fields.items():
+            # Retrieve or initialize the message at the map key
+            field_expr = expr.make_struct.fields.get_or_create(field)
+            # Copy the content of the visited value into the map's message field
+            field_expr.CopyFrom(self.visit(value))
+        
+        # Ensure get_datatype returns a correct protobuf message of type StructType
+        dtype = get_datatype(obj.dtype)
+        if dtype.struct_type is None:
+            raise InvalidExprException("Expected struct_type to be a StructType, found {}".format(dtype))
+        expr.make_struct.struct_type.CopyFrom(dtype.struct_type)
+        
+        return expr
 
 def val_as_json(val: Any) -> str:
     if isinstance(val, str):
